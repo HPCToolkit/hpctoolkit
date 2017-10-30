@@ -112,34 +112,6 @@ static uint16_t perf_kernel_lm_id;
 // implementation
 //******************************************************************************
 
-//----------------------------------------------------------
-// extend a user-mode callchain with kernel frames (if any)
-//----------------------------------------------------------
-static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf, void *data_aux
-)
-{
-  cct_node_t *parent = leaf;
-  
-  if (data_aux == NULL)  {
-    return parent;
-  }
-  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
-  if (data->nr > 0) {
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips
-    for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
-    }
-  }
-  return parent;
-}
 
 #if 0
 //
@@ -191,6 +163,11 @@ perf_add_callchain( cct_node_t        *parent_original,
 }
 #endif
 
+uint16_t
+get_perf_kernel_lm_id()
+{
+  return perf_kernel_lm_id;
+}
 
 /*
  * get int long value of variable environment.
@@ -336,7 +313,6 @@ is_perf_ksym_available()
   	int level = perf_kernel_syms_avail();
 
     if (level == 0 || level == 1) {
-      hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
       perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
       ksym_status = PERF_AVAILABLE;
     } else {

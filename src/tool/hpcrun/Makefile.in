@@ -356,7 +356,8 @@ am__v_AR_1 =
 libhpcrun_datacentric_wrap_a_AR = $(AR) $(ARFLAGS)
 libhpcrun_datacentric_wrap_a_LIBADD =
 am__dirstamp = $(am__leading_dot)dirstamp
-am_libhpcrun_datacentric_wrap_a_OBJECTS = sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.$(OBJEXT)
+am_libhpcrun_datacentric_wrap_a_OBJECTS = sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.$(OBJEXT) \
+	sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.$(OBJEXT)
 libhpcrun_datacentric_wrap_a_OBJECTS =  \
 	$(am_libhpcrun_datacentric_wrap_a_OBJECTS)
 libhpcrun_ga_wrap_a_AR = $(AR) $(ARFLAGS)
@@ -461,8 +462,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/datacentric/datacentric.c \
-	sample-sources/datacentric/data-overrides.c \
-	sample-sources/datacentric/data_tree.c \
 	sample-sources/display.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
@@ -550,8 +549,6 @@ am__objects_11 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/blame-shift/libhpcrun_la-blame-map.lo \
 	sample-sources/libhpcrun_la-common.lo \
 	sample-sources/datacentric/libhpcrun_la-datacentric.lo \
-	sample-sources/datacentric/libhpcrun_la-data-overrides.lo \
-	sample-sources/datacentric/libhpcrun_la-data_tree.lo \
 	sample-sources/libhpcrun_la-display.lo \
 	sample-sources/libhpcrun_la-ga.lo \
 	sample-sources/libhpcrun_la-io.lo \
@@ -672,7 +669,8 @@ libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
 libhpcrun_datacentric_la_LIBADD =
-am_libhpcrun_datacentric_la_OBJECTS = sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo
+am_libhpcrun_datacentric_la_OBJECTS = sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo \
+	sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo
 libhpcrun_datacentric_la_OBJECTS =  \
 	$(am_libhpcrun_datacentric_la_OBJECTS)
 libhpcrun_datacentric_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
@@ -756,8 +754,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/datacentric/datacentric.c \
-	sample-sources/datacentric/data-overrides.c \
-	sample-sources/datacentric/data_tree.c \
 	sample-sources/display.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
@@ -846,8 +842,6 @@ am__objects_43 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/blame-shift/libhpcrun_o-blame-map.$(OBJEXT) \
 	sample-sources/libhpcrun_o-common.$(OBJEXT) \
 	sample-sources/datacentric/libhpcrun_o-datacentric.$(OBJEXT) \
-	sample-sources/datacentric/libhpcrun_o-data-overrides.$(OBJEXT) \
-	sample-sources/datacentric/libhpcrun_o-data_tree.$(OBJEXT) \
 	sample-sources/libhpcrun_o-display.$(OBJEXT) \
 	sample-sources/libhpcrun_o-ga.$(OBJEXT) \
 	sample-sources/libhpcrun_o-io.$(OBJEXT) \
@@ -1514,8 +1508,6 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample_sources_all.c sample-sources/blame-shift/blame-shift.c \
 	sample-sources/blame-shift/blame-map.c sample-sources/common.c \
 	sample-sources/datacentric/datacentric.c \
-	sample-sources/datacentric/data-overrides.c \
-	sample-sources/datacentric/data_tree.c \
 	sample-sources/display.c sample-sources/ga.c \
 	sample-sources/io.c sample-sources/itimer.c \
 	sample-sources/idle.c sample-sources/memleak.c \
@@ -1623,9 +1615,11 @@ libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
 libhpcrun_datacentric_la_SOURCES = \
+	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_datacentric_wrap_a_SOURCES = \
+	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_ga_la_SOURCES = \
@@ -1943,6 +1937,9 @@ sample-sources/datacentric/$(am__dirstamp):
 sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) sample-sources/datacentric/$(DEPDIR)
 	@: > sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
+sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.$(OBJEXT):  \
+	sample-sources/datacentric/$(am__dirstamp) \
+	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.$(OBJEXT):  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
@@ -2122,12 +2119,6 @@ sample-sources/blame-shift/libhpcrun_la-blame-map.lo:  \
 sample-sources/libhpcrun_la-common.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/datacentric/libhpcrun_la-datacentric.lo:  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_la-data-overrides.lo:  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_la-data_tree.lo:  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-display.lo:  \
@@ -2473,6 +2464,9 @@ utilities/libhpcrun_la-last_func.lo: utilities/$(am__dirstamp) \
 
 libhpcrun.la: $(libhpcrun_la_OBJECTS) $(libhpcrun_la_DEPENDENCIES) $(EXTRA_libhpcrun_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_la_LINK) $(am_libhpcrun_la_rpath) $(libhpcrun_la_OBJECTS) $(libhpcrun_la_LIBADD) $(LIBS)
+sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo:  \
+	sample-sources/datacentric/$(am__dirstamp) \
+	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo:  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
@@ -2593,12 +2587,6 @@ sample-sources/libhpcrun_o-common.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/datacentric/libhpcrun_o-datacentric.$(OBJEXT):  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_o-data-overrides.$(OBJEXT):  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_o-data_tree.$(OBJEXT):  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-display.$(OBJEXT):  \
@@ -3117,12 +3105,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data-overrides.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-datacentric.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-datacentric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Plo@am__quote@
@@ -3289,6 +3275,20 @@ trampoline/x86-family/libhpcrun_o-x86-tramp.obj: trampoline/x86-family/x86-tramp
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.o: sample-sources/datacentric/data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+
+sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.obj: sample-sources/datacentric/data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.obj -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
 
 sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.o: sample-sources/datacentric/data-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_wrap_a_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_wrap_a_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Tpo -c -o sample-sources/datacentric/libhpcrun_datacentric_wrap_a-data-overrides.o `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
@@ -3625,20 +3625,6 @@ sample-sources/datacentric/libhpcrun_la-datacentric.lo: sample-sources/datacentr
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/datacentric.c' object='sample-sources/datacentric/libhpcrun_la-datacentric.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-datacentric.lo `test -f 'sample-sources/datacentric/datacentric.c' || echo '$(srcdir)/'`sample-sources/datacentric/datacentric.c
-
-sample-sources/datacentric/libhpcrun_la-data-overrides.lo: sample-sources/datacentric/data-overrides.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_la-data-overrides.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data-overrides.Tpo -c -o sample-sources/datacentric/libhpcrun_la-data-overrides.lo `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data-overrides.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data-overrides.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data-overrides.c' object='sample-sources/datacentric/libhpcrun_la-data-overrides.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-data-overrides.lo `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
-
-sample-sources/datacentric/libhpcrun_la-data_tree.lo: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_la-data_tree.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_la-data_tree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
 
 sample-sources/libhpcrun_la-display.lo: sample-sources/display.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-display.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-display.Tpo -c -o sample-sources/libhpcrun_la-display.lo `test -f 'sample-sources/display.c' || echo '$(srcdir)/'`sample-sources/display.c
@@ -4319,6 +4305,13 @@ utilities/libhpcrun_la-last_func.lo: utilities/last_func.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-last_func.lo `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
 
+sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo: sample-sources/datacentric/data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data_tree.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_datacentric_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+
 sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo: sample-sources/datacentric/data-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_datacentric_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_datacentric_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Tpo -c -o sample-sources/datacentric/libhpcrun_datacentric_la-data-overrides.lo `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Plo
@@ -4696,34 +4689,6 @@ sample-sources/datacentric/libhpcrun_o-datacentric.obj: sample-sources/datacentr
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/datacentric.c' object='sample-sources/datacentric/libhpcrun_o-datacentric.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-datacentric.obj `if test -f 'sample-sources/datacentric/datacentric.c'; then $(CYGPATH_W) 'sample-sources/datacentric/datacentric.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/datacentric.c'; fi`
-
-sample-sources/datacentric/libhpcrun_o-data-overrides.o: sample-sources/datacentric/data-overrides.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data-overrides.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data-overrides.o `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data-overrides.c' object='sample-sources/datacentric/libhpcrun_o-data-overrides.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data-overrides.o `test -f 'sample-sources/datacentric/data-overrides.c' || echo '$(srcdir)/'`sample-sources/datacentric/data-overrides.c
-
-sample-sources/datacentric/libhpcrun_o-data-overrides.obj: sample-sources/datacentric/data-overrides.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data-overrides.obj -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data-overrides.obj `if test -f 'sample-sources/datacentric/data-overrides.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data-overrides.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data-overrides.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data-overrides.c' object='sample-sources/datacentric/libhpcrun_o-data-overrides.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data-overrides.obj `if test -f 'sample-sources/datacentric/data-overrides.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data-overrides.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data-overrides.c'; fi`
-
-sample-sources/datacentric/libhpcrun_o-data_tree.o: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data_tree.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_o-data_tree.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
-
-sample-sources/datacentric/libhpcrun_o-data_tree.obj: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data_tree.obj -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_o-data_tree.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
 
 sample-sources/libhpcrun_o-display.o: sample-sources/display.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-display.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-display.Tpo -c -o sample-sources/libhpcrun_o-display.o `test -f 'sample-sources/display.c' || echo '$(srcdir)/'`sample-sources/display.c

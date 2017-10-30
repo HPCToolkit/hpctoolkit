@@ -123,7 +123,7 @@ record_partial_unwind(
   cct_bundle_t* cct, frame_t* bt_beg,
   frame_t* bt_last, int metricId,
   hpcrun_metricVal_t metricIncr,
-  int skipInner, void *data)
+  int skipInner, struct cct_custom_update_s *custom_update)
 {
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
@@ -144,7 +144,7 @@ record_partial_unwind(
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
 //					      false, bt_beg, bt_last,
-					      false, metricId, metricIncr, data);
+					      false, metricId, metricIncr, custom_update);
 }
 
 
@@ -236,13 +236,12 @@ hpcrun_sample_callpath(void* context, int metricId,
       /* check to see if shared library loadmap (of current epoch) has changed out from under us */
       epoch = hpcrun_check_for_new_loadmap(epoch);
 
-      void *data_aux = NULL;
+      struct cct_custom_update_s *data_aux = NULL;
       if (data != NULL)
-        data_aux = data->sample_data;
+        data_aux = &data->sample_custom_cct;
 
       node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId,
-          metricIncr,
-          skipInner, isSync, data_aux);
+          			   metricIncr, skipInner, isSync, data_aux);
       // end copied from help_hpcrun_sample_callpath
 
       if (ENABLED(DUMP_BACKTRACES)) {

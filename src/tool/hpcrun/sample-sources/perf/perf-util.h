@@ -158,6 +158,9 @@ typedef struct event_thread_s {
 } event_thread_t;
 
 
+// returns the id of kernel load module
+uint16_t get_perf_kernel_lm_id();
+
 // calling perf event open system call
 static inline long
 perf_event_open(struct perf_event_attr *hw_event, pid_t pid,

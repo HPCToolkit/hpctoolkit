@@ -52,7 +52,19 @@
 #include <unwind/common/backtrace.h>
 #include "metrics.h"
 
-typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path, void *data_aux);
+typedef  cct_node_t *(*hpcrun_cct_update_before_t)(cct_bundle_t *bundle, 
+						          cct_node_t *path, void *data_aux);
+
+typedef  cct_node_t *(*hpcrun_cct_update_after_t)(cct_node_t *path,
+                      void *data_aux);
+
+struct cct_custom_update_s {
+
+  hpcrun_cct_update_before_t *update_before_fn;
+  hpcrun_cct_update_after_t  *update_after_fn;
+
+  void *data_aux;
+};
 
 //
 // interface routines
@@ -73,36 +85,25 @@ typedef  cct_node_t *(*hpcrun_kernel_callpath_t)(cct_node_t *path, void *data_au
 //
 extern cct_node_t* hpcrun_cct_insert_backtrace(cct_node_t* cct, frame_t* path_beg, frame_t* path_end);
 
-extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_node_t* cct,
+extern cct_node_t* hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* bndl, cct_node_t* cct,
 							int metric_id,
 							frame_t* path_beg, frame_t* path_end,
-							cct_metric_data_t datum, void *data);
+							cct_metric_data_t datum, 
+							struct cct_custom_update_s *custom_update);
 
 extern cct_node_t* hpcrun_cct_record_backtrace(cct_bundle_t* bndl, bool partial, 
-backtrace_info_t *bt,
-#if 0
-bool thread_stop,
-					       frame_t* bt_beg, frame_t* bt_last,
-#endif
-					       bool tramp_found);
+	backtrace_info_t *bt, bool tramp_found);
 
 extern cct_node_t* hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* bndl, bool partial, 
-backtrace_info_t *bt,
-#if 0
-bool thread_stop,
-							frame_t* bt_beg, frame_t* bt_last,
-#endif
-				bool tramp_found,
-	                        int metricId, hpcrun_metricVal_t metricIncr,
-				void *data);
+backtrace_info_t *bt, bool tramp_found, int metricId, hpcrun_metricVal_t metricIncr,
+	struct cct_custom_update_s *custom_update);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
 	ip_normalized_t *leaf_func,  // JMC
 	int metricId, hpcrun_metricVal_t metricIncr,
-	int skipInner, int isSync, void *data);
+	int skipInner, int isSync, struct cct_custom_update_s *custom_update);
 
 
-extern void hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp);
 
 //
 // debug version of hpcrun_backtrace2cct:

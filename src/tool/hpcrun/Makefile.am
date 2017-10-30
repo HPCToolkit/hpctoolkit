@@ -279,8 +279,6 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/blame-map.c          \
 	sample-sources/common.c         \
 	sample-sources/datacentric/datacentric.c	\
-	sample-sources/datacentric/data-overrides.c	\
-	sample-sources/datacentric/data_tree.c	\
 	sample-sources/display.c	\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
@@ -464,9 +462,11 @@ libhpcrun_wrap_a_SOURCES =		\
 	monitor-exts/openmp.c
 
 libhpcrun_datacentric_la_SOURCES = 		\
+	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_datacentric_wrap_a_SOURCES = 	\
+	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_ga_la_SOURCES = 		\

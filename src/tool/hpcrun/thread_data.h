@@ -96,7 +96,6 @@ typedef struct gpu_data_t {
 // ----------------------------------------
 typedef struct memory_data_s {
   void *ibs_ptr;
-  cct_node_t *data_node;
   void *pc;
   // for static data
   uint16_t lm_id;
@@ -109,7 +108,6 @@ typedef struct memory_data_s {
   void *start;
   void *end;
 
-  int first_touch;
   // ----------------------------------------
   // soft ibs support 
   // ----------------------------------------

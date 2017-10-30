@@ -50,7 +50,7 @@
 #define FUNCTION_FOLDER_NAME(name) monitor_data ## _ ## name
 
 #define FUNCTION_FOLDER(name) 	void \
-			 	monitor_data ## _ ## name(void) \
+			 	static monitor_data ## _ ## name(void) \
 				{}
 
 #define FUNCTION_DATA_FOLDER_NAME(start,end) range ## _ ## start ## _ ## end

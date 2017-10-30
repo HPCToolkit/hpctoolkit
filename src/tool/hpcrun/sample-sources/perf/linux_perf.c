@@ -228,6 +228,36 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 
 //----------------------------------------------------------
+// extend a user-mode callchain with kernel frames (if any)
+//----------------------------------------------------------
+static cct_node_t *
+perf_add_kernel_callchain(
+  cct_node_t *leaf, void *data_aux
+)
+{
+  cct_node_t *parent = leaf;
+  
+  if (data_aux == NULL)  {
+    return parent;
+  }
+  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+  if (data->nr > 0) {
+    // add kernel IPs to the call chain top down, which is the 
+    // reverse of the order in which they appear in ips
+    for (int i = data->nr - 1; i >= 0; i--) {
+
+      uint16_t lm_id = get_perf_kernel_lm_id();
+      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
+      cct_addr_t frm = { .ip_norm = npc };
+      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
+      parent = child;
+    }
+  }
+  return parent;
+}
+
+
+//----------------------------------------------------------
 // stop an event
 //----------------------------------------------------------
 static void
@@ -464,7 +494,12 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   // update the cct and add callchain if necessary
   // ----------------------------------------------------------------------------
-  sampling_info_t info = {.sample_clock = 0, .sample_data = mmap_data};
+  sampling_info_t info;
+
+  info.sample_clock = 0;
+  info.sample_custom_cct.update_before_fn = NULL;
+  info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t*)perf_add_kernel_callchain;
+  info.sample_custom_cct.data_aux	        = mmap_data;
 
   *sv = hpcrun_sample_callpath(context, current->event->metric,
         (hpcrun_metricVal_t) {.r=counter},

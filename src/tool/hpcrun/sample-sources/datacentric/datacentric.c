@@ -55,7 +55,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/mman.h>
-
+#include <stdbool.h>
 
 
 /******************************************************************************
@@ -88,6 +88,8 @@
 #include "sample-sources/display.h" // show the list of events
 #include "sample-sources/perf/event_custom.h"
 
+#include "place_folder.h"
+
 /******************************************************************************
  * constants
  *****************************************************************************/
@@ -96,11 +98,51 @@
 
 
 /******************************************************************************
+ * data structure
+ *****************************************************************************/
+struct datacentric_info_s {
+  cct_node_t *data_node;
+  bool first_touch;
+};
+
+/******************************************************************************
  * local variables
  *****************************************************************************/
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
 
+#define POINTER_TO_FUNCTION
+
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+#define POINTER_TO_FUNCTION *(void**)
+#endif
+
+static cct_node_t*
+hpcrun_cct_record_datacentric(cct_bundle_t* cct, cct_node_t* cct_cursor, void *data_aux)
+{
+  if (data_aux == NULL)
+    return cct_cursor;
+
+  // datacentric support: attach samples to data allocation cct
+  struct datacentric_info_s *info = (struct datacentric_info_s *) data_aux;
+  cct_node_t *data_node           = info->data_node;
+
+  if (data_node) {
+    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
+                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap));
+
+    // copy the call path of the malloc
+    cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
+
+    if (info->first_touch) {
+      cct_cursor = hpcrun_insert_special_node(cct_cursor,
+                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
+      cct_cursor = hpcrun_insert_special_node(cct_cursor,
+                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(access_heap));
+    }
+  }
+  return cct_cursor;
+}
 
 /******************************************************************************
  * segv signal handler
@@ -125,14 +167,22 @@ segv_handler (int signal_number, siginfo_t *si, void *context)
   if (data_node) {
     void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
     mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
-    TD_GET(mem_data.data_node) = data_node;
-    TD_GET(mem_data.first_touch) = 1;
-    hpcrun_sample_callpath(context, alloc_metric_id, 	(hpcrun_metricVal_t) {.i=0},
-                            0/*skipInner*/, 0/*isSync*/, NULL);
-    TD_GET(mem_data.first_touch) = 0;
-    TD_GET(mem_data.data_node) = NULL;
+
+    sampling_info_t info;
+    struct datacentric_info_s data_aux = {.data_node = data_node, .first_touch = true};
+
+    info.sample_clock = 0;
+    info.sample_custom_cct.update_before_fn = hpcrun_cct_record_datacentric;
+    info.sample_custom_cct.update_after_fn  = 0;
+    info.sample_custom_cct.data_aux         = &data_aux;
+
+    TMSG(DATACENTRIC, "found node %p, p: %p, context: %p", data_node, p, context);
+
+    hpcrun_sample_callpath(context, alloc_metric_id, 	(hpcrun_metricVal_t) {.i=1},
+                            0/*skipInner*/, 0/*isSync*/, &info);
   }
   else {
+    TMSG(DATACENTRIC, "NOT found node %p", context);
     void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
     mprotect (p, pagesize, PROT_READ | PROT_WRITE);
   }

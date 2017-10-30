@@ -247,7 +247,7 @@ lush_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   }
 
   cct_node_t* node = NULL;
-  node = hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
+  node = hpcrun_cct_insert_backtrace_w_metric(cct, cct_cursor, metricId,
 					      bt_end, bt_beg,
 					      metricIncr, NULL);
 
