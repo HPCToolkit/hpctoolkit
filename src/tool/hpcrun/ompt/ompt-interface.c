@@ -527,6 +527,10 @@ init_idle_blame_shift(const char *version)
 // itself.
 //-------------------------------------------------
 
+
+// forward declaration
+void prepare_device();
+
 void
 ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
                 const char*            runtime_version,
@@ -547,6 +551,8 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
   init_parallel_regions();
   init_mutex_blame_shift(runtime_version);
   init_idle_blame_shift(runtime_version);
+
+  prepare_device();
 
   if(ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
@@ -692,3 +698,183 @@ ompt_idle_blame_shift_request()
   ompt_idle_blame_requested = 1;
   ompt_register_idle_metrics();
 }
+
+
+//*****************************************************************************
+// device operations
+//*****************************************************************************
+
+#define FOREACH_OMPT_TARGET_FN(macro) \
+  macro(ompt_get_device_time) \
+  macro(ompt_translate_time) \
+  macro(ompt_set_trace_native) \
+  macro(ompt_start_trace) \
+  macro(ompt_pause_trace) \
+  macro(ompt_stop_trace) \
+  macro(ompt_get_record_type) \
+  macro(ompt_get_record_native) \
+  macro(ompt_get_record_abstract) \
+  macro(ompt_advance_buffer_cursor) 
+
+#define ompt_decl_name(fn) \
+  fn ## _t  fn;
+
+  FOREACH_OMPT_TARGET_FN(ompt_decl_name)
+
+#undef ompt_decl_name
+
+void 
+ompt_bind_names(ompt_function_lookup_t lookup)
+{
+#define ompt_bind_name(fn) \
+  fn = (fn ## _t ) lookup(#fn);
+
+  FOREACH_OMPT_TARGET_FN(ompt_bind_name)
+
+#undef ompt_bind_name
+}
+
+
+#define BUFFER_SIZE (1024 * 1024 * 8)
+
+void 
+ompt_callback_buffer_request(uint64_t device_id,
+                             ompt_buffer_t **buffer,
+                             size_t *bytes)
+{
+  *bytes = BUFFER_SIZE;
+  *buffer = (ompt_buffer_t *)malloc(*bytes);
+  assert(buffer);
+}
+
+
+void 
+ompt_callback_buffer_complete(uint64_t device_id,
+                              ompt_buffer_t *buffer,
+                              size_t bytes,
+                              ompt_buffer_cursor_t begin,
+                              int buffer_owned)
+{
+  // signal advance to return pointer to first record
+  ompt_buffer_cursor_t next = begin;
+  int status = 0;
+  do {
+    status = ompt_advance_buffer_cursor(buffer, bytes, next, &next);
+  } while(status);
+}
+
+
+void
+ompt_trace_configure(ompt_device_t *device)
+{
+  int flags = 0;
+
+  // specify desired monitoring
+  flags |= ompt_native_kernel_execution;
+
+  flags |= ompt_native_driver;
+
+  flags |= ompt_native_data_motion_explicit;
+
+  // indicate desired monitoring
+  ompt_set_trace_native(device, 1, flags);
+
+  // turn on monitoring previously indicated
+  ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
+}
+
+
+void
+ompt_device_initialize(uint64_t device_num,
+                       const char *type,
+                       ompt_device_t *device,
+                       ompt_function_lookup_t lookup,
+                       const char *documentation)
+{
+  ompt_bind_names(lookup);
+
+  ompt_trace_configure(device);
+}
+
+
+void 
+ompt_device_finalize(uint64_t device_num)
+{
+}
+
+
+void 
+ompt_device_load(uint64_t device_num,
+                 const char *filename,
+                 int64_t file_offset,
+                 const void *file_addr,
+                 size_t bytes,
+                 const void *host_addr,
+                 const void *device_addr,
+                 uint64_t module_id)
+{
+}
+
+
+void 
+ompt_device_unload(uint64_t device_num,
+                   uint64_t module_id)
+{
+}
+
+
+void 
+ompt_target_callback(ompt_target_type_t kind,
+                     ompt_scope_endpoint_t endpoint,
+                     uint64_t device_num,
+                     ompt_data_t *task_data,
+                     ompt_id_t target_id,
+                     const void *codeptr_ra)
+{
+}
+
+
+void
+ompt_data_op_callback(ompt_id_t target_id,
+                      ompt_id_t host_op_id,
+                      ompt_target_data_op_t optype,
+                      void *host_addr,
+                      void *device_addr,
+                      size_t bytes)
+{
+}
+
+
+void
+ompt_submit_callback(ompt_id_t target_id,
+                     ompt_id_t host_op_id)
+{
+}
+
+
+void
+ompt_map_callback(ompt_id_t target_id,
+                  unsigned int nitems,
+                  void **host_addr,
+                  void **device_addr,
+                  size_t *bytes,
+                  unsigned int *mapping_flags)
+{
+}
+
+
+#define ompt_set_callback(e, cb) ompt_set_callback_fn(e, (ompt_callback_t) cb)
+
+void
+prepare_device()
+{
+  ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
+  ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
+  ompt_set_callback(ompt_callback_device_load, ompt_device_load);
+  ompt_set_callback(ompt_callback_device_unload, ompt_device_unload);
+  ompt_set_callback(ompt_callback_target, ompt_target_callback);
+  ompt_set_callback(ompt_callback_target_data_op, ompt_data_op_callback);
+  ompt_set_callback(ompt_callback_target_submit, ompt_submit_callback);
+  ompt_set_callback(ompt_callback_target_map, ompt_map_callback);
+}
+
