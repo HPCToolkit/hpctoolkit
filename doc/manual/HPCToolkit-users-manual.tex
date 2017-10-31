@@ -231,11 +231,11 @@ The low overhead of \HPCToolkit{}'s sampling-based measurement is particularly i
 
 \HPCToolkit{} is also especially good at pinpointing scaling losses in parallel codes, both within multicore nodes and across the nodes in a parallel system.
 Using differential analysis of call path profiles collected on different numbers of threads or processes enables one to quantify scalability losses and pinpoint their causes to individual lines of code executed in particular calling contexts~\cite{Coarfa-MC:2007:ICS-scalability}.
-We have used this technique to quantify scaling losses in leading science applications across thousands of processor cores on Cray XT and IBM Blue Gene/P systems and associate them with individual lines of source code in full calling context~\cite{Tallent-MC-etal:2009:SC-hpctoolkit-petascale,Tallent-MC-etal:2010:SC-hpctoolkit-load-imbalance}, as well as to quantify scaling losses in science applications within nodes at the loop nest level due to competition for memory bandwidth in multicore processors~\cite{Tallent-etal:2008:SciDAC-hpctoolkit}.
+We have used this technique to quantify scaling losses in leading science applications across thousands of processor cores on Cray  and IBM Blue Gene systems and associate them with individual lines of source code in full calling context~\cite{Tallent-MC-etal:2009:SC-hpctoolkit-petascale,Tallent-MC-etal:2010:SC-hpctoolkit-load-imbalance}, as well as to quantify scaling losses in science applications within nodes at the loop nest level due to competition for memory bandwidth in multicore processors~\cite{Tallent-etal:2008:SciDAC-hpctoolkit}.
 We have also developed techniques for efficiently attributing the idleness in one thread to its cause in another thread~\cite{Tallent-MC:2009:PPoPP-hpctoolkit-work-stealing,Tallent-MC-Porterfield:2010:PPoPP-hpctoolkit-lock-contention}.
 
-\HPCToolkit{} is deployed on several DOE leadership class machines, including Blue Gene/P (Intrepid) at Argonne's Leadership Computing Facility and Cray XT systems at ORNL and NERSC (Jaguar, JaguarPF, and Franklin).
-It is also deployed on the NSF TeraGrid system at TACC (Ranger) and other supercomputer centers around the world.  In addition, Bull Extreme Computing distributes HPCToolkit as part of its bullx  SuperComputer Suite development environment. 
+\HPCToolkit{} is deployed on several DOE leadership class machines, including Blue Gene Q systems at Argonne's Leadership Computing Facility and Cray systems at ORNL and NERSC.
+It is also deployed on systems at NSF centers such as TACC and other supercomputer centers around the world.  In addition, Bull Extreme Computing distributes HPCToolkit as part of its bullx  SuperComputer Suite development environment. 
 
 
 % ***************************************************************************
@@ -961,7 +961,7 @@ Observe that the MPI launcher (\texttt{mpirun}, \texttt{mpiexec}, \etc{}) is use
 \question{How do I compile and run a statically linked MPI program?}
 
 \answer{}
-On systems such as Cray's Compute Node Linux and IBM's BlueGene/P microkernel that are designed to run statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
+On systems such as Cray's Compute Node Linux and IBM's Blue Gene microkernel that are designed to run statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
 For example, to link your application binary \texttt{app}:
 %
 \begin{quote}
@@ -1081,19 +1081,18 @@ This is why we need the application to call \mytt{MPI_Comm_rank()} with communic
 \chapter{Monitoring Statically Linked Applications}
 \label{chpt:statically-linked-apps}
 
-This chapter describes how to use \HPCToolkit{} to monitor a statically linked application.
 
 % ===========================================================================
 % ===========================================================================
-
-\section{Introduction}
 
 On modern Linux systems, dynamically linked executables are the default.
 With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses library preloading to inject \HPCToolkit's monitoring code into an application's address space.
-However, in some cases, one wants or needs to build a statically linked executable.
+However, in some cases, statically-linked executables are necessary or desirable.
 \begin{itemize}
-\item One might want to build a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
-\item On scalable parallel systems such as a Blue Gene/P or a Cray XT, at present the compute node kernels don't support using dynamically linked executables; for these systems, one needs to build a statically linked executable.
+\item On Blue Gene platforms, the compute node kernel doesn't support using dynamically linked executables; for such systems, one needs to build a statically linked executable.
+\item On Cray systems, statically-linked executables are the default.
+\item One might choose to build a statically linked executable because they are generally faster if an application spends a significant amount of time calling functions provided by libraries.
+
 \end{itemize}
 
 For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
@@ -1132,12 +1131,12 @@ In practice, you may want to edit your \texttt{Makefile} to always build two ver
 For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
 On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
 
-On Cray XT and Blue Gene/P systems, the \hpcrun{} script is not applicable because of differences in application launch procedures.
+On Cray and Blue Gene systems, the \hpcrun{} script is not applicable because of differences in application launch procedures.
 On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
 Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
 
 The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
-For example, in a PBS script for a Cray XT system, you might write the following in Bourne shell or bash syntax:
+For example, in a PBS script for a Cray system, you might write the following in Bourne shell or bash syntax:
 \begin{quote}
 \begin{verbatim}
 #!/bin/sh
@@ -1149,7 +1148,7 @@ aprun -n 64 ./app arg ...
 \end{verbatim}
 \end{quote}
 
-Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/P system, you would use the \texttt{--env} option to pass environment variables.
+Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene system, you would use the \texttt{--env} option to pass environment variables.
 For example, you might submit a job with:
 \begin{quote}
 \begin{verbatim}
@@ -2017,6 +2016,7 @@ No hpcstruct =
 \bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs}
 
 %\thispagestyle{plain}
+
 
 \appendix
 \input{environ}

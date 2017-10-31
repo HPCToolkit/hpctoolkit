@@ -106,6 +106,8 @@ using namespace xml;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
+#include <lib/support/ExprEval.hpp>
+#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -644,9 +646,6 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
 
-    const Metric::SampledDesc* mSmpl =
-      dynamic_cast<const Metric::SampledDesc*>(m);
-
     bool isDrvd = false;
     Metric::IDBExpr* mDrvdExpr = NULL;
     if (typeid(*m) == typeid(Metric::DerivedDesc)) {
@@ -662,6 +661,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
        << " v=\"" << m->toValueTyStringXML() << "\""
+       << " em=\"" << m->isMultiplexed()    << "\""
+       << " es=\"" << m->num_samples()      << "\""
+       << " ep=\"" << long(m->periodMean())       << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
@@ -707,6 +709,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
+
+    const Metric::SampledDesc* mSmpl =
+      dynamic_cast<const Metric::SampledDesc*>(m);
     if (mSmpl) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>";
     }
@@ -831,7 +836,6 @@ namespace Prof {
 namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
-
 
 Profile*
 Profile::make(uint rFlags)
@@ -989,12 +993,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metricTbl;
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr.version, malloc);
+  metric_aux_info_t *aux_info;
+
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
+    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1161,6 +1167,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
+    const metric_aux_info_t &current_aux_info = aux_info[i];
 
     // ----------------------------------------
     // 
@@ -1170,7 +1177,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string profRelId = StrUtil::toStr(i);
 
     bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
-    
 
     // Certain metrics do not have both incl/excl values
     if (nm == HPCRUN_METRIC_RetCnt) {
@@ -1209,6 +1215,22 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     m->flags(mdesc.flags);
     
+    // ----------------------------------------
+    // 1b. Update the additional perf event attributes
+    // ----------------------------------------
+
+    Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
+        Prof::Metric::SamplingType_t::FREQUENCY : Prof::Metric::SamplingType_t::PERIOD;
+
+    m->sampling_type(sampling_type);
+    m->isMultiplexed(current_aux_info.is_multiplexed);
+    m->periodMean   (current_aux_info.threshold_mean);
+    m->num_samples  (current_aux_info.num_samples);
+
+    // ----------------------------------------
+    // 1c. add to the list of metric
+    // ----------------------------------------
+
     prof->metricMgr()->insert(m);
 
     // ----------------------------------------
@@ -1339,6 +1361,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
+  ExprEval eval;
+
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
@@ -1351,6 +1375,26 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
     }
+    // ------------------------------------------
+    // check if the metric contains a formula
+    //  if this is the case, we'll compute the metric based on the formula
+    //  given by hpcrun.
+    // FIXME: we don't check the validity of the formula (yet).
+    //        If hpcrun has incorrect formula, the result can be anything
+    // ------------------------------------------
+    metric_desc_t* m_lst = metricTbl.lst;
+    VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
+
+    for (uint i = 0; i < numMetricsSrc; i++) {
+      char *expr = (char*) m_lst[i].formula;
+      if (expr == NULL || strlen(expr)==0) continue;
+
+      double res = eval.Eval(expr, &var_map);
+      if (eval.GetErr() == EEE_NO_ERROR) {
+        // the formula syntax looks "correct". Update the the metric value
+      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+      }
+    }
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
@@ -1360,10 +1404,10 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
-	node_parent = it->second;
+	      node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for CCT node " << nodeId);
+	      DIAG_Throw("Cannot find parent for CCT node " << nodeId);
       }
     }
 
@@ -1487,8 +1531,14 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.period = 1;
     mdesc.formula = NULL;
     mdesc.format = NULL;
+    mdesc.is_frequency_metric = false;
 
-    hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
+    metric_aux_info_t aux_info;
+    aux_info.is_multiplexed = m->isMultiplexed();
+    aux_info.num_samples    = m->num_samples();
+    aux_info.threshold_mean = m->periodMean();
+
+    hpcrun_fmt_metricDesc_fwrite(&mdesc, &aux_info, fs);
   }
 
 

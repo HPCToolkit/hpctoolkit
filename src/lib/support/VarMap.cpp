@@ -1,0 +1,84 @@
+// -*-Mode: C++;-*-
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2017, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+#include <lib/prof-lean/hpcrun-fmt.h> // metric stuffs
+#include <lib/support/VarMap.hpp>
+
+#define VAR_PREFIX '$'
+
+VarMap::VarMap(hpcrun_metricVal_t *metrics, metric_desc_t* list_metric_desc,
+   size_t num_metrics)
+{
+  m_metrics          = metrics;
+  m_list_metric_desc = list_metric_desc;
+  m_error_code       = 0;
+  m_num_metrics      = num_metrics;
+}
+
+bool VarMap::isVariable(char *expr)
+{
+  return (expr[0] == VAR_PREFIX);
+}
+
+
+
+double VarMap::getValue(int var)
+{
+  if ( var>=0 && var<m_num_metrics )
+    return hpcrun_fmt_metric_get_value(m_list_metric_desc[var], 
+              m_metrics[var]);
+  m_error_code = 1;
+  return (double) var;
+}
+
+
+int 
+VarMap::getErrorCode()
+{
+   return m_error_code;
+}
+
+

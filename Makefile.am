@@ -134,6 +134,7 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
@@ -186,6 +187,7 @@ install-exec-hook:
 	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
 	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
 	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
 endif
 
 

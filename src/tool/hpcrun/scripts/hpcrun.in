@@ -55,7 +55,9 @@ VERSION='@PACKAGE_VERSION@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
+libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
+perfmon_libdir='@PERFMON_LIB@'
 
 #------------------------------------------------------------
 # Find path to this script
@@ -76,6 +78,10 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
+esac
+case "$libunwind_dir" in
+    /* ) ;;
+    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 case "$papi_libdir" in
     /* ) ;;
@@ -144,8 +150,18 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processor event or WALLCLOCK (microseconds).  May pass
                        multiple times as implementations permit.
                        {WALLCLOCK@5000}.
+                       For perf event's counter, it is possible to specify
+                       the number of frequency as the sample threshold by
+                       prefixing with f before the number. 
+                       For instance, to have 100 samples per second, the period
+                       is: @f100 .
                        N.B.: WALLCLOCK and hardware events cannot be mixed.
 
+  -c, --count <number>
+                       Only available for perf event's counter. This option
+                       specifies the event period to sample. It uses the same
+                       format of period as the option -e mentioned above. 
+                       
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
 
@@ -153,6 +169,15 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  -p,  --precise-ip <level>
+                       Specify the precise ip level (used only with perf events):
+                       0: sample ip can have arbitrary skid
+                       1: sample ip must have constant skid
+                       2: sample ip requested to have 0 skid
+                       3: sample ip must have 0 skid
+                       NOTE: Some architectures support a precise IP with 0 skid.
+                             Incorrect level will unable hpcrun to sample the events.
+   
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -249,6 +274,7 @@ do
 	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
 		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		DATACENTRIC*  ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_datacentric.so" ;;
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
@@ -266,6 +292,18 @@ do
 
 	-ds | --delay-sampling )
 	    export HPCRUN_DELAY_SAMPLING=1
+	    ;;
+
+	# --------------------------------------------------
+
+ 	-c | --count )
+ 	 	export HPCRUN_PERF_COUNT="$1"
+	    shift
+	    ;;
+
+	-p | --precise-ip )
+	    export HPCRUN_PRECISE_IP="$1"
+	    shift
 	    ;;
 
 	# --------------------------------------------------
@@ -432,7 +470,8 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}"
+# laks 2016.10.06: add perfmon directory
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
