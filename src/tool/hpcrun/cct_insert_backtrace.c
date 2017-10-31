@@ -189,7 +189,7 @@ hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* cct, cct_node_t* treenode,
 {
   // user-custom cct before official backtrace
   if (custom_update != NULL && custom_update->update_before_fn != NULL) {
-    treenode = (*custom_update->update_before_fn)(cct, treenode, custom_update->data_aux);
+    treenode = custom_update->update_before_fn(cct, treenode, custom_update->data_aux);
   }
 
   // the official backtrace insertion
@@ -197,7 +197,7 @@ hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* cct, cct_node_t* treenode,
 
   // user-custom cct after the official backtrace
   if (custom_update != NULL && custom_update->update_after_fn != NULL) {
-    path = (*custom_update->update_after_fn)(path, custom_update->data_aux);
+    path = custom_update->update_after_fn(path, custom_update->data_aux);
   }
 
   metric_set_t* mset = hpcrun_reify_metric_set(path);

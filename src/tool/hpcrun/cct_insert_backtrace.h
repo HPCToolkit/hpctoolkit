@@ -52,16 +52,16 @@
 #include <unwind/common/backtrace.h>
 #include "metrics.h"
 
-typedef  cct_node_t *(*hpcrun_cct_update_before_t)(cct_bundle_t *bundle, 
+typedef  cct_node_t* (*hpcrun_cct_update_before_t)(cct_bundle_t *bundle,
 						          cct_node_t *path, void *data_aux);
 
-typedef  cct_node_t *(*hpcrun_cct_update_after_t)(cct_node_t *path,
+typedef  cct_node_t* (*hpcrun_cct_update_after_t)(cct_node_t *path,
                       void *data_aux);
 
 struct cct_custom_update_s {
 
-  hpcrun_cct_update_before_t *update_before_fn;
-  hpcrun_cct_update_after_t  *update_after_fn;
+  hpcrun_cct_update_before_t update_before_fn;
+  hpcrun_cct_update_after_t  update_after_fn;
 
   void *data_aux;
 };

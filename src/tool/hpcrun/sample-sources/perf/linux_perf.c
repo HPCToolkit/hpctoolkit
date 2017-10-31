@@ -498,7 +498,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 
   info.sample_clock = 0;
   info.sample_custom_cct.update_before_fn = NULL;
-  info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t*)perf_add_kernel_callchain;
+  info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t)perf_add_kernel_callchain;
   info.sample_custom_cct.data_aux	        = mmap_data;
 
   *sv = hpcrun_sample_callpath(context, current->event->metric,
