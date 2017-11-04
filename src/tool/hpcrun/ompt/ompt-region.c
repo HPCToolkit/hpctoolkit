@@ -68,8 +68,8 @@ ompt_parallel_begin_internal(
     td->master = 1;
   }
 
-  cct_node_t *callpath = 
-   ompt_parallel_begin_context(region_id, ++levels_to_skip, 
+  cct_node_t *callpath =
+    ompt_parallel_begin_context(region_id, ++levels_to_skip, 
                                invoker == ompt_invoker_program);
 
   assert(region_id != 0);
@@ -98,11 +98,11 @@ ompt_parallel_begin_internal(
         outer_id = hpcrun_ompt_get_parallel_id(++i);
       }
       if (outer_id == 0){
-	// parent region id
+        // parent region id
         td->outer_region_id = hpcrun_ompt_get_parallel_id(0); 
         td->outer_region_context = 0;
         TMSG(DEFER_CTXT, "enter a new outer region 0x%lx (start team)", 
-	     td->outer_region_id);
+          td->outer_region_id);
       }
     }
   }
@@ -124,10 +124,10 @@ ompt_parallel_end_internal(
     if (ompt_region_map_entry_refcnt_get(record) > 0) {
       // associate calling context with region if it is not already present
       if (ompt_region_map_entry_callpath_get(record) == NULL) {
-	ompt_region_map_entry_callpath_set
-            (record, 
-             ompt_region_context(parallel_id, ompt_context_end, 
-                                 ++levels_to_skip, invoker == ompt_invoker_program));
+        ompt_region_map_entry_callpath_set
+          (record, 
+           ompt_region_context(parallel_id, ompt_context_end, 
+                               ++levels_to_skip, invoker == ompt_invoker_program));
       }
     } else {
       ompt_region_map_refcnt_update(parallel_id, 0L);

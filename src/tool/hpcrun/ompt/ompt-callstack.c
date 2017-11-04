@@ -481,9 +481,9 @@ lookup_region_id(uint64_t region_id)
 
 
 cct_node_t *
-ompt_region_context(uint64_t region_id, 
-		    ompt_context_type_t ctype, 
-		    int levels_to_skip,
+ompt_region_context(uint64_t region_id,
+                    ompt_context_type_t ctype,
+                    int levels_to_skip,
                     int adjust_callsite)
 {
   cct_node_t *node;
@@ -595,16 +595,15 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
 
       cct_node_t *prefix = lookup_region_id(region_id);
       if (prefix) {
-	// full context is available now. use it.
-	cct_cursor = prefix;
+	      // full context is available now. use it.
+	      cct_cursor = prefix;
       } else {
-	// full context is not available. if the there is a node for region_id in 
-	// the unresolved tree, use it as the cursor to anchor the sample for now. 
-	// it will be resolved later. otherwise, use the default cursor.
-	prefix = 
-	  hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-			       &(ADDR2(UNRESOLVED, region_id)));
-	if (prefix) cct_cursor = prefix;
+	      // full context is not available. if the there is a node for region_id in 
+	      // the unresolved tree, use it as the cursor to anchor the sample for now. 
+	      // it will be resolved later. otherwise, use the default cursor.
+	      prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
+          &(ADDR2(UNRESOLVED, region_id)));
+	      if (prefix) cct_cursor = prefix;
       }
     }
   }

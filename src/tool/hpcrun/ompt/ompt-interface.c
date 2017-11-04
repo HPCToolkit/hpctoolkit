@@ -68,6 +68,8 @@
 #include "ompt-callstack.h"
 #include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
+#include "ompt-region-map.h"
+#include "ompt-host-op-map.h"
 
 #include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
@@ -133,7 +135,6 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 static __thread int ompt_idle_count;
 
 
-
 /******************************************************************************
  * private operations 
  *****************************************************************************/
@@ -155,13 +156,13 @@ ompt_mutex_blame_target()
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
-    case ompt_state_wait_critical:
-    case ompt_state_wait_lock:
-    case ompt_state_wait_nest_lock:
-    case ompt_state_wait_atomic:
-    case ompt_state_wait_ordered:
-      return wait_id;
-    default: break;
+      case ompt_state_wait_critical:
+      case ompt_state_wait_lock:
+      case ompt_state_wait_nest_lock:
+      case ompt_state_wait_atomic:
+      case ompt_state_wait_ordered:
+        return wait_id;
+      default: break;
     }
   }
   return 0;
@@ -219,15 +220,15 @@ ompt_thread_needs_blame(void)
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
     switch(state) {
-    case ompt_state_idle:
-    case ompt_state_wait_barrier:
-    case ompt_state_wait_barrier_implicit:
-    case ompt_state_wait_barrier_explicit:
-    case ompt_state_wait_taskwait:
-    case ompt_state_wait_taskgroup:
-       return false;
-    default:
-      return true;
+      case ompt_state_idle:
+      case ompt_state_wait_barrier:
+      case ompt_state_wait_barrier_implicit:
+      case ompt_state_wait_barrier_explicit:
+      case ompt_state_wait_taskwait:
+      case ompt_state_wait_taskgroup:
+         return false;
+      default:
+        return true;
     }
   }
   return true;
@@ -326,7 +327,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
   uint64_t zero_metric_incr = 0LL;
 
   thread_data_t *td = hpcrun_get_thread_data();
-  td->overhead ++;
+  td->overhead++;
 
   ucontext_t uc;
   getcontext(&uc);
@@ -341,7 +342,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 
   task_map_insert(new_task_id, cct_node);  
 
-  td->overhead --;
+  td->overhead--;
 }
 
 
@@ -409,11 +410,11 @@ init_threads()
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_event_thread_begin, 
-		    (ompt_callback_t)ompt_thread_begin);
+    (ompt_callback_t)ompt_thread_begin);
   assert(ompt_event_may_occur(retval));
 
   retval = ompt_set_callback_fn(ompt_event_thread_end, 
-		    (ompt_callback_t)ompt_thread_end);
+    (ompt_callback_t)ompt_thread_end);
   assert(ompt_event_may_occur(retval));
 }
 
@@ -554,18 +555,18 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
 
   prepare_device();
 
-  if(ENABLED(OMPT_TASK_FULL_CTXT)) {
+  if (ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
   }
 
-  if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
+  if (!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
     ompt_callstack_init();
   }
   if (getenv("HPCRUN_OMP_SERIAL_ONLY")) {
-     serial_only_sf_entry.fn = ompt_serial_only;
-     serial_only_sf_entry.arg = 0;
-     sample_filters_register(&serial_only_sf_entry);
+    serial_only_sf_entry.fn = ompt_serial_only;
+    serial_only_sf_entry.arg = 0;
+    sample_filters_register(&serial_only_sf_entry);
   }
 }
 
@@ -585,16 +586,14 @@ hpcrun_ompt_state_is_overhead()
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
-  
-    case ompt_state_overhead:
-    case ompt_state_wait_critical:
-    case ompt_state_wait_lock:
-    case ompt_state_wait_nest_lock:
-    case ompt_state_wait_atomic:
-    case ompt_state_wait_ordered:
-      return 1;
-  
-    default: break;
+      case ompt_state_overhead:
+      case ompt_state_wait_critical:
+      case ompt_state_wait_lock:
+      case ompt_state_wait_nest_lock:
+      case ompt_state_wait_atomic:
+      case ompt_state_wait_ordered:
+        return 1;
+      default: break;
     }
   }
   return 0;
@@ -699,6 +698,41 @@ ompt_idle_blame_shift_request()
   ompt_register_idle_metrics();
 }
 
+//*****************************************************************************
+// map opid operations
+//*****************************************************************************
+
+// Records the (target id —> cct_node *) mapping in a thread local variable
+void
+hpcrun_opid_map_record_target(int target_id,
+                              cct_node_t *node)
+{
+  assert(target_id != 0);
+  ompt_region_map_insert((uint64_t) target_id, node);
+}
+
+
+// Adds an (opid, cct_node_t *) entry to the concurrent map by finding
+// the cct_node_t * associated with target_id from the thread_local variable
+void
+hpcrun_opid_map_insert(int host_op_id,
+                       int target_id)
+{
+  cct_node_t *node = ompt_region_map_entry_callpath_get(ompt_region_map_lookup(target_id));
+  ompt_host_op_map_insert(host_op_id, node);
+}
+
+
+// Look up the cct node associated with host_op_id in a map.
+// The map is mutable concurrent data structure. the GPU thread all CPU threads share it
+// this function will provide the pointer to the CCT node that represents the 
+// context for the target region. For now, this cct_node_t * will be in the thread’s CCT. 
+// Eventually, this function might return a pointer to a separate CCT that will be used by a device
+cct_node_t *
+hpcrun_opid_map_lookup(int host_op_id)
+{
+  return ompt_host_op_map_lookup(host_op_id);
+}
 
 //*****************************************************************************
 // device operations
@@ -831,6 +865,10 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
+  ucontext_t uc;
+  getcontext(&uc);
+  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  hpcrun_opid_map_record_target(target_id, node);
 }
 
 
@@ -842,6 +880,7 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
+  hpcrun_opid_map_insert(host_op_id, target_id);
 }
 
 
