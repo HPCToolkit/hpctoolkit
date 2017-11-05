@@ -731,7 +731,9 @@ hpcrun_opid_map_insert(int host_op_id,
 cct_node_t *
 hpcrun_opid_map_lookup(int host_op_id)
 {
-  return ompt_host_op_map_lookup(host_op_id);
+  // TODO(keren): There's no remove implementation in both host_op_map and region_map
+  cct_node_t *node = ompt_host_op_map_entry_callpath_get(ompt_host_op_map_lookup(host_op_id));
+  return node;
 }
 
 //*****************************************************************************
