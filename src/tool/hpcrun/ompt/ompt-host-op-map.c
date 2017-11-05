@@ -12,7 +12,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/ompt/ompt-region-map.h>
+#include <hpcrun/ompt/ompt-host-op-map.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
@@ -71,7 +71,7 @@ ompt_host_op_map_splay(ompt_host_op_map_entry_t *root, uint64_t key)
 static void
 ompt_host_op_map_delete_root()
 {
-  TMSG(DEFER_CTXT, "region %d: delete", ompt_host_op_map_root->host_op_id);
+  TMSG(DEFER_CTXT, "host op %d: delete", ompt_host_op_map_root->host_op_id);
 
   if (ompt_host_op_map_root->left == NULL) {
     ompt_host_op_map_root = ompt_host_op_map_root->right;
@@ -103,7 +103,7 @@ ompt_host_op_map_lookup(uint64_t id)
 
   spinlock_unlock(&ompt_host_op_map_lock);
 
-  TMSG(DEFER_CTXT, "region map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 
@@ -113,7 +113,7 @@ ompt_host_op_map_insert(uint64_t host_op_id, cct_node_t *call_path)
 {
   ompt_host_op_map_entry_t *node = ompt_host_op_map_entry_new(host_op_id, call_path);
 
-  TMSG(DEFER_CTXT, "region map insert: id=0x%lx (record %p)", host_op_id, node);
+  TMSG(DEFER_CTXT, "host op map insert: id=0x%lx (record %p)", host_op_id, node);
 
   node->left = node->right = NULL;
 
@@ -149,7 +149,7 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
 {
   bool result = false; 
 
-  TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (update %d)", 
+  TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (update %d)", 
        host_op_id, val);
 
   spinlock_lock(&ompt_host_op_map_lock);
@@ -159,10 +159,10 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
       ompt_host_op_map_root->host_op_id == host_op_id) {
     uint64_t old = ompt_host_op_map_root->refcnt;
     ompt_host_op_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (%ld --> %ld)", 
+    TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (%ld --> %ld)", 
 	 host_op_id, old, ompt_host_op_map_root->refcnt);
     if (ompt_host_op_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "region map refcnt_update: id=0x%lx (deleting)",
+      TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (deleting)",
            host_op_id);
       ompt_host_op_map_delete_root();
     }
