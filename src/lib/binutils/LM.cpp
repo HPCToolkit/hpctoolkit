@@ -102,6 +102,7 @@ using std::endl;
 
 
 
+
 //***************************************************************************
 // macros
 //***************************************************************************
@@ -335,6 +336,9 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
+static bool 
+isFakeLoadModule(const char *lm);
+
 //***************************************************************************
 
 
@@ -354,7 +358,7 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), ksyms(0)
 {
 }
 
@@ -404,6 +408,11 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
+  if (isFakeLoadModule(filenm)) {
+    m_name = filenm;
+    return;
+  }
+
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
   // -------------------------------------------------------
@@ -532,6 +541,12 @@ BinUtil::LM::read(LM::ReadFlg readflg)
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
+ if (isFakeLoadModule(m_name.c_str())) {
+    ksyms = new KernelSymbols;
+    ksyms->parseLinuxKernelSymbols();
+    return;
+  }
+
   readSymbolTables();
   readSegs();
   computeNoReturns();
@@ -580,6 +595,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   bool STATUS = false;
   func = file = "";
   line = 0;
+
+  if (ksyms) {
+    STATUS = ksyms->find(vma, func);  
+    return STATUS;
+  }
 
   if (!m_bfdSymTab) { 
     return STATUS; 
@@ -1171,7 +1191,13 @@ dumpSymFlag(std::ostream& o,
   }
 }
 
-
+static bool
+isFakeLoadModule(const char *lm)
+{
+  if (lm)
+    return (lm[0] == '<' && lm[strlen(lm)-1] == '>');
+  return false;
+}
 
 
 //***************************************************************************

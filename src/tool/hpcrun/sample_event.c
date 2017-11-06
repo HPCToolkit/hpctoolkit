@@ -65,15 +65,13 @@
 #include "thread_data.h"
 #include "trace.h"
 #include "handling_sample.h"
-#include "interval-interface.h"
 #include "unwind.h"
 #include <utilities/arch/context-pc.h>
 #include "hpcrun-malloc.h"
-#include "splay-interval.h"
 #include "sample_event.h"
 #include "sample_sources_all.h"
 #include "start-stop.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
@@ -82,23 +80,10 @@
 
 #include <messages/messages.h>
 
-#include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-
 
 //*************************** Forward Declarations **************************
 
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId, uint64_t metricIncr,
-			    int skipInner, int isSync);
-
-#if 0
-static cct_node_t*
-hpcrun_dbg_sample_callpath(epoch_t *epoch, void *context, void **trace_pc,
-			   int metricId, uint64_t metricIncr,
-			   int skipInner, int isSync);
-#endif
 
 //***************************************************************************
 
@@ -135,12 +120,10 @@ hpcrun_cleanup_partial_unwind(void)
 
 static cct_node_t*
 record_partial_unwind(
-  cct_bundle_t* cct,
-  frame_t* bt_beg,
-  frame_t* bt_last,
-  int metricId,
-  uint64_t metricIncr,
-  int skipInner)
+  cct_bundle_t* cct, frame_t* bt_beg,
+  frame_t* bt_last, int metricId,
+  hpcrun_metricVal_t metricIncr,
+  int skipInner, void *data)
 {
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
@@ -154,7 +137,6 @@ record_partial_unwind(
   bt.last =  bt_last;
   bt.fence = FENCE_BAD;
   bt.has_tramp = false;
-  bt.trolled = false;
   bt.n_trolls = 0;
   bt.bottom_frame_elided = false;
 
@@ -162,7 +144,7 @@ record_partial_unwind(
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
 //					      false, bt_beg, bt_last,
-					      false, metricId, metricIncr);
+					      false, metricId, metricIncr, data);
 }
 
 
@@ -182,8 +164,8 @@ hpcrun_drop_sample(void)
 
 sample_val_t
 hpcrun_sample_callpath(void* context, int metricId,
-		       uint64_t metricIncr,
-		       int skipInner, int isSync)
+		       hpcrun_metricVal_t metricIncr,
+		       int skipInner, int isSync, sampling_info_t *data)
 {
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -231,6 +213,9 @@ hpcrun_sample_callpath(void* context, int metricId,
   cct_node_t* node = NULL;
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
+  // --------------------------------------
+  // start of handling sample
+  // --------------------------------------
   hpcrun_set_handling_sample(td);
   ip_normalized_t leaf_func;
 
@@ -238,22 +223,43 @@ hpcrun_sample_callpath(void* context, int metricId,
   td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
+    if (epoch != NULL) {
+      // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
+      //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
 
-	if (epoch != NULL) {
-	  node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-		  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
+      // Laks: copied from help_hpcrun_sample_callpath
+      void* pc = hpcrun_context_pc(context);
 
-	  if (ENABLED(DUMP_BACKTRACES)) {
-		hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
-	  }
+      TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
+      TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
+
+      /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+      epoch = hpcrun_check_for_new_loadmap(epoch);
+
+      void *data_aux = NULL;
+      if (data != NULL)
+        data_aux = data->sample_data;
+
+      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId,
+          metricIncr,
+          skipInner, isSync, data_aux);
+      // end copied from help_hpcrun_sample_callpath
+
+      if (ENABLED(DUMP_BACKTRACES)) {
+        hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+      }
     }
   }
   else {
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr, skipInner);
+        metricId, metricIncr, skipInner, NULL);
+    leaf_func = td->btbuf_beg->the_function;
     hpcrun_cleanup_partial_unwind();
   }
+  // --------------------------------------
+  // end of handling sample
+  // --------------------------------------
 
   ret.sample_node = node;
 
@@ -297,8 +303,6 @@ static int const PTHREAD_CTXT_SKIP_INNER = 1;
 cct_node_t*
 hpcrun_gen_thread_ctxt(void* context)
 {
-//  void *trace_pc; // unused argument to callee
-
   if (monitor_block_shootdown()) {
     monitor_unblock_shootdown();
     return NULL;
@@ -372,29 +376,4 @@ hpcrun_gen_thread_ctxt(void* context)
 
   return node;
 }
-
-
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId,
-			    uint64_t metricIncr,
-			    int skipInner, int isSync)
-{
-  void* pc = hpcrun_context_pc(context);
-
-  TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
-  TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
-
-  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  epoch = hpcrun_check_for_new_loadmap(epoch);
-
-  cct_node_t* n =
-    hpcrun_backtrace2cct(&(epoch->csdata), context, leaf_func, metricId, metricIncr,
-			 skipInner, isSync);
-
-  // FIXME: n == -1 if sample is filtered
-
-  return n;
-}
-
 

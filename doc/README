@@ -6,7 +6,7 @@ This file contains notes for developers on how to edit and install
 files in the docs subdirectory.  The toolkit docs are handled
 differently from the rest of the source code.
 
-Briefly, we keep both source and generated doc files in the svn tree.
+Briefly, we keep both source and generated doc files in the git tree.
 In some cases (manual), building the doc files from source requires
 tools (latex) outside the normal build procedure.  In that case,
 'make' doesn't regenerate the doc files, and 'make install' merely
@@ -29,9 +29,9 @@ Use either no target or target 'all'.
 WWW directory and html files
 -----------------------------
 
-To edit the www/html files in the svn source tree:
+To edit the www/html files in the git source tree:
 
-1. Svn checkout and configure as usual.  If you're using this sandbox
+1. Git checkout and configure as usual.  If you're using this sandbox
 only to edit doc files, then you can omit the --with-externals option.
 
 2. In the source doc/www directory, edit the *.html.in files.  Just
@@ -40,7 +40,7 @@ style that's there.
 
 3. From the *build* directory, eg, build/doc/www, run 'make'.  This
 will remake the *.html files back in the source directory.  You can
-check this with svn stat or diff.  There should be corresponding diffs
+check this with git stat or diff.  There should be corresponding diffs
 in both the html.in and html files.
 
 4. Still in the build/doc/www directory, run 'make install'.  This
@@ -49,8 +49,8 @@ installs a copy of the html files into install/share/doc/hpctoolkit/.
 5. View the new files by opening a web browser on index.html in the
 *install* directory: install/share/doc/hpctoolkit/index.html.
 
-6. When you're satisfied with your edits, then 'svn commit' from the
-svn source tree.
+6. When you're satisfied with your edits, then 'git commit' from the
+git source tree.
 
 Note: always edit the html.in files (source directory) and run make
 from the build directory.  If you're only editing doc files, you may

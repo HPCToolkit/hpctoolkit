@@ -79,7 +79,6 @@
 #include <hpcrun/metrics.h>
 #include <messages/messages.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <lib/prof-lean/atomic-op.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <hpcrun/hpcrun_return_codes.h>
@@ -102,11 +101,9 @@ struct cct_node_t {
   int32_t persistent_id;
   
  // bundle abstract address components into a data type
-
   cct_addr_t addr;
 
   bool is_leaf;
-
   
   // ---------------------------------------------------------
   // tree structure
@@ -141,9 +138,8 @@ new_persistent_id()
   // Furthermore, global ids start at 12: 0,1 are special ids, 2-11 are for
   // users (and conceivably hpcrun).
   //
-  static long global_persistent_id = 12;
-  uint32_t myid = (int) fetch_and_add(&global_persistent_id, 2); 
-  return myid;
+  static atomic_uint_least32_t global_persistent_id = ATOMIC_VAR_INIT(12);
+  return atomic_fetch_add_explicit(&global_persistent_id, 2, memory_order_relaxed);
 }
 
 static cct_node_t*

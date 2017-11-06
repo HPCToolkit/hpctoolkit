@@ -114,6 +114,8 @@ static int num_errors = 0;
 
 //***************************************************************************
 
+static void restore_sighandler(void);
+
 static void
 banal_sighandler(int sig)
 {
@@ -122,6 +124,7 @@ banal_sighandler(int sig)
   }
 
   // caught a signal, but it didn't come from symtab
+  restore_sighandler();
   DIAG_Die("banal caught unexpected signal " << sig);
 }
 

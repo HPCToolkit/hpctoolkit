@@ -306,6 +306,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -344,6 +348,12 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -863,13 +873,14 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.a)
+	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
@@ -912,8 +923,9 @@ endef
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
 
 dist hpc-dist:
 	@echo "cleaning source tree (ignore errors) ..."

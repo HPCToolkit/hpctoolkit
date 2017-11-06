@@ -9,8 +9,6 @@
 #include <semaphore.h>
 #include <stdio.h>
 
-#include <lib/prof-lean/atomic.h>
-
 #include <sample-sources/blame-shift/blame-map.h>
 #include <sample-sources/pthread-blame.h>
 #include <hpcrun/thread_data.h>

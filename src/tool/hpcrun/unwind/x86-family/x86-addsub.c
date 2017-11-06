@@ -66,6 +66,9 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
   const xed_operand_t* op0 = xed_inst_operand(xi,0);
   const xed_operand_t* op1 = xed_inst_operand(xi,1);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
+  x86recipe_t *xr = UWI_RECIPE(iarg->current);
+  x86registers_t reg = xr->reg;
+  ra_loc istatus = xr->ra_status;
 
   if (op0_name == XED_OPERAND_REG0) {
     xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
@@ -77,7 +80,6 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
       if (xed_operand_name(op1) == XED_OPERAND_IMM0) {
 	int sign = (iclass_eq(xptr, XED_ICLASS_ADD)) ? -1 : 1;
 	long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
-	ra_loc istatus = UWI_RECIPE(iarg->current)->ra_status;
 	if ((istatus == RA_STD_FRAME) && (immedv > 0) &&
 	    (hw_tmp->state & HW_SP_DECREMENTED)) {
 	  //-------------------------------------------------------------------
@@ -92,10 +94,9 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
 	}
-	next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), 
-		      istatus, UWI_RECIPE(iarg->current)->sp_ra_pos + immedv, UWI_RECIPE(iarg->current)->bp_ra_pos, 
-		      UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos + immedv, 
-		      UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+	reg.sp_ra_pos += immedv;
+	reg.sp_bp_pos += immedv;
+	next = new_ui(nextInsn(iarg, xptr), istatus, &reg, m_alloc);
 
 	if (immedv > 0) {
 	  if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {
@@ -113,25 +114,20 @@ process_addsub(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *i
 	    // 9 December 2007 -- John Mellor-Crummey
 	    //-----------------------------------------------------------------
 	    hw_tmp->uwi = next;
-	    hw_tmp->succ_inst_ptr = 
-	      iarg->ins + xed_decoded_inst_get_length(xptr);
-	    hw_tmp->state = 
-	      HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);
+	    hw_tmp->succ_inst_ptr = nextInsn(iarg, xptr);
+	    hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_SP_DECREMENTED);
 	    iarg->canonical_interval = next;
 	  }
 	}
       } else {
-	if (UWI_RECIPE(iarg->current)->ra_status != RA_BP_FRAME){
+	if (istatus != RA_BP_FRAME){
 	  //-------------------------------------------------------------------
 	  // no immediate in add/subtract from stack pointer; switch to
 	  // BP_FRAME
 	  //
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr), RA_BP_FRAME, 
-			UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos, 
-			UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos, 
-			UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
+	  next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &reg, m_alloc);
 	  iarg->bp_frames_found = true;
 	}
       }

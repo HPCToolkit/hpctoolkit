@@ -60,11 +60,8 @@
 
 //*************************** User Include Files ****************************
 
-#if 0
-#include "splay-interval.h"
-#else
-
 #include <unwind/common/binarytree_uwi.h>
+#include <unwind/common/unwind-interval.h>
 
 /******************************************************************************
  * macro
@@ -92,8 +89,6 @@ typedef struct {
  */
 
 #define UWI_RECIPE(btuwi) ((ppc64recipe_t*)bitree_uwi_recipe(btuwi))
-
-#endif
 
 // same as in x8-unwind-interval.h
 typedef bitree_uwi_t unwind_interval;
@@ -132,7 +127,6 @@ new_ui(
 	ra_ty_t ra_ty,
 	int sp_arg,
 	int ra_arg,
-	unwind_interval *prev,
 	mem_alloc m_alloc);
 
 #if 0
@@ -170,14 +164,6 @@ ui_dump(unwind_interval *u);
 // FIXME: these should be part of the common interface
 void suspicious_interval(void *pc);
 void link_ui(unwind_interval *current, unwind_interval *next);
-
-
-//***************************************************************************
-// external interface
-//***************************************************************************
-
-btuwi_status_t
-build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
 
 
 //***************************************************************************

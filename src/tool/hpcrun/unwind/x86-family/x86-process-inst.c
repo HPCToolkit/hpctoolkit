@@ -61,7 +61,6 @@
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"
-#include "ui_tree.h"  // uw_recipe_map_lookup
 
 #define UWRECIPE_DEBUG 1
 
@@ -94,7 +93,7 @@ process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg, mem_alloc m_alloc)
 		dump_ui_stderr(ui);
 	  }
 	  // Fixup current intervals w.r.t. the warm code interval
-	  hpcrun_cold_code_fixup(iarg->current, ui);
+	  hpcrun_cold_code_fixup(iarg->first, iarg->current, ui);
     }
 
     break;

@@ -240,6 +240,13 @@ Please note that a list of examples below provides <code>configure</code> comman
 
 <ol class="noindent">
 
+<li>Configuring the perf_events sample source:
+<p>
+HPCToolkit's configure command will automatically check the availability of the Linux perf_events interface on the build system. 
+The test includes checking the existence of <code>/usr/include/linux/perf_event.h</code> and <code>/proc/sys/kernel/perf_event_paranoid</code> files. If the two files do not exist, it assumes the system does not support the perf_events interface.
+</p>
+To profile on a remote machine that has different system or architecture configuration, one must download and build the libpfm4 library (<a href="http://perfmon2.sourceforge.net">http://perfmon2.sourceforge.net</a>) and indicate its install directory by specifying the option <code>--with-perfmon=&lt;libpfm4_install_directory&gt;</code> to  HPCToolkit's <code>configure</code> command.
+</li>
 <li><p>Build and install HPCToolkit's Externals, which typically does not require any special options; we recommend using the GCC compilers:
   </p>
 <div class="indent">

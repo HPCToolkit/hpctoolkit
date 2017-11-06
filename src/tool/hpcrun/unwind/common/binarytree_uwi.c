@@ -1,9 +1,3 @@
-/*
- * binarytree_uwi.c
- *
- *      Author: dxnguyen
- */
-
 //******************************************************************************
 // global include files
 //******************************************************************************
@@ -23,10 +17,12 @@
 #include "binarytree_uwi.h"
 
 #define NUM_NODES 10
-#define BTUWI_DEBUG 0
 
-static bitree_uwi_t *GF_uwi_tree = NULL; // global free unwind interval tree
-static mcs_lock_t GFT_lock;  // lock for GF_uwi_tree
+static struct {
+  bitree_uwi_t *tree;		// global free unwind interval tree
+  mcs_lock_t lock;		// lock for tree
+} GF;
+
 static __thread  bitree_uwi_t *_lf_uwi_tree = NULL;  // thread local free unwind interval tree
 
 /*
@@ -35,115 +31,53 @@ static __thread  bitree_uwi_t *_lf_uwi_tree = NULL;  // thread local free unwind
 void
 bitree_uwi_init()
 {
-#if BTUWI_DEBUG
-  printf("DXN_DBG: bitree_uwi_init mcs_init(&GFT_lock) \n");
-#endif
-  mcs_init(&GFT_lock);
+  mcs_init(&GF.lock);
 }
 
 // constructors
-bitree_uwi_t*
-bitree_uwi_new(uwi_t *val,
-	bitree_uwi_t *left, bitree_uwi_t *right, mem_alloc m_alloc)
-{
-  binarytree_t *bt =
-	  binarytree_new(val, (binarytree_t*)left, (binarytree_t*)right, m_alloc);
-  return (bitree_uwi_t*)bt;
-}
-
-static bitree_uwi_t*
-bitree_uwi_new_node(mem_alloc m_alloc, size_t recipe_size)
-{
-  interval_t   *interval = interval_t_new(0, 0, m_alloc);
-  uw_recipe_t  * recipe  =  uw_recipe_t_new(m_alloc, recipe_size);
-  binarytree_t *btuwi    = binarytree_new(uwi_t_new(interval, recipe, m_alloc), NULL, NULL, m_alloc);
-  return (bitree_uwi_t*) btuwi;
-}
-
-static void
-bitree_uwi_add_nodes_to_lft(
-	mem_alloc m_alloc,
-	size_t recipe_size)
-{
-  bitree_uwi_t *btuwi = bitree_uwi_new_node(m_alloc, recipe_size);
-  bitree_uwi_t * current = btuwi;
-  for (int i = 1; i < NUM_NODES; i++) {
-	bitree_uwi_t *new_node =  bitree_uwi_new_node(m_alloc, recipe_size);
-	bitree_uwi_set_leftsubtree(current, new_node);
-	current = new_node;
-  }
-  bitree_uwi_set_rightsubtree(btuwi, _lf_uwi_tree);
-  _lf_uwi_tree = btuwi;
-}
-
-static bitree_uwi_t *
-bitree_uwi_alloc_from_lft()
-{
-  return bitree_uwi_remove_leftmostleaf(&_lf_uwi_tree);
-}
-
-static void
-bitree_uwi_populate_lft(
-	mem_alloc m_alloc,
-	size_t recipe_size)
-{
-  mcs_node_t me;
-  bool acquired = mcs_trylock(&GFT_lock, &me);
-  if (acquired) {
-	// the global free list is locked, so use it
-	if (GF_uwi_tree) {
-	  bitree_uwi_t *btuwi = GF_uwi_tree;
-	  GF_uwi_tree = bitree_uwi_rightsubtree(GF_uwi_tree);
-	  mcs_unlock(&GFT_lock, &me);
-	  bitree_uwi_set_rightsubtree(btuwi, _lf_uwi_tree);
-	  _lf_uwi_tree = btuwi;
-	}
-	else {
-	  mcs_unlock(&GFT_lock, &me);
-	}
-  }
-  if (!_lf_uwi_tree) {
-	bitree_uwi_add_nodes_to_lft(m_alloc, recipe_size);
-  }
-}
-
 bitree_uwi_t*
 bitree_uwi_malloc(
 	mem_alloc m_alloc,
 	size_t recipe_size)
 {
   if (!_lf_uwi_tree) {
-	bitree_uwi_populate_lft(m_alloc, recipe_size);
+    mcs_node_t me;
+    if (mcs_trylock(&GF.lock, &me)) {
+      // the global free list is locked, so use it
+      _lf_uwi_tree = GF.tree;
+      if (_lf_uwi_tree)
+	GF.tree = bitree_uwi_leftsubtree(_lf_uwi_tree);
+      mcs_unlock(&GF.lock, &me);
+      if (_lf_uwi_tree)
+	bitree_uwi_set_leftsubtree(_lf_uwi_tree, NULL);
+    }
+    if (!_lf_uwi_tree)
+      _lf_uwi_tree =
+	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size, 
+					     NUM_NODES, m_alloc);
   }
 
-#if BTUWI_DEBUG
-  assert(_lf_uwi_tree != NULL);
-#endif
-
-  return bitree_uwi_alloc_from_lft();
-}
-
-// destructor
-void
-bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free)
-{
-  binarytree_del((binarytree_t**) tree, m_free);
+  bitree_uwi_t *top = _lf_uwi_tree;
+  if (top) {
+    _lf_uwi_tree = bitree_uwi_rightsubtree(top);
+    bitree_uwi_set_rightsubtree(top, NULL);
+  }
+  return top;
 }
 
 /*
- * link only non null tree to GF_uwi_tree
+ * link only non null tree to GF.tree
  */
 void bitree_uwi_free(bitree_uwi_t *tree)
 {
   if(!tree) return;
-  bitree_uwi_leftmostleaf_to_root(&tree);
+  tree = bitree_uwi_flatten(tree);
   // link to the global free unwind interval tree:
   mcs_node_t me;
-  mcs_lock(&GFT_lock, &me);
-  bitree_uwi_set_rightsubtree(tree, GF_uwi_tree);
-  GF_uwi_tree = tree;
-  bitree_uwi_set_rightsubtree(tree, NULL);
-  mcs_unlock(&GFT_lock, &me);
+  mcs_lock(&GF.lock, &me);
+  bitree_uwi_set_leftsubtree(tree, GF.tree);
+  GF.tree = tree;
+  mcs_unlock(&GF.lock, &me);
 }
 
 // return the value at the root
@@ -166,14 +100,6 @@ bitree_uwi_t*
 bitree_uwi_rightsubtree(bitree_uwi_t *tree)
 {
   return (bitree_uwi_t*) binarytree_rightsubtree((binarytree_t*) tree);
-}
-
-void
-bitree_uwi_set_rootval(
-	bitree_uwi_t *tree,
-	uwi_t* rootval)
-{
-  binarytree_set_rootval((binarytree_t*) tree, rootval);
 }
 
 void
@@ -200,7 +126,7 @@ bitree_uwi_interval(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi_t_interval(uwi);
+  return &uwi->interval;
 }
 
 // return the recipe_t value of the tree root
@@ -211,23 +137,30 @@ bitree_uwi_recipe(bitree_uwi_t *tree)
   assert(tree != NULL);
   uwi_t* uwi = bitree_uwi_rootval(tree);
   assert(uwi != NULL);
-  return uwi_t_recipe(uwi);
+  return (uw_recipe_t *)uwi->recipe;
 }
 
-// count the number of nodes in the binary tree.
-int
-bitree_uwi_count(bitree_uwi_t *tree)
-{
-  return binarytree_count((binarytree_t *)tree);
-}
-
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
+// change a tree of all right children into a balanced tree
 bitree_uwi_t*
-bitree_uwi_rebalance(bitree_uwi_t * tree)
+bitree_uwi_rebalance(bitree_uwi_t * tree, int count)
 {
-  binarytree_t *balanced = binarytree_rebalance((binarytree_t*)tree);
+  binarytree_t *balanced = binarytree_list_to_tree((binarytree_t**)&tree, count);
   return (bitree_uwi_t*)balanced;
+}
+
+bitree_uwi_t*
+bitree_uwi_flatten(bitree_uwi_t * tree)
+{
+  binarytree_t *flattened = binarytree_listify((binarytree_t*)tree);
+  return (bitree_uwi_t*)flattened;
+}
+
+static int
+uwi_t_cmp(void* lhs, void* rhs)
+{
+  uwi_t* uwi1 = (uwi_t*)lhs;
+  uwi_t* uwi2 = (uwi_t*)rhs;
+  return interval_t_cmp(&uwi1->interval, &uwi2->interval);
 }
 
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
@@ -243,12 +176,36 @@ bitree_uwi_find(bitree_uwi_t *tree, uwi_t *val)
 // use uwi_t_inrange to find a node in a binary search tree of uwi_t that
 // contains the given address
 // empty tree is returned if no such node is found.
+static int
+uwi_t_inrange(void* lhs, void* address)
+{
+  uwi_t* uwi = (uwi_t*)lhs;
+  return interval_t_inrange(&uwi->interval, address);
+}
+
 bitree_uwi_t*
 bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address)
 {
   binarytree_t * found =
 	  binarytree_find((binarytree_t*)tree, uwi_t_inrange, (void*)address);
   return (bitree_uwi_t*)found;
+}
+
+
+//******************************************************************************
+// String output
+//******************************************************************************
+
+#define MAX_UWI_STR MAX_INTERVAL_STR+MAX_RECIPE_STR+4
+static void
+uwi_t_tostr(void* uwip, char str[])
+{
+  uwi_t *uwi = uwip;
+  char intervalstr[MAX_INTERVAL_STR];
+  interval_t_tostr(&uwi->interval, intervalstr);
+  char recipestr[MAX_RECIPE_STR];
+  uw_recipe_tostr(uwi->recipe, recipestr);
+  sprintf(str, "(%s %s)", intervalstr, recipestr);
 }
 
 // compute a string representing the binary tree printed vertically and
@@ -277,62 +234,3 @@ bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents,
   binarytree_tostring_indent((binarytree_t*)tree,
 	  uwi_t_tostr, uwibuff, indents, treestr);
 }
-
-// compute the height of the binary tree.
-// the height of an empty tree is 0.
-// the height of an non-empty tree is  1+ the larger of the height of the left subtree
-// and the right subtree.
-int
-bitree_uwi_height(bitree_uwi_t *tree)
-{
-  return binarytree_height((binarytree_t*)tree);
-}
-
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-bitree_uwi_is_balanced(bitree_uwi_t *tree)
-{
-  return binarytree_is_balanced((binarytree_t*)tree);
-}
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-bitree_uwi_is_inorder(bitree_uwi_t *tree)
-{
-  return binarytree_is_inorder((binarytree_t*)tree, uwi_t_cmp);
-}
-
-
-bitree_uwi_t*
-bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc)
-{
-  return (bitree_uwi_t*)binarytree_insert((binarytree_t*)tree,
-	  uwi_t_cmp, val, m_alloc);
-}
-
-bitree_uwi_t*
-bitree_uwi_finalize(bitree_uwi_t *tree)
-{
-  if (tree == NULL) return tree;
-  bitree_uwi_set_leftsubtree(tree, NULL);
-  bitree_uwi_finalize(bitree_uwi_rightsubtree(tree));
-  return tree;
-}
-
-void
-bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree)
-{
-  binarytree_leftmostleaf_to_root((binarytree_t**)tree);
-}
-
-bitree_uwi_t*
-bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree)
-{
-  return (bitree_uwi_t*) binarytree_remove_leftmostleaf((binarytree_t**)tree);
-}
-

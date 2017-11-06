@@ -104,7 +104,7 @@
 #include <sample_event.h>
 #include <thread_data.h>
 
-#include <unwind/common/ui_tree.h>
+#include <unwind/common/uw_recipe_map.h>
 #include <messages/messages.h>
 
 #include <lib/prof-lean/spinlock.h>
