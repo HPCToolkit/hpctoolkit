@@ -44,33 +44,61 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATACENTRIC_DATA_TREE_H__
-#define __DATACENTRIC_DATA_TREE_H__
 
-#include "cct.h"
 
 /******************************************************************************
- * type definitions
+ * segv signal handler
  *****************************************************************************/
+// this segv handler is used to monitor first touches
+static void
+segv_handler (int signal_number, siginfo_t *si, void *context)
+{
+  int pagesize = getpagesize();
+  if (TD_GET(inside_hpcrun) && si && si->si_addr) {
+    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
+    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
+    return;
+  }
+  hpcrun_safe_enter();
+  if (!si || !si->si_addr) {
+    hpcrun_safe_exit();
+    return;
+  }
+  void *start, *end;
+  cct_node_t *data_node = splay_lookup((void *)si->si_addr, &start, &end);
+  if (data_node) {
+    void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
+    mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
 
-typedef struct datainfo_s {
-  long magic;
-  cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;	// additional information to record remote memory
-  struct datainfo_s *left;
-  struct datainfo_s *right;
-} datainfo_t;
+    sampling_info_t info;
+    struct datacentric_info_s data_aux = {.data_node = data_node, .first_touch = true};
 
+    info.sample_clock = 0;
+    info.sample_custom_cct.update_before_fn = hpcrun_cct_record_datacentric;
+    info.sample_custom_cct.update_after_fn  = 0;
+    info.sample_custom_cct.data_aux         = &data_aux;
 
-/* * Insert a node */ 
-void splay_insert(struct datainfo_s *node);
+    TMSG(DATACENTRIC, "found node %p, p: %p, context: %p", data_node, p, context);
 
-/* find a cct node for a given key and range */
-cct_node_t * splay_lookup(void *key, void **start, void **end);
+    hpcrun_sample_callpath(context, alloc_metric_id,  (hpcrun_metricVal_t) {.i=1},
+                            0/*skipInner*/, 0/*isSync*/, &info);
+  }
+  else {
+    TMSG(DATACENTRIC, "NOT found node %p", context);
+    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
+    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
+  }
+  hpcrun_safe_exit();
+  return;
+}
 
-/* remove a node containing a memory block */
-struct datainfo_s * splay_delete(void *memblock);
+static inline void
+set_segv_handler()
+{
+  struct sigaction sa;
 
-#endif //__DATACENTRIC_DATA_TREE_H__
+  sa.sa_flags = SA_SIGINFO;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_sigaction = segv_handler;
+  sigaction(SIGSEGV, &sa, NULL);
+}

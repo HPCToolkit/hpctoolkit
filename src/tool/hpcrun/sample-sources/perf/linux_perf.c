@@ -126,15 +126,6 @@
 
 #define LINUX_PERF_DEBUG 0
 
-// default the number of samples per second
-// linux perf tool has default of 4000. It looks very high but
-// visually the overhead is still small for them.
-// however, for some machines, the overhead is significant, and
-//  somehow it causes the kernel to adjust the period threshold to
-//  less than 100.
-// 300 samples per sec looks has relatively similar percentage
-// with perf tool
-#define DEFAULT_THRESHOLD  300
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -165,12 +156,6 @@
 // type declarations
 //******************************************************************************
 
-
-enum threshold_e { PERIOD, FREQUENCY };
-struct event_threshold_s {
-  long             threshold_num;
-  enum threshold_e threshold_type;
-};
 
 //******************************************************************************
 // forward declarations 
@@ -214,7 +199,6 @@ static sigset_t sig_mask;
 // once initialize, this list doesn't change (but event description can change)
 static event_info_t  *event_desc = NULL;
 
-static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
 
 /******************************************************************************
@@ -509,24 +493,6 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 }
 
 
-/***
- * get the default event count threshold by looking from the environment variable
- * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
- */
-static struct event_threshold_s
-init_default_count()
-{
-  const char *str_val= getenv("HPCRUN_PERF_COUNT");
-  if (str_val == NULL) {
-    return default_threshold;
-  }
-  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
-  if (res == 1)
-    default_threshold.threshold_type = PERIOD;
-
-  return default_threshold;
-}
-
 /******************************************************************************
  * method functions
  *****************************************************************************/
@@ -711,7 +677,9 @@ METHOD_FN(supports_event, const char *ev_str)
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
   char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) ;
+
+  // here, we don't care with the threshold. The number 100 is useless
+  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 100 /* unused */) ;
 
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL)
@@ -763,7 +731,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   int i=0;
 
-  default_threshold = init_default_count();
+  struct event_threshold_s default_threshold = init_default_count();
 
   // ----------------------------------------------------------------------
   // for each perf's event, create the metric descriptor which will be used later

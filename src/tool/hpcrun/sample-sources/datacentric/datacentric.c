@@ -204,16 +204,22 @@ set_segv_handler()
 static void
 datacentric_register(event_info_t *event_desc)
 {
-  if (alloc_metric_id < 0) {
-    alloc_metric_id = hpcrun_new_metric();
-    free_metric_id = hpcrun_new_metric();
+  if (alloc_metric_id >= 0)
+    return; // been registered
 
-    hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-    hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+  alloc_metric_id = hpcrun_new_metric();
+  free_metric_id = hpcrun_new_metric();
 
-    // set and initialize segv signal
-    set_segv_handler();
-  }
+  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
+  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+
+  // set and initialize segv signal
+  set_segv_handler();
+
+  struct event_threshold_s threshold = init_default_count();
+
+  // hardware-specific data centric setup
+  datacentric_hw_register(event_desc, &threshold);
 }
 
 static void

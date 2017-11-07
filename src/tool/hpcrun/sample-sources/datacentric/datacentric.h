@@ -52,7 +52,9 @@
  * local includes 
  ******************************************************************************/
 
-#include <cct/cct.h>
+#include <cct/cct.h>                       // cct_node_t
+#include "sample-sources/perf/perf-util.h" // event_info_t
+
 
 /******************************************************************************
  *  MACROs
@@ -66,6 +68,9 @@ void datacentric_init();
 int hpcrun_datacentric_alloc_id(); 
 int hpcrun_datacentric_active();
 void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);
+
+// to be implemented by specific hardware
+int datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period);
 
 #endif // sample_source_memleak_h
 

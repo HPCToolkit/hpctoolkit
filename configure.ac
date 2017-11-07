@@ -2194,7 +2194,7 @@ AC_SUBST([PERFMON_LDFLAGS_STAT])
 AC_SUBST([PERFMON_COPY])
 
 #-------------------------------------------------
-# check if perf event is available
+# perf event: check if perf event is available
 #-------------------------------------------------
 
 AC_MSG_CHECKING([if perf event is available])
@@ -2228,7 +2228,7 @@ AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" != no])
 AC_SUBST([PERF_EVENT_PARANOID])
 
 #-------------------------------------------------
-# check if the kernel is 4.3 or newer
+# perf event: check if the kernel is 4.3 or newer
 #-------------------------------------------------
 
 AC_MSG_CHECKING([if the kernel is 4.3 or newer])
@@ -2247,6 +2247,42 @@ void check_kernel()
 AC_MSG_RESULT([$kernel_4_3])
 
 AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_4_3" = yes])
+
+
+#-------------------------------------------------
+# perf event: check if AMD IBS OP is supported
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the AMD IBS OP is supported])
+
+IBS_OP_PATH="/sys/bus/event_source/devices/ibs_op/type"
+IBS_OP_AVAIL=no
+
+if test -f $IBS_OP_PATH; then
+  IBS_OP_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$IBS_OP_AVAIL])
+
+AM_CONDITIONAL([OPT_IBS_OP], [test "$IBS_OP_AVAIL" = yes])
+
+
+#-------------------------------------------------
+# perf event: check if AMD IBS FETCH is supported
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the AMD IBS FETCH is supported])
+
+IBS_FETCH_PATH="/sys/bus/event_source/devices/ibs_fetch/type"
+IBS_FETCH_AVAIL=no
+
+if test -f $IBS_FETCH_PATH; then
+  IBS_FETCH_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$IBS_FETCH_AVAIL])
+
+AM_CONDITIONAL([OPT_IBS_FETCH], [test "$IBS_FETCH_AVAIL" = yes])
 
 
 #-------------------------------------------------

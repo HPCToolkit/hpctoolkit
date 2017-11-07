@@ -731,6 +731,10 @@ SYMTABAPI_COPY
 SYMTABAPI_LIB_LIST
 SYMTABAPI_LIB
 SYMTABAPI_INC
+OPT_IBS_FETCH_FALSE
+OPT_IBS_FETCH_TRUE
+OPT_IBS_OP_FALSE
+OPT_IBS_OP_TRUE
 OPT_ENABLE_KERNEL_4_3_FALSE
 OPT_ENABLE_KERNEL_4_3_TRUE
 PERF_EVENT_PARANOID
@@ -20514,7 +20518,7 @@ fi
 
 
 #-------------------------------------------------
-# check if perf event is available
+# perf event: check if perf event is available
 #-------------------------------------------------
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if perf event is available" >&5
@@ -20567,7 +20571,7 @@ fi
 
 
 #-------------------------------------------------
-# check if the kernel is 4.3 or newer
+# perf event: check if the kernel is 4.3 or newer
 #-------------------------------------------------
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking if the kernel is 4.3 or newer" >&5
@@ -20602,6 +20606,60 @@ $as_echo "$kernel_4_3" >&6; }
 else
   OPT_ENABLE_KERNEL_4_3_TRUE='#'
   OPT_ENABLE_KERNEL_4_3_FALSE=
+fi
+
+
+
+#-------------------------------------------------
+# perf event: check if AMD IBS OP is supported
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if the AMD IBS OP is supported" >&5
+$as_echo_n "checking if the AMD IBS OP is supported... " >&6; }
+
+IBS_OP_PATH="/sys/bus/event_source/devices/ibs_op/type"
+IBS_OP_AVAIL=no
+
+if test -f $IBS_OP_PATH; then
+  IBS_OP_AVAIL=yes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $IBS_OP_AVAIL" >&5
+$as_echo "$IBS_OP_AVAIL" >&6; }
+
+ if test "$IBS_OP_AVAIL" = yes; then
+  OPT_IBS_OP_TRUE=
+  OPT_IBS_OP_FALSE='#'
+else
+  OPT_IBS_OP_TRUE='#'
+  OPT_IBS_OP_FALSE=
+fi
+
+
+
+#-------------------------------------------------
+# perf event: check if AMD IBS FETCH is supported
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if the AMD IBS FETCH is supported" >&5
+$as_echo_n "checking if the AMD IBS FETCH is supported... " >&6; }
+
+IBS_FETCH_PATH="/sys/bus/event_source/devices/ibs_fetch/type"
+IBS_FETCH_AVAIL=no
+
+if test -f $IBS_FETCH_PATH; then
+  IBS_FETCH_AVAIL=yes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $IBS_FETCH_AVAIL" >&5
+$as_echo "$IBS_FETCH_AVAIL" >&6; }
+
+ if test "$IBS_FETCH_AVAIL" = yes; then
+  OPT_IBS_FETCH_TRUE=
+  OPT_IBS_FETCH_FALSE='#'
+else
+  OPT_IBS_FETCH_TRUE='#'
+  OPT_IBS_FETCH_FALSE=
 fi
 
 
@@ -22833,6 +22891,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_KERNEL_4_3_TRUE}" && test -z "${OPT_ENABLE_KERNEL_4_3_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_KERNEL_4_3\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_IBS_OP_TRUE}" && test -z "${OPT_IBS_OP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_IBS_OP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_IBS_FETCH_TRUE}" && test -z "${OPT_IBS_FETCH_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_IBS_FETCH\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then

@@ -53,6 +53,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <hpcrun/utilities/tokenize.h>
 
 #include <include/linux_info.h>
 #include "perf-util.h"
@@ -78,6 +79,17 @@
 #define PERF_EVENT_SKID_CONSTANT         1
 #define PERF_EVENT_SKID_ARBITRARY        0
 
+#define HPCRUN_OPTION_PERF_COUNT "HPCRUN_PERF_COUNT"
+
+// default the number of samples per second
+// linux perf tool has default of 4000. It looks very high but
+// visually the overhead is still small for them.
+// however, for some machines, the overhead is significant, and
+//  somehow it causes the kernel to adjust the period threshold to
+//  less than 100.
+// 300 samples per sec looks has relatively similar percentage
+// with perf tool
+#define DEFAULT_THRESHOLD  300
 
 //******************************************************************************
 // constants
@@ -326,6 +338,31 @@ is_perf_ksym_available()
 /*************************************************************
  * Interface API
  **************************************************************/ 
+
+
+/***
+ * get the default event count threshold by looking from the environment variable
+ * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
+ */
+struct event_threshold_s
+init_default_count()
+{
+  static struct event_threshold_s default_threshold = {.threshold_num=0, .threshold_type=FREQUENCY};
+  if (default_threshold.threshold_num > 0)
+    return default_threshold;
+
+  const char *str_val= getenv(HPCRUN_OPTION_PERF_COUNT);
+  if (str_val == NULL) {
+    default_threshold.threshold_num = DEFAULT_THRESHOLD;
+    return default_threshold;
+  }
+
+  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
+  if (res == 1)
+    default_threshold.threshold_type = PERIOD;
+
+  return default_threshold;
+}
 
 //----------------------------------------------------------
 // generic default initialization for event attributes

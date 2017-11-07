@@ -77,6 +77,21 @@ typedef __u64 u64;
 // If we include user call chains, it should be bigger than that.
 #define MAX_CALLCHAIN_FRAMES 32
 
+// --------------------------------------------------------------------
+// threshold data structure (period or frequency
+// --------------------------------------------------------------------
+
+enum threshold_e { PERIOD, FREQUENCY };
+
+struct event_threshold_s {
+  long             threshold_num;
+  enum threshold_e threshold_type;
+};
+
+// --------------------------------------------------------------------
+// perf event mmap data
+// --------------------------------------------------------------------
+
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
   struct perf_event_header header;
@@ -157,6 +172,14 @@ typedef struct event_thread_s {
 
 } event_thread_t;
 
+
+
+// --------------------------------------------------------------------
+// API
+// --------------------------------------------------------------------
+
+// get the default threshold
+struct event_threshold_s init_default_count();
 
 // returns the id of kernel load module
 uint16_t get_perf_kernel_lm_id();

@@ -44,33 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATACENTRIC_DATA_TREE_H__
-#define __DATACENTRIC_DATA_TREE_H__
 
-#include "cct.h"
-
-/******************************************************************************
- * type definitions
- *****************************************************************************/
-
-typedef struct datainfo_s {
-  long magic;
-  cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;	// additional information to record remote memory
-  struct datainfo_s *left;
-  struct datainfo_s *right;
-} datainfo_t;
-
-
-/* * Insert a node */ 
-void splay_insert(struct datainfo_s *node);
-
-/* find a cct node for a given key and range */
-cct_node_t * splay_lookup(void *key, void **start, void **end);
-
-/* remove a node containing a memory block */
-struct datainfo_s * splay_delete(void *memblock);
-
-#endif //__DATACENTRIC_DATA_TREE_H__
+int
+datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
+{
+}

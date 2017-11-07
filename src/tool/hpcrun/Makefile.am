@@ -278,7 +278,6 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/blame-shift.c        \
 	sample-sources/blame-shift/blame-map.c          \
 	sample-sources/common.c         \
-	sample-sources/datacentric/datacentric.c	\
 	sample-sources/display.c	\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
@@ -346,7 +345,16 @@ MY_BASE_FILES +=  			\
 	sample-sources/perf/event_custom.c	\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	
+	sample-sources/perf/perf_mmap.c	\
+	sample-sources/datacentric/datacentric.c	
+endif
+
+if OPT_IBS_OP
+MY_BASE_FILES +=  			\
+	sample-sources/datacentric/ibsop.c
+else
+MY_BASE_FILES +=  			\
+	sample-sources/datacentric/datadummy.c	
 endif
 
 if OPT_ENABLE_KERNEL_4_3

@@ -44,33 +44,52 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATACENTRIC_DATA_TREE_H__
-#define __DATACENTRIC_DATA_TREE_H__
+#include <stdio.h>
 
-#include "cct.h"
+#include <hpcrun/messages/messages.h>
+#include "sample-sources/perf/perf-util.h"
 
-/******************************************************************************
- * type definitions
- *****************************************************************************/
+#include "datacentric.h"
 
-typedef struct datainfo_s {
-  long magic;
-  cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;	// additional information to record remote memory
-  struct datainfo_s *left;
-  struct datainfo_s *right;
-} datainfo_t;
+#define IBS_OP_TYPE_FILE "/sys/bus/event_source/devices/ibs_op/type"
 
+int
+datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
+{
+  // get the type of ibs op
 
-/* * Insert a node */ 
-void splay_insert(struct datainfo_s *node);
+  FILE *ibs_file = fopen(IBS_OP_TYPE_FILE, "r");
+  u32 type;
 
-/* find a cct node for a given key and range */
-cct_node_t * splay_lookup(void *key, void **start, void **end);
+  if (!ibs_file) {
+    EMSG("Cannot open file: %s", IBS_OP_TYPE_FILE);
+    return 0;
+  }
+  fscanf(ibs_file, "%d", &type);
 
-/* remove a node containing a memory block */
-struct datainfo_s * splay_delete(void *memblock);
+  event_desc->attr.config = (1ULL<<19);
+  event_desc->attr.type   = type;
+  event_desc->attr.sample_period  = period->threshold_num;
+  event_desc->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
 
-#endif //__DATACENTRIC_DATA_TREE_H__
+  event_desc->attr.sample_type    = PERF_SAMPLE_RAW
+                                    | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+                                    | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
+                                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
+  event_desc->attr.disabled       = 1;
+  event_desc->attr.exclude_kernel = 0;
+  event_desc->attr.exclude_user   = 0;
+  event_desc->attr.exclude_hv     = 0;
+  event_desc->attr.exclude_guest  = 0;
+  event_desc->attr.exclude_idle   = 0;
+  event_desc->attr.exclude_host   = 0;
+  event_desc->attr.pinned         = 0;
+  event_desc->attr.precise_ip     = 1;
+  event_desc->attr.mmap           = 1;
+
+  event_desc->attr.sample_id_all = 1;
+  event_desc->attr.read_format = 0;
+
+  return 1;
+}
+
