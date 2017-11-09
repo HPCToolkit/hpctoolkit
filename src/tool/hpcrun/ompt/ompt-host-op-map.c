@@ -25,7 +25,8 @@
 struct ompt_host_op_map_entry_s {
   uint64_t host_op_id;
   uint64_t refcnt;
-  cct_node_t *call_path;
+  uint64_t host_op_seq_id;
+  ompt_region_map_entry_t *region_entry;
   struct ompt_host_op_map_entry_s *left;
   struct ompt_host_op_map_entry_s *right;
 }; 
@@ -46,13 +47,16 @@ static spinlock_t ompt_host_op_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static ompt_host_op_map_entry_t *
-ompt_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *call_path)
+ompt_host_op_map_entry_new(uint64_t host_op_id,
+                           uint64_t host_op_seq_id,
+                           ompt_region_map_entry_t *map_entry)
 {
   ompt_host_op_map_entry_t *e;
   e = (ompt_host_op_map_entry_t *)hpcrun_malloc(sizeof(ompt_host_op_map_entry_t));
   e->host_op_id = host_op_id;
   e->refcnt = 0;
-  e->call_path = call_path;
+  e->host_op_seq_id = host_op_seq_id;
+  e->region_entry = map_entry;
   e->left = NULL;
   e->right = NULL;
 
@@ -94,13 +98,12 @@ ompt_host_op_map_entry_t *
 ompt_host_op_map_lookup(uint64_t id)
 {
   ompt_host_op_map_entry_t *result = NULL;
-  spinlock_lock(&ompt_host_op_map_lock);
 
+  spinlock_lock(&ompt_host_op_map_lock);
   ompt_host_op_map_root = ompt_host_op_map_splay(ompt_host_op_map_root, id);
   if (ompt_host_op_map_root && ompt_host_op_map_root->host_op_id == id) {
     result = ompt_host_op_map_root;
   }
-
   spinlock_unlock(&ompt_host_op_map_lock);
 
   TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (record %p)", id, result);
@@ -109,13 +112,15 @@ ompt_host_op_map_lookup(uint64_t id)
 
 
 void
-ompt_host_op_map_insert(uint64_t host_op_id, cct_node_t *call_path)
+ompt_host_op_map_insert(uint64_t host_op_id,
+                        uint64_t host_op_seq_id,
+                        ompt_region_map_entry_t *map_entry)
 {
-  ompt_host_op_map_entry_t *node = ompt_host_op_map_entry_new(host_op_id, call_path);
+  ompt_host_op_map_entry_t *entry = ompt_host_op_map_entry_new(host_op_id, host_op_seq_id, map_entry);
 
-  TMSG(DEFER_CTXT, "host op map insert: id=0x%lx (record %p)", host_op_id, node);
+  TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_seq_id);
 
-  node->left = node->right = NULL;
+  entry->left = entry->right = NULL;
 
   spinlock_lock(&ompt_host_op_map_lock);
 
@@ -124,12 +129,12 @@ ompt_host_op_map_insert(uint64_t host_op_id, cct_node_t *call_path)
       ompt_host_op_map_splay(ompt_host_op_map_root, host_op_id);
 
     if (host_op_id < ompt_host_op_map_root->host_op_id) {
-      node->left = ompt_host_op_map_root->left;
-      node->right = ompt_host_op_map_root;
+      entry->left = ompt_host_op_map_root->left;
+      entry->right = ompt_host_op_map_root;
       ompt_host_op_map_root->left = NULL;
     } else if (host_op_id > ompt_host_op_map_root->host_op_id) {
-      node->left = ompt_host_op_map_root;
-      node->right = ompt_host_op_map_root->right;
+      entry->left = ompt_host_op_map_root;
+      entry->right = ompt_host_op_map_root->right;
       ompt_host_op_map_root->right = NULL;
     } else {
       // host_op_id already present: fatal error since a host_op_id 
@@ -137,9 +142,9 @@ ompt_host_op_map_insert(uint64_t host_op_id, cct_node_t *call_path)
       assert(0);
     }
   }
-  ompt_host_op_map_root = node;
 
   spinlock_unlock(&ompt_host_op_map_lock);
+  ompt_host_op_map_root = entry;
 }
 
 
@@ -153,6 +158,7 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
        host_op_id, val);
 
   spinlock_lock(&ompt_host_op_map_lock);
+
   ompt_host_op_map_root = ompt_host_op_map_splay(ompt_host_op_map_root, host_op_id);
 
   if (ompt_host_op_map_root && 
@@ -160,7 +166,7 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
     uint64_t old = ompt_host_op_map_root->refcnt;
     ompt_host_op_map_root->refcnt += val;
     TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	 host_op_id, old, ompt_host_op_map_root->refcnt);
+	  host_op_id, old, ompt_host_op_map_root->refcnt);
     if (ompt_host_op_map_root->refcnt == 0) {
       TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (deleting)",
            host_op_id);
@@ -170,31 +176,23 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
   }
 
   spinlock_unlock(&ompt_host_op_map_lock);
+
   return result;
 }
 
 
-uint64_t 
-ompt_host_op_map_entry_refcnt_get(ompt_host_op_map_entry_t *node) 
+ompt_region_map_entry_t *
+ompt_host_op_map_entry_region_map_entry_get(ompt_host_op_map_entry_t *entry)
 {
-  return node->refcnt;
+  return entry->map_entry;
 }
 
 
-void 
-ompt_host_op_map_entry_callpath_set(ompt_host_op_map_entry_t *node, 
-				  cct_node_t *call_path)
+uint64_t
+ompt_host_op_map_entry_seq_id_get(ompt_host_op_map_entry_t *entry)
 {
-  node->call_path = call_path;
+  return entry->host_op_seq_id;
 }
-
-
-cct_node_t *
-ompt_host_op_map_entry_callpath_get(ompt_host_op_map_entry_t *node)
-{
-  return node->call_path;
-}
-
 
 
 /******************************************************************************
@@ -202,11 +200,11 @@ ompt_host_op_map_entry_callpath_get(ompt_host_op_map_entry_t *node)
  *****************************************************************************/
 
 static int 
-ompt_host_op_map_count_helper(ompt_host_op_map_entry_t *node) 
+ompt_host_op_map_count_helper(ompt_host_op_map_entry_t *entry) 
 {
-  if (node) {
-     int left = ompt_host_op_map_count_helper(node->left);
-     int right = ompt_host_op_map_count_helper(node->right);
+  if (entry) {
+     int left = ompt_host_op_map_count_helper(entry->left);
+     int right = ompt_host_op_map_count_helper(entry->right);
      return 1 + right + left; 
   } 
   return 0;

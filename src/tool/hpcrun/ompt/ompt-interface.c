@@ -133,6 +133,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //    nested marking.
 //-----------------------------------------
 static __thread int ompt_idle_count;
+static __thread int ompt_host_op_seq_id;
 
 
 /******************************************************************************
@@ -704,26 +705,33 @@ ompt_idle_blame_shift_request()
 
 // Records the (target id —> cct_node *) mapping in a thread local variable
 void
-hpcrun_opid_map_record_target(int target_id,
-                              cct_node_t *node)
+hpcrun_op_id_map_record_target(ompt_id_t target_id,
+                              cct_node_t *node,
+                              uint64_t device_id)
 {
   assert(target_id != 0);
-  ompt_region_map_insert((uint64_t) target_id, node);
+  ompt_region_map_insert((uint64_t) target_id, node, device_id);
 }
 
 
 // Adds an (opid, cct_node_t *) entry to the concurrent map by finding
 // the cct_node_t * associated with target_id from the thread_local variable
 void
-hpcrun_opid_map_insert(int host_op_id,
-                       int target_id)
+hpcrun_op_id_map_insert(ompt_id_t host_op_id,
+                       ompt_id_t target_id)
 {
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
-  cct_node_t *node = NULL;
   if (entry != NULL) {
-    node = ompt_region_map_entry_callpath_get(entry);
-    ompt_region_map_insert(host_op_id, node);
-  } 
+    cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
+    cct_node_t *cct_child = NULL;
+    if ((cct_child = ompt_region_map_seq_lookup(entry, ompt_host_op_seq_id)) == NULL) {
+      cct_addr_t frm = { .ip_norm = NULL };  // FIXME(keren): define union type for cct_addr_t
+      cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
+      ompt_region_map_child_insert(entry, cct_child);
+    }
+    ompt_host_op_map_insert(host_op_id, ompt_host_op_seq_id, entry);
+    ompt_host_op_seq_id++;
+  }
 }
 
 
@@ -733,12 +741,14 @@ hpcrun_opid_map_insert(int host_op_id,
 // context for the target region. For now, this cct_node_t * will be in the thread’s CCT. 
 // Eventually, this function might return a pointer to a separate CCT that will be used by a device
 cct_node_t *
-hpcrun_opid_map_lookup(int host_op_id)
+hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
 {
   ompt_host_op_map_entry_t *entry = ompt_host_op_map_lookup(host_op_id);
   cct_node_t *node = NULL;
   if (entry != NULL) {
-    node = ompt_host_op_map_entry_callpath_get(entry);
+    ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
+    uint64_t host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
+    node = ompt_region_map_entry_callpath_get(region_map_entry);
     ompt_host_op_map_refcnt_update(host_op_id, 0);
   } 
   return node;
@@ -875,10 +885,11 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
+  ompt_host_op_seq_id = 0;
   ucontext_t uc;
   getcontext(&uc);
   cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
-  hpcrun_opid_map_record_target(target_id, node);
+  hpcrun_op_id_map_record_target(target_id, node, device_num);
 }
 
 
@@ -890,7 +901,7 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  hpcrun_opid_map_insert(host_op_id, target_id);
+  hpcrun_op_id_map_insert(host_op_id, target_id);
 }
 
 
@@ -898,6 +909,7 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
+  hpcrun_op_id_map_insert(host_op_id, target_id);
 }
 
 

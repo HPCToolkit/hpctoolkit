@@ -73,7 +73,8 @@ ompt_parallel_begin_internal(
                                invoker == ompt_invoker_program);
 
   assert(region_id != 0);
-  ompt_region_map_insert((uint64_t) region_id, callpath);
+  // device_num -1 reserved for unknown device 
+  ompt_region_map_insert((uint64_t) region_id, callpath, -1);
 
   if (!td->master) {
     if (td->outer_region_id == 0) {

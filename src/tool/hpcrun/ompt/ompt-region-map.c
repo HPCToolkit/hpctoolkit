@@ -13,6 +13,7 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 #include <hpcrun/ompt/ompt-region-map.h>
+#include <hpcrun/ompt/ompt-cct-node-vector.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
@@ -25,7 +26,9 @@
 struct ompt_region_map_entry_s {
   uint64_t region_id;
   uint64_t refcnt;
+  int64_t device_id;  // -1 reserved for unknown devices
   cct_node_t *call_path;
+  struct ompt_cct_node_vector_t *vector; 
   struct ompt_region_map_entry_s *left;
   struct ompt_region_map_entry_s *right;
 }; 
@@ -46,15 +49,17 @@ static spinlock_t ompt_region_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static ompt_region_map_entry_t *
-ompt_region_map_entry_new(uint64_t region_id, cct_node_t *call_path)
+ompt_region_map_entry_new(uint64_t region_id, cct_node_t *call_path, int64_t device_id)
 {
   ompt_region_map_entry_t *e;
   e = (ompt_region_map_entry_t *)hpcrun_malloc(sizeof(ompt_region_map_entry_t));
   e->region_id = region_id;
+  e->device_id = device_id;
   e->refcnt = 0;
   e->call_path = call_path;
   e->left = NULL;
   e->right = NULL;
+  ompt_cct_node_vector_init(e->vector);
 
   return e;
 }
@@ -108,14 +113,26 @@ ompt_region_map_lookup(uint64_t id)
 }
 
 
-void
-ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path)
+cct_node_t *ompt_region_map_seq_lookup(ompt_region_map_entry_t *entry, uint64_t id)
 {
-  ompt_region_map_entry_t *node = ompt_region_map_entry_new(region_id, call_path);
+  cct_node_t *result = NULL;
 
-  TMSG(DEFER_CTXT, "region map insert: id=0x%lx (record %p)", region_id, node);
+  if (entry->vector) {
+    result = ompt_cct_node_vector_get(entry->vector, id);
+  }
 
-  node->left = node->right = NULL;
+  return result;
+}
+
+
+void
+ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path, int64_t device_id)
+{
+  ompt_region_map_entry_t *entry = ompt_region_map_entry_new(region_id, call_path, device_id);
+
+  TMSG(DEFER_CTXT, "region map insert: id=0x%lx (record %p)", region_id, entry);
+
+  entry->left = entry->right = NULL;
 
   spinlock_lock(&ompt_region_map_lock);
 
@@ -124,12 +141,12 @@ ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path)
       ompt_region_map_splay(ompt_region_map_root, region_id);
 
     if (region_id < ompt_region_map_root->region_id) {
-      node->left = ompt_region_map_root->left;
-      node->right = ompt_region_map_root;
+      entry->left = ompt_region_map_root->left;
+      entry->right = ompt_region_map_root;
       ompt_region_map_root->left = NULL;
     } else if (region_id > ompt_region_map_root->region_id) {
-      node->left = ompt_region_map_root;
-      node->right = ompt_region_map_root->right;
+      entry->left = ompt_region_map_root;
+      entry->right = ompt_region_map_root->right;
       ompt_region_map_root->right = NULL;
     } else {
       // region_id already present: fatal error since a region_id 
@@ -137,9 +154,17 @@ ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path)
       assert(0);
     }
   }
-  ompt_region_map_root = node;
+  ompt_region_map_root = entry;
 
   spinlock_unlock(&ompt_region_map_lock);
+}
+
+
+void ompt_region_map_child_insert(ompt_region_map_entry_t *entry, cct_node_t *cct_node)
+{
+  if (entry->vector) {
+    ompt_cct_node_vector_push_back(entry, cct_node);
+  }
 }
 
 
@@ -175,24 +200,24 @@ ompt_region_map_refcnt_update(uint64_t region_id, int val)
 
 
 uint64_t 
-ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *node) 
+ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *entry) 
 {
-  return node->refcnt;
+  return entry->refcnt;
 }
 
 
 void 
-ompt_region_map_entry_callpath_set(ompt_region_map_entry_t *node, 
+ompt_region_map_entry_callpath_set(ompt_region_map_entry_t *entry, 
 				  cct_node_t *call_path)
 {
-  node->call_path = call_path;
+  entry->call_path = call_path;
 }
 
 
 cct_node_t *
-ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *node)
+ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *entry)
 {
-  return node->call_path;
+  return entry->call_path;
 }
 
 
@@ -202,11 +227,11 @@ ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *node)
  *****************************************************************************/
 
 static int 
-ompt_region_map_count_helper(ompt_region_map_entry_t *node) 
+ompt_region_map_count_helper(ompt_region_map_entry_t *entry) 
 {
-  if (node) {
-     int left = ompt_region_map_count_helper(node->left);
-     int right = ompt_region_map_count_helper(node->right);
+  if (entry) {
+     int left = ompt_region_map_count_helper(entry->left);
+     int right = ompt_region_map_count_helper(entry->right);
      return 1 + right + left; 
   } 
   return 0;

@@ -31,16 +31,17 @@ typedef struct ompt_host_op_map_entry_s ompt_host_op_map_entry_t;
 
 ompt_host_op_map_entry_t *ompt_host_op_map_lookup(uint64_t id);
 
-void ompt_host_op_map_insert(uint64_t host_op_id, cct_node_t *call_path);
+void ompt_host_op_map_insert(uint64_t host_op_id,
+                             uint64_t host_op_seq_id,
+                             ompt_region_map_entry_t *map_entry);
 
 bool ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val);
 
-uint64_t ompt_host_op_map_entry_refcnt_get(ompt_host_op_map_entry_t *node);
+uint64_t ompt_host_op_map_entry_refcnt_get(ompt_host_op_map_entry_t *entry);
 
-void ompt_host_op_map_entry_callpath_set(ompt_host_op_map_entry_t *node,
-                                         cct_node_t *call_path);
+ompt_region_map_entry_t *ompt_host_op_map_entry_region_map_entry_get(ompt_host_op_map_entry_t *entry);
 
-cct_node_t *ompt_host_op_map_entry_callpath_get(ompt_host_op_map_entry_t *node);
+uint64_t ompt_host_op_map_entry_seq_id_get(ompt_host_op_map_entry_t *entry);
 
 #endif
 

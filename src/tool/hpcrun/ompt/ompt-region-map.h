@@ -31,15 +31,19 @@ typedef struct ompt_region_map_entry_s ompt_region_map_entry_t;
 
 ompt_region_map_entry_t *ompt_region_map_lookup(uint64_t id);
 
-void ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path);
+cct_node_t *ompt_region_map_seq_lookup(ompt_region_map_entry_t *entry, uint64_t id);
+
+void ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path, int64_t device_id);
+
+void ompt_region_map_child_insert(ompt_region_map_entry_t *entry, cct_node_t *cct_node);
 
 bool ompt_region_map_refcnt_update(uint64_t region_id, int val);
 
-uint64_t ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *node);
+uint64_t ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *entry);
 
-void ompt_region_map_entry_callpath_set(ompt_region_map_entry_t *node, 
+void ompt_region_map_entry_callpath_set(ompt_region_map_entry_t *entry, 
 				       cct_node_t *call_path);
 
-cct_node_t *ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *node);
+cct_node_t *ompt_region_map_entry_callpath_get(ompt_region_map_entry_t *entry);
 
 #endif
