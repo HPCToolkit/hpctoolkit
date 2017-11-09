@@ -64,8 +64,8 @@
  * private data
  *****************************************************************************/
 
-static struct datainfo_s *datacentric_tree_root = NULL;
-static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
+static struct datainfo_s __thread *datacentric_tree_root = NULL;
+//static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
 
 
 
@@ -98,7 +98,7 @@ splay_insert(struct datainfo_s *node)
 
   node->left = node->right = NULL;
 
-  spinlock_lock(&memtree_lock);  
+//  spinlock_lock(&memtree_lock);
   if (datacentric_tree_root != NULL) {
     datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
@@ -110,14 +110,10 @@ splay_insert(struct datainfo_s *node)
       node->left = datacentric_tree_root;
       node->right = datacentric_tree_root->right;
       datacentric_tree_root->right = NULL;
-    } else {
-      TMSG(DATACENTRIC, "datacentric splay tree: unable to insert %p (already present)", 
-	   node->memblock);
-      assert(0);
     }
   }
   datacentric_tree_root = node;
-  spinlock_unlock(&memtree_lock);  
+//  spinlock_unlock(&memtree_lock);
 }
 
 /*
@@ -128,9 +124,9 @@ splay_delete(void *memblock)
 {
   struct datainfo_s *result = NULL;
 
-  spinlock_lock(&memtree_lock);  
+//  spinlock_lock(&memtree_lock);
   if (datacentric_tree_root == NULL) {
-    spinlock_unlock(&memtree_lock);  
+//    spinlock_unlock(&memtree_lock);
     TMSG(DATACENTRIC, "datacentric splay tree empty: unable to delete %p", memblock);
     return NULL;
   }
@@ -138,7 +134,7 @@ splay_delete(void *memblock)
   datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
   if (memblock != datacentric_tree_root->memblock) {
-    spinlock_unlock(&memtree_lock);  
+//    spinlock_unlock(&memtree_lock);
     TMSG(DATACENTRIC, "datacentric splay tree: %p not in tree", memblock);
     return NULL;
   }
@@ -147,14 +143,14 @@ splay_delete(void *memblock)
 
   if (datacentric_tree_root->left == NULL) {
     datacentric_tree_root = datacentric_tree_root->right;
-    spinlock_unlock(&memtree_lock);  
+//    spinlock_unlock(&memtree_lock);
     return result;
   }
 
   datacentric_tree_root->left = splay(datacentric_tree_root->left, memblock);
   datacentric_tree_root->left->right = datacentric_tree_root->right;
   datacentric_tree_root =  datacentric_tree_root->left;
-  spinlock_unlock(&memtree_lock);  
+//  spinlock_unlock(&memtree_lock);
   return result;
 }
 
@@ -167,20 +163,20 @@ splay_lookup(void *key, void **start, void **end)
   }
 
   struct datainfo_s *info;
-  spinlock_lock(&memtree_lock);  
+//  spinlock_lock(&memtree_lock);
   datacentric_tree_root = interval_splay(datacentric_tree_root, key);
   info = datacentric_tree_root;
   if(!info) {
-    spinlock_unlock(&memtree_lock);  
+//    spinlock_unlock(&memtree_lock);
     return NULL;
   }
   if((info->memblock <= key) && (info->rmemblock > key)) {
     *start = info->memblock;
     *end = info->rmemblock;
-    spinlock_unlock(&memtree_lock);  
+//    spinlock_unlock(&memtree_lock);
     return info->context;
   }
-  spinlock_unlock(&memtree_lock);  
+//  spinlock_unlock(&memtree_lock);
   return NULL;
 }
 

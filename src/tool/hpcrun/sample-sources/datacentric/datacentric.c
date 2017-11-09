@@ -287,9 +287,6 @@ void
 hpcrun_datacentric_free_inc(cct_node_t* node, int incr)
 {
   if (node != NULL) {
-    TMSG(DATACENTRIC, "\tfree (cct node %p): metric[%d] += %d", 
-	 node, free_metric_id, incr);
-    
     cct_metric_data_increment(free_metric_id,
 			      node,
 			      (cct_metric_data_t){.i = incr});

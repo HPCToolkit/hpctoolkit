@@ -44,8 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "sample-sources/perf/perf-util.h"
 
 int
 datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
 {
+  return 0;
 }
