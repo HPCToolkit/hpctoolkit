@@ -144,62 +144,6 @@ hpcrun_cct_record_datacentric(cct_bundle_t* cct, cct_node_t* cct_cursor, void *d
   return cct_cursor;
 }
 
-/******************************************************************************
- * segv signal handler
- *****************************************************************************/
-// this segv handler is used to monitor first touches
-static void
-segv_handler (int signal_number, siginfo_t *si, void *context)
-{
-  int pagesize = getpagesize();
-  if (TD_GET(inside_hpcrun) && si && si->si_addr) {
-    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
-    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
-    return;
-  }
-  hpcrun_safe_enter();
-  if (!si || !si->si_addr) {
-    hpcrun_safe_exit();
-    return;
-  }
-  void *start, *end;
-  cct_node_t *data_node = splay_lookup((void *)si->si_addr, &start, &end);
-  if (data_node) {
-    void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
-    mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
-
-    sampling_info_t info;
-    struct datacentric_info_s data_aux = {.data_node = data_node, .first_touch = true};
-
-    info.sample_clock = 0;
-    info.sample_custom_cct.update_before_fn = hpcrun_cct_record_datacentric;
-    info.sample_custom_cct.update_after_fn  = 0;
-    info.sample_custom_cct.data_aux         = &data_aux;
-
-    TMSG(DATACENTRIC, "found node %p, p: %p, context: %p", data_node, p, context);
-
-    hpcrun_sample_callpath(context, alloc_metric_id, 	(hpcrun_metricVal_t) {.i=1},
-                            0/*skipInner*/, 0/*isSync*/, &info);
-  }
-  else {
-    TMSG(DATACENTRIC, "NOT found node %p", context);
-    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
-    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
-  }
-  hpcrun_safe_exit();
-  return;
-}
-
-static inline void
-set_segv_handler()
-{
-  struct sigaction sa;
-
-  sa.sa_flags = SA_SIGINFO;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_sigaction = segv_handler;
-  sigaction(SIGSEGV, &sa, NULL);
-}
 
 static void
 datacentric_register(event_info_t *event_desc)
@@ -212,9 +156,6 @@ datacentric_register(event_info_t *event_desc)
 
   hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
   hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
-
-  // set and initialize segv signal
-  set_segv_handler();
 
   struct event_threshold_s threshold = init_default_count();
 
