@@ -44,6 +44,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+/******************************************************************************
+ * global include files
+ *****************************************************************************/
+
+#include <sys/param.h>
+
+
 
 /******************************************************************************
  * ompt
@@ -68,6 +75,7 @@
 #include "ompt-callstack.h"
 #include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
+#include "cubin-symbols.h"
 
 #include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
@@ -813,6 +821,11 @@ ompt_device_load(uint64_t device_num,
                  const void *device_addr,
                  uint64_t module_id)
 {
+  char device_file[MAXPATHLEN]; 
+  assert(filename);
+  sprintf(device_file, "%s@0x%lx", filename, (unsigned long) file_addr);
+  hpcrun_loadModule_add(device_file);
+  computeCubinFunctionOffsets(host_addr, bytes);
 }
 
 
