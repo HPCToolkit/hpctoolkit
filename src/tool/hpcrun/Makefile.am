@@ -337,7 +337,8 @@ MY_BASE_FILES =				\
 	ompt/ompt-interface.c           \
 	ompt/ompt-region.c              \
 	ompt/ompt-region-map.c          \
-	ompt/ompt-state-placeholders.c  \
+	ompt/ompt-host-op-map.c         \
+	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	ompt/ompt-task-map.c            \

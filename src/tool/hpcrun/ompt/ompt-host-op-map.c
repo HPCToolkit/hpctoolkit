@@ -26,7 +26,7 @@ struct ompt_host_op_map_entry_s {
   uint64_t host_op_id;
   uint64_t refcnt;
   uint64_t host_op_seq_id;
-  ompt_region_map_entry_t *region_entry;
+  ompt_region_map_entry_t *region_map_entry;
   struct ompt_host_op_map_entry_s *left;
   struct ompt_host_op_map_entry_s *right;
 }; 
@@ -49,14 +49,14 @@ static spinlock_t ompt_host_op_map_lock = SPINLOCK_UNLOCKED;
 static ompt_host_op_map_entry_t *
 ompt_host_op_map_entry_new(uint64_t host_op_id,
                            uint64_t host_op_seq_id,
-                           ompt_region_map_entry_t *map_entry)
+                           ompt_region_map_entry_t *region_map_entry)
 {
   ompt_host_op_map_entry_t *e;
   e = (ompt_host_op_map_entry_t *)hpcrun_malloc(sizeof(ompt_host_op_map_entry_t));
   e->host_op_id = host_op_id;
   e->refcnt = 0;
   e->host_op_seq_id = host_op_seq_id;
-  e->region_entry = map_entry;
+  e->region_map_entry = region_map_entry;
   e->left = NULL;
   e->right = NULL;
 
@@ -184,7 +184,7 @@ ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val)
 ompt_region_map_entry_t *
 ompt_host_op_map_entry_region_map_entry_get(ompt_host_op_map_entry_t *entry)
 {
-  return entry->map_entry;
+  return entry->region_map_entry;
 }
 
 

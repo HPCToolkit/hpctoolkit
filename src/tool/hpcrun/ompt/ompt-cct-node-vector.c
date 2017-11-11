@@ -22,8 +22,8 @@
 
 struct ompt_cct_node_vector_s {
   cct_node_t **nodes;
-  unit64_t size;
-  unit64_t capacity;
+  uint64_t size;
+  uint64_t capacity;
 }; 
 
 
@@ -39,8 +39,10 @@ void ompt_cct_node_vector_init(ompt_cct_node_vector_t *vector)
 void ompt_cct_node_vector_reserve(ompt_cct_node_vector_t *vector, uint64_t capacity)
 {
   // FIXME(keren): free memory
-  vector->nodes = (cct_nodes_t **)hpcrun_malloc(sizeof(cct_nodes_t *) * (size));
-  if (!nodes) {
+  if (capacity > vector->capacity) {
+    vector->nodes = (cct_node_t **)hpcrun_malloc(sizeof(cct_node_t *) * (capacity));
+  }
+  if (!vector->nodes) {
     // no more free memory
   } else {
     vector->capacity = capacity;
@@ -51,17 +53,17 @@ void ompt_cct_node_vector_reserve(ompt_cct_node_vector_t *vector, uint64_t capac
 void ompt_cct_node_vector_push_back(ompt_cct_node_vector_t *vector, cct_node_t *node)
 {
   if (vector->size == vector->capacity) {
-    ompt_cct_node_vector_reserve(vector, node->capacity * 2);
+    ompt_cct_node_vector_reserve(vector, vector->capacity * 2);
   }
-  *(vector->nodes)[vector->size] = node;
+  vector->nodes[vector->size] = node;
   vector->size++;
 }
 
 
 cct_node_t *ompt_cct_node_vector_get(ompt_cct_node_vector_t *vector, uint64_t host_op_seq_id)
 {
-  if (host_op_seq_id < vector->size()) {
-    return *(vector->nodes)[host_op_seq_id];
+  if (host_op_seq_id < vector->size) {
+    return vector->nodes[host_op_seq_id];
   } else {
     // out of the bound
     return NULL;

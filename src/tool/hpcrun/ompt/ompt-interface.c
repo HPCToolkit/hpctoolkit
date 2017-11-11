@@ -706,8 +706,8 @@ ompt_idle_blame_shift_request()
 // Records the (target id —> cct_node *) mapping in a thread local variable
 void
 hpcrun_op_id_map_record_target(ompt_id_t target_id,
-                              cct_node_t *node,
-                              uint64_t device_id)
+                               cct_node_t *node,
+                               uint64_t device_id)
 {
   assert(target_id != 0);
   ompt_region_map_insert((uint64_t) target_id, node, device_id);
@@ -718,7 +718,7 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 // the cct_node_t * associated with target_id from the thread_local variable
 void
 hpcrun_op_id_map_insert(ompt_id_t host_op_id,
-                       ompt_id_t target_id)
+                        ompt_id_t target_id)
 {
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {

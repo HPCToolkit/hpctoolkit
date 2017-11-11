@@ -14,7 +14,7 @@
 
 #include <hpcrun/cct/cct.h>
 
-typedef struct ompt_cct_node_vector_s *ompt_cct_node_vector_t;
+typedef struct ompt_cct_node_vector_s ompt_cct_node_vector_t;
 
 void ompt_cct_node_vector_init(ompt_cct_node_vector_t *vector);
 
