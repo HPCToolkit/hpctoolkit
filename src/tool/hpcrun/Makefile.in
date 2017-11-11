@@ -448,11 +448,12 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-region.c ompt/ompt-region-map.c \
-	ompt/ompt-host-op-map.c ompt/ompt-cct-node-vector.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
+	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -546,6 +547,7 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	messages/libhpcrun_la-messages-sync.lo \
 	messages/libhpcrun_la-messages-async.lo \
 	messages/libhpcrun_la-fmt.lo \
+	ompt/libhpcrun_la-cubin-symbols.lo \
 	ompt/libhpcrun_la-ompt-callstack.lo \
 	ompt/libhpcrun_la-ompt-defer.lo \
 	ompt/libhpcrun_la-ompt-defer-write.lo \
@@ -742,11 +744,12 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-region.c ompt/ompt-region-map.c \
-	ompt/ompt-host-op-map.c ompt/ompt-cct-node-vector.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
+	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -846,6 +849,7 @@ am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	messages/libhpcrun_o-messages-sync.$(OBJEXT) \
 	messages/libhpcrun_o-messages-async.$(OBJEXT) \
 	messages/libhpcrun_o-fmt.$(OBJEXT) \
+	ompt/libhpcrun_o-cubin-symbols.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-callstack.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer-write.$(OBJEXT) \
@@ -1546,6 +1550,7 @@ MY_BASE_FILES = \
 	messages/messages-async.c	\
 	messages/fmt.c	                \
 	\
+	ompt/cubin-symbols.c            \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -1801,7 +1806,7 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_24)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(am__append_60) \
+	-lpthread -lrt -lelf $(LIBUNWIND_LDFLAGS_DYN) $(am__append_60) \
 	$(am__append_104) $(am__append_113) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
@@ -2219,6 +2224,8 @@ ompt/$(am__dirstamp):
 ompt/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) ompt/$(DEPDIR)
 	@: > ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-cubin-symbols.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-callstack.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-defer.lo: ompt/$(am__dirstamp) \
@@ -2663,6 +2670,8 @@ messages/libhpcrun_o-messages-async.$(OBJEXT):  \
 	messages/$(am__dirstamp) messages/$(DEPDIR)/$(am__dirstamp)
 messages/libhpcrun_o-fmt.$(OBJEXT): messages/$(am__dirstamp) \
 	messages/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-cubin-symbols.$(OBJEXT): ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-callstack.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-defer.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3072,6 +3081,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@messages/$(DEPDIR)/libhpcrun_o-messages-sync.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_wrap_a-openmp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cct-node-vector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo@am__quote@
@@ -3083,6 +3093,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-task-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-task.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-thread.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cct-node-vector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer-write.Po@am__quote@
@@ -3921,6 +3932,13 @@ messages/libhpcrun_la-fmt.lo: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='messages/fmt.c' object='messages/libhpcrun_la-fmt.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o messages/libhpcrun_la-fmt.lo `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
+
+ompt/libhpcrun_la-cubin-symbols.lo: ompt/cubin-symbols.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-cubin-symbols.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Tpo -c -o ompt/libhpcrun_la-cubin-symbols.lo `test -f 'ompt/cubin-symbols.c' || echo '$(srcdir)/'`ompt/cubin-symbols.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Tpo ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cubin-symbols.c' object='ompt/libhpcrun_la-cubin-symbols.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cubin-symbols.lo `test -f 'ompt/cubin-symbols.c' || echo '$(srcdir)/'`ompt/cubin-symbols.c
 
 ompt/libhpcrun_la-ompt-callstack.lo: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-callstack.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo -c -o ompt/libhpcrun_la-ompt-callstack.lo `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
@@ -5335,6 +5353,20 @@ messages/libhpcrun_o-fmt.obj: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='messages/fmt.c' object='messages/libhpcrun_o-fmt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o messages/libhpcrun_o-fmt.obj `if test -f 'messages/fmt.c'; then $(CYGPATH_W) 'messages/fmt.c'; else $(CYGPATH_W) '$(srcdir)/messages/fmt.c'; fi`
+
+ompt/libhpcrun_o-cubin-symbols.o: ompt/cubin-symbols.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cubin-symbols.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Tpo -c -o ompt/libhpcrun_o-cubin-symbols.o `test -f 'ompt/cubin-symbols.c' || echo '$(srcdir)/'`ompt/cubin-symbols.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Tpo ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cubin-symbols.c' object='ompt/libhpcrun_o-cubin-symbols.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cubin-symbols.o `test -f 'ompt/cubin-symbols.c' || echo '$(srcdir)/'`ompt/cubin-symbols.c
+
+ompt/libhpcrun_o-cubin-symbols.obj: ompt/cubin-symbols.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cubin-symbols.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Tpo -c -o ompt/libhpcrun_o-cubin-symbols.obj `if test -f 'ompt/cubin-symbols.c'; then $(CYGPATH_W) 'ompt/cubin-symbols.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cubin-symbols.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Tpo ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cubin-symbols.c' object='ompt/libhpcrun_o-cubin-symbols.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cubin-symbols.obj `if test -f 'ompt/cubin-symbols.c'; then $(CYGPATH_W) 'ompt/cubin-symbols.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cubin-symbols.c'; fi`
 
 ompt/libhpcrun_o-ompt-callstack.o: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-callstack.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo -c -o ompt/libhpcrun_o-ompt-callstack.o `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c

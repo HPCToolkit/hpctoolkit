@@ -216,6 +216,7 @@ hpcrun_loadModule_new(const char* name)
 }
 
 
+
 //***************************************************************************
 // 
 //***************************************************************************
@@ -494,6 +495,16 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 #endif
 
   hpcrun_loadmap_notify_unmap(start_addr, end_addr);
+}
+
+
+// used only to add a load module for the kernel 
+uint16_t 
+hpcrun_loadModule_add(const char* name)
+{
+  load_module_t *lm = hpcrun_loadModule_new(name);
+  hpcrun_loadmap_pushFront(lm);
+  return lm->id;
 }
 
 

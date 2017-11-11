@@ -331,6 +331,7 @@ MY_BASE_FILES =				\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
 	\
+	ompt/cubin-symbols.c            \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -681,7 +682,7 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -lelf \
         $(LIBUNWIND_LDFLAGS_DYN)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
