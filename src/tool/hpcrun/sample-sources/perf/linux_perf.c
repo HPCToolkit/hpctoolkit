@@ -164,9 +164,6 @@
 static int
 restart_perf_event(int fd);
 
-static bool 
-perf_thread_init(event_info_t *event, event_thread_t *et);
-
 static void 
 perf_thread_fini(int nevents, event_thread_t *event_thread);
 
@@ -338,21 +335,21 @@ perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
 //  threshold: sampling threshold 
 //----------------------------------------------------------
 static bool
-perf_thread_init(event_info_t *event, event_thread_t *et)
+perf_thread_init(event_thread_t *et)
 {
-  et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_event_open(&event->attr,
+  et->fd = perf_event_open( &(et->event->attr),
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
+
   TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
-    event->id, et->fd, event->attr.precise_ip, event->attr.config,
-	event->attr.type, event->attr.sample_freq, event->attr.freq);
+    	et->event->id, et->fd, et->event->attr.precise_ip, et->event->attr.config,
+	et->event->attr.type, et->event->attr.sample_freq, et->event->attr.freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
     EMSG("Linux perf event open %d (%d) failed: %s",
-          event->id, event->attr.config, strerror(errno));
+          et->event->id, et->event->attr.config, strerror(errno));
     return false;
   }
 
@@ -364,7 +361,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   int ret  = fcntl(et->fd, F_SETFL, flag | O_ASYNC );
   if (ret == -1) {
     EMSG("Can't set notification for event %d, fd: %d: %s", 
-      event->id, et->fd, strerror(errno));
+         et->event->id, et->fd, strerror(errno));
   }
 
   // need to set PERF_SIGNAL to this file descriptor
@@ -372,7 +369,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   ret = fcntl(et->fd, F_SETSIG, PERF_SIGNAL);
   if (ret == -1) {
     EMSG("Can't set signal for event %d, fd: %d: %s",
-      event->id, et->fd, strerror(errno));
+         et->event->id, et->fd, strerror(errno));
   }
 
   // set file descriptor owner to this specific thread
@@ -382,7 +379,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   ret = fcntl(et->fd, F_SETOWN_EX, &owner);
   if (ret == -1) {
     EMSG("Can't set thread owner for event %d, fd: %d: %s", 
-      event->id, et->fd, strerror(errno));
+         et->event->id, et->fd, strerror(errno));
   }
 
   ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
@@ -483,7 +480,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   info.sample_clock = 0;
   info.sample_custom_cct.update_before_fn = NULL;
   info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t)perf_add_kernel_callchain;
-  info.sample_custom_cct.data_aux	        = mmap_data;
+  info.sample_custom_cct.data_aux         = mmap_data;
 
   *sv = hpcrun_sample_callpath(context, current->event->metric,
         (hpcrun_metricVal_t) {.r=counter},
@@ -843,8 +840,10 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   for (int i=0; i<nevents; i++)
   {
+    event_thread[i].event = &event_desc[i];
+
     // initialize this event. If it's valid, we set the metric for the event
-    if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
+    if (!perf_thread_init( &(event_thread[i])) ) {
       TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
     }
   }

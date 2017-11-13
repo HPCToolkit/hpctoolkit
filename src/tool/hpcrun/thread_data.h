@@ -91,30 +91,6 @@ typedef struct gpu_data_t {
   uint64_t accum_num_samples;
 } gpu_data_t;
 
-// ----------------------------------------
-// datacentric support 
-// ----------------------------------------
-typedef struct memory_data_s {
-  void *ibs_ptr;
-  void *pc;
-  // for static data
-  uint16_t lm_id;
-  uintptr_t lm_ip;
-
-  int ldst; // whether it is a load/store instruction;
-  int in_malloc; // whether it is a malloc unwind
-  void *ea; //effective address
-  // for address-centric analysis
-  void *start;
-  void *end;
-
-  // ----------------------------------------
-  // soft ibs support 
-  // ----------------------------------------
-  long ma_count; // the number of memory accesses collected
-   
-} memory_data_t;
-
 
 /* ******
    TODO:
@@ -264,8 +240,6 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
- 
-  memory_data_t mem_data;
 
 } thread_data_t;
 
