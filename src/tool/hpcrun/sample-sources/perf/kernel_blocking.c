@@ -157,7 +157,7 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
  *  end if
  ***********************************************************************/
 void
-kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
+kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if (metric_blocking_index < 0)

@@ -116,6 +116,7 @@ hpcrun_sample_val_init(sample_val_t* x)
 
 typedef struct sampling_info_s {
   uint64_t  flags;        // see the above constants SAMPLING_*
+
   uint64_t  sample_clock; // time can be used for tracing
   struct cct_custom_update_s sample_custom_cct; 
 } sampling_info_t;

@@ -424,6 +424,9 @@ static sample_val_t*
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, sample_val_t* sv)
 {
+  if (current == NULL || current->event == NULL || current->event->metric < 0)
+    return NULL;
+
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
   // sampling taken by perf event kernel
@@ -1049,7 +1052,7 @@ perf_event_handler(
     if (mmap_data.header_type == PERF_RECORD_SAMPLE)
       record_sample(current, &mmap_data, context, &sv);
 
-    event_custom_handler(current, sv, &mmap_data);
+    event_custom_handler(current, context, sv, &mmap_data);
 
   } while (more_data);
 

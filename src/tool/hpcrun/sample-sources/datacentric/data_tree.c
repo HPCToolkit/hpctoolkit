@@ -161,23 +161,6 @@ splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **
   return NULL;
 }
 
-/* find in another thread */
-static cct_node_t *
-splay_lookup_other_threads(void *key, void **start, void **end)
-{
-  struct list_data_thread_s *item = NULL;
-
-  SLIST_FOREACH(item, &list_data_thread_head, entries) {
-    if (item != NULL) {
-      cct_node_t *node = splay_lookup_with_root(item->root_ptr, key, start, end);
-
-      if (node != NULL)
-        return node;
-    }
-  }
-  return NULL;
-}
-
 
 /*
  * Insert a node
@@ -214,14 +197,12 @@ splay_delete(void *memblock)
   struct datainfo_s *result = NULL;
 
   if (datacentric_tree_root == NULL) {
-    TMSG(DATACENTRIC, "datacentric splay tree empty: unable to delete %p", memblock);
     return NULL;
   }
 
   datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
   if (memblock != datacentric_tree_root->memblock) {
-    TMSG(DATACENTRIC, "datacentric splay tree: %p not in tree", memblock);
     return NULL;
   }
 

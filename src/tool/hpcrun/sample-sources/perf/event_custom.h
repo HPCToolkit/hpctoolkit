@@ -51,7 +51,7 @@
 
 // callback functions
 typedef void (*register_event_t)(struct event_info_s *);
-typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , struct perf_mmap_data_s* );
+typedef void (*event_handler_t)(struct event_thread_s*, void *context, sample_val_t , struct perf_mmap_data_s* );
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
@@ -79,6 +79,6 @@ int event_custom_register(event_custom_t *event);
 
 void event_custom_display(FILE *std);
 
-int event_custom_handler(struct event_thread_s* event, sample_val_t sample, struct perf_mmap_data_s* data);
+int event_custom_handler(struct event_thread_s* event, void *context, sample_val_t sample, struct perf_mmap_data_s* data);
 
 #endif

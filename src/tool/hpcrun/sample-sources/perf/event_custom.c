@@ -118,17 +118,21 @@ event_custom_register(event_custom_t *event)
 }
 
 int
-event_custom_handler(struct event_thread_s* current, sample_val_t sample, struct perf_mmap_data_s* data)
+event_custom_handler(struct event_thread_s* current, void *context, sample_val_t sample, struct perf_mmap_data_s* data)
 {
+  if (current == NULL)
+    return 0;
+
   events_list_t *item = NULL;
 
   SLIST_FOREACH(item, &list_events_head, entries) {
     if (item != NULL) {
     	if (item->event->handle_type == INCLUSIVE) {
-    		item->event->handler_fn(current, sample, data);
+    		item->event->handler_fn(current, context, sample, data);
+
     	} else if (item->event == current->event->metric_custom) {
     	  // exclusive event: make sure the event is the same is the current event
-    		item->event->handler_fn(current, sample, data);
+    		item->event->handler_fn(current, context, sample, data);
     	}
     }
   }
