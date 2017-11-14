@@ -54,6 +54,7 @@
  *****************************************************************************/
 
 typedef struct datainfo_s {
+  long magic;
   cct_node_t *context;
   size_t bytes;
   void *memblock;

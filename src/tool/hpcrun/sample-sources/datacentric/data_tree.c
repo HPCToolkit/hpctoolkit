@@ -53,11 +53,20 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 
+#include "include/queue.h" // Singly-linkled list macros
+
 #include "data_tree.h"
 
 /******************************************************************************
  * type definitions
  *****************************************************************************/
+
+struct list_data_thread_s {
+  struct datainfo_s **root_ptr;
+  int    thread_id;
+
+  SLIST_ENTRY(events_list_s) entries;
+};
 
 
 /******************************************************************************
@@ -65,8 +74,52 @@
  *****************************************************************************/
 
 static struct datainfo_s __thread *datacentric_tree_root = NULL;
-//static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
+static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
 
+static SLIST_HEAD(list_head, list_data_thread_s) list_data_thread_head =
+	SLIST_HEAD_INITIALIZER(list_head);
+
+
+
+/******************************************************************************
+ * thread data operations
+ *****************************************************************************/
+
+static struct datainfo_s **
+thread_find(int thread_id)
+{
+  struct list_data_thread_s *item = NULL;
+
+  // check if we already have the event
+  SLIST_FOREACH(item, &list_data_thread_head, entries) {
+    if (item != NULL && item->thread_id == thread_id)
+      return item->root_ptr;
+  }
+  return NULL;
+}
+
+
+static int
+thread_add(int thread_id, struct datainfo_s **root_ptr)
+{
+  spinlock_lock(&memtree_lock);
+
+  int return_value = 0;
+  struct list_data_thread_s* item = thread_find(thread_id);
+
+  if (item == NULL) {
+    item = hpcrun_malloc(sizeof (struct list_data_thread_s));
+    item->thread_id = thread_id;
+    item->root_ptr  = root_ptr;
+
+    SLIST_INSERT_HEAD(&list_data_thread_head, item, entries);
+
+    return_value = 1 ;
+  } 
+  spinlock_unlock(&memtree_lock);
+
+  return return_value;
+}
 
 
 /******************************************************************************
@@ -88,6 +141,44 @@ interval_splay(struct datainfo_s *root, void *key)
   return root;
 }
 
+/* interface for data-centric analysis */
+static cct_node_t *
+splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **end)
+{
+  if(!root || !key) {
+    return NULL;
+  }
+
+  root = interval_splay(root, key);
+  if(!root) {
+    return NULL;
+  }
+  if((root->memblock <= key) && (root->rmemblock > key)) {
+    *start = root->memblock;
+    *end   = root->rmemblock;
+    return root->context;
+  }
+  return NULL;
+}
+
+/* find in another thread */
+static cct_node_t *
+splay_lookup_other_threads(void *key, void **start, void **end)
+{
+  struct list_data_thread_s *item = NULL;
+
+  SLIST_FOREACH(item, &list_data_thread_head, entries) {
+    if (item != NULL) {
+      cct_node_t *node = splay_lookup_with_root(item->root_ptr, key, start, end);
+
+      if (node != NULL)
+        return node;
+    }
+  }
+  return NULL;
+}
+
+
 /*
  * Insert a node
  */ 
@@ -98,7 +189,6 @@ splay_insert(struct datainfo_s *node)
 
   node->left = node->right = NULL;
 
-//  spinlock_lock(&memtree_lock);
   if (datacentric_tree_root != NULL) {
     datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
@@ -113,7 +203,6 @@ splay_insert(struct datainfo_s *node)
     }
   }
   datacentric_tree_root = node;
-//  spinlock_unlock(&memtree_lock);
 }
 
 /*
@@ -124,9 +213,7 @@ splay_delete(void *memblock)
 {
   struct datainfo_s *result = NULL;
 
-//  spinlock_lock(&memtree_lock);
   if (datacentric_tree_root == NULL) {
-//    spinlock_unlock(&memtree_lock);
     TMSG(DATACENTRIC, "datacentric splay tree empty: unable to delete %p", memblock);
     return NULL;
   }
@@ -134,7 +221,6 @@ splay_delete(void *memblock)
   datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
   if (memblock != datacentric_tree_root->memblock) {
-//    spinlock_unlock(&memtree_lock);
     TMSG(DATACENTRIC, "datacentric splay tree: %p not in tree", memblock);
     return NULL;
   }
@@ -143,41 +229,19 @@ splay_delete(void *memblock)
 
   if (datacentric_tree_root->left == NULL) {
     datacentric_tree_root = datacentric_tree_root->right;
-//    spinlock_unlock(&memtree_lock);
     return result;
   }
 
   datacentric_tree_root->left = splay(datacentric_tree_root->left, memblock);
   datacentric_tree_root->left->right = datacentric_tree_root->right;
   datacentric_tree_root =  datacentric_tree_root->left;
-//  spinlock_unlock(&memtree_lock);
   return result;
 }
+
 
 /* interface for data-centric analysis */
 cct_node_t *
 splay_lookup(void *key, void **start, void **end)
 {
-  if(!datacentric_tree_root || !key) {
-    return NULL;
-  }
-
-  struct datainfo_s *info;
-//  spinlock_lock(&memtree_lock);
-  datacentric_tree_root = interval_splay(datacentric_tree_root, key);
-  info = datacentric_tree_root;
-  if(!info) {
-//    spinlock_unlock(&memtree_lock);
-    return NULL;
-  }
-  if((info->memblock <= key) && (info->rmemblock > key)) {
-    *start = info->memblock;
-    *end = info->rmemblock;
-//    spinlock_unlock(&memtree_lock);
-    return info->context;
-  }
-//  spinlock_unlock(&memtree_lock);
-  return NULL;
+  return splay_lookup_with_root(datacentric_tree_root, key, start, end);
 }
-
-
