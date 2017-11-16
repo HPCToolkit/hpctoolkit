@@ -126,14 +126,12 @@
 
 #include <unwind/common/backtrace.h>
 #include <unwind/common/unwind.h>
-#include <unwind/common/splay-interval.h>
 
 #include <utilities/arch/context-pc.h>
 
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
 
-#include <lib/prof-lean/atomic.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 
@@ -725,10 +723,39 @@ hpcrun_thread_fini(epoch_t *epoch)
   }
 }
 
+
+//***************************************************************************
+// hpcrun debugging support 
+//***************************************************************************
+
+volatile int HPCRUN_DEBUGGER_WAIT = 1;
+
+void 
+hpcrun_continue()
+{
+  HPCRUN_DEBUGGER_WAIT = 0;
+}
+
+
+void 
+hpcrun_wait()
+{
+  const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
+  if (HPCRUN_WAIT) {
+    while (HPCRUN_DEBUGGER_WAIT);
+
+    // when the user program forks, we don't want to wait to have a debugger 
+    // attached for each exec along a chain of fork/exec. if that is what
+    // you want when debugging, make your own arrangements. 
+    unsetenv("HPCRUN_WAIT");
+  }
+}
+
+
+
 //***************************************************************************
 // process control (via libmonitor)
 //***************************************************************************
-volatile int HPCRUN_DEBUGGER_WAIT = 1;
 
 void*
 monitor_init_process(int *argc, char **argv, void* data)
@@ -741,15 +768,7 @@ monitor_init_process(int *argc, char **argv, void* data)
   fork_data_t* fork_data = (fork_data_t*) data;
   bool is_child = data && fork_data->is_child;
 
-  const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
-  if (HPCRUN_WAIT) {
-    while (HPCRUN_DEBUGGER_WAIT);
-
-    // when the user program forks, we don't want to wait to have a debugger 
-    // attached for each exec along a chain of fork/exec. if that is what
-    // you want when debugging, make your own arrangements. 
-    unsetenv("HPCRUN_WAIT");
-  }
+  hpcrun_wait();
 
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation 

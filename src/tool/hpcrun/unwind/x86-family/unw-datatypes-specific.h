@@ -48,6 +48,5 @@
 #define UNW_DATATYPES_SPECIFIC_H
 
 #include <unwind/common/std_unw_cursor.h>
-typedef void* unw_word_t;
 
 #endif // UNW_DATATYPES_SPECIFIC_H 

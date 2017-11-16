@@ -31,11 +31,11 @@ Contents:
 0.2. Unsupported experimental features
 ----------------------------------------
 
-- We are not yet supporting measurement and analysis of Cilk
-  applications, though you are free to try it out.  (PPoPP '09)
-
-- We are don't yet support Cilk++. It violates our assumption that
-  profile interrupts can be processed on a thread's stack.
+- HPCToolkit can be used to analyze the performance of code parallelized
+  using CilkPlus features available in Intel and GNU compilers. Without 
+  runtime support, HPCToolkit shows an implementation-level view where
+  call stacks for worker threads contain whatever computation fragments
+  they stole rooted at the stolen frames.
  
 - We are not yet supporting measurement and analysis of Pthreads lock
   contention, though you are free to try it out.  (PPoPP '10)
@@ -180,6 +180,113 @@ Contents:
 ------------------------------------------------------------
 2. Revision History
 ------------------------------------------------------------
+
+----------------------------------------
+HPCToolkit upcoming
+----------------------------------------
+
+Merged the 'banal' branch into master.  This fully replaces hpcstruct
+and the banal code with the new inline tree format.  However, the
+format of the .hpcstruct file is unchanged.
+
+The new banal code produces a better loop analysis (placement of loop
+header) and has a smaller memory footprint.  This also includes
+support for displaying parseapi gaps (unclaimed code regions) in the
+viewer.
+
+Merged the 'perf-datacentric' branch into master.  This adds support
+for the perf family of events as a way of accessing the hardware
+performance counters without using PAPI.
+
+----------------------------------------
+HPCToolkit Version 2017.06, June 2017
+----------------------------------------
+
+Updated the 'ompt' branch and merged master into ompt.  This improves
+scalability of the ompt support to large thread counts, as found on 
+KNL and Power8. The ompt branch, together with the LLVM OpenMP runtime 
+library provides 
+
+- support for attributing performance measurements to a global-view,
+  source-level program representation by unifying measurements of OpenMP 
+  activity in worker threads with the main thread.
+- support for attributing causes of idleness in OpenMP programs using
+  HPCToolkit event OMP_IDLE.
+
+The LLVM OpenMP runtime can be used with Clang, Intel, and GNU compilers. 
+The LLVM OpenMP runtime with OMPT support for performance analysis 
+can be can be obtained as follows 
+
+  svn co http://llvm.org/svn/llvm-project/openmp/trunk openmp
+
+To use the draft OMPT support present in LLVM's OpenMP runtime, one must 
+build the LLVM OpenMP runtime with LIBOMP_OMPT_SUPPORT=TRUE. This version
+of the runtime is designed to be used with HPCToolkit's ompt branch.
+
+  Note: support for the OMPT tools interface in HPCToolkit and LLVM
+  currently follows a design outlined in TR2 at openmp.org. An improved
+  version of the OMPT interface was designed for OpenMP 5.0, which
+  is described in TR4 at openmp.org. At some point soon, both LLVM and
+  HPCToolkit will transition to support the new API; presently, both lack
+  support for the new API.
+
+Merged the 'atomics' branch into master.  This branch replaces the
+atomic operations in hpcrun with C11 atomics through the stdatomic.h
+header file.
+
+Updated Dyninst to version 9.3.2 in externals, plus a patch for better
+binary analysis of functions that use jump tables. 
+
+Updated hpcstruct to handle new ABI on Power/LE architectures, which
+has both internal and external interfaces for functions.
+
+
+Various bug fixes:
+
+-- enhanced binary analysis for call stack unwinding on x86-64, including 
+an enhancement to analyze functions that perform stack alignment and
+a bug fix to track stack frame allocation/deallocation of space for local 
+variables using the load effective address (LEA) instruction.
+
+-- fixed bug in hpcrun to correct data reinitialization after fork(). This
+bug prevented using hpcrun to profile programs launched with shell scripts.
+
+-- fixed bug in hpcrun in binary analysis related to ld.so.
+
+-- fixed bug in hpcstruct in getRealPath() that caused hpcstruct
+to sometimes report incorrect file names.
+
+
+Known issues:
+
+When profiling optimized code with HPCToolkit, one may find that a program 
+generates a significant number of "partial unwinds" where the call stack 
+can't be unwound all the way up to main.  This more commonly happens on
+x86-64 architectures than on PowerPC and ARM. A large number partial unwinds
+may make it harder to use the top-down calling context view in hpcviewer,
+which works best when call stacks unwind all the way up to main. Even 
+with significant numbers of partial unwinds, the bottom-up caller's view
+and the flat view in hpcviewer can be used effectively for analyzing 
+performance. Ongoing work aims to improve call stack unwinding of 
+optimized code by employing compiler-generated unwinding information 
+where available in addition to using binary analysis to discover unwinding
+recipes.
+ 
+On x86-64, hpcfnbounds occasionally is too aggressive about inferring the 
+presence of stripped functions in optimized programs. We have noticed
+this particularly for optimized Fortran. This can cause "partial unwinds", 
+where a call stack can't be unwound fully up to main.  Improving this 
+analysis is the subject of ongoing work.
+
+When using with the LLVM OpenMP runtime's OMPT support, measurements
+of programs compiled with GCC using HPCToolkit's ompt branch sometimes
+reveal implementation-level stack frames that belong to the OpenMP
+runtime system.  This will improve with the transition of HPCToolkit
+and the LLVM OpenMP runtime to the new OMPT ABI designed for OpenMP
+5.0. This transition should occur over the next 6 months. In the
+meantime, there is nothing wrong with the quality of the information
+collected. The only problem is HPCToolkit's measurements reveal more of
+an implementation-level view of OpenMP than intended.
 
 ----------------------------------------
 HPCToolkit Version 2016.12, Dec 2016

@@ -136,6 +136,9 @@ typedef struct load_module_t
 load_module_t*
 hpcrun_loadModule_new(const char* name);
 
+// used only to add a load module for the kernel 
+uint16_t 
+hpcrun_loadModule_add(const char* name);
 
 //***************************************************************************
 // 

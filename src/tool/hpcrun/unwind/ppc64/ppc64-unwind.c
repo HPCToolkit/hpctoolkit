@@ -73,8 +73,7 @@
 
 #include "sample_event.h"
 
-#include "splay.h"
-#include "ui_tree.h"
+#include "uw_recipe_map.h"
 
 #include <messages/messages.h>
 
@@ -83,14 +82,6 @@
 
 #include <lib/isa-lean/power/instruction-set.h>
 #include <unwind/common/fence_enum.h>
-
-
-//***************************************************************************
-// external declarations
-//***************************************************************************
-
-extern void 
-hpcrun_set_real_siglongjmp(void);
 
 
 
@@ -137,7 +128,7 @@ hpcrun_check_fence(void* ip);
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
   load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
@@ -198,7 +189,6 @@ void
 hpcrun_unw_init(void)
 {
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 int
@@ -209,7 +199,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
@@ -281,7 +271,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   
   // next (parent) frame
   void*           nxt_pc = NULL;
-  ip_normalized_t nxt_pc_norm = ip_normalized_NULL;
   void** nxt_sp = NULL;
   void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler

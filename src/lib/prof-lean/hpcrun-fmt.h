@@ -357,6 +357,8 @@ hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 }
 
 
+
+
 // --------------------------------------------------------------------------
 // metric_desc_t
 // --------------------------------------------------------------------------
@@ -375,6 +377,7 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
+  bool is_frequency_metric;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;
@@ -396,32 +399,50 @@ HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
 
 extern int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* out);
 
 extern int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, metric_aux_info_t *aux_info, FILE* out);
 
 extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 extern int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 
+// ---------------------------------------------------------
+// metric get and set
+// ---------------------------------------------------------
+
+double 
+hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric);
+
+void
+hpcrun_fmt_metric_set_value(metric_desc_t metric_desc, 
+   hpcrun_metricVal_t *metric, double value);
+
+void
+hpcrun_fmt_metric_set_value_int( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, int value);
+
+void
+hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, double value);
 
 //***************************************************************************
 // loadmap
@@ -709,6 +730,15 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
+
+// --------------------------------------------------------------------------
+// additional sampling info
+// --------------------------------------------------------------------------
+
+typedef struct sampling_info_s {
+  uint64_t  sample_clock;
+  void     *sample_data;
+} sampling_info_t;
 
 
 //***************************************************************************

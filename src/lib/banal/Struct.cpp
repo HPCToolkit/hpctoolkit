@@ -668,6 +668,7 @@ static void
 doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	       HPC::StringTable & strTab, bool fullGaps)
 {
+  set <Address> coveredFuncs;
   VMAIntervalSet covered;
   long num_funcs = ginfo->procMap.size();
 
@@ -728,10 +729,34 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 #endif
 
+    int num_contain = func->entry()->containingFuncs();
+
     if (SYMTAB_ARCH_CUDA(symtab) == false) { 
-    // if this function is entirely contained within another function
-    // (as determined by its entry block), then skip it.
-    if (num_funcs > 1 && func->entry()->containingFuncs() > 1) {
+    //
+    // see if this function is entirely contained within another
+    // function (as determined by its entry block).  if yes, then we
+    // don't parse the func.  but we still use its blocks for gaps,
+    // unless we've already added the containing func.
+    //
+    bool add_blocks = true;
+
+    if (num_contain > 1) {
+      vector <ParseAPI::Function *> funcVec;
+      func->entry()->getFuncs(funcVec);
+
+      // see if we've already added the containing func
+      for (auto fit = funcVec.begin(); fit != funcVec.end(); ++fit) {
+	Address entry = (*fit)->addr();
+
+	if (coveredFuncs.find(entry) != coveredFuncs.end()) {
+	  add_blocks = false;
+	  break;
+	}
+      }
+    }
+
+    // skip duplicated function, blocks already added
+    if (! add_blocks) {
       DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
@@ -759,14 +784,21 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 	Block * block = *bit;
 	covered.insert(block->start(), block->end());
       }
+      coveredFuncs.insert(entry_addr);
+    }
+
+    // skip duplicated function, blocks added just now
+    if (num_contain > 1) {
+      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      continue;
     }
 
     // if the outline func file name does not match the enclosing
     // symtab func, then do the full parse in the outline file
     // (alt-file) and use the symtab file for gaps only.
     if (pinfo->gap_only) {
-      string mesg = "\nskipping full parse (gap only) for function:  '";
-      DEBUG_MESG(mesg << func->name() << "'\n");
+      DEBUG_MESG("\nskipping full parse (gap only) for function:  '"
+		 << func->name() << "'\n");
       continue;
     }
 
@@ -793,7 +825,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       mergeInlineLoop(root, empty, *it);
     }
     pinfo->symbol_index = 0; // clear for functions not in CUBINs 
-    } else {
+    }
+    else {
       doCudaFunction(ginfo, func, root, strTab);
     }
 
@@ -1121,6 +1154,13 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
   }
 
   ProcInfo * pinfo = ginfo->procMap.begin()->second;
+
+  // if one function is entirely contained within another function,
+  // then it's possible that ProcInfo has no statements and a NULL
+  // TreeNode.
+  if (pinfo->root == NULL) {
+    pinfo->root = new TreeNode;
+  }
   TreeNode * root = pinfo->root;
 
   for (auto git = ginfo->gapSet.begin(); git != ginfo->gapSet.end(); ++git) {

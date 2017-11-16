@@ -63,7 +63,7 @@
 #include "blame-map.h"
 
 #include <hpcrun/messages/messages.h>
-#include <lib/prof-lean/atomic-op.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <memory/hpcrun-malloc.h>
 
 /******************************************************************************
@@ -107,7 +107,7 @@ typedef struct {
 
 
 union blame_entry_t {
-  uint64_t all;
+  atomic_uint_least64_t  all;
   blame_parts_t parts; 
 };
 
@@ -145,7 +145,7 @@ blame_map_entry(uint64_t obj, uint32_t metric_value)
   blame_entry_t be;
   be.parts.obj_id = blame_map_obj_id(obj);
   be.parts.blame = metric_value;
-  return be.all;
+  return atomic_load_explicit(&be.all, memory_order_relaxed);
 }
 
 
@@ -158,9 +158,7 @@ blame_entry_t*
 blame_map_new(void)
 {
   blame_entry_t* rv = hpcrun_malloc(N * sizeof(blame_entry_t));
-  for(blame_entry_t* p = rv; p < rv + N; p++) {
-    p->all = 0;
-  }
+  blame_map_init(rv);
   return rv;
 }
 
@@ -168,8 +166,10 @@ void
 blame_map_init(blame_entry_t table[])
 {
   int i;
-  for(i = 0; i < N; i++)
-    table[i].all = 0;
+  for(i = 0; i < N; i++) {
+    table[i].parts.obj_id = 0;
+    table[i].parts.blame = 0;
+  }
 }
 
 
@@ -190,8 +190,12 @@ blame_map_add_blame(blame_entry_t table[],
 #ifdef LOSSLESS_BLAME
       blame_entry_t newval = oldval;
       newval.parts.blame += metric_value;
-      if (compare_and_swap_i64(&table[index].all, oldval.all, newval.all) 
-	    == oldval.all) break;
+      uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
+      uint64_t testoldall = oldall;
+      uint64_t newall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
+      if (atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, newall,
+						  memory_order_relaxed, memory_order_relaxed) 
+	    == testoldall) break;
 #else
       oldval.parts.blame += metric_value;
       table[index].all = oldval.all;
@@ -201,8 +205,11 @@ blame_map_add_blame(blame_entry_t table[],
       if(oldval.parts.obj_id == 0) {
 	uint64_t newval = blame_map_entry(obj, metric_value);
 #ifdef LOSSLESS_BLAME
-	if (compare_and_swap_i64(&table[index].all, oldval.all, newval) 
-	    == oldval.all) break;
+	uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
+	uint64_t testoldall = oldall;
+	if ((atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, newval,
+						     memory_order_relaxed, memory_order_relaxed)) 
+	    == testoldall) break;
 	// otherwise, try again
 #else
 	table[index].all = newval;
@@ -237,8 +244,11 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
     blame_entry_t oldval = table[index];
     if(oldval.parts.obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
-      if (compare_and_swap_i64(&table[index].all, oldval.all, zero) 
-	  != oldval.all) continue; // try again on failure
+      uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
+      uint64_t testoldall = oldall;
+      if (atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, zero,
+						  memory_order_relaxed, memory_order_relaxed)
+	  != testoldall) continue; // try again on failure
 #else
       table[index].all = 0;
 #endif

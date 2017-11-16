@@ -70,6 +70,7 @@
 #include <list>
 #include <map>
 
+#include <lib/binutils/LM.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/SrcFile.hpp>

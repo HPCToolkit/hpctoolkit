@@ -49,5 +49,6 @@
 extern char *start_tok(char *l);
 extern int   more_tok(void);
 extern char *next_tok(void);
+extern int hpcrun_extract_threshold(const char *in, long *th, long def);
 extern int hpcrun_extract_ev_thresh(const char*, int, char*, long*, long);
 extern bool hpcrun_ev_is(const char* candidate, const char* event_name);

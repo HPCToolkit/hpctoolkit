@@ -503,7 +503,7 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
         // call hpcrun_sample_callpath with context, metric_id, & datum.
         // The last 2 arguments to hpcrun_sample_callpath are always 0
         //
-        hpcrun_sample_callpath(context, metric_id, datum, 0/*skipInner*/, 0/*isSync*/);
+        hpcrun_sample_callpath(context, metric_id, datum, 0/*skipInner*/, 0/*isSync*/, NULL);
       }
     }
   }

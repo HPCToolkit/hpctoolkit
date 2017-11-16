@@ -1,11 +1,3 @@
-/*
- * binarytree_uwi.h
- *
- * binary search tree of unwind intervals uwi_t as specified in uwi.h.
- *
- * Author: dxnguyen
- */
-
 #ifndef __BINARYTREE_UWI_H__
 #define __BINARYTREE_UWI_H__
 
@@ -22,7 +14,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/mem_manager.h>
-#include "uwi.h"
+#include "interval_t.h"
 
 
 /******************************************************************************
@@ -48,14 +40,20 @@ typedef struct unwind_interval_t unwind_interval;
  ******************************************************************************/
 
 #define UWI_NEXT(btuwi) (bitree_uwi_rightsubtree(btuwi))
-#define UWI_PREV(btuwi) (bitree_uwi_leftsubtree(btuwi))
 #define UWI_START_ADDR(btuwi) (bitree_uwi_interval(btuwi))->start
 #define UWI_END_ADDR(btuwi) (bitree_uwi_interval(btuwi))->end
-
+#define MAX_RECIPE_STR 256
 
 //******************************************************************************
 // abstract data type
 //******************************************************************************
+
+typedef struct recipe_s uw_recipe_t;
+
+typedef struct uwi_s {
+  interval_t interval;
+  char recipe[];
+} uwi_t;
 
 typedef struct bitree_uwi_s bitree_uwi_t;
 
@@ -63,6 +61,7 @@ typedef struct bitree_uwi_s bitree_uwi_t;
 typedef struct btuwi_status_s {
   char *first_undecoded_ins;
   bitree_uwi_t *first;
+  int count;
   int errcode;
 } btuwi_status_t;
 
@@ -71,11 +70,6 @@ typedef struct btuwi_status_s {
  */
 void
 bitree_uwi_init();
-
-// constructors
-bitree_uwi_t*
-bitree_uwi_new(uwi_t *val, bitree_uwi_t *left, bitree_uwi_t *right,
-	mem_alloc m_alloc);
 
 /*
  * Returns a bitree_uwi_t node whose left and right subtree nodes are NULL.
@@ -86,9 +80,6 @@ bitree_uwi_new(uwi_t *val, bitree_uwi_t *left, bitree_uwi_t *right,
  */
 bitree_uwi_t*
 bitree_uwi_malloc(mem_alloc m_alloc, size_t recipe_size);
-
-// destructor
-void bitree_uwi_del(bitree_uwi_t **tree, mem_free m_free);
 
 /*
  * If tree != NULL return tree to global free tree,
@@ -111,11 +102,6 @@ bitree_uwi_t*
 bitree_uwi_rightsubtree(bitree_uwi_t *tree);
 
 void
-bitree_uwi_set_rootval(
-	bitree_uwi_t *tree,
-	uwi_t* rootval);
-
-void
 bitree_uwi_set_leftsubtree(
 	bitree_uwi_t *tree,
 	bitree_uwi_t* subtree);
@@ -135,14 +121,14 @@ bitree_uwi_interval(bitree_uwi_t *tree);
 uw_recipe_t*
 bitree_uwi_recipe(bitree_uwi_t *tree);
 
-// count the number of nodes in the binary tree.
-int
-bitree_uwi_count(bitree_uwi_t * tree);
-
-// perform bulk rebalancing by gathering nodes into a vector and
-// rebuilding the tree from scratch using the same nodes.
+// given a tree that is a list, with all left children empty,
+// restructure to make a balanced tree
 bitree_uwi_t *
-bitree_uwi_rebalance(bitree_uwi_t * tree);
+bitree_uwi_rebalance(bitree_uwi_t * tree, int count);
+
+// restructure a binary tree so that all its left children are null
+bitree_uwi_t*
+bitree_uwi_flatten(bitree_uwi_t * tree);
 
 // use uwi_t_cmp to find a matching node in a binary search tree of uwi_t
 // empty tree is returned if no match is found.
@@ -155,6 +141,17 @@ bitree_uwi_find(bitree_uwi_t *tree, uwi_t *val);
 bitree_uwi_t*
 bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address);
 
+/*
+ * Concrete implementation of the abstract val_tostr function of the
+ * generic_val class.
+ * pre-condition: uwr is of type uw_recipe_t*
+ */
+void
+uw_recipe_tostr(void* uwr, char str[]);
+
+void
+uw_recipe_print(void* uwr);
+
 // compute a string representing the binary tree printed vertically and
 // return result in the treestr parameter.
 // caller should provide the appropriate length for treestr.
@@ -166,38 +163,5 @@ bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents, char treestr[]);
 
 void
 bitree_uwi_print(bitree_uwi_t *tree);
-
-// compute the height of the binary tree.
-// the height of an empty tree is 0.
-// the height of an non-empty tree is  1+ the larger of the height of the left subtree
-// and the right subtree.
-int
-bitree_uwi_height(bitree_uwi_t *tree);
-
-// an empty binary tree is balanced.
-// a non-empty binary tree is balanced iff the difference in height between
-// the left and right subtrees is less or equal to 1.
-bool
-bitree_uwi_is_balanced(bitree_uwi_t *tree);
-
-// an empty binary tree is in order
-// an non-empty binary tree is in order iff
-// its left subtree is in order and all of its elements are < the root element
-// its right subtree is in order and all of its elements are > the root element
-bool
-bitree_uwi_is_inorder(bitree_uwi_t *tree);
-
-
-bitree_uwi_t *
-bitree_uwi_insert(bitree_uwi_t *tree, uwi_t *val, mem_alloc m_alloc);
-
-bitree_uwi_t*
-bitree_uwi_finalize(bitree_uwi_t *tree);
-
-void
-bitree_uwi_leftmostleaf_to_root(bitree_uwi_t **tree);
-
-bitree_uwi_t*
-bitree_uwi_remove_leftmostleaf(bitree_uwi_t **tree);
 
 #endif /* __BINARYTREE_UWI_H__ */
