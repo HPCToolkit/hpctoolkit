@@ -175,8 +175,10 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   int status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
   /* whatever libutils says about the last address range,
    * we insist that it extend to the last address of this 
-   * function range. */
-  bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
+   * function range. but we can't rely on the so-called end of the function
+   * really being all the way to the end.*/
+  if (bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
+    bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 
   btuwi_status_t stat;
