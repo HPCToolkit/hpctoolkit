@@ -82,7 +82,7 @@ m4_include(config/hpc-mpiutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2017.10],
+AC_INIT([hpctoolkit], [2017.11],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -1863,57 +1863,20 @@ AC_SUBST([OPT_INSTALL_MONITOR])
 # Check for Open Analysis (CFG builder, etc.)
 #-------------------------------------------------
 
+# Open Analysis is no longer used.  Now, it's ParseAPI or nothing.
+# For the transition, keep the option and issue a warning if used.
+
 OA=no
-OA_IFLAGS=
-OA_LDFLAGS=
-OA_AVAIL=no
-
-if test "$use_externals" = yes ; then
-  OA="$ext_open_analysis_prefix"
-fi
-
-# The open-analysis CFG support in lib/isa is broken on power8/le and
-# doesn't exist on ARM.  So, disable OA on those platforms.
-
-case "$host" in
-  *powerpc64le* | *aarch* )
-    myhosttype=`echo $host | awk -F- '{ print $1 }'`
-    AC_MSG_NOTICE([disable open-analysis cfg support on $myhosttype])
-    OA=no
-    ;;
-esac
 
 AC_ARG_WITH([open-analysis],
   [AS_HELP_STRING([--with-open-analysis=PATH],
-      [path to OpenAnalysis install directory])],
+      [deprecated option, no longer used])],
   [OA="$withval"],
   [])
 
-AC_MSG_CHECKING([for OpenAnalysis])
-
-case "$OA" in
-  /* )
-    if test -f "${OA}/include/OpenAnalysis/Utils/RIFG.hpp" \
-       && test -f "${OA}/lib/libOAsz64.a"
-    then :
-    else
-      AC_MSG_ERROR([invalid OpenAnalysis directory: $OA])
-    fi
-    OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
-    OA_LDFLAGS="${OA}/lib/libOAsz64.a"
-    OA_AVAIL=yes
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([OpenAnalysis directory must be absolute path: $OA])
-    ;;
-esac
-
-AC_MSG_RESULT([$OA])
-
-AC_SUBST([OA_IFLAGS])
-AC_SUBST([OA_LDFLAGS])
+if test "x$OA" != xno ; then
+  AC_MSG_WARN([open analysis is deprecated and no longer used])
+fi
 
 
 #-------------------------------------------------
@@ -2114,6 +2077,7 @@ fi
 AC_MSG_RESULT([$use_papi_c_cupti])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
+
 #-------------------------------------------------
 # Option: --with-perfmon=PATH
 #
@@ -2253,6 +2217,8 @@ AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_4_3" = yes])
 # Option: --with-symtabAPI=PATH
 #-------------------------------------------------
 
+# Now require full ParseAPI with CFG loop support or nothing.
+
 SYMTABAPI=no
 if test "$use_externals" = yes ; then
   SYMTABAPI="$ext_symtabAPI_prefix"
@@ -2260,31 +2226,33 @@ fi
 
 AC_ARG_WITH([symtabAPI],
   [AS_HELP_STRING([--with-symtabAPI=PATH],
-      [path to symtabAPI install directory])],
+      [path to symtabAPI (dyninst) install directory])],
   [SYMTABAPI="$withval"],
   [])
 
-SYMTABAPI_COPY=no
-SYMTABAPI_COPY_DYN=no
-SYMTABAPI_COPY_PARSE=no
-SYMTABAPI_LIB_LIST=
-
+#
+# Basic test that symtab and parseapi files exist.
+#
 AC_MSG_CHECKING([for symtabAPI])
+
+SYMTABAPI_COPY=no
+SYMTABAPI_LIB_LIST=
+hpcstruct_mesg=no
 
 case "${SYMTABAPI}" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" && \
-       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
+    if test -f "${SYMTABAPI}/include/Symtab.h"  \
+       && test -f "${SYMTABAPI}/include/CFG.h"  \
+       && test -f "${SYMTABAPI}/lib/libsymtabAPI.so"  \
+       && test -f "${SYMTABAPI}/lib/libparseAPI.so"
     then :
     else
-        AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
+       AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
     fi
     SYMTABAPI_COPY=yes
-    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
-    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
-      SYMTABAPI_COPY_DYN=yes
-      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
-    fi
+    SYMTABAPI_LIB_LIST='-lparseAPI -linstructionAPI -lsymtabAPI -lcommon'
+    SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    hpcstruct_mesg=parseapi
     ;;
   no )
     ;;
@@ -2295,29 +2263,53 @@ esac
 
 AC_MSG_RESULT([$SYMTABAPI])
 
-AC_MSG_CHECKING([for parseAPI])
-
-PARSEAPI_AVAIL=no
-
-if test "$SYMTABAPI" != no \
-   && test -f "${SYMTABAPI}/include/CFG.h" \
-   && test -f "${SYMTABAPI}/lib/libparseAPI.so"
-then
-  SYMTABAPI_COPY_PARSE=yes
-  PARSEAPI_AVAIL=yes
-fi
-
-AC_MSG_RESULT([$PARSEAPI_AVAIL])
-
 SYMTABAPI_INC="${SYMTABAPI}/include"
 SYMTABAPI_LIB="${SYMTABAPI}/lib"
 
+AC_SUBST([SYMTABAPI_COPY])
+AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
-AC_SUBST([SYMTABAPI_LIB_LIST])
-AC_SUBST([SYMTABAPI_COPY])
-AC_SUBST([SYMTABAPI_COPY_DYN])
-AC_SUBST([SYMTABAPI_COPY_PARSE])
+
+#
+# Chcek that ParseAPI includes CFG loop support.
+#
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+AC_LANG_PUSH([C++])
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([for parseAPI CFG loop support])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <iostream>
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+void get_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  std::cout << bvec.size();
+}
+]])], [cfg_loop_support=yes], [cfg_loop_support=no])
+
+  AC_MSG_RESULT([$cfg_loop_support])
+
+  if test "$cfg_loop_support" != yes ; then
+    AC_MSG_ERROR([parseAPI does not include CFG loop support])
+  fi
+fi
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
 
 
 #-------------------------------------------------
@@ -2814,156 +2806,6 @@ case "$enable_hpcserver" in
 esac
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
-
-
-#-------------------------------------------------
-# hpcstruct: CFG support from OpenAnalysis and ParseAPI
-#-------------------------------------------------
-
-# Test symtabAPI/parseAPI for inline function and CFG loop tree
-# support, and test for old or new method for getting an inline
-# function name.
-
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
-AC_LANG_PUSH([C++])
-
-#
-# Test for inline function support, getInlinedParent().
-#
-inline_avail=no
-
-AC_MSG_CHECKING([symtabAPI for inline function support])
-
-if test "$SYMTABAPI" != no
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-void get_parent(FunctionBase * func)
-{
-  FunctionBase *parent = func->getInlinedParent();
-  cout << parent;
-}
-]])], [inline_avail=yes], [inline_avail=no])
-fi
-
-AC_MSG_RESULT([$inline_avail])
-
-#
-# Test if symtabAPI is using the new method for inline function names.
-# Symtab 9.0 uses a new method (getName) for function names which is
-# incompatible with the old method (getAllPrettyNames).
-#
-new_symtab_getname=no
-
-AC_MSG_CHECKING([symtabAPI for new function name iterator])
-
-if test "$inline_avail" = yes
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-void get_name(FunctionBase * func)
-{
-  std::cout << func->getName();
-}
-]])], [new_symtab_getname=yes], [new_symtab_getname=no])
-fi
-
-AC_MSG_RESULT([$new_symtab_getname])
-
-#
-# Test if symtabAPI includes parseAPI CFG loop support.
-#
-parseapi_avail=no
-
-AC_MSG_CHECKING([parseAPI for CFG loop support])
-
-if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <vector>
-#include <Symtab.h>
-#include <Function.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace std;
-void get_blocks(LoopTreeNode * node)
-{
-  Loop * loop = node->loop;
-  vector <Block *> bvec;
-  loop->getLoopBasicBlocks(bvec);
-  std::cout << bvec.size();
-}
-]])], [parseapi_avail=yes], [parseapi_avail=no])
-fi
-
-AC_MSG_RESULT([$parseapi_avail])
-
-AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#
-# Use OpenAnalysis or ParseAPI or both as available for building CFG's
-# in hpcstruct.  Warn if neither is available.
-#
-# OpenAnalysis can be disabled with '--without-open-analysis' and
-# ParseAPI can be disabled with '--disable-parseapi'.
-#
-
-AC_ARG_ENABLE([parseapi],
-  [AS_HELP_STRING([--disable-parseapi],
-      [disable using parseapi for building control flow graphs in
-       hpcstruct (default is to use if available)])],
-  [],
-  [enable_parseapi=use])
-
-if test "$enable_parseapi" = no ; then
-  parseapi_avail=no
-fi
-
-cfg_mesg=
-if test "$OA_AVAIL" = yes ; then
-  cfg_mesg='open-analysis'
-fi
-if test "$parseapi_avail" = yes ; then
-  cfg_mesg="$cfg_mesg parseapi"
-fi
-cfg_mesg=`echo $cfg_mesg`
-
-if test "$OA_AVAIL" = no && test "$parseapi_avail" = no ; then
-  AC_MSG_WARN([unable to build hpcstruct: no open-analysis or parseapi])
-  cfg_mesg=no
-fi
-
-if test "$new_symtab_getname" = yes ; then
-  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
-fi
-
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$inline_avail" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$parseapi_avail" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$OA_AVAIL" = yes])
-
-# Hpcstruct gets a launch script if (1) Xed is shared (some versions
-# of MIC), or (2) use symtab for inline support.
-
-hpcstruct_launch_script=yes
-
-AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
 
 
 #-------------------------------------------------
@@ -3814,7 +3656,7 @@ AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
-AC_MSG_NOTICE([  hpcstruct:    $cfg_mesg])
+AC_MSG_NOTICE([  hpcstruct:    $hpcstruct_mesg])
 AC_MSG_NOTICE([  perf-events:  ${perf_event}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
@@ -3843,7 +3685,6 @@ AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
-AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
 AC_MSG_NOTICE([  Perfmon:      ${PERFMON}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
@@ -3853,6 +3694,10 @@ AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
+
+if test "x$OA" != xno ; then
+  AC_MSG_WARN([open analysis is deprecated and no longer used])
+fi
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])

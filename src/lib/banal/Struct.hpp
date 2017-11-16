@@ -44,75 +44,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
+// This file defines the external API that Struct.cpp provides for
+// tool/hpcstruct/main.cpp.
+
 //***************************************************************************
 
 #ifndef BAnal_Struct_hpp
 #define BAnal_Struct_hpp
 
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h> 
-
-#include <lib/prof/Struct-Tree.hpp>
-
-#include <lib/binutils/LM.hpp>
+#include <ostream>
+#include <string>
 
 #include <lib/support/ProcNameMgr.hpp>
 
-
-//***************************************************************************
-
 namespace BAnal {
-
 namespace Struct {
 
-  enum CFG {
-    CFG_DEFAULT = 1,
-    CFG_OA,
-    CFG_PARSEAPI
-  };
-
-  enum NormTy {
-    // TODO: redo along the lines of BinUtil::LM::ReadFlg
-    NormTy_None,
-    NormTy_Safe, // Safe-only
-    NormTy_All
-  };
-
-  Prof::Struct::LM* 
-  makeStructure(BinUtil::LM* lm, 
-		std::ostream * dotFile,
-		int cfgRequest,
-		NormTy doNormalizeTy,
-		bool isIrrIvalLoop = false,
-		bool isFwdSubst = false,
-		ProcNameMgr* procNameMgr = NULL,
-		const std::string& dbgProcGlob = "");
-  
-  Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
-
-
-  bool 
-  normalize(Prof::Struct::LM* lmStrct, bool doNormalizeUnsafe = true);
+void
+makeStructure(std::string filenm,
+	      std::string gaps_filenm,
+	      std::ostream * outFile,
+	      std::ostream * gapsFile,
+	      std::ostream * dotFile,
+	      ProcNameMgr* procNameMgr = NULL);
 
 } // namespace Struct
-
 } // namespace BAnal
-
-//****************************************************************************
 
 #endif // BAnal_Struct_hpp

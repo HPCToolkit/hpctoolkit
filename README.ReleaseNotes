@@ -182,6 +182,23 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
+HPCToolkit upcoming
+----------------------------------------
+
+Merged the 'banal' branch into master.  This fully replaces hpcstruct
+and the banal code with the new inline tree format.  However, the
+format of the .hpcstruct file is unchanged.
+
+The new banal code produces a better loop analysis (placement of loop
+header) and has a smaller memory footprint.  This also includes
+support for displaying parseapi gaps (unclaimed code regions) in the
+viewer.
+
+Merged the 'perf-datacentric' branch into master.  This adds support
+for the perf family of events as a way of accessing the hardware
+performance counters without using PAPI.
+
+----------------------------------------
 HPCToolkit Version 2017.06, June 2017
 ----------------------------------------
 
