@@ -117,65 +117,43 @@ static int free_metric_id   = -1;
 #define POINTER_TO_FUNCTION *(void**)
 #endif
 
-static cct_node_t*
-datacentric_record(cct_bundle_t* cct, cct_node_t* cct_cursor, void *data_aux)
+
+static cct_node_t *
+datacentric_get_root(cct_node_t *node)
 {
-  if (data_aux == NULL)
-    return cct_cursor;
-
-  // datacentric support: attach samples to data allocation cct
-  struct datacentric_info_s *info = (struct datacentric_info_s *) data_aux;
-  cct_node_t *data_node           = info->data_node;
-
-  if (data_node) {
-    cct_cursor = hpcrun_insert_special_node(cct->tree_root,
-                                            POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap));
-
-    // copy the call path of the malloc
-    cct_cursor = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
-
-    if (info->first_touch) {
-      cct_cursor = hpcrun_insert_special_node(cct_cursor,
-                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
-      cct_cursor = hpcrun_insert_special_node(cct_cursor,
-                                              POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(access_heap));
-    }
+  cct_node_t *current = node;
+  while(current && hpcrun_cct_parent(current)) {
+      current = hpcrun_cct_parent(current);
   }
-  return cct_cursor;
+  return current;
 }
 
 static void
 datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
-  if ( (current == NULL)  ||  (mmap_data == NULL) || (mmap_data->addr == 0))
+  if ( (current == NULL)      ||  (mmap_data == NULL) ||
+       (mmap_data->addr == 0) ||  (sv.sample_node == NULL))
     return;
-
-  TMSG(DATACENTRIC, "datacentric handler starts");
 
   // memory information exists
   void *start, *end;
   cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
 
-  sampling_info_t info;
-  info.flags = SAMPLING_FIRST_TOUCH;
+  if (node) {
+    cct_node_t *root   = datacentric_get_root(sv.sample_node);
+    cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
 
-  info.sample_clock = mmap_data->time;
-  info.sample_custom_cct.update_before_fn = datacentric_record;
-  info.sample_custom_cct.update_after_fn  = NULL;
+    // copy the call path of the malloc
+    cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
-  struct datacentric_info_s info_aux;
-  info_aux.data_node   = node;
-  info_aux.first_touch = true;
-
-  info.sample_custom_cct.data_aux = &info_aux;
-
-  hpcrun_sample_callpath(context, current->event->metric_custom->metric_index,
-          (hpcrun_metricVal_t) {.i=mmap_data->addr},
-          0/*skipInner*/, 0/*isSync*/, &info);
-
-
-  TMSG(DATACENTRIC, "datacentric handler ends");
+    metric_set_t* mset = hpcrun_reify_metric_set(cursor);
+    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, current->event->metric_custom->metric_index);
+    if (loc->i == 0) {
+      loc->i = mmap_data->addr;
+    }
+    TMSG(DATACENTRIC, "handling node %p, cct: %p", node, sv.sample_node);
+  }
 }
 
 

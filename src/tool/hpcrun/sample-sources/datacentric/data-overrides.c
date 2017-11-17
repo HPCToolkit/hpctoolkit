@@ -405,8 +405,6 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   int active, loc;
   size_t size;
 
-  TMSG(DATACENTRIC, "%s: bytes: %ld", name, bytes);
-
   // do the real malloc, aligned or not.  note: we can't track malloc
   // inside dlopen, that would lead to deadlock.
   active = 1;
@@ -447,6 +445,8 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   }
   if (bytes <= MIN_BYTES) return sys_ptr;
 
+  TMSG(DATACENTRIC, "%s: bytes: %ld", name, bytes);
+
   loc = datacentric_get_malloc_loc(sys_ptr, bytes, align, &appl_ptr, &info_ptr);
   datacentric_add_leakinfo(name, sys_ptr, appl_ptr, info_ptr, bytes, uc, loc);
 
@@ -469,7 +469,6 @@ datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
   char *loc_str;
 
   if (info_ptr == NULL) {
-    TMSG(DATACENTRIC, "%s: sys: %p appl: %p (no malloc)", name, sys_ptr, appl_ptr);
     return;
   }
 
@@ -655,7 +654,6 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
   int safe = hpcrun_safe_enter();
 
   datacentric_initialize();
-  TMSG(DATACENTRIC, "free: ptr: %p", ptr);
 
   if (! leak_detection_enabled) {
     real_free(ptr);
@@ -691,7 +689,6 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   int safe = hpcrun_safe_enter();
 
   datacentric_initialize();
-  TMSG(DATACENTRIC, "realloc: ptr: %p bytes: %ld", ptr, bytes);
 
   if (! leak_detection_enabled) {
     appl_ptr = real_realloc(ptr, bytes);

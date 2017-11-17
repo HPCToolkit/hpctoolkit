@@ -1032,7 +1032,6 @@ perf_event_handler(
     return 1; // tell monitor the signal has not been handled.
   }
 
-  TMSG(LINUX_PERF, "signal sampling.");
   // ----------------------------------------------------------------------------
   // parse the buffer until it finishes reading all buffers
   // ----------------------------------------------------------------------------
@@ -1044,7 +1043,6 @@ perf_event_handler(
 
     // reading info from mmapped buffer
     more_data = read_perf_buffer(current, &mmap_data);
-    TMSG(LINUX_PERF, "record buffer: sid: %d, ip: %p, addr: %p, id: %d", mmap_data.sample_id, mmap_data.ip, mmap_data.addr, mmap_data.id);
 
     sample_val_t sv;
     memset(&sv, 0, sizeof(sample_val_t));
