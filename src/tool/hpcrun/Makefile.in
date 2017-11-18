@@ -451,9 +451,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-cubin-id-map.c \
+	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -553,6 +554,7 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-defer-write.lo \
 	ompt/libhpcrun_la-ompt-interface.lo \
 	ompt/libhpcrun_la-ompt-region.lo \
+	ompt/libhpcrun_la-ompt-state-placeholders.lo \
 	ompt/libhpcrun_la-ompt-region-map.lo \
 	ompt/libhpcrun_la-ompt-host-op-map.lo \
 	ompt/libhpcrun_la-ompt-cubin-id-map.lo \
@@ -748,9 +750,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
-	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-cubin-id-map.c \
+	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
+	ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -856,6 +859,7 @@ am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer-write.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-interface.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region.$(OBJEXT) \
+	ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-cubin-id-map.$(OBJEXT) \
@@ -1558,6 +1562,7 @@ MY_BASE_FILES = \
 	ompt/ompt-defer-write.c         \
 	ompt/ompt-interface.c           \
 	ompt/ompt-region.c              \
+	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-region-map.c          \
 	ompt/ompt-host-op-map.c         \
 	ompt/ompt-cubin-id-map.c        \
@@ -2239,6 +2244,8 @@ ompt/libhpcrun_la-ompt-interface.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-region.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-ompt-state-placeholders.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-region-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-host-op-map.lo: ompt/$(am__dirstamp) \
@@ -2687,6 +2694,8 @@ ompt/libhpcrun_o-ompt-interface.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-region.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT):  \
+	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-region-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3098,6 +3107,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-task-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-task.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-thread.Plo@am__quote@
@@ -3111,6 +3121,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-task-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-thread.Po@am__quote@
@@ -3983,6 +3994,13 @@ ompt/libhpcrun_la-ompt-region.lo: ompt/ompt-region.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-region.c' object='ompt/libhpcrun_la-ompt-region.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-region.lo `test -f 'ompt/ompt-region.c' || echo '$(srcdir)/'`ompt/ompt-region.c
+
+ompt/libhpcrun_la-ompt-state-placeholders.lo: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-state-placeholders.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Tpo -c -o ompt/libhpcrun_la-ompt-state-placeholders.lo `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-state-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-state-placeholders.c' object='ompt/libhpcrun_la-ompt-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-state-placeholders.lo `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
 
 ompt/libhpcrun_la-ompt-region-map.lo: ompt/ompt-region-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-region-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-region-map.Tpo -c -o ompt/libhpcrun_la-ompt-region-map.lo `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
@@ -5453,6 +5471,20 @@ ompt/libhpcrun_o-ompt-region.obj: ompt/ompt-region.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-region.c' object='ompt/libhpcrun_o-ompt-region.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-region.obj `if test -f 'ompt/ompt-region.c'; then $(CYGPATH_W) 'ompt/ompt-region.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region.c'; fi`
+
+ompt/libhpcrun_o-ompt-state-placeholders.o: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-state-placeholders.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo -c -o ompt/libhpcrun_o-ompt-state-placeholders.o `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-state-placeholders.c' object='ompt/libhpcrun_o-ompt-state-placeholders.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-state-placeholders.o `test -f 'ompt/ompt-state-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-state-placeholders.c
+
+ompt/libhpcrun_o-ompt-state-placeholders.obj: ompt/ompt-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-state-placeholders.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo -c -o ompt/libhpcrun_o-ompt-state-placeholders.obj `if test -f 'ompt/ompt-state-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-state-placeholders.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-state-placeholders.c' object='ompt/libhpcrun_o-ompt-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-state-placeholders.obj `if test -f 'ompt/ompt-state-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-state-placeholders.c'; fi`
 
 ompt/libhpcrun_o-ompt-region-map.o: ompt/ompt-region-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-region-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-region-map.Tpo -c -o ompt/libhpcrun_o-ompt-region-map.o `test -f 'ompt/ompt-region-map.c' || echo '$(srcdir)/'`ompt/ompt-region-map.c
