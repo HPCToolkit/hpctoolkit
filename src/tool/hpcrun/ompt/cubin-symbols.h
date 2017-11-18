@@ -68,8 +68,8 @@
 //******************************************************************************
 
 typedef struct Elf_SymbolVector {
-   int nsymbols;
-   unsigned long *symbols;
+  int nsymbols;
+  unsigned long *symbols;
 } Elf_SymbolVector;
 
 

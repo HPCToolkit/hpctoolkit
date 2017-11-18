@@ -339,6 +339,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-region.c              \
 	ompt/ompt-region-map.c          \
 	ompt/ompt-host-op-map.c         \
+	ompt/ompt-cubin-id-map.c        \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \

@@ -77,6 +77,7 @@
 #include "ompt-thread.h"
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
+#include "ompt-cubin-id-map.h"
 #include "cubin-symbols.h"
 
 #include "sample-sources/sample-filters.h"
@@ -762,6 +763,22 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
   return node;
 }
 
+
+ip_normalized_t
+hpcrun_cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset)
+{
+  ompt_cubin_id_map_entry_t *entry = ompt_cubin_id_map_lookup(cubin_id);
+  ip_normalized_t ip;
+  if (entry != NULL) {
+    uint64_t hpctoolkit_module_id = ompt_cubin_id_map_entry_hpctoolkit_id_get(entry);
+    Elf_SymbolVector *vector = ompt_cubin_id_map_entry_efl_vector_get(entry);
+    ip.lm_id = (uint16_t)hpctoolkit_module_id;
+    ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
+  }
+  return ip;
+}
+
+
 //*****************************************************************************
 // device operations
 //*****************************************************************************
@@ -879,7 +896,11 @@ ompt_device_load(uint64_t device_num,
   assert(filename);
   sprintf(device_file, "%s@0x%lx", filename, (unsigned long) file_addr);
   hpcrun_loadModule_add(device_file);
-  computeCubinFunctionOffsets(host_addr, bytes);
+  ompt_cubin_id_map_entry_t *entry = ompt_cubin_id_map_lookup(module_id);
+  if (entry == NULL) {
+    Elf_SymbolVector *vector = computeCubinFunctionOffsets(host_addr, bytes);
+    ompt_cubin_id_map_insert(module_id, vector);
+  }
 }
 
 
@@ -887,6 +908,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
+  ompt_cubin_id_map_refcnt_update(module_id, 0);
 }
 
 

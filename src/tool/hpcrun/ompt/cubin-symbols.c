@@ -197,20 +197,20 @@ relocateSymbolsHelper
       GElf_Sym sym;
       GElf_Sym *symp = gelf_getsym(datap, i, &sym);
       if (symp) { // symbol properly read
-	int symtype = GELF_ST_TYPE(sym.st_info);
-	if (sym.st_shndx == SHN_UNDEF) continue;
-	switch(symtype) {
-	case STT_FUNC:
-	  {
-	    int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
-	    // update each function symbol's offset to match the new offset of the
-	    // text section that contains it.
-	    sym.st_value = (Elf64_Addr) s_offset;
-	    gelf_update_sym(datap, i, &sym);
-	    symbol_values->symbols[i] = s_offset;
-	  }
-	default: break;
-	}
+	      int symtype = GELF_ST_TYPE(sym.st_info);
+	      if (sym.st_shndx == SHN_UNDEF) continue;
+	      switch(symtype) {
+	        case STT_FUNC:
+	          {
+	            int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
+	            // update each function symbol's offset to match the new offset of the
+	            // text section that contains it.
+	            sym.st_value = (Elf64_Addr) s_offset;
+	            gelf_update_sym(datap, i, &sym);
+	            symbol_values->symbols[i] = s_offset;
+	          }
+	        default: break;
+	      }
       }
     }
   }
@@ -228,13 +228,13 @@ relocateSymbols
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
-    for (int i = 0;  i < sections->nsections; i++) {
+    for (int i = 0; i < sections->nsections; i++) {
       Elf_Scn *scn = sections->sections[i];
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_SYMTAB) {
-	symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn);
-	break; // AFAIK, there can only be one symbol table
+	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn);
+	      break; // AFAIK, there can only be one symbol table
       }
     }
   }
@@ -288,11 +288,11 @@ computeCubinFunctionOffsets
   Elf *elf = elf_memory(cubin_ptr, cubin_len);
   if (elf != 0) {
 	  GElf_Ehdr ehdr_v;
-	  GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
+	  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 	  if (ehdr) {
 		  if (ehdr->e_machine == EM_CUDA) {
 			  symbols = computeSymbolOffsets(cubin_ptr, elf);
-                          printSymbols(symbols);
+        printSymbols(symbols);
 			  elf_end(elf);
 		  }
 	  }

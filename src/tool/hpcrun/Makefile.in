@@ -452,8 +452,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -555,6 +555,7 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-region.lo \
 	ompt/libhpcrun_la-ompt-region-map.lo \
 	ompt/libhpcrun_la-ompt-host-op-map.lo \
+	ompt/libhpcrun_la-ompt-cubin-id-map.lo \
 	ompt/libhpcrun_la-ompt-cct-node-vector.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
 	ompt/libhpcrun_la-ompt-thread.lo \
@@ -748,8 +749,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -857,6 +858,7 @@ am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT) \
+	ompt/libhpcrun_o-ompt-cubin-id-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-cct-node-vector.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
@@ -1558,6 +1560,7 @@ MY_BASE_FILES = \
 	ompt/ompt-region.c              \
 	ompt/ompt-region-map.c          \
 	ompt/ompt-host-op-map.c         \
+	ompt/ompt-cubin-id-map.c        \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
@@ -2240,6 +2243,8 @@ ompt/libhpcrun_la-ompt-region-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-host-op-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-ompt-cubin-id-map.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-cct-node-vector.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-task.lo: ompt/$(am__dirstamp) \
@@ -2686,6 +2691,8 @@ ompt/libhpcrun_o-ompt-region-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-ompt-cubin-id-map.$(OBJEXT): ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-cct-node-vector.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3084,6 +3091,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cct-node-vector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-host-op-map.Plo@am__quote@
@@ -3096,6 +3104,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cct-node-vector.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer-write.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-host-op-map.Po@am__quote@
@@ -3988,6 +3997,13 @@ ompt/libhpcrun_la-ompt-host-op-map.lo: ompt/ompt-host-op-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-host-op-map.c' object='ompt/libhpcrun_la-ompt-host-op-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-host-op-map.lo `test -f 'ompt/ompt-host-op-map.c' || echo '$(srcdir)/'`ompt/ompt-host-op-map.c
+
+ompt/libhpcrun_la-ompt-cubin-id-map.lo: ompt/ompt-cubin-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-cubin-id-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Tpo -c -o ompt/libhpcrun_la-ompt-cubin-id-map.lo `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-cubin-id-map.c' object='ompt/libhpcrun_la-ompt-cubin-id-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-cubin-id-map.lo `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
 
 ompt/libhpcrun_la-ompt-cct-node-vector.lo: ompt/ompt-cct-node-vector.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-cct-node-vector.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-cct-node-vector.Tpo -c -o ompt/libhpcrun_la-ompt-cct-node-vector.lo `test -f 'ompt/ompt-cct-node-vector.c' || echo '$(srcdir)/'`ompt/ompt-cct-node-vector.c
@@ -5465,6 +5481,20 @@ ompt/libhpcrun_o-ompt-host-op-map.obj: ompt/ompt-host-op-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-host-op-map.c' object='ompt/libhpcrun_o-ompt-host-op-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-host-op-map.obj `if test -f 'ompt/ompt-host-op-map.c'; then $(CYGPATH_W) 'ompt/ompt-host-op-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-host-op-map.c'; fi`
+
+ompt/libhpcrun_o-ompt-cubin-id-map.o: ompt/ompt-cubin-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-cubin-id-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Tpo -c -o ompt/libhpcrun_o-ompt-cubin-id-map.o `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-cubin-id-map.c' object='ompt/libhpcrun_o-ompt-cubin-id-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-cubin-id-map.o `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
+
+ompt/libhpcrun_o-ompt-cubin-id-map.obj: ompt/ompt-cubin-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-cubin-id-map.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Tpo -c -o ompt/libhpcrun_o-ompt-cubin-id-map.obj `if test -f 'ompt/ompt-cubin-id-map.c'; then $(CYGPATH_W) 'ompt/ompt-cubin-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-cubin-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-cubin-id-map.c' object='ompt/libhpcrun_o-ompt-cubin-id-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-cubin-id-map.obj `if test -f 'ompt/ompt-cubin-id-map.c'; then $(CYGPATH_W) 'ompt/ompt-cubin-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-cubin-id-map.c'; fi`
 
 ompt/libhpcrun_o-ompt-cct-node-vector.o: ompt/ompt-cct-node-vector.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-cct-node-vector.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-cct-node-vector.Tpo -c -o ompt/libhpcrun_o-ompt-cct-node-vector.o `test -f 'ompt/ompt-cct-node-vector.c' || echo '$(srcdir)/'`ompt/ompt-cct-node-vector.c
