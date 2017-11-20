@@ -332,6 +332,8 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	\
 	ompt/cubin-symbols.c            \
+	ompt/cupti-activity-api.c       \
+	ompt/cupti-activity-strings.c   \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -340,6 +342,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-region-map.c          \
 	ompt/ompt-host-op-map.c         \
+	ompt/ompt-function-id-map.c     \
 	ompt/ompt-cubin-id-map.c        \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \

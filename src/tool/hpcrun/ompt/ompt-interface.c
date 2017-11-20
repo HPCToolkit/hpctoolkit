@@ -79,6 +79,7 @@
 #include "ompt-host-op-map.h"
 #include "ompt-cubin-id-map.h"
 #include "cubin-symbols.h"
+#include "cupti-activity-api.h"
 
 #include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
@@ -838,6 +839,8 @@ ompt_callback_buffer_complete(uint64_t device_id,
   ompt_buffer_cursor_t next = begin;
   int status = 0;
   do {
+    CUpti_Activity *activity = (CUpti_Activity *)next;
+    cupti_activity_handle(activity);
     status = ompt_advance_buffer_cursor(buffer, bytes, next, &next);
   } while(status);
 }

@@ -54,8 +54,8 @@
 //***************************************************************************
 //
 
-#ifndef __CUBIN_SYMBOLS_H
-#define __CUBIN_SYMBOLS_H
+#ifndef _CUBIN_SYMBOLS_H_
+#define _CUBIN_SYMBOLS_H_
 
 //******************************************************************************
 // system includes

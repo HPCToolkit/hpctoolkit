@@ -448,13 +448,14 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/cupti-activity-api.c \
+	ompt/cupti-activity-strings.c ompt/ompt-callstack.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
-	ompt/ompt-host-op-map.c ompt/ompt-cubin-id-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-function-id-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -549,6 +550,8 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	messages/libhpcrun_la-messages-async.lo \
 	messages/libhpcrun_la-fmt.lo \
 	ompt/libhpcrun_la-cubin-symbols.lo \
+	ompt/libhpcrun_la-cupti-activity-api.lo \
+	ompt/libhpcrun_la-cupti-activity-strings.lo \
 	ompt/libhpcrun_la-ompt-callstack.lo \
 	ompt/libhpcrun_la-ompt-defer.lo \
 	ompt/libhpcrun_la-ompt-defer-write.lo \
@@ -557,6 +560,7 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-state-placeholders.lo \
 	ompt/libhpcrun_la-ompt-region-map.lo \
 	ompt/libhpcrun_la-ompt-host-op-map.lo \
+	ompt/libhpcrun_la-ompt-function-id-map.lo \
 	ompt/libhpcrun_la-ompt-cubin-id-map.lo \
 	ompt/libhpcrun_la-ompt-cct-node-vector.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
@@ -747,13 +751,14 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/cupti-activity-api.c \
+	ompt/cupti-activity-strings.c ompt/ompt-callstack.c \
 	ompt/ompt-defer.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-region.c \
 	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
-	ompt/ompt-host-op-map.c ompt/ompt-cubin-id-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-function-id-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -854,6 +859,8 @@ am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	messages/libhpcrun_o-messages-async.$(OBJEXT) \
 	messages/libhpcrun_o-fmt.$(OBJEXT) \
 	ompt/libhpcrun_o-cubin-symbols.$(OBJEXT) \
+	ompt/libhpcrun_o-cupti-activity-api.$(OBJEXT) \
+	ompt/libhpcrun_o-cupti-activity-strings.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-callstack.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer-write.$(OBJEXT) \
@@ -862,6 +869,7 @@ am__objects_35 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT) \
+	ompt/libhpcrun_o-ompt-function-id-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-cubin-id-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-cct-node-vector.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
@@ -1557,6 +1565,8 @@ MY_BASE_FILES = \
 	messages/fmt.c	                \
 	\
 	ompt/cubin-symbols.c            \
+	ompt/cupti-activity-api.c       \
+	ompt/cupti-activity-strings.c   \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -1565,6 +1575,7 @@ MY_BASE_FILES = \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-region-map.c          \
 	ompt/ompt-host-op-map.c         \
+	ompt/ompt-function-id-map.c        \
 	ompt/ompt-cubin-id-map.c        \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
@@ -2234,6 +2245,10 @@ ompt/$(DEPDIR)/$(am__dirstamp):
 	@: > ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-cubin-symbols.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-cupti-activity-api.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-cupti-activity-strings.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-callstack.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-defer.lo: ompt/$(am__dirstamp) \
@@ -2249,6 +2264,8 @@ ompt/libhpcrun_la-ompt-state-placeholders.lo: ompt/$(am__dirstamp) \
 ompt/libhpcrun_la-ompt-region-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-host-op-map.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-ompt-function-id-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-cubin-id-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
@@ -2684,6 +2701,10 @@ messages/libhpcrun_o-fmt.$(OBJEXT): messages/$(am__dirstamp) \
 	messages/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-cubin-symbols.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-cupti-activity-api.$(OBJEXT): ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-cupti-activity-strings.$(OBJEXT):  \
+	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-callstack.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-defer.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -2699,6 +2720,8 @@ ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT):  \
 ompt/libhpcrun_o-ompt-region-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-host-op-map.$(OBJEXT): ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-ompt-function-id-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-cubin-id-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
@@ -3098,11 +3121,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_wrap_a-openmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-strings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cct-node-vector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-function-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-host-op-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region-map.Plo@am__quote@
@@ -3112,11 +3138,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-task.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cct-node-vector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer-write.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-host-op-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region-map.Po@am__quote@
@@ -3960,6 +3989,20 @@ ompt/libhpcrun_la-cubin-symbols.lo: ompt/cubin-symbols.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cubin-symbols.lo `test -f 'ompt/cubin-symbols.c' || echo '$(srcdir)/'`ompt/cubin-symbols.c
 
+ompt/libhpcrun_la-cupti-activity-api.lo: ompt/cupti-activity-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-cupti-activity-api.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-api.Tpo -c -o ompt/libhpcrun_la-cupti-activity-api.lo `test -f 'ompt/cupti-activity-api.c' || echo '$(srcdir)/'`ompt/cupti-activity-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-api.Tpo ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-api.c' object='ompt/libhpcrun_la-cupti-activity-api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cupti-activity-api.lo `test -f 'ompt/cupti-activity-api.c' || echo '$(srcdir)/'`ompt/cupti-activity-api.c
+
+ompt/libhpcrun_la-cupti-activity-strings.lo: ompt/cupti-activity-strings.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-cupti-activity-strings.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-strings.Tpo -c -o ompt/libhpcrun_la-cupti-activity-strings.lo `test -f 'ompt/cupti-activity-strings.c' || echo '$(srcdir)/'`ompt/cupti-activity-strings.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-strings.Tpo ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-strings.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-strings.c' object='ompt/libhpcrun_la-cupti-activity-strings.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cupti-activity-strings.lo `test -f 'ompt/cupti-activity-strings.c' || echo '$(srcdir)/'`ompt/cupti-activity-strings.c
+
 ompt/libhpcrun_la-ompt-callstack.lo: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-callstack.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo -c -o ompt/libhpcrun_la-ompt-callstack.lo `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo
@@ -4015,6 +4058,13 @@ ompt/libhpcrun_la-ompt-host-op-map.lo: ompt/ompt-host-op-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-host-op-map.c' object='ompt/libhpcrun_la-ompt-host-op-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-host-op-map.lo `test -f 'ompt/ompt-host-op-map.c' || echo '$(srcdir)/'`ompt/ompt-host-op-map.c
+
+ompt/libhpcrun_la-ompt-function-id-map.lo: ompt/ompt-function-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-function-id-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-function-id-map.Tpo -c -o ompt/libhpcrun_la-ompt-function-id-map.lo `test -f 'ompt/ompt-function-id-map.c' || echo '$(srcdir)/'`ompt/ompt-function-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-function-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-function-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-function-id-map.c' object='ompt/libhpcrun_la-ompt-function-id-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-function-id-map.lo `test -f 'ompt/ompt-function-id-map.c' || echo '$(srcdir)/'`ompt/ompt-function-id-map.c
 
 ompt/libhpcrun_la-ompt-cubin-id-map.lo: ompt/ompt-cubin-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-cubin-id-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Tpo -c -o ompt/libhpcrun_la-ompt-cubin-id-map.lo `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
@@ -5402,6 +5452,34 @@ ompt/libhpcrun_o-cubin-symbols.obj: ompt/cubin-symbols.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cubin-symbols.obj `if test -f 'ompt/cubin-symbols.c'; then $(CYGPATH_W) 'ompt/cubin-symbols.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cubin-symbols.c'; fi`
 
+ompt/libhpcrun_o-cupti-activity-api.o: ompt/cupti-activity-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-activity-api.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Tpo -c -o ompt/libhpcrun_o-cupti-activity-api.o `test -f 'ompt/cupti-activity-api.c' || echo '$(srcdir)/'`ompt/cupti-activity-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-api.c' object='ompt/libhpcrun_o-cupti-activity-api.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-activity-api.o `test -f 'ompt/cupti-activity-api.c' || echo '$(srcdir)/'`ompt/cupti-activity-api.c
+
+ompt/libhpcrun_o-cupti-activity-api.obj: ompt/cupti-activity-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-activity-api.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Tpo -c -o ompt/libhpcrun_o-cupti-activity-api.obj `if test -f 'ompt/cupti-activity-api.c'; then $(CYGPATH_W) 'ompt/cupti-activity-api.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-activity-api.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-api.c' object='ompt/libhpcrun_o-cupti-activity-api.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-activity-api.obj `if test -f 'ompt/cupti-activity-api.c'; then $(CYGPATH_W) 'ompt/cupti-activity-api.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-activity-api.c'; fi`
+
+ompt/libhpcrun_o-cupti-activity-strings.o: ompt/cupti-activity-strings.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-activity-strings.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Tpo -c -o ompt/libhpcrun_o-cupti-activity-strings.o `test -f 'ompt/cupti-activity-strings.c' || echo '$(srcdir)/'`ompt/cupti-activity-strings.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-strings.c' object='ompt/libhpcrun_o-cupti-activity-strings.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-activity-strings.o `test -f 'ompt/cupti-activity-strings.c' || echo '$(srcdir)/'`ompt/cupti-activity-strings.c
+
+ompt/libhpcrun_o-cupti-activity-strings.obj: ompt/cupti-activity-strings.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-activity-strings.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Tpo -c -o ompt/libhpcrun_o-cupti-activity-strings.obj `if test -f 'ompt/cupti-activity-strings.c'; then $(CYGPATH_W) 'ompt/cupti-activity-strings.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-activity-strings.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-strings.c' object='ompt/libhpcrun_o-cupti-activity-strings.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-activity-strings.obj `if test -f 'ompt/cupti-activity-strings.c'; then $(CYGPATH_W) 'ompt/cupti-activity-strings.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-activity-strings.c'; fi`
+
 ompt/libhpcrun_o-ompt-callstack.o: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-callstack.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo -c -o ompt/libhpcrun_o-ompt-callstack.o `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Po
@@ -5513,6 +5591,20 @@ ompt/libhpcrun_o-ompt-host-op-map.obj: ompt/ompt-host-op-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-host-op-map.c' object='ompt/libhpcrun_o-ompt-host-op-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-host-op-map.obj `if test -f 'ompt/ompt-host-op-map.c'; then $(CYGPATH_W) 'ompt/ompt-host-op-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-host-op-map.c'; fi`
+
+ompt/libhpcrun_o-ompt-function-id-map.o: ompt/ompt-function-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-function-id-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Tpo -c -o ompt/libhpcrun_o-ompt-function-id-map.o `test -f 'ompt/ompt-function-id-map.c' || echo '$(srcdir)/'`ompt/ompt-function-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-function-id-map.c' object='ompt/libhpcrun_o-ompt-function-id-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-function-id-map.o `test -f 'ompt/ompt-function-id-map.c' || echo '$(srcdir)/'`ompt/ompt-function-id-map.c
+
+ompt/libhpcrun_o-ompt-function-id-map.obj: ompt/ompt-function-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-function-id-map.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Tpo -c -o ompt/libhpcrun_o-ompt-function-id-map.obj `if test -f 'ompt/ompt-function-id-map.c'; then $(CYGPATH_W) 'ompt/ompt-function-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-function-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-function-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-function-id-map.c' object='ompt/libhpcrun_o-ompt-function-id-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-function-id-map.obj `if test -f 'ompt/ompt-function-id-map.c'; then $(CYGPATH_W) 'ompt/ompt-function-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-function-id-map.c'; fi`
 
 ompt/libhpcrun_o-ompt-cubin-id-map.o: ompt/ompt-cubin-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-cubin-id-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Tpo -c -o ompt/libhpcrun_o-ompt-cubin-id-map.o `test -f 'ompt/ompt-cubin-id-map.c' || echo '$(srcdir)/'`ompt/ompt-cubin-id-map.c
