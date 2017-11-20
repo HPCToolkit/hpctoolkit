@@ -757,7 +757,6 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
   cct_node_t *node = NULL;
   if (entry != NULL) {
     ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
-    uint64_t host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
     node = ompt_region_map_entry_callpath_get(region_map_entry);
     ompt_host_op_map_refcnt_update(host_op_id, 0);
   } 
