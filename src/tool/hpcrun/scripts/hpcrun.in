@@ -275,6 +275,7 @@ do
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
 		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
 		DATACENTRIC*  ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_datacentric.so" ;;
+		MEMCENTRIC*   ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_datacentric.so" ;;
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;

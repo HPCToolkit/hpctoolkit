@@ -47,58 +47,150 @@
 
 
 /******************************************************************************
- * segv signal handler
+ * local includes
+ ******************************************************************************/
+
+#include <cct/cct.h>                          // cct_node_t
+
+#include "sample-sources/perf/perf-util.h"    // event_info_t, perf_attr_init
+#include "sample-sources/perf/event_custom.h" // event_custom_t
+
+#include <place_folder.h>
+
+/******************************************************************************
+ *  MACROs
+ ******************************************************************************/
+
+#define EVNAME_MEMORY_CENTRIC "MEMCENTRIC"
+
+
+/******************************************************************************
+ *  interface operations
+ ******************************************************************************/
+
+
+/******************************************************************************
+ * data structure
  *****************************************************************************/
-// this segv handler is used to monitor first touches
+
+
+/******************************************************************************
+ * local variables
+ *****************************************************************************/
+
+#define POINTER_TO_FUNCTION
+
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+#define POINTER_TO_FUNCTION *(void**)
+#endif
+
+
+static cct_node_t *
+memcentric_get_root(cct_node_t *node)
+{
+  cct_node_t *current = node;
+  while(current && hpcrun_cct_parent(current)) {
+      current = hpcrun_cct_parent(current);
+  }
+  return current;
+}
+
 static void
-segv_handler (int signal_number, siginfo_t *si, void *context)
+memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
+    perf_mmap_data_t *mmap_data)
 {
-  int pagesize = getpagesize();
-  if (TD_GET(inside_hpcrun) && si && si->si_addr) {
-    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
-    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
+  if ( (current == NULL)      ||  (mmap_data == NULL) ||
+       (mmap_data->addr == 0) ||  (sv.sample_node == NULL))
     return;
-  }
-  hpcrun_safe_enter();
-  if (!si || !si->si_addr) {
-    hpcrun_safe_exit();
-    return;
-  }
+
+  // memory information exists
   void *start, *end;
-  cct_node_t *data_node = splay_lookup((void *)si->si_addr, &start, &end);
-  if (data_node) {
-    void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
-    mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
+  cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
 
-    sampling_info_t info;
-    struct datacentric_info_s data_aux = {.data_node = data_node, .first_touch = true};
+  if (node) {
+    cct_node_t *root   = memcentric_get_root(sv.sample_node);
+    cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
 
-    info.sample_clock = 0;
-    info.sample_custom_cct.update_before_fn = hpcrun_cct_record_datacentric;
-    info.sample_custom_cct.update_after_fn  = 0;
-    info.sample_custom_cct.data_aux         = &data_aux;
+    // copy the call path of the malloc
+    cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
-    TMSG(DATACENTRIC, "found node %p, p: %p, context: %p", data_node, p, context);
-
-    hpcrun_sample_callpath(context, alloc_metric_id,  (hpcrun_metricVal_t) {.i=1},
-                            0/*skipInner*/, 0/*isSync*/, &info);
+    metric_set_t* mset = hpcrun_reify_metric_set(cursor);
+    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, current->event->metric_custom->metric_index);
+    if (loc->i == 0) {
+      loc->i = mmap_data->addr;
+    }
+    TMSG(DATACENTRIC, "handling node %p, cct: %p", node, sv.sample_node);
   }
-  else {
-    TMSG(DATACENTRIC, "NOT found node %p", context);
-    void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
-    mprotect (p, pagesize, PROT_READ | PROT_WRITE);
-  }
-  hpcrun_safe_exit();
-  return;
 }
 
-static inline void
-set_segv_handler()
+
+static void
+memcentric_register(event_info_t *event_desc)
 {
-  struct sigaction sa;
+  struct event_threshold_s threshold = init_default_count();
 
-  sa.sa_flags = SA_SIGINFO;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_sigaction = segv_handler;
-  sigaction(SIGSEGV, &sa, NULL);
+  // ------------------------------------------
+  // create metric page-fault
+  // ------------------------------------------
+  int pagefault_metric = hpcrun_new_metric();
+
+  event_desc->metric = pagefault_metric;
+  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
+      pagefault_metric, "PAGE-FAULTS",
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  // ------------------------------------------
+  // create custom metric page-address
+  // ------------------------------------------
+  int page_address     = hpcrun_new_metric();
+  event_desc->metric_custom->metric_index = page_address;
+  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
+      page_address, "PAGE-ADDR",
+      MetricFlags_ValFmt_Int, 1 /* frequency*/, metric_property_none);
+
+  // ------------------------------------------
+  // initialize perf attributes
+  // ------------------------------------------
+  u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |
+      PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
+      PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
+
+  // set the default attributes for page fault
+  struct perf_event_attr *attr = &(event_desc->attr);
+  attr->config = PERF_COUNT_SW_PAGE_FAULTS;
+  attr->type   = PERF_TYPE_SOFTWARE;
+
+  perf_attr_init(
+      attr,
+      true                      /* use_period*/,
+      threshold.threshold_num   /* use the default */,
+      sample_type               /* need additional info for sample type */
+  );
+
+  event_desc->attr.sample_id_all = 1;
 }
+
+
+/******************************************************************************
+ * method definitions
+ *****************************************************************************/
+
+
+void
+memcentric_init()
+{
+  event_custom_t *event_memcentric = hpcrun_malloc(sizeof(event_custom_t));
+  event_memcentric->name         = EVNAME_MEMORY_CENTRIC;
+  event_memcentric->desc         = "Experimental counter: identifying first-touch memory address.";
+  event_memcentric->register_fn  = memcentric_register;   // call backs
+  event_memcentric->handler_fn   = memcentric_handler;
+  event_memcentric->metric_index = 0;        // these fields to be defined later
+  event_memcentric->metric_desc  = NULL;     // these fields to be defined later
+  event_memcentric->handle_type  = EXCLUSIVE;// call me only for my events
+
+  event_custom_register(event_memcentric);
+}
+
+
+
+

@@ -346,15 +346,22 @@ MY_BASE_FILES +=  			\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/perf-util.c	\
 	sample-sources/perf/perf_mmap.c	\
-	sample-sources/datacentric/datacentric.c	
+	sample-sources/datacentric/datacentric.c	\
+	sample-sources/datacentric/memaddress.c	
 endif
 
 if OPT_IBS_OP
 MY_BASE_FILES +=  			\
 	sample-sources/datacentric/ibsop.c
+else 
+if HOST_CPU_X86_64
+MY_BASE_FILES +=  			\
+	sample-sources/datacentric/pmu_x86.c
 else
 MY_BASE_FILES +=  			\
-	sample-sources/datacentric/datadummy.c	
+	sample-sources/datacentric/datadummy.c
+endif	# HOST_CPU_X86_64
+
 endif
 
 if OPT_ENABLE_KERNEL_4_3

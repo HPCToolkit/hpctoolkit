@@ -87,7 +87,7 @@ event_custom_display(FILE *std)
   }
   events_list_t *item = NULL;
 
-  display_header(stdout, "Customized perf-event based");
+  display_header(stdout, "Available customized events");
   fprintf(std, "Name\t\tDescription\n");
   display_line_single(stdout);
 
