@@ -303,6 +303,32 @@ show_info(char *event )
 // Supported operations
 //******************************************************************************
 
+/**
+ * get the complete perf event attribute for a given pmu
+ * @return 1 if successful
+ * -1 otherwise
+ */
+int
+pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr)
+{
+  pfm_perf_encode_arg_t arg;
+  char *fqstr = NULL;
+
+  arg.fstr = &fqstr;
+  arg.size = sizeof(pfm_perf_encode_arg_t);
+  struct perf_event_attr attr;
+  memset(&attr, 0, sizeof(struct perf_event_attr));
+
+  arg.attr = &attr;
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
+
+  if (ret == PFM_SUCCESS) {
+    memcpy(event_attr, arg.attr, sizeof(struct perf_event_attr));
+    return 1;
+  }
+  return -1;
+}
+
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
 int 

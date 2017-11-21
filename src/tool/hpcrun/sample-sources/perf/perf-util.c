@@ -371,7 +371,6 @@ init_default_count()
 //----------------------------------------------------------
 int
 perf_attr_init(
-  u64 event_code, u64 event_type,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -383,11 +382,7 @@ perf_attr_init(
                              | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
                              | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
 
-  memset(attr, 0, sizeof(struct perf_event_attr));
-
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;       
-  attr->config = event_code;       
   attr->freq   = (usePeriod ? 0 : 1);
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */

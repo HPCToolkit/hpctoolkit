@@ -759,8 +759,9 @@ METHOD_FN(process_event_list, int lush_metrics)
         continue;
       }
     }
-    u64 event_code, event_type;
-    int isPMU = perf_get_pmu_code_type(name, &event_code, &event_type);
+    struct perf_event_attr *event_attr = &(event_desc[i].attr);
+
+    int isPMU = pfmu_getEventAttribute(name, event_attr);
     if (isPMU < 0)
     	// case for unknown event
     	// it is impossible to be here, unless the code is buggy
@@ -772,7 +773,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the perf event attributes
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_attr_init(event_code, event_type, &(event_desc[i].attr), is_period, threshold, 0);
+    perf_attr_init(event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric

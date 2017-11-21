@@ -197,8 +197,13 @@ datacentric_register(event_info_t *event_desc)
       PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
       PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
-  perf_attr_init(PERF_COUNT_SW_PAGE_FAULTS, PERF_TYPE_SOFTWARE,
-      &(event_desc->attr),
+  // set the default attributes for page fault
+  struct perf_event_attr *attr = &(event_desc->attr);
+  attr->config = PERF_COUNT_SW_PAGE_FAULTS;
+  attr->type   = PERF_TYPE_SOFTWARE;
+
+  perf_attr_init(
+      attr,
       true                      /* use_period*/,
       threshold.threshold_num   /* use the default */,
       sample_type               /* need additional info for sample type */
