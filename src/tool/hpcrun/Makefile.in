@@ -488,7 +488,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
-	unwind/common/stack_troll.c unwind/common/uw_recipe_map.c \
+	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
+	unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -607,6 +608,7 @@ am__objects_33 = unwind/common/libhpcrun_la-backtrace.lo \
 am__objects_34 = $(am__objects_33) \
 	unwind/common/libhpcrun_la-binarytree_uwi.lo \
 	unwind/common/libhpcrun_la-interval_t.lo \
+	unwind/common/libhpcrun_la-libunw_intervals.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
 am__objects_35 = $(am__objects_34) \
@@ -763,8 +765,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
 	sample-sources/upc.c unwind/common/backtrace.c \
 	unwind/common/unw-throw.c unwind/common/binarytree_uwi.c \
-	unwind/common/interval_t.c unwind/common/stack_troll.c \
-	unwind/common/uw_recipe_map.c \
+	unwind/common/interval_t.c unwind/common/libunw_intervals.c \
+	unwind/common/stack_troll.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -882,6 +884,7 @@ am__objects_60 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 am__objects_61 = $(am__objects_60) \
 	unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT) \
 	unwind/common/libhpcrun_o-interval_t.$(OBJEXT) \
+	unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
 am__objects_62 = $(am__objects_61) \
@@ -1395,10 +1398,11 @@ UNW_UNIV_FILES = \
         unwind/common/unw-throw.c
 
 UNW_COMMON_FILES = \
-        $(UNW_UNIV_FILES)               \
-	unwind/common/binarytree_uwi.c		    \
-	unwind/common/interval_t.c	    \
-	unwind/common/stack_troll.c	\
+        $(UNW_UNIV_FILES)				\
+	unwind/common/binarytree_uwi.c			\
+	unwind/common/interval_t.c			\
+	unwind/common/libunw_intervals.c		\
+	unwind/common/stack_troll.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
@@ -2288,6 +2292,9 @@ unwind/common/libhpcrun_la-binarytree_uwi.lo:  \
 unwind/common/libhpcrun_la-interval_t.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
+unwind/common/libhpcrun_la-libunw_intervals.lo:  \
+	unwind/common/$(am__dirstamp) \
+	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-stack_troll.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
@@ -2644,6 +2651,9 @@ unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-interval_t.$(OBJEXT):  \
+	unwind/common/$(am__dirstamp) \
+	unwind/common/$(DEPDIR)/$(am__dirstamp)
+unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-stack_troll.$(OBJEXT):  \
@@ -3033,6 +3043,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-binarytree_uwi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-default_validation_summary.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-interval_t.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-libunw_intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-unw-throw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-uw_recipe_map.Plo@am__quote@
@@ -3040,6 +3051,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-binarytree_uwi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-default_validation_summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-interval_t.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-unw-throw.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-uw_recipe_map.Po@am__quote@
@@ -4007,6 +4019,13 @@ unwind/common/libhpcrun_la-interval_t.lo: unwind/common/interval_t.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/interval_t.c' object='unwind/common/libhpcrun_la-interval_t.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_la-interval_t.lo `test -f 'unwind/common/interval_t.c' || echo '$(srcdir)/'`unwind/common/interval_t.c
+
+unwind/common/libhpcrun_la-libunw_intervals.lo: unwind/common/libunw_intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-libunw_intervals.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-libunw_intervals.Tpo -c -o unwind/common/libhpcrun_la-libunw_intervals.lo `test -f 'unwind/common/libunw_intervals.c' || echo '$(srcdir)/'`unwind/common/libunw_intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_la-libunw_intervals.Tpo unwind/common/$(DEPDIR)/libhpcrun_la-libunw_intervals.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/libunw_intervals.c' object='unwind/common/libhpcrun_la-libunw_intervals.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_la-libunw_intervals.lo `test -f 'unwind/common/libunw_intervals.c' || echo '$(srcdir)/'`unwind/common/libunw_intervals.c
 
 unwind/common/libhpcrun_la-stack_troll.lo: unwind/common/stack_troll.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-stack_troll.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-stack_troll.Tpo -c -o unwind/common/libhpcrun_la-stack_troll.lo `test -f 'unwind/common/stack_troll.c' || echo '$(srcdir)/'`unwind/common/stack_troll.c
@@ -5449,6 +5468,20 @@ unwind/common/libhpcrun_o-interval_t.obj: unwind/common/interval_t.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/interval_t.c' object='unwind/common/libhpcrun_o-interval_t.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-interval_t.obj `if test -f 'unwind/common/interval_t.c'; then $(CYGPATH_W) 'unwind/common/interval_t.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/interval_t.c'; fi`
+
+unwind/common/libhpcrun_o-libunw_intervals.o: unwind/common/libunw_intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-libunw_intervals.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Tpo -c -o unwind/common/libhpcrun_o-libunw_intervals.o `test -f 'unwind/common/libunw_intervals.c' || echo '$(srcdir)/'`unwind/common/libunw_intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/libunw_intervals.c' object='unwind/common/libhpcrun_o-libunw_intervals.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-libunw_intervals.o `test -f 'unwind/common/libunw_intervals.c' || echo '$(srcdir)/'`unwind/common/libunw_intervals.c
+
+unwind/common/libhpcrun_o-libunw_intervals.obj: unwind/common/libunw_intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-libunw_intervals.obj -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Tpo -c -o unwind/common/libhpcrun_o-libunw_intervals.obj `if test -f 'unwind/common/libunw_intervals.c'; then $(CYGPATH_W) 'unwind/common/libunw_intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/libunw_intervals.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/libunw_intervals.c' object='unwind/common/libhpcrun_o-libunw_intervals.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-libunw_intervals.obj `if test -f 'unwind/common/libunw_intervals.c'; then $(CYGPATH_W) 'unwind/common/libunw_intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/libunw_intervals.c'; fi`
 
 unwind/common/libhpcrun_o-stack_troll.o: unwind/common/stack_troll.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-stack_troll.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-stack_troll.Tpo -c -o unwind/common/libhpcrun_o-stack_troll.o `test -f 'unwind/common/stack_troll.c' || echo '$(srcdir)/'`unwind/common/stack_troll.c

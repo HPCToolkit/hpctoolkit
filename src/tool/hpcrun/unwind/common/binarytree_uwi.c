@@ -21,45 +21,50 @@
 static struct {
   bitree_uwi_t *tree;		// global free unwind interval tree
   mcs_lock_t lock;		// lock for tree
-} GF;
+  mem_alloc alloc;
+} GF[NUM_UNWINDERS];
 
-static __thread  bitree_uwi_t *_lf_uwi_tree = NULL;  // thread local free unwind interval tree
+static __thread  bitree_uwi_t *_lf_uwi_tree[NUM_UNWINDERS]; // thread local free unwind interval tree
 
 /*
  * initialize the MCS lock for the hidden global free unwind interval tree.
  */
 void
-bitree_uwi_init()
+bitree_uwi_init(mem_alloc m_alloc)
 {
-  mcs_init(&GF.lock);
+  int i;
+  for (i = 0; i < NUM_UNWINDERS; ++i) {
+    mcs_init(&GF[i].lock);
+    GF[i].tree = NULL;
+    GF[i].alloc = m_alloc;
+  }
 }
 
 // constructors
 bitree_uwi_t*
-bitree_uwi_malloc(
-	mem_alloc m_alloc,
-	size_t recipe_size)
+bitree_uwi_malloc(unwinder_t uw,
+		  size_t recipe_size)
 {
-  if (!_lf_uwi_tree) {
+  if (!_lf_uwi_tree[uw]) {
     mcs_node_t me;
-    if (mcs_trylock(&GF.lock, &me)) {
+    if (mcs_trylock(&GF[uw].lock, &me)) {
       // the global free list is locked, so use it
-      _lf_uwi_tree = GF.tree;
-      if (_lf_uwi_tree)
-	GF.tree = bitree_uwi_leftsubtree(_lf_uwi_tree);
-      mcs_unlock(&GF.lock, &me);
-      if (_lf_uwi_tree)
-	bitree_uwi_set_leftsubtree(_lf_uwi_tree, NULL);
+      _lf_uwi_tree[uw] = GF[uw].tree;
+      if (_lf_uwi_tree[uw])
+	GF[uw].tree = bitree_uwi_leftsubtree(_lf_uwi_tree[uw]);
+      mcs_unlock(&GF[uw].lock, &me);
+      if (_lf_uwi_tree[uw])
+	bitree_uwi_set_leftsubtree(_lf_uwi_tree[uw], NULL);
     }
-    if (!_lf_uwi_tree)
-      _lf_uwi_tree =
+    if (!_lf_uwi_tree[uw])
+      _lf_uwi_tree[uw] =
 	(bitree_uwi_t *)binarytree_listalloc(sizeof(uwi_t) + recipe_size, 
-					     NUM_NODES, m_alloc);
+					     NUM_NODES, GF[uw].alloc);
   }
 
-  bitree_uwi_t *top = _lf_uwi_tree;
+  bitree_uwi_t *top = _lf_uwi_tree[uw];
   if (top) {
-    _lf_uwi_tree = bitree_uwi_rightsubtree(top);
+    _lf_uwi_tree[uw] = bitree_uwi_rightsubtree(top);
     bitree_uwi_set_rightsubtree(top, NULL);
   }
   return top;
@@ -68,16 +73,16 @@ bitree_uwi_malloc(
 /*
  * link only non null tree to GF.tree
  */
-void bitree_uwi_free(bitree_uwi_t *tree)
+void bitree_uwi_free(unwinder_t uw, bitree_uwi_t *tree)
 {
   if(!tree) return;
   tree = bitree_uwi_flatten(tree);
   // link to the global free unwind interval tree:
   mcs_node_t me;
-  mcs_lock(&GF.lock, &me);
-  bitree_uwi_set_leftsubtree(tree, GF.tree);
-  GF.tree = tree;
-  mcs_unlock(&GF.lock, &me);
+  mcs_lock(&GF[uw].lock, &me);
+  bitree_uwi_set_leftsubtree(tree, GF[uw].tree);
+  GF[uw].tree = tree;
+  mcs_unlock(&GF[uw].lock, &me);
 }
 
 // return the value at the root

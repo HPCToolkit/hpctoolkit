@@ -52,8 +52,7 @@
 #include <lib/isa-lean/x86/instruction-set.h>
 
 unwind_interval *
-process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
   unwind_interval *next = iarg->current;
@@ -71,7 +70,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
       // note: we don't check that BP is BP_SAVED; we might have to
       //=======================================================================
       reg.bp_status = BP_HOSED;
-      next = new_ui(next_ins, RA_SP_RELATIVE, &reg, m_alloc);
+      next = new_ui(next_ins, RA_SP_RELATIVE, &reg);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, HW_BP_OVERWRITTEN) &&
 	  (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == xr->reg.sp_ra_pos)) {
 	hw_tmp->uwi = next;
@@ -96,7 +95,7 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	      xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
 	    reg.sp_ra_pos -= disp;
 	    reg.sp_bp_pos -= disp;
-	    next = new_ui(next_ins, xr->ra_status, &reg, m_alloc);
+	    next = new_ui(next_ins, xr->ra_status, &reg);
 
 	    if (disp < 0) {
 	      if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {

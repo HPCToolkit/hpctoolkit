@@ -66,7 +66,7 @@ uw_recipe_map_init(void);
  * else return false
  */
 bool
-uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
+uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
 
 
 void
