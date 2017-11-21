@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2016, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,9 +65,6 @@
  ******************************************************************************/
 
 void datacentric_init();
-int hpcrun_datacentric_alloc_id(); 
-int hpcrun_datacentric_active();
-void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);
 
 // to be implemented by specific hardware
 int datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period);

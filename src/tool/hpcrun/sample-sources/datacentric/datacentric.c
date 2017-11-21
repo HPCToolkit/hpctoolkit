@@ -88,7 +88,7 @@
 #include "sample-sources/display.h" // show the list of events
 #include "sample-sources/perf/event_custom.h"
 
-#include "place_folder.h"
+#include <place_folder.h>
 
 /******************************************************************************
  * constants
@@ -108,8 +108,6 @@ struct datacentric_info_s {
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static int alloc_metric_id  = -1;
-static int free_metric_id   = -1;
 
 #define POINTER_TO_FUNCTION
 
@@ -160,15 +158,6 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
 static void
 datacentric_register(event_info_t *event_desc)
 {
-  if (alloc_metric_id >= 0)
-    return; // been registered
-
-  alloc_metric_id = hpcrun_new_metric();
-  free_metric_id = hpcrun_new_metric();
-
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
-
   struct event_threshold_s threshold = init_default_count();
 
   // ------------------------------------------
@@ -226,10 +215,6 @@ datacentric_register(event_info_t *event_desc)
 void
 datacentric_init()
 {
-  // reset static variables to their virgin state
-  alloc_metric_id = -1;
-  free_metric_id = -1;
-
   event_custom_t *event_datacentric = hpcrun_malloc(sizeof(event_custom_t));
   event_datacentric->name         = EVNAME_DATACENTRIC;
   event_datacentric->desc         = "Experimental counter: counting the memory latency.";
@@ -255,28 +240,3 @@ datacentric_init()
 //        For the case of the retcnt sample source, the handler (the trampoline)
 //        is separate from the sample source code.
 //        Consequently, the interaction with metrics must be done procedurally
-
-int
-hpcrun_datacentric_alloc_id() 
-{
-  return alloc_metric_id;
-}
-
-
-int
-hpcrun_datacentric_active() 
-{
-  return alloc_metric_id >= 0;
-}
-
-
-
-void
-hpcrun_datacentric_free_inc(cct_node_t* node, int incr)
-{
-  if (node != NULL) {
-    cct_metric_data_increment(free_metric_id,
-			      node,
-			      (cct_metric_data_t){.i = incr});
-  }
-}

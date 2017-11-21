@@ -155,29 +155,35 @@ extern free_fcn           real_free;
 extern realloc_fcn        real_realloc;
 
 
-
-/******************************************************************************
- * private data
- *****************************************************************************/
-
-static int leak_detection_enabled = 0; // default is off
-static int leak_detection_init = 0;    // default is uninitialized
-static int use_datacentric_prob = 0;
-static float datacentric_prob = 0.0;
-
-static long datacentric_pagesize = DATACENTRIC_DEFAULT_PAGESIZE;
-
 enum {
   DATACENTRIC_LOC_HEAD = 1,
   DATACENTRIC_LOC_FOOT,
   DATACENTRIC_LOC_NONE
 };
 
+enum data_overrides_status_e {
+  OVERRIDES_UNINITIALIZED=0, OVERRIDES_INITIALIZED, OVERRIDES_ACTIVE
+};
+
+/******************************************************************************
+ * private data
+ *****************************************************************************/
+
+static enum data_overrides_status_e overrides_status = OVERRIDES_UNINITIALIZED;
+
+static int use_datacentric_prob = 0;
+static float datacentric_prob = 0.0;
+
+static long datacentric_pagesize = DATACENTRIC_DEFAULT_PAGESIZE;
+
 static char *loc_name[4] = {
   NULL, "header", "footer", "none"
 };
 
 static int datainfo_size = sizeof(struct datainfo_s);
+
+static int alloc_metric_id  = -1;
+static int free_metric_id   = -1;
 
 /******************************************************************************
  * private operations
@@ -205,7 +211,69 @@ string_to_prob(char *str)
   return ans;
 }
 
+/**
+ * @return true if the module is initialized
+ */
+static bool
+is_initialized()
+{
+  return (overrides_status == OVERRIDES_INITIALIZED);
+}
 
+/***
+ * @return the metric id of allocation
+ */
+static int
+get_metric_alloc_id()
+{
+  return alloc_metric_id;
+}
+
+/**
+ * @return true if the module was initialized, and active
+ */
+static int
+is_active()
+{
+  return get_metric_alloc_id() >= 0;
+}
+
+
+/**
+ * increment metric free
+ * @param node: the current cct
+ * @param incr: the incremental factor
+ */
+static void
+increment_free_metric(cct_node_t* node, int incr)
+{
+  if (node != NULL) {
+    cct_metric_data_increment(free_metric_id,
+            node,
+            (cct_metric_data_t){.i = incr});
+  }
+}
+
+/**
+ * initialize metrics
+ * if the initialization is successful, the module moves to active phase
+ */
+static void
+metric_initialize()
+{
+  if (alloc_metric_id >= 0)
+    return; // been registered
+
+  alloc_metric_id = hpcrun_new_metric();
+  free_metric_id = hpcrun_new_metric();
+
+  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
+  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+}
+
+/**
+ * initialize datacentric module
+ */
 static void
 datacentric_initialize(void)
 {
@@ -214,7 +282,7 @@ datacentric_initialize(void)
   unsigned int seed;
   int fd;
 
-  if (leak_detection_init)
+  if (is_initialized())
     return;
 
 #ifdef _SC_PAGESIZE
@@ -242,24 +310,14 @@ datacentric_initialize(void)
     srandom(seed);
   }
 
-  // unconditionally enable leak detection for now
-  leak_detection_enabled = 1;
-  leak_detection_init = 1;
+  metric_initialize();
 
-  TMSG(DATACENTRIC, "init");
+  overrides_status = OVERRIDES_INITIALIZED;
+
+  TMSG(DATACENTRIC, "initialized");
 }
 
 
-// Returns: 1 if p1 and p2 are on the same physical page.
-//
-static inline int
-datacentric_same_page(void *p1, void *p2)
-{
-  uintptr_t n1 = (uintptr_t) p1;
-  uintptr_t n2 = (uintptr_t) p2;
-
-  return (n1 / datacentric_pagesize) == (n2 / datacentric_pagesize);
-}
 
 
 // Choose the location of the leakinfo struct at malloc().  Use a
@@ -363,12 +421,12 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->rmemblock = info_ptr->memblock + info_ptr->bytes;
   info_ptr->left = NULL;
   info_ptr->right = NULL;
-  if (hpcrun_datacentric_active()) {
+  if (is_active()) {
     sampling_info_t info;
     memset(&info, 0, sizeof(sampling_info_t));
     info.flags = SAMPLING_IN_MALLOC;
 
-    sample_val_t smpl = hpcrun_sample_callpath(uc, hpcrun_datacentric_alloc_id(),
+    sample_val_t smpl = hpcrun_sample_callpath(uc, get_metric_alloc_id(),
                                                (hpcrun_metricVal_t) {.i=bytes},
                                                0, 1, &info);
     info_ptr->context = smpl.sample_node;
@@ -408,7 +466,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   // do the real malloc, aligned or not.  note: we can't track malloc
   // inside dlopen, that would lead to deadlock.
   active = 1;
-  if (! (leak_detection_enabled && hpcrun_datacentric_active())) {
+  if (! (is_initialized() && is_active())) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;
@@ -472,8 +530,8 @@ datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
     return;
   }
 
-  if (info_ptr->context != NULL && hpcrun_datacentric_active()) {
-    hpcrun_datacentric_free_inc(info_ptr->context, info_ptr->bytes);
+  if (info_ptr->context != NULL && is_active()) {
+    increment_free_metric(info_ptr->context, info_ptr->bytes);
     loc_str = loc_name[loc];
   } else {
     loc_str = "inactive";
@@ -655,7 +713,7 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 
   datacentric_initialize();
 
-  if (! leak_detection_enabled) {
+  if (! is_initialized()) {
     real_free(ptr);
     TMSG(DATACENTRIC, "free: ptr: %p (inactive)", ptr);
     goto finish;
@@ -690,7 +748,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 
   datacentric_initialize();
 
-  if (! leak_detection_enabled) {
+  if (! is_initialized()) {
     appl_ptr = real_realloc(ptr, bytes);
     goto finish;
   }
@@ -722,7 +780,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   // but if there used to be a header, then must slide user data.
   // again, can't track malloc inside dlopen.
   active = 1;
-  if (! (leak_detection_enabled && hpcrun_datacentric_active())) {
+  if (! (is_initialized() && is_active())) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;
