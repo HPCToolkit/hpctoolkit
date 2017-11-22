@@ -31,7 +31,7 @@ void ompt_cct_node_vector_init(ompt_cct_node_vector_t *vector)
 {
   vector = (ompt_cct_node_vector_t *)hpcrun_malloc(sizeof(ompt_cct_node_vector_t));
   vector->size = 0;
-  vector->capacity = 4;
+  vector->capacity = 4; // TODO(keren): increase it
   ompt_cct_node_vector_reserve(vector, vector->capacity);
 }
 

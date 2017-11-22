@@ -41,7 +41,9 @@ cupti_process_sample
       uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
       uint64_t cubin_id = ompt_function_id_map_entry_function_index_get(entry);
       ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
-      external_id = -1;
+      cct_addr_t frm = { .ip_norm = ip };
+      cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
+      hpcrun_cct_insert_addr(cct_node, &frm);
     }
   }
 }
