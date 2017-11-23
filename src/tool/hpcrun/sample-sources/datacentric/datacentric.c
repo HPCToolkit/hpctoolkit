@@ -70,25 +70,19 @@
  * local includes
  *****************************************************************************/
 
-#include <hpcrun/hpcrun_options.h>
 #include <hpcrun/disabled.h>
 #include <hpcrun/metrics.h>
 #include <sample_event.h>
 #include <main.h>
-#include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
-#include <utilities/tokenize.h>
-#include <safe-sampling.h>
 
 #include "datacentric.h"
 #include "data_tree.h"
 
-#include "sample-sources/display.h" // show the list of events
 #include "sample-sources/perf/event_custom.h"
 
-#include <place_folder.h>
 
 /******************************************************************************
  * constants
@@ -99,31 +93,12 @@
 /******************************************************************************
  * data structure
  *****************************************************************************/
-struct datacentric_info_s {
-  cct_node_t *data_node;
-  bool first_touch;
-};
 
 /******************************************************************************
  * local variables
  *****************************************************************************/
 
-#define POINTER_TO_FUNCTION
 
-#if defined(__PPC64__) || defined(HOST_CPU_IA64)
-#define POINTER_TO_FUNCTION *(void**)
-#endif
-
-
-static cct_node_t *
-datacentric_get_root(cct_node_t *node)
-{
-  cct_node_t *current = node;
-  while(current && hpcrun_cct_parent(current)) {
-      current = hpcrun_cct_parent(current);
-  }
-  return current;
-}
 
 static void
 datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
@@ -137,20 +112,6 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
   void *start, *end;
   cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
 
-  if (node) {
-    cct_node_t *root   = datacentric_get_root(sv.sample_node);
-    cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
-
-    // copy the call path of the malloc
-    cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
-
-    metric_set_t* mset = hpcrun_reify_metric_set(cursor);
-    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, current->event->metric_custom->metric_index);
-    if (loc->i == 0) {
-      loc->i = mmap_data->addr;
-    }
-    TMSG(DATACENTRIC, "handling node %p, cct: %p", node, sv.sample_node);
-  }
 }
 
 
@@ -160,49 +121,21 @@ datacentric_register(event_info_t *event_desc)
   struct event_threshold_s threshold = init_default_count();
 
   // ------------------------------------------
-  // create metric page-fault
-  // ------------------------------------------
-  int pagefault_metric = hpcrun_new_metric();
-
-  event_desc->metric = pagefault_metric;
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      pagefault_metric, "PAGE-FAULTS",
-      MetricFlags_ValFmt_Int, 1, metric_property_none);
-
-  // ------------------------------------------
-  // create custom metric page-address
-  // ------------------------------------------
-  int page_address     = hpcrun_new_metric();
-  event_desc->metric_custom->metric_index = page_address;
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      page_address, "PAGE-ADDR",
-      MetricFlags_ValFmt_Int, 1 /* frequency*/, metric_property_none);
-
-  // ------------------------------------------
-  // initialize perf attributes
-  // ------------------------------------------
-  u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID       |
-      PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
-      PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
-
-  // set the default attributes for page fault
-  struct perf_event_attr *attr = &(event_desc->attr);
-  attr->config = PERF_COUNT_SW_PAGE_FAULTS;
-  attr->type   = PERF_TYPE_SOFTWARE;
-
-  perf_attr_init(
-      attr,
-      true                      /* use_period*/,
-      threshold.threshold_num   /* use the default */,
-      sample_type               /* need additional info for sample type */
-  );
-
-  event_desc->attr.sample_id_all = 1;
-
-  // ------------------------------------------
   // hardware-specific data centric setup (if supported)
   // ------------------------------------------
-  datacentric_hw_register(event_desc, &threshold);
+  int result = datacentric_hw_register(event_desc, &threshold);
+  if (result == 0)
+    return;
+
+  // ------------------------------------------
+  // create metric page-fault
+  // ------------------------------------------
+  int metric = hpcrun_new_metric();
+
+  event_desc->metric = metric;
+  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
+      metric, EVNAME_DATACENTRIC,
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 

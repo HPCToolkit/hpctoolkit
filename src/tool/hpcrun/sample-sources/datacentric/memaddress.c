@@ -55,6 +55,8 @@
 #include "sample-sources/perf/perf-util.h"    // event_info_t, perf_attr_init
 #include "sample-sources/perf/event_custom.h" // event_custom_t
 
+#include "data_tree.h"
+
 #include <place_folder.h>
 
 /******************************************************************************

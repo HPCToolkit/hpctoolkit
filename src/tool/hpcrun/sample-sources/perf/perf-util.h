@@ -202,4 +202,6 @@ perf_attr_init(
   u64  sampletype
 );
 
+u64 get_precise_ip(struct perf_event_attr *attr);
+
 #endif

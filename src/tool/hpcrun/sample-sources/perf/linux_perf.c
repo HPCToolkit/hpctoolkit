@@ -756,7 +756,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (event_desc[i].metric_custom != NULL) {
       if (event_desc[i].metric_custom->register_fn != NULL) {
-    	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
         continue;
       }
@@ -765,14 +764,14 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int isPMU = pfmu_getEventAttribute(name, event_attr);
     if (isPMU < 0)
-    	// case for unknown event
-    	// it is impossible to be here, unless the code is buggy
-    	continue;
+      // case for unknown event
+      // it is impossible to be here, unless the code is buggy
+      continue;
 
     bool is_period = (period_type == 1);
 
     // ------------------------------------------------------------
-    // initialize the perf event attributes
+    // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
     perf_attr_init(event_attr, is_period, threshold, 0);
@@ -787,7 +786,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
-    // set the metric for this perf event
     event_desc[i].metric = hpcrun_new_metric();
    
     // ------------------------------------------------------------
@@ -795,8 +793,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     // it can change dynamically. In this case, the period is 1
     // ------------------------------------------------------------
     if (!is_period) {
-      // using frequency : the threshold is always 1, 
-      //                   since the period is determine dynamically
       threshold = 1;
     }
     metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
