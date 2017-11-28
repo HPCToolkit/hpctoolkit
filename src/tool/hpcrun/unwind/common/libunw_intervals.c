@@ -93,14 +93,12 @@
 //************************************************
 
 static void
-compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
+compute_normalized_ips(hpcrun_unw_cursor_t* cursor, unwindr_info_t unwr_info)
 {
-  void *func_start_pc = NULL;
-  void *func_end_pc = NULL;
-  load_module_t* lm = NULL;
+  void *func_start_pc =  (void*) unwr_info.interval.start;
+  load_module_t* lm = unwr_info.lm;
 
-  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
-
+  cursor->unwr_info = unwr_info;
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 }
@@ -124,10 +122,6 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   cursor->pc_unnorm = (void *) pc;
   cursor->libunw_status = LIBUNW_INIT;
-
-  compute_normalized_ips(cursor);
-
-  TMSG(UNW, "init cursor pc = %p\n", cursor->pc_unnorm);
 }
 
 //***************************************************************************
@@ -248,7 +242,7 @@ libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 
   cursor->pc_unnorm = pc;
 
-  compute_normalized_ips(cursor);
+  compute_normalized_ips(cursor, unwr_info);
 
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   return STEP_OK;
