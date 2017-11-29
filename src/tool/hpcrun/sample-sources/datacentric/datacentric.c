@@ -57,6 +57,7 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 
+#include <linux/perf_event.h> // perf_mem_data_src
 
 /******************************************************************************
  * libmonitor
@@ -94,24 +95,96 @@
  * data structure
  *****************************************************************************/
 
+typedef union perf_mem_data_src perf_mem_data_src_t;
+
+struct perf_data_src_mem_lvl_s {
+  u32 ld_uncache, ld_io, ld_fbhit, ld_l1hit, ld_l2hit, lcl_hitm, ld_llchit; 
+  u32 lcl_dram, ld_shared, rmt_dram, ld_excl;
+
+  u64 loads, stores;
+};
+
 /******************************************************************************
  * local variables
  *****************************************************************************/
 
+static struct perf_data_src_mem_lvl_s  __thread data_mem = {
+  .ld_uncache = 0, .ld_io     = 0, .ld_fbhit = 0, .ld_l1hit  = 0, .ld_l2hit = 0, 
+  .lcl_hitm   = 0, .ld_llchit = 0, .lcl_dram = 0, .ld_shared = 0, .rmt_dram = 0,
+  .ld_excl    = 0, .loads     = 0, .stores   = 0 
+};
 
+
+/******************************************************************************
+ * Functions
+ *****************************************************************************/
+
+#define P(a, b) PERF_MEM_##a##_##b
 
 static void
 datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if ( (current == NULL)      ||  (mmap_data == NULL) ||
-       (mmap_data->addr == 0) ||  (sv.sample_node == NULL))
+       (sv.sample_node == NULL))
     return;
 
-  // memory information exists
-  void *start, *end;
-  cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
+  if (mmap_data->addr) {
+    // memory information exists
+    void *start, *end;
+    cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
+  }
 
+  if (mmap_data->data_src == NULL) {
+    return;
+  }
+
+  perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
+
+  if (data_src.mem_op & P(OP, LOAD))
+    data_mem.loads++;
+  else if (data_src.mem_op & P(OP, STORE))
+    data_mem.stores++;
+
+  TMSG(DATACENTRIC, "data_src: %x, op: %d, lvl: %d, snoop: %d, loads: %d, stores: %d", 
+		  data_src, data_src.mem_op, data_src.mem_lvl, data_src.mem_snoop, data_mem.loads, data_mem.stores);
+
+  u64 lvl   = data_src.mem_lvl;
+  u64 snoop = data_src.mem_snoop;
+
+  if ( lvl & P(LVL, HIT) ) {
+    if (lvl & P(LVL, UNC)) data_mem.ld_uncache++;
+    if (lvl & P(LVL, IO))  data_mem.ld_io++;
+    if (lvl & P(LVL, LFB)) data_mem.ld_fbhit++;
+    if (lvl & P(LVL, L1 )) data_mem.ld_l1hit++;
+    if (lvl & P(LVL, L2 )) data_mem.ld_l2hit++;
+    if (lvl & P(LVL, L3 )) {
+      if (snoop & P(SNOOP, HITM))
+        data_mem.lcl_hitm++;
+      else
+        data_mem.ld_llchit++;
+    }
+
+    if (lvl & P(LVL, LOC_RAM)) {
+      data_mem.lcl_dram++;
+      if (snoop & P(SNOOP, HIT))
+        data_mem.ld_shared++;
+      else
+        data_mem.ld_excl++;
+    }
+#if 0
+    bool mrem = 0; //data_src.mem_remote;
+    if ((lvl & P(LVL, REM_RAM1)) ||
+        (lvl & P(LVL, REM_RAM2)) ||
+        mrem) {
+      data_mem.rmt_dram++;
+      if (snoop & P(SNOOP, HIT))
+        data_mem.ld_shared++;
+      else
+        data_mem.ld_excl++;
+    }
+#endif
+  }
 }
 
 
@@ -134,8 +207,8 @@ datacentric_register(event_info_t *event_desc)
 
   event_desc->metric = metric;
   event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      metric, EVNAME_DATACENTRIC,
-      MetricFlags_ValFmt_Int, 1, metric_property_none);
+        metric, EVNAME_DATACENTRIC,
+        MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 

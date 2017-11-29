@@ -44,6 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <linux/version.h>
 
 #include <hpcrun/messages/messages.h>
 #include "sample-sources/perf/perf-util.h"
@@ -51,7 +52,7 @@
 
 #include "datacentric.h"
 
-#define EVNAME_SANDY_BRIDGE "snb::OFFCORE_RESPONSE_0:ANY_DATA"
+#define EVNAME_SANDY_BRIDGE "MEM_TRANS_RETIRED:PRECISE_STORE"
 
 int
 datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
@@ -65,10 +66,14 @@ datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *peri
   event_desc->attr.sample_period  = period->threshold_num;
   event_desc->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
 
-  event_desc->attr.sample_type    = PERF_SAMPLE_RAW 	 | PERF_SAMPLE_DATA_SRC
+  event_desc->attr.sample_type    = PERF_SAMPLE_RAW  
                                     | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
-                                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
+                                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+                                    | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
+#endif
+                                    ;
   event_desc->attr.disabled       = 1;
   event_desc->attr.exclude_kernel = 0;
   event_desc->attr.exclude_user   = 0;
