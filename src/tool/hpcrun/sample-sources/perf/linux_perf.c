@@ -343,14 +343,14 @@ perf_thread_init(event_thread_t *et)
   et->fd = perf_event_open( &(et->event->attr),
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
 
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
-    	et->event->id, et->fd, et->event->attr.precise_ip, et->event->attr.config,
+  TMSG(LINUX_PERF, "dbg register event fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
+    	et->fd, et->event->attr.precise_ip, et->event->attr.config,
 	et->event->attr.type, et->event->attr.sample_freq, et->event->attr.freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
-    EMSG("Linux perf event open %d (%d) failed: %s",
-          et->event->id, et->event->attr.config, strerror(errno));
+    EMSG("Linux perf event open %d failed: %s",
+          et->event->attr.config, strerror(errno));
     return false;
   }
 
@@ -361,16 +361,16 @@ perf_thread_init(event_thread_t *et)
   int flag = fcntl(et->fd, F_GETFL, 0);
   int ret  = fcntl(et->fd, F_SETFL, flag | O_ASYNC );
   if (ret == -1) {
-    EMSG("Can't set notification for event %d, fd: %d: %s", 
-         et->event->id, et->fd, strerror(errno));
+    EMSG("Can't set notification for event fd: %d: %s",
+         et->fd, strerror(errno));
   }
 
   // need to set PERF_SIGNAL to this file descriptor
   // to avoid POLL_HUP in the signal handler
   ret = fcntl(et->fd, F_SETSIG, PERF_SIGNAL);
   if (ret == -1) {
-    EMSG("Can't set signal for event %d, fd: %d: %s",
-         et->event->id, et->fd, strerror(errno));
+    EMSG("Can't set signal for event fd: %d: %s",
+         et->fd, strerror(errno));
   }
 
   // set file descriptor owner to this specific thread
@@ -379,8 +379,8 @@ perf_thread_init(event_thread_t *et)
   owner.pid  = syscall(SYS_gettid);
   ret = fcntl(et->fd, F_SETOWN_EX, &owner);
   if (ret == -1) {
-    EMSG("Can't set thread owner for event %d, fd: %d: %s", 
-         et->event->id, et->fd, strerror(errno));
+    EMSG("Can't set thread owner for event fd: %d: %s",
+         et->fd, strerror(errno));
   }
 
   ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);

@@ -144,15 +144,12 @@ struct event_custom_s;
 // this code doesn't work if the number of events change dynamically.
 // --------------------------------------------------------------
 typedef struct event_info_s {
-  int    id;
   struct perf_event_attr attr; // the event attribute
   int    metric;               // metric ID of the event (raw counter)
   metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
   // predefined metric
   struct event_custom_s *metric_custom;	// pointer to the predefined metric
-
-  metric_aux_info_t info_data;
 
 } event_info_t;
 

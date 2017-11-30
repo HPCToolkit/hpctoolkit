@@ -109,6 +109,7 @@
 #endif
 
 #define MIN_BYTES 8192
+#define NUM_DATA_METRICS 2
 
 /******************************************************************************
  * type definitions
@@ -268,7 +269,15 @@ metric_initialize()
   free_metric_id = hpcrun_new_metric();
 
   hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+  hpcrun_set_metric_info(free_metric_id,  "Bytes Freed");
+
+  size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
+  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
+  memset(aux_info, 0, mem_metrics_size);
+
+  thread_data_t* td = hpcrun_get_thread_data();
+
+  td->core_profile_trace_data.perf_event_info = aux_info;
 }
 
 /**
@@ -421,15 +430,21 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->rmemblock = info_ptr->memblock + info_ptr->bytes;
   info_ptr->left = NULL;
   info_ptr->right = NULL;
+
   if (is_active()) {
     sampling_info_t info;
     memset(&info, 0, sizeof(sampling_info_t));
     info.flags = SAMPLING_IN_MALLOC;
+    int metric = get_metric_alloc_id();
 
-    sample_val_t smpl = hpcrun_sample_callpath(uc, get_metric_alloc_id(),
+    sample_val_t smpl = hpcrun_sample_callpath(uc, metric,
                                                (hpcrun_metricVal_t) {.i=bytes},
                                                0, 1, &info);
     info_ptr->context = smpl.sample_node;
+    
+    thread_data_t *td = hpcrun_get_thread_data();
+    metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric]);
+    info_aux->num_samples++;
     
     loc_str = loc_name[loc];
   } else {
