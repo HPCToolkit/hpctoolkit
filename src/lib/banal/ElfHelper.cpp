@@ -70,6 +70,7 @@
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
+#include <include/hpctoolkit-config.h>
 
 
 //******************************************************************************
@@ -111,7 +112,7 @@ ElfFile::open
 #ifdef EM_CUDA
 
   if (ehdr->e_machine == EM_CUDA) {
-#if DYNINST_CUDA
+#ifdef DYNINST_USE_CUDA
     relocateCubin(memPtr, elf);
 #else
     elf_end(elf);

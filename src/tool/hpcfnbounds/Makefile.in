@@ -118,13 +118,14 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
+@OPT_DYNINST_LIBDW_TRUE@am__append_1 = -ldw
+@USE_BOOST_LIBS_TRUE@am__append_2 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+@OPT_USE_ZLIB_TRUE@am__append_3 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = x86-process-ranges.cpp amd-xop.c
-@HOST_CPU_X86_FAMILY_TRUE@am__append_4 = -I$(XED2_INC)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_5 = $(XED2_LIB_FLAGS)
-@HOST_CPU_X86_FAMILY_FALSE@am__append_6 = generic-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__append_4 = x86-process-ranges.cpp amd-xop.c
+@HOST_CPU_X86_FAMILY_TRUE@am__append_5 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_6 = $(XED2_LIB_FLAGS)
+@HOST_CPU_X86_FAMILY_FALSE@am__append_7 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -162,7 +163,8 @@ hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 hpcfnbounds_bin_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4)
@@ -372,6 +374,7 @@ LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBDW_COPY = @LIBDW_COPY@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
@@ -575,13 +578,14 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 MYCXXFLAGS = @HOST_CXXFLAGS@
 MYLDADD = $(HPCLIB_SupportLean) -L$(SYMTABAPI_LIB) \
 	$(SYMTABAPI_LIB_LIST) -L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf $(am__append_1) $(am__append_2)
+	-L$(LIBELF_LIB) -lelf $(am__append_1) $(am__append_2) \
+	$(am__append_3)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexec_SCRIPTS = hpcfnbounds
-hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_3) $(am__append_6)
-hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_4)
+hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_4) $(am__append_7)
+hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_5)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_5)
+hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_6)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS

@@ -67,6 +67,7 @@
 //******************************************************************************
 
 #include <lib/support/StrUtil.hpp>
+#include <include/hpctoolkit-config.h>
 
 #include "InputFile.hpp"
 #include "ElfHelper.hpp"
@@ -203,7 +204,8 @@ findCubinSections
   int count = 0;
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
-#if DYNINST_CUDA
+
+#ifdef DYNINST_USE_CUDA
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
       Elf_Scn *scn = *si;

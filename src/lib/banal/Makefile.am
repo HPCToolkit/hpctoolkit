@@ -51,20 +51,17 @@ include $(top_srcdir)/src/Makeinclude.config
 #----------------------------------------------------------------------
 
 BOOST_INC = @BOOST_INC@
-LIBDWARF_INC = @LIBDWARF_INC@
-SYMTABAPI_INC = @SYMTABAPI_INC@
 LIBELF_INC = @LIBELF_INC@
+SYMTABAPI_INC = @SYMTABAPI_INC@
+
+if OPT_DYNINST_LIBDWARF
+DWARF_INC = @LIBDWARF_INC@
+endif
 
 MYSOURCES = \
-	InputFile.cpp  \
-	Linemap.cpp  \
-	ElfHelper.hpp \
 	ElfHelper.cpp \
-	Fatbin.hpp \
 	Fatbin.cpp \
-	InputFile.hpp \
 	InputFile.cpp \
-	RelocateCubin.hpp \
 	RelocateCubin.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
@@ -76,9 +73,9 @@ MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
 	@GNUBINUTILS_IFLAGS@  \
-	-I$(LIBELF_INC)  \
 	-I$(BOOST_INC)  \
-	-I$(LIBDWARF_INC)  \
+	-I$(DWARF_INC)  \
+	-I$(LIBELF_INC)  \
 	-I$(SYMTABAPI_INC)
 
 MYLIBADD = @HOST_LIBTREPOSITORY@

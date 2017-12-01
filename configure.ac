@@ -2311,6 +2311,77 @@ fi
 AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"
 
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst.
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=old
+
+AC_ARG_WITH([dyninst-type],
+  [AS_HELP_STRING([--with-dyninst-type=old|libdw|cuda],
+      [temporary option to identify dyninst version])],
+  [dyninst_type="$withval"],
+  [])
+
+AC_MSG_NOTICE([dyninst-type: $dyninst_type])
+
+use_libdw=no
+use_cuda=no
+
+case "$dyninst_type" in
+  old ) ;;
+  libdw ) use_libdw=yes ;;
+  cuda ) use_libdw=yes ; use_cuda=yes ;;
+  * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
+esac
+
+AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
+AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+
+if test "$use_cuda" = yes ; then
+  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
+fi
+
+LIBDW_COPY="$use_libdw"
+AC_SUBST([LIBDW_COPY])
+
+# Test if ParseAPI uses Instruction or Instruction::Ptr.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+AC_LANG_PUSH([C++])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_instructions(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.size();
+}
+]])], [use_instn_ptr=yes], [use_instn_ptr=no])
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+if test "$use_instn_ptr" = yes ; then
+  AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
+fi
+
+AC_MSG_NOTICE([dyninst uses Instruction::Ptr: $use_instn_ptr])
+
 
 #-------------------------------------------------
 # Option: --with-xed2=PATH

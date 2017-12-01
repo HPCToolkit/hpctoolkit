@@ -106,6 +106,10 @@ MYLDADD = $(HPCLIB_SupportLean) \
 	-L$(LIBDWARF_LIB) -ldwarf \
 	-L$(LIBELF_LIB) -lelf
 
+if OPT_DYNINST_LIBDW
+  MYLDADD += -ldw
+endif
+
 if USE_BOOST_LIBS
   MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
 endif

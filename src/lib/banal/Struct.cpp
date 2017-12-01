@@ -88,8 +88,9 @@
 #include <Module.h>
 #include <Symtab.h>
 
+#include <include/hpctoolkit-config.h>
+
 #include "ElfHelper.hpp"
-#include "Linemap.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -103,12 +104,11 @@ using namespace ParseAPI;
 using namespace std;
 
 
-
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#if DYNINST_CUDA
+#ifdef DYNINST_USE_CUDA
 #define SYMTAB_ARCH_CUDA(symtab) \
   (symtab->getArchitecture() == Dyninst::Arch_cuda) 
 #else
@@ -121,7 +121,6 @@ using namespace std;
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_GAPS        0
-
 
 
 //******************************************************************************
@@ -729,7 +728,12 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 #endif
 
-    int num_contain = func->entry()->containingFuncs();
+    // cuda relocations break function entry blocks, so we have to
+    // test for NULL here.
+    int num_contain = 1;
+    if (func->entry() != NULL) {
+      num_contain = func->entry()->containingFuncs();
+    }
 
     if (SYMTAB_ARCH_CUDA(symtab) == false) { 
     //
@@ -1015,14 +1019,23 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
 
   // iterate through the instructions in this block
+#ifdef DYNINST_INSTRUCTION_PTR
   map <Offset, Instruction::Ptr> imap;
+#else
+  map <Offset, Instruction> imap;
+#endif
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
-    int    len = iit->second->size();
     string filenm = "";
     SrcFile::ln line = 0;
+
+#ifdef DYNINST_INSTRUCTION_PTR
+    int  len = iit->second->size();
+#else
+    int  len = iit->second.size();
+#endif
 
 #if USE_LIBDWARF_LINE_MAP
     LineRange lr;

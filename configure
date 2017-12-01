@@ -717,6 +717,11 @@ XED2_HPCRUN_LIBS
 XED2_LIB_FLAGS
 XED2_LIB_DIR
 XED2_INC
+LIBDW_COPY
+OPT_DYNINST_LIBDW_FALSE
+OPT_DYNINST_LIBDW_TRUE
+OPT_DYNINST_LIBDWARF_FALSE
+OPT_DYNINST_LIBDWARF_TRUE
 SYMTABAPI_LIB
 SYMTABAPI_INC
 SYMTABAPI_LIB_LIST
@@ -999,6 +1004,7 @@ enable_papi_c
 enable_papi_c_cupti
 with_perfmon
 with_symtabAPI
+with_dyninst_type
 with_xed2
 with_xerces
 with_zlib
@@ -1743,6 +1749,8 @@ Optional Packages:
   --with-perfmon=PATH     path to perfmon2 (pfmlib4) build or install
                           directory (default is NO)
   --with-symtabAPI=PATH   path to symtabAPI (dyninst) install directory
+  --with-dyninst-type=old|libdw|cuda
+                          temporary option to identify dyninst version
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
   --with-zlib=PATH        path to zlib install directory
@@ -20675,6 +20683,117 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 CXXFLAGS="$ORIG_CXXFLAGS"
 
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst.
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=old
+
+
+# Check whether --with-dyninst-type was given.
+if test "${with_dyninst_type+set}" = set; then :
+  withval=$with_dyninst_type; dyninst_type="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: dyninst-type: $dyninst_type" >&5
+$as_echo "$as_me: dyninst-type: $dyninst_type" >&6;}
+
+use_libdw=no
+use_cuda=no
+
+case "$dyninst_type" in
+  old ) ;;
+  libdw ) use_libdw=yes ;;
+  cuda ) use_libdw=yes ; use_cuda=yes ;;
+  * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
+esac
+
+ if test "$use_libdw" = no; then
+  OPT_DYNINST_LIBDWARF_TRUE=
+  OPT_DYNINST_LIBDWARF_FALSE='#'
+else
+  OPT_DYNINST_LIBDWARF_TRUE='#'
+  OPT_DYNINST_LIBDWARF_FALSE=
+fi
+
+ if test "$use_libdw" = yes; then
+  OPT_DYNINST_LIBDW_TRUE=
+  OPT_DYNINST_LIBDW_FALSE='#'
+else
+  OPT_DYNINST_LIBDW_TRUE='#'
+  OPT_DYNINST_LIBDW_FALSE=
+fi
+
+
+if test "$use_cuda" = yes ; then
+
+$as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
+
+fi
+
+LIBDW_COPY="$use_libdw"
+
+
+# Test if ParseAPI uses Instruction or Instruction::Ptr.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_instructions(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_instn_ptr=yes
+else
+  use_instn_ptr=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+if test "$use_instn_ptr" = yes ; then
+
+$as_echo "#define DYNINST_INSTRUCTION_PTR 1" >>confdefs.h
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: dyninst uses Instruction::Ptr: $use_instn_ptr" >&5
+$as_echo "$as_me: dyninst uses Instruction::Ptr: $use_instn_ptr" >&6;}
+
 
 #-------------------------------------------------
 # Option: --with-xed2=PATH
@@ -22602,6 +22721,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_KERNEL_4_3_TRUE}" && test -z "${OPT_ENABLE_KERNEL_4_3_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_KERNEL_4_3\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
