@@ -117,18 +117,32 @@ memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
     cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
     metric_set_t* mset = hpcrun_reify_metric_set(cursor);
-    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, current->event->metric_custom->metric_index);
+    int metric_custom = current->event->metric_custom->metric_index;
+
+    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, metric_custom);
     if (loc->i == 0) {
       loc->i = mmap_data->addr;
     }
-    TMSG(DATACENTRIC, "handling node %p, cct: %p", node, sv.sample_node);
+
+    thread_data_t *td = hpcrun_get_thread_data();
+    td->core_profile_trace_data.perf_event_info[metric_custom].num_samples++;
+
+    TMSG(DATACENTRIC, "handling node %p, cct: %p, addr: %p", node, sv.sample_node, mmap_data->addr);
   }
 }
 
 
-static void
-memcentric_register(event_info_t *event_desc)
+static int
+memcentric_register(event_custom_t *event)
 {
+  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_desc == NULL)
+    return -1;
+
+  memset(event_desc, 0, sizeof(event_info_t));
+
+  event_desc->metric_custom = event;
+
   struct event_threshold_s threshold = init_default_count();
 
   // ------------------------------------------
@@ -170,6 +184,9 @@ memcentric_register(event_info_t *event_desc)
   );
 
   event_desc->attr.sample_id_all = 1;
+
+  event_desc_add(event_desc);
+  return 1;
 }
 
 

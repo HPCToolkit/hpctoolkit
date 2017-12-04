@@ -48,10 +48,13 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include "sample-sources/perf/perf-util.h"
 
+#include "event_desc.h"
+
+typedef struct event_custom_s event_custom_t;
 
 // callback functions
-typedef void (*register_event_t)(struct event_info_s *);
-typedef void (*event_handler_t)(struct event_thread_s*, void *context, sample_val_t , struct perf_mmap_data_s* );
+typedef int  register_event_t(event_custom_t *event);
+typedef void event_handler_t(struct event_thread_s*, void *context, sample_val_t , struct perf_mmap_data_s* );
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
@@ -63,8 +66,8 @@ typedef struct event_custom_s {
   const char *name;            // unique name of the event
   const char *desc;            // brief description of the event
 
-  register_event_t register_fn;// function to register the event
-  event_handler_t  handler_fn; // callback to be used during the sampling
+  register_event_t *register_fn;// function to register the event
+  event_handler_t  *handler_fn; // callback to be used during the sampling
 
   int            metric_index; // hpcrun's index metric
   metric_desc_t *metric_desc;  // pointer to predefined metric
@@ -73,12 +76,31 @@ typedef struct event_custom_s {
 
 } event_custom_t;
 
+// --------------------------------------------------------------
+// Function interface
+// --------------------------------------------------------------
+/**
+ * find an event custom based on its event name.
+ * @return event_custom_t if exists, NULL otherwise.
+ **/ 
 event_custom_t *event_custom_find(const char *name);
 
+/**
+ * register a new event. 
+ * For the sake of simplicity, if an event already exists, it still  adda it the head.
+ * The caller has to make sure the name of the event is unique
+ * @param event_custom_t event
+ **/
 int event_custom_register(event_custom_t *event);
 
+/**
+ * list all registered custom events
+ **/ 
 void event_custom_display(FILE *std);
 
+/**
+ * method to be called during signal delivery. If an event is recognized, it will delivered to the custom handler.
+ **/ 
 int event_custom_handler(struct event_thread_s* event, void *context, sample_val_t sample, struct perf_mmap_data_s* data);
 
 #endif

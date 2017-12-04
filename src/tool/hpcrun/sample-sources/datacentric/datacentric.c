@@ -188,27 +188,35 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
 }
 
 
-static void
-datacentric_register(event_info_t *event_desc)
+static int
+datacentric_register(event_custom_t *event)
 {
   struct event_threshold_s threshold = init_default_count();
+  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_desc == NULL)
+    return -1;
+
+  memset(event_desc, 0, sizeof(event_info_t));
 
   // ------------------------------------------
   // hardware-specific data centric setup (if supported)
   // ------------------------------------------
   int result = datacentric_hw_register(event_desc, &threshold);
   if (result == 0)
-    return;
+    return 0;
 
   // ------------------------------------------
   // create metric page-fault
   // ------------------------------------------
   int metric = hpcrun_new_metric();
 
-  event_desc->metric = metric;
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
+  event_desc->metric        = metric;
+  event_desc->metric_custom = event;
+  event_desc->metric_desc   = hpcrun_set_metric_info_and_period(
         metric, EVNAME_DATACENTRIC,
         MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  return event_desc_add(event_desc);
 }
 
 

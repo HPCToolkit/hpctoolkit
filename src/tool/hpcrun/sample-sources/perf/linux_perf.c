@@ -154,11 +154,6 @@
 
 
 //******************************************************************************
-// type declarations
-//******************************************************************************
-
-
-//******************************************************************************
 // forward declarations 
 //******************************************************************************
 
@@ -168,35 +163,23 @@ restart_perf_event(int fd);
 static void 
 perf_thread_fini(int nevents, event_thread_t *event_thread);
 
-static int perf_event_handler(
-  int sig, 
-  siginfo_t* siginfo, 
-  void* context
-);
+static int 
+perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 
 
 //******************************************************************************
 // constants
 //******************************************************************************
 
-
 #ifndef ENABLE_PERFMON
 static const char *event_name = "CPU_CYCLES";
 #endif
-
-
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
-
 static sigset_t sig_mask;
-
-// a list of main description of events, shared between threads
-// once initialize, this list doesn't change (but event description can change)
-static event_info_t  *event_desc = NULL;
-
 
 
 /******************************************************************************
@@ -718,18 +701,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
 
   self->evl.nevents = num_events;
-  
-  // setup all requested events
-  // if an event cannot be initialized, we still keep it in our list
-  //  but there will be no samples
-
-  size_t size = sizeof(event_info_t) * num_events;
-  event_desc = (event_info_t*) hpcrun_malloc(size);
-  if (event_desc == NULL) {
-	  EMSG("Unable to allocate %d bytes", size);
-	  return;
-  }
-  memset(event_desc, 0, size);
 
   int i=0;
 
@@ -752,15 +723,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     // need a special case if we have our own customized  predefined  event
     // This "customized" event will use one or more perf events
     // ------------------------------------------------------------
-    event_desc[i].metric_custom = event_custom_find(name);
 
-    if (event_desc[i].metric_custom != NULL) {
-      if (event_desc[i].metric_custom->register_fn != NULL) {
-        event_desc[i].metric_custom->register_fn( &event_desc[i] );
-        continue;
-      }
+    if (event_custom_create_event(name) > 0) {
+      continue;
     }
-    struct perf_event_attr *event_attr = &(event_desc[i].attr);
+
+    event_info_t *event = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+    struct perf_event_attr *event_attr = &event->attr;
 
     int isPMU = pfmu_getEventAttribute(name, event_attr);
     if (isPMU < 0)
@@ -786,7 +755,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
-    event_desc[i].metric = hpcrun_new_metric();
+    event->metric = hpcrun_new_metric();
    
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
@@ -795,15 +764,15 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (!is_period) {
       threshold = 1;
     }
-    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
+    event->metric_desc = hpcrun_set_metric_info_and_period(event->metric, name_dup,
             MetricFlags_ValFmt_Real, threshold, prop);
 
-    if (m == NULL) {
+    if (event->metric_desc == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     } else {
-      m->is_frequency_metric = (event_desc[i].attr.freq == 1);
+      event->metric_desc->is_frequency_metric = (event->attr.freq == 1);
     }
-    event_desc[i].metric_desc = m;
+    event_desc_add(event);
   }
 
   if (num_events > 0)
@@ -818,7 +787,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(LINUX_PERF, "gen_event_set");
 
-  int nevents 	  = (self->evl).nevents;
+  int nevents 	  = event_desc_get_num();
   int num_metrics = hpcrun_get_num_metrics();
 
   // a list of event information, private for each thread
@@ -839,14 +808,16 @@ METHOD_FN(gen_event_set, int lush_metrics)
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-
-  for (int i=0; i<nevents; i++)
+  int i = 0;
+  for (event_desc_list_t* list = event_desc_get_first();
+       list != NULL && i<nevents;
+       list = event_desc_get_next(list), i++)
   {
-    event_thread[i].event = &event_desc[i];
+    event_thread[i].event = event_desc_get_event_info(list);
 
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init( &(event_thread[i])) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
+      TMSG(LINUX_PERF, "FAIL to initialize %s", event_thread[i].event->metric_desc->name);
     }
   }
 

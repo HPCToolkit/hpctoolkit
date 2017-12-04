@@ -51,6 +51,7 @@
 #include "sample-sources/display.h"
 
 #include "event_custom.h"
+#include "event_desc.h"
 
 //*************************** type data structure **************************
 
@@ -100,21 +101,40 @@ event_custom_display(FILE *std)
   fprintf(std, "\n");
 }
 
+// --------------------------------------------------------------
+// Adding a new event on the head without checking if it already exists or not
+// --------------------------------------------------------------
 int
 event_custom_register(event_custom_t *event)
 {
   events_list_t item;
   item.event = event_custom_find(event->name);
-  if (item.event != NULL) return 0;
+  if (item.event != NULL)
+    return 0;
 
   events_list_t *list_item = (events_list_t *) hpcrun_malloc(sizeof(events_list_t));
   if (list_item == NULL)
-	return -1;
+    return -1;
 
   list_item->event = event;
 
   SLIST_INSERT_HEAD(&list_events_head, list_item, entries);
   return 1;
+}
+
+// --------------------------------------------------------------
+// Create a custom event
+// --------------------------------------------------------------
+int
+event_custom_create_event(char *name)
+{
+  event_custom_t *event = event_custom_find(name);
+
+  if (event == NULL) {
+    return 0;
+  }
+
+  return event->register_fn(event);
 }
 
 int

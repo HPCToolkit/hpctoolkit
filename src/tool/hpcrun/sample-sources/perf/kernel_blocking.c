@@ -67,10 +67,13 @@
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"
 #include "event_custom.h"
+#include "event_desc.h"
 
 /******************************************************************************
  * Macros
  *****************************************************************************/
+
+#define KERNEL_BLOCKING_DEBUG 0
 
 // -----------------------------------------------------
 // Predefined events
@@ -110,7 +113,7 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
-    TMSG(LINUX_PERF, "old t: %llu, c: %d, p: %d, td: %d -- vs -- t: %llu, c: %d, p: %d, td: %d",
+    TMSG(LINUX_PERF, "old t: %l, c: %d, p: %d, td: %d -- vs -- t: %l, c: %d, p: %d, td: %d",
         time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
   }
@@ -212,8 +215,10 @@ kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t
       // other event than cs occurs (it can be cycles, clocks or others)
 
       if ((mmap_data->time > 0) && (time_cs_out > 0) && (mmap_data->nr==0)) {
+#if KERNEL_BLOCKING_DEBUG
         unsigned int cpumode = mmap_data->header_misc & PERF_RECORD_MISC_CPUMODE_MASK;
         assert(cpumode == PERF_RECORD_MISC_USER);
+#endif
 
         blame_kernel_time(current_event, cct_kernel, mmap_data);
         // important: need to reset the value to inform that we are leaving the kernel
@@ -235,18 +240,27 @@ kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t
  * - blocking time metric to store the time spent in the kernel
  * - context switch metric to store the number of context switches
  ****************************************************************/
-static void
-register_blocking(event_info_t *event_desc)
+static int
+register_blocking(event_custom_t *event)
 {
+  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_desc == NULL)
+    return -1;
+
+  memset(event_desc, 0, sizeof(event_info_t));
+
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
+  event_desc->metric_custom = event;
+
   event_desc->metric_custom->metric_index = hpcrun_new_metric();
   event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
       event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   metric_blocking_index = event_desc->metric_custom->metric_index;
+
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
@@ -267,6 +281,7 @@ register_blocking(event_info_t *event_desc)
   struct perf_event_attr *attr = &(event_desc->attr);
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
+
   perf_attr_init( attr,
       true        /* use_period*/,
       1           /* sample every context switch*/,
@@ -275,6 +290,10 @@ register_blocking(event_info_t *event_desc)
 
   event_desc->attr.context_switch = 1;
   event_desc->attr.sample_id_all = 1;
+
+  event_desc_add(event_desc);
+
+  return 1;
 }
 
 
