@@ -68,9 +68,6 @@ static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
 static dso_info_t* s_dso_free_list = NULL;
 
 
-/* locking functions to ensure that loadmaps are consistent */
-static spinlock_t loadmap_lock = SPINLOCK_UNLOCKED;
-
 static loadmap_notify_t *notification_recipients = NULL;
 
 void
@@ -216,30 +213,6 @@ hpcrun_loadModule_new(const char* name)
 }
 
 
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-void
-hpcrun_loadmap_lock() 
-{
-  spinlock_lock(&loadmap_lock);
-}
-
-
-void
-hpcrun_loadmap_unlock()
-{
-  spinlock_unlock(&loadmap_lock);
-}
-
-
-int
-hpcrun_loadmap_isLocked()
-{
-  return spinlock_is_locked(&loadmap_lock);
-}
 
 
 //***************************************************************************
