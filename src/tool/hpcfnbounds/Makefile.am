@@ -101,7 +101,8 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
-MYLDADD = $(HPCLIB_SupportLean) \
+MYLDADD = libeh_frames.a  \
+	$(HPCLIB_SupportLean) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
 	-L$(LIBDWARF_LIB) -ldwarf \
 	-L$(LIBELF_LIB) -lelf
@@ -127,8 +128,14 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
+noinst_LIBRARIES = libeh_frames.a
+
 pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
+
+libeh_frames_a_SOURCES = eh-frames.cpp
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(LIBDWARF_INC)
+libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
