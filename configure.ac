@@ -1431,6 +1431,53 @@ AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
 
 
 #-------------------------------------------------
+# Option: --with-bzip=PATH
+#-------------------------------------------------
+
+# Location of libbz2.so.  This is just for copy-libs as an elfutils
+# prereq.  Toolkit doesn't directly call bzip, so we don't need an
+# include path here.  Note: this package is not built in externals.
+
+BZIP=no
+BZIP_COPY=no
+BZIP_LIB=no
+
+AC_ARG_WITH([bzip],
+  [AS_HELP_STRING([--with-bzip=PATH],
+      [path to bzip install directory])],
+  [BZIP="$withval"],
+  [])
+
+AC_MSG_CHECKING([for bzip])
+
+case "$BZIP" in
+  /* )
+    for lib in $multilib_path ; do
+      bzip_lib="${BZIP}/$lib"
+      if test -f "${bzip_lib}/libbz2.so" ; then
+        BZIP_LIB="$bzip_lib"
+	break
+      fi
+    done
+    if test "$BZIP_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libbz2.so in: $BZIP])
+    fi
+    BZIP_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([bzip directory must be absolute path: $BZIP])
+    ;;
+esac
+
+AC_MSG_RESULT([$BZIP])
+
+AC_SUBST([BZIP_COPY])
+AC_SUBST([BZIP_LIB])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -3750,6 +3797,7 @@ AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
+AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

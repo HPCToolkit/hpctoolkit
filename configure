@@ -784,6 +784,8 @@ LIBELF_INC
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+BZIP_LIB
+BZIP_COPY
 USE_BOOST_LIBS_FALSE
 USE_BOOST_LIBS_TRUE
 BOOST_COPY
@@ -991,6 +993,7 @@ with_dummy_blank_line
 with_externals
 with_binutils
 with_boost
+with_bzip
 with_libdwarf
 with_libelf
 with_libmonitor
@@ -1736,6 +1739,7 @@ Optional Packages:
                           directory (normally required)
   --with-binutils=PATH    path to binutils install directory
   --with-boost=PATH       path to boost install directory
+  --with-bzip=PATH        path to bzip install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
@@ -19589,6 +19593,56 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-bzip=PATH
+#-------------------------------------------------
+
+# Location of libbz2.so.  This is just for copy-libs as an elfutils
+# prereq.  Toolkit doesn't directly call bzip, so we don't need an
+# include path here.  Note: this package is not built in externals.
+
+BZIP=no
+BZIP_COPY=no
+BZIP_LIB=no
+
+
+# Check whether --with-bzip was given.
+if test "${with_bzip+set}" = set; then :
+  withval=$with_bzip; BZIP="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for bzip" >&5
+$as_echo_n "checking for bzip... " >&6; }
+
+case "$BZIP" in
+  /* )
+    for lib in $multilib_path ; do
+      bzip_lib="${BZIP}/$lib"
+      if test -f "${bzip_lib}/libbz2.so" ; then
+        BZIP_LIB="$bzip_lib"
+	break
+      fi
+    done
+    if test "$BZIP_LIB" = no ; then
+      as_fn_error $? "unable to find libbz2.so in: $BZIP" "$LINENO" 5
+    fi
+    BZIP_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "bzip directory must be absolute path: $BZIP" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BZIP" >&5
+$as_echo "$BZIP" >&6; }
+
+
+
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -25407,6 +25461,8 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   binutils:     ${GNUBINUTILS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   boost:        ${BOOST}" >&5
 $as_echo "$as_me:   boost:        ${BOOST}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   bzip:         ${BZIP}" >&5
+$as_echo "$as_me:   bzip:         ${BZIP}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libelf:       ${LIBELF}" >&5

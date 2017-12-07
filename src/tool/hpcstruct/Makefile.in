@@ -274,6 +274,8 @@ BOOST_INC = @BOOST_INC@
 # Fixme: new elfutils from spack wants bzip, xz and zlib.
 BOOST_LIB = @BOOST_LIB@
 BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BZIP_COPY = @BZIP_COPY@
+BZIP_LIB = @BZIP_LIB@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
