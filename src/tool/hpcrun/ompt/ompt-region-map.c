@@ -12,10 +12,10 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/ompt/ompt-region-map.h>
-#include <hpcrun/ompt/ompt-cct-node-vector.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include "ompt-region-map.h"
+#include "ompt-cct-node-vector.h"
 
 
 
@@ -59,7 +59,7 @@ ompt_region_map_entry_new(uint64_t region_id, cct_node_t *call_path, int64_t dev
   e->call_path = call_path;
   e->left = NULL;
   e->right = NULL;
-  ompt_cct_node_vector_init(e->vector);
+  e->vector = (ompt_cct_node_vector_t *)ompt_cct_node_vector_init();
 
   return e;
 }
@@ -163,7 +163,7 @@ ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path, int64_t device
 void ompt_region_map_child_insert(ompt_region_map_entry_t *entry, cct_node_t *cct_node)
 {
   if (entry->vector) {
-    ompt_cct_node_vector_push_back(entry, cct_node);
+    ompt_cct_node_vector_push_back(entry->vector, cct_node);
   }
 }
 

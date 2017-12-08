@@ -1,8 +1,10 @@
 #include <stdio.h>
 
-#include "ompt-function-id-map.h"
+#include <hpcrun/cct2metrics.h>
+
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
+#include "ompt-function-id-map.h"
 #include "ompt-interface.h"
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -39,17 +41,28 @@ cupti_process_sample
     ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
     if (entry != NULL) {
       uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
-      uint64_t cubin_id = ompt_function_id_map_entry_function_index_get(entry);
+      uint64_t cubin_id = ompt_function_id_map_entry_cubin_id_get(entry);
+      PRINT("function_index %u, cubin_id %u, external id %d\n", function_index, cubin_id, external_id);
       ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
       cct_addr_t frm = { .ip_norm = ip };
       cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
-      hpcrun_cct_insert_addr(cct_node, &frm);
+      if (cct_node != NULL) {
+        PRINT("lookup cct_node %u\n", external_id);
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
+          PRINT("successful insert ip %u\n", ip.lm_ip);
+          metric_set_t* metrics = hpcrun_reify_metric_set(cct_child);
+          hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
+        }
+      } else {
+        PRINT("cannot find cct_node %u\n", external_id);
+      }
     }
   }
 }
 
 
-static void
+void
 cupti_process_source_locator
 (
  CUpti_ActivitySourceLocator *asl,

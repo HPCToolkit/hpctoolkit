@@ -16,7 +16,7 @@
 
 typedef struct ompt_cct_node_vector_s ompt_cct_node_vector_t;
 
-void ompt_cct_node_vector_init(ompt_cct_node_vector_t *vector);
+ompt_cct_node_vector_t *ompt_cct_node_vector_init();
 
 void ompt_cct_node_vector_reserve(ompt_cct_node_vector_t *vector, uint64_t capacity);
 

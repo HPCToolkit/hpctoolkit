@@ -206,6 +206,7 @@ static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
+static device_finalizer_callback_t device_finalizer;
 
 //
 // Local functions
@@ -617,6 +618,7 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
+    device_finalizer();
 
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -719,12 +721,18 @@ hpcrun_thread_fini(epoch_t *epoch)
     if (hpcrun_get_disabled()) {
       return;
     }
-
+    
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
 }
 
+
+void
+hpcrun_register_device_finalizer_callback(device_finalizer_callback_t device_finalizer_callback)
+{
+  device_finalizer = device_finalizer_callback;
+}
 
 //***************************************************************************
 // hpcrun debugging support 

@@ -12,9 +12,9 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/ompt/ompt-host-op-map.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include "ompt-host-op-map.h"
 
 
 
@@ -142,9 +142,9 @@ ompt_host_op_map_insert(uint64_t host_op_id,
       assert(0);
     }
   }
+  ompt_host_op_map_root = entry;
 
   spinlock_unlock(&ompt_host_op_map_lock);
-  ompt_host_op_map_root = entry;
 }
 
 

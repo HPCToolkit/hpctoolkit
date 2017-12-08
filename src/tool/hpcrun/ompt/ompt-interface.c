@@ -69,7 +69,9 @@
 #include <hpcrun/ompt/ompt-task.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/cct2metrics.h>
 #include <hpcrun/hpcrun-initializers.h>
+#include <hpcrun/main.h>
 
 #include "ompt-interface.h"
 #include "ompt-callstack.h"
@@ -95,6 +97,7 @@
 #include "sample-sources/idle.h"
 
 
+
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -102,7 +105,7 @@
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
 
-
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 /******************************************************************************
  * static variables
@@ -149,6 +152,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //-----------------------------------------
 static __thread int ompt_idle_count;
 static __thread int ompt_host_op_seq_id;
+static __thread ompt_device_t *ompt_device = NULL;
 
 
 /******************************************************************************
@@ -548,6 +552,8 @@ init_idle_blame_shift(const char *version)
 // forward declaration
 void prepare_device();
 
+void hpcrun_ompt_device_finializer(void);
+
 void
 ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
                 const char*            runtime_version,
@@ -570,6 +576,7 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
   init_idle_blame_shift(runtime_version);
 
   prepare_device();
+  hpcrun_register_device_finalizer_callback(hpcrun_ompt_device_finializer);
 
   if (ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
@@ -718,7 +725,7 @@ ompt_idle_blame_shift_request()
 // map opid operations
 //*****************************************************************************
 
-// Records the (target id —> cct_node *) mapping in a thread local variable
+// Records the (target id cct_node *) mapping in a thread local variable
 void
 hpcrun_op_id_map_record_target(ompt_id_t target_id,
                                cct_node_t *node,
@@ -733,28 +740,38 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 // the cct_node_t * associated with target_id from the thread_local variable
 void
 hpcrun_op_id_map_insert(ompt_id_t host_op_id,
-                        ompt_id_t target_id)
+                        ompt_id_t target_id,
+                        ip_normalized_t ip)
 {
+  PRINT("inserted host_op_id %u\n", host_op_id);
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
+    PRINT("start to insert\n");
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
     cct_node_t *cct_child = NULL;
     if ((cct_child = ompt_region_map_seq_lookup(entry, ompt_host_op_seq_id)) == NULL) {
-      cct_addr_t frm = { .ip_norm = NULL };  // FIXME(keren): define union type for cct_addr_t
+      cct_addr_t frm = { .ip_norm = ip };  // FIXME(keren): define union type for cct_addr_t
       cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
+      metric_set_t* metrics = hpcrun_reify_metric_set(cct_child);
+      hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
       ompt_region_map_child_insert(entry, cct_child);
     }
     ompt_host_op_map_insert(host_op_id, ompt_host_op_seq_id, entry);
     ompt_host_op_seq_id++;
   }
+  cct_node_t *cct_node = hpcrun_op_id_map_lookup(host_op_id);
+  if (cct_node)
+    PRINT("inserted find cct_node %u\n", host_op_id);
+  else
+    PRINT("cannot find cct_node %u\n", host_op_id);
 }
 
 
 // Look up the cct node associated with host_op_id in a map.
 // The map is mutable concurrent data structure. the GPU thread all CPU threads share it
-// this function will provide the pointer to the CCT node that represents the 
-// context for the target region. For now, this cct_node_t * will be in the thread’s CCT. 
-// Eventually, this function might return a pointer to a separate CCT that will be used by a device
+// this function will provide the pointer to the CCT node that represents the
+// context for the target region. For now, this cct_node_t * will be in the thread CCT.
+// Eventually, this function might return a pointer to a separate CCT that will be used by a device
 cct_node_t *
 hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
 {
@@ -762,8 +779,9 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
   cct_node_t *node = NULL;
   if (entry != NULL) {
     ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
-    node = ompt_region_map_entry_callpath_get(region_map_entry);
-    ompt_host_op_map_refcnt_update(host_op_id, 0);
+    int host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
+    node = ompt_region_map_seq_lookup(region_map_entry, host_op_seq_id);
+    //ompt_host_op_map_refcnt_update(host_op_id, 0);
   } 
   return node;
 }
@@ -776,13 +794,13 @@ hpcrun_cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offse
   ip_normalized_t ip;
   if (entry != NULL) {
     uint64_t hpctoolkit_module_id = ompt_cubin_id_map_entry_hpctoolkit_id_get(entry);
-    Elf_SymbolVector *vector = ompt_cubin_id_map_entry_efl_vector_get(entry);
+    const Elf_SymbolVector *vector = ompt_cubin_id_map_entry_efl_vector_get(entry);
+    PRINT("hpctoolkit_module_id %u\n", hpctoolkit_module_id);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
   }
   return ip;
 }
-
 
 //*****************************************************************************
 // device operations
@@ -820,6 +838,14 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 
 
 #define BUFFER_SIZE (1024 * 1024 * 8)
+
+void
+hpcrun_ompt_device_finializer(void)
+{
+  if (ompt_device != NULL) {
+    ompt_stop_trace(ompt_device);
+  }
+}
 
 void 
 ompt_callback_buffer_request(uint64_t device_id,
@@ -880,6 +906,8 @@ ompt_device_initialize(uint64_t device_num,
   ompt_bind_names(lookup);
 
   ompt_trace_configure(device);
+
+  ompt_device = device;
 }
 
 
@@ -915,7 +943,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
-  ompt_cubin_id_map_refcnt_update(module_id, 0);
+  //ompt_cubin_id_map_refcnt_update(module_id, 0);
 }
 
 
@@ -930,7 +958,14 @@ ompt_target_callback(ompt_target_type_t kind,
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
   getcontext(&uc);
-  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+  hpcrun_safe_enter();
+  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node; 
+  metric_set_t* metrics = hpcrun_reify_metric_set(node);
+  hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
+  hpcrun_safe_exit();
+  td->overhead--;
   hpcrun_op_id_map_record_target(target_id, node, device_num);
 }
 
@@ -943,7 +978,8 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  hpcrun_op_id_map_insert(host_op_id, target_id);
+  ip_normalized_t ip = {.lm_id = 0, .lm_ip = optype};
+  hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 
 
@@ -951,7 +987,8 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
-  hpcrun_op_id_map_insert(host_op_id, target_id);
+  ip_normalized_t ip = {.lm_id = 0, .lm_ip = 7};
+  hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 
 

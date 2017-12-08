@@ -12,9 +12,9 @@
 
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/ompt/ompt-cct-node-vector.h>
+#include "ompt-cct-node-vector.h"
 
-
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 /******************************************************************************
  * type definitions 
@@ -27,12 +27,13 @@ struct ompt_cct_node_vector_s {
 }; 
 
 
-void ompt_cct_node_vector_init(ompt_cct_node_vector_t *vector)
+ompt_cct_node_vector_t *ompt_cct_node_vector_init()
 {
-  vector = (ompt_cct_node_vector_t *)hpcrun_malloc(sizeof(ompt_cct_node_vector_t));
+  ompt_cct_node_vector_t *vector = (ompt_cct_node_vector_t *)hpcrun_malloc(sizeof(ompt_cct_node_vector_t));
   vector->size = 0;
-  vector->capacity = 4; // TODO(keren): increase it
-  ompt_cct_node_vector_reserve(vector, vector->capacity);
+  vector->capacity = 0;
+  ompt_cct_node_vector_reserve(vector, 32); // TODO(keren): increase it
+  return vector;
 }
 
 
@@ -40,13 +41,14 @@ void ompt_cct_node_vector_reserve(ompt_cct_node_vector_t *vector, uint64_t capac
 {
   // FIXME(keren): free memory
   if (capacity > vector->capacity) {
-    vector->nodes = (cct_node_t **)hpcrun_malloc(sizeof(cct_node_t *) * (capacity));
+    cct_node_t **new_nodes = (cct_node_t **)hpcrun_malloc(sizeof(cct_node_t *) * (capacity));
+    size_t i = 0;
+    for (; i < vector->size; ++i) {
+      new_nodes[i] = vector->nodes[i];
+    }
+    vector->nodes = new_nodes;
   }
-  if (!vector->nodes) {
-    // no more free memory
-  } else {
-    vector->capacity = capacity;
-  }
+  vector->capacity = capacity;
 }
 
 
