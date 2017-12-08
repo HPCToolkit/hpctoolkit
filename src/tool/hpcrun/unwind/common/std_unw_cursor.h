@@ -76,7 +76,6 @@
 #endif
 
 enum libunw_state {
-  LIBUNW_INIT,
   LIBUNW_OK,
   LIBUNW_FAIL,
 };
