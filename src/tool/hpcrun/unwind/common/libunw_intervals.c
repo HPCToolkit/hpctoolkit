@@ -149,6 +149,10 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
     }
 
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
+  if (!uw) {
+      TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+      return STEP_ERROR;
+  }
   uwi_t *uwi = bitree_uwi_rootval(uw);
   unw_apply_reg_state(unw_cursor, uwi->recipe);
   return STEP_OK;
