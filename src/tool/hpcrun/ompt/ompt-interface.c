@@ -105,8 +105,6 @@
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
 
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-
 /******************************************************************************
  * static variables
  *****************************************************************************/
@@ -133,7 +131,9 @@ static undirected_blame_info_t omp_idle_blame_info;
 // declare ompt interface function pointers
 //-----------------------------------------
 #define ompt_interface_fn(f) f ## _t f ## _fn;
+
 FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
+
 #undef ompt_interface_fn
 
 
@@ -743,10 +743,8 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
                         ompt_id_t target_id,
                         ip_normalized_t ip)
 {
-  PRINT("inserted host_op_id %u\n", host_op_id);
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
-    PRINT("start to insert\n");
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
     cct_node_t *cct_child = NULL;
     if ((cct_child = ompt_region_map_seq_lookup(entry, ompt_host_op_seq_id)) == NULL) {
@@ -760,10 +758,6 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
     ompt_host_op_seq_id++;
   }
   cct_node_t *cct_node = hpcrun_op_id_map_lookup(host_op_id);
-  if (cct_node)
-    PRINT("inserted find cct_node %u\n", host_op_id);
-  else
-    PRINT("cannot find cct_node %u\n", host_op_id);
 }
 
 
@@ -781,6 +775,7 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
     ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
     int host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
     node = ompt_region_map_seq_lookup(region_map_entry, host_op_seq_id);
+    // TODO(keren): cannot be removed?
     //ompt_host_op_map_refcnt_update(host_op_id, 0);
   } 
   return node;
@@ -795,7 +790,6 @@ hpcrun_cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offse
   if (entry != NULL) {
     uint64_t hpctoolkit_module_id = ompt_cubin_id_map_entry_hpctoolkit_id_get(entry);
     const Elf_SymbolVector *vector = ompt_cubin_id_map_entry_efl_vector_get(entry);
-    PRINT("hpctoolkit_module_id %u\n", hpctoolkit_module_id);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
   }
@@ -943,7 +937,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
-  //ompt_cubin_id_map_refcnt_update(module_id, 0);
+  ompt_cubin_id_map_refcnt_update(module_id, 0);
 }
 
 
@@ -955,6 +949,7 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
+  // TODO(keren): why must be synchronized?
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
   getcontext(&uc);
@@ -978,6 +973,8 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
+  // TODO(keren): setup lm_ip
+  // FIXME(keren): should I care about lm_id?
   ip_normalized_t ip = {.lm_id = 0, .lm_ip = optype};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
@@ -987,6 +984,8 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
+  // TODO(keren): setup lm_ip
+  // FIXME(keren): should I care about lm_id?
   ip_normalized_t ip = {.lm_id = 0, .lm_ip = 7};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }

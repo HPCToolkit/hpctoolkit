@@ -14,8 +14,6 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include "ompt-cct-node-vector.h"
 
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
