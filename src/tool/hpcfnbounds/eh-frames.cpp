@@ -67,87 +67,81 @@
 #include <libdwarf.h>
 #include "eh-frames.h"
 
-#define DWARF_OK(e) (DW_DLV_OK == (e))
+#include <set>
 
-using namespace std;
+typedef std::set <void *> AddrSet;
 
-static int verbose = 0;
+static void dwarf_frame_info_help(int, AddrSet &);
+
+#define DWARF_INIT    dwarf_init
+#define DWARF_FINISH  dwarf_finish
+#define DWARF_DEALLOC  dwarf_dealloc
+#define DWARF_GET_FDE_LIST_EH  dwarf_get_fde_list_eh
+#define DWARF_GET_FDE_RANGE    dwarf_get_fde_range
+#define DWARF_FDE_CIE_LIST_DEALLOC  dwarf_fde_cie_list_dealloc
 
 //----------------------------------------------------------------------
 
-// collect function start addresses from eh_frame info
-// (part of the DWARF info)
-// enter these start addresses into the reachable function
-// data structure
-
 void
-seed_dwarf_info(int dwarf_fd)
+dwarf_eh_frame_info(int fd)
 {
-  Dwarf_Debug dbg = NULL;
+  if (fd < 0) {
+    return;
+  }
+
+  AddrSet addrSet;
+
+  dwarf_frame_info_help(fd, addrSet);
+
+  for (auto it = addrSet.begin(); it != addrSet.end(); ++it) {
+    add_frame_addr(*it);
+  }
+}
+
+//----------------------------------------------------------------------
+
+// Read the eh frame info (exception handler) from the FDE records
+// (frame description entry) and put the list of addresses (low_pc)
+// into addrSet.
+//
+static void
+dwarf_frame_info_help(int fd, AddrSet & addrSet)
+{
+  Dwarf_Debug dbg;
   Dwarf_Error err;
-  Dwarf_Handler errhand = NULL;
-  Dwarf_Ptr errarg = NULL;
+  int ret;
 
-  // Unless disabled, add eh_frame info to function entries
-  if(getenv("EH_NO")) {
-    close(dwarf_fd);
+  ret = DWARF_INIT (fd, DW_DLC_READ, NULL, NULL, &dbg, &err);
+  if (ret == DW_DLV_ERROR) { DWARF_DEALLOC (dbg, err, DW_DLA_ERROR); }
+
+  if (ret != DW_DLV_OK) {
     return;
   }
 
-  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
-                             errhand, errarg,
-                             &dbg, &err))) {
-    if (verbose) fprintf(stderr, "dwarf init failed !!\n");
-    return;
-  }
+  Dwarf_Cie * cie_data = NULL;
+  Dwarf_Fde * fde_data = NULL;
+  Dwarf_Signed cie_count = 0;
+  Dwarf_Signed fde_count = 0;
 
-  Dwarf_Cie* cie_data = NULL;
-  Dwarf_Signed cie_element_count = 0;
-  Dwarf_Fde* fde_data = NULL;
-  Dwarf_Signed fde_element_count = 0;
+  ret = DWARF_GET_FDE_LIST_EH (dbg, &cie_data, &cie_count, &fde_data, &fde_count, &err);
+  if (ret == DW_DLV_ERROR) { DWARF_DEALLOC (dbg, err, DW_DLA_ERROR); }
 
-  int fres =
-    dwarf_get_fde_list_eh(dbg, &cie_data,
-                          &cie_element_count, &fde_data,
-                          &fde_element_count, &err);
-  if ( ! DWARF_OK(fres)) {
-    if (verbose) fprintf(stderr, "failed to get eh_frame element from DWARF\n");
-    return;
-  }
+  if (ret == DW_DLV_OK ) {
+    for (long i = 0; i < fde_count; i++) {
+      Dwarf_Addr low_pc = 0;
 
-  for (int i = 0; i < fde_element_count; i++) {
-    Dwarf_Addr low_pc = 0;
-    Dwarf_Unsigned func_length = 0;
-    Dwarf_Ptr fde_bytes = NULL;
-    Dwarf_Unsigned fde_bytes_length = 0;
-    Dwarf_Off cie_offset = 0;
-    Dwarf_Signed cie_index = 0;
-    Dwarf_Off fde_offset = 0;
+      ret = DWARF_GET_FDE_RANGE (fde_data[i], &low_pc, NULL, NULL, NULL,
+				 NULL, NULL, NULL, &err);
+      if (ret == DW_DLV_ERROR) { DWARF_DEALLOC (dbg, err, DW_DLA_ERROR); }
 
-    int fres = dwarf_get_fde_range(fde_data[i],
-                                   &low_pc, &func_length,
-                                   &fde_bytes,
-                                   &fde_bytes_length,
-                                   &cie_offset, &cie_index,
-                                   &fde_offset, &err);
-    if (fres == DW_DLV_ERROR) {
-      fprintf(stderr, " error on dwarf_get_fde_range\n");
-      return;
-    }
-    if (fres == DW_DLV_NO_ENTRY) {
-      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
-      return;
-    }
-    if(getenv("EH_SHOW")) {
-      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
+      if (ret == DW_DLV_OK && low_pc != 0) {
+	addrSet.insert((void *) low_pc);
+      }
     }
 
-    if (low_pc != (Dwarf_Addr) 0) {
-      add_frame_addr((void *) low_pc);
-    }
+    DWARF_FDE_CIE_LIST_DEALLOC (dbg, cie_data, cie_count, fde_data, fde_count);
   }
-  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
-    fprintf(stderr, "dwarf finish fails ???\n");
-  }
-  close(dwarf_fd);
+
+  ret = DWARF_FINISH (dbg, &err);
+  if (ret == DW_DLV_ERROR) { DWARF_DEALLOC (dbg, err, DW_DLA_ERROR); }
 }

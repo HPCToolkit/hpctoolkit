@@ -7,7 +7,7 @@
 #ifndef fnbounds_eh_frames_hpp
 #define fnbounds_eh_frames_hpp
 
-void seed_dwarf_info(int);
+void dwarf_eh_frame_info(int);
 void add_frame_addr(void *);
 
 #endif

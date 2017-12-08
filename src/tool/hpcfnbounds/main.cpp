@@ -66,12 +66,6 @@
 #include <unistd.h>
 
 //*****************************************************************************
-// HPCToolkit Externals Include
-//*****************************************************************************
-
-#include <libdwarf.h>
-
-//*****************************************************************************
 // local includes
 //*****************************************************************************
 
@@ -103,8 +97,6 @@ using namespace SymtabAPI;
 #define USE_SYMTABAPI_EXCEPTION_BLOCKS
 
 #define STRLEN(s) (sizeof(s) - 1)
-
-#define DWARF_OK(e) (DW_DLV_OK == (e))
 
 //*****************************************************************************
 // forward declarations
@@ -227,11 +219,11 @@ char *
 cplus_demangle(char *s, int opts)
 {
 return strdup(s);
-}  
+}
 };
 
 
-// Callback from seed_dwarf_info() in eh-frames.cpp.
+// Callback from dwarf_eh_frame_info() in eh-frames.cpp.
 void
 add_frame_addr(void * addr)
 {
@@ -390,7 +382,7 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
     }
   }
 
-  seed_dwarf_info(dwarf_fd);
+  dwarf_eh_frame_info(dwarf_fd);
 
   process_code_ranges();
 
@@ -474,9 +466,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
   int relocatable = 0;
 
-  // open for dwarf usage
-  int dwarf_fd = open(filename, O_RDONLY);
-
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
   //-----------------------------------------------------------------
   // ensure that we don't infer function starts within try blocks or
@@ -529,7 +518,11 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 #endif
 
   if (syms->getObjectType() != obj_Unknown) {
+    int dwarf_fd = open(filename, O_RDONLY);
+
     dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    close(dwarf_fd);
+
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }
@@ -538,8 +531,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can
   //-----------------------------------------------------------------
-
-  close(dwarf_fd);
 
   Symtab::closeSymtab(syms);
 }
