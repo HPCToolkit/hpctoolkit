@@ -52,7 +52,7 @@
 #include <unistd.h>
 #include <string>
 
-#include "function-entries.h"
+#include "variable-entries.h"
 #include "server.h"
 
 #define __STDC_FORMAT_MACROS
@@ -83,6 +83,12 @@ public:
 /******************************************************************************
  * forward declarations
  *****************************************************************************/
+
+// this functions are defined in main.cpp
+// needs to move these stuff into a 3rd party file
+extern int c_mode(void);
+extern int server_mode(void);
+
 
 static void new_variable_entry(void *addr, long size, string *comment, bool isvisible);
 static void dump_variable_entry(void *addr, long size, const char *comment);

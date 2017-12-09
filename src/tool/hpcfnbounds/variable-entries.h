@@ -47,6 +47,10 @@
 #ifndef SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
 #define SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
 
+#include <string>
+
+using namespace std;
+
 void variable_entries_reinit(void);
 
 void dump_variables();
