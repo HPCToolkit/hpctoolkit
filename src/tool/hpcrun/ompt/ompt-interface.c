@@ -386,6 +386,7 @@ ompt_thread_begin(ompt_thread_type_t ttype)
 static void
 ompt_thread_end()
 {
+  // TODO(keren): test if it is called
   undirected_blame_thread_end(&omp_idle_blame_info);
 }
 
@@ -860,6 +861,7 @@ ompt_callback_buffer_complete(uint64_t device_id,
                               int buffer_owned)
 {
   // signal advance to return pointer to first record
+  // TODO: separate it from ompt
   ompt_buffer_cursor_t next = begin;
   int status = 0;
   do {
@@ -949,7 +951,7 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
-  // TODO(keren): why must be synchronized?
+  // TODO(keren): hpcrun_safe_enter prevent self interruption
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
   getcontext(&uc);
@@ -964,6 +966,11 @@ ompt_target_callback(ompt_target_type_t kind,
   hpcrun_op_id_map_record_target(target_id, node, device_num);
 }
 
+#define FOREACH_OMPT_DATA_OP(macro)                                        \
+  macro(optype, ompt_target_data_alloc, ompt_op_alloc)                \
+  macro(optype, ompt_target_data_transfer_to_dev, ompt_op_copy_in)    \
+  macro(optype, ompt_target_data_transfer_from_dev, ompt_op_copy_out) \
+  macro(optype, ompt_target_data_delete, ompt_op_delete)
 
 void
 ompt_data_op_callback(ompt_id_t target_id,
@@ -973,9 +980,20 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  // TODO(keren): setup lm_ip
-  // FIXME(keren): should I care about lm_id?
-  ip_normalized_t ip = {.lm_id = 0, .lm_ip = optype};
+  uintptr_t op = 0;
+  switch (optype) {                       
+#define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
+    case ompt_op_type:                                 \
+      op = ompt_op_class;                              \
+      break;
+    
+    FOREACH_OMPT_DATA_OP(ompt_op_macro);
+
+#undef ompt_op_macro
+    default:
+      break;
+  }
+  ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 
@@ -984,9 +1002,7 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
-  // TODO(keren): setup lm_ip
-  // FIXME(keren): should I care about lm_id?
-  ip_normalized_t ip = {.lm_id = 0, .lm_ip = 7};
+  ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 

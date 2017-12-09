@@ -43,5 +43,16 @@ extern ompt_idle_t ompt_idle_placeholder_fn;
 #define task_map_lookup(id) 0 // FIXME
 #endif
 
+// lm_id(uint16_t): denote a device operation node
+#define OMPT_DEVICE_OPERATION 0xFFFF
+
+enum {
+  ompt_op_alloc,
+  ompt_op_copy_in,
+  ompt_op_copy_out,
+  ompt_op_delete,
+  ompt_op_kernel_submit
+} ompt_op_class;
+
 
 #endif // _OMPT_INTERFACE_H_

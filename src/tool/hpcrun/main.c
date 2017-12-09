@@ -721,6 +721,8 @@ hpcrun_thread_fini(epoch_t *epoch)
     if (hpcrun_get_disabled()) {
       return;
     }
+
+    device_finalizer();
     
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
