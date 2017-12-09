@@ -9,4 +9,7 @@ void hpcrun_syserv_fini(void);
 
 void *hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh);
 
+void *hpcrun_syserv_query_var(const char *fname, struct fnbounds_file_header *fh);
+
+
 #endif  // _FNBOUNDS_CLIENT_H_

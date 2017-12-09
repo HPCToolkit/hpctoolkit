@@ -772,3 +772,15 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
   root = hpcrun_cct_insert_path_return_leaf(path->parent, root);
   return hpcrun_cct_insert_addr(root, &(path->addr));
 }
+
+
+cct_node_t *
+hpcrun_cct_get_root(cct_node_t *node)
+{
+  cct_node_t *current = node;
+  while(current && hpcrun_cct_parent(current)) {
+      current = hpcrun_cct_parent(current);
+  }
+  return current;
+}
+

@@ -346,13 +346,14 @@ MY_BASE_FILES +=  			\
 	sample-sources/perf/event_desc.c	\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	\
-	sample-sources/datacentric/memaddress.c	
+	sample-sources/perf/perf_mmap.c	
 endif
 
 if OPT_PERF_MEM_DATA_SRC
 MY_BASE_FILES +=  			\
-	sample-sources/datacentric/datacentric.c
+	sample-sources/datacentric/datacentric.c	\
+	sample-sources/datacentric/memaddress.c		\
+	varmap.c
 endif
 
 if OPT_IBS_OP

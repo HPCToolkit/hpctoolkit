@@ -67,9 +67,10 @@
 
 
 /******************************************************************************
- *  interface operations
+ * function folder
  ******************************************************************************/
 
+FUNCTION_FOLDER(first_touch)
 
 /******************************************************************************
  * data structure
@@ -79,23 +80,6 @@
 /******************************************************************************
  * local variables
  *****************************************************************************/
-
-#define POINTER_TO_FUNCTION
-
-#if defined(__PPC64__) || defined(HOST_CPU_IA64)
-#define POINTER_TO_FUNCTION *(void**)
-#endif
-
-
-static cct_node_t *
-memcentric_get_root(cct_node_t *node)
-{
-  cct_node_t *current = node;
-  while(current && hpcrun_cct_parent(current)) {
-      current = hpcrun_cct_parent(current);
-  }
-  return current;
-}
 
 static void
 memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
@@ -110,7 +94,7 @@ memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
   cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
 
   if (node) {
-    cct_node_t *root   = memcentric_get_root(sv.sample_node);
+    cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
     cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
 
     // copy the call path of the malloc

@@ -394,10 +394,11 @@ launch_server(void)
     sprintf(fdout_str, "%d", recvfd[1]);
 
     arglist[0] = server;
-    arglist[1] = "-s";
-    arglist[2] = fdin_str;
-    arglist[3] = fdout_str;
-    arglist[4] = NULL;
+    arglist[1] = "-m";
+    arglist[2] = "-s";
+    arglist[3] = fdin_str;
+    arglist[4] = fdout_str;
+    arglist[5] = NULL;
 
     monitor_real_execve(server, arglist, environ);
     err(1, "hpcrun system server: exec(%s) failed", server);
@@ -477,7 +478,7 @@ hpcrun_syserv_fini(void)
 // or else NULL on error.
 //
 void *
-hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
+hpcrun_syserv_query_specific(const char *fname, struct fnbounds_file_header *fh, int query)
 {
   struct syserv_mesg mesg;
   void *addr;
@@ -491,20 +492,20 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     launch_server();
   }
 
-  TMSG(SYSTEM_SERVER, "query: %s", fname);
+  TMSG(SYSTEM_SERVER, "query %d: %s", query, fname);
 
   // Send the file name length (including \0) to the server and look
   // for the initial ACK.  If the server has died, then make one
   // attempt to restart it before giving up.
   //
   size_t len = strlen(fname) + 1;
-  if (write_mesg(SYSERV_QUERY, len) != SUCCESS
+  if (write_mesg(query, len) != SUCCESS
       || read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
   {
     TMSG(SYSTEM_SERVER, "restart server");
     shutdown_server();
     launch_server();
-    if (write_mesg(SYSERV_QUERY, len) != SUCCESS
+    if (write_mesg(query, len) != SUCCESS
 	|| read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
     {
       EMSG("SYSTEM_SERVER ERROR: unable to restart system server");
@@ -588,6 +589,18 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   }
 
   return addr;
+}
+
+void *
+hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
+{
+  return hpcrun_syserv_query_specific(fname, fh, SYSERV_QUERY);
+}
+
+void *
+hpcrun_syserv_query_var(const char *fname, struct fnbounds_file_header *fh)
+{
+  return hpcrun_syserv_query_specific(fname, fh, SYSERV_QUERY_VAR);
 }
 
 

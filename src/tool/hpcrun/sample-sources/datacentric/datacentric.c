@@ -82,14 +82,23 @@
 #include "datacentric.h"
 #include "data_tree.h"
 
+#include "varmap.h"  // static variable mapping
+#include "place_folder.h"
+
 #include "sample-sources/perf/event_custom.h"
 
 
 /******************************************************************************
- * constants
+ * macros 
  *****************************************************************************/
 #define EVNAME_DATACENTRIC "DATACENTRIC"
 
+
+/******************************************************************************
+ * prototypes and forward declaration
+ *****************************************************************************/
+
+FUNCTION_FOLDER(static)
 
 /******************************************************************************
  * data structure
@@ -114,9 +123,10 @@ static struct perf_data_src_mem_lvl_s  __thread data_mem = {
   .ld_excl    = 0, .loads     = 0, .stores   = 0 
 };
 
+static int metric_memload = -1;
 
 /******************************************************************************
- * Functions
+ * PRIVATE Function implementation
  *****************************************************************************/
 
 #define P(a, b) PERF_MEM_##a##_##b
@@ -128,14 +138,25 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
   if ( (current == NULL)      ||  (mmap_data == NULL) ||
        (sv.sample_node == NULL))
     return;
+ 
+  cct_node_t *node = NULL;
+  void *start, *end;
 
   if (mmap_data->addr) {
     // memory information exists
-    void *start, *end;
-    cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
+    node = splay_lookup((void*) mmap_data->addr, &start, &end);
+
+    if (node == NULL) {
+      return;
+    }
+    if (node == (void*)DATA_STATIC_CONTEXT) {
+      // looking for the static variables
+      cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
+      cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
+    }
   }
 
-  if (mmap_data->data_src == NULL) {
+  if (mmap_data->data_src == 0) {
     return;
   }
 
@@ -153,6 +174,10 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
   u64 snoop = data_src.mem_snoop;
 
   if ( lvl & P(LVL, HIT) ) {
+    
+    cct_metric_data_increment(metric_memload, node,
+      	                      (cct_metric_data_t){.i = 1});
+
     if (lvl & P(LVL, UNC)) data_mem.ld_uncache++;
     if (lvl & P(LVL, IO))  data_mem.ld_io++;
     if (lvl & P(LVL, LFB)) data_mem.ld_fbhit++;
@@ -184,6 +209,7 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
         data_mem.ld_excl++;
     }
 #endif
+
   }
 }
 
@@ -206,7 +232,13 @@ datacentric_register(event_custom_t *event)
     return 0;
 
   // ------------------------------------------
-  // create metric page-fault
+  // Memory load metric
+  // ------------------------------------------
+  metric_memload = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric_memload, "MEM-LOAD");
+
+  // ------------------------------------------
+  // create metric data centric
   // ------------------------------------------
   int metric = hpcrun_new_metric();
 
@@ -221,9 +253,8 @@ datacentric_register(event_custom_t *event)
 
 
 /******************************************************************************
- * method definitions
+ * PUBLIC method definitions
  *****************************************************************************/
-
 
 void
 datacentric_init()
@@ -240,16 +271,3 @@ datacentric_init()
   event_custom_register(event_datacentric);
 }
 
-
-
-
-// ***************************************************************************
-//  Interface functions
-// ***************************************************************************
-
-// increment the return count
-//
-// N.B. : This function is necessary to avoid exposing the retcnt_obj.
-//        For the case of the retcnt sample source, the handler (the trampoline)
-//        is separate from the sample source code.
-//        Consequently, the interaction with metrics must be done procedurally

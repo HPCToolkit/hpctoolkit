@@ -44,49 +44,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the API for messages over the pipe between the
-// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
-// fnbounds server (server.cpp).
-//
-// Note: none of these structs needs to be platform-independent
-// because they're only used between processes within a single node
-// (same for the old server).
+#ifndef SRC_TOOL_HPCRUN_VARMAP_H_
+#define SRC_TOOL_HPCRUN_VARMAP_H_
 
-//***************************************************************************
 
-#ifndef _SYSERV_MESG_H_
-#define _SYSERV_MESG_H_
+#define DATA_STATIC_CONTEXT 0x1
 
-#include <stdint.h>
 
-#define SYSERV_MAGIC    0x00f8f8f8
-#define FNBOUNDS_MAGIC  0x00f9f9f9
+// splay tree query
+void *static_data_interval_splay_lookup(void *key, void **start, void **end);
 
-enum {
-  SYSERV_ACK = 1,
-  SYSERV_QUERY,
-  SYSERV_QUERY_VAR, /* query for static variables */
-  SYSERV_EXIT,
-  SYSERV_OK,
-  SYSERV_ERR
-};
+void  insert_var_table(dso_info_t *dso, void **var_table, unsigned long num);
 
-struct syserv_mesg {
-  int32_t  magic;
-  int32_t  type;
-  int64_t  len;
-};
-
-struct syserv_fnbounds_info {
-  // internal fields for the client
-  int32_t   magic;
-  int32_t   status;
-  long      memsize;
-
-  // fields for the fnbounds file header
-  uint64_t  num_entries;
-  uint64_t  reference_offset;
-  int       is_relocatable;
-};
-
-#endif  // _SYSERV_MESG_H_
+#endif /* SRC_TOOL_HPCRUN_VARMAP_H_ */

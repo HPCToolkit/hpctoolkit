@@ -49,16 +49,25 @@
 
 #include "cct.h"
 
+
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+#define DATA_STATIC_MAGIC 0xFEA12B0B
+
+
 /******************************************************************************
  * type definitions
  *****************************************************************************/
 
 typedef struct datainfo_s {
-  long magic;
+  long        magic;
   cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;	// additional information to record remote memory
+  size_t      bytes;
+  void       *memblock;
+  void       *rmemblock;	// additional information to record remote memory
+
   struct datainfo_s *left;
   struct datainfo_s *right;
 } datainfo_t;

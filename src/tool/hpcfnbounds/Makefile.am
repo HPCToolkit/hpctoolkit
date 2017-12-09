@@ -96,6 +96,11 @@ MYSOURCES = \
 	intervals.cpp \
 	server.cpp
 
+if OPT_PERF_MEM_DATA_SRC
+MYSOURCES += \
+	variable-entries.cpp
+endif
+
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 	-I$(SYMTABAPI_INC)
 

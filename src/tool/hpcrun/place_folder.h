@@ -58,24 +58,30 @@
 #define FUNCTION_DATA_FOLDER(start,end)      FUNCTION_FOLDER(range_ ## start ## _ ## end)
 
 
+#define POINTER_TO_FUNCTION
+
+#if defined(__PPC64__) || defined(HOST_CPU_IA64)
+#define POINTER_TO_FUNCTION *(void**)
+#endif
+
 /********************************
  * place folder for data centric
  *******************************/
 
+#if 0
 FUNCTION_FOLDER(heap)
-FUNCTION_FOLDER(static)
 FUNCTION_FOLDER(stack)
 FUNCTION_FOLDER(unknown)
 FUNCTION_FOLDER(access_unknown)
 FUNCTION_FOLDER(access_heap)
 FUNCTION_FOLDER(heap_allocation)
-FUNCTION_FOLDER(first_touch)
 
 FUNCTION_DATA_FOLDER(1, 5)
 FUNCTION_DATA_FOLDER(2, 5)
 FUNCTION_DATA_FOLDER(3, 5)
 FUNCTION_DATA_FOLDER(4, 5)
 FUNCTION_DATA_FOLDER(5, 5)
+#endif
 
 #ifdef TEST_PF_DEBUG
 int main()

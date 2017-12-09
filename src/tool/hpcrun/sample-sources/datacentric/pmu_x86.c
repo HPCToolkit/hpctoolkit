@@ -52,15 +52,37 @@
 
 #include "datacentric.h"
 
-#define EVNAME_SANDY_BRIDGE "MEM_TRANS_RETIRED:PRECISE_STORE"
+#define EVNAME_SANDYBRIDGE_LATENCY  "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"
+#define EVNAME_SANDYBRIDGE_STORE    "MEM_TRANS_RETIRED:PRECISE_STORE"
+
+/**
+ * attention: the order of the array is very important.
+ * It has to start from event from the latest architecture
+ * to the old one, since sometimes newer architecture still keep
+ * compatibility with the old ones.
+ */
+static const char *evnames[] = {
+    EVNAME_SANDYBRIDGE_LATENCY,
+    EVNAME_SANDYBRIDGE_STORE
+};
 
 int
 datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
 {
-  struct perf_event_attr *event_attr = &(event_desc->attr);
-  int isPMU = pfmu_getEventAttribute(EVNAME_SANDY_BRIDGE, event_attr);
-  if (isPMU < 0)
-    return 0;
+  int size = sizeof(evnames)/sizeof(const char*);
+
+  for(int i=0; i<size ; i++) {
+    struct perf_event_attr *event_attr = &(event_desc->attr);
+    int isPMU = pfmu_getEventAttribute(evnames[i], event_attr);
+
+    if (isPMU >= 0) {
+      // testing the feasibility;
+      event_desc->attr.precise_ip = get_precise_ip(&(event_desc->attr));  // as precise as possible
+
+      if (event_desc->attr.precise_ip > 0)
+        break;
+    }
+  }
 
   event_desc->attr.size           = sizeof(struct perf_event_attr);
   event_desc->attr.sample_period  = period->threshold_num;
@@ -86,7 +108,5 @@ datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *peri
 
   event_desc->attr.sample_id_all = 1;
   event_desc->attr.read_format   = 0;
-  event_desc->attr.precise_ip    = get_precise_ip(&(event_desc->attr));  // as precise as possible
-
   return 1;
 }

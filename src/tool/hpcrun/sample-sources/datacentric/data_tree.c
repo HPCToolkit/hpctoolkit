@@ -53,20 +53,11 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 
-#include "include/queue.h" // Singly-linkled list macros
-
 #include "data_tree.h"
 
 /******************************************************************************
  * type definitions
  *****************************************************************************/
-
-struct list_data_thread_s {
-  struct datainfo_s **root_ptr;
-  int    thread_id;
-
-  SLIST_ENTRY(events_list_s) entries;
-};
 
 
 /******************************************************************************
@@ -74,56 +65,10 @@ struct list_data_thread_s {
  *****************************************************************************/
 
 static struct datainfo_s __thread *datacentric_tree_root = NULL;
-static spinlock_t memtree_lock = SPINLOCK_UNLOCKED;
-
-static SLIST_HEAD(list_head, list_data_thread_s) list_data_thread_head =
-	SLIST_HEAD_INITIALIZER(list_head);
-
 
 
 /******************************************************************************
- * thread data operations
- *****************************************************************************/
-
-static struct datainfo_s **
-thread_find(int thread_id)
-{
-  struct list_data_thread_s *item = NULL;
-
-  // check if we already have the event
-  SLIST_FOREACH(item, &list_data_thread_head, entries) {
-    if (item != NULL && item->thread_id == thread_id)
-      return item->root_ptr;
-  }
-  return NULL;
-}
-
-
-static int
-thread_add(int thread_id, struct datainfo_s **root_ptr)
-{
-  spinlock_lock(&memtree_lock);
-
-  int return_value = 0;
-  struct list_data_thread_s* item = thread_find(thread_id);
-
-  if (item == NULL) {
-    item = hpcrun_malloc(sizeof (struct list_data_thread_s));
-    item->thread_id = thread_id;
-    item->root_ptr  = root_ptr;
-
-    SLIST_INSERT_HEAD(&list_data_thread_head, item, entries);
-
-    return_value = 1 ;
-  } 
-  spinlock_unlock(&memtree_lock);
-
-  return return_value;
-}
-
-
-/******************************************************************************
- * splay operations
+ * PRIVATE splay operations
  *****************************************************************************/
 
 
@@ -160,6 +105,11 @@ splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **
   }
   return NULL;
 }
+
+
+/******************************************************************************
+ * PUBLIC splay operations
+ *****************************************************************************/
 
 
 /*

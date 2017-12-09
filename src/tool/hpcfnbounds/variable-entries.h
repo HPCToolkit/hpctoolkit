@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcvarbounds/function-entries.cpp $
+// $Id: function-entries.cpp 4099 2013-02-10 20:13:32Z krentel $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,49 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the API for messages over the pipe between the
-// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
-// fnbounds server (server.cpp).
-//
-// Note: none of these structs needs to be platform-independent
-// because they're only used between processes within a single node
-// (same for the old server).
+#ifndef SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
+#define SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
 
-//***************************************************************************
+void variable_entries_reinit(void);
 
-#ifndef _SYSERV_MESG_H_
-#define _SYSERV_MESG_H_
+void dump_variables();
 
-#include <stdint.h>
+void add_variable_entry(void *addr, long size, const string *comment, bool isvisible);
 
-#define SYSERV_MAGIC    0x00f8f8f8
-#define FNBOUNDS_MAGIC  0x00f9f9f9
+long num_variable_entries(void);
 
-enum {
-  SYSERV_ACK = 1,
-  SYSERV_QUERY,
-  SYSERV_QUERY_VAR, /* query for static variables */
-  SYSERV_EXIT,
-  SYSERV_OK,
-  SYSERV_ERR
-};
-
-struct syserv_mesg {
-  int32_t  magic;
-  int32_t  type;
-  int64_t  len;
-};
-
-struct syserv_fnbounds_info {
-  // internal fields for the client
-  int32_t   magic;
-  int32_t   status;
-  long      memsize;
-
-  // fields for the fnbounds file header
-  uint64_t  num_entries;
-  uint64_t  reference_offset;
-  int       is_relocatable;
-};
-
-#endif  // _SYSERV_MESG_H_
+#endif /* SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_ */

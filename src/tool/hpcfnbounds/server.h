@@ -6,6 +6,8 @@
 
 void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
 
+void dump_file_info_var(const char *filename, DiscoverFnTy fn_discovery);
+
 void system_server(DiscoverFnTy, int, int);
 
 void syserv_add_addr(void *, long);

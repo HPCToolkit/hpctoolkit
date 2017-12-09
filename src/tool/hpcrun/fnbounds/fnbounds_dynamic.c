@@ -343,6 +343,15 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
 	   module_name, start, end);
       isOk = false;
     }
+
+    // ----------------------------------------------------------
+    // add into var data tree
+    // ----------------------------------------------------------
+    struct fnbounds_file_header fh;
+    char filename[PATH_MAX];
+    realpath(module_name, filename);
+    void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
+    insert_var_table(dso, var_table, fh.num_entries);
   }
 
   FNBOUNDS_UNLOCK;
