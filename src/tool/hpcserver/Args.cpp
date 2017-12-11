@@ -297,25 +297,6 @@ Args::ddump() const
 
 //***************************************************************************
 
-BAnal::Struct::NormTy
-Args::parseArg_norm(const string& value, const char* err_note)
-{
-  if (value == "all") {
-    return BAnal::Struct::NormTy_All;
-  }
-  else if (value == "safe") {
-    return BAnal::Struct::NormTy_Safe;
-  }
-  else if (value == "none") {
-    return BAnal::Struct::NormTy_None;
-  }
-  else {
-    ARG_ERROR(err_note << ": Unexpected value received: " << value);
-  }
-}
-
-//***************************************************************************
-
 #if 0
 void
 Args::setHPCHome()

@@ -59,7 +59,7 @@
 
 unwind_interval *
 process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug,
-	interval_arg_t *iarg, mem_alloc m_alloc);
+	interval_arg_t *iarg);
 
 unwind_interval *
 process_conditional_branch(xed_decoded_inst_t *xptr, interval_arg_t *iarg);

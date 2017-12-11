@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,19 +44,41 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "x86-interval-highwatermark.h"
-#include "x86-interval-arg.h"
+// This file defines the API for writing an hpcstruct file directly
+// from the TreeNode format.
 
-/******************************************************************************
- * interface operations 
- *****************************************************************************/
+//***************************************************************************
 
-unwind_interval *
-process_leave(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
-{
-  x86registers_t reg = { 0, 0, BP_UNCHANGED, 0, 0};
-  unwind_interval *next;
-  next = new_ui(nextInsn(iarg, xptr), RA_SP_RELATIVE, &reg);
-  return next;
-}
+#ifndef Banal_Struct_Output_hpp
+#define Banal_Struct_Output_hpp
 
+#include <ostream>
+#include <string>
+
+#include <lib/support/StringTable.hpp>
+
+#include "Struct-Inline.hpp"
+#include "Struct-Skel.hpp"
+
+namespace BAnal {
+namespace Output {
+
+using namespace Struct;
+using namespace std;
+
+void printStructFileBegin(ostream *, ostream *, string);
+void printStructFileEnd(ostream *, ostream *);
+
+void printLoadModuleBegin(ostream *, string);
+void printLoadModuleEnd(ostream *);
+
+void printFileBegin(ostream *, FileInfo *);
+void printFileEnd(ostream *, FileInfo *);
+
+void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
+	       ProcInfo *, HPC::StringTable & strTab);
+
+}  // namespace Output
+}  // namespace BAnal
+
+#endif

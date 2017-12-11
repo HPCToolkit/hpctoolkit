@@ -91,6 +91,7 @@ using namespace Prof;
 #include <lib/binutils/Insn.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 
 
 //*************************** Forward Declarations ***************************
@@ -110,10 +111,17 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   procnm = BinUtil::canonicalizeProcName(procnm);
   
   if (filenm.empty()) {
-    filenm = Prof::Struct::Tree::UnknownFileNm;
+    filenm = Prof::Struct::Tree::UnknownFileNm
+      + " [" + FileUtil::basename(lm->name().c_str()) + "]";
   }
   if (procnm.empty()) {
-    procnm = Prof::Struct::Tree::UnknownProcNm;
+    std::stringstream buf;
+
+    buf << Prof::Struct::Tree::UnknownProcNm
+	<< " 0x" << std::hex << vma << std::dec
+	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
+
+    procnm = buf.str();
   }
   
   Prof::Struct::File* fileStrct = Prof::Struct::File::demand(lmStrct, filenm);

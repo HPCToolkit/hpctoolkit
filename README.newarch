@@ -27,31 +27,3 @@ interrupts taken inside the PLT, so for every call to a function
 inside a shared library, there is a small window of vulnerability
 where the unwind will fail.
 
-------------------------------------------------------------
-
-Building externals with an alternate Dyninst.
-
-To build hpctoolkit + externals with a later version or different
-branch of Dyninst, follow these steps.  This mostly affects ParseAPI
-support for control-flow graphs used by hpcstruct.
-
-1. Clone dyninst from github.
-
-git clone https://github.com/dyninst/dyninst
-
-2. Select and checkout a version or branch of Dyninst.  This choice is
-platform dependent.
-
-cd dyninst
-git checkout ...
-
-3. Configure externals with the option '--with-dyninst-src=PATH' to
-specify the path to the dyninst source tree.
-
-configure --with-dyninst-src=/path/to/dyninst/src/tree
-
-4. Continue building externals and hpctoolkit as usual.
-
-Not every version of Dyninst will build or run correctly, and you may
-need to adjust the patches in externals/symtabAPI/patches.
-

@@ -51,6 +51,6 @@
 #include "x86-interval-arg.h"
 
 unwind_interval*
-process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg, mem_alloc m_alloc);
+process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg);
 
 #endif

@@ -56,8 +56,7 @@
 //***************************************************************************
 
 unwind_interval *
-process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, 
-	    interval_arg_t *iarg, mem_alloc m_alloc)
+process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
   const xed_operand_t* op0 = xed_inst_operand(xi,0);
@@ -71,7 +70,7 @@ process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	//----------------------------------------------------------------------
 	// we are adjusting the stack pointer via 'and' instruction
 	//----------------------------------------------------------------------
-	next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg, m_alloc);
+	next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg);
       } else {
 	// remember that SP was adjusted by masking bits
 	iarg->sp_realigned = true; 

@@ -68,9 +68,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
-
-#include <lib/banal/Struct.hpp>
-
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -119,7 +116,6 @@ public:
   std::string demangle_function;       // default: ""
   bool isIrreducibleIntervalLoop;     // default: true
   bool isForwardSubstitution;         // default: false
-  BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
   std::string dbgProcGlob;
 
   std::string out_filenm;
@@ -127,7 +123,7 @@ public:
   bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
-  int  cfgRequest;
+  bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
@@ -135,9 +131,6 @@ public:
 private:
   void
   Ctor();
-
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

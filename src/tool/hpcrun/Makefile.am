@@ -186,10 +186,11 @@ UNW_UNIV_FILES = \
         unwind/common/unw-throw.c
 
 UNW_COMMON_FILES = \
-        $(UNW_UNIV_FILES)               \
-	unwind/common/binarytree_uwi.c		    \
-	unwind/common/interval_t.c	    \
-	unwind/common/stack_troll.c	\
+        $(UNW_UNIV_FILES)				\
+	unwind/common/binarytree_uwi.c			\
+	unwind/common/interval_t.c			\
+	unwind/common/libunw_intervals.c		\
+	unwind/common/stack_troll.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
