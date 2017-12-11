@@ -55,6 +55,9 @@
 #define EVNAME_SANDYBRIDGE_LATENCY  "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"
 #define EVNAME_SANDYBRIDGE_STORE    "MEM_TRANS_RETIRED:PRECISE_STORE"
 
+#define EVNAME_KNL_OFFCORE_RESP_0   "knl::OFFCORE_RESPONSE_0"
+#define EVNAME_KNL_CACHE_L2_HIT     "knl::MEM_UOPS_RETIRED:LD_L2_HIT"
+
 /**
  * attention: the order of the array is very important.
  * It has to start from event from the latest architecture
@@ -62,6 +65,9 @@
  * compatibility with the old ones.
  */
 static const char *evnames[] = {
+    EVNAME_KNL_OFFCORE_RESP_0,
+    EVNAME_KNL_CACHE_L2_HIT,
+
     EVNAME_SANDYBRIDGE_LATENCY,
     EVNAME_SANDYBRIDGE_STORE
 };

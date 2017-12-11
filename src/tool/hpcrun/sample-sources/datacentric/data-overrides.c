@@ -92,10 +92,12 @@
 #include <safe-sampling.h>
 #include <sample_event.h>
 #include <monitor-exts/monitor_ext.h>
+#include <varmap.h> // DATA_STATIC_CONTEXT
 
 #include <sample-sources/datacentric/datacentric.h>
 
 #include "data_tree.h"
+
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
 // revert to the getcontext syscall for now.
@@ -545,7 +547,9 @@ datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
     return;
   }
 
-  if (info_ptr->context != NULL && is_active()) {
+  if (info_ptr->context != NULL 
+      && info_ptr->context != (void*)  DATA_STATIC_CONTEXT
+      && is_active()) {
     increment_free_metric(info_ptr->context, info_ptr->bytes);
     loc_str = loc_name[loc];
   } else {
@@ -738,8 +742,12 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
   }
 
   loc = datacentric_get_free_loc(ptr, &sys_ptr, &info_ptr);
-  datacentric_free_helper("free", sys_ptr, ptr, info_ptr, loc);
-  real_free(sys_ptr);
+  if (loc != DATACENTRIC_LOC_NONE) {
+    datacentric_free_helper("free", sys_ptr, ptr, info_ptr, loc);
+    real_free(sys_ptr);
+  } else {
+    real_free(ptr);
+  }
 
 finish:
   if (safe) {

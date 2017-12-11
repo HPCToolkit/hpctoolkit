@@ -174,9 +174,10 @@ insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
 
     data_info->memblock = var_table[i];
     data_info->bytes    = var_table[i+1] - var_table[i];
-    data_info->context  = NULL;
     data_info->left     = data_info->right = NULL;
+
     data_info->magic    = DATA_STATIC_MAGIC;
+    data_info->context  = (void*) DATA_STATIC_CONTEXT;
 
     data_info->rmemblock = data_info->memblock + data_info->bytes;
 
