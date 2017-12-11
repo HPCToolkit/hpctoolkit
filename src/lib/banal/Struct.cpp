@@ -132,7 +132,7 @@ typedef map <VMA, HeaderInfo> HeaderList;
 typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
-makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
+makeSkeleton(CodeObject *, ProcNameMgr *, const string &, bool);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
@@ -298,6 +298,7 @@ makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * gapsFile,
 	      ostream * dotFile,
+	      bool ourDemangle,
 	      ProcNameMgr * procNmMgr)
 {
   HPC::StringTable strTab;
@@ -332,7 +333,7 @@ makeStructure(string filename,
   }
 
   string basename = FileUtil::basename(filename.c_str());
-  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
+  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename, ourDemangle);
 
   Output::printStructFileBegin(outFile, gapsFile, filename);
   Output::printLoadModuleBegin(outFile, filename);
@@ -423,7 +424,8 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 // symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename)
+makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename,
+	     bool ourDemangle)
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
@@ -482,10 +484,17 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	// cases are also valid).
 	//
 	auto mangled_it = sym_func->mangled_names_begin();
+	auto pretty_it = sym_func->pretty_names_begin();
 
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
-	  prettynm = BinUtil::demangleProcName(linknm);
+
+	  if (ourDemangle) {
+	    prettynm = BinUtil::demangleProcName(linknm);
+	  }
+	  else if (pretty_it != sym_func->pretty_names_end()) {
+	    prettynm = *pretty_it;
+	  }
 	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line);
@@ -611,6 +620,10 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 //
 // 10. Decide how to handle basic blocks that belong to multiple
 // functions.
+//
+// 11. Improve demangle proc names -- the problem is more if/when to
+// demangle rather than how.  Maybe keep a map of symtab mangled to
+// pretty names.
 
 //----------------------------------------------------------------------
 
