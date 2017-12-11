@@ -20783,6 +20783,12 @@ else
 fi
 
 
+if test "$use_libdw" = yes ; then
+
+$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
+
+fi
+
 if test "$use_cuda" = yes ; then
 
 $as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h

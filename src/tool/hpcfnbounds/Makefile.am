@@ -103,16 +103,16 @@ MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = libeh_frames.a  \
 	$(HPCLIB_SupportLean) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf
-
-if OPT_DYNINST_LIBDW
-  MYLDADD += -ldw
-endif
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 
 if USE_BOOST_LIBS
   MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
+
+if OPT_DYNINST_LIBDW
+  MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
+else
+  MYLDADD += -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 if OPT_USE_ZLIB

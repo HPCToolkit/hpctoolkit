@@ -2388,6 +2388,10 @@ esac
 AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
 AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
 
+if test "$use_libdw" = yes ; then
+  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+fi
+
 if test "$use_cuda" = yes ; then
   AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
 fi
