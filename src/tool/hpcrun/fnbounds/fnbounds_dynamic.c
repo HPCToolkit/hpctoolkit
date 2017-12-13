@@ -110,7 +110,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 
-#include "sample-sources/datacentric/data_tree.h"
+#include "data_tree.h"
 
 //*********************************************************************
 // local types

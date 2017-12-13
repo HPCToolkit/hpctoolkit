@@ -306,7 +306,7 @@ MY_BASE_FILES =				\
 	\
 	cct2metrics.c                   \
 	\
-	sample-sources/datacentric/data_tree.c	\
+	data_tree.c	\
 	\
 	trampoline/common/trampoline.c  \
 	\

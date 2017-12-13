@@ -482,19 +482,19 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c sample-sources/datacentric/data_tree.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/perf/perfmon-util.c \
+	cct2metrics.c data_tree.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	sample-sources/perf/perfmon-util.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/event_desc.c \
 	sample-sources/perf/linux_perf.c \
@@ -590,8 +590,7 @@ am__objects_15 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
 	libhpcrun_la-write_data.lo cct/libhpcrun_la-cct_bundle.lo \
 	cct/libhpcrun_la-cct_ctxt.lo cct/libhpcrun_la-cct.lo \
-	libhpcrun_la-cct2metrics.lo \
-	sample-sources/datacentric/libhpcrun_la-data_tree.lo \
+	libhpcrun_la-cct2metrics.lo libhpcrun_la-data_tree.lo \
 	trampoline/common/libhpcrun_la-trampoline.lo \
 	lush/libhpcrun_la-lush-backtrace.lo lush/libhpcrun_la-lush.lo \
 	lush/libhpcrun_la-lush-pthread.lo \
@@ -788,19 +787,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c sample-sources/datacentric/data_tree.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/perf/perfmon-util.c \
+	cct2metrics.c data_tree.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	sample-sources/perf/perfmon-util.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/event_desc.c \
 	sample-sources/perf/linux_perf.c \
@@ -901,7 +900,7 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	cct/libhpcrun_o-cct_ctxt.$(OBJEXT) \
 	cct/libhpcrun_o-cct.$(OBJEXT) \
 	libhpcrun_o-cct2metrics.$(OBJEXT) \
-	sample-sources/datacentric/libhpcrun_o-data_tree.$(OBJEXT) \
+	libhpcrun_o-data_tree.$(OBJEXT) \
 	trampoline/common/libhpcrun_o-trampoline.$(OBJEXT) \
 	lush/libhpcrun_o-lush-backtrace.$(OBJEXT) \
 	lush/libhpcrun_o-lush.$(OBJEXT) \
@@ -1553,21 +1552,21 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c sample-sources/datacentric/data_tree.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_15) $(am__append_16) \
-	$(am__append_17) $(am__append_18) $(am__append_19) \
-	$(am__append_20) $(am__append_21) $(am__append_22)
+	cct2metrics.c data_tree.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/tokenize.h \
+	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	$(am__append_15) $(am__append_16) $(am__append_17) \
+	$(am__append_18) $(am__append_19) $(am__append_20) \
+	$(am__append_21) $(am__append_22)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -2186,9 +2185,6 @@ cct/libhpcrun_la-cct_ctxt.lo: cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_la-cct.lo: cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_la-data_tree.lo:  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/$(am__dirstamp):
 	@$(MKDIR_P) trampoline/common
 	@: > trampoline/common/$(am__dirstamp)
@@ -2673,9 +2669,6 @@ cct/libhpcrun_o-cct_ctxt.$(OBJEXT): cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_o-cct.$(OBJEXT): cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
-sample-sources/datacentric/libhpcrun_o-data_tree.$(OBJEXT):  \
-	sample-sources/datacentric/$(am__dirstamp) \
-	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/libhpcrun_o-trampoline.$(OBJEXT):  \
 	trampoline/common/$(am__dirstamp) \
 	trampoline/common/$(DEPDIR)/$(am__dirstamp)
@@ -3025,6 +3018,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-data_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-epoch.Plo@am__quote@
@@ -3058,6 +3052,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-data_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
@@ -3178,13 +3173,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-blame-shift.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_la-data-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_datacentric_wrap_a-data-overrides.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-datacentric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-datadummy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-ibsop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-memaddress.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_x86.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-datacentric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-datadummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-ibsop.Po@am__quote@
@@ -3857,12 +3850,12 @@ libhpcrun_la-cct2metrics.lo: cct2metrics.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct2metrics.lo `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
 
-sample-sources/datacentric/libhpcrun_la-data_tree.lo: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_la-data_tree.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-data_tree.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_la-data_tree.lo' libtool=yes @AMDEPBACKSLASH@
+libhpcrun_la-data_tree.lo: data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-data_tree.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-data_tree.Tpo -c -o libhpcrun_la-data_tree.lo `test -f 'data_tree.c' || echo '$(srcdir)/'`data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-data_tree.Tpo $(DEPDIR)/libhpcrun_la-data_tree.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data_tree.c' object='libhpcrun_la-data_tree.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-data_tree.lo `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-data_tree.lo `test -f 'data_tree.c' || echo '$(srcdir)/'`data_tree.c
 
 trampoline/common/libhpcrun_la-trampoline.lo: trampoline/common/trampoline.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Tpo -c -o trampoline/common/libhpcrun_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
@@ -5124,19 +5117,19 @@ libhpcrun_o-cct2metrics.obj: cct2metrics.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct2metrics.obj `if test -f 'cct2metrics.c'; then $(CYGPATH_W) 'cct2metrics.c'; else $(CYGPATH_W) '$(srcdir)/cct2metrics.c'; fi`
 
-sample-sources/datacentric/libhpcrun_o-data_tree.o: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data_tree.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_o-data_tree.o' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-data_tree.o: data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-data_tree.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o libhpcrun_o-data_tree.o `test -f 'data_tree.c' || echo '$(srcdir)/'`data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-data_tree.Tpo $(DEPDIR)/libhpcrun_o-data_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data_tree.c' object='libhpcrun_o-data_tree.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data_tree.o `test -f 'sample-sources/datacentric/data_tree.c' || echo '$(srcdir)/'`sample-sources/datacentric/data_tree.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-data_tree.o `test -f 'data_tree.c' || echo '$(srcdir)/'`data_tree.c
 
-sample-sources/datacentric/libhpcrun_o-data_tree.obj: sample-sources/datacentric/data_tree.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-data_tree.obj -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o sample-sources/datacentric/libhpcrun_o-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-data_tree.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/data_tree.c' object='sample-sources/datacentric/libhpcrun_o-data_tree.obj' libtool=no @AMDEPBACKSLASH@
+libhpcrun_o-data_tree.obj: data_tree.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-data_tree.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-data_tree.Tpo -c -o libhpcrun_o-data_tree.obj `if test -f 'data_tree.c'; then $(CYGPATH_W) 'data_tree.c'; else $(CYGPATH_W) '$(srcdir)/data_tree.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-data_tree.Tpo $(DEPDIR)/libhpcrun_o-data_tree.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='data_tree.c' object='libhpcrun_o-data_tree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-data_tree.obj `if test -f 'sample-sources/datacentric/data_tree.c'; then $(CYGPATH_W) 'sample-sources/datacentric/data_tree.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/data_tree.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-data_tree.obj `if test -f 'data_tree.c'; then $(CYGPATH_W) 'data_tree.c'; else $(CYGPATH_W) '$(srcdir)/data_tree.c'; fi`
 
 trampoline/common/libhpcrun_o-trampoline.o: trampoline/common/trampoline.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Tpo -c -o trampoline/common/libhpcrun_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
