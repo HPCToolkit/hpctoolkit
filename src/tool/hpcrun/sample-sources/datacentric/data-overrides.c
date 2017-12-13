@@ -92,7 +92,6 @@
 #include <safe-sampling.h>
 #include <sample_event.h>
 #include <monitor-exts/monitor_ext.h>
-#include <varmap.h> // DATA_STATIC_CONTEXT
 
 #include <sample-sources/datacentric/datacentric.h>
 

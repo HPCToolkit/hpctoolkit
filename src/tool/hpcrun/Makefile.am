@@ -306,6 +306,8 @@ MY_BASE_FILES =				\
 	\
 	cct2metrics.c                   \
 	\
+	sample-sources/datacentric/data_tree.c	\
+	\
 	trampoline/common/trampoline.c  \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
@@ -353,8 +355,7 @@ endif
 if OPT_PERF_MEM_DATA_SRC
 MY_BASE_FILES +=  			\
 	sample-sources/datacentric/datacentric.c	\
-	sample-sources/datacentric/memaddress.c		\
-	varmap.c
+	sample-sources/datacentric/memaddress.c		
 endif
 
 if OPT_IBS_OP
@@ -484,11 +485,9 @@ libhpcrun_wrap_a_SOURCES =		\
 	monitor-exts/openmp.c
 
 libhpcrun_datacentric_la_SOURCES = 		\
-	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_datacentric_wrap_a_SOURCES = 	\
-	sample-sources/datacentric/data_tree.c	\
 	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_ga_la_SOURCES = 		\

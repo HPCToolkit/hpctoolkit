@@ -82,7 +82,6 @@
 #include "datacentric.h"
 #include "data_tree.h"
 
-#include "varmap.h"  // static variable mapping
 #include "place_folder.h"
 
 #include "sample-sources/perf/event_custom.h"

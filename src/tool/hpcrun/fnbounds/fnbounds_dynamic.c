@@ -100,6 +100,7 @@
 #include <hpcrun_stats.h>
 #include <disabled.h>
 #include <loadmap.h>
+#include <env.h>
 #include <epoch.h>
 #include <sample_event.h>
 #include <thread_data.h>
@@ -109,6 +110,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 
+#include "sample-sources/datacentric/data_tree.h"
 
 //*********************************************************************
 // local types
@@ -241,6 +243,36 @@ fnbounds_map_open_dsos()
 }
 
 
+//---------------------------------------------------------------------
+// Function: insert_var_table
+// Purpose:  
+//    create a tree of static variables to be used later by datacentric
+//    or other modules 
+//---------------------------------------------------------------------
+static void
+insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
+{
+  if(!var_table) return;
+  int i;
+  for (i = 0; i < num; i+=2) {
+    // create splay node
+    struct datainfo_s *data_info = hpcrun_malloc(sizeof(struct datainfo_s));
+
+    data_info->memblock = var_table[i];
+    data_info->bytes    = var_table[i+1] - var_table[i];
+    data_info->left     = data_info->right = NULL;
+
+    data_info->magic    = DATA_STATIC_MAGIC;
+    data_info->context  = (void*) DATA_STATIC_CONTEXT;
+
+    data_info->rmemblock = data_info->memblock + data_info->bytes;
+
+    splay_insert(data_info);
+  }
+}
+
+
+
 //
 // Find start and end of executable from /proc/self/maps
 //
@@ -344,14 +376,19 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
       isOk = false;
     }
 
-    // ----------------------------------------------------------
-    // add into var data tree
-    // ----------------------------------------------------------
-    struct fnbounds_file_header fh;
-    char filename[PATH_MAX];
-    realpath(module_name, filename);
-    void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
-    insert_var_table(dso, var_table, fh.num_entries);
+    char *events     = getenv(HPCRUN_EVENT_LIST);
+    bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+    if (datacentric) {
+      TMSG(DATACENTRIC, "Datacentric static variable is active");
+      // ----------------------------------------------------------
+      // add into var data tree
+      // ----------------------------------------------------------
+      struct fnbounds_file_header fh;
+      char filename[PATH_MAX];
+      realpath(module_name, filename);
+      void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
+      insert_var_table(dso, var_table, fh.num_entries);
+    }
   }
 
   FNBOUNDS_UNLOCK;
