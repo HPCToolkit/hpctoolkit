@@ -138,6 +138,7 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
@@ -618,6 +619,7 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
+    PRINT("internal_fini! %d\n", omp_get_thread_num());
     device_finalizer();
 
     hpcrun_process_aux_cleanup_action();
@@ -722,6 +724,7 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
+    PRINT("thread_fini! %d\n", omp_get_thread_num());
     device_finalizer();
     
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -730,6 +733,7 @@ hpcrun_thread_fini(epoch_t *epoch)
 }
 
 
+// TODO(keren): make it more general by blame-shift
 void
 hpcrun_register_device_finalizer_callback(device_finalizer_callback_t device_finalizer_callback)
 {

@@ -96,6 +96,7 @@
 
 #include "sample-sources/idle.h"
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 
 /******************************************************************************
@@ -726,7 +727,9 @@ ompt_idle_blame_shift_request()
 // map opid operations
 //*****************************************************************************
 
+//--------------------------------------------------------------------------
 // Records the (target id cct_node *) mapping in a thread local variable
+//--------------------------------------------------------------------------
 void
 hpcrun_op_id_map_record_target(ompt_id_t target_id,
                                cct_node_t *node,
@@ -737,8 +740,10 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 }
 
 
+//--------------------------------------------------------------------------
 // Adds an (opid, cct_node_t *) entry to the concurrent map by finding
 // the cct_node_t * associated with target_id from the thread_local variable
+//--------------------------------------------------------------------------
 void
 hpcrun_op_id_map_insert(ompt_id_t host_op_id,
                         ompt_id_t target_id,
@@ -762,11 +767,13 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
 }
 
 
+//--------------------------------------------------------------------------
 // Look up the cct node associated with host_op_id in a map.
 // The map is mutable concurrent data structure. the GPU thread all CPU threads share it
 // this function will provide the pointer to the CCT node that represents the
 // context for the target region. For now, this cct_node_t * will be in the thread CCT.
 // Eventually, this function might return a pointer to a separate CCT that will be used by a device
+//--------------------------------------------------------------------------
 cct_node_t *
 hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
 {
@@ -951,6 +958,7 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
+  PRINT("ompt_target_callback! %u %d\n", target_id, omp_get_thread_num());
   // TODO(keren): hpcrun_safe_enter prevent self interruption
   ompt_host_op_seq_id = 0;
   ucontext_t uc;

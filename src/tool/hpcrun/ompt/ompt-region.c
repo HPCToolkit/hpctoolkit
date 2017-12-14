@@ -22,8 +22,7 @@
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
-#include "ompt-region.h"
-#include "ompt-region-map.h"
+#include "ompt-parallel-region-map.h"
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
@@ -74,7 +73,7 @@ ompt_parallel_begin_internal(
 
   assert(region_id != 0);
   // device_num -1 reserved for unknown device 
-  ompt_region_map_insert((uint64_t) region_id, callpath, -1);
+  ompt_parallel_region_map_insert((uint64_t) region_id, callpath);
 
   if (!td->master) {
     if (td->outer_region_id == 0) {
@@ -120,18 +119,18 @@ ompt_parallel_end_internal(
 )
 {
   hpcrun_safe_enter();
-  ompt_region_map_entry_t *record = ompt_region_map_lookup(parallel_id);
+  ompt_parallel_region_map_entry_t *record = ompt_parallel_region_map_lookup(parallel_id);
   if (record) {
-    if (ompt_region_map_entry_refcnt_get(record) > 0) {
+    if (ompt_parallel_region_map_entry_refcnt_get(record) > 0) {
       // associate calling context with region if it is not already present
-      if (ompt_region_map_entry_callpath_get(record) == NULL) {
-        ompt_region_map_entry_callpath_set
+      if (ompt_parallel_region_map_entry_callpath_get(record) == NULL) {
+        ompt_parallel_region_map_entry_callpath_set
           (record, 
            ompt_region_context(parallel_id, ompt_context_end, 
                                ++levels_to_skip, invoker == ompt_invoker_program));
       }
     } else {
-      ompt_region_map_refcnt_update(parallel_id, 0L);
+      ompt_parallel_region_map_refcnt_update(parallel_id, 0L);
     }
   } else {
     assert(0);
