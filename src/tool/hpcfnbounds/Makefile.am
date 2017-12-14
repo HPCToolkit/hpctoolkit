@@ -134,7 +134,7 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
 
 libeh_frames_a_SOURCES = eh-frames.cpp
-libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(LIBDWARF_INC)
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBDWARF_INC)
 libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)

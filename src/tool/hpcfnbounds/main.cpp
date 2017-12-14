@@ -520,6 +520,10 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   if (syms->getObjectType() != obj_Unknown) {
     int dwarf_fd = open(filename, O_RDONLY);
 
+    if (dwarf_fd < 0) {
+      fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
+    }
+
     dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
     close(dwarf_fd);
 

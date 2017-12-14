@@ -72,6 +72,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <boost/tokenizer.hpp>
 #include <libdwarf.h>
 
 #include <include/hpctoolkit-config.h>
@@ -87,7 +88,10 @@ typedef set <void *> AddrSet;
 static void dwarf_frame_info_help(int, AddrSet &);
 
 #define EXT_LIBS_DIR_STR  "HPCTOOLKIT_EXT_LIBS_DIR"
+#define LD_LIBRARY_PATH   "LD_LIBRARY_PATH"
+
 #define LIBDWARF_NAME  "libdwarf.so"
+#define DLOPEN_OPTS    (RTLD_NOW | RTLD_LOCAL)
 
 #define KEEP_LIBDWARF_OPEN  0
 
@@ -163,31 +167,66 @@ get_libdwarf_functions(void)
 #ifdef DYNINST_USE_LIBDW
 
   // step 1 -- find libdwarf.so file, this only happens once.
-  // fixme: may want to search LD_LIBRARY_PATH for libdwarf.so,
-  // in case EXT_LIBS_DIR is not set.
   if (! found_library) {
+    //
+    // try HPCTOOLKIT_EXT_LIBS_DIR first, this is set in the launch
+    // script.
+    //
     char *str = getenv(EXT_LIBS_DIR_STR);
 
-    if (str == NULL) {
-      warnx("unable to get %s", EXT_LIBS_DIR_STR);
-      return 1;
+    if (str != NULL) {
+      library_file = string(str) + "/" + LIBDWARF_NAME;
+      libdwarf_handle = dlopen(library_file.c_str(), DLOPEN_OPTS);
+
+      if (libdwarf_handle != NULL) {
+	found_library = 1;
+	dlopen_done = 1;
+      }
+      else {
+	warnx("unable to open %s in %s = %s", LIBDWARF_NAME, EXT_LIBS_DIR_STR, str);
+      }
     }
+  }
 
-    library_file = string(str) + "/" + LIBDWARF_NAME;
-    libdwarf_handle = dlopen(library_file.c_str(), RTLD_NOW | RTLD_LOCAL);
+  if (! found_library) {
+    //
+    // try LD_LIBRARY_PATH, in case running the binary directly.  as
+    // long as make install copied libdwarf.so to ext-libs, this
+    // method pretty much has to work.
+    //
+    // boost::tokenizer and algorithm::split generate a lot of code
+    // bloat.  we could rewrite this with string::find_first_of().
+    //
+    char *str = getenv(LD_LIBRARY_PATH);
 
-    if (libdwarf_handle == NULL) {
-      warnx("unable to open: %s", library_file.c_str());
-      return 1;
+    if (str != NULL) {
+      string path = str;
+      boost::char_separator <char> sep (":;", "", boost::drop_empty_tokens);
+      boost::tokenizer <boost::char_separator <char>> token (path, sep);
+
+      for (auto it = token.begin(); it != token.end(); ++it) {
+	library_file = string(*it) + "/" + LIBDWARF_NAME;
+	libdwarf_handle = dlopen(library_file.c_str(), DLOPEN_OPTS);
+
+	if (libdwarf_handle != NULL) {
+	  found_library = 1;
+	  dlopen_done = 1;
+	  break;
+	}
+      }
+      if (! found_library) {
+	warnx("unable to find %s in %s = %s", LIBDWARF_NAME, LD_LIBRARY_PATH, str);
+      }
     }
+  }
 
-    found_library = 1;
-    dlopen_done = 1;
+  if (! found_library) {
+    return 1;
   }
 
   // step 2 -- dlopen()
   if (! dlopen_done) {
-    libdwarf_handle = dlopen(library_file.c_str(), RTLD_NOW | RTLD_LOCAL);
+    libdwarf_handle = dlopen(library_file.c_str(), DLOPEN_OPTS);
 
     if (libdwarf_handle == NULL) {
       warnx("unable to open: %s", library_file.c_str());
@@ -252,12 +291,15 @@ release_libdwarf_functions(void)
 void
 dwarf_eh_frame_info(int fd)
 {
-  if (fd < 0) {
+  static int open_failed = 0;
+
+  if (fd < 0 || open_failed) {
     return;
   }
 
   if (get_libdwarf_functions() != 0) {
     warnx("unable to open %s", LIBDWARF_NAME);
+    open_failed = 1;
     return;
   }
 
