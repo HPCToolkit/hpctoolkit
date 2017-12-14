@@ -215,9 +215,12 @@ getEnvLong(const char *env_var, long default_value)
 
 //----------------------------------------------------------
 // find the best precise ip value in this platform
+// @param current perf event attribute. This attribute can be
+//    updated for the default precise ip.
+// @return the assigned precise ip 
 //----------------------------------------------------------
-static u64
-get_precise_ip()
+u64
+get_precise_ip(struct perf_event_attr *attr)
 {
   static int precise_ip = -1;
 
@@ -225,27 +228,15 @@ get_precise_ip()
   if (precise_ip >= 0)
     return precise_ip;
 
-
-  struct perf_event_attr attr;
-
-  memset(&attr, 0, sizeof(attr));
-
-  attr.config = PERF_COUNT_HW_CPU_CYCLES; // Perf's cycle event
-  attr.type   = PERF_TYPE_HARDWARE;     // it's a hardware event
-
-  attr.exclude_kernel = 1;
-  attr.exclude_hv     = 1;
-  attr.exclude_idle   = 1;
-
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
   if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
   {
-    attr.precise_ip = val;
+    attr->precise_ip = val;
 
     // check the validity of the requested precision
     // if it returns -1 we need to use our own auto-detect precision
-    int ret = perf_event_open(&attr,
+    int ret = perf_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -260,11 +251,11 @@ get_precise_ip()
   // if there's a change in the specification, we need to change
   // this one too (unfortunately)
   for(int i=perf_skid_flavors-1; i>=0; i--) {
-    attr.precise_ip = perf_skid_precision[i];
+    attr->precise_ip = perf_skid_precision[i];
 
     // ask sys to "create" the event
     // it returns -1 if it fails.
-    int ret = perf_event_open(&attr,
+    int ret = perf_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -358,7 +349,6 @@ is_perf_ksym_available()
 //----------------------------------------------------------
 int
 perf_attr_init(
-  u64 event_code, u64 event_type,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -370,11 +360,7 @@ perf_attr_init(
                              | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
                              | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
 
-  memset(attr, 0, sizeof(struct perf_event_attr));
-
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
-  attr->type   = event_type;       
-  attr->config = event_code;       
   attr->freq   = (usePeriod ? 0 : 1);
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
@@ -386,8 +372,6 @@ perf_attr_init(
     attr->sample_period = max_sample_rate-1;
   }
 
-  attr->precise_ip    = get_precise_ip();   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
   attr->disabled      = 1;                 /* the counter will be enabled later  */
   attr->sample_type   = sample_type;
 
@@ -410,5 +394,7 @@ perf_attr_init(
     attr->exclude_hv         = 0;
     attr->exclude_idle       = 0;
   }
+  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
+                                              as precise as possible or  on the user's variable.  */
   return true;
 }

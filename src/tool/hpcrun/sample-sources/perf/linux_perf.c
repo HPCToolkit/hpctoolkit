@@ -184,28 +184,21 @@ perf_thread_init(event_info_t *event, event_thread_t *et);
 static void 
 perf_thread_fini(int nevents, event_thread_t *event_thread);
 
-static int perf_event_handler(
-  int sig, 
-  siginfo_t* siginfo, 
-  void* context
-);
+static int 
+perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 
 
 //******************************************************************************
 // constants
 //******************************************************************************
 
-
 #ifndef ENABLE_PERFMON
 static const char *event_name = "CPU_CYCLES";
 #endif
 
-
-
 //******************************************************************************
 // local variables
 //******************************************************************************
-
 
 static sigset_t sig_mask;
 
@@ -288,32 +281,7 @@ perf_init()
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
-/*************************************
- * get the perf code and type of the given event name
- * if perfmon is enabled, we query the info from perfmon
- * otherwise we depend on the predefined events
- *************************************/
-static int
-perf_get_pmu_code_type(const char *name, u64 *event_code, u64* event_type)
-{
-#ifdef ENABLE_PERFMON
-  if (!pfmu_getEventType(name, event_code, event_type)) {
-     EMSG("Linux perf event not recognized: %s", name);
-     return -1;
-  }
-  if (event_type<0) {
-     EMSG("Linux perf event type not recognized: %s", name);
-     return -1;
-  }
-  return 1;
-#else
-	// default pmu if we don't have perfmon
-	*event_code = PERF_COUNT_HW_BUS_CYCLES;
-	*event_type = PERF_TYPE_HARDWARE;
 
-  return 0;
-#endif
-}
 
 
 //----------------------------------------------------------
@@ -412,6 +380,9 @@ static sample_val_t*
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, sample_val_t* sv)
 {
+  if (current == NULL || current->event == NULL || current->event->metric < 0)
+    return NULL;
+
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
   // sampling taken by perf event kernel
@@ -754,20 +725,22 @@ METHOD_FN(process_event_list, int lush_metrics)
         continue;
       }
     }
-    u64 event_code, event_type;
-    int isPMU = perf_get_pmu_code_type(name, &event_code, &event_type);
+
+    struct perf_event_attr *event_attr = &(event_desc[i].attr);
+
+    int isPMU = pfmu_getEventAttribute(name, event_attr);
     if (isPMU < 0)
-    	// case for unknown event
-    	// it is impossible to be here, unless the code is buggy
-    	continue;
+      // case for unknown event
+      // it is impossible to be here, unless the code is buggy
+      continue;
 
     bool is_period = (period_type == 1);
 
     // ------------------------------------------------------------
-    // initialize the perf event attributes
+    // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_attr_init(event_code, event_type, &(event_desc[i].attr), is_period, threshold, 0);
+    perf_attr_init(event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric
@@ -1025,7 +998,6 @@ perf_event_handler(
     return 1; // tell monitor the signal has not been handled.
   }
 
-  TMSG(LINUX_PERF, "signal sampling.");
   // ----------------------------------------------------------------------------
   // parse the buffer until it finishes reading all buffers
   // ----------------------------------------------------------------------------
