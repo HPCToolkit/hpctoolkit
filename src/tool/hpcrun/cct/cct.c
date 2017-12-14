@@ -101,11 +101,9 @@ struct cct_node_t {
   int32_t persistent_id;
   
  // bundle abstract address components into a data type
-
   cct_addr_t addr;
 
   bool is_leaf;
-
   
   // ---------------------------------------------------------
   // tree structure
@@ -259,7 +257,7 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 //
 
 typedef struct {
-  hpcfmt_uint_t num_metrics;
+  hpcfmt_uint_t num_kind_metrics;
   FILE* fs;
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
@@ -294,9 +292,9 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
-  tmp->num_metrics = my_arg->num_metrics;
-  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
-			       my_arg->num_metrics);
+  tmp->num_metrics = my_arg->num_kind_metrics;
+  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_data_list(node),
+			       my_arg->num_kind_metrics);
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -626,19 +624,19 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
   hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
   TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
 
-  hpcfmt_uint_t num_metrics = hpcrun_get_num_metrics();
-  TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_metrics);
+  hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
+  TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_kind_metrics);
   
   hpcrun_fmt_cct_node_t tmp_node;
 
   write_arg_t write_arg = {
-    .num_metrics = num_metrics,
+    .num_kind_metrics = num_kind_metrics,
     .fs          = fs,
     .flags       = flags,
     .tmp_node    = &tmp_node,
   };
   
-  hpcrun_metricVal_t metrics[num_metrics];
+  hpcrun_metricVal_t metrics[num_kind_metrics];
   tmp_node.metrics = &(metrics[0]);
 
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);

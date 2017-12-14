@@ -52,6 +52,7 @@
 /******************************************************************************
  * system includes
  *****************************************************************************/
+
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
@@ -242,6 +243,23 @@ extern __thread bool hpcrun_thread_suppress_sample;
 /******************************************************************************
  * method functions
  *****************************************************************************/
+
+// strip the prefix "papi::" from an event name, if exists.
+// this allows forcing a papi event over a perf event.
+// allow case-insensitive and any number of ':'
+static const char *
+strip_papi_prefix(const char *str)
+{
+  if (strncasecmp(str, "papi:", 5) == 0) {
+    str = &str[5];
+
+    while (str[0] == ':') {
+      str = &str[1];
+    }
+  }
+
+  return str;
+}
 
 static void
 METHOD_FN(init)
@@ -458,6 +476,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+  ev_str = strip_papi_prefix(ev_str);
+  
   TMSG(PAPI, "supports event");
   if (papi_unavail) { return false; }
 
@@ -488,6 +508,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     char name[1024];
     int evcode;
     long thresh;
+
+    event = (char *) strip_papi_prefix(event);
 
     TMSG(PAPI,"checking event spec = %s",event);
     // FIXME: restore checking will require deciding if the event is synchronous or not
@@ -526,9 +548,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   some_overflow = 0;
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
-    int metric_id = hpcrun_new_metric(); /* weight */
     metric_desc_properties_t prop = metric_property_none;
-    METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
 
@@ -564,21 +584,22 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (component_uses_sync_samples(cidx))
       TMSG(PAPI, "Event %s from synchronous component", buffer);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      MetricFlags_ValFmt_Int,
-				      threshold, prop);
+    int metric_id = /* weight */
+      hpcrun_set_new_metric_info_and_period(strdup(buffer),
+					    MetricFlags_ValFmt_Int,
+					    threshold, prop);
+    METHOD_CALL(self, store_metric_id, i, metric_id);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
+      int mid_idleness =
+	hpcrun_set_new_metric_info_and_period("idleness",
+					      MetricFlags_ValFmt_Real,
+					      self->evl.events[i].thresh, prop);
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
-      int mid_idleness = hpcrun_new_metric();
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
-
-      hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
-					MetricFlags_ValFmt_Real,
-					self->evl.events[i].thresh, prop);
     }
   }
 
@@ -777,6 +798,7 @@ METHOD_FN(display_events)
 
 #define ss_name papi
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  80
 
 #include "ss_obj.h"
 
@@ -925,8 +947,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       metricIncrement = 1;
     }
 
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metricIncrement,
-			   0/*skipInner*/, 0/*isSync*/);
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
+			(hpcrun_metricVal_t) {.i=metricIncrement},
+			0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -939,8 +962,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (ci->some_derived) {
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
-	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - ci->prev_values[i], 0, 0);
+	      hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
+			(hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
+			0, 0, NULL);
       }
     }
 

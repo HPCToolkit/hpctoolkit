@@ -164,7 +164,8 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
   ucontext_t context;
   getcontext(&context); // FIXME: check for errors
   smpl = hpcrun_sample_callpath(&context, lush_agents->metric_time,
-				0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
+                                (hpcrun_metricVal_t) {.i=0}, 
+				1/*skipInner*/, 1/*isSync*/, NULL);
   hpcrun_safe_exit();
 
   return smpl.sample_node;
@@ -642,22 +643,20 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
     // Case 1: empty
     return NULL;
   }
-  else if (pthr->freelstHead == pthr->freelstHead) {
-    // Case 2: non-empty
-    lushPtr_SyncObjData_t* x = pthr->freelstHead;
-    pthr->freelstHead = x->next;
-    x->next = NULL;
+  // Case 2: non-empty
+  lushPtr_SyncObjData_t* x = pthr->freelstHead;
+  pthr->freelstHead = x->next;
+  x->next = NULL;
 
-    if (!pthr->freelstHead) {
-      // Special case: one element
-      pthr->freelstTail = NULL;
-    }
+  if (!pthr->freelstHead) {
+    // Special case: one element
+    pthr->freelstTail = NULL;
+  }
 #if (LUSH_DBG_STATS)
-    atomic_fetch_add_explicit(&DBG_numLockFreelistCur, -1, memory_order_relaxed);
+  atomic_fetch_add_explicit(&DBG_numLockFreelistCur, -1, memory_order_relaxed);
 #endif
     
-    return x;
-  }
+  return x;
 }
 
 

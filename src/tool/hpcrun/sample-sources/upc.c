@@ -211,7 +211,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     if (counter >= threshold) {
       if (safe) {
 	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
-			       1, 0, 0);
+			       1, 0, 0, NULL);
       }
       BGP_UPC_Set_Counter_Value(ev, 0);
       BGP_UPC_Set_Counter_Threshold_Value(ev, threshold);
@@ -291,12 +291,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_pre_allocate_metrics(nevents);
 
   for (k = 0; k < nevents; k++) {
-    metric_id = hpcrun_new_metric();
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(name),
-				      MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
+    metric_id = 
+      hpcrun_set_new_metric_info_and_period(strdup(name),
+					    MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);

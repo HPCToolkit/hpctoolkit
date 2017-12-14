@@ -1,15 +1,3 @@
-/*
- * interval_t.h
- *
- * Structure representing a right-opened interval of the form [a, b), where
- * a and b are pointers.
- *
- * Viewed as a concrete "subclass" of the generic_val class defined in
- * generic_val.h.
- *
- * Author: dxnguyen
- */
-
 #ifndef __PTRINTERVAL_T_H__
 #define __PTRINTERVAL_T_H__
 
@@ -42,15 +30,6 @@ typedef struct interval_s {
 
 
 //******************************************************************************
-// Constructor
-//******************************************************************************
-
-// pre-condition: start <= end
-interval_t*
-interval_t_new(uintptr_t start, uintptr_t end, mem_alloc m_alloc);
-
-
-//******************************************************************************
 // Comparison
 //******************************************************************************
 
@@ -70,12 +49,12 @@ interval_t_cmp(void* p1, void* p2);
  * check if address is inside of interval, i.e. start <= address < end
  *
  *  // special boundary case:
- *  if (address == UINTPTR_MAX && interval->start == UINTPTR_MAX)
+ *  if (address == UINTPTR_MAX && interval.start == UINTPTR_MAX)
  *    return 0;
  *
- * if address < interval->start , i.e. interval is "greater than" address
+ * if address < interval.start , i.e. interval is "greater than" address
  *   return 1
- * if interval->start <= address < interval.end, i.e. address is inside interval
+ * if interval.start <= address < interval.end, i.e. address is inside interval
  *   return 0
  * else , i.e. interval is "less than" address
  *   returns -1
@@ -92,7 +71,7 @@ interval_t_inrange(void* interval, void* address);
  * concrete implementation of the abstract val_tostr function of the generic_val class.
  * pre-condition: ptr_interval is of type ptrinterval_t*
  * pre-condition: result[] is an array of length >= MAX_INTERVAL_STR
- * post-condition: result[] is a string of the form [interval->start, interval->end)
+ * post-condition: result[] is a string of the form [interval.start, interval.end)
  */
 void
 interval_t_tostr(void* interval, char result[]);

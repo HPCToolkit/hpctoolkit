@@ -266,12 +266,12 @@ ompt_mutex_blame_shift_register(void)
 static void
 ompt_register_mutex_metrics(void)
 {
-  int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
+  omp_mutex_blame_info.wait_metric_id = 
+  hpcrun_set_new_metric_info_and_period("OMP_MUTEX_WAIT", 
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
+  omp_mutex_blame_info.blame_metric_id = 
+  hpcrun_set_new_metric_info_and_period("OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
@@ -279,12 +279,12 @@ ompt_register_mutex_metrics(void)
 static void
 ompt_register_idle_metrics(void)
 {
-  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
+  omp_idle_blame_info.idle_metric_id = 
+  hpcrun_set_new_metric_info_and_period("OMP_IDLE",
 				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
-  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
+  omp_idle_blame_info.work_metric_id = 
+  hpcrun_set_new_metric_info_and_period("OMP_WORK",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
@@ -331,7 +331,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 		   ompt_task_id_t new_task_id,
 		   void *task_function)
 {
-  uint64_t zero_metric_incr = 0LL;
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
 
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
@@ -343,7 +343,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node =
-    hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
+    hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 

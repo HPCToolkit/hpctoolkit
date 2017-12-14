@@ -134,13 +134,14 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libinstruct*)
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.a)
+	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
@@ -184,8 +185,9 @@ install-exec-hook:
 	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
 	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
 	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
-	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.a)
+	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
 	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
 endif
 
 

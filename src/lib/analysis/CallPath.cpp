@@ -84,6 +84,8 @@ using std::string;
 #include "Util.hpp"
 
 #include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
 
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
@@ -146,8 +148,11 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
     prof->merge(*p, mergeTy, mrgFlags);
+
+    prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
   }
+  prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
   return prof;
 }
@@ -447,7 +452,14 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
       VMA lm_ip = n_dyn->lmIP();
       const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(lm_ip);
-      DIAG_Assert(strct, "Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: " << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+
+      // Laks: I don't think an empty strct is critical. We can just send a warning
+      //  and then continue. (like the serial version of hpcprof)
+      if (!strct) {
+        DIAG_EMsg("Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: "
+            << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+        continue;
+      }
 
       n->structure(strct);
     }
@@ -1105,7 +1117,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   uint metricBegId = 0;
   uint metricEndId = prof.metricMgr()->size();
 
-  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+ {
     Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
     Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
     metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
@@ -1117,7 +1129,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<HPCToolkitExperiment version=\"2.1\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

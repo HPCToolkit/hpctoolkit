@@ -22,12 +22,14 @@
  * type definitions 
  *****************************************************************************/
 
+#if 0
 struct ompt_task_map_entry_s {
   uint64_t task_id;
   cct_node_t *call_path;
   struct ompt_task_map_entry_s *left;
   struct ompt_task_map_entry_s *right;
 }; 
+#endif
 
 
 

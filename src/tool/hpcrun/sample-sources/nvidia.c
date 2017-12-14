@@ -95,16 +95,58 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 
+
 /******************************************************************************
  * macros
  *****************************************************************************/
 
+#define FORALL_EM(macro)	\
+  macro("EM_HTOD_BYTES",    1)	\
+  macro("EM_DTOH_BYTES",    2)	\
+  macro("EM_HTOA_BYTES",    3)	\
+  macro("EM_ATOH_BYTES",    4)	\
+  macro("EM_ATOA_BYTES",    5)	\
+  macro("EM_ATOD_BYTES",    6)	\
+  macro("EM_DTOA_BYTES",    7)	\
+  macro("EM_DTOD_BYTES",    8)	\
+  macro("EM_HTOH_BYTES",    9)	\
+  macro("EM_PTOP_BYTES",   10) 
 
-#define OVERFLOW_MODE 0
-#define NO_THRESHOLD  1L
+#define FORALL_EM_TIMES(macro)  \
+  macro("EM_TIME (us)",    11)  
 
-#define PAPI_CUDA_COMPONENT_ID 1
-#define CUPTI_LAUNCH_CALLBACK_DEPTH 7
+#define FORALL_IM(macro)	\
+  macro("IM_HTOD_BYTES",    1)	\
+  macro("IM_DTOH_BYTES",    2)	\
+  macro("IM_CPU_PF",        3)	\
+  macro("IM_GPU_PF",        4)	\
+  macro("IM_THRASH",        5)	\
+  macro("IM_THROT",         6)	\
+  macro("IM_RMAP",          7)	\
+  macro("IM_DTOD_BYTES",    8)
+
+#define FORALL_IM_TIMES(macro)  \
+  macro("EM_TIME (us)",     9)  
+
+#define FORALL_STL(macro)	\
+  macro("STL_NONE",         1)	\
+  macro("STL_IFETCH",       2)	\
+  macro("STL_EXC_DEP",      3)	\
+  macro("STL_MEM_DEP",      4)	\
+  macro("STL_TEX",          5)	\
+  macro("STL_SYNC",         6)	\
+  macro("STL_CMEM_DEP",     7)	\
+  macro("STL_PIPE_BSY",     8)	\
+  macro("STL_MEM_THR",      9)	\
+  macro("STL_NOSEL",       10)	\
+  macro("STL_OTHR",        11)	\
+  macro("STL_SLEEP",       12)
+
+#define FORALL_GPU_INST(macro)  \
+  macro("GPU_ISAMP",        13)  
+
+#define COUNT_FORALL_CLAUSE(a,b) + 1
+#define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
 
 
@@ -112,14 +154,15 @@
  * forward declarations 
  *****************************************************************************/
 
-static void hpcrun_cuda_kernel_callback(void *userdata, 
-					CUpti_CallbackDomain domain,
-					CUpti_CallbackId cbid, 
-					const CUpti_CallbackData *cbInfo);
+/******************************************************************************
+ * local variables 
+ *****************************************************************************/
 
-static void check_cupti_error(int err, char *cuptifunc);
+static kind_info_t* ke_kind; // kernel execution
+static kind_info_t* em_kind; // explicit memory copies
+static kind_info_t* im_kind; // implicit memory events
 
-static void event_fatal_error(int ev_code, int papi_ret);
+
 
 /******************************************************************************
  * interface operations
@@ -134,23 +177,24 @@ METHOD_FN(init)
 static void
 METHOD_FN(thread_init)
 {
-  TMSG(CUDA, "thread init OK");
+  TMSG(CUDA, "thread_init");
 }
 
 static void
 METHOD_FN(thread_init_action)
 {
-  TMSG(CUDA, "thread_init_action ok");
+  TMSG(CUDA, "thread_init_action");
 }
-
 static void
 METHOD_FN(start)
 {
+  TMSG(CUDA, "start");
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
+  TMSG(CUDA, "thread_fini_action");
 }
 
 static void
@@ -191,6 +235,15 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+
+  ke_kind = hpcrun_metrics_new_kind();
+
+  int hpcrun_set_new_metric_info_and_period(const char* name,
+                                          MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+
+  em_kind = hpcrun_metrics_new_kind();
+  im_kind = hpcrun_metrics_new_kind();
+
 
   hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
 

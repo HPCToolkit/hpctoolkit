@@ -136,7 +136,33 @@ hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc)
 
 
 //***************************************************************************
-// 
+// generic read and write
+//***************************************************************************
+
+
+int
+hpcfmt_fread(void *data, size_t size, FILE *infs)
+{
+	size_t bytes = fread(data, sizeof(char), size, infs);
+	if (bytes == size) {
+			return HPCFMT_OK;
+	}
+	return HPCFMT_ERR;
+}
+
+
+int
+hpcfmt_fwrite(void *data, size_t size, FILE *outfs)
+{
+  size_t bytes = fwrite(data, sizeof(char), size, outfs);
+  if (bytes == size)
+  	return HPCFMT_OK;
+  return HPCFMT_ERR;
+}
+
+
+//***************************************************************************
+//
 //***************************************************************************
 
 int

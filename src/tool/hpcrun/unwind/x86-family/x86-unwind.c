@@ -93,6 +93,7 @@
 #include <utilities/arch/mcontext.h>
 #include <utilities/ip-normalized.h>
 
+#include <hpcrun/main.h>
 #include <hpcrun/thread_data.h>
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
@@ -103,7 +104,6 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
-#include "main.h"
 
 
 //****************************************************************************
@@ -135,18 +135,6 @@ static int DEBUG_NO_LONGJMP = 0;
 static void 
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset);
 
-static fence_enum_t
-hpcrun_check_fence(void* ip);
-
-static void 
-simulate_segv(void);
-
-static void 
-help_simulate_segv(bool no_backtrace);
-
-static int
-unw_step_prefer_sp(void);
-
 static step_state 
 unw_step_sp(hpcrun_unw_cursor_t* cursor);
 
@@ -166,8 +154,6 @@ t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor);
 
 static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step;
 
-extern void hpcrun_set_real_siglongjmp(void);
-
 //************************************************
 // private functions
 //************************************************
@@ -175,7 +161,7 @@ extern void hpcrun_set_real_siglongjmp(void);
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
   load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
@@ -193,7 +179,6 @@ hpcrun_unw_init(void)
 {
   x86_family_decoder_init();
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 
@@ -247,7 +232,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 }
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
@@ -265,8 +250,7 @@ hpcrun_unw_set_cursor(hpcrun_unw_cursor_t* cursor, void **sp, void **bp, void *i
   TMSG(UNW, "unw_set_cursor: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
-  cursor->flags = 0; // trolling_used
-
+  load_module_t *lm;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
 
   compute_normalized_ips(cursor);
@@ -289,7 +273,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
 
-  cursor->flags = 0; // trolling_used
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
 
   if (!found) {
@@ -319,34 +302,29 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   return cursor->ra_loc;
 }
 
-static bool
-fence_stop(fence_enum_t fence)
-{
-  return (fence == FENCE_MAIN) || (fence == FENCE_THREAD);
-}
-
 static step_state
 hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
 {
+  void *pc = cursor->pc_unnorm;
+  cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
+		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+		   
+  if (cursor->fence != FENCE_NONE) {
+    if (ENABLED(FENCE_UNW))
+      TMSG(FENCE_UNW, "%s", fence_enum_name(cursor->fence));
 
-  cursor->fence = hpcrun_check_fence(cursor->pc_unnorm);
-
-  //-----------------------------------------------------------
-  // check if we have reached the end of our unwind, which is
-  // demarcated with a fence. 
-  //-----------------------------------------------------------
-  if (fence_stop(cursor->fence)) {
-    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", cursor->pc_unnorm);
+    //-----------------------------------------------------------
+    // check if we have reached the end of our unwind, which is
+    // demarcated with a fence. 
+    //-----------------------------------------------------------
+    TMSG(UNW,"unw_step: STEP_STOP, current pc in monitor fence pc=%p\n", pc);
     return STEP_STOP;
   }
 
   // current frame  
   void** bp = cursor->bp;
   void*  sp = cursor->sp;
-  void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
-
-  step_state unw_res;
 
   if (!uw){
     TMSG(UNW, "unw_step: invalid unw interval for cursor, trolling ...");
@@ -355,6 +333,7 @@ hpcrun_unw_step_real(hpcrun_unw_cursor_t* cursor)
     return STEP_TROLL;
   }
 
+  step_state unw_res;
   switch (UWI_RECIPE(uw)->ra_status){
   case RA_SP_RELATIVE:
     unw_res = unw_step_sp(cursor);
@@ -471,20 +450,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 // hpcrun_unw_step helpers
 //****************************************************************************
 
-// FIXME: make this a selectable paramter, so that all manner of strategies 
-// can be selected
-static int
-unw_step_prefer_sp(void)
-{
-  if (ENABLED(PREFER_SP)){
-    return 1;
-  } else {
-    return 0;
-  }
-  // return cursor->flags; // trolling_used
-}
-
-
 static step_state
 unw_step_sp(hpcrun_unw_cursor_t* cursor)
 {
@@ -497,19 +462,20 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  sp = cursor->sp;
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
+  x86recipe_t *xr = UWI_RECIPE(uw);
   
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
 
   void** next_bp = NULL;
-  void** next_sp = (void **)(sp + UWI_RECIPE(uw)->sp_ra_pos);
+  void** next_sp = (void **)(sp + xr->reg.sp_ra_pos);
   void*  ra_loc  = (void*) next_sp;
   void*  next_pc  = *next_sp;
 
   TMSG(UNW,"  step_sp: potential next cursor next_sp=%p ==> next_pc = %p",
        next_sp, next_pc);
 
-  if (UWI_RECIPE(uw)->bp_status == BP_UNCHANGED){
+  if (xr->reg.bp_status == BP_UNCHANGED){
     next_bp = bp;
     TMSG(UNW,"  step_sp: unwind step has BP_UNCHANGED ==> next_bp=%p", next_bp);
   }
@@ -519,7 +485,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     // save area in the activation frame according to the unwind 
     // information produced by binary analysis
     //-----------------------------------------------------------
-    next_bp = (void **)(sp + UWI_RECIPE(uw)->sp_bp_pos);
+    next_bp = (void **)(sp + xr->reg.sp_bp_pos);
     TMSG(UNW,"  step_sp: unwind next_bp loc = %p", next_bp);
     next_bp  = *next_bp; 
     TMSG(UNW,"  step_sp: sp unwind next_bp val = %p", next_bp);
@@ -549,9 +515,8 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       
       return STEP_ERROR;
     }
-    unwind_interval* uw = cursor->unwr_info.btuwi;
-    if ((RA_BP_FRAME == UWI_RECIPE(uw)->ra_status) ||
-	(RA_STD_FRAME == UWI_RECIPE(uw)->ra_status)) { // Makes sense to sanity check BP, do it
+    if ((RA_BP_FRAME == xr->ra_status) ||
+	(RA_STD_FRAME == xr->ra_status)) { // Makes sense to sanity check BP, do it
       //-----------------------------------------------------------
       // if value of BP reloaded from the save area does not point 
       // into the stack, then it cannot possibly be useful as a frame 
@@ -591,17 +556,16 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
 static step_state
 unw_step_bp(hpcrun_unw_cursor_t* cursor)
 {
-  void *sp, **bp, *pc; 
   void **next_sp, **next_bp, *next_pc;
-
-  unwind_interval *uw;
 
   TMSG(UNW_STRATEGY,"Using BP step");
   // current frame
-  bp = cursor->bp;
-  sp = cursor->sp;
-  pc = cursor->pc_unnorm;
-  uw = cursor->unwr_info.btuwi;
+  void **bp = cursor->bp;
+  void *sp = cursor->sp;
+  void *pc = cursor->pc_unnorm;
+  unwind_interval *uw = cursor->unwr_info.btuwi;
+  x86recipe_t *xr = UWI_RECIPE(uw);
+  
 
   TMSG(UNW,"step_bp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
@@ -620,9 +584,9 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
     }
   }
   // bp relative
-  next_sp  = (void **)((void *)bp + UWI_RECIPE(uw)->bp_bp_pos);
+  next_sp  = (void **)((void *)bp + xr->reg.bp_bp_pos);
   next_bp  = *next_sp;
-  next_sp  = (void **)((void *)bp + UWI_RECIPE(uw)->bp_ra_pos);
+  next_sp  = (void **)((void *)bp + xr->reg.bp_ra_pos);
   void* ra_loc = (void*) next_sp;
   next_pc  = *next_sp;
   next_sp += 1;
@@ -704,7 +668,7 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
 {
   int unw_res;
 
-  if (unw_step_prefer_sp()){
+  if (ENABLED(PREFER_SP)) {
     TMSG(UNW_STRATEGY,"--STD_FRAME: STARTing with SP");
     unw_res = unw_step_sp(cursor);
     if (unw_res == STEP_ERROR || unw_res == STEP_STOP_WEAK) {
@@ -730,7 +694,17 @@ unw_step_std(hpcrun_unw_cursor_t* cursor)
 static step_state
 t1_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  simulate_segv();
+  if (!DEBUG_NO_LONGJMP) {
+
+    if (hpcrun_below_pmsg_threshold()) {
+      hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
+    }
+
+    hpcrun_up_pmsg_count();
+
+    sigjmp_buf_t *it = &(TD_GET(bad_unwind));
+    (*hpcrun_get_real_siglongjmp())(it->jb, 9);
+  }
 
   return STEP_ERROR;
 }
@@ -756,32 +730,6 @@ t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 //****************************************************************************
 // private operations
 //****************************************************************************
-
-static void 
-help_simulate_segv(bool no_backtrace)
-{
-  if (DEBUG_NO_LONGJMP) return;
-
-  if (no_backtrace) {
-    return;
-  }
-  if (hpcrun_below_pmsg_threshold()) {
-    hpcrun_bt_dump(TD_GET(btbuf_cur), "DROP");
-  }
-
-  hpcrun_up_pmsg_count();
-
-  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
-  (*hpcrun_get_real_siglongjmp())(it->jb, 9);
-}
-
-
-static void
-simulate_segv(void)
-{
-  help_simulate_segv(false);
-}
-
 
 static void
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
@@ -823,8 +771,6 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
       cursor->ra_loc    = ra_loc;
 
       compute_normalized_ips(cursor);
-      cursor->flags = 1; // trolling_used
-
       return; // success!
     }
     TMSG(TROLL, "No interval found for trolled pc, dropping sample,"
@@ -839,18 +785,4 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
   }
   // assert(0);
   hpcrun_unw_throw();
-}
-
-static fence_enum_t
-hpcrun_check_fence(void* ip)
-{
-  fence_enum_t rv = FENCE_NONE;
-  if (monitor_unwind_process_bottom_frame(ip))
-    rv = FENCE_MAIN;
-  else if (monitor_unwind_thread_bottom_frame(ip))
-    rv = FENCE_THREAD;
-
-   if (ENABLED(FENCE_UNW) && rv != FENCE_NONE)
-     TMSG(FENCE_UNW, "%s", fence_enum_name(rv));
-   return rv;
 }
