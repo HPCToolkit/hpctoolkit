@@ -44,31 +44,11 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-
-#############################################################################
-# Common settings
-#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
+#----------------------------------------------------------------------
 
 BOOST_LIB = @BOOST_LIB@
 BOOST_LIB_LIST = @BOOST_LIB_LIST@
@@ -80,12 +60,12 @@ SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 ZLIB_LIB = @ZLIB_LIB@
 
-MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+MYSOURCES = main.cpp Args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@GNUBINUTILS_IFLAGS@
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
@@ -96,6 +76,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -104,29 +85,13 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_LIB_CFG) \
-	$(MY_LIB_Symtab) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-MY_LIB_CFG =
-
-if OPT_ENABLE_BANAL_WITH_PARSEAPI
-MY_LIB_CFG += -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
-MYCXXFLAGS += -DBANAL_USE_PARSEAPI
-endif
-
-if OPT_ENABLE_BANAL_WITH_OA
-MY_LIB_CFG += @OA_LDFLAGS@
-MYCXXFLAGS += @OA_IFLAGS@
-endif
-
-if OPT_ENABLE_BANAL_WITH_SYMTAB
-MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
+MY_LIB_CFG = \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
+	-L$(LIBDWARF_LIB) -ldwarf  \
 	-L$(LIBELF_LIB) -lelf
-else
-MY_LIB_Symtab =
-endif
 
 if USE_BOOST_LIBS
 MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
@@ -144,9 +109,7 @@ endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-#############################################################################
-# Automake rules
-#############################################################################
+#----------------------------------------------------------------------
 
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
@@ -155,23 +118,13 @@ bin_SCRIPTS = hpcstruct
 pkglibexec_PROGRAMS = hpcstruct-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
-hpcstruct_bin_CFLAGS   = $(MYCFLAGS)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
-if ! OPT_HPCSTRUCT_LAUNCH_SCRIPT
-install-exec-hook:
-	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
-	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-endif
-
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 include $(top_srcdir)/src/Makeinclude.rules
 

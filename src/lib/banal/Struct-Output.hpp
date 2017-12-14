@@ -44,97 +44,41 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
+// This file defines the API for writing an hpcstruct file directly
+// from the TreeNode format.
+
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef Banal_Struct_Output_hpp
+#define Banal_Struct_Output_hpp
 
-//************************* System Include Files ****************************
-
-#include <iostream>
+#include <ostream>
 #include <string>
 
-//*************************** User Include Files ****************************
+#include <lib/support/StringTable.hpp>
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
+#include "Struct-Inline.hpp"
+#include "Struct-Skel.hpp"
 
-//*************************** Forward Declarations **************************
+namespace BAnal {
+namespace Output {
 
-//***************************************************************************
+using namespace Struct;
+using namespace std;
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
+void printStructFileBegin(ostream *, ostream *, string);
+void printStructFileEnd(ostream *, ostream *);
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+void printLoadModuleBegin(ostream *, string);
+void printLoadModuleEnd(ostream *);
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+void printFileBegin(ostream *, FileInfo *);
+void printFileEnd(ostream *, FileInfo *);
 
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
+	       ProcInfo *, HPC::StringTable & strTab);
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+}  // namespace Output
+}  // namespace BAnal
 
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  std::string dot_filenm;
-  bool doDot;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif
