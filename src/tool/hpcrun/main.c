@@ -619,8 +619,9 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
-    PRINT("internal_fini! %d\n", omp_get_thread_num());
     device_finalizer();
+    PRINT("internal_fini total! %d\n", omp_get_num_threads());
+    PRINT("internal_fini id! %d\n", omp_get_thread_num());
 
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -724,8 +725,9 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    PRINT("thread_fini! %d\n", omp_get_thread_num());
     device_finalizer();
+    PRINT("thread_fini! total %d\n", omp_get_num_threads());
+    PRINT("thread_fini! id %d\n", omp_get_thread_num());
     
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));

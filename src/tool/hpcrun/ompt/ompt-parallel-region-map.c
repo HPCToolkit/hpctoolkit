@@ -111,7 +111,7 @@ ompt_parallel_region_map_lookup(uint64_t id)
 void
 ompt_parallel_region_map_insert(uint64_t region_id, cct_node_t *call_path)
 {
-  ompt_parallel_region_map_entry_t *entry = ompt_parallel_region_map_entry_new(region_id, call_path)
+  ompt_parallel_region_map_entry_t *entry = ompt_parallel_region_map_entry_new(region_id, call_path);
 
   TMSG(DEFER_CTXT, "region map insert: id=0x%lx (record %p)", region_id, entry);
 

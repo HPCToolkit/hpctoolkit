@@ -22,6 +22,7 @@
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
+#include "ompt-region.h"
 #include "ompt-parallel-region-map.h"
 
 #include <hpcrun/safe-sampling.h>
