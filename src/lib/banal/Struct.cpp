@@ -115,9 +115,6 @@ using namespace std;
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
 
-#define USE_DYNINST_LINE_MAP    1
-#define USE_LIBDWARF_LINE_MAP   0
-
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_GAPS        0
@@ -135,9 +132,6 @@ static const string & unknown_link = "_unknown_proc_";
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
 
-#if USE_LIBDWARF_LINE_MAP
-static LineMap * the_linemap = NULL;
-#endif
 
 //----------------------------------------------------------------------
 
@@ -426,92 +420,91 @@ makeStructure(InputFile &inputFile,
 	      ostream * dotFile,
 	      ProcNameMgr * procNmMgr)
 {
-  HPC::StringTable strTab;
+  ElfFileVector * elfFileVector = inputFile.fileVector();
+  string & sfilename = inputFile.fileName();
+  const char * cfilename = inputFile.CfileName();
 
-  std::string &sfilename = inputFile.fileName();
-  const char *cfilename = inputFile.CfileName();
-  ElfFileVector *elfFileVector = inputFile.fileVector();
-
-  if (elfFileVector && !elfFileVector->empty()) {
-    Output::printStructFileBegin(outFile, gapsFile, sfilename);
-    for (unsigned int i = 0; i < elfFileVector->size(); i++) {
-      ElfFile *elfFile = (*elfFileVector)[i]; 
-
-      // insert empty string "" first
-      strTab.str2index("");
-
-#if USE_LIBDWARF_LINE_MAP
-      the_linemap = new LineMap;
-      the_linemap->readFile(elfFile.getElf());
-#endif
-
-      Symtab * symtab = Inline::openSymtab(elfFile);
-      the_symtab = symtab;
-
-#if USE_DYNINST_LINE_MAP
-      vector <Module *> modVec;
-      the_symtab->getAllModules(modVec);
-
-      for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
-	(*mit)->parseLineInformation();
-      }
-#endif
-
-      SymtabCodeSource * code_src;
-      CodeObject * code_obj = NULL;
-
-      if (symtab != NULL) {
-	code_src = new SymtabCodeSource(symtab);
-	code_obj = new CodeObject(code_src);
-	if (SYMTAB_ARCH_CUDA(symtab) == false) { 
-	  code_obj->parse();
-	}
-      }
-
-  string basename = FileUtil::basename(cfilename);
-  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
-
-      Output::printLoadModuleBegin(outFile, elfFile->getFileName());
-
-      // process the files in the skeleton map
-      for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
-	FileInfo * finfo = fit->second;
-
-	Output::printFileBegin(outFile, finfo);
-
-	// process the groups within one file
-	for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
-	  GroupInfo * ginfo = git->second;
-
-      // make the inline tree for all funcs in one group
-      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-
-      for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-	ProcInfo * pinfo = pit->second;
-
-	if (! pinfo->gap_only) {
-	  Output::printProc(outFile, gapsFile, gaps_filenm,
-			    finfo, ginfo, pinfo, strTab);
-	}
-
-	    delete pinfo->root;
-	    pinfo->root = NULL;
-	  }
-	}
-	Output::printFileEnd(outFile, finfo);
-      }
-
-      Output::printLoadModuleEnd(outFile);
-
-      // write CFG in dot (graphviz) format to file
-      if (dotFile != NULL) {
-	makeDotFile(dotFile, code_obj);
-      }
-
-      Inline::closeSymtab();
-    }
-    Output::printStructFileEnd(outFile, gapsFile);
+  if (elfFileVector == NULL || elfFileVector->empty()) {
+    return;
   }
+
+  // insert empty string "" first
+  HPC::StringTable strTab;
+  strTab.str2index("");
+
+  Output::printStructFileBegin(outFile, gapsFile, sfilename);
+
+  for (uint i = 0; i < elfFileVector->size(); i++) {
+    ElfFile *elfFile = (*elfFileVector)[i];
+
+    Symtab * symtab = Inline::openSymtab(elfFile);
+    if (symtab == NULL) {
+      continue;
+    }
+    the_symtab = symtab;
+
+    // pre-compute line map info
+    vector <Module *> modVec;
+    the_symtab->getAllModules(modVec);
+
+    for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+      (*mit)->parseLineInformation();
+    }
+
+    SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
+    CodeObject * code_obj = new CodeObject(code_src);
+
+    // don't run parseapi on cuda binary
+    if (SYMTAB_ARCH_CUDA(symtab) == false) {
+      code_obj->parse();
+    }
+
+    string basename = FileUtil::basename(cfilename);
+    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
+
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+
+    // process the files in the skeleton map
+    for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+      FileInfo * finfo = fit->second;
+
+      Output::printFileBegin(outFile, finfo);
+
+      // process the groups within one file
+      for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+	GroupInfo * ginfo = git->second;
+
+	// make the inline tree for all funcs in one group
+	doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+
+	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	  ProcInfo * pinfo = pit->second;
+
+	  if (! pinfo->gap_only) {
+	    Output::printProc(outFile, gapsFile, gaps_filenm,
+			      finfo, ginfo, pinfo, strTab);
+	  }
+
+	  delete pinfo->root;
+	  pinfo->root = NULL;
+	}
+      }
+      Output::printFileEnd(outFile, finfo);
+    }
+
+    Output::printLoadModuleEnd(outFile);
+
+    delete code_obj;
+    delete code_src;
+    Inline::closeSymtab();
+
+    // write CFG in dot (graphviz) format to file
+    if (dotFile != NULL) {
+      makeDotFile(dotFile, code_obj);
+    }
+  }
+
+  Output::printStructFileEnd(outFile, gapsFile);
 }
 
 //----------------------------------------------------------------------
