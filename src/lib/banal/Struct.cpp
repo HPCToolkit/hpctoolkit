@@ -145,6 +145,7 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class LineMapCache;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
@@ -211,6 +212,8 @@ debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
 
 #endif  // DEBUG_CFG_SOURCE
 
+//----------------------------------------------------------------------
+
 // Info on candidates for loop header.
 class HeaderInfo {
 public:
@@ -233,6 +236,105 @@ public:
     line_num = 0;
   }
 };
+
+//----------------------------------------------------------------------
+
+// A simple cache of getStatement() that stores one line range.  This
+// saves extra calls to getSourceLines() if we don't need them.
+//
+class LineMapCache {
+private:
+  SymtabAPI::Function * sym_func;
+  string  cache_filenm;
+  uint    cache_line;
+  VMA  start;
+  VMA  end;
+
+public:
+  LineMapCache(SymtabAPI::Function * sf)
+  {
+    sym_func = sf;
+    cache_filenm = "";
+    cache_line = 0;
+    start = 1;
+    end = 0;
+  }
+
+  bool
+  getLineInfo(VMA vma, string & filenm, uint & line)
+  {
+    // try cache first
+    if (start <= vma && vma < end) {
+      filenm = cache_filenm;
+      line = cache_line;
+      return true;
+    }
+
+    // lookup with getStatement() and getSourceLines()
+    StatementVector svec;
+    getStatement(svec, vma, sym_func);
+
+    if (! svec.empty()) {
+      filenm = svec[0]->getFile();
+      line = svec[0]->getLine();
+      RealPathMgr::singleton().realpath(filenm);
+
+      cache_filenm = filenm;
+      cache_line = line;
+      start = svec[0]->startAddr();
+      end = svec[0]->endAddr();
+
+      return true;
+    }
+
+    // no line info available
+    filenm = "";
+    line = 0;
+    return false;
+  }
+};
+
+//----------------------------------------------------------------------
+
+// Line map info from SymtabAPI.  Try the Module associated with the
+// Symtab Function as a hint first, else look for other modules that
+// might contain vma.
+//
+static void
+getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
+{
+  svec.clear();
+
+  // try the Module in sym_func first as a hint
+  if (sym_func != NULL) {
+    Module * mod = sym_func->getModule();
+
+    if (mod != NULL) {
+      mod->getSourceLines(svec, vma);
+    }
+  }
+
+  // else look for other modules
+  if (svec.empty()) {
+    set <Module *> modSet;
+    the_symtab->findModuleByOffset(modSet, vma);
+
+    for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
+      (*mit)->getSourceLines(svec, vma);
+      if (! svec.empty()) {
+	break;
+      }
+    }
+  }
+
+  // make sure file and line are either both known or both unknown.
+  // this case probably never happens, but we do want to rely on it.
+  if (! svec.empty()
+      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
+  {
+    svec.clear();
+  }
+}
 
 //----------------------------------------------------------------------
 
@@ -1006,17 +1108,9 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   }
   visited[block] = true;
 
-#if DEBUG_CFG_SOURCE
-  cout << "\nblock:\n";
-#endif
+  DEBUG_MESG("\nblock:\n");
 
-#if USE_DYNINST_LINE_MAP
-  // save the last symtab line map query
-  Offset low_vma = 1;
-  Offset high_vma = 0;
-  string cache_filenm = "";
-  SrcFile::ln cache_line = 0;
-#endif
+  LineMapCache lmcache (ginfo->sym_func);
 
   // iterate through the instructions in this block
 #ifdef DYNINST_INSTRUCTION_PTR
@@ -1029,7 +1123,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
     string filenm = "";
-    SrcFile::ln line = 0;
+    uint line = 0;
 
 #ifdef DYNINST_INSTRUCTION_PTR
     int  len = iit->second->size();
@@ -1037,36 +1131,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     int  len = iit->second.size();
 #endif
 
-#if USE_LIBDWARF_LINE_MAP
-    LineRange lr;
-
-    the_linemap->getLineRange(vma, lr);
-    filenm = lr.filenm;
-    line = lr.lineno;
-#endif
-
-#if USE_DYNINST_LINE_MAP
-    if (low_vma <= vma && vma < high_vma) {
-      // use cached value
-      filenm = cache_filenm;
-      line = cache_line;
-    }
-    else {
-      StatementVector svec;
-      getStatement(svec, vma, ginfo->sym_func);
-
-      if (! svec.empty()) {
-	// use symtab value and save in cache
-	low_vma = svec[0]->startAddr();
-	high_vma = svec[0]->endAddr();
-	filenm = svec[0]->getFile();
-	RealPathMgr::singleton().realpath(filenm);
-	line = svec[0]->getLine();
-	cache_filenm = filenm;
-	cache_line = line;
-      }
-    }
-#endif
+    lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
     debugStmt(vma, len, filenm, line);
@@ -1076,71 +1141,27 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   }
 }
 
+//----------------------------------------------------------------------
 
-// process a cuda function
+// Process one cuda function.
+//
+// We don't have cuda instruction parsing (yet), so just one flat
+// block per function and no loops.
+//
 static void
 doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 	       HPC::StringTable & strTab)
 {
+  DEBUG_MESG("\ncuda function:\n");
 
-#if DEBUG_CFG_SOURCE
-  cout << "\nblock:\n";
-#endif
+  LineMapCache lmcache (ginfo->sym_func);
 
-#if USE_DYNINST_LINE_MAP
-  // save the last symtab line map query
-  Offset low_vma = 1;
-  Offset high_vma = 0;
-  string cache_filenm = "";
-  SrcFile::ln cache_line = 0;
-  int try_symtab = 1;
-#endif
-
-  for (Offset vma = ginfo->start; vma < ginfo->end; vma += 4) {
-    int    len = 4;
+  int len = 4;
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
     string filenm = "";
-    SrcFile::ln line = 0;
+    uint line = 0;
 
-#if USE_LIBDWARF_LINE_MAP
-    LineRange lr;
-
-    the_linemap->getLineRange(vma, lr);
-    filenm = lr.filenm;
-    line = lr.lineno;
-#endif
-
-#if USE_DYNINST_LINE_MAP
-    if (low_vma <= vma && vma < high_vma) {
-      // use cached value
-      filenm = cache_filenm;
-      line = cache_line;
-    }
-    else {
-      StatementVector svec;
-      getStatement(svec, vma, ginfo->sym_func);
-
-#if USE_FULL_SYMTAB_BACKUP
-      // fall back on full symtab if module LineInfo fails.
-      // symtab lookups are very expensive, so limit to one failure
-      // per block.
-      if (svec.empty() && try_symtab) {
-	the_symtab->getSourceLines(svec, vma);
-	if (svec.empty()) {
-	  try_symtab = 0;
-	}
-      }
-#endif
-      if (! svec.empty()) {
-	// use symtab value and save in cache
-	low_vma = svec[0]->startAddr();
-	high_vma = svec[0]->endAddr();
-	filenm = getRealPath(svec[0]->getFile().c_str());
-	line = svec[0]->getLine();
-	cache_filenm = filenm;
-	cache_line = line;
-      }
-    }
-#endif
+    lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
     debugStmt(vma, len, filenm, line);
@@ -1149,7 +1170,6 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
     addStmtToTree(root, strTab, vma, len, filenm, line);
   }
 }
-
 
 //----------------------------------------------------------------------
 
@@ -1206,49 +1226,6 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 //****************************************************************************
 // Support functions
 //****************************************************************************
-
-// Line map info from SymtabAPI.  Try the Module associated with the
-// Symtab Function as a hint first, else look for other modules that
-// might contain vma.
-//
-static void
-getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
-{
-  svec.clear();
-
-  // try the Module in sym_func first as a hint
-  if (sym_func != NULL) {
-    Module * mod = sym_func->getModule();
-
-    if (mod != NULL) {
-      mod->getSourceLines(svec, vma);
-    }
-  }
-
-  // else look for other modules
-  if (svec.empty()) {
-    set <Module *> modSet;
-    the_symtab->findModuleByOffset(modSet, vma);
-
-    for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma);
-      if (! svec.empty()) {
-	break;
-      }
-    }
-  }
-
-  // make sure file and line are either both known or both unknown.
-  // this case probably never happens, but we do want to rely on it.
-  if (! svec.empty()
-      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
-  {
-    svec.clear();
-  }
-}
-
-//----------------------------------------------------------------------
-
 
 // New heuristic for identifying loop header inside inline tree.
 // Start at the root, descend the inline tree and try to find where
