@@ -137,10 +137,12 @@ hpcrun_metrics_new_kind(void)
   return rv;
 }
 
-void
+kind_info_t*
 hpcrun_metrics_switch_kind(kind_info_t* kind)
 {
+  kind_info_t* prev_kind = current_kind;
   current_kind = kind;
+  return prev_kind;
 }
 
 //

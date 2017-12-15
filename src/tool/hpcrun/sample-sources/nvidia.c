@@ -65,8 +65,10 @@
 
 #include <pthread.h>
 
+#if 0
 #include <cuda.h>
 #include <cupti.h>
+#endif
 
 /******************************************************************************
  * libmonitor
@@ -101,6 +103,7 @@
  *****************************************************************************/
 
 #define FORALL_EM(macro)	\
+  macro("EM_INVALID",       0)	\
   macro("EM_HTOD_BYTES",    1)	\
   macro("EM_DTOH_BYTES",    2)	\
   macro("EM_HTOA_BYTES",    3)	\
@@ -112,10 +115,11 @@
   macro("EM_HTOH_BYTES",    9)	\
   macro("EM_PTOP_BYTES",   10) 
 
-#define FORALL_EM_TIMES(macro)  \
+#define FORALL_EM_TIME(macro)  \
   macro("EM_TIME (us)",    11)  
 
 #define FORALL_IM(macro)	\
+  macro("IM_INVALID",       0)	\
   macro("IM_HTOD_BYTES",    1)	\
   macro("IM_DTOH_BYTES",    2)	\
   macro("IM_CPU_PF",        3)	\
@@ -125,10 +129,11 @@
   macro("IM_RMAP",          7)	\
   macro("IM_DTOD_BYTES",    8)
 
-#define FORALL_IM_TIMES(macro)  \
+#define FORALL_IM_TIME(macro)  \
   macro("EM_TIME (us)",     9)  
 
 #define FORALL_STL(macro)	\
+  macro("STL_INVALID",      0)	\
   macro("STL_NONE",         1)	\
   macro("STL_IFETCH",       2)	\
   macro("STL_EXC_DEP",      3)	\
@@ -148,6 +153,13 @@
 #define COUNT_FORALL_CLAUSE(a,b) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
+#if 0
+#define OMPT_MEMORY_EXPLICIT  "dev_ex_memcpy"
+#define OMPT_MEMORY_IMPLICIT  "dev_im_memcpy"
+#define OMPT_KERNEL_EXECUTION "dev_kernel"
+#endif
+
+#define OMPT_NVIDIA "nvidia" 
 
 
 /******************************************************************************
@@ -162,6 +174,15 @@ static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
 
+
+int stall_metric_id[NUM_CLAUSES(FORALL_STL)+1];
+int gpu_inst_metric_id;
+
+int em_metric_id[NUM_CLAUSES(FORALL_EM)+1];
+int em_time_metric_id;
+
+int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
+int im_time_metric_id;
 
 
 /******************************************************************************
@@ -202,7 +223,7 @@ METHOD_FN(stop)
 {
   thread_data_t *td = hpcrun_get_thread_data();
 
-  TD_GET(ss_state)[self->evset_idx] = STOP;
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 static void
@@ -213,20 +234,15 @@ METHOD_FN(shutdown)
 
 
 static bool
-METHOD_FN(supports_event,const char *ev_str)
+METHOD_FN(supports_event, const char *ev_str)
 {
-  if (self->state == UNINIT){
-    METHOD_CALL(self, init);
-  }
-  
-  char evtmp[1024];
-  int ec;
-  long th;
+  return hpcrun_ev_is(ev_str, OMPT_NVIDIA);
 
-  hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, 
-			   NO_THRESHOLD);
-
-  return 0;
+#if 0
+    hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
+    hpcrun_ev_is(ev_str, OMPT_MEMORY_IMPLICIT) ||
+    hpcrun_ev_is(ev_str, OMPT_KERNEL_EXECUTION);
+#endif
 }
  
 static void
@@ -236,27 +252,38 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(CUDA,"nevents = %d", nevents);
 
-  ke_kind = hpcrun_metrics_new_kind();
+#define getindex(name, index) index
+#define declare_stall_metric(name, index) \
+  stall_metric_id[index] = hpcrun_set_new_metric_info(name);
 
-  int hpcrun_set_new_metric_info_and_period(const char* name,
-                                          MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+  ke_kind = hpcrun_metrics_new_kind();
+  kind_info_t* incoming_kind = hpcrun_metrics_switch_kind(ke_kind);
+
+  FORALL_STL(declare_stall_metric);	
+  FORALL_GPU_INST(declare_stall_metric);
+  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
+
+#define declare_im_metric(name, index) \
+  im_metric_id[index] = hpcrun_set_new_metric_info(name);
+
+  im_kind = hpcrun_metrics_new_kind();
+  hpcrun_metrics_switch_kind(im_kind);
+
+  FORALL_IM(declare_im_metric);	
+  FORALL_IM_TIME(declare_im_metric);
+  im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
+
+#define declare_em_metric(name, index) \
+  em_metric_id[index] = hpcrun_set_new_metric_info(name);
 
   em_kind = hpcrun_metrics_new_kind();
-  im_kind = hpcrun_metrics_new_kind();
+  hpcrun_metrics_switch_kind(em_kind);
 
+  FORALL_IM(declare_em_metric);	
+  FORALL_IM_TIME(declare_em_metric);
+  em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
 
-  hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
-
-  for (i = 0; i < nevents; i++) {
-    char buffer[PAPI_MAX_STR_LEN];
-    int metric_id = hpcrun_new_metric(); /* weight */
-    METHOD_CALL(self, store_metric_id, i, metric_id);
-    PAPI_event_code_to_name(self->evl.events[i].event, buffer);
-    TMSG(CUDA, "metric for event %d = %s", i, buffer);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      MetricFlags_ValFmt_Int,
-				      self->evl.events[i].thresh);
-  }
+  hpcrun_metrics_switch_kind(incoming_kind);
 }
 
 static void
@@ -267,17 +294,6 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
-  PAPI_event_info_t info;
-  char name[200];
-  int ev, ret, num_total;
-
-  printf("===========================================================================\n");
-  printf("Available CUDA events\n");
-  printf("===========================================================================\n");
-  printf("Name\t\t\t\tDescription\n");
-  printf("---------------------------------------------------------------------------\n");
-
-  printf("Total CUDA events: %d\n", num_total);
   printf("\n");
 }
 
@@ -285,7 +301,7 @@ METHOD_FN(display_events)
  * object
  ***************************************************************************/
 
-#define ss_name cuda
+#define ss_name ompt_nvidia_gpu
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"

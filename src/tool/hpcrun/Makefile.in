@@ -447,28 +447,28 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
-	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sample-filters.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/cubin-symbols.c \
-	ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-region.c ompt/ompt-region-map.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/nvidia.c sample-sources/common.c \
+	sample-sources/display.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
@@ -546,6 +546,7 @@ am__objects_11 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/blame-shift/libhpcrun_la-undirected.lo \
 	sample-sources/libhpcrun_la-omp-mutex.lo \
 	sample-sources/libhpcrun_la-omp-idle.lo \
+	sample-sources/libhpcrun_la-nvidia.lo \
 	sample-sources/libhpcrun_la-common.lo \
 	sample-sources/libhpcrun_la-display.lo \
 	sample-sources/libhpcrun_la-ga.lo \
@@ -757,28 +758,28 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
-	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sample-filters.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/cubin-symbols.c \
-	ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-region.c ompt/ompt-region-map.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/nvidia.c sample-sources/common.c \
+	sample-sources/display.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
@@ -856,6 +857,7 @@ am__objects_43 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/blame-shift/libhpcrun_o-undirected.$(OBJEXT) \
 	sample-sources/libhpcrun_o-omp-mutex.$(OBJEXT) \
 	sample-sources/libhpcrun_o-omp-idle.$(OBJEXT) \
+	sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
 	sample-sources/libhpcrun_o-common.$(OBJEXT) \
 	sample-sources/libhpcrun_o-display.$(OBJEXT) \
 	sample-sources/libhpcrun_o-ga.$(OBJEXT) \
@@ -1535,28 +1537,28 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/blame-shift/directed.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
-	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sample-filters.c sample-sources/sync.c \
-	sample_sources_registered.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/cubin-symbols.c \
-	ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-region.c ompt/ompt-region-map.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	sample-sources/nvidia.c sample-sources/common.c \
+	sample-sources/display.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sample-filters.c \
+	sample-sources/sync.c sample_sources_registered.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-region.c \
+	ompt/ompt-region-map.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
@@ -2126,6 +2128,8 @@ sample-sources/libhpcrun_la-omp-mutex.lo:  \
 sample-sources/libhpcrun_la-omp-idle.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_la-nvidia.lo: sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-common.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-display.lo:  \
@@ -2625,6 +2629,9 @@ sample-sources/libhpcrun_o-omp-mutex.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-omp-idle.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_o-nvidia.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-common.$(OBJEXT):  \
@@ -3167,6 +3174,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-itimer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-memleak.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-nvidia.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-omp-idle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-omp-mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-papi-c-cupti.Plo@am__quote@
@@ -3188,6 +3196,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-itimer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-memleak.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-none.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-omp-idle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-omp-mutex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-papi-c-cupti.Po@am__quote@
@@ -3726,6 +3735,13 @@ sample-sources/libhpcrun_la-omp-idle.lo: sample-sources/omp-idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/omp-idle.c' object='sample-sources/libhpcrun_la-omp-idle.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-omp-idle.lo `test -f 'sample-sources/omp-idle.c' || echo '$(srcdir)/'`sample-sources/omp-idle.c
+
+sample-sources/libhpcrun_la-nvidia.lo: sample-sources/nvidia.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-nvidia.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-nvidia.Tpo -c -o sample-sources/libhpcrun_la-nvidia.lo `test -f 'sample-sources/nvidia.c' || echo '$(srcdir)/'`sample-sources/nvidia.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-nvidia.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-nvidia.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia.c' object='sample-sources/libhpcrun_la-nvidia.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-nvidia.lo `test -f 'sample-sources/nvidia.c' || echo '$(srcdir)/'`sample-sources/nvidia.c
 
 sample-sources/libhpcrun_la-common.lo: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-common.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-common.Tpo -c -o sample-sources/libhpcrun_la-common.lo `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c
@@ -4930,6 +4946,20 @@ sample-sources/libhpcrun_o-omp-idle.obj: sample-sources/omp-idle.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/omp-idle.c' object='sample-sources/libhpcrun_o-omp-idle.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-omp-idle.obj `if test -f 'sample-sources/omp-idle.c'; then $(CYGPATH_W) 'sample-sources/omp-idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/omp-idle.c'; fi`
+
+sample-sources/libhpcrun_o-nvidia.o: sample-sources/nvidia.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-nvidia.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Tpo -c -o sample-sources/libhpcrun_o-nvidia.o `test -f 'sample-sources/nvidia.c' || echo '$(srcdir)/'`sample-sources/nvidia.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia.c' object='sample-sources/libhpcrun_o-nvidia.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-nvidia.o `test -f 'sample-sources/nvidia.c' || echo '$(srcdir)/'`sample-sources/nvidia.c
+
+sample-sources/libhpcrun_o-nvidia.obj: sample-sources/nvidia.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-nvidia.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Tpo -c -o sample-sources/libhpcrun_o-nvidia.obj `if test -f 'sample-sources/nvidia.c'; then $(CYGPATH_W) 'sample-sources/nvidia.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-nvidia.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia.c' object='sample-sources/libhpcrun_o-nvidia.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-nvidia.obj `if test -f 'sample-sources/nvidia.c'; then $(CYGPATH_W) 'sample-sources/nvidia.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia.c'; fi`
 
 sample-sources/libhpcrun_o-common.o: sample-sources/common.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-common.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-common.Tpo -c -o sample-sources/libhpcrun_o-common.o `test -f 'sample-sources/common.c' || echo '$(srcdir)/'`sample-sources/common.c

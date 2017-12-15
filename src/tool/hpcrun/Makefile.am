@@ -283,6 +283,7 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/undirected.c    \
 	sample-sources/omp-mutex.c      \
 	sample-sources/omp-idle.c       \
+	sample-sources/nvidia.c         \
         sample-sources/common.c         \
 	sample-sources/display.c		\
 	sample-sources/ga.c		\

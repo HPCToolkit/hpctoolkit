@@ -114,7 +114,7 @@ typedef struct metric_data_list_t metric_data_list_t;
 
 kind_info_t* hpcrun_metrics_new_kind();
 
-void hpcrun_metrics_switch_kind(kind_info_t* kind);
+kind_info_t* hpcrun_metrics_switch_kind(kind_info_t* kind);
 
 bool hpcrun_metrics_finalized(void);
 
