@@ -569,6 +569,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
   }
+  hpcrun_finalize_metrics();
 
   event = next_tok();
   if (more_tok()) {
