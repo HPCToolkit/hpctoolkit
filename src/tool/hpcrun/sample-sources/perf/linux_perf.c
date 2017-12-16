@@ -219,25 +219,6 @@ extern __thread bool hpcrun_thread_suppress_sample;
 // private operations 
 //******************************************************************************
 
-//----------------------------------------------------------
-// stop an event
-//----------------------------------------------------------
-static void
-perf_stop(event_thread_t event)
-{
-  if ( event.fd >= 0 ) {
-
-    // ------------------------------
-    // disable the counter
-    // ------------------------------
-    int ret = ioctl(event.fd, PERF_EVENT_IOC_DISABLE, 0);
-    if (ret == -1) {
-      EMSG("Warning: cannot disable counter fd %d: %s,", 
-            event.fd, strerror(errno));
-    }
-    TMSG(LINUX_PERF, "disabled: %d", event.fd);
-  }
-}
 
 /*
  * Enable all the counters
@@ -588,10 +569,8 @@ METHOD_FN(stop)
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents  = (self->evl).nevents;
 
-  for (int i=0; i<nevents; i++)
-  {
-    perf_stop( event_thread[i] );
-  }
+  perf_stop_all(nevents, event_thread);
+
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = STOP;
 

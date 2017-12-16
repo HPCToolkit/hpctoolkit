@@ -141,56 +141,6 @@ perf_add_kernel_callchain(
   return parent;
 }
 
-#if 0
-//
-// add user and kernel callchain
-//
-static cct_node_t *
-perf_add_callchain( cct_node_t        *parent_original, 
-		    perf_mmap_data_t  *data, 
-		    int               metric_id,
-		    cct_metric_data_t datum )
-{
-  cct_node_t *parent = parent_original;
-  
-  // ------------------------------------------------------------------
-  // insert cct
-  // ------------------------------------------------------------------
-  if (data != NULL && data->nr > 0) {
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips
-    for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-      // ------------------------------------------------------------------
-      // case if we want to include user call chain as well:
-      // Wild assumption : if hpcrun cannot find the load module of a certain
-      //   address, it is possible the address is from the kernel
-      // ------------------------------------------------------------------
-      void *addr = (void *) data->ips[i];
-      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
-      if (lm != NULL) lm_id = lm->id;
-
-      // ------------------------------------------------------------------
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
-    }
-  }
-  // ------------------------------------------------------------------
-  // adding metric to the leaf
-  // ------------------------------------------------------------------
-  metric_set_t* mset = hpcrun_reify_metric_set(parent);
-
-  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
-  if (upd_proc) {
-    upd_proc(metric_id, mset, datum);
-  }
-  return parent;
-}
-#endif
-
 
 /*
  * get int long value of variable environment.
@@ -243,7 +193,8 @@ get_precise_ip(struct perf_event_attr *attr)
       precise_ip = val;
       return precise_ip;
     }
-    EMSG("The kernel does not support the requested ip-precision: %d. hpcrun will use auto-detect ip-precision instead.", val);
+    EMSG("The kernel does not support the requested ip-precision: %d."
+         " hpcrun will use auto-detect ip-precision instead.", val);
   }
 
   // start with the most restrict skid (3) then 2, 1 and 0
@@ -324,14 +275,14 @@ is_perf_ksym_available()
   static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
   if (ksym_status == PERF_UNDEFINED) {
-  	int level = perf_kernel_syms_avail();
+    int level = perf_kernel_syms_avail();
 
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
       perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
       ksym_status = PERF_AVAILABLE;
     } else {
-    	ksym_status = PERF_UNAVAILABLE;
+      ksym_status = PERF_UNAVAILABLE;
     }
   }
   return (ksym_status == PERF_AVAILABLE);
@@ -390,9 +341,9 @@ perf_attr_init(
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
 #endif
-    attr->exclude_kernel 	   = 0;
-    attr->exclude_hv         = 0;
-    attr->exclude_idle       = 0;
+    attr->exclude_kernel  = 0;
+    attr->exclude_hv      = 0;
+    attr->exclude_idle    = 0;
   }
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
