@@ -120,7 +120,7 @@ struct kind_info_t {
 // local table of metric update functions
 // (indexed by metric id)
   metric_upd_proc_t** metric_proc_tbl;
-
+  metric_proc_map_t *proc_map;
 };
 
 static kind_info_t kinds = {.idx = 0, .has_set_max = 0, .link = NULL };
@@ -152,8 +152,6 @@ typedef struct metric_data_list_t {
   kind_info_t *kind;
   metric_set_t *metrics;
 } metric_data_list_t;
-
-static metric_proc_map_t* proc_map = NULL;
 
 
 //***************************************************************************
@@ -213,7 +211,7 @@ hpcrun_get_num_metrics()
     }
     current_kind->metric_proc_tbl = (metric_upd_proc_t**) hpcrun_malloc(n_metrics * sizeof(metric_upd_proc_t*));
     
-    for(metric_proc_map_t* l = proc_map; l; l = l->next) {
+    for(metric_proc_map_t* l = current_kind->proc_map; l; l = l->next) {
     //    for(metric_proc_map_t* l = proc_map; l; l = l->next) {
       TMSG(METRICS_FINALIZE, "metric_proc[%d] = %p", l->id, l->proc);
       current_kind->metric_proc_tbl[l->id] = l->proc;
@@ -321,10 +319,10 @@ hpcrun_new_metric_of_kind(kind_info_t* kind)
   // No preallocation for metric_proc tbl
   //
   metric_proc_map_t* m = (metric_proc_map_t*) hpcrun_malloc(sizeof(metric_proc_map_t));
-  m->next = proc_map;
+  m->next = current_kind->proc_map;
   m->id   = kind->metric_data->id;
   m->proc = (metric_upd_proc_t*) NULL;
-  proc_map = m;
+  current_kind->proc_map = m;
   
   return m->id;
 }
@@ -376,7 +374,7 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   //
   // manage metric proc mapping
   //
-  for (metric_proc_map_t* l = proc_map; l; l = l->next){
+  for (metric_proc_map_t* l = current_kind->proc_map; l; l = l->next){
     if (l->id == metric_id){
       l->proc = upd_fn;
       break;
