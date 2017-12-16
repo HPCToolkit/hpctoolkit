@@ -560,14 +560,13 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 			     metric_data_list_t* list,
 			     int num_metrics)
 {
-  int offset = 0;
   kind_info_t *curr_k = &kinds;
   metric_data_list_t *curr;
 
   for (curr_k = &kinds; curr_k != NULL; curr_k = curr_k->link) {
     for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
     metric_set_t* actual = curr ? curr->metrics : (metric_set_t*) curr_k->null_metrics;
-    memcpy((char*) dest + offset, (char*) actual, curr_k->idx * sizeof(cct_metric_data_t));
-    offset += curr_k->idx;
+    memcpy((char*) dest, (char*) actual, curr_k->idx * sizeof(cct_metric_data_t));
+    dest += curr_k->idx;
   }
 }
