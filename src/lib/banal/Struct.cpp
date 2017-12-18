@@ -332,92 +332,17 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
-// Make a dot (graphviz) file for the Control-Flow Graph for each
-// procedure and write to the ostream 'dotFile'.
-//
-static void
-makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
-{
-  const CodeObject::funclist & funcList = code_obj->funcs();
-
-  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
-  {
-    ParseAPI::Function * func = *fit;
-    map <Block *, int> blockNum;
-    map <Block *, int>::iterator mit;
-    int num;
-
-    *dotFile << "--------------------------------------------------\n"
-	     << "Procedure: '" << func->name() << "'\n\n"
-	     << "digraph " << func->name() << " {\n"
-	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
-
-    const ParseAPI::Function::blocklist & blist = func->blocks();
-
-    // write the list of nodes (blocks)
-    num = 1;
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      num++;
-
-      blockNum[block] = num;
-      *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << dec << "\" ];\n";
-    }
-    int endNum = num + 1;
-    *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
-
-    // in parseAPI, functions have a unique entry point
-    mit = blockNum.find(func->entry());
-    if (mit != blockNum.end()) {
-      *dotFile << "  1 -> " << mit->second << ";\n";
-    }
-
-    // write the list of internal edges
-    num = 1;
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      const ParseAPI::Block::edgelist & elist = block->targets();
-      num++;
-
-      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
-	mit = blockNum.find((*eit)->trg());
-	if (mit != blockNum.end()) {
-	  *dotFile << "  " << num << " -> " << mit->second << ";\n";
-	}
-      }
-    }
-
-    // add any exit edges
-    const ParseAPI::Function::const_blocklist & eblist = func->exitBlocks();
-    for (auto bit = eblist.begin(); bit != eblist.end(); ++bit) {
-      Block * block = *bit;
-      mit = blockNum.find(block);
-      if (mit != blockNum.end()) {
-	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
-      }
-    }
-  }
-
-    *dotFile << "}\n" << endl;
-}
-
-
-//----------------------------------------------------------------------
-
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
 // Read the binutils load module and the parseapi code object, iterate
 // over functions, loops and blocks, make an internal inline tree and
-// write an hpcstruct file to 'outFile'.  Also, write a dot (graphviz)
-// file if 'dotFile' is non-null.
+// write an hpcstruct file to 'outFile'.
 //
 void
-makeStructure(InputFile &inputFile,
-	      string gaps_filenm,
+makeStructure(InputFile & inputFile,
 	      ostream * outFile,
 	      ostream * gapsFile,
-	      ostream * dotFile,
+	      string gaps_filenm,
 	      ProcNameMgr * procNmMgr)
 {
   ElfFileVector * elfFileVector = inputFile.fileVector();
@@ -497,11 +422,6 @@ makeStructure(InputFile &inputFile,
     delete code_obj;
     delete code_src;
     Inline::closeSymtab();
-
-    // write CFG in dot (graphviz) format to file
-    if (dotFile != NULL) {
-      makeDotFile(dotFile, code_obj);
-    }
   }
 
   Output::printStructFileEnd(outFile, gapsFile);

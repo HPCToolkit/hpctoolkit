@@ -119,8 +119,6 @@ public:
   std::string dbgProcGlob;
 
   std::string out_filenm;
-  std::string dot_filenm;
-  bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false

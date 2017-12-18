@@ -203,30 +203,6 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
-  std::ostream* dotFile = NULL;
-  char* dotBuf = NULL;
-  std::streambuf* dot_rdbuf = NULL;
-
-  if (args.doDot) {
-    std::string dotName = args.dot_filenm;
-    if (dotName == "-") {
-      if (args.out_filenm == "-") {
-	DIAG_EMsg("Cannot use '-' (stdout) for both hpcstruct file and dot file.");
-	exit(1);
-      }
-      dotFile = &std::cout;
-    }
-    else {
-      if (dotName.empty()) {
-	dotName = FileUtil::basename(args.in_filenm) + ".dot";
-      }
-      dotFile = IOUtil::OpenOStream(dotName.c_str());
-    }
-    dotBuf = new char[HPCIO_RWBufferSz];
-    dot_rdbuf = dotFile->rdbuf();
-    dot_rdbuf->pubsetbuf(dotBuf, HPCIO_RWBufferSz);
-  }
-
   ProcNameMgr* procNameMgr = NULL;
   if (args.lush_agent == "agent-c++") {
     procNameMgr = new CppNameMgr;
@@ -235,8 +211,7 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  BAnal::Struct::makeStructure(loadModule, gapsName, outFile, gapsFile,
-			       dotFile, procNameMgr);
+  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName, procNameMgr);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;
@@ -244,12 +219,6 @@ realmain(int argc, char* argv[])
   if (gapsFile != NULL) {
     IOUtil::CloseStream(gapsFile);
     delete[] gapsBuf;
-  }
-
-
-  if (dotFile != NULL) {
-    IOUtil::CloseStream(dotFile);
-    delete[] dotBuf;
   }
 
   return (0);

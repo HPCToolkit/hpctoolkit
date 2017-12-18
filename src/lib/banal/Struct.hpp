@@ -63,12 +63,11 @@ namespace BAnal {
 namespace Struct {
 
 void
-makeStructure(InputFile &inputFile,
-	      std::string gaps_filenm,
+makeStructure(InputFile & inputFile,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
-	      std::ostream * dotFile,
-	      ProcNameMgr* procNameMgr = NULL);
+	      std::string gaps_filenm,
+	      ProcNameMgr * procNameMgr = NULL);
 
 } // namespace Struct
 } // namespace BAnal
