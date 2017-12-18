@@ -90,6 +90,7 @@
 #include "sample-sources/common.h"
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/messages/messages.h>
@@ -102,8 +103,9 @@
 #include <hpcrun/utilities/arch/context-pc.h>
 
 #include <evlist.h>
-
+#include <limits.h>   // PATH_MAX
 #include <lib/prof-lean/hpcrun-metric.h> // prefix for metric helper
+#include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h> 
 
@@ -159,6 +161,10 @@
 #define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
 #define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
 
+#define DIRECTORY_FILE_COLLECTION   "collect"
+#define FILE_KALLSYMS "kallsyms"
+
+#define FILE_BUFFER_SIZE (1024*1024)
 
 //******************************************************************************
 // type declarations
@@ -245,6 +251,67 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
 }
 
 
+/****
+ * copy /proc/kallsyms file into hpctoolkit output directory
+ * return
+ *  1 if the copy is successful
+ *  0 if the target file already exists
+ *  -1 if something wrong happens
+ */
+static int
+copy_kallsyms()
+{
+  char *source = LINUX_KERNEL_SYMBOL_FILE;
+
+  FILE *infile = fopen(source, "r");
+  if (infile == NULL)
+    return -1;
+
+  char  dest[PATH_MAX];
+  char  dest_directory[PATH_MAX];
+  char *hpctoolkit_directory = get_output_directory();
+
+  snprintf(dest_directory, PATH_MAX, "%s/%s", hpctoolkit_directory,
+           DIRECTORY_FILE_COLLECTION);
+
+  // we need to keep the host-id to be exactly the same template
+  // as the hpcrun file. If the filename format changes in hpcun
+  //  we need to adapt again here.
+
+  snprintf(dest, PATH_MAX, "%s/%s.%08lx",
+           dest_directory, FILE_KALLSYMS, OSUtil_hostid());
+
+  // test if the file already exist
+  struct stat st = {0};
+  if (stat(dest, &st) >= 0) {
+    return 0; // file already exists
+  }
+
+  int err = mkdir(dest_directory, S_IRWXU | S_IRGRP | S_IXGRP);
+  if (err != 0) {
+    // directory has already existed
+  }
+
+  FILE *outfile = fopen(dest, "w");
+  if (outfile == NULL)
+    return -1;
+
+  char buffer[FILE_BUFFER_SIZE];
+  size_t bytes;
+
+  // copy the file to the output directory
+  while (0 < (bytes = fread(buffer, 1, sizeof(buffer), infile))) {
+    fwrite(buffer, 1, bytes, outfile);
+  }
+
+  fclose(infile);
+  fclose(outfile);
+
+  TMSG(LINUX_PERF, "copy %s into %s", source, dest);
+
+  return 1;
+}
+
 //----------------------------------------------------------
 // initialization
 //----------------------------------------------------------
@@ -252,6 +319,9 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
 static void 
 perf_init()
 {
+  //copy the kernel symbol table
+  copy_kallsyms();
+
   perf_mmap_init();
 
   // initialize mask to block PERF_SIGNAL 

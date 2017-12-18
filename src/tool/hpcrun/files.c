@@ -137,6 +137,9 @@
 //***************************************************************
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
+// laks: please do not modify the template for host-id.
+//       if you really need to change it, you should apply the same
+//       thing in linux_perf.c
 #define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%08lx-%u-%d.%s"
 
 #define FILES_RANDOM_GEN  4
@@ -156,6 +159,9 @@ struct fileid {
 // globals 
 //***************************************************************
 
+// laks 2017.12.18: upgrade to global variable so that it is visible
+// by other modules like perf sample-source
+char output_directory[PATH_MAX] = {'\0'};
 
 
 //***************************************************************
@@ -170,7 +176,6 @@ static void hpcrun_rename_log_file_early(int rank);
 //***************************************************************
 
 static char default_path[PATH_MAX] = {'\0'};
-static char output_directory[PATH_MAX] = {'\0'};
 static char executable_name[PATH_MAX] = {'\0'};
 static char executable_pathname[PATH_MAX] = {'\0'};
 
@@ -414,6 +419,11 @@ hpcrun_files_set_directory()
   }
 }
 
+char*
+get_output_directory()
+{
+  return output_directory;
+}
 
 void 
 hpcrun_files_set_executable(char *execname)

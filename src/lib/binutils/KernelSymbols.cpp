@@ -121,14 +121,15 @@ KernelSymbols::parseLinuxKernelSymbols()
       case 't':
       case 'T':
         // if module is non-empty, append it to name 
-	if (strlen(module) > 0) { 
+      	if (strlen(module) > 0) {
            strcat(name, " "); 
            strcat(name, module); 
         }
         // add name to the set of function symbols
-	R->kernel_symbols.push_back(new KernelSymbol((uint64_t) addr, type, name));
+	      R->kernel_symbols.push_back(new KernelSymbol((uint64_t) addr, type, name));
+	      break;
       default:
-	break;
+	      break;
       }
     }
     fclose(fp);
@@ -170,6 +171,7 @@ KernelSymbols::find(uint64_t vma, std::string &fnname)
       return true;
     }
   }
+  return false;
 }
 
 
