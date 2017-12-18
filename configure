@@ -644,8 +644,9 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
-OPT_CUPTI
+OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
+OPT_CUPTI
 OPT_ENABLE_CUPTI_FALSE
 OPT_ENABLE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
@@ -1016,6 +1017,8 @@ with_cuda
 with_cuda_include
 with_cuda_lib
 with_cupti
+with_cupti_include
+with_cupti_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1753,6 +1756,11 @@ Optional Packages:
                           (default is NO)
   --with-cupti=PATH       use given CUDA/CUPTI installation (absolute path)
                           with hpcrun (default is NO)
+  --with-cupti-include=PATH
+                          use given CUPTI include (absolute path) with hpcrun
+                          (default is NO)
+  --with-cupti-lib=PATH   use given CUPTI lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -22015,9 +22023,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 
 # Check whether --with-cuda was given.
@@ -22099,9 +22104,16 @@ fi
 #-------------------------------------------------
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
+OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
 OPT_CUPTI_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
+fi
 
 
 # Check whether --with-cupti was given.
@@ -22119,12 +22131,6 @@ fi
 #
 # Valid cupti library
 #
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      as_fn_error $? "--with-cupti=$OPT_CUPTI invalid! No cupti.h" "$LINENO" 5
-   fi
-fi
-
 if test "$use_papi_c_cupti" != no; then
    if test "$OPT_HAVE_CUPTI" = yes; then
        OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
@@ -22138,6 +22144,55 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+
+# Check whether --with-cupti-include was given.
+if test "${with_cupti_include+set}" = set; then :
+  withval=$with_cupti_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUPTI}/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+     else
+         as_fn_error $? "'${OPT_CUPTI}/include/cupti.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
+
+
+# Check whether --with-cupti-lib was given.
+if test "${with_cupti_lib+set}" = set; then :
+  withval=$with_cupti_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi
+else
+  for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUPTI}/${lib}/libcupti.so"
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
+      break
+    fi
+  done
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       as_fn_error $? "libcupti.so not found" "$LINENO" 5
+     fi
+
+fi
+
+
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -lcupti "
+
+fi
+
  if test "$OPT_HAVE_CUPTI" = yes; then
   OPT_ENABLE_CUPTI_TRUE=
   OPT_ENABLE_CUPTI_FALSE='#'
@@ -22145,6 +22200,7 @@ else
   OPT_ENABLE_CUPTI_TRUE='#'
   OPT_ENABLE_CUPTI_FALSE=
 fi
+
 
 
 

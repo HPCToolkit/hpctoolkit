@@ -166,6 +166,7 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
 MPI_INC = @MPI_INC@
@@ -332,8 +333,6 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	\
 	ompt/cubin-symbols.c            \
-	ompt/cupti-activity-api.c       \
-	ompt/cupti-activity-strings.c   \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -345,6 +344,8 @@ MY_BASE_FILES =				\
 	ompt/ompt-host-op-map.c         \
 	ompt/ompt-function-id-map.c     \
 	ompt/ompt-cubin-id-map.c        \
+	ompt/ompt-stop-map.c            \
+	ompt/ompt-submit-map.c          \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
@@ -403,11 +404,16 @@ MY_PAPI_FILES = \
     sample-sources/papi-c.c \
     sample-sources/papi-c-extended-info.c
 else
-MY_PAPI_FILES = sample-sources/papi.c
+    MY_PAPI_FILES = sample-sources/papi.c
 endif
 
 if OPT_PAPI_CUPTI
-MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+    MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+endif
+
+if OPT_ENABLE_CUPTI
+MY_CUPTI_FILES = ompt/cupti-activity-strings.c   \
+								 ompt/cupti-activity-api.c      
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -825,8 +831,15 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 endif
 
+if OPT_ENABLE_CUPTI
+  libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
+  libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
+  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+  libhpcrun_la_LDFLAGS  += $(CUPTI_LD_FLGS)
+endif
+
 if OPT_PAPI_CUPTI
-libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+	libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 endif
 
 if OPT_PAPI_STATIC

@@ -5,6 +5,7 @@
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
 #include "ompt-function-id-map.h"
+#include "ompt-submit-map.h"
 #include "ompt-interface.h"
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -37,6 +38,7 @@ cupti_process_sample
 	 sample->correlationId,
 	 sample->samples,
 	 cupti_stall_reason_string(sample->stallReason));
+  PRINT("external_id sample %d\n", external_id);
   if (external_id != -1) {
     ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
     if (entry != NULL) {
@@ -108,7 +110,9 @@ cupti_process_correlation
  void *state
 )
 {
-  external_id = ec->externalId;
+  if (ompt_submit_map_lookup(ec->externalId) != NULL) {
+    external_id = ec->externalId;
+  }
   PRINT("External CorrelationId %lu\n", ec->externalId);
   PRINT("Activity Kind %u\n", ec->kind);
 }
@@ -133,7 +137,6 @@ cupti_process_memcpy2
 {
   if (external_id != -1) {
     cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-    external_id = -1;
   }
 }
 
@@ -161,7 +164,6 @@ cupti_process_activityAPI
     {
       if (external_id != -1) {
         cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-        external_id = -1;
       }
       break;
     }
@@ -169,7 +171,6 @@ cupti_process_activityAPI
     {
       if (external_id != -1) {
         cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-        external_id = -1;
       }
       break;
     }
@@ -257,4 +258,22 @@ cupti_activity_handle
 {
   void *state;
   cupti_process_activity(activity, state);
+}
+
+
+bool
+cupti_advance_buffer_cursor
+(
+  uint8_t *buffer,
+  size_t size,
+  CUpti_Activity *current,
+  CUpti_Activity **next
+)
+{
+  CUpti_Activity *cursor = (CUpti_Activity *)current;
+  bool result = (cuptiActivityGetNextRecord(buffer, size, &cursor) == CUPTI_SUCCESS);
+  if (result) {                                                                                                                                                        
+    *next = (CUpti_Activity *)cursor;
+  }
+  return result;
 }

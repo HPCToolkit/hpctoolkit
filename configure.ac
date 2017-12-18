@@ -3283,9 +3283,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 AC_ARG_WITH([cuda],
   AS_HELP_STRING([--with-cuda=PATH],
@@ -3354,9 +3351,16 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 #-------------------------------------------------
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
+OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
 OPT_CUPTI_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
+fi
 
 AC_ARG_WITH([cupti],
   AS_HELP_STRING([--with-cupti=PATH],
@@ -3372,12 +3376,6 @@ AC_ARG_WITH([cupti],
 #
 # Valid cupti library
 #
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
-   fi
-fi
-
 if test "$use_papi_c_cupti" != no; then
    if test "$OPT_HAVE_CUPTI" = yes; then
        OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
@@ -3391,10 +3389,56 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+ AC_ARG_WITH([cupti-include],
+  AS_HELP_STRING([--with-cupti-include=PATH],
+                 [use given CUPTI include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUPTI}/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+     else
+         AC_MSG_ERROR(['${OPT_CUPTI}/include/cupti.h' not found])
+     fi])  
+
+  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
+
+  AC_ARG_WITH([cupti-lib],
+  AS_HELP_STRING([--with-cupti-lib=PATH],
+                 [use given CUPTI lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUPTI}/${lib}/libcupti.so" 
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       AC_MSG_ERROR([libcupti.so not found])
+     fi
+   ] )
+
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -lcupti "
+
+fi
+
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
-AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI])
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing

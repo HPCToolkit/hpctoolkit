@@ -109,7 +109,7 @@
 
 #include <lib/support-lean/timer.h>
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/wrapper-macros.h>
 /******************************************************************************

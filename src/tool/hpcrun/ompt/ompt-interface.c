@@ -63,6 +63,7 @@
  * local includes
  *****************************************************************************/
 
+#include <lib/prof-lean/spinlock.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/ompt/ompt-region.h>
@@ -79,6 +80,8 @@
 #include "ompt-thread.h"
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
+#include "ompt-stop-map.h"
+#include "ompt-submit-map.h"
 
 #define HAVE_CUDA_H 1
 
@@ -95,9 +98,6 @@
 #include "sample-sources/blame-shift/blame-map.h"
 
 #include "sample-sources/idle.h"
-
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-
 
 /******************************************************************************
  * macros
@@ -153,6 +153,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //-----------------------------------------
 static __thread int ompt_idle_count;
 static __thread int ompt_host_op_seq_id;
+static __thread bool ompt_stop_flag = false;
 static __thread ompt_device_t *ompt_device = NULL;
 
 
@@ -749,6 +750,7 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
                         ompt_id_t target_id,
                         ip_normalized_t ip)
 {
+  pthread_t tid = pthread_self();
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
@@ -760,10 +762,10 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
       hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
       ompt_region_map_child_insert(entry, cct_child);
     }
+    // FIXME(keren): problem with seq id, not in while loop
     ompt_host_op_map_insert(host_op_id, ompt_host_op_seq_id, entry);
     ompt_host_op_seq_id++;
   }
-  cct_node_t *cct_node = hpcrun_op_id_map_lookup(host_op_id);
 }
 
 
@@ -783,9 +785,9 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
     ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
     int host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
     node = ompt_region_map_seq_lookup(region_map_entry, host_op_seq_id);
-    // TODO(keren): cannot be removed?
+    // FIXME(keren): remove host_op_id
     //ompt_host_op_map_refcnt_update(host_op_id, 0);
-  } 
+  }
   return node;
 }
 
@@ -844,8 +846,12 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 void
 hpcrun_ompt_device_finializer(void)
 {
-  if (ompt_device != NULL) {
-    ompt_stop_trace(ompt_device);
+  if (ompt_stop_map_lookup(&ompt_stop_flag)) {
+    if (ompt_device != NULL) {
+      ompt_stop_trace(ompt_device);
+      ompt_stop_map_refcnt_update(&ompt_stop_flag, 0);
+      ompt_stop_flag = false;
+    }
   }
 }
 
@@ -874,7 +880,7 @@ ompt_callback_buffer_complete(uint64_t device_id,
   do {
     CUpti_Activity *activity = (CUpti_Activity *)next; // TODO(keren): separate it
     cupti_activity_handle(activity);
-    status = ompt_advance_buffer_cursor(buffer, bytes, next, &next);
+    status = cupti_advance_buffer_cursor(buffer, bytes, next, &next);
   } while(status);
 }
 
@@ -958,7 +964,8 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
-  PRINT("ompt_target_callback! %u %d\n", target_id, omp_get_thread_num());
+  ompt_stop_flag = true;
+  ompt_stop_map_insert(&ompt_stop_flag); 
   // TODO(keren): hpcrun_safe_enter prevent self interruption
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
@@ -1011,6 +1018,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
+  ompt_submit_map_insert(host_op_id);
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 

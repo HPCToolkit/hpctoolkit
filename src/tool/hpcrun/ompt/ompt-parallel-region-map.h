@@ -31,8 +31,6 @@ typedef struct ompt_parallel_region_map_entry_s ompt_parallel_region_map_entry_t
 
 ompt_parallel_region_map_entry_t *ompt_parallel_region_map_lookup(uint64_t id);
 
-cct_node_t *ompt_parallel_region_map_seq_lookup(ompt_parallel_region_map_entry_t *entry, uint64_t id);
-
 void ompt_parallel_region_map_insert(uint64_t region_id, cct_node_t *call_path);
 
 bool ompt_parallel_region_map_refcnt_update(uint64_t region_id, int val);
