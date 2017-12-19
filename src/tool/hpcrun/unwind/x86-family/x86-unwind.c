@@ -418,7 +418,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    save_registers(cursor, pc, bp, sp, NULL);
+    save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){
