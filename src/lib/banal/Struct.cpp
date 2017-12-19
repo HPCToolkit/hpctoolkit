@@ -194,6 +194,12 @@ static string
 debugPrettyName(const string &);
 
 static void
+debugElfHeader(ElfFile *);
+
+static void
+debugFuncHeader(FileInfo *, ProcInfo *, long, long, string = "");
+
+static void
 debugStmt(VMA, int, string &, SrcFile::ln);
 
 static void
@@ -364,6 +370,10 @@ makeStructure(InputFile & inputFile,
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
     ElfFile *elfFile = (*elfFileVector)[i];
+
+#if DEBUG_CFG_SOURCE
+    debugElfHeader(elfFile);
+#endif
 
     Symtab * symtab = Inline::openSymtab(elfFile);
     if (symtab == NULL) {
@@ -735,12 +745,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 
 #if DEBUG_CFG_SOURCE
-    cout << "\n------------------------------------------------------------\n"
-	 << "func:  0x" << hex << entry_addr << dec
-	 << "  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << pinfo->linkName << "'\n"
-	 << "parse:  '" << func->name() << "'\n"
-	 << "file:   '" << finfo->fileName << "'\n";
+    debugFuncHeader(finfo, pinfo, num, num_funcs);
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -1059,8 +1064,8 @@ doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     num++;
 
 #if DEBUG_CFG_SOURCE
-    Address entry_addr = func->addr();
-    cout << "\ncuda function:  0x" << hex << entry_addr << dec << "\n";
+    long num_funcs = ginfo->procMap.size();
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
 #endif
 
     TreeNode * root = new TreeNode;
@@ -1070,6 +1075,7 @@ doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     pinfo->root = root;
 
 #if DEBUG_CFG_SOURCE
+    cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
     debugInlineTree(root, NULL, strTab, 0, true);
 #endif
   }
@@ -1087,6 +1093,8 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 	       HPC::StringTable & strTab)
 {
   LineMapCache lmcache (ginfo->sym_func);
+
+  DEBUG_MESG("\ncuda blocks:\n");
 
   int len = 4;
   for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
@@ -1619,6 +1627,39 @@ debugPrettyName(const string & procnm)
   }
 
   return ans;
+}
+
+//----------------------------------------------------------------------
+
+static void
+debugElfHeader(ElfFile * elfFile)
+{
+  size_t len = elfFile->getLength();
+
+  cout << "\n============================================================\n"
+       << "Elf File:  " << elfFile->getFileName() << "\n"
+       << "length:    0x" << hex << len << dec << "  (" << len << ")\n"
+       << "============================================================\n";
+}
+
+//----------------------------------------------------------------------
+
+static void
+debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
+		string label)
+{
+  ParseAPI::Function * func = pinfo->func;
+  Address entry_addr = func->addr();
+
+  cout << "\n------------------------------------------------------------\n";
+
+  if (label != "") { cout << label << " "; }
+
+  cout << "func:  0x" << hex << entry_addr << dec
+       << "  (" << num << "/" << num_funcs << ")"
+       << "  link='" << pinfo->linkName << "'\n"
+       << "parse:  '" << func->name() << "'\n"
+       << "file:   '" << finfo->fileName << "'\n";
 }
 
 //----------------------------------------------------------------------
