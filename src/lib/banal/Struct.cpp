@@ -110,7 +110,7 @@ using namespace std;
 
 #ifdef DYNINST_USE_CUDA
 #define SYMTAB_ARCH_CUDA(symtab) \
-  (symtab->getArchitecture() == Dyninst::Arch_cuda) 
+  ((symtab)->getArchitecture() == Dyninst::Arch_cuda)
 #else
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
@@ -162,6 +162,9 @@ doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *,
 static void
 doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
+
+static void
+doCudaList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static void
 doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
@@ -367,6 +370,7 @@ makeStructure(InputFile & inputFile,
       continue;
     }
     the_symtab = symtab;
+    int cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
     // pre-compute line map info
     vector <Module *> modVec;
@@ -380,7 +384,7 @@ makeStructure(InputFile & inputFile,
     CodeObject * code_obj = new CodeObject(code_src);
 
     // don't run parseapi on cuda binary
-    if (SYMTAB_ARCH_CUDA(symtab) == false) {
+    if (! cuda_file) {
       code_obj->parse();
     }
 
@@ -400,7 +404,12 @@ makeStructure(InputFile & inputFile,
 	GroupInfo * ginfo = git->second;
 
 	// make the inline tree for all funcs in one group
-	doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+	if (cuda_file) {
+	  doCudaList(symtab, finfo, ginfo, strTab);
+	}
+	else {
+	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+	}
 
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
@@ -692,7 +701,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
   //
   std::map <VMA, VMA> callMap;
 
-  if (SYMTAB_ARCH_CUDA(symtab) == false) { 
   if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
       ParseAPI::Function * func = pit->second->func;
@@ -705,7 +713,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       }
     }
   }
-  }
 
   // one binutils proc may contain several parseapi funcs
   long num = 0;
@@ -714,6 +721,9 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     ParseAPI::Function * func = pinfo->func;
     Address entry_addr = func->addr();
     num++;
+
+    // only used for cuda functions
+    pinfo->symbol_index = 0;
 
     // compute the inline seqn for the call site for this func, if
     // there is one.
@@ -743,20 +753,12 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 #endif
 
-    // cuda relocations break function entry blocks, so we have to
-    // test for NULL here.
-    int num_contain = 1;
-    if (func->entry() != NULL) {
-      num_contain = func->entry()->containingFuncs();
-    }
-
-    if (SYMTAB_ARCH_CUDA(symtab) == false) { 
-    //
     // see if this function is entirely contained within another
     // function (as determined by its entry block).  if yes, then we
     // don't parse the func.  but we still use its blocks for gaps,
     // unless we've already added the containing func.
     //
+    int num_contain = func->entry()->containingFuncs();
     bool add_blocks = true;
 
     if (num_contain > 1) {
@@ -779,17 +781,9 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
-    }
 
-    TreeNode * root = new TreeNode;
-
-    // initially, create an empty blocklist for cuda
-    ParseAPI::Function::blocklist emptyBlockList; 
-    ParseAPI::Function::blocklist &blist = emptyBlockList;
-
-    if (SYMTAB_ARCH_CUDA(symtab) == false) { 
     // basic blocks for this function
-    blist = func->blocks();
+    const ParseAPI::Function::blocklist & blist = func->blocks();
     BlockSet visited;
 
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -821,13 +815,13 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       continue;
     }
 
+    TreeNode * root = new TreeNode;
+
     // traverse the loop (Tarjan) tree
     LoopList *llist =
 	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
 
-#if DEBUG_CFG_SOURCE
-    cout << "\nnon-loop blocks:\n";
-#endif
+    DEBUG_MESG("\nnon-loop blocks:\n");
 
     // process any blocks not in a loop
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -843,11 +837,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     for (auto it = llist->begin(); it != llist->end(); ++it) {
       mergeInlineLoop(root, empty, *it);
     }
-    pinfo->symbol_index = 0; // clear for functions not in CUBINs 
-    }
-    else {
-      doCudaFunction(ginfo, func, root, strTab);
-    }
+
 
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
@@ -879,7 +869,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
   }
 
-  if (SYMTAB_ARCH_CUDA(symtab) == false) { 
   // add unclaimed regions (gaps) to the group leader, but skip groups
   // in an alternate file (handled in orig file).
   if (! ginfo->alt_file) {
@@ -911,7 +900,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\ngaps: alt-file\n";
   }
 #endif
-  }
 }
 
 //----------------------------------------------------------------------
@@ -1056,6 +1044,39 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
 //----------------------------------------------------------------------
 
+// CUDA functions
+//
+static void
+doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
+	   HPC::StringTable & strTab)
+{
+  // not sure if cuda generates multiple functions, but we'll handle
+  // this case until proven otherwise.
+  long num = 0;
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
+    num++;
+
+#if DEBUG_CFG_SOURCE
+    Address entry_addr = func->addr();
+    cout << "\ncuda function:  0x" << hex << entry_addr << dec << "\n";
+#endif
+
+    TreeNode * root = new TreeNode;
+
+    doCudaFunction(ginfo, func, root, strTab);
+
+    pinfo->root = root;
+
+#if DEBUG_CFG_SOURCE
+    debugInlineTree(root, NULL, strTab, 0, true);
+#endif
+  }
+}
+
+//----------------------------------------------------------------------
+
 // Process one cuda function.
 //
 // We don't have cuda instruction parsing (yet), so just one flat
@@ -1065,8 +1086,6 @@ static void
 doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 	       HPC::StringTable & strTab)
 {
-  DEBUG_MESG("\ncuda function:\n");
-
   LineMapCache lmcache (ginfo->sym_func);
 
   int len = 4;
