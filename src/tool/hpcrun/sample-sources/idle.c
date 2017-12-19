@@ -199,13 +199,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "idle",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
-
-  work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "work",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  idle_metric_id = hpcrun_set_new_metric_info_and_period
+    ("idle", MetricFlags_ValFmt_Real, 1, metric_property_none);
+  work_metric_id = hpcrun_set_new_metric_info("work");
   TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
        idle_metric_id, work_metric_id);
 
@@ -327,7 +323,8 @@ idle_metric_blame_shift_idle(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 
+      (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
 }
@@ -350,7 +347,8 @@ idle_metric_blame_shift_work(void)
     if ( ! hpcrun_safe_enter()) return;
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_sample_callpath(&uc, idle_metric_id, 0, 1, 1);
+    hpcrun_sample_callpath(&uc, idle_metric_id, 
+      (hpcrun_metricVal_t) {.i=0}, 1, 1, NULL);
     hpcrun_safe_exit();
   }
 }

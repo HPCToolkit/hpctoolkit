@@ -62,23 +62,18 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 
   if ((op0_name == XED_OPERAND_REG0)) { 
     x86recipe_t *xr = UWI_RECIPE(next);
+    x86registers_t reg = xr->reg;
     xed_reg_enum_t regname = xed_decoded_inst_get_reg(xptr, op0_name);
-    char *next_ins = iarg->ins + xed_decoded_inst_get_length(xptr);
+    char *next_ins = nextInsn(iarg, xptr);
     if (x86_isReg_BP(regname)) {
       //=======================================================================
       // action: clobbering the base pointer; begin a new SP_RELATIVE interval
       // note: we don't check that BP is BP_SAVED; we might have to
       //=======================================================================
-      next = new_ui(next_ins,
-		    RA_SP_RELATIVE, 
-		    xr->sp_ra_pos, 
-		    xr->bp_ra_pos,
-		    BP_HOSED, 
-		    xr->sp_bp_pos, 
-		    xr->bp_bp_pos,
-		    m_alloc);
+      reg.bp_status = BP_HOSED;
+      next = new_ui(next_ins, RA_SP_RELATIVE, &reg, m_alloc);
       if (HW_TEST_STATE(hw_tmp->state, HW_BP_SAVED, HW_BP_OVERWRITTEN) &&
-	  (UWI_RECIPE(hw_tmp->uwi)->sp_ra_pos == xr->sp_ra_pos)) {
+	  (UWI_RECIPE(hw_tmp->uwi)->reg.sp_ra_pos == xr->reg.sp_ra_pos)) {
 	hw_tmp->uwi = next;
 	hw_tmp->state = HW_NEW_STATE(hw_tmp->state, HW_BP_OVERWRITTEN);
       }
@@ -99,15 +94,9 @@ process_lea(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg
 	    //==================================================================
 	    xed_int64_t disp = 
 	      xed_decoded_inst_get_memory_displacement(xptr, mem_op_index);
-
-	    next = new_ui(next_ins,
-			  xr->ra_status, 
-			  xr->sp_ra_pos - disp, 
-			  xr->bp_ra_pos,
-			  xr->bp_status,
-			  xr->sp_bp_pos - disp, 
-			  xr->bp_bp_pos,
-			  m_alloc);
+	    reg.sp_ra_pos -= disp;
+	    reg.sp_bp_pos -= disp;
+	    next = new_ui(next_ins, xr->ra_status, &reg, m_alloc);
 
 	    if (disp < 0) {
 	      if (HW_TEST_STATE(hw_tmp->state, 0, HW_SP_DECREMENTED)) {

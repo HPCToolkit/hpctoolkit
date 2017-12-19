@@ -44,20 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
+// This file is the main program for hpcstruct.  This side just
+// handles the argument list.  The real work is in makeStructure() in
+// lib/banal/Struct.cpp.
 
-//************************* System Include Files ****************************
+//****************************** Include Files ******************************
 
 #include <iostream>
 using std::cerr;
@@ -70,35 +61,21 @@ using std::endl;
 #include <streambuf>
 #include <new>
 
-
-//*************************** User Include Files ****************************
-
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-
-#include <lib/prof/Struct-Tree.hpp>
+#include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
 
-#include <lib/binutils/Demangler.hpp>
-#include <lib/binutils/LM.hpp>
-
 #include <lib/support/diagnostics.h>
+#include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
+//**************************** Support Functions ****************************
 
 #define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
-
-
-
-//*************************** Forward Declarations ***************************
 
 static int
 realmain(int argc, char* argv[]);
@@ -138,6 +115,7 @@ hpctoolkit_demangler_init(const char *demangler_library_filename, const char *de
   } 
 }
 
+//****************************** Main Program *******************************
 
 int
 main(int argc, char* argv[])
@@ -168,7 +146,9 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
+
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
+  RealPathMgr::singleton().realpath(args.in_filenm);
 
 
   // ------------------------------------------------------------
@@ -183,39 +163,36 @@ realmain(int argc, char* argv[])
     hpctoolkit_demangler_init(demangle_library, demangle_function);
   }
 
-  
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  BinUtil::LM* lm = NULL;
-  try {
-    BinUtil::LM::ReadFlg read_flag = (args.cfgRequest == BAnal::Struct::CFG_OA) ?
-      BinUtil::LM::ReadFlg_ALL : BinUtil::LM::ReadFlg_Proc;
-
-    lm = new BinUtil::LM(args.useBinutils);
-    lm->open(args.in_filenm.c_str());
-    lm->read(read_flag);
-  }
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading '" << args.in_filenm << "'");
-    throw;
-  }
-
-  if (lm->bfdSymTabSz() == 0) {
-    DIAG_WMsg(0, "Program structure is likely useless because no symbol table could be found.");
-  }
-
 
   // ------------------------------------------------------------
   // Build and print the program structure tree
   // ------------------------------------------------------------
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-  std::ostream* os = IOUtil::OpenOStream(osnm);
+  std::ostream* outFile = IOUtil::OpenOStream(osnm);
   char* outBuf = new char[HPCIO_RWBufferSz];
 
-  std::streambuf* os_buf = os->rdbuf();
+  std::streambuf* os_buf = outFile->rdbuf();
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
+
+  std::string gapsName = "";
+  std::ostream* gapsFile = NULL;
+  char* gapsBuf = NULL;
+  std::streambuf* gaps_rdbuf = NULL;
+
+  if (args.show_gaps) {
+    // fixme: may want to add --gaps-name option
+    if (args.out_filenm == "-") {
+      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
+      exit(1);
+    }
+
+    gapsName = RealPath(osnm) + std::string(".gaps");
+    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
+    gapsBuf = new char[HPCIO_RWBufferSz];
+    gaps_rdbuf = gapsFile->rdbuf();
+    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
+  }
 
   std::ostream* dotFile = NULL;
   char* dotBuf = NULL;
@@ -248,35 +225,22 @@ realmain(int argc, char* argv[])
   else if (args.lush_agent == "agent-cilk") {
     procNameMgr = new CilkNameMgr;
   }
-  
-  Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
-  Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
 
-  using namespace BAnal::Struct;
-  Prof::Struct::LM* lmStrct = makeStructure(lm, dotFile,
-					    args.cfgRequest,
-					    args.doNormalizeTy,
-					    args.isIrreducibleIntervalLoop,
-					    args.isForwardSubstitution,
-					    procNameMgr,
-					    args.dbgProcGlob);
-  lmStrct->link(rootStrct);
-  
-  Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
-  IOUtil::CloseStream(os);
+  BAnal::Struct::makeStructure(args.in_filenm, gapsName, outFile, gapsFile,
+			       dotFile, procNameMgr);
+
+  IOUtil::CloseStream(outFile);
+  delete[] outBuf;
+
+  if (gapsFile != NULL) {
+    IOUtil::CloseStream(gapsFile);
+    delete[] gapsBuf;
+  }
 
   if (dotFile != NULL) {
     IOUtil::CloseStream(dotFile);
+    delete[] dotBuf;
   }
-  
-  // Cleanup
 
-  delete strctTree;
-  delete lm;
-  delete[] outBuf;
-  
   return (0);
 }
-
-//****************************************************************************
-

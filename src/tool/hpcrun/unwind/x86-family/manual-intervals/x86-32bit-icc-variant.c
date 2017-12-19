@@ -82,14 +82,16 @@ adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
 
     for(;  UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
 
-    int ra_correction =  UWI_RECIPE(ui)->sp_ra_pos - 4; // N.B. The '4' is only correct for 32 bit
-    int bp_correction =  UWI_RECIPE(ui)->sp_bp_pos;
+    x86recipe_t *xr = UWI_RECIPE(ui);
+    int ra_correction =  xr->reg.sp_ra_pos - 4; // N.B. The '4' is only correct for 32 bit
+    int bp_correction =  xr->reg.sp_bp_pos;
 
     for(; ui; ui = UWI_NEXT(ui)) {
-      UWI_RECIPE(ui)->bp_ra_pos -= ra_correction;
-      UWI_RECIPE(ui)->bp_bp_pos -= bp_correction;
-      UWI_RECIPE(ui)->sp_ra_pos -= ra_correction;
-      UWI_RECIPE(ui)->sp_bp_pos -= bp_correction;
+      xr = UWI_RECIPE(ui);
+      xr->reg.bp_ra_pos -= ra_correction;
+      xr->reg.bp_bp_pos -= bp_correction;
+      xr->reg.sp_ra_pos -= ra_correction;
+      xr->reg.sp_bp_pos -= bp_correction;
     }
     return 1;
   }

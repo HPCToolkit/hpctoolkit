@@ -89,13 +89,13 @@ class InlineNode;
 class FLPIndex;
 class FLPCompare;
 class StmtInfo;
+class StmtMap;
 class LoopInfo;
 class TreeNode;
 
 typedef list <InlineNode> InlineSeqn;
 typedef list <FLPIndex> FLPSeqn;
 typedef list <LoopInfo *> LoopList;
-typedef map  <VMA, StmtInfo *> StmtMap;
 typedef map  <FLPIndex, TreeNode *, FLPCompare> NodeMap;
 
 
@@ -176,7 +176,10 @@ public:
 };
 
 
-// Info for one terminal statement (vma) in the inline tree.
+// Info for one terminal statement (vma) in the inline tree.  Now used
+// for multiple, consecutive instructions, all with the same file and
+// line info.
+//
 class StmtInfo {
 public:
   VMA   vma;
@@ -205,6 +208,47 @@ public:
     base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
     line_num = line;
   }
+
+  // returns: true if vma is contained within this range
+  bool member(VMA x)
+  {
+    return vma <= x && x < vma + len;
+  }
+};
+
+
+// Map of vma ranges and their file and line info.
+//
+// The intervals are disjoint, semi-open [...), the map key is by left
+// endpoint, the addresses within a single range share a common file
+// and line and may contain multiple instructions, and we compact
+// adjacent ranges with identical attributes into one interval.
+//
+class StmtMap : public std::map <VMA, StmtInfo *> {
+public:
+
+  // returns: pointer to StmtInfo that contains vma, else NULL
+  StmtInfo * findStmt(VMA vma)
+  {
+    auto it = this->upper_bound(vma);
+
+    if (it == this->begin()) {
+      return NULL;
+    }
+    --it;
+    StmtInfo * sinfo = it->second;
+
+    return (sinfo->member(vma)) ? sinfo : NULL;
+  }
+
+  // returns: true if vma is contained within some range in the map
+  bool member(VMA vma)
+  {
+    return findStmt(vma) != NULL;
+  }
+
+  // insert one statement range into the map
+  void insert(StmtInfo *);
 };
 
 
@@ -244,8 +288,20 @@ public:
   NodeMap  nodeMap;
   StmtMap  stmtMap;
   LoopList loopList;
+  long  file_index;
 
-  TreeNode()
+  TreeNode(long file = 0)
+  {
+    nodeMap.clear();
+    stmtMap.clear();
+    loopList.clear();
+    file_index = file;
+  }
+
+  // shallow delete: erase the maps, but don't delete their contents.
+  // we use this when the elements are copies from other trees.
+  void
+  clear()
   {
     nodeMap.clear();
     stmtMap.clear();
@@ -274,11 +330,11 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(std::string filename, BinUtil::LM *);
+Symtab * openSymtab(std::string filename);
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
-StmtInfo *
+void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line);
 

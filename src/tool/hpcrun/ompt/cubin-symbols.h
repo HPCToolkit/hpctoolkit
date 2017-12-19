@@ -80,7 +80,7 @@ typedef struct Elf_SymbolVector {
 Elf_SymbolVector *
 computeCubinFunctionOffsets
 (
- char *cubin_ptr,
+ const char *cubin_ptr,
  size_t cubin_len
 );
 

@@ -83,9 +83,11 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
+static const unsigned int MAX_CHAR_FORMULA = 32;
+
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
-
+static int leak_metric_id = -1;
 
 
 /******************************************************************************
@@ -100,6 +102,7 @@ METHOD_FN(init)
   // reset static variables to their virgin state
   alloc_metric_id = -1;
   free_metric_id = -1;
+  leak_metric_id = -1;
 }
 
 
@@ -157,14 +160,16 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
-  alloc_metric_id = hpcrun_new_metric();
-  free_metric_id = hpcrun_new_metric();
-
   TMSG(MEMLEAK, "Setting up metrics for memory leak detection");
+  alloc_metric_id = hpcrun_set_new_metric_info("Bytes Allocated");
+  free_metric_id = hpcrun_set_new_metric_info("Bytes Freed");
+  leak_metric_id = hpcrun_set_new_metric_info("Bytes Leaked");
+  metric_desc_t* memleak_metric = hpcrun_id2metric(leak_metric_id);
+  char *buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
 
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-
-  hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+  // leak = allocated - freed
+  sprintf(buffer, "$%d-$%d", alloc_metric_id, free_metric_id);
+  memleak_metric->formula = buffer;
 }
 
 

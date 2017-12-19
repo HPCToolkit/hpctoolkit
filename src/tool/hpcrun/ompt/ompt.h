@@ -751,6 +751,9 @@ OMPT_API_FUNCTION(void, ompt_initialize, (
     unsigned int ompt_version
 ));
 
+
+struct ompt_fns_t;
+
 OMPT_API_FUNCTION(void, ompt_initialize_5, (
     ompt_function_lookup_t ompt_fn_lookup,
     struct ompt_fns_t *fns

@@ -554,23 +554,22 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_time);
+  int metric_id =
+    hpcrun_set_new_metric_info_and_period(the_metric_name, MetricFlags_ValFmt_Int,
+					  sample_period, metric_property_time);
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(IDLE_METRIC_NAME,
+					    MetricFlags_ValFmt_Real,
+					    sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
-
-    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_time);
   }
+  hpcrun_finalize_metrics();
 
   event = next_tok();
   if (more_tok()) {
@@ -631,6 +630,7 @@ METHOD_FN(display_events)
 
 #define ss_name itimer
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  20
 
 #include "ss_obj.h"
 
@@ -687,12 +687,14 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
+  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 
-  int metric_id = hpcrun_event2metric(&_itimer_obj, ITIMER_EVENT);
+  int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
+					    0/*skipInner*/, 0/*isSync*/, NULL);
 
-  sample_val_t sv = 
-    hpcrun_sample_callpath(context, metric_id, metric_incr,
-			   0/*skipInner*/, 0/*isSync*/);
+  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+
 
   if(sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);

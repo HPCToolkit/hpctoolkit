@@ -76,13 +76,10 @@ static int dump_ins = 0;
  * forward declarations 
  *****************************************************************************/
 
-static void set_status(btuwi_status_t *status, char *fui, int errcode,
-	unwind_interval *first);
-
 btuwi_status_t x86_build_intervals(void *ins, unsigned int len, int noisy,
 	mem_alloc m_alloc);
 
-static void x86_coalesce_unwind_intervals(unwind_interval *ui);
+static int x86_coalesce_unwind_intervals(unwind_interval *ui);
 
 /******************************************************************************
  * interface operations 
@@ -92,7 +89,6 @@ btuwi_status_t
 build_intervals(char *ins, unsigned int len, mem_alloc m_alloc)
 {
   btuwi_status_t status = x86_build_intervals(ins, len, 0, m_alloc);
-  bitree_uwi_finalize(status.first);
   return status;
 }
 
@@ -123,13 +119,16 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   void *first_ins    = ins;
   void *end          = ins + len;
+  int count          = 1;
 
   iarg.beg           = first_ins;
   iarg.end           = end;
   iarg.highwatermark = _h;
   iarg.ins           = ins;
-  iarg.current       = new_ui(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, m_alloc);
+  x86registers_t reg = {0, 0, BP_UNCHANGED, 0, 0};
+  iarg.current       = new_ui(ins, RA_SP_RELATIVE, &reg, m_alloc);
   iarg.first         = iarg.current;
+  iarg.restored_canonical = iarg.current;
 
   // handle return is different if there are any bp frames
 
@@ -169,7 +168,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 	}
 
 	// ensure that we don't move past the end of the interval because of a misaligned instruction
-	void *nextins = iarg.ins + xed_decoded_inst_get_length(xptr);
+	void *nextins = nextInsn(&iarg, xptr);
 	if (nextins > end) break;
 
 	next = process_inst(xptr, &iarg, m_alloc);
@@ -177,6 +176,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 	if (next != iarg.current) {
 	  link_ui(iarg.current, next);
 	  iarg.current = next;
+	  count++;
 
 	  if (noisy) dump_ui(iarg.current, true);
 	}
@@ -186,10 +186,12 @@ x86_build_intervals(void *ins, unsigned int len, int noisy, mem_alloc m_alloc)
 
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
-  set_status(&status, iarg.ins, error_count, iarg.first);
+  status.first_undecoded_ins = iarg.ins;
+  status.errcode = error_count;
+  status.first   = iarg.first;
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
-  x86_coalesce_unwind_intervals(status.first);
+  status.count = count - x86_coalesce_unwind_intervals(status.first);
 
   return status;
 }
@@ -203,21 +205,11 @@ static bool
 x86_ui_same_data(x86recipe_t *proto, x86recipe_t *cand)
 {
   return ( (proto->ra_status == cand->ra_status) &&
-	  (proto->sp_ra_pos == cand->sp_ra_pos) &&
-	  (proto->sp_bp_pos == cand->sp_bp_pos) &&
-	  (proto->bp_status == cand->bp_status) &&
-	  (proto->bp_ra_pos == cand->bp_ra_pos) &&
-	  (proto->bp_bp_pos == cand->bp_bp_pos) );
-}
-
-
-static void
-set_status(btuwi_status_t *status, char *fui, int errcode,
-	unwind_interval *first)
-{
-  status->first_undecoded_ins = fui;
-  status->errcode = errcode;
-  status->first   = first;
+	  (proto->reg.sp_ra_pos == cand->reg.sp_ra_pos) &&
+	  (proto->reg.sp_bp_pos == cand->reg.sp_bp_pos) &&
+	  (proto->reg.bp_status == cand->reg.bp_status) &&
+	  (proto->reg.bp_ra_pos == cand->reg.bp_ra_pos) &&
+	  (proto->reg.bp_bp_pos == cand->reg.bp_bp_pos) );
 }
 
 // NOTE: following routine has an additional side effect!
@@ -234,13 +226,14 @@ set_status(btuwi_status_t *status, char *fui, int errcode,
 //       building time. If more routine-level information items come up, the reduction side
 //       effect of the coalesce routine can be expanded to accomodate.
 
-static void
+static int
 x86_coalesce_unwind_intervals(unwind_interval *ui)
 {
+  int num_freed = 0;
   TMSG(COALESCE,"coalescing interval list starting @ %p",ui);
   if (! ui) {
 	TMSG(COALESCE,"  --interval list empty, so no work");
-	return;
+	return num_freed;
   }
 
   unwind_interval *first   = ui;
@@ -271,6 +264,7 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
 	  bitree_uwi_set_rightsubtree(ui, NULL);
 	  bitree_uwi_set_leftsubtree(ui, NULL);
 	  bitree_uwi_free(ui);
+	  ++num_freed;
 
 	  ui = current;
 	  TMSG(COALESCE,"Intervals match! Extended interval:");
@@ -287,5 +281,5 @@ x86_coalesce_unwind_intervals(unwind_interval *ui)
   // update first interval with collected info
   UWI_RECIPE(first)->has_tail_calls = routine_has_tail_calls;
 
-  return;
+  return num_freed;
 }

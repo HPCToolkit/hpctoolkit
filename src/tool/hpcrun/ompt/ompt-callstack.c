@@ -311,7 +311,7 @@ ompt_elide_runtime_frame(
     if (!frame0) break;
 
     ompt_task_id_t tid = hpcrun_ompt_get_task_id(i);
-    cct_node_t *omp_task_context = ompt_task_map_lookup(tid);
+    ompt_task_map_entry_t *omp_task_context = ompt_task_map_lookup(tid);
 
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
@@ -339,7 +339,7 @@ ompt_elide_runtime_frame(
     }
 
     if (exit0_flag && omp_task_context) {
-      TD_GET(omp_task_context) = omp_task_context;
+      TD_GET(omp_task_context) = omp_task_context->call_path;
       *bt_outer = exit0 - 1;
       break;
     }
@@ -490,8 +490,10 @@ ompt_region_context(uint64_t region_id,
   ucontext_t uc;
   getcontext(&uc);
 
+
   // levels to skip will be broken if inlining occurs.
-  node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  hpcrun_metricVal_t zero = {.i = 0};
+  node = hpcrun_sample_callpath(&uc, 0, zero, 0, 1, NULL).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {

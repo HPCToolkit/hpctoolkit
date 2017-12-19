@@ -230,6 +230,7 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
   hpcrun_cct_walk_node_1st_w_level(cct, op, arg, 0);
 }
 
+
 //
 // Special routine to walk a path represented by a cct node.
 // The actual path represented by a node is list reversal of the nodes

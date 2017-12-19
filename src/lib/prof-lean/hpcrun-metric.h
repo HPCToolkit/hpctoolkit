@@ -81,6 +81,7 @@ extern "C" {
 // treated as a constant variable and not an actual constant.
 #define /*const char**/ HPCRUN_METRIC_RetCnt "RETCNT"
 
+
 //***************************************************************************
 
 #if defined(__cplusplus)

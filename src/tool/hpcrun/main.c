@@ -364,9 +364,10 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-static sigjmp_buf ivd_jb;
-
 siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
+
+#ifndef USE_LIBUNW
+static sigjmp_buf ivd_jb;
 
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
@@ -374,6 +375,7 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
   (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
   return 0;
 }
+#endif
 
 //------------------------------------
 // process level 

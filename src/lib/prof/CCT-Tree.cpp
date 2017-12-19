@@ -809,10 +809,9 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 	DIAG_MsgIf(MERGE_ERROR /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding not permitted:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
-        DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
+        DIAG_WMsgIf( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
 		     "CCT::ANode::mergeDeep: adding not permitted");
-      }
-      if ( !(mrgCtxt.flags() & MrgFlg_CCTMergeOnly) ) {
+      } else if (!(mrgCtxt.flags() & MrgFlg_CCTMergeOnly)) {
 	DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));

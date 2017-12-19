@@ -209,7 +209,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
 
 static int
-write_epochs(FILE* fs, epoch_t* epoch)
+write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
 {
   uint32_t num_epochs = 0;
 
@@ -266,10 +266,15 @@ write_epochs(FILE* fs, epoch_t* epoch)
     // == metrics ==
     //
 
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-    hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
+    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
 
     TMSG(DATA_WRITE, "Done writing metric data");
 
@@ -327,7 +332,7 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
   if (fs == NULL)
     return;
 
-  write_epochs(fs, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch);
   hpcrun_epoch_reset();
 }
 
@@ -341,7 +346,7 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   if (fs == NULL)
     return HPCRUN_ERR;
 
-  write_epochs(fs, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);

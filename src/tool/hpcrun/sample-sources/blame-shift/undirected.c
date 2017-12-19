@@ -107,7 +107,8 @@ trace_current_context(undirected_blame_info_t *bi)
   if (!hpcrun_safe_enter()) return;
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, bi->idle_metric_id, 0, bi->levels_to_skip + 1, 1);
+  hpcrun_metricVal_t zero = {.i = 0};
+  hpcrun_sample_callpath(&uc, bi->idle_metric_id, zero, bi->levels_to_skip + 1, 1, NULL);
   hpcrun_safe_exit();
 }
 
