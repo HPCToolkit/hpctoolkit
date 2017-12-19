@@ -60,10 +60,6 @@ extern void hpcrun_set_safe_to_sync(void);
 //
 extern char* hpcrun_get_execname(void);
 
-typedef void (*device_finalizer_callback_t)(void);
-
-extern void hpcrun_register_device_finalizer_callback(device_finalizer_callback_t thread_final_callback);
-
 typedef void siglongjmp_fcn(sigjmp_buf, int);
 
 siglongjmp_fcn *hpcrun_get_real_siglongjmp(void);

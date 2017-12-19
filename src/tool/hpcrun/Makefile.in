@@ -442,24 +442,24 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/retcnt.c sample-sources/sample-filters.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
-	ompt/ompt-parallel-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-function-id-map.c ompt/ompt-cubin-id-map.c \
-	ompt/ompt-stop-map.c ompt/ompt-submit-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	thread_use.c device-finalizers.c threadmgr.c trace.c weak.c \
+	write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/cubin-symbols.c \
+	ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-region.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-region-map.c ompt/ompt-parallel-region-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-function-id-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-stop-map.c \
+	ompt/ompt-submit-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -538,11 +538,11 @@ am__objects_7 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
-	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
-	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
-	libhpcrun_la-write_data.lo cct/libhpcrun_la-cct_bundle.lo \
-	cct/libhpcrun_la-cct_ctxt.lo cct/libhpcrun_la-cct.lo \
-	libhpcrun_la-cct2metrics.lo \
+	libhpcrun_la-thread_use.lo libhpcrun_la-device-finalizers.lo \
+	libhpcrun_la-threadmgr.lo libhpcrun_la-trace.lo \
+	libhpcrun_la-weak.lo libhpcrun_la-write_data.lo \
+	cct/libhpcrun_la-cct_bundle.lo cct/libhpcrun_la-cct_ctxt.lo \
+	cct/libhpcrun_la-cct.lo libhpcrun_la-cct2metrics.lo \
 	trampoline/common/libhpcrun_la-trampoline.lo \
 	lush/libhpcrun_la-lush-backtrace.lo lush/libhpcrun_la-lush.lo \
 	lush/libhpcrun_la-lush-pthread.lo \
@@ -752,24 +752,24 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/retcnt.c sample-sources/sample-filters.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	segv_handler.c start-stop.c term_handler.c thread_data.c \
-	thread_use.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c cct2metrics.c \
-	trampoline/common/trampoline.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/cubin-symbols.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-region.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-region-map.c \
-	ompt/ompt-parallel-region-map.c ompt/ompt-host-op-map.c \
-	ompt/ompt-function-id-map.c ompt/ompt-cubin-id-map.c \
-	ompt/ompt-stop-map.c ompt/ompt-submit-map.c \
-	ompt/ompt-cct-node-vector.c ompt/ompt-task.c \
-	ompt/ompt-thread.c ompt/ompt-task-map.c \
+	thread_use.c device-finalizers.c threadmgr.c trace.c weak.c \
+	write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct2metrics.c trampoline/common/trampoline.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/cubin-symbols.c \
+	ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-region.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-region-map.c ompt/ompt-parallel-region-map.c \
+	ompt/ompt-host-op-map.c ompt/ompt-function-id-map.c \
+	ompt/ompt-cubin-id-map.c ompt/ompt-stop-map.c \
+	ompt/ompt-submit-map.c ompt/ompt-cct-node-vector.c \
+	ompt/ompt-task.c ompt/ompt-thread.c ompt/ompt-task-map.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
@@ -851,6 +851,7 @@ am__objects_37 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) \
+	libhpcrun_o-device-finalizers.$(OBJEXT) \
 	libhpcrun_o-threadmgr.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
 	libhpcrun_o-weak.$(OBJEXT) libhpcrun_o-write_data.$(OBJEXT) \
 	cct/libhpcrun_o-cct_bundle.$(OBJEXT) \
@@ -1551,6 +1552,7 @@ MY_BASE_FILES = \
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	device-finalizers.c \
 	threadmgr.c			\
 	trace.c				\
 	weak.c				\
@@ -3052,6 +3054,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-closure-registry.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-device-finalizers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-disabled.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-epoch.Plo@am__quote@
@@ -3087,6 +3090,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-closure-registry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-device-finalizers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-disabled.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-env.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-epoch.Po@am__quote@
@@ -3876,6 +3880,13 @@ libhpcrun_la-thread_use.lo: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_use.c' object='libhpcrun_la-thread_use.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-thread_use.lo `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+
+libhpcrun_la-device-finalizers.lo: device-finalizers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-device-finalizers.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-device-finalizers.Tpo -c -o libhpcrun_la-device-finalizers.lo `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-device-finalizers.Tpo $(DEPDIR)/libhpcrun_la-device-finalizers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device-finalizers.c' object='libhpcrun_la-device-finalizers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-device-finalizers.lo `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
 
 libhpcrun_la-threadmgr.lo: threadmgr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-threadmgr.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-threadmgr.Tpo -c -o libhpcrun_la-threadmgr.lo `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
@@ -5206,6 +5217,20 @@ libhpcrun_o-thread_use.obj: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_use.c' object='libhpcrun_o-thread_use.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_use.obj `if test -f 'thread_use.c'; then $(CYGPATH_W) 'thread_use.c'; else $(CYGPATH_W) '$(srcdir)/thread_use.c'; fi`
+
+libhpcrun_o-device-finalizers.o: device-finalizers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-device-finalizers.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo -c -o libhpcrun_o-device-finalizers.o `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo $(DEPDIR)/libhpcrun_o-device-finalizers.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device-finalizers.c' object='libhpcrun_o-device-finalizers.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-device-finalizers.o `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
+
+libhpcrun_o-device-finalizers.obj: device-finalizers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-device-finalizers.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo -c -o libhpcrun_o-device-finalizers.obj `if test -f 'device-finalizers.c'; then $(CYGPATH_W) 'device-finalizers.c'; else $(CYGPATH_W) '$(srcdir)/device-finalizers.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo $(DEPDIR)/libhpcrun_o-device-finalizers.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device-finalizers.c' object='libhpcrun_o-device-finalizers.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-device-finalizers.obj `if test -f 'device-finalizers.c'; then $(CYGPATH_W) 'device-finalizers.c'; else $(CYGPATH_W) '$(srcdir)/device-finalizers.c'; fi`
 
 libhpcrun_o-threadmgr.o: threadmgr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-threadmgr.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-threadmgr.Tpo -c -o libhpcrun_o-threadmgr.o `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c

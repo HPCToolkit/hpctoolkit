@@ -73,6 +73,7 @@
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/hpcrun-initializers.h>
 #include <hpcrun/main.h>
+#include <hpcrun/device-finalizers.h>
 
 #include "ompt-interface.h"
 #include "ompt-callstack.h"
@@ -127,6 +128,8 @@ static directed_blame_info_t omp_mutex_blame_info;
 
 // state for undirected blame shifting away from spinning waiting for work
 static undirected_blame_info_t omp_idle_blame_info;
+
+static device_finalizer_fn_entry_t device_finalizer;
 
 //-----------------------------------------
 // declare ompt interface function pointers
@@ -555,7 +558,7 @@ init_idle_blame_shift(const char *version)
 // forward declaration
 void prepare_device();
 
-void hpcrun_ompt_device_finializer(void);
+void hpcrun_ompt_device_finializer(void *args);
 
 void
 ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
@@ -579,7 +582,6 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
   init_idle_blame_shift(runtime_version);
 
   prepare_device();
-  hpcrun_register_device_finalizer_callback(hpcrun_ompt_device_finializer);
 
   if (ENABLED(OMPT_TASK_FULL_CTXT)) {
     init_tasks();
@@ -750,7 +752,6 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
                         ompt_id_t target_id,
                         ip_normalized_t ip)
 {
-  pthread_t tid = pthread_self();
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
@@ -844,14 +845,12 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 #define BUFFER_SIZE (1024 * 1024 * 8)
 
 void
-hpcrun_ompt_device_finializer(void)
+hpcrun_ompt_device_finializer(void *args)
 {
   if (ompt_stop_map_lookup(&ompt_stop_flag)) {
-    if (ompt_device != NULL) {
-      ompt_stop_trace(ompt_device);
-      ompt_stop_map_refcnt_update(&ompt_stop_flag, 0);
-      ompt_stop_flag = false;
-    }
+    ompt_stop_trace(ompt_device);
+    ompt_stop_map_refcnt_update(&ompt_stop_flag, 0);
+    ompt_stop_flag = false;
   }
 }
 
@@ -1039,6 +1038,8 @@ ompt_map_callback(ompt_id_t target_id,
 void
 prepare_device()
 {
+  device_finalizer.fn = hpcrun_ompt_device_finializer;
+  device_finalizer_register(&device_finalizer);
   ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
   ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
   ompt_set_callback(ompt_callback_device_load, ompt_device_load);

@@ -110,6 +110,7 @@
 #include "sample_prob.h"
 #include "term_handler.h"
 
+#include "device-finalizers.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -138,7 +139,6 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
@@ -207,7 +207,6 @@ static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
-static device_finalizer_callback_t device_finalizer;
 
 //
 // Local functions
@@ -619,9 +618,7 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
-    device_finalizer();
-    PRINT("internal_fini total! %d\n", omp_get_num_threads());
-    PRINT("internal_fini id! %d\n", omp_get_thread_num());
+    device_finalizer_apply();
 
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -725,21 +722,11 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    device_finalizer();
-    PRINT("thread_fini! total %d\n", omp_get_num_threads());
-    PRINT("thread_fini! id %d\n", omp_get_thread_num());
+    device_finalizer_apply();
     
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
-}
-
-
-// TODO(keren): make it more general by blame-shift
-void
-hpcrun_register_device_finalizer_callback(device_finalizer_callback_t device_finalizer_callback)
-{
-  device_finalizer = device_finalizer_callback;
 }
 
 //***************************************************************************

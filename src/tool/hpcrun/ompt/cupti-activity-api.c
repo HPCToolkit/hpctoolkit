@@ -158,7 +158,7 @@ cupti_process_activityAPI
  void *state
 )
 {
-  PRINT("driver and kernel");
+  PRINT("driver and kernel\n");
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_DRIVER:
     {
