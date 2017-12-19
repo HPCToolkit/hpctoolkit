@@ -158,11 +158,7 @@
 
 #define PERF_MULTIPLEX_RANGE 1.2
 
-#define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
-#define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
-
 #define DIRECTORY_FILE_COLLECTION   "collect"
-#define FILE_KALLSYMS "kallsyms"
 
 #define FILE_BUFFER_SIZE (1024*1024)
 
@@ -263,8 +259,8 @@ copy_kallsyms()
 {
   char *source = LINUX_KERNEL_SYMBOL_FILE;
 
-  FILE *infile = fopen(source, "r");
-  if (infile == NULL)
+  int infile = open(source, O_RDONLY);
+  if (infile == -1)
     return -1;
 
   char  dest[PATH_MAX];
@@ -279,7 +275,7 @@ copy_kallsyms()
   //  we need to adapt again here.
 
   snprintf(dest, PATH_MAX, "%s/%s.%08lx",
-           dest_directory, FILE_KALLSYMS, OSUtil_hostid());
+           dest_directory, LINUX_KERNEL_SYMBOL_FILE_SHORT, OSUtil_hostid());
 
   // test if the file already exist
   struct stat st = {0};
@@ -287,25 +283,28 @@ copy_kallsyms()
     return 0; // file already exists
   }
 
-  int err = mkdir(dest_directory, S_IRWXU | S_IRGRP | S_IXGRP);
-  if (err != 0) {
-    // directory has already existed
-  }
+  mkdir(dest_directory, S_IRWXU | S_IRGRP | S_IXGRP);
 
-  FILE *outfile = fopen(dest, "w");
-  if (outfile == NULL)
+  int mode    = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+  int outfile = open(dest, O_CREAT | O_WRONLY | O_EXCL, mode);
+
+  if (outfile == -1)
     return -1;
 
   char buffer[FILE_BUFFER_SIZE];
-  size_t bytes;
 
   // copy the file to the output directory
-  while (0 < (bytes = fread(buffer, 1, sizeof(buffer), infile))) {
-    fwrite(buffer, 1, bytes, outfile);
+  for(;;) {
+    ssize_t byteRead = read(infile, buffer, sizeof(buffer));
+
+    if (byteRead <= 0)
+      break;
+
+    write(outfile, buffer, byteRead);
   }
 
-  fclose(infile);
-  fclose(outfile);
+  close(infile);
+  close(outfile);
 
   TMSG(LINUX_PERF, "copy %s into %s", source, dest);
 
@@ -319,8 +318,20 @@ copy_kallsyms()
 static void 
 perf_init()
 {
-  //copy the kernel symbol table
-  copy_kallsyms();
+  // copy /proc/kallsyms file into hpctoolkit output directory
+  // only if the value of kptr_restric is zero
+
+  FILE *fp = fopen(PATH_KERNEL_KPTR_RESTICT, "r");
+  if (fp != NULL) {
+    int privilege = -1;
+    fscanf(fp, "%d", &privilege);
+
+    if (privilege == 0) {
+      //copy the kernel symbol table
+      copy_kallsyms();
+    }
+    fclose(fp);
+  }
 
   perf_mmap_init();
 
