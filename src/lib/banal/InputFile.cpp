@@ -58,11 +58,12 @@
 // system includes
 //******************************************************************************
 
-#include <err.h>
-#include <fcntl.h>
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <err.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
-
 
 
 //******************************************************************************
@@ -80,7 +81,8 @@
 // private operations
 //******************************************************************************
 
-int file_size(int fd)
+static size_t
+file_size(int fd)
 {
   struct stat sb;
   int retval = fstat(fd, &sb);
@@ -90,6 +92,29 @@ int file_size(int fd)
   return 0;
 }
 
+
+// Automatically restart short reads.
+// This protects against EINTR.
+//
+static size_t
+read_all(int fd, void *buf, size_t count)
+{
+  ssize_t ret;
+  size_t len;
+
+  len = 0;
+  while (len < count) {
+    ret = read(fd, ((char *) buf) + len, count - len);
+    if (ret == 0 || (ret < 0 && errno != EINTR)) {
+      break;
+    }
+    if (ret > 0) {
+      len += ret;
+    }
+  }
+
+  return len;
+}
 
 
 //******************************************************************************
@@ -126,7 +151,7 @@ InputFile::openFile
     return false;
   }
 
-  size_t bytes = read(file_fd, file_buffer, f_size);
+  size_t bytes = read_all(file_fd, file_buffer, f_size);
 
   if (f_size != bytes) {
     DIAG_EMsg("read only " << bytes << " bytes of "
