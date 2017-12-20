@@ -125,6 +125,11 @@ cupti_process_memcpy
  void *state
 )
 {
+  if (external_id != -1) {
+    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+  }
+  PRINT("Memcpy copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy copy bytes %u\n", activity->bytes);
 }
 
 
@@ -138,6 +143,8 @@ cupti_process_memcpy2
   if (external_id != -1) {
     cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
   }
+  PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy2 copy bytes %u\n", activity->bytes);
 }
 
 

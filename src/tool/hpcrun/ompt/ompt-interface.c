@@ -972,7 +972,7 @@ ompt_target_callback(ompt_target_type_t kind,
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
   hpcrun_safe_enter();
-  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node; 
+  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, (cct_metric_data_t){.i = 0}, 0, 1, NULL).sample_node; 
   metric_set_t* metrics = hpcrun_reify_metric_set(node);
   hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
   hpcrun_safe_exit();
