@@ -53,6 +53,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>
 #include "perf-util.h"
@@ -279,7 +280,14 @@ is_perf_ksym_available()
 
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
-      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+
+#define MAX_BUFFER_LINUX_KERNEL 128
+
+      char buffer[MAX_BUFFER_LINUX_KERNEL];
+      snprintf(buffer, MAX_BUFFER_LINUX_KERNEL, "<%s.%08lx>", LINUX_KERNEL_NAME_REAL,
+          OSUtil_hostid());
+      perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
+
       ksym_status = PERF_AVAILABLE;
     } else {
       ksym_status = PERF_UNAVAILABLE;
