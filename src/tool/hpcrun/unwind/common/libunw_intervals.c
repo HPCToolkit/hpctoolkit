@@ -192,9 +192,9 @@ dwarf_reg_states_callback(void *token,
 {
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);
-  bitree_uwi_set_rightsubtree(b->latest, u);
   if (!u)
     return (-1);
+  bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
   uwi->interval.start = (uintptr_t)start_ip;
   uwi->interval.end = (uintptr_t)end_ip;
