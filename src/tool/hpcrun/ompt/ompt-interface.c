@@ -896,6 +896,8 @@ ompt_trace_configure(ompt_device_t *device)
 
   flags |= ompt_native_data_motion_explicit;
 
+  flags |= ompt_native_runtime;
+
   // indicate desired monitoring
   ompt_set_trace_native(device, 1, flags);
 
