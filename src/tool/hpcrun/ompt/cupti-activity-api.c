@@ -5,6 +5,7 @@
 
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
+#include "cupti-correlation-id-map.h"
 #include "ompt-function-id-map.h"
 #include "ompt-submit-map.h"
 #include "ompt-interface.h"

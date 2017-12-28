@@ -501,8 +501,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/papi.c sample-sources/papi-c-cupti.c \
 	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
 	ompt/cupti-activity-strings.c ompt/cupti-activity-api.c \
-	sample-sources/upc.c sample-sources/gpu_blame.c \
-	sample-sources/gpu_ctxt_actions.c \
+	ompt/cupti-correlation-id-map.c sample-sources/upc.c \
+	sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c \
 	gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
@@ -641,7 +641,8 @@ am__objects_23 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__objects_25)
 @OPT_PAPI_DYNAMIC_TRUE@am__objects_27 = $(am__objects_26)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_28 = ompt/libhpcrun_la-cupti-activity-strings.lo \
-@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_la-cupti-activity-api.lo
+@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_la-cupti-activity-api.lo \
+@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_la-cupti-correlation-id-map.lo
 @OPT_ENABLE_CUPTI_TRUE@am__objects_29 = $(am__objects_28)
 am__objects_30 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_31 = $(am__objects_30)
@@ -825,12 +826,12 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/aarch64/aarch64-tramp.c \
 	utilities/arch/libunwind/libunwind-context-pc.c \
 	ompt/cupti-activity-strings.c ompt/cupti-activity-api.c \
-	sample-sources/papi.c sample-sources/papi-c-cupti.c \
-	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
-	sample-sources/upc.c unwind/common/backtrace.c \
-	unwind/common/unw-throw.c unwind/common/binarytree_uwi.c \
-	unwind/common/interval_t.c unwind/common/stack_troll.c \
-	unwind/common/uw_recipe_map.c \
+	ompt/cupti-correlation-id-map.c sample-sources/papi.c \
+	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
+	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
+	unwind/common/stack_troll.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -963,7 +964,8 @@ am__objects_55 =  \
 	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
 @HOST_CPU_AARCH64_TRUE@am__objects_56 = $(am__objects_55)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_57 = ompt/libhpcrun_o-cupti-activity-strings.$(OBJEXT) \
-@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_o-cupti-activity-api.$(OBJEXT)
+@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_o-cupti-activity-api.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	ompt/libhpcrun_o-cupti-correlation-id-map.$(OBJEXT)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_58 = $(am__objects_57)
 @OPT_PAPI_CUPTI_TRUE@am__objects_59 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
 @OPT_PAPI_COMPONENT_FALSE@am__objects_60 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
@@ -1647,7 +1649,8 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_19)
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = ompt/cupti-activity-strings.c   \
-@OPT_ENABLE_CUPTI_TRUE@								 ompt/cupti-activity-api.c      
+@OPT_ENABLE_CUPTI_TRUE@								 ompt/cupti-activity-api.c       \
+@OPT_ENABLE_CUPTI_TRUE@								 ompt/cupti-correlation-id-map.c      
 
 MY_UPC_FILES = sample-sources/upc.c
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_20)
@@ -2455,6 +2458,8 @@ ompt/libhpcrun_la-cupti-activity-strings.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-cupti-activity-api.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-cupti-correlation-id-map.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-gpu_blame.lo:  \
@@ -2867,6 +2872,8 @@ ompt/libhpcrun_o-cupti-activity-strings.$(OBJEXT):  \
 	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-cupti-activity-api.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-cupti-correlation-id-map.$(OBJEXT):  \
+	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3221,6 +3228,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cupti-activity-strings.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cct-node-vector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-cubin-id-map.Plo@am__quote@
@@ -3241,6 +3249,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cupti-activity-strings.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cct-node-vector.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-cubin-id-map.Po@am__quote@
@@ -4460,6 +4469,13 @@ ompt/libhpcrun_la-cupti-activity-api.lo: ompt/cupti-activity-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-api.c' object='ompt/libhpcrun_la-cupti-activity-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cupti-activity-api.lo `test -f 'ompt/cupti-activity-api.c' || echo '$(srcdir)/'`ompt/cupti-activity-api.c
+
+ompt/libhpcrun_la-cupti-correlation-id-map.lo: ompt/cupti-correlation-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-cupti-correlation-id-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Tpo -c -o ompt/libhpcrun_la-cupti-correlation-id-map.lo `test -f 'ompt/cupti-correlation-id-map.c' || echo '$(srcdir)/'`ompt/cupti-correlation-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-correlation-id-map.c' object='ompt/libhpcrun_la-cupti-correlation-id-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-cupti-correlation-id-map.lo `test -f 'ompt/cupti-correlation-id-map.c' || echo '$(srcdir)/'`ompt/cupti-correlation-id-map.c
 
 sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-upc.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-upc.Tpo -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -6252,6 +6268,20 @@ ompt/libhpcrun_o-cupti-activity-api.obj: ompt/cupti-activity-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-activity-api.c' object='ompt/libhpcrun_o-cupti-activity-api.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-activity-api.obj `if test -f 'ompt/cupti-activity-api.c'; then $(CYGPATH_W) 'ompt/cupti-activity-api.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-activity-api.c'; fi`
+
+ompt/libhpcrun_o-cupti-correlation-id-map.o: ompt/cupti-correlation-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-correlation-id-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Tpo -c -o ompt/libhpcrun_o-cupti-correlation-id-map.o `test -f 'ompt/cupti-correlation-id-map.c' || echo '$(srcdir)/'`ompt/cupti-correlation-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-correlation-id-map.c' object='ompt/libhpcrun_o-cupti-correlation-id-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-correlation-id-map.o `test -f 'ompt/cupti-correlation-id-map.c' || echo '$(srcdir)/'`ompt/cupti-correlation-id-map.c
+
+ompt/libhpcrun_o-cupti-correlation-id-map.obj: ompt/cupti-correlation-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-cupti-correlation-id-map.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Tpo -c -o ompt/libhpcrun_o-cupti-correlation-id-map.obj `if test -f 'ompt/cupti-correlation-id-map.c'; then $(CYGPATH_W) 'ompt/cupti-correlation-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-correlation-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/cupti-correlation-id-map.c' object='ompt/libhpcrun_o-cupti-correlation-id-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-cupti-correlation-id-map.obj `if test -f 'ompt/cupti-correlation-id-map.c'; then $(CYGPATH_W) 'ompt/cupti-correlation-id-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/cupti-correlation-id-map.c'; fi`
 
 sample-sources/libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo -c -o sample-sources/libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
