@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <hpcrun/cct2metrics.h>
+#include <hpcrun/sample-sources/nvidia.h>
 
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
@@ -31,12 +32,13 @@ cupti_process_sample
 )
 {
   PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-	 "samples %u, stallreason %s\n",
+	 "samples %u, latencySamples %u, stallreason %s\n",
 	 sample->sourceLocatorId,
 	 sample->functionId,
 	 sample->pcOffset,
 	 sample->correlationId,
 	 sample->samples,
+	 sample->latencySamples,
 	 cupti_stall_reason_string(sample->stallReason));
   PRINT("external_id sample %d\n", external_id);
   if (external_id != -1) {
@@ -50,8 +52,7 @@ cupti_process_sample
       if (cct_node != NULL) {
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
-          metric_set_t* metrics = hpcrun_reify_metric_set(cct_child);
-          hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
+          cupti_attribute_activity(sample, cct_child);
         }
       }
     }
