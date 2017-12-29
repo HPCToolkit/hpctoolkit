@@ -82,7 +82,6 @@
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
 #include "ompt-stop-map.h"
-#include "ompt-submit-map.h"
 
 #define HAVE_CUDA_H 1
 
@@ -1019,7 +1018,6 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
-  ompt_submit_map_insert(host_op_id);
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }
 

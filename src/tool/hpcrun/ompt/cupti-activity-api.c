@@ -7,12 +7,9 @@
 #include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
 #include "ompt-function-id-map.h"
-#include "ompt-submit-map.h"
 #include "ompt-interface.h"
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
-
-static __thread int external_id = -1;
 
 static void
 cupti_process_unknown
@@ -41,20 +38,20 @@ cupti_process_sample
 	 sample->samples,
 	 sample->latencySamples,
 	 cupti_stall_reason_string(sample->stallReason));
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
+  uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
   PRINT("external_id sample %d\n", external_id);
-  if (external_id != -1) {
-    ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
-    if (entry != NULL) {
-      uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
-      uint64_t cubin_id = ompt_function_id_map_entry_cubin_id_get(entry);
-      ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
-      cct_addr_t frm = { .ip_norm = ip };
-      cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
-      if (cct_node != NULL) {
-        cct_node_t *cct_child = NULL;
-        if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
-          cupti_attribute_activity(sample, cct_child);
-        }
+  ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
+  if (entry != NULL) {
+    uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
+    uint64_t cubin_id = ompt_function_id_map_entry_cubin_id_get(entry);
+    ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
+    cct_addr_t frm = { .ip_norm = ip };
+    cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
+    if (cct_node != NULL) {
+      cct_node_t *cct_child = NULL;
+      if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
+        cupti_attribute_activity(sample, cct_child);
       }
     }
   }
@@ -112,10 +109,11 @@ cupti_process_correlation
  void *state
 )
 {
-  if (ompt_submit_map_lookup(ec->externalId) != NULL) {
-    external_id = ec->externalId;
-  }
-  PRINT("External CorrelationId %lu\n", ec->externalId);
+  uint64_t correlation_id = ec->correlationId;
+  uint64_t external_id = ec->externalId;
+  cupti_correlation_id_map_insert(correlation_id, external_id);
+  PRINT("External CorrelationId %lu\n", correlation_id);
+  PRINT("CorrelationId %lu\n", external_id);
   PRINT("Activity Kind %u\n", ec->kind);
 }
 
@@ -127,11 +125,6 @@ cupti_process_memcpy
  void *state
 )
 {
-  if (external_id != -1) {
-    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-  }
-  PRINT("Memcpy copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy copy bytes %u\n", activity->bytes);
 }
 
 
@@ -142,8 +135,11 @@ cupti_process_memcpy2
  void *state
 )
 {
-  if (external_id != -1) {
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    cupti_attribute_activity(activity, node);
   }
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
   PRINT("Memcpy2 copy bytes %u\n", activity->bytes);
@@ -157,6 +153,14 @@ cupti_process_memctr
  void *state
 )
 {
+  // FIXME(keren): no correlationId field
+  //cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  //if (cupti_entry != NULL) {
+  //  uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+  //  cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+  //  cupti_attribute_activity(activity, node);
+  //}
+  //PRINT("Unified memory copy\n");
 }
 
 
@@ -171,16 +175,10 @@ cupti_process_activityAPI
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_DRIVER:
     {
-      if (external_id != -1) {
-        cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-      }
       break;
     }
     case CUPTI_ACTIVITY_KIND_KERNEL:
     {
-      if (external_id != -1) {
-        cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-      }
       break;
     }
     default:

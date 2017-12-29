@@ -22,12 +22,12 @@
  * type definitions 
  *****************************************************************************/
 
-struct ompt_correlation_id_map_entry_s {
+struct cupti_correlation_id_map_entry_s {
   uint64_t correlation_id;
   uint64_t refcnt;
   uint64_t external_id;
-  struct ompt_correlation_id_map_entry_s *left;
-  struct ompt_correlation_id_map_entry_s *right;
+  struct cupti_correlation_id_map_entry_s *left;
+  struct cupti_correlation_id_map_entry_s *right;
 }; 
 
 
@@ -36,8 +36,8 @@ struct ompt_correlation_id_map_entry_s {
  * global data 
  *****************************************************************************/
 
-static ompt_correlation_id_map_entry_t *ompt_correlation_id_map_root = NULL;
-static spinlock_t ompt_correlation_id_map_lock = SPINLOCK_UNLOCKED;
+static cupti_correlation_id_map_entry_t *cupti_correlation_id_map_root = NULL;
+static spinlock_t cupti_correlation_id_map_lock = SPINLOCK_UNLOCKED;
 
 
 
@@ -45,11 +45,11 @@ static spinlock_t ompt_correlation_id_map_lock = SPINLOCK_UNLOCKED;
  * private operations
  *****************************************************************************/
 
-static ompt_correlation_id_map_entry_t *
-ompt_correlation_id_map_entry_new(uint64_t correlation_id, uint64_t external_id)
+static cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_entry_new(uint64_t correlation_id, uint64_t external_id)
 {
-  ompt_correlation_id_map_entry_t *e;
-  e = (ompt_correlation_id_map_entry_t *)hpcrun_malloc(sizeof(ompt_correlation_id_map_entry_t));
+  cupti_correlation_id_map_entry_t *e;
+  e = (cupti_correlation_id_map_entry_t *)hpcrun_malloc(sizeof(cupti_correlation_id_map_entry_t));
   e->correlation_id = correlation_id;
   e->refcnt = 0;
   e->external_id = external_id;
@@ -60,27 +60,27 @@ ompt_correlation_id_map_entry_new(uint64_t correlation_id, uint64_t external_id)
 }
 
 
-static ompt_correlation_id_map_entry_t *
-ompt_correlation_id_map_splay(ompt_correlation_id_map_entry_t *root, uint64_t key)
+static cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_splay(cupti_correlation_id_map_entry_t *root, uint64_t key)
 {
-  REGULAR_SPLAY_TREE(ompt_correlation_id_map_entry_s, root, key, correlation_id, left, right);
+  REGULAR_SPLAY_TREE(cupti_correlation_id_map_entry_s, root, key, correlation_id, left, right);
   return root;
 }
 
 
 static void
-ompt_correlation_id_map_delete_root()
+cupti_correlation_id_map_delete_root()
 {
-  TMSG(DEFER_CTXT, "correlation_id %d: delete", ompt_correlation_id_map_root->correlation_id);
+  TMSG(DEFER_CTXT, "correlation_id %d: delete", cupti_correlation_id_map_root->correlation_id);
 
-  if (ompt_correlation_id_map_root->left == NULL) {
-    ompt_correlation_id_map_root = ompt_correlation_id_map_root->right;
+  if (cupti_correlation_id_map_root->left == NULL) {
+    cupti_correlation_id_map_root = cupti_correlation_id_map_root->right;
   } else {
-    ompt_correlation_id_map_root->left = 
-      ompt_correlation_id_map_splay(ompt_correlation_id_map_root->left, 
-			   ompt_correlation_id_map_root->correlation_id);
-    ompt_correlation_id_map_root->left->right = ompt_correlation_id_map_root->right;
-    ompt_correlation_id_map_root = ompt_correlation_id_map_root->left;
+    cupti_correlation_id_map_root->left = 
+      cupti_correlation_id_map_splay(cupti_correlation_id_map_root->left, 
+			   cupti_correlation_id_map_root->correlation_id);
+    cupti_correlation_id_map_root->left->right = cupti_correlation_id_map_root->right;
+    cupti_correlation_id_map_root = cupti_correlation_id_map_root->left;
   }
 }
 
@@ -90,18 +90,18 @@ ompt_correlation_id_map_delete_root()
  * interface operations
  *****************************************************************************/
 
-ompt_correlation_id_map_entry_t *
-ompt_correlation_id_map_lookup(uint64_t id)
+cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_lookup(uint64_t id)
 {
-  ompt_correlation_id_map_entry_t *result = NULL;
-  spinlock_lock(&ompt_correlation_id_map_lock);
+  cupti_correlation_id_map_entry_t *result = NULL;
+  spinlock_lock(&cupti_correlation_id_map_lock);
 
-  ompt_correlation_id_map_root = ompt_correlation_id_map_splay(ompt_correlation_id_map_root, id);
-  if (ompt_correlation_id_map_root && ompt_correlation_id_map_root->correlation_id == id) {
-    result = ompt_correlation_id_map_root;
+  cupti_correlation_id_map_root = cupti_correlation_id_map_splay(cupti_correlation_id_map_root, id);
+  if (cupti_correlation_id_map_root && cupti_correlation_id_map_root->correlation_id == id) {
+    result = cupti_correlation_id_map_root;
   }
 
-  spinlock_unlock(&ompt_correlation_id_map_lock);
+  spinlock_unlock(&cupti_correlation_id_map_lock);
 
   TMSG(DEFER_CTXT, "correlation_id map lookup: id=0x%lx (record %p)", id, result);
   return result;
@@ -109,80 +109,80 @@ ompt_correlation_id_map_lookup(uint64_t id)
 
 
 void
-ompt_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id)
+cupti_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id)
 {
-  ompt_correlation_id_map_entry_t *entry = ompt_correlation_id_map_entry_new(correlation_id, external_id);
+  cupti_correlation_id_map_entry_t *entry = cupti_correlation_id_map_entry_new(correlation_id, external_id);
 
   TMSG(DEFER_CTXT, "correlation_id map insert: id=0x%lx (record %p)", correlation_id, entry);
 
   entry->left = entry->right = NULL;
 
-  spinlock_lock(&ompt_correlation_id_map_lock);
+  spinlock_lock(&cupti_correlation_id_map_lock);
 
-  if (ompt_correlation_id_map_root != NULL) {
-    ompt_correlation_id_map_root = 
-      ompt_correlation_id_map_splay(ompt_correlation_id_map_root, correlation_id);
+  if (cupti_correlation_id_map_root != NULL) {
+    cupti_correlation_id_map_root = 
+      cupti_correlation_id_map_splay(cupti_correlation_id_map_root, correlation_id);
 
-    if (correlation_id < ompt_correlation_id_map_root->correlation_id) {
-      entry->left = ompt_correlation_id_map_root->left;
-      entry->right = ompt_correlation_id_map_root;
-      ompt_correlation_id_map_root->left = NULL;
-    } else if (correlation_id > ompt_correlation_id_map_root->correlation_id) {
-      entry->left = ompt_correlation_id_map_root;
-      entry->right = ompt_correlation_id_map_root->right;
-      ompt_correlation_id_map_root->right = NULL;
+    if (correlation_id < cupti_correlation_id_map_root->correlation_id) {
+      entry->left = cupti_correlation_id_map_root->left;
+      entry->right = cupti_correlation_id_map_root;
+      cupti_correlation_id_map_root->left = NULL;
+    } else if (correlation_id > cupti_correlation_id_map_root->correlation_id) {
+      entry->left = cupti_correlation_id_map_root;
+      entry->right = cupti_correlation_id_map_root->right;
+      cupti_correlation_id_map_root->right = NULL;
     } else {
       // correlation_id already present: fatal error since a correlation_id 
       //   should only be inserted once 
       assert(0);
     }
   }
-  ompt_correlation_id_map_root = entry;
+  cupti_correlation_id_map_root = entry;
 
-  spinlock_unlock(&ompt_correlation_id_map_lock);
+  spinlock_unlock(&cupti_correlation_id_map_lock);
 }
 
 
 // return true if record found; false otherwise
 bool
-ompt_correlation_id_map_refcnt_update(uint64_t correlation_id, int val)
+cupti_correlation_id_map_refcnt_update(uint64_t correlation_id, int val)
 {
   bool result = false; 
 
   TMSG(DEFER_CTXT, "correlation_id map refcnt_update: id=0x%lx (update %d)", 
        correlation_id, val);
 
-  spinlock_lock(&ompt_correlation_id_map_lock);
-  ompt_correlation_id_map_root = ompt_correlation_id_map_splay(ompt_correlation_id_map_root, correlation_id);
+  spinlock_lock(&cupti_correlation_id_map_lock);
+  cupti_correlation_id_map_root = cupti_correlation_id_map_splay(cupti_correlation_id_map_root, correlation_id);
 
-  if (ompt_correlation_id_map_root && 
-      ompt_correlation_id_map_root->correlation_id == correlation_id) {
-    uint64_t old = ompt_correlation_id_map_root->refcnt;
-    ompt_correlation_id_map_root->refcnt += val;
+  if (cupti_correlation_id_map_root && 
+      cupti_correlation_id_map_root->correlation_id == correlation_id) {
+    uint64_t old = cupti_correlation_id_map_root->refcnt;
+    cupti_correlation_id_map_root->refcnt += val;
     TMSG(DEFER_CTXT, "correlation_id map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	 correlation_id, old, ompt_correlation_id_map_root->refcnt);
-    if (ompt_correlation_id_map_root->refcnt == 0) {
+	 correlation_id, old, cupti_correlation_id_map_root->refcnt);
+    if (cupti_correlation_id_map_root->refcnt == 0) {
       TMSG(DEFER_CTXT, "correlation_id map refcnt_update: id=0x%lx (deleting)",
            correlation_id);
-      ompt_correlation_id_map_delete_root();
+      cupti_correlation_id_map_delete_root();
     }
     result = true;
   }
 
-  spinlock_unlock(&ompt_correlation_id_map_lock);
+  spinlock_unlock(&cupti_correlation_id_map_lock);
   return result;
 }
 
 
 uint64_t 
-ompt_correlation_id_map_entry_refcnt_get(ompt_correlation_id_map_entry_t *entry) 
+cupti_correlation_id_map_entry_refcnt_get(cupti_correlation_id_map_entry_t *entry) 
 {
   return entry->refcnt;
 }
 
 
 uint64_t
-ompt_correlation_id_map_entry_external_id_get(ompt_correlation_id_map_entry_t *entry)
+cupti_correlation_id_map_entry_external_id_get(cupti_correlation_id_map_entry_t *entry)
 {
   return entry->external_id;
 }
@@ -193,11 +193,11 @@ ompt_correlation_id_map_entry_external_id_get(ompt_correlation_id_map_entry_t *e
  *****************************************************************************/
 
 static int 
-ompt_correlation_id_map_count_helper(ompt_correlation_id_map_entry_t *entry) 
+cupti_correlation_id_map_count_helper(cupti_correlation_id_map_entry_t *entry) 
 {
   if (entry) {
-     int left = ompt_correlation_id_map_count_helper(entry->left);
-     int right = ompt_correlation_id_map_count_helper(entry->right);
+     int left = cupti_correlation_id_map_count_helper(entry->left);
+     int right = cupti_correlation_id_map_count_helper(entry->right);
      return 1 + right + left; 
   } 
   return 0;
@@ -205,9 +205,9 @@ ompt_correlation_id_map_count_helper(ompt_correlation_id_map_entry_t *entry)
 
 
 int 
-ompt_correlation_id_map_count() 
+cupti_correlation_id_map_count() 
 {
-  return ompt_correlation_id_map_count_helper(ompt_correlation_id_map_root);
+  return cupti_correlation_id_map_count_helper(cupti_correlation_id_map_root);
 }
 
 

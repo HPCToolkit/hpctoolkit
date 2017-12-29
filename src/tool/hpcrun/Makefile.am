@@ -348,7 +348,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-function-id-map.c     \
 	ompt/ompt-cubin-id-map.c        \
 	ompt/ompt-stop-map.c            \
-	ompt/ompt-submit-map.c          \
 	ompt/ompt-cct-node-vector.c     \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \

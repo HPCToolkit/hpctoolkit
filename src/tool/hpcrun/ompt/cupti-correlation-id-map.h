@@ -21,7 +21,7 @@
  * type definitions 
  *****************************************************************************/
 
-typedef struct ompt_correlation_id_map_entry_s ompt_correlation_id_map_entry_t;
+typedef struct cupti_correlation_id_map_entry_s cupti_correlation_id_map_entry_t;
 
 
 
@@ -29,15 +29,15 @@ typedef struct ompt_correlation_id_map_entry_s ompt_correlation_id_map_entry_t;
  * interface operations
  *****************************************************************************/
 
-ompt_correlation_id_map_entry_t *ompt_correlation_id_map_lookup(uint64_t id);
+cupti_correlation_id_map_entry_t *cupti_correlation_id_map_lookup(uint64_t id);
 
-void ompt_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id);
+void cupti_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id);
 
-bool ompt_correlation_id_map_refcnt_update(uint64_t correlation_id, int val);
+bool cupti_correlation_id_map_refcnt_update(uint64_t correlation_id, int val);
 
-uint64_t ompt_correlation_id_map_entry_refcnt_get(ompt_correlation_id_map_entry_t *entry);
+uint64_t cupti_correlation_id_map_entry_refcnt_get(cupti_correlation_id_map_entry_t *entry);
 
-uint64_t ompt_correlation_id_map_entry_external_id_get(ompt_correlation_id_map_entry_t *entry);
+uint64_t cupti_correlation_id_map_entry_external_id_get(cupti_correlation_id_map_entry_t *entry);
 
 #endif
 
