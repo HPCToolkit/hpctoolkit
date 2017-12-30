@@ -509,10 +509,11 @@ relocateSymbols
 
 
 // cubin text segments all start at offset 0 and are thus overlapping.
-// relocate each text segment so that it begins at its offset in the
+// relocate each segment of type SHT_PROGBITS (a program text
+// or data segment) so that it begins at its offset in the
 // cubin. when this function returns, text segments no longer overlap.
 static void
-relocateTextSegments
+relocateProgramDataSegments
 (
   Elf *elf,
   Elf_SectionVector *sections
@@ -525,12 +526,12 @@ relocateTextSegments
       Elf_Scn *scn = *si;
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
-      if (shdr.sh_type == SHT_PROGBITS && (shdr.sh_flags & SHF_EXECINSTR)) {
+      if (shdr.sh_type == SHT_PROGBITS) {
 #if DEBUG_CUBIN_RELOCATION
         std::cout << "relocating section " << elf_strptr(elf, ehdr->e_shstrndx, shdr.sh_name)
 		  << std::endl;
 #endif
-	// update a text segment so it's starting address matches its offset in the
+	// update a segment so it's starting address matches its offset in the
 	// cubin.
 	shdr.sh_addr = shdr.sh_offset;
 	gelf_update_shdr(scn, &shdr);
@@ -556,7 +557,7 @@ relocateCubin
 
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
-    relocateTextSegments(cubin_elf, sections);
+    relocateProgramDataSegments(cubin_elf, sections);
     Elf_SymbolVector *symbol_values = relocateSymbols(cubin_elf, sections);
     if (symbol_values) {
       relocateLineMap(cubin_ptr, cubin_elf, sections, symbol_values);
