@@ -117,7 +117,13 @@ using namespace std;
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
-#define DEBUG_GAPS        0
+#define DEBUG_SHOW_GAPS   0
+
+#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
+#define DEBUG_ANY_ON  1
+#else
+#define DEBUG_ANY_ON  0
+#endif
 
 
 //******************************************************************************
@@ -186,9 +192,11 @@ deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 
-#if DEBUG_CFG_SOURCE
+//----------------------------------------------------------------------
 
-#define DEBUG_MESG(expr)  std::cout << expr
+#if DEBUG_ANY_ON
+
+#define DEBUG_ANY(expr)  std::cout << expr
 
 static string
 debugPrettyName(const string &);
@@ -209,11 +217,34 @@ debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
 
+#else  // ! DEBUG_ANY_ON
+
+#define DEBUG_ANY(expr)
+
+#endif
+
+#if DEBUG_CFG_SOURCE
+#define DEBUG_CFG(expr)  std::cout << expr
 #else
+#define DEBUG_CFG(expr)
+#endif
 
-#define DEBUG_MESG(expr)
+#if DEBUG_MAKE_SKEL
+#define DEBUG_SKEL(expr)  std::cout << expr
+#define DEBUG_SKEL_FUNC(num, start, end, next, region)  \
+    cout << "(case " << num << ")"  \
+         << "  symbol:  0x" << hex << start << "--0x" << end  \
+         << "  next:  0x" << next << "  region:  0x" << region << dec << "\n"
+#else
+#define DEBUG_SKEL(expr)
+#define DEBUG_SKEL_FUNC(num, start, end, next, region)
+#endif
 
-#endif  // DEBUG_CFG_SOURCE
+#if DEBUG_SHOW_GAPS
+#define DEBUG_GAPS(expr)  std::cout << expr
+#else
+#define DEBUG_GAPS(expr)
+#endif
 
 //----------------------------------------------------------------------
 
@@ -371,7 +402,7 @@ makeStructure(InputFile & inputFile,
   for (uint i = 0; i < elfFileVector->size(); i++) {
     ElfFile *elfFile = (*elfFileVector)[i];
 
-#if DEBUG_CFG_SOURCE
+#if DEBUG_ANY_ON
     debugElfHeader(elfFile);
 #endif
 
@@ -480,6 +511,11 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
   }
 
   ginfo->procMap[pinfo->entry_vma] = pinfo;
+
+#if DEBUG_MAKE_SKEL
+  cout << (alt_file ? "alt-file:  " : "file:   ") << finfo->fileName << "\n"
+       << "group:  0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
+#endif
 }
 
 
@@ -512,12 +548,17 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
 
+    auto next_it = fmit;  ++next_it;
+    VMA  next_vma = (next_it != funcMap.end()) ? next_it->second->addr() : 0;
+
     Region * region = the_symtab->findEnclosingRegion(vma);
     VMA  reg_end = (region != NULL) ? (region->getMemOffset() + region->getMemSize()) : 0;
 
     stringstream buf;
     buf << "0x" << hex << vma << dec;
     string  vma_str = buf.str();
+
+    DEBUG_SKEL("\nskel:   " << vma_str << "  " << func->name() << "\n");
 
     // see if entry vma lies within a valid symtab function
     bool found = the_symtab->getContainingFunction(vma, sym_func);
@@ -526,14 +567,15 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	&& sym_func != NULL
 	&& sym_func->getRegion() == region)
     {
-      VMA sym_start = sym_func->getOffset();
-      VMA sym_end = sym_start + sym_func->getSize();
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
       string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
       SrcFile::ln line = 0;
 
       // symtab lets some funcs (_init) spill into the next region
+      VMA sym_start = sym_func->getOffset();
+      VMA raw_end = sym_start + sym_func->getSize();
+      VMA sym_end = raw_end;
       if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
 	sym_end = reg_end;
       }
@@ -554,6 +596,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	// names from symtab func.  this is the normal case (but other
 	// cases are also valid).
 	//
+	DEBUG_SKEL_FUNC(1, sym_start, raw_end, next_vma, reg_end);
+
 	auto mangled_it = sym_func->mangled_names_begin();
 
 	if (mangled_it != sym_func->mangled_names_end()) {
@@ -592,6 +636,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // case 2 -- outline func inside symtab func with same file
 	  // name.  use 'outline 0xxxxxx' proc name.
 	  //
+	  DEBUG_SKEL_FUNC(2, sym_start, raw_end, next_vma, reg_end);
+
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
 	}
@@ -601,6 +647,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // add proc info to both files: outline file for full parse
 	  // (but no gaps), and symtab file for gap only.
 	  //
+	  DEBUG_SKEL_FUNC(3, sym_start, raw_end, next_vma, reg_end);
+
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
 
@@ -615,15 +663,19 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       // line map).  make a fake group at the parseapi entry vma.
       // this normally only happens for plt funcs.
       //
+      DEBUG_SKEL_FUNC(4, 0, 0, next_vma, reg_end);
+
       string linknm = func->name();
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
 
-      auto next_it = fmit;  ++next_it;
       if (next_it != funcMap.end()) {
-	end = next_it->second->addr();
+	end = next_vma;
+	if (region != NULL && vma < reg_end && reg_end < end) {
+	  end = reg_end;
+	}
       }
-      else if (region != NULL) {
+      else if (region != NULL && vma < reg_end) {
 	end = reg_end;
       }
       else {
@@ -637,6 +689,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 #if DEBUG_MAKE_SKEL
   // print the skeleton map
+  cout << "\n------------------------------------------------------------\n";
 
   for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
     auto finfo = fit->second;
@@ -652,7 +705,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 	cout << "\nentry:   0x" << hex << pinfo->entry_vma << dec
 	     << "  (" << num << "/" << size << ")\n"
-	     << "symbol:  0x" << hex << ginfo->start
+	     << "group:   0x" << hex << ginfo->start
 	     << "--0x" << ginfo->end << dec << "\n"
 	     << "file:    " << finfo->fileName << "\n"
 	     << "link:    " << pinfo->linkName << "\n"
@@ -783,7 +836,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // skip duplicated function, blocks already added
     if (! add_blocks) {
-      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
 
@@ -807,7 +860,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // skip duplicated function, blocks added just now
     if (num_contain > 1) {
-      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
 
@@ -815,8 +868,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     // symtab func, then do the full parse in the outline file
     // (alt-file) and use the symtab file for gaps only.
     if (pinfo->gap_only) {
-      DEBUG_MESG("\nskipping full parse (gap only) for function:  '"
-		 << func->name() << "'\n");
+      DEBUG_CFG("\nskipping full parse (gap only) for function:  '"
+		<< func->name() << "'\n");
       continue;
     }
 
@@ -826,7 +879,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     LoopList *llist =
 	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
 
-    DEBUG_MESG("\nnon-loop blocks:\n");
+    DEBUG_CFG("\nnon-loop blocks:\n");
 
     // process any blocks not in a loop
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -884,7 +937,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
   }
 
-#if DEBUG_GAPS
+#if DEBUG_SHOW_GAPS
   auto pit = ginfo->procMap.begin();
   ProcInfo * pinfo = pit->second;
 
@@ -984,8 +1037,7 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 {
   TreeNode * root = new TreeNode;
 
-  DEBUG_MESG("\nbegin loop:  " << loopName << "  '"
-	     << func->name() << "'\n");
+  DEBUG_CFG("\nbegin loop:  " << loopName << "  '" << func->name() << "'\n");
 
   // add the inclusive blocks not contained in a subloop
   vector <Block *> blist;
@@ -1014,7 +1066,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   }
   visited[block] = true;
 
-  DEBUG_MESG("\nblock:\n");
+  DEBUG_CFG("\nblock:\n");
 
   LineMapCache lmcache (ginfo->sym_func);
 
@@ -1094,7 +1146,7 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 {
   LineMapCache lmcache (ginfo->sym_func);
 
-  DEBUG_MESG("\ncuda blocks:\n");
+  DEBUG_CFG("\ncuda blocks:\n");
 
   int len = 4;
   for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
@@ -1309,7 +1361,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     path.push_back(flp);
     depth_root++;
 
-    DEBUG_MESG("inline:  l=" << flp.line_num
+    DEBUG_CFG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
 	       << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
 	       << "'\n");
@@ -1459,7 +1511,7 @@ found_file:
     }
   }
 
-  DEBUG_MESG("\nheader:  l=" << line_ans << "  f='"
+  DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
 	     << strTab.index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
@@ -1583,7 +1635,7 @@ computeGaps(VMAIntervalSet & vset, VMAIntervalSet & gaps, VMA start, VMA end)
 // Debug functions
 //****************************************************************************
 
-#if DEBUG_CFG_SOURCE
+#if DEBUG_ANY_ON
 
 // Debug functions to display the raw input data from ParseAPI for
 // loops, blocks, stmts, file names, proc names and line numbers.
