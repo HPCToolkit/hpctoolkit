@@ -319,7 +319,7 @@ perf_init()
   // copy /proc/kallsyms file into hpctoolkit output directory
   // only if the value of kptr_restric is zero
 
-  FILE *fp = fopen(PATH_KERNEL_KPTR_RESTICT, "r");
+  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
   if (fp != NULL) {
     int privilege = -1;
     fscanf(fp, "%d", &privilege);

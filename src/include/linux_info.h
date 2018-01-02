@@ -7,7 +7,7 @@
 #define LINUX_PERF_EVENTS_FILE          "/proc/sys/kernel/perf_event_paranoid"
 #define LINUX_PERF_EVENTS_MAX_RATE      "/proc/sys/kernel/perf_event_max_sample_rate"
 
-#define PATH_KERNEL_KPTR_RESTICT        "/proc/sys/kernel/kptr_restrict"
+#define LINUX_KERNEL_KPTR_RESTICT        "/proc/sys/kernel/kptr_restrict"
 
 #define LINUX_KERNEL_SUFFIX_CHARS       8
 
