@@ -86,6 +86,7 @@
 #include <Function.h>
 #include <Instruction.h>
 #include <Module.h>
+#include <Region.h>
 #include <Symtab.h>
 
 #include <include/hpctoolkit-config.h>
@@ -149,6 +150,7 @@ class LineMapCache;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
+typedef map <VMA, Region *> RegionMap;
 typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
@@ -231,13 +233,8 @@ debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
 
 #if DEBUG_MAKE_SKEL
 #define DEBUG_SKEL(expr)  std::cout << expr
-#define DEBUG_SKEL_FUNC(num, start, end, next, region)  \
-    cout << "(case " << num << ")"  \
-         << "  symbol:  0x" << hex << start << "--0x" << end  \
-         << "  next:  0x" << next << "  region:  0x" << region << dec << "\n"
 #else
 #define DEBUG_SKEL(expr)
-#define DEBUG_SKEL_FUNC(num, start, end, next, region)
 #endif
 
 #if DEBUG_SHOW_GAPS
@@ -479,6 +476,59 @@ makeStructure(InputFile & inputFile,
 
 //----------------------------------------------------------------------
 
+// codeMap is a map of all code regions from start vma to Region *.
+// Used to find the region containing a vma and thus the region's end.
+//
+static void
+makeCodeMap(RegionMap & codeMap)
+{
+  DEBUG_SKEL("\n");
+
+  vector <Region *> regVec;
+  the_symtab->getCodeRegions(regVec);
+
+  codeMap.clear();
+
+  for (auto it = regVec.begin(); it != regVec.end(); ++it) {
+    Region * reg = *it;
+    VMA start = reg->getMemOffset();
+
+    codeMap[start] = reg;
+
+    DEBUG_SKEL("code region:  0x" << hex << start
+	       << "--0x" << (start + reg->getMemSize()) << dec
+	       << "  " << reg->getRegionName() << "\n");
+  }
+}
+
+// Note: normally, code regions don't overlap, but if they do, then we
+// find the Region with the highest start address that contains vma.
+//
+// Returns: the Region containing vma, or else NULL.
+//
+static Region *
+findCodeRegion(RegionMap & codeMap, VMA vma)
+{
+  auto it = codeMap.upper_bound(vma);
+
+  // invariant: vma is not in range it...end
+  while (it != codeMap.begin()) {
+    --it;
+
+    Region * reg = it->second;
+    VMA start = reg->getMemOffset();
+    VMA end = start + reg->getMemSize();
+
+    if (start <= vma && vma < end) {
+      return reg;
+    }
+  }
+
+  return NULL;
+}
+
+//----------------------------------------------------------------------
+
 // addProc -- helper for makeSkeleton() to locate and add one ProcInfo
 // object into the global file map.
 //
@@ -513,11 +563,10 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
-  cout << (alt_file ? "alt-file:  " : "file:   ") << finfo->fileName << "\n"
-       << "group:  0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
+  cout << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
+       << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
-
 
 // makeSkeleton -- the new buildLMSkeleton
 //
@@ -533,6 +582,10 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
+
+  // map of code regions to find end of region
+  RegionMap codeMap;
+  makeCodeMap(codeMap);
 
   // iterate over the ParseAPI Functions, order by vma
   const CodeObject::funclist & funcList = code_obj->funcs();
@@ -551,21 +604,41 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     auto next_it = fmit;  ++next_it;
     VMA  next_vma = (next_it != funcMap.end()) ? next_it->second->addr() : 0;
 
-    Region * region = the_symtab->findEnclosingRegion(vma);
-    VMA  reg_end = (region != NULL) ? (region->getMemOffset() + region->getMemSize()) : 0;
-
     stringstream buf;
     buf << "0x" << hex << vma << dec;
     string  vma_str = buf.str();
 
-    DEBUG_SKEL("\nskel:   " << vma_str << "  " << func->name() << "\n");
+    DEBUG_SKEL("\nskel:    " << vma_str << "  " << func->name() << "\n");
 
     // see if entry vma lies within a valid symtab function
     bool found = the_symtab->getContainingFunction(vma, sym_func);
+    VMA  sym_start = 0;
+    VMA  sym_end = 0;
 
-    if (found
-	&& sym_func != NULL
-	&& sym_func->getRegion() == region)
+    Region * region = NULL;
+    VMA  reg_start = 0;
+    VMA  reg_end = 0;
+
+    if (found && sym_func != NULL) {
+      sym_start = sym_func->getOffset();
+      sym_end = sym_start + sym_func->getSize();
+
+      region = sym_func->getRegion();
+      if (region != NULL) {
+	reg_start = region->getMemOffset();
+	reg_end = reg_start + region->getMemSize();
+      }
+    }
+
+    DEBUG_SKEL("symbol:  0x" << hex << sym_start << "--0x" << sym_end
+	       << "  next:  0x" << next_vma
+	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
+
+    // symtab doesn't recognize plt funcs and puts them in the wrong
+    // region.  to be a valid symbol, the func entry must lie within
+    // the symbol's region.
+    if (found && sym_func != NULL && region != NULL
+	&& reg_start <= vma && vma < reg_end)
     {
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
@@ -573,10 +646,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       SrcFile::ln line = 0;
 
       // symtab lets some funcs (_init) spill into the next region
-      VMA sym_start = sym_func->getOffset();
-      VMA raw_end = sym_start + sym_func->getSize();
-      VMA sym_end = raw_end;
-      if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
+      if (sym_start < reg_end && reg_end < sym_end) {
 	sym_end = reg_end;
       }
 
@@ -596,10 +666,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	// names from symtab func.  this is the normal case (but other
 	// cases are also valid).
 	//
-	DEBUG_SKEL_FUNC(1, sym_start, raw_end, next_vma, reg_end);
+	DEBUG_SKEL("(case 1)\n");
 
 	auto mangled_it = sym_func->mangled_names_begin();
-
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
 	  prettynm = BinUtil::demangleProcName(linknm);
@@ -636,7 +705,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // case 2 -- outline func inside symtab func with same file
 	  // name.  use 'outline 0xxxxxx' proc name.
 	  //
-	  DEBUG_SKEL_FUNC(2, sym_start, raw_end, next_vma, reg_end);
+	  DEBUG_SKEL("(case 2)\n");
 
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
@@ -647,7 +716,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // add proc info to both files: outline file for full parse
 	  // (but no gaps), and symtab file for gap only.
 	  //
-	  DEBUG_SKEL_FUNC(3, sym_start, raw_end, next_vma, reg_end);
+	  DEBUG_SKEL("(case 3)\n");
 
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
@@ -663,11 +732,16 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       // line map).  make a fake group at the parseapi entry vma.
       // this normally only happens for plt funcs.
       //
-      DEBUG_SKEL_FUNC(4, 0, 0, next_vma, reg_end);
-
       string linknm = func->name();
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
+
+      region = findCodeRegion(codeMap, vma);
+      reg_start = (region != NULL) ? region->getMemOffset() : 0;
+      reg_end = (region != NULL) ? (reg_start + region->getMemSize()) : 0;
+
+      DEBUG_SKEL("region:  0x" << hex << reg_start << "--0x" << reg_end << dec << "\n");
+      DEBUG_SKEL("(case 4)\n");
 
       if (next_it != funcMap.end()) {
 	end = next_vma;
