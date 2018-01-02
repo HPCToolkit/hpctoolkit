@@ -9,4 +9,9 @@
 
 #define PATH_KERNEL_KPTR_RESTICT        "/proc/sys/kernel/kptr_restrict"
 
+#define LINUX_KERNEL_SUFFIX_CHARS       8
+
+// directory where to collect the copied kallsyms files
+#define DIRECTORY_FILE_COLLECTION   "collect"
+
 #endif /* linux_info_h */

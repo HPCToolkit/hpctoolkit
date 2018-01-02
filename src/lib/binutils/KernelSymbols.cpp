@@ -96,9 +96,9 @@ KernelSymbols::KernelSymbols()
 
 
 bool
-KernelSymbols::parseLinuxKernelSymbols()
+KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
 {
-  FILE *fp = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+  FILE *fp = fopen(filename.c_str(), "r");
 
   if (fp) {
     size_t len = 4096;

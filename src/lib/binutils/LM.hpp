@@ -158,7 +158,7 @@ public:
   // return an exception on error.  If a file has already been read do
   // nothing.
   virtual void
-  read(ReadFlg readflg/* = ReadFlg_Seg*/);
+  read(const std::set<std::string> &directorySet, ReadFlg readflg/* = ReadFlg_Seg*/);
 
 
   // -------------------------------------------------------

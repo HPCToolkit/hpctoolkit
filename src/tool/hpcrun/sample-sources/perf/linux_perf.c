@@ -158,8 +158,6 @@
 
 #define PERF_MULTIPLEX_RANGE 1.2
 
-#define DIRECTORY_FILE_COLLECTION   "collect"
-
 #define FILE_BUFFER_SIZE (1024*1024)
 
 //******************************************************************************

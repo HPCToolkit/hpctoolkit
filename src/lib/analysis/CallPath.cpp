@@ -151,6 +151,9 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
 
     prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
+
+    // add the directory into the set of directories
+    prof->addDirectory(profileFiles[i]);
   }
   prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
@@ -397,7 +400,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
-      lm->read(BinUtil::LM::ReadFlg_Proc);
+      lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;

@@ -78,6 +78,10 @@
 #include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
 
+#include <lib/support/FileUtil.hpp> // dirname
+
+
+
 //*************************** Forward Declarations ***************************
 
 //***************************************************************************
@@ -130,6 +134,20 @@ public:
   // 		  false -- redundancy is allowed
   void disable_redundancy(bool flag) {
     m_remove_redundancy = flag;
+  }
+
+  void
+  addDirectory(std::string filename) {
+    std::string directory = FileUtil::dirname(filename);
+    if (!directory.empty()) {
+      std::string dir{directory};
+      m_directorySet.insert(dir);
+    }
+  }
+
+  const std::set<std::string>&
+  directorySet() {
+    return m_directorySet;
   }
 
   // -------------------------------------------------------
@@ -347,6 +365,7 @@ private:
   uint32_t m_raToCallsiteOfst;
 
   std::string m_profileFileName; // non-empty, if relevant
+  std::set<std::string> m_directorySet; // list of directories
 
   std::string m_traceFileName;   // non-empty, if relevant
   std::set<std::string> m_traceFileNameSet;

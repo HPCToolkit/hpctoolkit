@@ -100,8 +100,7 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
-
-
+#include <include/linux_info.h>
 
 //***************************************************************************
 // macros
@@ -534,16 +533,37 @@ BinUtil::LM::open(const char* filenm)
 
 
 void
-BinUtil::LM::read(LM::ReadFlg readflg)
+BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg)
 {
   // Internal sanity check.
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
- if (isFakeLoadModule(m_name.c_str())) {
+  if (isFakeLoadModule(m_name.c_str())) {
     ksyms = new KernelSymbols;
-    ksyms->parseLinuxKernelSymbols();
+
+    size_t pos = m_name.find('.', 0);
+    if (pos>0) {
+      // format filename: vmlinux.xxxxx
+      // we need to grab the xxxxx
+      std::string suffix = m_name.substr(pos+1, LINUX_KERNEL_SUFFIX_CHARS);
+      std::set<std::string>::iterator it;
+
+      // check if any of the directory in the set has kallsyms.xxxx file
+      for(it = directorySet.begin(); it != directorySet.end(); ++it) {
+        std::string dir  = *it;
+        std::string path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/"
+                               + LINUX_KERNEL_SYMBOL_FILE_SHORT + "." + suffix;
+
+        struct stat buffer;
+        if (stat(path.c_str(), &buffer) == 0) {
+          m_name = path;
+          break;
+        }
+      }
+    }
+    ksyms->parseLinuxKernelSymbols(m_name);
     return;
   }
 
