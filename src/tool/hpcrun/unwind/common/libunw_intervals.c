@@ -192,6 +192,8 @@ dwarf_reg_states_callback(void *token,
 {
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);
+  if (!u)
+    return (-1);
   bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
   uwi->interval.start = (uintptr_t)start_ip;
@@ -220,7 +222,8 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
    * we insist that it extend to the last address of this 
    * function range. but we can't rely on the so-called end of the function
    * really being all the way to the end.*/
-  if (bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
+  if (status == 0 &&
+      bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
     bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 

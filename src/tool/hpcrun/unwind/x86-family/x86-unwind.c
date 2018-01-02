@@ -414,6 +414,11 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       return (STEP_STOP);
     if (libunw_find_step(cursor) == STEP_OK)
       return (STEP_OK);
+    void *pc, **bp, *sp;
+    unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
+    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+    save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){

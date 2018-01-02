@@ -656,7 +656,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     current_btuwi = ilm_btui;
 
     btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
-    if (btuwi_stat.first == NULL) {
+    if (btuwi_stat.errcode != 0) {
       atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
       TMSG(UW_RECIPE_MAP, "BAD build_intervals failed: fcn range %p to %p",
 	   fcn_start, fcn_end);
