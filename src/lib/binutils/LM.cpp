@@ -543,27 +543,23 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
   if (isFakeLoadModule(m_name.c_str())) {
     ksyms = new KernelSymbols;
 
-    size_t pos = m_name.find('.', 0);
-    if (pos>0) {
-      // format filename: vmlinux.xxxxx
-      // we need to grab the xxxxx
-      std::string suffix = m_name.substr(pos+1, LINUX_KERNEL_SUFFIX_CHARS);
-      std::set<std::string>::iterator it;
+    // remove the fake symbol < and >
+    std::string fname = m_name.substr( 1, m_name.size()-2 );
 
-      // check if any of the directory in the set has kallsyms.xxxx file
-      for(it = directorySet.begin(); it != directorySet.end(); ++it) {
-        std::string dir  = *it;
-        std::string path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/"
-                               + LINUX_KERNEL_NAME_REAL + "." + suffix;
+    // check if any of the directory in the set has vmlinux.xxxx file
 
-        struct stat buffer;
-        if (stat(path.c_str(), &buffer) == 0) {
-          m_name = path;
-          break;
-        }
+    std::set<std::string>::iterator it;
+    for(it = directorySet.begin(); it != directorySet.end(); ++it) {
+      std::string dir  = *it;
+      std::string path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/" + fname;
+
+      struct stat buffer;
+      if (stat(path.c_str(), &buffer) == 0) {
+        m_name = LINUX_KERNEL_NAME;
+        ksyms->parseLinuxKernelSymbols(path);
+        break;
       }
     }
-    ksyms->parseLinuxKernelSymbols(m_name);
     return;
   }
 
