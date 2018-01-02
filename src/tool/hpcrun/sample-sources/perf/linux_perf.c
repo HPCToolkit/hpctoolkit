@@ -261,19 +261,20 @@ copy_kallsyms()
   if (infile == -1)
     return -1;
 
-  char  dest[PATH_MAX];
+  char  dest[PATH_MAX], kernel_name[PATH_MAX];
   char  dest_directory[PATH_MAX];
   char *hpctoolkit_directory = get_output_directory();
 
   snprintf(dest_directory, PATH_MAX, "%s/%s", hpctoolkit_directory,
            DIRECTORY_FILE_COLLECTION);
 
+  OSUtil_setCustomKernelName(kernel_name, PATH_MAX);
+
   // we need to keep the host-id to be exactly the same template
   // as the hpcrun file. If the filename format changes in hpcun
   //  we need to adapt again here.
 
-  snprintf(dest, PATH_MAX, "%s/%s.%08lx",
-           dest_directory, LINUX_KERNEL_SYMBOL_FILE_SHORT, OSUtil_hostid());
+  snprintf(dest, PATH_MAX, "%s/%s", dest_directory, kernel_name);
 
   // test if the file already exist
   struct stat st = {0};

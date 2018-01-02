@@ -74,6 +74,11 @@
 //*************************** User Include Files ****************************
 
 #include "OSUtil.h"
+#include <include/linux_info.h>
+
+//*************************** macros **************************
+
+#define PATTERN_KERNEL_NAME    "%s.%08lx"
 
 //*************************** Forward Declarations **************************
 
@@ -178,4 +183,23 @@ OSUtil_hostid()
   }
 
   return hostid;
+}
+
+int
+OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
+{
+  int n = snprintf(buffer, max_chars, PATTERN_KERNEL_NAME,
+           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+
+  return n;
+}
+
+
+int
+OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars)
+{
+  int n = snprintf(buffer, max_chars, "<" PATTERN_KERNEL_NAME ">",
+           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+
+  return n;
 }

@@ -554,7 +554,7 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
       for(it = directorySet.begin(); it != directorySet.end(); ++it) {
         std::string dir  = *it;
         std::string path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/"
-                               + LINUX_KERNEL_SYMBOL_FILE_SHORT + "." + suffix;
+                               + LINUX_KERNEL_NAME_REAL + "." + suffix;
 
         struct stat buffer;
         if (stat(path.c_str(), &buffer) == 0) {

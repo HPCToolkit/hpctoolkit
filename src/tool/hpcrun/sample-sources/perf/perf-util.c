@@ -79,6 +79,8 @@
 #define PERF_EVENT_SKID_CONSTANT         1
 #define PERF_EVENT_SKID_ARBITRARY        0
 
+#define MAX_BUFFER_LINUX_KERNEL 128
+
 
 //******************************************************************************
 // constants
@@ -281,11 +283,9 @@ is_perf_ksym_available()
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
 
-#define MAX_BUFFER_LINUX_KERNEL 128
-
       char buffer[MAX_BUFFER_LINUX_KERNEL];
-      snprintf(buffer, MAX_BUFFER_LINUX_KERNEL, "<%s.%08lx>", LINUX_KERNEL_NAME_REAL,
-          OSUtil_hostid());
+      OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
+
       perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
 
       ksym_status = PERF_AVAILABLE;
