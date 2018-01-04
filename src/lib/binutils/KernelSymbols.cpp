@@ -150,6 +150,9 @@ KernelSymbols::find(uint64_t vma, std::string &fnname)
   int first = 0;
   int last = R->kernel_symbols.size() - 1;
 
+  if (last < first)
+    return false;
+
   if (vma < R->kernel_symbols[first]->addr()) {
     return false;
   }

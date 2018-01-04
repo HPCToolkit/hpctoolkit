@@ -107,6 +107,9 @@ namespace Prof {
 extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 extern std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
+extern uint fake_load_module_id;
+extern std::set<uint> m_setFakeLoadModule;
+
 // local function to convert from the original procedure ID into a 
 // a "compact" id to reduce redundancy if the procedure of the same
 // file has exactly the same name.
@@ -1190,7 +1193,13 @@ ProcFrm::toStringMe(uint oFlags) const
   string self = ANode::toStringMe(oFlags);
   
   if (m_strct) {
-    string lm_nm = xml::MakeAttrNum(lmId());
+    uint lm_id = lmId();
+    std::set<uint>::iterator it = Prof::m_setFakeLoadModule.find(lm_id);
+
+    if (it != Prof::m_setFakeLoadModule.end()) {
+      lm_id = Prof::fake_load_module_id;
+    }
+    string lm_nm = xml::MakeAttrNum(lm_id);
 
     uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);

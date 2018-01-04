@@ -67,6 +67,8 @@
 #include <map>
 #include <iostream>
 
+#include <string.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -84,6 +86,8 @@
 #include <lib/support/Exception.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
+
+#include <include/linux_info.h> // linux kernel macros
 
 //*************************** Forward Declarations **************************
 
@@ -164,6 +168,15 @@ public:
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
+  static bool
+  isFakeLoadModule(const char *lm) {
+    if (lm) {
+      if (lm[0] == '<' && lm[strlen(lm)-1] == '>') {
+        return (strncmp(lm+1, LINUX_KERNEL_NAME_REAL, 7) == 0);
+      }
+    }
+    return false;
+  }
 
   // name: Return name of load module
   const std::string&
@@ -362,6 +375,12 @@ public:
     VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     m_insnMap.insert(InsnMap::value_type(opvma, insn));
   }
+
+  bool
+  isPseudolLoadModule();
+
+  const char*
+  getPseudoLoadModuleName();
 
   bool
   functionNeverReturns(VMA addr);

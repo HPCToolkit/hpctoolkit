@@ -335,8 +335,6 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
-static bool 
-isFakeLoadModule(const char *lm);
 
 //***************************************************************************
 
@@ -407,7 +405,7 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
-  if (isFakeLoadModule(filenm)) {
+  if (LM::isFakeLoadModule(filenm)) {
     m_name = filenm;
     return;
   }
@@ -540,7 +538,7 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
-  if (isFakeLoadModule(m_name.c_str())) {
+  if (LM::isFakeLoadModule(m_name.c_str())) {
     ksyms = new KernelSymbols;
 
     // remove the fake symbol < and >
@@ -1194,6 +1192,19 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 }
 
 
+
+bool
+BinUtil::LM::isPseudolLoadModule()
+{
+  return LM::isFakeLoadModule(m_name.c_str());
+}
+
+const char*
+BinUtil::LM::getPseudoLoadModuleName()
+{
+  return LINUX_KERNEL_NAME;
+}
+
 static void
 dumpSymFlag(std::ostream& o, 
 	    asymbol* sym, int flag, const char* txt, bool& hasPrinted)
@@ -1205,14 +1216,6 @@ dumpSymFlag(std::ostream& o,
     o << txt;
     hasPrinted = true;			\
   }
-}
-
-static bool
-isFakeLoadModule(const char *lm)
-{
-  if (lm)
-    return (lm[0] == '<' && lm[strlen(lm)-1] == '>');
-  return false;
 }
 
 

@@ -349,17 +349,17 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   // iteration includes LoadMap::LMId_NULL
   // -------------------------------------------------------
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-       i <= loadmap->size(); ++i) {
+      i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
     if (lm->isUsed()) {
       try {
-	const string& lm_nm = lm->name();
-	
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
+        const string& lm_nm = lm->name();
+
+        Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
       }
       catch (const Diagnostics::Exception& x) {
-	errors += "  " + x.what() + "\n";
+        errors += "  " + x.what() + "\n";
       }
     }
   }
@@ -416,6 +416,11 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     }
   }
 
+  if (lm) {
+    if (lm->isPseudolLoadModule()) {
+      lmStrct->pretty_name(lm->getPseudoLoadModuleName());
+    }
+  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()
