@@ -16,6 +16,7 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include "ompt-host-op-map.h"
 
+#include "cupti-activity-queue.h"
 
 
 /******************************************************************************
@@ -26,6 +27,7 @@ struct ompt_host_op_map_entry_s {
   uint64_t host_op_id;
   uint64_t refcnt;
   uint64_t host_op_seq_id;
+  cupti_activity_queue_entry_t **cupti_activity_queue;
   ompt_region_map_entry_t *region_map_entry;
   struct ompt_host_op_map_entry_s *left;
   struct ompt_host_op_map_entry_s *right;
@@ -59,6 +61,7 @@ ompt_host_op_map_entry_new(uint64_t host_op_id,
   e->region_map_entry = region_map_entry;
   e->left = NULL;
   e->right = NULL;
+  e->cupti_activity_queue = cupti_activity_queue_head();
 
   return e;
 }
@@ -194,6 +197,11 @@ ompt_host_op_map_entry_seq_id_get(ompt_host_op_map_entry_t *entry)
   return entry->host_op_seq_id;
 }
 
+cupti_activity_queue_entry_t **
+ompt_host_op_map_entry_activity_queue_get(ompt_host_op_map_entry_t *entry)
+{
+  return entry->cupti_activity_queue;
+}
 
 /******************************************************************************
  * debugging code

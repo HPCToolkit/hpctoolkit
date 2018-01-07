@@ -219,15 +219,14 @@ int im_time_metric_id;
 void
 cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
 {
-  metric_set_t *metrics;
   switch (record->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)record;
       hpcrun_metrics_switch_kind(ke_kind);
-      metrics = hpcrun_reify_metric_set(node);
-      int index = stall_metric_id[activity_sample->stallReason];
-      if (index != 0x7fffffff) {
+      metric_set_t *metrics = hpcrun_reify_metric_set(node);
+      if (activity_sample->stallReason != 0x7fffffff) {
+        int index = stall_metric_id[activity_sample->stallReason];
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->samples});
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->samples});
       }
@@ -237,9 +236,9 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     {
       CUpti_ActivityMemcpy2 *activity_memcpy = (CUpti_ActivityMemcpy2 *)record;
       hpcrun_metrics_switch_kind(em_kind);
-      metrics = hpcrun_reify_metric_set(node);
-      int index = em_metric_id[activity_memcpy->copyKind];
-      if (index != 0x7fffffff) {
+      metric_set_t *metrics = hpcrun_reify_metric_set(node);
+      if (activity_memcpy->copyKind != 0x7fffffff) {
+        int index = em_metric_id[activity_memcpy->copyKind];
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity_memcpy->end - activity_memcpy->start});
       }
@@ -249,9 +248,9 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     {
       CUpti_ActivityUnifiedMemoryCounter *activity_unified = (CUpti_ActivityUnifiedMemoryCounter *)record;
       hpcrun_metrics_switch_kind(im_kind);
-      metrics = hpcrun_reify_metric_set(node);
-      int index = im_metric_id[activity_unified->counterKind];
-      if (index != 0x7fffffff) {
+      metric_set_t *metrics = hpcrun_reify_metric_set(node);
+      if (activity_unified->counterKind != 0x7fffffff) {
+        int index = im_metric_id[activity_unified->counterKind];
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
         hpcrun_metric_std_inc(im_time_metric_id, metrics, (cct_metric_data_t){.i = activity_unified->timestamp});
       }
@@ -271,45 +270,6 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-  int nevents = (self->evl).nevents;
-
-  TMSG(CUDA,"nevents = %d", nevents);
-
-#define getindex(name, index) index
-#define declare_stall_metric(name, index) \
-  stall_metric_id[index] = hpcrun_set_new_metric_info(name);
-
-  ke_kind = hpcrun_metrics_new_kind();
-  kind_info_t* incoming_kind = hpcrun_metrics_switch_kind(ke_kind);
-
-  FORALL_STL(declare_stall_metric);	
-  FORALL_GPU_INST(declare_stall_metric);
-  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
-  hpcrun_finalize_metrics();
-
-#define declare_im_metric(name, index) \
-  im_metric_id[index] = hpcrun_set_new_metric_info(name);
-
-  im_kind = hpcrun_metrics_new_kind();
-  hpcrun_metrics_switch_kind(im_kind);
-
-  FORALL_IM(declare_im_metric);	
-  FORALL_IM_TIME(declare_im_metric);
-  im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
-  hpcrun_finalize_metrics();
-
-#define declare_em_metric(name, index) \
-  em_metric_id[index] = hpcrun_set_new_metric_info(name);
-
-  em_kind = hpcrun_metrics_new_kind();
-  hpcrun_metrics_switch_kind(em_kind);
-
-  FORALL_EM(declare_em_metric);	
-  FORALL_EM_TIME(declare_em_metric);
-  em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
-  hpcrun_finalize_metrics();
-
-  hpcrun_metrics_switch_kind(incoming_kind);
 }
 
 static void
@@ -366,45 +326,45 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
 // TODO(keren): not invoked, why?
-//  int nevents = (self->evl).nevents;
-//
-//  TMSG(CUDA,"nevents = %d", nevents);
-//
-//#define getindex(name, index) index
-//#define declare_stall_metric(name, index) \
-//  stall_metric_id[index] = hpcrun_set_new_metric_info(name);
-//
-//  ke_kind = hpcrun_metrics_new_kind();
-//  kind_info_t* incoming_kind = hpcrun_metrics_switch_kind(ke_kind);
-//
-//  FORALL_STL(declare_stall_metric);	
-//  FORALL_GPU_INST(declare_stall_metric);
-//  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
-//  hpcrun_finalize_metrics();
-//
-//#define declare_im_metric(name, index) \
-//  im_metric_id[index] = hpcrun_set_new_metric_info(name);
-//
-//  im_kind = hpcrun_metrics_new_kind();
-//  hpcrun_metrics_switch_kind(im_kind);
-//
-//  FORALL_IM(declare_im_metric);	
-//  FORALL_IM_TIME(declare_im_metric);
-//  im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
-//  hpcrun_finalize_metrics();
-//
-//#define declare_em_metric(name, index) \
-//  em_metric_id[index] = hpcrun_set_new_metric_info(name);
-//
-//  em_kind = hpcrun_metrics_new_kind();
-//  hpcrun_metrics_switch_kind(em_kind);
-//
-//  FORALL_EM(declare_em_metric);	
-//  FORALL_EM_TIME(declare_em_metric);
-//  em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
-//  hpcrun_finalize_metrics();
-//
-//  hpcrun_metrics_switch_kind(incoming_kind);
+  int nevents = (self->evl).nevents;
+
+  TMSG(CUDA,"nevents = %d", nevents);
+
+#define getindex(name, index) index
+#define declare_stall_metric(name, index) \
+  stall_metric_id[index] = hpcrun_set_new_metric_info(name);
+
+  ke_kind = hpcrun_metrics_new_kind();
+  kind_info_t* incoming_kind = hpcrun_metrics_switch_kind(ke_kind);
+
+  FORALL_STL(declare_stall_metric);	
+  FORALL_GPU_INST(declare_stall_metric);
+  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
+  hpcrun_finalize_metrics();
+
+#define declare_im_metric(name, index) \
+  im_metric_id[index] = hpcrun_set_new_metric_info(name);
+
+  im_kind = hpcrun_metrics_new_kind();
+  hpcrun_metrics_switch_kind(im_kind);
+
+  FORALL_IM(declare_im_metric);	
+  FORALL_IM_TIME(declare_im_metric);
+  im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
+  hpcrun_finalize_metrics();
+
+#define declare_em_metric(name, index) \
+  em_metric_id[index] = hpcrun_set_new_metric_info(name);
+
+  em_kind = hpcrun_metrics_new_kind();
+  hpcrun_metrics_switch_kind(em_kind);
+
+  FORALL_EM(declare_em_metric);	
+  FORALL_EM_TIME(declare_em_metric);
+  em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
+  hpcrun_finalize_metrics();
+
+  hpcrun_metrics_switch_kind(incoming_kind);
 }
 
 static void

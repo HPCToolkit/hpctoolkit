@@ -2,7 +2,6 @@
 #define _CUPTI_ACTIVITY_API_H_
 
 #include <cupti.h>
-#include <cupti_activity.h>
 
 extern void
 cupti_activity_handle

@@ -16,6 +16,8 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/ompt/ompt-region-map.h>
 
+#include "cupti-activity-queue.h"
+
 
 /******************************************************************************
  * type definitions 
@@ -42,6 +44,8 @@ uint64_t ompt_host_op_map_entry_refcnt_get(ompt_host_op_map_entry_t *entry);
 ompt_region_map_entry_t *ompt_host_op_map_entry_region_map_entry_get(ompt_host_op_map_entry_t *entry);
 
 uint64_t ompt_host_op_map_entry_seq_id_get(ompt_host_op_map_entry_t *entry);
+
+cupti_activity_queue_entry_t **ompt_host_op_map_entry_activity_queue_get(ompt_host_op_map_entry_t *entry);
 
 #endif
 

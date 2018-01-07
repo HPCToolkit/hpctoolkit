@@ -6,7 +6,9 @@
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
+#include "cupti-activity-queue.h"
 #include "ompt-function-id-map.h"
+#include "ompt-host-op-map.h"
 #include "ompt-interface.h"
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -40,7 +42,7 @@ cupti_process_sample
 	 cupti_stall_reason_string(sample->stallReason));
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-  PRINT("external_id sample %d\n", external_id);
+  PRINT("external_id %d\n", external_id);
   ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
   if (entry != NULL) {
     uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
@@ -48,10 +50,12 @@ cupti_process_sample
     ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
     cct_addr_t frm = { .ip_norm = ip };
     cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
+    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
     if (cct_node != NULL) {
       cct_node_t *cct_child = NULL;
       if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
-        cupti_attribute_activity(sample, cct_child);
+        cupti_activity_queue_push(queue, sample, cct_child);
       }
     }
   }
@@ -138,8 +142,10 @@ cupti_process_memcpy2
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-    cupti_attribute_activity(activity, node);
+    cupti_activity_queue_push(queue, activity, node);
   }
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
   PRINT("Memcpy2 copy bytes %u\n", activity->bytes);

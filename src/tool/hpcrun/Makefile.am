@@ -435,6 +435,7 @@ endif
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = ompt/cupti-activity-strings.c   \
 								 ompt/cupti-activity-api.c       \
+								 ompt/cupti-activity-queue.c     \
 								 ompt/cupti-correlation-id-map.c      
 endif
 

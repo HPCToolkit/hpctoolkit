@@ -89,6 +89,7 @@
 #include "ompt-cubin-id-map.h"
 #include "cubin-symbols.h"
 #include "cupti-activity-api.h"
+#include "cupti-activity-queue.h"
 #endif
 
 #include "sample-sources/sample-filters.h"
@@ -96,6 +97,7 @@
 #include "sample-sources/blame-shift/undirected.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
+#include "sample-sources/nvidia.h"
 
 #include "sample-sources/idle.h"
 
@@ -557,7 +559,7 @@ init_idle_blame_shift(const char *version)
 // forward declaration
 void prepare_device();
 
-void hpcrun_ompt_device_finializer(void *args);
+void hpcrun_ompt_device_finalizer(void *args);
 
 void
 ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
@@ -844,12 +846,13 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 #define BUFFER_SIZE (1024 * 1024 * 8)
 
 void
-hpcrun_ompt_device_finializer(void *args)
+hpcrun_ompt_device_finalizer(void *args)
 {
   if (ompt_stop_map_lookup(&ompt_stop_flag)) {
     ompt_stop_trace(ompt_device);
     ompt_stop_map_refcnt_update(&ompt_stop_flag, 0);
     ompt_stop_flag = false;
+    cupti_activity_queue_apply(cupti_attribute_activity);
   }
 }
 
@@ -1038,7 +1041,7 @@ ompt_map_callback(ompt_id_t target_id,
 void
 prepare_device()
 {
-  device_finalizer.fn = hpcrun_ompt_device_finializer;
+  device_finalizer.fn = hpcrun_ompt_device_finalizer;
   device_finalizer_register(&device_finalizer);
   ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
   ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
