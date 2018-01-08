@@ -759,8 +759,6 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
     if ((cct_child = ompt_region_map_seq_lookup(entry, ompt_host_op_seq_id)) == NULL) {
       cct_addr_t frm = { .ip_norm = ip };  // FIXME(keren): define union type for cct_addr_t
       cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
-      metric_set_t* metrics = hpcrun_reify_metric_set(cct_child);
-      hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
       ompt_region_map_child_insert(entry, cct_child);
     }
     // FIXME(keren): problem with seq id, not in while loop
@@ -974,8 +972,6 @@ ompt_target_callback(ompt_target_type_t kind,
   td->overhead++;
   hpcrun_safe_enter();
   cct_node_t *node = hpcrun_sample_callpath(&uc, 0, (cct_metric_data_t){.i = 0}, 0, 1, NULL).sample_node; 
-  metric_set_t* metrics = hpcrun_reify_metric_set(node);
-  hpcrun_metric_std_inc(0, metrics, (cct_metric_data_t){.i = 1});
   hpcrun_safe_exit();
   td->overhead--;
   hpcrun_op_id_map_record_target(target_id, node, device_num);
