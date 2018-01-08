@@ -81,7 +81,6 @@
 #include "ompt-thread.h"
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
-#include "ompt-stop-map.h"
 
 #define HAVE_CUDA_H 1
 
@@ -848,9 +847,8 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 void
 hpcrun_ompt_device_finalizer(void *args)
 {
-  if (ompt_stop_map_lookup(&ompt_stop_flag)) {
+  if (ompt_stop_flag) {
     ompt_stop_trace(ompt_device);
-    ompt_stop_map_refcnt_update(&ompt_stop_flag, 0);
     ompt_stop_flag = false;
     cupti_activity_queue_apply(cupti_attribute_activity);
   }
@@ -968,7 +966,6 @@ ompt_target_callback(ompt_target_type_t kind,
                      const void *codeptr_ra)
 {
   ompt_stop_flag = true;
-  ompt_stop_map_insert(&ompt_stop_flag); 
   // TODO(keren): hpcrun_safe_enter prevent self interruption
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
