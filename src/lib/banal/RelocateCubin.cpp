@@ -436,12 +436,13 @@ relocateSymbolsHelper
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
-  int nsymbols;
+  int nsymbols = 0;
   assert (shdr->sh_type == SHT_SYMTAB);
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
-    if (nsymbols <= 0) return NULL;
   }
+  if (nsymbols <= 0) return NULL;
+
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = new Elf_SymbolVector(nsymbols);

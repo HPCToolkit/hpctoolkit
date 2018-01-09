@@ -128,6 +128,7 @@ isCubin(Elf *elf)
 }
 
 
+#ifdef DYNINST_USE_CUDA
 static bool
 recordIfNvFatbin
 (
@@ -186,6 +187,7 @@ recordIfCubin
   }
   return false;
 }
+#endif
 	
 
 // cubin text segments all start at offset 0 and are thus overlapping.
@@ -202,10 +204,11 @@ findCubinSections
  )
 {
   int count = 0;
+
+#ifdef DYNINST_USE_CUDA
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 
-#ifdef DYNINST_USE_CUDA
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
       Elf_Scn *scn = *si;
