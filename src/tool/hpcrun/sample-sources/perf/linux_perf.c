@@ -1000,11 +1000,11 @@ perf_event_handler(
 
   } while (more_data);
 
-  hpcrun_safe_exit();
-
   restart_perf_event(fd);
 
   perf_start_all(nevents, event_thread);
+
+  hpcrun_safe_exit();
 
   return 0; // tell monitor the signal has been handled.
 }
