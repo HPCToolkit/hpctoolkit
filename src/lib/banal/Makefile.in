@@ -502,8 +502,7 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-@OPT_DYNINST_LIBDWARF_TRUE@DWARF_INC = @LIBDWARF_INC@
-@OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(DWARF_INC) 
+@OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
 MYSOURCES = \
 	ElfHelper.cpp \
 	Fatbin.cpp \
@@ -527,7 +526,7 @@ MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
 dotgraph_bin_SOURCES = DotGraph.cpp
-dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) -I$(DWARF_INC) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
+dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) $(DWARF_IFLAGS) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
 dotgraph_bin_CXXFLAGS = @HOST_CXXFLAGS@
 dotgraph_bin_LDADD = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 libHPCbanal_la_SOURCES = $(MYSOURCES)

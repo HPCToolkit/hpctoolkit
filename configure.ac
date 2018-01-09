@@ -2318,6 +2318,8 @@ AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
 
+#-------------------------------------------------
+
 #
 # Chcek that ParseAPI includes CFG loop support.
 #
@@ -2355,58 +2357,68 @@ void get_blocks(LoopTreeNode * node)
   fi
 fi
 
-AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#-------------------------------------------------
-
-# Temporary option to identify version of dyninst.
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
-#  cuda = uses libdw and supports cuda
-
-dyninst_type=old
-
-AC_ARG_WITH([dyninst-type],
-  [AS_HELP_STRING([--with-dyninst-type=old|libdw|cuda],
-      [temporary option to identify dyninst version])],
-  [dyninst_type="$withval"],
-  [])
-
-AC_MSG_NOTICE([dyninst-type: $dyninst_type])
-
+#
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There's not a good compile or link test for this, so we fall back on
+# ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+#
 use_libdw=no
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if dyninst built with libdw.so])
+
+  dyn_dwarf="${SYMTABAPI_LIB}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  AC_MSG_RESULT([$use_libdw])
+fi
+
+#
+# Test if dyninst supports cuda.
+#
 use_cuda=no
 
-case "$dyninst_type" in
-  old ) ;;
-  libdw ) use_libdw=yes ;;
-  cuda ) use_libdw=yes ; use_cuda=yes ;;
-  * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
-esac
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if dyninst supports cuda])
 
-AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
-AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+]])], [use_cuda=yes], [use_cuda=no])
 
-if test "$use_libdw" = yes ; then
-  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+  AC_MSG_RESULT([$use_cuda])
 fi
 
-if test "$use_cuda" = yes ; then
-  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
-fi
-
-LIBDW_COPY="$use_libdw"
-AC_SUBST([LIBDW_COPY])
-
+#
 # Test if ParseAPI uses Instruction or Instruction::Ptr.
+#
+use_instn_ptr=yes
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
-AC_LANG_PUSH([C++])
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if parseapi uses Instruction::Ptr])
 
-AC_COMPILE_IFELSE([
-AC_LANG_SOURCE([[
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
 #include <map>
 #include <Symtab.h>
 #include <Function.h>
@@ -2424,14 +2436,57 @@ long num_instructions(Block * block)
 }
 ]])], [use_instn_ptr=yes], [use_instn_ptr=no])
 
-AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
+  AC_MSG_RESULT([$use_instn_ptr])
+fi
 
 if test "$use_instn_ptr" = yes ; then
   AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
 fi
 
-AC_MSG_NOTICE([dyninst uses Instruction::Ptr: $use_instn_ptr])
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+#
+dyninst_type=unset
+
+AC_ARG_WITH([dyninst-type],
+  [AS_HELP_STRING([--with-dyninst-type=TYPE],
+      [temp option for dyninst version (old, libdw, cuda),
+       only needed if autoconf fails to detect correctly])],
+  [dyninst_type="$withval"],
+  [])
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
+  esac
+
+  AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
+fi
+
+AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
+AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+
+if test "$use_libdw" = yes ; then
+  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+fi
+
+if test "$use_cuda" = yes ; then
+  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
+fi
+
+LIBDW_COPY="$use_libdw"
+AC_SUBST([LIBDW_COPY])
 
 
 #-------------------------------------------------

@@ -51,12 +51,12 @@ include $(top_srcdir)/src/Makeinclude.config
 #----------------------------------------------------------------------
 
 BOOST_INC = @BOOST_INC@
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBELF_INC = @LIBELF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 
 if OPT_DYNINST_LIBDWARF
-DWARF_INC = @LIBDWARF_INC@
-DWARF_IFLAGS=-I$(DWARF_INC) 
+DWARF_IFLAGS = -I$(LIBDWARF_INC)
 endif
 
 MYSOURCES = \
@@ -92,7 +92,7 @@ pkglibexec_PROGRAMS = dotgraph-bin
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
 
 dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) -I$(DWARF_INC) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
+dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) $(DWARF_IFLAGS) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
 dotgraph_bin_CXXFLAGS = @HOST_CXXFLAGS@
 dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 
