@@ -268,7 +268,8 @@ hpcrun_sample_callpath(void* context, int metricId,
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
-    cct_addr_t frm = { .ip_norm = leaf_func };
+    cct_addr_t frm = { .ip_norm = hpcrun_cct_addr(node)->ip_norm };
+    //cct_addr_t frm = { .ip_norm = leaf_func };
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy =
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
