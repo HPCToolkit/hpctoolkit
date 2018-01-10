@@ -226,7 +226,7 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
     TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
 	 metric_incr, state2str(pthread_blame.state),
 	 hpcrun_cct_persistent_id(node));
-    metric_set_t* metrics = hpcrun_reify_metric_set(node);
+    metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
     hpcrun_metric_std_inc(wait_metric,
 			  metrics,
 			  (cct_metric_data_t) {.i = metric_incr});
@@ -356,9 +356,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  blame_metric_id = hpcrun_set_new_metric_info(PTHREAD_BLAME_METRIC);
-  blockwait_metric_id = hpcrun_set_new_metric_info(PTHREAD_BLOCKWAIT_METRIC);
-  spinwait_metric_id = hpcrun_set_new_metric_info(PTHREAD_SPINWAIT_METRIC);
+  kind_info_t *pthr_kind = hpcrun_metrics_new_kind();
+  blame_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLAME_METRIC);
+  blockwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLOCKWAIT_METRIC);
+  spinwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_SPINWAIT_METRIC);
+  hpcrun_close_kind(pthr_kind);
   metric_id_set = true;
 
   // create & initialize blame table (once per process)

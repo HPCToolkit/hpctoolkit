@@ -77,6 +77,14 @@ struct  metric_set_t {
   hpcrun_metricVal_t v1;
 };
 
+typedef struct metric_desc_list_t {
+  struct metric_desc_list_t* next;
+  metric_desc_t val;
+  metric_upd_proc_t*        proc;
+  int id;
+  int g_id;
+} metric_desc_list_t;
+
 //*************************** Local Data **************************
 
 // some sample sources will pre-allocate some metrics ...
@@ -93,12 +101,6 @@ static metric_desc_list_t* pre_alloc = NULL;
 // To use the mechanism, call hpcrun_metrics_new_kind.
 // Then each call to hpcrun_new_metric will yield a slot in the
 // new metric kind subarray.
-//
-// For complicated metric assignment, hpcrun_metrics_switch_kind(kind),
-// and hpcrun_new_metric_of_kind(kind) enable fine-grain control
-// of metric sloc allocation
-//
-// Default case is 1 kind.
 //
 // Future expansion to permit different strategies is possible, but
 // unimplemented at this time
@@ -117,35 +119,28 @@ struct kind_info_t {
   hpcrun_metricVal_t *null_metrics;
 // information about tracked metrics
   metric_desc_list_t* metric_data;
-// local table of metric update functions
-// (indexed by metric id)
-  metric_upd_proc_t** metric_proc_tbl;
-  metric_proc_map_t *proc_map;
 };
 
-static kind_info_t kinds = {.idx = 0, .has_set_max = 0, .link = NULL };
-static kind_info_t* current_kind = &kinds;
+static kind_info_t *first_kind = NULL;
+static kind_info_t **next_kind = &first_kind;
+static bool all_kinds_done = false;
 static int num_kind_metrics;
+static struct dmap {
+  metric_desc_t *desc;
+  int id;
+  kind_info_t *kind;
+  metric_upd_proc_t *proc;
+} *metric_data;
 
 kind_info_t*
 hpcrun_metrics_new_kind(void)
 {
   kind_info_t* rv = (kind_info_t*) hpcrun_malloc(sizeof(kind_info_t));
-  *rv = (kind_info_t) {.idx = 0, .has_set_max = 0, .link = NULL};
-  current_kind->link = rv;
-  current_kind = rv;
+  *rv = (kind_info_t) {.idx = 0, .metric_data = NULL, .has_set_max = 0, .link = NULL};
+  *next_kind = rv;
+  next_kind = &rv->link;
   return rv;
 }
-
-kind_info_t*
-hpcrun_metrics_switch_kind(kind_info_t* kind)
-{
-  kind_info_t* prev_kind = current_kind;
-  current_kind = kind;
-  return prev_kind;
-}
-
-//
 
 typedef struct metric_data_list_t {
   struct metric_data_list_t* next;
@@ -163,20 +158,10 @@ typedef struct metric_data_list_t {
 //  Interface functions
 //***************************************************************************
 
-bool
-hpcrun_metrics_finalized()
-{
-  return current_kind->has_set_max;
-}
-
-
 void
 hpcrun_pre_allocate_metrics(size_t num)
 {
-  if (current_kind->has_set_max) {
-    return;
-  }
-  for(int i=0; i < num; i++){
+  for (int i=0; i < num; i++){
     metric_desc_list_t* n = (metric_desc_list_t*) hpcrun_malloc(sizeof(metric_desc_list_t));
     n->next = pre_alloc;
     pre_alloc = n;
@@ -188,6 +173,21 @@ hpcrun_pre_allocate_metrics(size_t num)
 int
 hpcrun_get_num_kind_metrics()
 {
+  if (all_kinds_done)
+    return -1;
+
+  metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
+
+  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+      metric_data[l->g_id].desc = &l->val;
+      metric_data[l->g_id].id = l->id;
+      metric_data[l->g_id].kind = kind;
+      metric_data[l->g_id].proc = l->proc;
+    }
+  }
+
+  all_kinds_done = true;
   return (num_kind_metrics);
 }
 
@@ -196,54 +196,44 @@ hpcrun_get_num_kind_metrics()
 // the metric info table
 //
 int
-hpcrun_get_num_metrics()
+hpcrun_get_num_metrics(kind_info_t *kind)
 {
-  int n_metrics = current_kind->idx;
+  int n_metrics = kind->idx;
   //
   // create id->descriptor table, metric_tbl, and metric_proc tbl
   //
-  if (!current_kind->has_set_max) {
-    current_kind->metric_tbl.len = n_metrics;
-    current_kind->metric_tbl.lst = hpcrun_malloc(current_kind->idx * sizeof(metric_desc_t*));
-    for(metric_desc_list_t* l = current_kind->metric_data; l; l = l->next){
-      TMSG(METRICS_FINALIZE,"metric_tbl[%d] = %s", l->id, l->val.name);
-      current_kind->metric_tbl.lst[l->id] = &(l->val);
-    }
-    current_kind->metric_proc_tbl = (metric_upd_proc_t**) hpcrun_malloc(n_metrics * sizeof(metric_upd_proc_t*));
-    
-    for(metric_proc_map_t* l = current_kind->proc_map; l; l = l->next) {
-    //    for(metric_proc_map_t* l = proc_map; l; l = l->next) {
-      TMSG(METRICS_FINALIZE, "metric_proc[%d] = %p", l->id, l->proc);
-      current_kind->metric_proc_tbl[l->id] = l->proc;
-    }
+  if (!kind->has_set_max) {
+    kind->metric_tbl.len = n_metrics;
+    kind->metric_tbl.lst = hpcrun_malloc(n_metrics * sizeof(metric_desc_t*));
+    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next)
+      kind->metric_tbl.lst[l->id] = &l->val;
   // *** TEMPORARY ***
   // *** create a "NULL METRICS" dense array for use with
   // *** metric set dense copy
 
-    current_kind->null_metrics = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
+    kind->null_metrics = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
     for (int i = 0; i < n_metrics; i++) {
-      current_kind->null_metrics[i].bits = 0;
+      kind->null_metrics[i].bits = 0;
     }
-    num_kind_metrics += n_metrics;
   }
-  current_kind->has_set_max = true;
+  kind->has_set_max = true;
 
   return n_metrics;
 }
 
 // Finalize metrics
 
-void hpcrun_finalize_metrics() 
+void hpcrun_close_kind(kind_info_t *kind) 
 {
-  hpcrun_get_num_metrics();
+  hpcrun_get_num_metrics(kind);
 }
 
 metric_desc_t*
 hpcrun_id2metric(int metric_id)
 {
-  int n_metrics = hpcrun_get_num_metrics(); 
+  int n_metrics = hpcrun_get_num_kind_metrics();
   if ((0 <= metric_id) && (metric_id < n_metrics)) {
-    return current_kind->metric_tbl.lst[metric_id];
+    return metric_data[metric_id].desc;
   }
   return NULL;
 }
@@ -253,17 +243,11 @@ metric_desc_p_tbl_t*
 hpcrun_get_metric_tbl(kind_info_t **curr)
 {
   if (*curr == NULL)
-    *curr = &kinds;
+    *curr = first_kind;
   else
     *curr = (*curr)->link;
 
   return &(*curr)->metric_tbl;
-}
-
-metric_desc_list_t*
-hpcrun_get_metric_desc_data()
-{
-  return current_kind->metric_data;
 }
 
 
@@ -273,34 +257,26 @@ hpcrun_get_metric_desc_data()
 metric_upd_proc_t*
 hpcrun_get_metric_proc(int metric_id)
 {
-  int n_metrics = hpcrun_get_num_metrics(); // ensure that metrics are finalized
+  int n_metrics = hpcrun_get_num_kind_metrics(); // ensure that metrics are finalized
 
   if ((0 <= metric_id) && (metric_id < n_metrics)) {
-    return current_kind->metric_proc_tbl[metric_id];
+    return metric_data[metric_id].proc;
   }
 
   return NULL;
 }
 
-metric_data_list_t *hpcrun_new_metric_data_list()
-{
-  metric_data_list_t *curr = hpcrun_malloc(sizeof(metric_data_list_t));
-  curr->kind = current_kind;
-  curr->metrics = hpcrun_metric_set_new();
-  curr->next = NULL;
-  return curr;
-}
-
 //
 // Allocate new metric of a particular kind
 //
-static int
-hpcrun_new_metric_of_kind(kind_info_t* kind)
+int
+hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
+				MetricFlags_ValFmt_t valFmt, size_t period,
+				metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
 {
-  if (kind->has_set_max) {
+  if (kind->has_set_max)
     return -1;
-  }
-
+  int metric_id = num_kind_metrics++;
   metric_desc_list_t* n = NULL;
 
   // if there are pre-allocated metrics, use them
@@ -313,42 +289,11 @@ hpcrun_new_metric_of_kind(kind_info_t* kind)
   }
   n->next = kind->metric_data;
   kind->metric_data = n;
-  kind->metric_data->id   = kind->idx++;
-
-  //
-  // No preallocation for metric_proc tbl
-  //
-  metric_proc_map_t* m = (metric_proc_map_t*) hpcrun_malloc(sizeof(metric_proc_map_t));
-  m->next = current_kind->proc_map;
-  m->id   = kind->metric_data->id;
-  m->proc = (metric_upd_proc_t*) NULL;
-  current_kind->proc_map = m;
+  n->proc = upd_fn;
+  n->id   = kind->idx++;
+  n->g_id = metric_id;
   
-  return m->id;
-}
-
-static int
-hpcrun_new_metric(void)
-{
-  return hpcrun_new_metric_of_kind(current_kind);
-}
-
-static void
-hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
-			    MetricFlags_ValFmt_t valFmt, size_t period,
-			    metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
-{
-  if (current_kind->has_set_max) {
-    return;
-  }
-
-  metric_desc_t* mdesc = NULL;
-  for (metric_desc_list_t* l = current_kind->metric_data; l; l = l->next) {
-    if (l->id == metric_id) {
-      mdesc = &(l->val);
-      break;
-    }
-  }
+  metric_desc_t* mdesc = &(n->val);
   TMSG(METRICS,"id = %d, name = %s, flags = %d, period = %d", metric_id, name, valFmt, period);
   if (! mdesc) {
     EMSG("Metric id is NULL (likely unallocated)");
@@ -370,86 +315,29 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
   mdesc->formula = NULL;
   mdesc->format = NULL;
   mdesc->properties = prop;
-
-  //
-  // manage metric proc mapping
-  //
-  for (metric_proc_map_t* l = current_kind->proc_map; l; l = l->next){
-    if (l->id == metric_id){
-      l->proc = upd_fn;
-      break;
-    }
-  }
-}
-
-int
-hpcrun_set_new_metric_info_w_fn(const char* name,
-				MetricFlags_ValFmt_t valFmt, size_t period,
-				metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
-{
-  int metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period, upd_fn, prop);
   return metric_id;
 }
 
 
-static void
-hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
-{
-  return  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
-			      hpcrun_metric_std_inc, prop);
-}
-
-
 int
-hpcrun_set_new_metric_info_and_period(const char* name,
+hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
 				      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
 {
-  int metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
-			      hpcrun_metric_std_inc, prop);
-  return metric_id;
+  return hpcrun_set_new_metric_info_w_fn(kind, name, valFmt, period,
+					 hpcrun_metric_std_inc, prop);
 }
 
-
-int
-hpcrun_set_new_metric_info(const char* name)
-{
-  int metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
-  return metric_id;
-}
 
 //
 // utility routine to make an Async metric with period 1
 //
-void
-hpcrun_set_metric_info(int metric_id, const char* name)
+int
+hpcrun_set_new_metric_info(kind_info_t *kind, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  return hpcrun_set_new_metric_info_and_period(kind, name, MetricFlags_ValFmt_Int, 1,
+					       metric_property_none);
 }
 
-
-//
-// hpcrun_set_metric_name function is primarily used by
-// synchronous sample sources that need to name the metrics
-// after they have been allocated.
-//
-// makes a call to hpcrun_get_num_metrics just to ensure that
-// metric_tbl has been finalized.
-//
-void
-hpcrun_set_metric_name(int metric_id, char* name)
-{
-  int n_metrics = hpcrun_get_num_metrics();
-
-  if ((0 <= metric_id) && (metric_id < n_metrics)) {
-    current_kind->metric_tbl.lst[metric_id]->name        = name;
-    current_kind->metric_tbl.lst[metric_id]->description = name;
-  }
-}
 
 //
 // Metric set interface
@@ -457,32 +345,29 @@ hpcrun_set_metric_name(int metric_id, char* name)
 
 
 
-metric_set_t*
-hpcrun_metric_set_new(void)
-{
-  int n_metrics = hpcrun_get_num_metrics();
-  return hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
-}
-
 //
 // return an lvalue from metric_set_t*
 //
 cct_metric_data_t*
-hpcrun_metric_set_loc(metric_set_t* s, int id)
+hpcrun_metric_set_loc(metric_data_list_t *rv, int id)
 {
-  int n_metrics = hpcrun_get_num_metrics();
-  if (s && (0 <= id) && (id < n_metrics)) {
-    return &(s->v1) + id;
+  metric_data_list_t *curr;
+  for (curr = rv->next; rv->kind != metric_data[id].kind && curr != NULL; rv = curr);
+  if (rv->kind != metric_data[id].kind) {
+    curr = hpcrun_new_metric_data_list(id);
+    rv->next = curr;
+    rv = curr;
   }
-  return NULL;
+
+  return &(rv->metrics->v1) + metric_data[id].id;
 }
 
 
 void
-hpcrun_metric_std(int metric_id, metric_set_t* set,
+hpcrun_metric_std(int metric_id, metric_data_list_t* set,
 		  char operation, hpcrun_metricVal_t val)
 {
-  metric_desc_t* minfo = current_kind->metric_tbl.lst[metric_id];
+  metric_desc_t* minfo = metric_data[metric_id].desc;
   if (!minfo) {
     return;
   }
@@ -509,7 +394,7 @@ hpcrun_metric_std(int metric_id, metric_set_t* set,
 // replace the old value with the new value
 //
 void
-hpcrun_metric_std_set(int metric_id, metric_set_t* set,
+hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
 		      hpcrun_metricVal_t value)
 {
   hpcrun_metric_std(metric_id, set, '=', value);
@@ -518,39 +403,25 @@ hpcrun_metric_std_set(int metric_id, metric_set_t* set,
 // increasing the value of metric
 //
 void
-hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
+hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
 		      hpcrun_metricVal_t incr)
 {
   hpcrun_metric_std(metric_id, set, '+', incr);
 }
 
-// add a metric of the current kind to a metric_data_list, if it's not already 
-// there, and return the metric
-metric_set_t*
-hpcrun_add_current_metric(metric_data_list_t *rv)
+metric_data_list_t *
+hpcrun_new_metric_data_list(int metric_id)
 {
-  metric_data_list_t *curr;
-  for (curr = rv; curr != NULL && curr->kind != current_kind; rv = curr, curr = curr->next);
-  if (curr == NULL) {
-    TMSG(CCT2METRICS, " -- Metric set was null, allocating new metric set");
-    curr = rv->next = hpcrun_new_metric_data_list();
-    if (curr == NULL)
-      return NULL;
-  }
-  return curr->metrics;
+  metric_data_list_t *curr = hpcrun_malloc(sizeof(metric_data_list_t));
+  curr->kind = metric_data[metric_id].kind;
+  int n_metrics = hpcrun_get_num_metrics(curr->kind);
+  curr->metrics = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));
+  for (int i = 0; i < n_metrics; i++)
+    curr->metrics[i].v1 = curr->kind->null_metrics[i];
+  memset(curr->metrics, 0, n_metrics * sizeof(hpcrun_metricVal_t));
+  curr->next = NULL;
+  return curr;
 }
-
-// find a metric of the current kind to a metric_data_list, or null
-metric_set_t*
-hpcrun_find_current_metric(metric_data_list_t *rv)
-{
-  metric_data_list_t *curr;
-  for (curr = rv; curr != NULL && curr->kind != current_kind; curr = curr->next);
-  if (curr == NULL)
-    return (NULL);
-  return curr->metrics;
-}
-
 
 //
 // copy a metric set
@@ -560,10 +431,10 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 			     metric_data_list_t* list,
 			     int num_metrics)
 {
-  kind_info_t *curr_k = &kinds;
+  kind_info_t *curr_k;
   metric_data_list_t *curr;
 
-  for (curr_k = &kinds; curr_k != NULL; curr_k = curr_k->link) {
+  for (curr_k = first_kind; curr_k != NULL; curr_k = curr_k->link) {
     for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
     metric_set_t* actual = curr ? curr->metrics : (metric_set_t*) curr_k->null_metrics;
     memcpy((char*) dest, (char*) actual, curr_k->idx * sizeof(cct_metric_data_t));

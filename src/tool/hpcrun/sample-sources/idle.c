@@ -199,9 +199,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
+  kind_info_t *idle_kind = hpcrun_metrics_new_kind();
   idle_metric_id = hpcrun_set_new_metric_info_and_period
-    ("idle", MetricFlags_ValFmt_Real, 1, metric_property_none);
-  work_metric_id = hpcrun_set_new_metric_info("work");
+    (idle_kind, "idle", MetricFlags_ValFmt_Real, 1, metric_property_none);
+  work_metric_id = hpcrun_set_new_metric_info(idle_kind, "work");
+  hpcrun_close_kind(idle_kind);
   TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
        idle_metric_id, work_metric_id);
 

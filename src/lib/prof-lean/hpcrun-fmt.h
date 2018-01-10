@@ -383,14 +383,6 @@ typedef struct metric_desc_t {
 extern const metric_desc_t metricDesc_NULL;
 
 
-typedef struct metric_desc_list_t {
-  struct metric_desc_list_t* next;
-  metric_desc_t val;
-  int id;
-} metric_desc_list_t;
-
-
-
 HPCFMT_List_declare(metric_desc_t);
 typedef HPCFMT_List(metric_desc_t) metric_tbl_t; // hpcrun_metricTbl_t
 

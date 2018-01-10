@@ -167,7 +167,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(RETCNT_CTL, "Setting up return counts(trampolines)");
 
   // FIXME: MetricFlags_Ty_Final
-  int metric_id = hpcrun_set_new_metric_info(HPCRUN_METRIC_RetCnt);
+  kind_info_t *ret_kind = hpcrun_metrics_new_kind();
+  int metric_id = hpcrun_set_new_metric_info(ret_kind, HPCRUN_METRIC_RetCnt);
+  hpcrun_close_kind(ret_kind);
 
   METHOD_CALL(self, store_event, RETCNT_EVENT, IRRELEVANT);
   METHOD_CALL(self, store_metric_id, RETCNT_EVENT, metric_id);

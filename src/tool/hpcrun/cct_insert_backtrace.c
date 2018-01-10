@@ -188,7 +188,7 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
     path = hpcrun_kernel_callpath(path, data_aux);
   }
 
-  metric_set_t* mset = hpcrun_reify_metric_set(path);
+  metric_data_list_t* mset = hpcrun_reify_metric_set(path, metric_id);
 
   metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
   if (upd_proc) {

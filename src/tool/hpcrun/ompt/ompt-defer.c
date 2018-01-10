@@ -59,13 +59,13 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
   // if nodes a and b are the same, no need to merge
   if (a == b) return;
 
-  metric_set_t* mset_a = hpcrun_get_metric_set(a);
-  metric_set_t* mset_b = hpcrun_get_metric_set(b);
+  metric_data_list_t* mset_a = hpcrun_get_metric_data_list(a);
+  metric_data_list_t* mset_b = hpcrun_get_metric_data_list(b);
 
   if (!mset_a || !mset_b) return;
 
-  int num_metrics = hpcrun_get_num_metrics();
-  for (int i = 0; i < num_metrics; i++) {
+  int num_kind_metrics = hpcrun_get_num_kind_metrics();
+  for (int i = 0; i < num_kind_metrics; i++) {
     cct_metric_data_t *mdata_a = hpcrun_metric_set_loc(mset_a, i);
     cct_metric_data_t *mdata_b = hpcrun_metric_set_loc(mset_b, i);
 
