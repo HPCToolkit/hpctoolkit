@@ -65,6 +65,8 @@
 #include <sys/types.h> // getpid()
 #include <setjmp.h>
 #include <signal.h>
+
+#include <stdio.h> // snprintf
 #include <stdlib.h>
 #include <string.h>
 
