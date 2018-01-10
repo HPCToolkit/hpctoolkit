@@ -175,4 +175,7 @@ perf_attr_init(
   u64  sampletype
 );
 
+int
+perf_get_kptr_restrict();
+
 #endif

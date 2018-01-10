@@ -115,6 +115,16 @@ static uint16_t perf_kernel_lm_id;
 // implementation
 //******************************************************************************
 
+static cct_node_t *
+perf_insert_cct(cct_node_t *parent, u64 ip)
+{
+  uint16_t lm_id      = perf_kernel_lm_id;
+  ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = ip };
+  cct_addr_t frm      = { .ip_norm = npc };
+
+  return hpcrun_cct_insert_addr(parent, &frm);
+}
+
 //----------------------------------------------------------
 // extend a user-mode callchain with kernel frames (if any)
 //----------------------------------------------------------
@@ -128,17 +138,22 @@ perf_add_kernel_callchain(
   if (data_aux == NULL)  {
     return parent;
   }
+
+
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
   if (data->nr > 0) {
+
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
+    // if we have call chain from the kernel, but no kernel symbol address available,
+    // we collapse all kernel call chains into a single node
+    if (perf_get_kptr_restrict() != 0) {
+      return perf_insert_cct(parent, 0);
+    }
+
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
+      parent = perf_insert_cct(parent, data->ips[i]);
     }
   }
   return parent;
@@ -172,7 +187,7 @@ getEnvLong(const char *env_var, long default_value)
 //    updated for the default precise ip.
 // @return the assigned precise ip 
 //----------------------------------------------------------
-u64
+static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
   static int precise_ip = -1;
@@ -356,4 +371,24 @@ perf_attr_init(
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   return true;
+}
+
+
+/***
+ * retrieve the value of kptr_restrict
+ */
+int
+perf_get_kptr_restrict()
+{
+  static int privilege = -1;
+
+  if (privilege >= 0)
+    return privilege;
+
+  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &privilege);
+    fclose(fp);
+  }
+  return privilege;
 }
