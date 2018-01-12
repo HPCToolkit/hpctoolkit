@@ -140,7 +140,7 @@ public:
   addDirectory(std::string filename) {
     std::string directory = FileUtil::dirname(filename);
     if (!directory.empty()) {
-      std::string dir{directory};
+      std::string dir(directory);
       m_directorySet.insert(dir);
     }
   }
