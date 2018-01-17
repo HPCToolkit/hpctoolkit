@@ -343,6 +343,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-region.c              \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-region-map.c          \
+	ompt/ompt-device-map.c          \
 	ompt/ompt-parallel-region-map.c \
 	ompt/ompt-host-op-map.c         \
 	ompt/ompt-function-id-map.c     \

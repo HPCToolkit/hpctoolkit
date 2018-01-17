@@ -81,6 +81,7 @@
 #include "ompt-thread.h"
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
+#include "ompt-device-map.h"
 
 #define HAVE_CUDA_H 1
 
@@ -915,7 +916,7 @@ ompt_device_initialize(uint64_t device_num,
 
   ompt_trace_configure(device);
 
-  ompt_device = device;
+  ompt_device_map_insert(device_num, device, type);
 }
 
 
@@ -938,11 +939,12 @@ ompt_device_load(uint64_t device_num,
   char device_file[MAXPATHLEN]; 
   assert(filename);
   sprintf(device_file, "%s@0x%lx", filename, (unsigned long) file_addr);
-  hpcrun_loadModule_add(device_file);
+  // FIXME
+  uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
   ompt_cubin_id_map_entry_t *entry = ompt_cubin_id_map_lookup(module_id);
   if (entry == NULL) {
     Elf_SymbolVector *vector = computeCubinFunctionOffsets(host_addr, bytes);
-    ompt_cubin_id_map_insert(module_id, vector);
+    ompt_cubin_id_map_insert(module_id, hpctoolkit_module_id, vector);
   }
 }
 
@@ -964,12 +966,14 @@ ompt_target_callback(ompt_target_type_t kind,
                      const void *codeptr_ra)
 {
   ompt_stop_flag = true;
-  // TODO(keren): hpcrun_safe_enter prevent self interruption
+  ompt_device_map_entry_t *entry = ompt_device_map_lookup(device_num);
+  ompt_device = ompt_device_map_entry_device_get(entry);
   ompt_host_op_seq_id = 0;
   ucontext_t uc;
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
+  // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
   cct_node_t *node = hpcrun_sample_callpath(&uc, 0, (cct_metric_data_t){.i = 0}, 0, 1, NULL).sample_node; 
   hpcrun_safe_exit();
