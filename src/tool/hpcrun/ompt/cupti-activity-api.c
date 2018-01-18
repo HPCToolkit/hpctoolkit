@@ -285,7 +285,7 @@ cupti_advance_buffer_cursor
 {
   CUpti_Activity *cursor = (CUpti_Activity *)current;
   bool result = (cuptiActivityGetNextRecord(buffer, size, &cursor) == CUPTI_SUCCESS);
-  if (result) {                                                                                                                                                        
+  if (result) {
     *next = (CUpti_Activity *)cursor;
   }
   return result;
