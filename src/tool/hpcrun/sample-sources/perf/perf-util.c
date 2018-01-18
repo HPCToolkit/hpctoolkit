@@ -146,7 +146,7 @@ perf_add_kernel_callchain(
     // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
     // if we have call chain from the kernel, but no kernel symbol address available,
     // we collapse all kernel call chains into a single node
-    if (perf_get_kptr_restrict() != 0) {
+    if (perf_util_get_kptr_restrict() != 0) {
       return perf_insert_cct(parent, 0);
     }
 
@@ -204,7 +204,7 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // check the validity of the requested precision
     // if it returns -1 we need to use our own auto-detect precision
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -224,7 +224,7 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // ask sys to "create" the event
     // it returns -1 if it fails.
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -243,18 +243,17 @@ get_precise_ip(struct perf_event_attr *attr)
 // predicates that test perf availability
 //----------------------------------------------------------
 
-static int
-perf_kernel_syms_avail()
+int
+perf_util_get_paranoid_level()
 {
   FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
-  FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
   int level         = 3; // default : no access to perf event
 
-  if (ksyms != NULL && pe_paranoid != NULL) {
+  if (pe_paranoid != NULL) {
     fscanf(pe_paranoid, "%d", &level) ;
   }
-  if (ksyms)       fclose(ksyms);
-  if (pe_paranoid) fclose(pe_paranoid);
+  if (pe_paranoid)
+    fclose(pe_paranoid);
 
   return level;
 }
@@ -293,7 +292,7 @@ is_perf_ksym_available()
   static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
   if (ksym_status == PERF_UNDEFINED) {
-    int level = perf_kernel_syms_avail();
+    int level = perf_util_get_paranoid_level();
 
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
@@ -316,13 +315,24 @@ is_perf_ksym_available()
  * Interface API
  **************************************************************/ 
 
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
+{
+   int ret;
+
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
+}
+
+
 //----------------------------------------------------------
 // generic default initialization for event attributes
 // return true if the initialization is successful,
 //   false otherwise.
 //----------------------------------------------------------
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -378,7 +388,7 @@ perf_attr_init(
  * retrieve the value of kptr_restrict
  */
 int
-perf_get_kptr_restrict()
+perf_util_get_kptr_restrict()
 {
   static int privilege = -1;
 

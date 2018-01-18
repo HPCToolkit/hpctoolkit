@@ -158,24 +158,20 @@ typedef struct event_thread_s {
 
 
 // calling perf event open system call
-static inline long
-perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
-
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags);
 
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
 );
 
 int
-perf_get_kptr_restrict();
+perf_util_get_kptr_restrict();
 
+int
+perf_util_get_paranoid_level();
 #endif

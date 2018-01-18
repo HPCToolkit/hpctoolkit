@@ -82,7 +82,9 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp
+	VMAInterval.hpp VMAInterval.cpp \
+	\
+	decompress.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

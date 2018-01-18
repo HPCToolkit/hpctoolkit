@@ -72,7 +72,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	timer.h timer.c \
-	OSUtil.h OSUtil.c
+	OSUtil.h OSUtil.c 
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
@@ -85,6 +85,22 @@ endif
 MYLIBADD = 
 
 MYCLEAN = 
+
+#############################################################################
+# zlib
+#############################################################################
+
+if OPT_USE_ZLIB
+MYSOURCES += \
+	compress.h compress.c
+
+MYLIBADD   += -L$(ZLIB_LIB) -lz
+MYCFLAGS   += -I$(ZLIB_INC) 
+
+else
+MYSOURCES += \
+	compress.h compress_dummy.c
+endif
 
 #############################################################################
 # Automake rules

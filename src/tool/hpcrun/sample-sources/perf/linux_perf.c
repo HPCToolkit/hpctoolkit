@@ -121,6 +121,8 @@
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
 
+#include "lib/support-lean/compress.h"
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -257,8 +259,8 @@ copy_kallsyms()
 {
   char *source = LINUX_KERNEL_SYMBOL_FILE;
 
-  int infile = open(source, O_RDONLY);
-  if (infile == -1)
+  FILE *infile = fopen(source, "r");
+  if (infile == NULL)
     return -1;
 
   char  dest[PATH_MAX], kernel_name[PATH_MAX];
@@ -284,26 +286,26 @@ copy_kallsyms()
 
   mkdir(dest_directory, S_IRWXU | S_IRGRP | S_IXGRP);
 
-  int mode    = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-  int outfile = open(dest, O_CREAT | O_WRONLY | O_EXCL, mode);
+  FILE *outfile = fopen(dest, "wx");
 
-  if (outfile == -1)
+  if (outfile == NULL)
     return -1;
 
   char buffer[FILE_BUFFER_SIZE];
 
   // copy the file to the output directory
-  for(;;) {
+  /*for(;;) {
     ssize_t byteRead = read(infile, buffer, sizeof(buffer));
 
     if (byteRead <= 0)
       break;
 
     write(outfile, buffer, byteRead);
-  }
+  } */
+  compress_deflate(infile, outfile, Z_DEFAULT_COMPRESSION);
 
-  close(infile);
-  close(outfile);
+  fclose(infile);
+  fclose(outfile);
 
   TMSG(LINUX_PERF, "copy %s into %s", source, dest);
 
@@ -320,7 +322,7 @@ perf_init()
   // copy /proc/kallsyms file into hpctoolkit output directory
   // only if the value of kptr_restric is zero
 
-  if (perf_get_kptr_restrict() == 0) {
+  if (perf_util_get_kptr_restrict() == 0 && perf_util_get_paranoid_level()<2) {
     //copy the kernel symbol table
     copy_kallsyms();
   }
@@ -350,7 +352,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_event_open(&event->attr,
+  et->fd = perf_util_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
     event->id, et->fd, event->attr.precise_ip, event->attr.config,
@@ -792,7 +794,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_attr_init(event_attr, is_period, threshold, 0);
+    perf_util_attr_init(event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric

@@ -272,7 +272,7 @@ register_blocking(event_info_t *event_desc)
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
 
-  perf_attr_init( attr,
+  perf_util_attr_init( attr,
       true        /* use_period*/,
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */

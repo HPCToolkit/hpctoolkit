@@ -171,6 +171,9 @@ CUPTI_BASE = @OPT_CUPTI@
 MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
+ZLIB_LIB = @ZLIB_LIB@
+ZLIB_INC = @ZLIB_INC@
+
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
