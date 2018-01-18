@@ -136,3 +136,25 @@ int compress_deflate(FILE *source, FILE *dest, int level)
     return Z_OK;
 }
 
+#ifdef __UNIT_TEST_COMPRESS__
+#include <errno.h>
+#include <unistd.h>
+#include <stdlib.h>
+int main(int argc, char *argv[])
+{
+  if (argc < 3) {
+    printf("syntax: %s input_compressed_file  output_file\n", argv[0]);
+    exit(0);
+  }
+  FILE *fp_in  = fopen(argv[1], "r");
+  FILE *fp_out = fopen(argv[2], "wx");
+
+  if (fp_in == NULL || fp_out == NULL) {
+    perror("fail to open file:");
+  }
+  compress_deflate(fp_in, fp_out, 1);
+  fclose(fp_in);
+  fclose(fp_out);
+
+}
+#endif

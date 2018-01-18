@@ -45,8 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef HPCTOOLKIT_COMPRESS_H
-#define HPCTOOLKIT_COMPRESS_H
+#ifndef HPCTOOLKIT_DECOMPRESS_H
+#define HPCTOOLKIT_DECOMPRESS_H
 
 #include <stdio.h>
 #include "zlib.h"

@@ -145,20 +145,22 @@ KernelSymbols::KernelSymbols()
 bool
 KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
 {
-  FILE *fp = fopen(filename.c_str(), "r");
-  if (fp == NULL)
+  FILE *fp_in = fopen(filename.c_str(), "r");
+  if (fp_in == NULL)
     return false;
 
   FILE *fp_deflate = tmpfile();
   if (fp_deflate == NULL)
     return false;
 
-  if (compress_inflate(fp, fp_deflate) == Z_OK) {
+  if (compress_inflate(fp_in, fp_deflate) == Z_OK) {
+    fseek(fp_deflate, 0, SEEK_SET);
+
     size_t len = 4096;
-    char *line = (char *) malloc(len); 
+    char *line = new char[len];
     
     for(;;) {
-      if (getline(&line, &len, fp) == EOF) break; // read a line from the file
+      if (getline(&line, &len, fp_deflate) == EOF) break; // read a line from the file
 
       // parse the line into 3 or 4 parts
       char type;
@@ -179,13 +181,15 @@ KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
            strcat(name, module); 
         }
         // add name to the set of function symbols
-	      R->kernel_symbols.push_back(new KernelSymbol((uint64_t) addr, type, name));
-	      break;
+        R->kernel_symbols.push_back(new KernelSymbol((uint64_t) addr, type, name));
+        break;
       default:
-	      break;
+        break;
       }
     }
-    fclose(fp);
+    delete[] line;
+
+    fclose(fp_in);
     fclose(fp_deflate);
   }
   int size = R->kernel_symbols.size();

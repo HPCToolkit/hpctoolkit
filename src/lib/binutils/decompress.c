@@ -121,3 +121,37 @@ int compress_inflate(FILE *source, FILE *dest)
     (void)inflateEnd(&strm);
     return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
 }
+
+#ifdef __UNIT_TEST_COMPRESS__
+#include <errno.h>
+#include <unistd.h>
+#include <stdlib.h>
+int main(int argc, char *argv[])
+{
+  if (argc < 2) {
+    printf("syntax: %s input_compressed_file  [output_file]\n", argv[0]);
+    exit(0);
+  }
+  FILE *fp_in  = fopen(argv[1], "r");
+  FILE *fp_out;
+  if (argc == 2) {
+    fp_out = tmpfile();
+  } else {
+   fp_out = fopen(argv[2], "wb+");
+  }
+
+  if (fp_in == NULL || fp_out == NULL) {
+    perror("fail to open file:");
+  }
+  compress_inflate(fp_in, fp_out);
+  fclose(fp_in);
+
+  // testing the output
+  char buffer[11];
+  fseek(fp_out, 1, SEEK_SET);
+  fgets(buffer, 10, fp_out);
+  buffer[10] = '\0';
+  printf("file: '%s'\n", buffer);
+  fclose(fp_out);
+}
+#endif
