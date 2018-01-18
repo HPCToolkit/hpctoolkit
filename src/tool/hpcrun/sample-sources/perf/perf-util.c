@@ -308,7 +308,7 @@ perf_attr_init(
   // by default, we always ask for sampling period information
   unsigned int sample_type = sampletype 
                              | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME 
-                             | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
+			     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
                              | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
@@ -333,7 +333,6 @@ perf_attr_init(
 
   attr->exclude_kernel = 1;
   attr->exclude_hv     = 1;
-  attr->exclude_idle   = 1;
 
   if (is_perf_ksym_available()) {
     /* Records kernel call-chain when we have privilege */
