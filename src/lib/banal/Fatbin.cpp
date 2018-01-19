@@ -69,6 +69,8 @@
 #include <lib/support/StrUtil.hpp>
 #include <include/hpctoolkit-config.h>
 
+#include <Elf_X.h>
+
 #include "InputFile.hpp"
 #include "ElfHelper.hpp"
 
@@ -116,6 +118,8 @@ static FatbinSectionVector fatbinSectionVector;
 // private functions
 //******************************************************************************
 
+#ifdef DYNINST_USE_CUDA
+
 static bool
 isCubin(Elf *elf)
 {
@@ -128,7 +132,6 @@ isCubin(Elf *elf)
 }
 
 
-#ifdef DYNINST_USE_CUDA
 static bool
 recordIfNvFatbin
 (
@@ -273,6 +276,7 @@ writeElfFile
 }
 
 
+#ifdef DYNINST_USE_CUDA
 void
 writeCubins(
  ElfFileVector *elfFileVector
@@ -285,3 +289,4 @@ writeCubins(
      }
   }
 }
+#endif
