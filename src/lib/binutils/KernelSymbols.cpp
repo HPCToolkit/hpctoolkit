@@ -68,6 +68,12 @@
 
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define MAX_CHARS_INLINE 4096
+
+//******************************************************************************
 // types
 //******************************************************************************
 
@@ -153,20 +159,34 @@ KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
   if (fp_deflate == NULL)
     return false;
 
-  if (compress_inflate(fp_in, fp_deflate) == Z_OK) {
-    fseek(fp_deflate, 0, SEEK_SET);
+  FILE *fp_out = fp_deflate;
 
-    size_t len = 4096;
-    char *line = new char[len];
+  enum decompress_e decomp_status = compress_inflate(fp_in, fp_deflate);
+
+  // if the decompression is not needed (zlib doesn't exist) we just
+  // read the original copied kallsyms
+  if (decomp_status == DECOMPRESS_NONE) {
+    fp_out = fp_in;
+    fclose(fp_deflate);
+  }
+
+  if (fp_out != NULL) {
+    fseek(fp_out, 0, SEEK_SET);
+
+    size_t len = MAX_CHARS_INLINE;
+    char *line = (char*) malloc(sizeof(char) * len);
+
+    if (line == NULL)
+      return false;
     
     for(;;) {
-      if (getline(&line, &len, fp_deflate) == EOF) break; // read a line from the file
+      if (getline(&line, &len, fp_out) == EOF) break; // read a line from the file
 
       // parse the line into 3 or 4 parts
       char type;
       void *addr;
-      char name[4096];
-      char module[4096];
+      char name[MAX_CHARS_INLINE];
+      char module[MAX_CHARS_INLINE];
       module[0] = 0; // initialize module to null in case it is missing
       int result = sscanf(line, "%p %c %s %s\n", &addr, &type, name, module);
 
@@ -187,10 +207,11 @@ KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
         break;
       }
     }
-    delete[] line;
+    if (line != NULL) free(line);
 
     fclose(fp_in);
-    fclose(fp_deflate);
+    if (fp_in != fp_out)
+      fclose(fp_out);
   }
   int size = R->kernel_symbols.size();
 

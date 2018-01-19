@@ -56,15 +56,20 @@
 #  define SET_BINARY_MODE(file)
 #endif
 
+#include "decompress.h"
+
 #define CHUNK 16384
 
 /* Decompress from file source to file dest until stream ends or EOF.
-   inf() returns Z_OK on success, Z_MEM_ERROR if memory could not be
-   allocated for processing, Z_DATA_ERROR if the deflate data is
-   invalid or incomplete, Z_VERSION_ERROR if the version of zlib.h and
-   the version of the library linked do not match, or Z_ERRNO if there
-   is an error reading or writing the files. */
-int compress_inflate(FILE *source, FILE *dest)
+   It returns:
+     DECOMPRESS_OK on success, 
+     DECOMPRESS_FAIL if the deflate data is invalid or the version is 
+       incorrect,
+     DECOMPRESS_IO_ERROR is there is an error reading or writing the file
+     DECOMPRESS_NONE if decompression is not needed.
+ */ 
+enum decompress_e
+compress_inflate(FILE *source, FILE *dest)
 {
     int ret;
     unsigned have;
@@ -80,14 +85,14 @@ int compress_inflate(FILE *source, FILE *dest)
     strm.next_in = Z_NULL;
     ret = inflateInit(&strm);
     if (ret != Z_OK)
-        return ret;
+        return DECOMPRESS_FAIL;
 
     /* decompress until deflate stream ends or end of file */
     do {
         strm.avail_in = fread(in, 1, CHUNK, source);
         if (ferror(source)) {
             (void)inflateEnd(&strm);
-            return Z_ERRNO;
+            return DECOMPRESS_IO_ERROR;
         }
         if (strm.avail_in == 0)
             break;
@@ -105,12 +110,12 @@ int compress_inflate(FILE *source, FILE *dest)
             case Z_DATA_ERROR:
             case Z_MEM_ERROR:
                 (void)inflateEnd(&strm);
-                return ret;
+                return DECOMPRESS_FAIL;
             }
             have = CHUNK - strm.avail_out;
             if (fwrite(out, 1, have, dest) != have || ferror(dest)) {
                 (void)inflateEnd(&strm);
-                return Z_ERRNO;
+                return DECOMPRESS_IO_ERROR;
             }
         } while (strm.avail_out == 0);
 
@@ -119,7 +124,7 @@ int compress_inflate(FILE *source, FILE *dest)
 
     /* clean up and return */
     (void)inflateEnd(&strm);
-    return ret == Z_STREAM_END ? Z_OK : Z_DATA_ERROR;
+    return ret == Z_STREAM_END ? DECOMPRESS_OK : DECOMPRESS_IO_ERROR;
 }
 
 #ifdef __UNIT_TEST_COMPRESS__

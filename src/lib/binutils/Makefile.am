@@ -82,10 +82,10 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp \
-	\
-	decompress.c
+	VMAInterval.hpp VMAInterval.cpp 
 
+
+#############################################################################
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 
@@ -98,6 +98,22 @@ endif
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
+
+#############################################################################
+# zlib
+#############################################################################
+
+if OPT_USE_ZLIB
+MYSOURCES += \
+	decompress.h decompress.c
+
+MYLIBADD   += -L$(ZLIB_LIB) -lz
+MYCFLAGS   += -I$(ZLIB_INC) 
+
+else
+MYSOURCES += \
+	decompress.h decompress_dummy.c
+endif
 
 #############################################################################
 # Automake rules

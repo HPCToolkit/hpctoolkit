@@ -51,16 +51,29 @@
 #include <stdio.h>
 #include "zlib.h"
 
+#ifdef __cplusplus
 extern "C"
 {
-/* Decompress from file source to file dest until stream ends or EOF.
-   inf() returns Z_OK on success, Z_MEM_ERROR if memory could not be
-   allocated for processing, Z_DATA_ERROR if the deflate data is
-   invalid or incomplete, Z_VERSION_ERROR if the version of zlib.h and
-   the version of the library linked do not match, or Z_ERRNO if there
-   is an error reading or writing the files. */
-int compress_inflate(FILE *source, FILE *dest);
+#endif
 
+enum decompress_e {
+  DECOMPRESS_OK, DECOMPRESS_FAIL, DECOMPRESS_IO_ERROR, DECOMPRESS_NONE
+}; 
+
+
+/* Decompress from file source to file dest until stream ends or EOF.
+   It returns:
+     DECOMPRESS_OK on success, 
+     DECOMPRESS_FAIL if the deflate data is invalid or the version is 
+       incorrect,
+     DECOMPRESS_IO_ERROR is there is an error reading or writing the file
+     DECOMPRESS_NONE if decompression is not needed.
+ */ 
+enum decompress_e
+compress_inflate(FILE *source, FILE *dest);
+
+#ifdef __cplusplus
 }
+#endif
 
 #endif
