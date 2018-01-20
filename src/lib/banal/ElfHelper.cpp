@@ -70,6 +70,8 @@
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
+#include <Elf_X.h> // ensure EM_CUDA defined
+
 #include <include/hpctoolkit-config.h>
 
 
