@@ -64,7 +64,7 @@
 #include <include/linux_info.h>
 #include "KernelSymbols.hpp"
 
-#include "decompress.h"
+#include "../support-lean/compress.h"
 
 
 //******************************************************************************
@@ -161,11 +161,11 @@ KernelSymbols::parseLinuxKernelSymbols(std::string &filename)
 
   FILE *fp_out = fp_deflate;
 
-  enum decompress_e decomp_status = compress_inflate(fp_in, fp_deflate);
+  enum compress_e decomp_status = compress_inflate(fp_in, fp_deflate);
 
   // if the decompression is not needed (zlib doesn't exist) we just
   // read the original copied kallsyms
-  if (decomp_status == DECOMPRESS_NONE) {
+  if (decomp_status == COMPRESS_NONE) {
     fp_out = fp_in;
     fclose(fp_deflate);
   }

@@ -57,14 +57,17 @@
 //
 //***************************************************************************
 
+#include "../support-lean/compress.h"
+
 #define CHUNK 1024
 
 /* Compress from file source to file dest until EOF on source.
-   def() returns Z_OK on success, Z_MEM_ERROR if memory could not be
-   allocated for processing, Z_STREAM_ERROR if an invalid compression
-   level is supplied, Z_VERSION_ERROR if the version of zlib.h and the
-   version of the library linked do not match, or Z_ERRNO if there is
-   an error reading or writing the files. *
+It returns:
+     COMPRESS_OK on success,
+     COMPRESS_FAIL if the inflate data is invalid or the version is
+       incorrect,
+     COMPRESS_IO_ERROR is there is an error reading or writing the file
+     COMPRESS_NONE if compression is not needed.
 
    The compression level must be Z_DEFAULT_COMPRESSION,
    or between 0 and 9: 1 gives best speed, 9 gives best compression,
@@ -84,5 +87,19 @@ int compress_deflate(FILE *source, FILE *dest, int level)
 
     fwrite(dest, buffer, byteRead);
   }
-  return 0;
+  return COMPRESS_NONE;
+}
+
+/* Decompress from file source to file dest until stream ends or EOF.
+   It returns:
+     DECOMPRESS_OK on success,
+     DECOMPRESS_FAIL if the deflate data is invalid or the version is
+       incorrect,
+     DECOMPRESS_IO_ERROR is there is an error reading or writing the file
+     DECOMPRESS_NONE if decompression is not needed.
+ */
+int
+compress_inflate(FILE *source, FILE *dest)
+{
+  return COMPRESS_NONE;
 }

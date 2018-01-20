@@ -99,21 +99,6 @@ MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-#############################################################################
-# zlib
-#############################################################################
-
-if OPT_USE_ZLIB
-MYSOURCES += \
-	decompress.h decompress.c
-
-MYLIBADD   += -L$(ZLIB_LIB) -lz
-MYCFLAGS   += -I$(ZLIB_INC) 
-
-else
-MYSOURCES += \
-	decompress.h decompress_dummy.c
-endif
 
 #############################################################################
 # Automake rules

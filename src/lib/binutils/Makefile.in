@@ -119,18 +119,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-
-#############################################################################
-# zlib
-#############################################################################
-@OPT_USE_ZLIB_TRUE@am__append_1 = \
-@OPT_USE_ZLIB_TRUE@	decompress.h decompress.c
-
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
-@OPT_USE_ZLIB_TRUE@am__append_3 = -I$(ZLIB_INC) 
-@OPT_USE_ZLIB_FALSE@am__append_4 = \
-@OPT_USE_ZLIB_FALSE@	decompress.h decompress_dummy.c
-
 subdir = src/lib/binutils
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -150,25 +138,14 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am__libHPCbinutils_la_SOURCES_DIST = Demangler.hpp Demangler.cpp \
-	KernelSymbols.hpp KernelSymbols.cpp LM.hpp LM.cpp Seg.hpp \
-	Seg.cpp Proc.hpp Proc.cpp Insn.hpp Insn.cpp Dbg-LM.hpp \
-	Dbg-LM.cpp Dbg-Proc.hpp Dbg-Proc.cpp BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp decompress.h decompress.c \
-	decompress_dummy.c
-@OPT_USE_ZLIB_TRUE@am__objects_1 = libHPCbinutils_la-decompress.lo
-@OPT_USE_ZLIB_FALSE@am__objects_2 =  \
-@OPT_USE_ZLIB_FALSE@	libHPCbinutils_la-decompress_dummy.lo
-am__objects_3 = libHPCbinutils_la-Demangler.lo \
+libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCbinutils_la-Demangler.lo \
 	libHPCbinutils_la-KernelSymbols.lo libHPCbinutils_la-LM.lo \
 	libHPCbinutils_la-Seg.lo libHPCbinutils_la-Proc.lo \
 	libHPCbinutils_la-Insn.lo libHPCbinutils_la-Dbg-LM.lo \
 	libHPCbinutils_la-Dbg-Proc.lo libHPCbinutils_la-BinUtils.lo \
-	libHPCbinutils_la-VMAInterval.lo $(am__objects_1) \
-	$(am__objects_2)
-am_libHPCbinutils_la_OBJECTS = $(am__objects_3)
+	libHPCbinutils_la-VMAInterval.lo
+am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -194,24 +171,6 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -230,8 +189,26 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 SOURCES = $(libHPCbinutils_la_SOURCES)
-DIST_SOURCES = $(am__libHPCbinutils_la_SOURCES_DIST)
+DIST_SOURCES = $(libHPCbinutils_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -531,19 +508,27 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 #############################################################################
 # Local settings
 #############################################################################
-MYSOURCES = Demangler.hpp Demangler.cpp KernelSymbols.hpp \
-	KernelSymbols.cpp LM.hpp LM.cpp Seg.hpp Seg.cpp Proc.hpp \
-	Proc.cpp Insn.hpp Insn.cpp Dbg-LM.hpp Dbg-LM.cpp Dbg-Proc.hpp \
-	Dbg-Proc.cpp BinUtils.hpp BinUtils.cpp VMAInterval.hpp \
-	VMAInterval.cpp $(am__append_1) $(am__append_4)
+MYSOURCES = \
+        Demangler.hpp Demangler.cpp \
+	KernelSymbols.hpp KernelSymbols.cpp \
+	LM.hpp LM.cpp \
+	Seg.hpp Seg.cpp \
+	Proc.hpp Proc.cpp \
+	Insn.hpp Insn.cpp \
+	\
+	Dbg-LM.hpp Dbg-LM.cpp \
+	Dbg-Proc.hpp Dbg-Proc.cpp \
+	\
+	BinUtils.hpp BinUtils.cpp \
+	VMAInterval.hpp VMAInterval.cpp 
+
 
 #############################################################################
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
-	$(am__append_3)
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
-MYLIBADD = @HOST_LIBTREPOSITORY@ $(am__append_2)
+MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
@@ -567,7 +552,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -629,43 +614,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-decompress.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-decompress_dummy.Plo@am__quote@
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-libHPCbinutils_la-decompress.lo: decompress.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CFLAGS) $(CFLAGS) -MT libHPCbinutils_la-decompress.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-decompress.Tpo -c -o libHPCbinutils_la-decompress.lo `test -f 'decompress.c' || echo '$(srcdir)/'`decompress.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-decompress.Tpo $(DEPDIR)/libHPCbinutils_la-decompress.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompress.c' object='libHPCbinutils_la-decompress.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CFLAGS) $(CFLAGS) -c -o libHPCbinutils_la-decompress.lo `test -f 'decompress.c' || echo '$(srcdir)/'`decompress.c
-
-libHPCbinutils_la-decompress_dummy.lo: decompress_dummy.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CFLAGS) $(CFLAGS) -MT libHPCbinutils_la-decompress_dummy.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-decompress_dummy.Tpo -c -o libHPCbinutils_la-decompress_dummy.lo `test -f 'decompress_dummy.c' || echo '$(srcdir)/'`decompress_dummy.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-decompress_dummy.Tpo $(DEPDIR)/libHPCbinutils_la-decompress_dummy.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='decompress_dummy.c' object='libHPCbinutils_la-decompress_dummy.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CFLAGS) $(CFLAGS) -c -o libHPCbinutils_la-decompress_dummy.lo `test -f 'decompress_dummy.c' || echo '$(srcdir)/'`decompress_dummy.c
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
