@@ -113,6 +113,7 @@ using namespace xml;
 //*************************** Forward Declarations **************************
 
 #define DBG 0
+#define MAX_PREFIX_CHARS 64
 
 //***************************************************************************
 
@@ -578,10 +579,24 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // a procedure can have the same name if they are from different
         // file or different load module
         // -------------------------------------------------------
-        const char *filename = getFileName(strct);	
+        std::string completProcName;
+
+        Struct::LM *lm = strct->ancestorLM();
+        if (lm) {
+          uint lm_id = lm->id();
+          if (BinUtil::LM::isFakeLoadModule(lm->name().c_str())) {
+            lm_id = fake_load_module_id;
+          }
+          char buffer[MAX_PREFIX_CHARS];
+          snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
+          completProcName.append(buffer);
+        }
+
         // we need to allow the same function name from a different file
-        std::string completProcName(filename);
-        completProcName.append(":");
+        char buffer[MAX_PREFIX_CHARS];
+        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", strct->ancestorFile()->id());
+        completProcName.append(buffer);
+
         const char *lnm;
 
         // a procedure name within the same file has to be unique.
@@ -795,7 +810,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-    writeXML_help(os, "Procedure", m_structure, &filt2, 3, m_remove_redundancy);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3, true /*m_remove_redundancy*/);
     os << "  </ProcedureTable>\n";
   }
 
