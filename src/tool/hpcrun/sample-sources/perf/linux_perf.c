@@ -215,6 +215,7 @@ static event_info_t  *event_desc = NULL;
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
+static kind_info_t *lnux_kind;
 
 /******************************************************************************
  * external thread-local variables
@@ -724,6 +725,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
   memset(event_desc, 0, size);
 
+  lnux_kind = hpcrun_metrics_new_kind();
   int i=0;
 
   default_threshold = init_default_count();
@@ -780,7 +782,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
-    event_desc[i].metric = hpcrun_set_new_metric_info_and_period(name_dup,
+    event_desc[i].metric = hpcrun_set_new_metric_info_and_period(lnux_kind, name_dup,
             MetricFlags_ValFmt_Real, threshold, prop);
    
     // ------------------------------------------------------------
@@ -801,6 +803,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
     event_desc[i].metric_desc = m;
   }
+  hpcrun_close_kind(lnux_kind);
 
   if (num_events > 0)
     perf_init();
@@ -815,7 +818,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   TMSG(LINUX_PERF, "gen_event_set");
 
   int nevents 	  = (self->evl).nevents;
-  int num_metrics = hpcrun_get_num_metrics();
+  int num_metrics = hpcrun_get_num_metrics(lnux_kind);
 
   // a list of event information, private for each thread
   event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);

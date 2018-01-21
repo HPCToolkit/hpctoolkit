@@ -111,19 +111,19 @@ cct2metrics_new(cct_node_id_t node, metric_data_list_t* kind_metrics)
 // create a metric set, and return it.
 //
 
-metric_set_t*
-hpcrun_reify_metric_set(cct_node_id_t cct_id)
+metric_data_list_t*
+hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
 {
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
   metric_data_list_t* rv = hpcrun_get_metric_data_list(cct_id);
   if (rv == NULL) {
     TMSG(CCT2METRICS, " -- Metric kind was null, allocating new metric kind");
-    rv = hpcrun_new_metric_data_list();
+    rv = hpcrun_new_metric_data_list(metric_id);
     cct2metrics_assoc(cct_id, rv);
   }
   else
     TMSG(CCT2METRICS, " -- Metric kind found = %p", rv);
-  return hpcrun_add_current_metric(rv);
+  return rv;
 }
 
 metric_data_list_t *
@@ -143,28 +143,6 @@ hpcrun_get_metric_data_list(cct_node_id_t cct_id)
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
-}
-
-//
-// get metric set for a node (NULL return value means no metrics associated).
-//
-metric_set_t*
-hpcrun_get_metric_set(cct_node_id_t cct_id)
-{
-  metric_data_list_t *list = hpcrun_get_metric_data_list(cct_id);
-  if (list != NULL)
-    return (hpcrun_find_current_metric(list));
-  else
-    return NULL;
-}
-
-//
-// check to see if node already has metrics
-//
-bool
-hpcrun_has_metric_set(cct_node_id_t cct_id)
-{
-  return (hpcrun_get_metric_set(cct_id) != NULL);
 }
 
 //

@@ -332,39 +332,31 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #define getindex(name, index) index
 #define declare_stall_metric(name, index) \
-  stall_metric_id[index] = hpcrun_set_new_metric_info(name);
+  stall_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
 
   ke_kind = hpcrun_metrics_new_kind();
-  kind_info_t* incoming_kind = hpcrun_metrics_switch_kind(ke_kind);
-
   FORALL_STL(declare_stall_metric);	
   FORALL_GPU_INST(declare_stall_metric);
   gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
-  hpcrun_finalize_metrics();
+  hpcrun_close_kind(ke_kind);
 
 #define declare_im_metric(name, index) \
-  im_metric_id[index] = hpcrun_set_new_metric_info(name);
+  im_metric_id[index] = hpcrun_set_new_metric_info(im_kind, name);
 
   im_kind = hpcrun_metrics_new_kind();
-  hpcrun_metrics_switch_kind(im_kind);
-
   FORALL_IM(declare_im_metric);	
   FORALL_IM_TIME(declare_im_metric);
   im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
-  hpcrun_finalize_metrics();
+  hpcrun_close_kind(im_kind);
 
 #define declare_em_metric(name, index) \
-  em_metric_id[index] = hpcrun_set_new_metric_info(name);
+  em_metric_id[index] = hpcrun_set_new_metric_info(em_kind, name);
 
   em_kind = hpcrun_metrics_new_kind();
-  hpcrun_metrics_switch_kind(em_kind);
-
   FORALL_EM(declare_em_metric);	
   FORALL_EM_TIME(declare_em_metric);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
-  hpcrun_finalize_metrics();
-
-  hpcrun_metrics_switch_kind(incoming_kind);
+  hpcrun_close_kind(em_kind);
 }
 
 static void

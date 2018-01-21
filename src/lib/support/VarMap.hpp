@@ -57,7 +57,7 @@ private:
   hpcrun_metricVal_t *m_metrics;	   // metric values
   metric_desc_t*      m_list_metric_desc;  // metric descriptions
 
-  size_t m_num_metrics;
+  int m_num_metrics;
   int    m_error_code;
 
 public:
@@ -66,7 +66,7 @@ public:
   int    getErrorCode();
 
   VarMap(hpcrun_metricVal_t *metrics, 
-    metric_desc_t* m_list_metric_desc, size_t num_metrics);
+    metric_desc_t* m_list_metric_desc, int num_metrics);
 };
 
 

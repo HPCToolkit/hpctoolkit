@@ -285,26 +285,30 @@ ompt_mutex_blame_shift_register(void)
 static void
 ompt_register_mutex_metrics(void)
 {
+  kind_info_t *mut_kind = hpcrun_metrics_new_kind();
   omp_mutex_blame_info.wait_metric_id = 
-  hpcrun_set_new_metric_info_and_period("OMP_MUTEX_WAIT", 
+    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_WAIT", 
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   omp_mutex_blame_info.blame_metric_id = 
-  hpcrun_set_new_metric_info_and_period("OMP_MUTEX_BLAME",
+    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  hpcrun_close_kind(mut_kind);
 }
 
 
 static void
 ompt_register_idle_metrics(void)
 {
+  kind_info_t *idl_kind = hpcrun_metrics_new_kind();
   omp_idle_blame_info.idle_metric_id = 
-  hpcrun_set_new_metric_info_and_period("OMP_IDLE",
+    hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_IDLE",
 				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   omp_idle_blame_info.work_metric_id = 
-  hpcrun_set_new_metric_info_and_period("OMP_WORK",
+    hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_WORK",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  hpcrun_close_kind(idl_kind);
 }
 
 static void

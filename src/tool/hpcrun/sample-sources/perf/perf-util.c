@@ -181,7 +181,7 @@ perf_add_callchain( cct_node_t        *parent_original,
   // ------------------------------------------------------------------
   // adding metric to the leaf
   // ------------------------------------------------------------------
-  metric_set_t* mset = hpcrun_reify_metric_set(parent);
+  metric_data_list_t* mset = hpcrun_reify_metric_set(parent, metric_id);
 
   metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
   if (upd_proc) {
