@@ -223,22 +223,20 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)record;
-      hpcrun_metrics_switch_kind(ke_kind);
-      metric_set_t *metrics = hpcrun_reify_metric_set(node);
       if (activity_sample->stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity_sample->stallReason];
+        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->samples});
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->samples});
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_MEMCPY2:
+    case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
-      CUpti_ActivityMemcpy2 *activity_memcpy = (CUpti_ActivityMemcpy2 *)record;
-      hpcrun_metrics_switch_kind(em_kind);
-      metric_set_t *metrics = hpcrun_reify_metric_set(node);
+      CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)record;
       if (activity_memcpy->copyKind != 0x7fffffff) {
         int index = em_metric_id[activity_memcpy->copyKind];
+        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity_memcpy->end - activity_memcpy->start});
       }
@@ -247,10 +245,9 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
     {
       CUpti_ActivityUnifiedMemoryCounter *activity_unified = (CUpti_ActivityUnifiedMemoryCounter *)record;
-      hpcrun_metrics_switch_kind(im_kind);
-      metric_set_t *metrics = hpcrun_reify_metric_set(node);
       if (activity_unified->counterKind != 0x7fffffff) {
         int index = im_metric_id[activity_unified->counterKind];
+        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
         hpcrun_metric_std_inc(im_time_metric_id, metrics, (cct_metric_data_t){.i = activity_unified->timestamp});
       }

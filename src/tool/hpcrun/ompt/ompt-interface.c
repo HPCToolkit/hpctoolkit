@@ -132,6 +132,10 @@ static undirected_blame_info_t omp_idle_blame_info;
 
 static device_finalizer_fn_entry_t device_finalizer;
 
+// target kind metric
+static int ompt_target_metric_id = -1;
+static int ompt_task_metric_id = -1;
+
 //-----------------------------------------
 // declare ompt interface function pointers
 //-----------------------------------------
@@ -366,7 +370,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node =
-    hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL).sample_node;
+    hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 
@@ -973,13 +977,15 @@ ompt_target_callback(ompt_target_type_t kind,
   ompt_device_map_entry_t *entry = ompt_device_map_lookup(device_num);
   ompt_device = ompt_device_map_entry_device_get(entry);
   ompt_host_op_seq_id = 0;
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   ucontext_t uc;
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
-  cct_node_t *node = hpcrun_sample_callpath(&uc, 0, (cct_metric_data_t){.i = 0}, 0, 1, NULL).sample_node; 
+  
+  cct_node_t *node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
   hpcrun_safe_exit();
   td->overhead--;
   hpcrun_op_id_map_record_target(target_id, node, device_num);
@@ -1044,6 +1050,15 @@ prepare_device()
 {
   device_finalizer.fn = hpcrun_ompt_device_finalizer;
   device_finalizer_register(&device_finalizer);
+
+  kind_info_t *ompt_target_kind = hpcrun_metrics_new_kind();
+  ompt_target_metric_id = hpcrun_set_new_metric_info(ompt_target_kind, "OMPT_TARGET_KIND"); 
+  hpcrun_close_kind(ompt_target_kind);
+
+  kind_info_t *ompt_task_kind = hpcrun_metrics_new_kind();
+  ompt_task_metric_id = hpcrun_set_new_metric_info(ompt_task_kind, "OMPT_TASK_KIND");
+  hpcrun_close_kind(ompt_task_kind);
+
   ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
   ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
   ompt_set_callback(ompt_callback_device_load, ompt_device_load);

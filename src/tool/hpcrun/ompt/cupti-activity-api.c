@@ -115,10 +115,16 @@ cupti_process_correlation
 {
   uint64_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
-  cupti_correlation_id_map_insert(correlation_id, external_id);
+  if (hpcrun_op_id_map_lookup(external_id) != NULL) {
+    if (cupti_correlation_id_map_lookup(correlation_id) != NULL) {
+      cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
+    } else {
+      cupti_correlation_id_map_insert(correlation_id, external_id);
+    }
+  }
   PRINT("External CorrelationId %lu\n", correlation_id);
   PRINT("CorrelationId %lu\n", external_id);
-  PRINT("Activity Kind %u\n", ec->kind);
+  PRINT("Activity Kind %u\n", ec->externalKind);
 }
 
 
@@ -129,6 +135,19 @@ cupti_process_memcpy
  void *state
 )
 {
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
+    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    if (node != NULL) {
+      cupti_activity_queue_push(queue, activity, node);
+    }
+  }
+  PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
+  PRINT("Memcpy copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy copy bytes %u\n", activity->bytes);
 }
 
 
@@ -145,7 +164,9 @@ cupti_process_memcpy2
     ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
     cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
-    cupti_activity_queue_push(queue, activity, node);
+    if (node != NULL) {
+      cupti_activity_queue_push(queue, activity, node);
+    }
   }
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
   PRINT("Memcpy2 copy bytes %u\n", activity->bytes);

@@ -24,14 +24,14 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *
       ((CUpti_ActivityPCSampling2 *)entry->activity)->samples = activity_sample->samples;
       break;
     }
-    case CUPTI_ACTIVITY_KIND_MEMCPY2:
+    case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
-      CUpti_ActivityMemcpy2 *activity_memcpy = (CUpti_ActivityMemcpy2 *)activity;
-      entry->activity = (CUpti_ActivityMemcpy2 *)hpcrun_malloc(sizeof(CUpti_ActivityMemcpy2));
-      ((CUpti_ActivityMemcpy2 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_MEMCPY2;
-      ((CUpti_ActivityMemcpy2 *)entry->activity)->copyKind = activity_memcpy->copyKind;
-      ((CUpti_ActivityMemcpy2 *)entry->activity)->end = activity_memcpy->end;
-      ((CUpti_ActivityMemcpy2 *)entry->activity)->start = activity_memcpy->start;
+      CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)activity;
+      entry->activity = (CUpti_ActivityMemcpy *)hpcrun_malloc(sizeof(CUpti_ActivityMemcpy));
+      ((CUpti_ActivityMemcpy *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_MEMCPY;
+      ((CUpti_ActivityMemcpy *)entry->activity)->copyKind = activity_memcpy->copyKind;
+      ((CUpti_ActivityMemcpy *)entry->activity)->end = activity_memcpy->end;
+      ((CUpti_ActivityMemcpy *)entry->activity)->start = activity_memcpy->start;
       break;
     }
     case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:

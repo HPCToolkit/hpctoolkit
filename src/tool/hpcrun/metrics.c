@@ -173,8 +173,9 @@ hpcrun_pre_allocate_metrics(size_t num)
 int
 hpcrun_get_num_kind_metrics()
 {
-  if (all_kinds_done)
-    return -1;
+  if (all_kinds_done) {
+    return (num_kind_metrics);
+  }
 
   metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
 
@@ -188,7 +189,6 @@ hpcrun_get_num_kind_metrics()
   }
 
   all_kinds_done = true;
-  return (num_kind_metrics);
 }
 
 //
@@ -413,6 +413,7 @@ metric_data_list_t *
 hpcrun_new_metric_data_list(int metric_id)
 {
   metric_data_list_t *curr = hpcrun_malloc(sizeof(metric_data_list_t));
+  hpcrun_get_num_kind_metrics();
   curr->kind = metric_data[metric_id].kind;
   int n_metrics = hpcrun_get_num_metrics(curr->kind);
   curr->metrics = hpcrun_malloc(n_metrics * sizeof(hpcrun_metricVal_t));

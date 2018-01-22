@@ -100,7 +100,7 @@ static cct_backtrace_finalize_entry_t ompt_finalizer;
 static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
-static int ompt_callstack_debug = 0;
+static int ompt_callstack_debug = 1;
 
 
 

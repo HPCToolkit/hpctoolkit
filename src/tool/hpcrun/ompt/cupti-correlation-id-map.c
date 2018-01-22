@@ -143,6 +143,27 @@ cupti_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id)
 }
 
 
+uint64_t
+cupti_correlation_id_map_external_id_replace(uint64_t correlation_id, uint64_t external_id)
+{
+  TMSG(DEFER_CTXT, "correlation_id map replace: id=0x%lx");
+
+  uint64_t old_external_id;
+
+  spinlock_lock(&cupti_correlation_id_map_lock);
+
+  cupti_correlation_id_map_root = cupti_correlation_id_map_splay(cupti_correlation_id_map_root, correlation_id);
+  if (cupti_correlation_id_map_root && cupti_correlation_id_map_root->correlation_id == correlation_id) {
+    old_external_id = cupti_correlation_id_map_root->external_id;
+    cupti_correlation_id_map_root->external_id = external_id;
+  }
+
+  spinlock_unlock(&cupti_correlation_id_map_lock);
+
+  return old_external_id;
+}
+
+
 // return true if record found; false otherwise
 bool
 cupti_correlation_id_map_refcnt_update(uint64_t correlation_id, int val)
