@@ -122,8 +122,8 @@ cupti_process_correlation
       cupti_correlation_id_map_insert(correlation_id, external_id);
     }
   }
-  PRINT("External CorrelationId %lu\n", correlation_id);
-  PRINT("CorrelationId %lu\n", external_id);
+  PRINT("External CorrelationId %lu\n", external_id);
+  PRINT("CorrelationId %lu\n", correlation_id);
   PRINT("Activity Kind %u\n", ec->externalKind);
 }
 
@@ -168,6 +168,7 @@ cupti_process_memcpy2
       cupti_activity_queue_push(queue, activity, node);
     }
   }
+  PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
   PRINT("Memcpy2 copy bytes %u\n", activity->bytes);
 }

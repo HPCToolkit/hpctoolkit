@@ -897,6 +897,8 @@ ompt_trace_configure(ompt_device_t *device)
   int flags = 0;
 
   // specify desired monitoring
+  flags |= ompt_native_kernel_invocation;
+
   flags |= ompt_native_kernel_execution;
 
   flags |= ompt_native_driver;
