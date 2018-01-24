@@ -119,18 +119,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-
-#############################################################################
-# zlib
-#############################################################################
-@OPT_USE_ZLIB_TRUE@am__append_1 = \
-@OPT_USE_ZLIB_TRUE@	compress.h compress.c
-
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
-@OPT_USE_ZLIB_TRUE@am__append_3 = -I$(ZLIB_INC) 
-@OPT_USE_ZLIB_FALSE@am__append_4 = \
-@OPT_USE_ZLIB_FALSE@	compress.h compress_dummy.c
-
 subdir = src/lib/support-lean
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -150,17 +138,11 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am__libHPCsupport_lean_la_SOURCES_DIST = timer.h timer.c OSUtil.h \
-	OSUtil.c compress.h compress.c compress_dummy.c
-@OPT_USE_ZLIB_TRUE@am__objects_1 = libHPCsupport_lean_la-compress.lo
-@OPT_USE_ZLIB_FALSE@am__objects_2 =  \
-@OPT_USE_ZLIB_FALSE@	libHPCsupport_lean_la-compress_dummy.lo
-am__objects_3 = libHPCsupport_lean_la-timer.lo \
-	libHPCsupport_lean_la-OSUtil.lo $(am__objects_1) \
-	$(am__objects_2)
-am_libHPCsupport_lean_la_OBJECTS = $(am__objects_3)
+libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCsupport_lean_la-timer.lo \
+	libHPCsupport_lean_la-OSUtil.lo \
+	libHPCsupport_lean_la-compress_lzma.lo
+am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
 libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -205,7 +187,7 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libHPCsupport_lean_la_SOURCES)
-DIST_SOURCES = $(am__libHPCsupport_lean_la_SOURCES_DIST)
+DIST_SOURCES = $(libHPCsupport_lean_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -331,6 +313,11 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LIB = @LZMA_LIB@
@@ -402,6 +389,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
@@ -499,18 +487,18 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 
 #############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
 # Local settings
 #############################################################################
-MYSOURCES = timer.h timer.c OSUtil.h OSUtil.c $(am__append_1) \
-	$(am__append_4)
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(am__append_3)
+MYSOURCES = \
+	timer.h timer.c \
+	OSUtil.h OSUtil.c \
+	\
+	compress_lzma.c
+
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)  -I$(LZMA_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
-MYLIBADD = $(am__append_2)
+MYLIBADD = 
 MYCLEAN = 
 
 #############################################################################
@@ -586,8 +574,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress_dummy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
 
 .c.o:
@@ -625,19 +612,12 @@ libHPCsupport_lean_la-OSUtil.lo: OSUtil.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-OSUtil.lo `test -f 'OSUtil.c' || echo '$(srcdir)/'`OSUtil.c
 
-libHPCsupport_lean_la-compress.lo: compress.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-compress.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-compress.Tpo -c -o libHPCsupport_lean_la-compress.lo `test -f 'compress.c' || echo '$(srcdir)/'`compress.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-compress.Tpo $(DEPDIR)/libHPCsupport_lean_la-compress.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress.c' object='libHPCsupport_lean_la-compress.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCsupport_lean_la-compress_lzma.lo: compress_lzma.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-compress_lzma.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Tpo -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Tpo $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress_lzma.c' object='libHPCsupport_lean_la-compress_lzma.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress.lo `test -f 'compress.c' || echo '$(srcdir)/'`compress.c
-
-libHPCsupport_lean_la-compress_dummy.lo: compress_dummy.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-compress_dummy.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-compress_dummy.Tpo -c -o libHPCsupport_lean_la-compress_dummy.lo `test -f 'compress_dummy.c' || echo '$(srcdir)/'`compress_dummy.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-compress_dummy.Tpo $(DEPDIR)/libHPCsupport_lean_la-compress_dummy.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress_dummy.c' object='libHPCsupport_lean_la-compress_dummy.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress_dummy.lo `test -f 'compress_dummy.c' || echo '$(srcdir)/'`compress_dummy.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

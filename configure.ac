@@ -1745,6 +1745,7 @@ LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
+LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
 
@@ -1769,6 +1770,7 @@ case "$LZMA" in
         LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
 	LZMA_COPY=yes
 	LZMA_LIB="$lzma_libdir"
+        LZMA_INC="${LZMA}/include"
 	if test -f "${lzma_libdir}/liblzma.a" ; then
 	  LZMA_STATIC=yes
 	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
@@ -1793,6 +1795,7 @@ AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
 AC_SUBST([LZMA_COPY])
+AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
 
 
@@ -2536,6 +2539,7 @@ AC_MSG_CHECKING([zlib])
 
 ZLIB_INC=no
 ZLIB_LIB=no
+ZLIB_HPCLINK_LIB=no
 ZLIB_COPY=no
 
 case "$ZLIB" in
@@ -2545,13 +2549,14 @@ case "$ZLIB" in
     fi
     ZLIB_INC="${ZLIB}/include"
     for lib in $multilib_path ; do
-      if test -f "${ZLIB}/${lib}/libz.so" ; then
+      if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
+	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
 	break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
-      AC_MSG_ERROR([unable to find zlib.so in: $ZLIB])
+      AC_MSG_ERROR([unable to find zlib.so or zlib.a in: $ZLIB])
     fi
     ZLIB_COPY=yes
     ;;
@@ -2568,6 +2573,7 @@ AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
 AC_SUBST([ZLIB_INC])
 AC_SUBST([ZLIB_LIB])
+AC_SUBST([ZLIB_HPCLINK_LIB])
 AC_SUBST([ZLIB_COPY])
 
 

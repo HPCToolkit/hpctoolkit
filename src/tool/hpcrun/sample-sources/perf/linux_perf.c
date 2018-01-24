@@ -162,6 +162,8 @@
 
 #define FILE_BUFFER_SIZE (1024*1024)
 
+#define DEFAULT_COMPRESSION 5
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -291,18 +293,7 @@ copy_kallsyms()
   if (outfile == NULL)
     return -1;
 
-  char buffer[FILE_BUFFER_SIZE];
-
-  // copy the file to the output directory
-  /*for(;;) {
-    ssize_t byteRead = read(infile, buffer, sizeof(buffer));
-
-    if (byteRead <= 0)
-      break;
-
-    write(outfile, buffer, byteRead);
-  } */
-  compress_deflate(infile, outfile, Z_DEFAULT_COMPRESSION);
+  compress_deflate(infile, outfile, DEFAULT_COMPRESSION);
 
   fclose(infile);
   fclose(outfile);

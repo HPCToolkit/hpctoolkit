@@ -116,7 +116,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -143,13 +142,13 @@ am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_5 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
 	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_4)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_5)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -355,6 +354,7 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
+LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LIB = @LZMA_LIB@
@@ -426,6 +426,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
@@ -528,17 +529,21 @@ MYCXXFLAGS = \
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
+	$(LZMA_LDFLAGS_DYN) \
 	-ldl
 
 MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) $(MY_LIB_XED) $(HPCLIB_XML) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(MY_LIB_CFG) @GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1) $(am__append_2)
+	$(HPCLIB_SupportLean) $(MY_LIB_CFG) $(LZMA_LDFLAGS_STAT) \
+	@GNUBINUTILS_LDLIBS@ @HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1)
+
+# is this variable used ???
 MY_LIB_CFG = \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
 	-L$(LIBDWARF_LIB) -ldwarf  \
-	-L$(LIBELF_LIB) -lelf
+	-L$(LIBELF_LIB) -lelf \
+	$(LZMA_LDFLAGS_DYN)
 
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)

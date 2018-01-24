@@ -61,7 +61,6 @@
 #define HPCTOOLKIT_COMPRESS_H
 
 #include <stdio.h>
-#include "zlib.h"
 
 
 #ifdef __cplusplus

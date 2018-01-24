@@ -172,6 +172,7 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
 ZLIB_LIB = @ZLIB_LIB@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
@@ -674,7 +675,7 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 #-----------------------------------------------------------
 
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
-libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
+libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) 
 
 if OPT_BGQ_BACKEND
   libhpcrun_la_LIBADD += utilities/bgq-cnk/libhardware-thread-id.la
@@ -700,6 +701,10 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(LZMA_LDFLAGS_STAT) \
 						$(PERFMON_LDFLAGS_STAT)
+
+if OPT_USE_ZLIB
+#  libhpcrun_o_LDFLAGS   += $(ZLIB_HPCLINK_LIB)
+endif
 
 
 #-----------------------------------------------------------
@@ -764,7 +769,7 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
-  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS)
+  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)

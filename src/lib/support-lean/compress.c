@@ -58,7 +58,7 @@
 //***************************************************************************
 
 
-#include "../support-lean/compress.h"
+#include "compress.h"
 
 #include <stdio.h>
 #include <string.h>
