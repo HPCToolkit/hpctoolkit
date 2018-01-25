@@ -175,6 +175,9 @@ ZLIB_LIB = @ZLIB_LIB@
 ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 
+LZMA_LDFLAGS_STAT=@LZMA_LDFLAGS_STAT@
+LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
+
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
@@ -675,7 +678,7 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 #-----------------------------------------------------------
 
 libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
-libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) 
+libhpcrun_o_LDADD   = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean)
 
 if OPT_BGQ_BACKEND
   libhpcrun_la_LIBADD += utilities/bgq-cnk/libhardware-thread-id.la
@@ -699,13 +702,13 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(LZMA_LDFLAGS_STAT) \
-						$(PERFMON_LDFLAGS_STAT)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
+			$(PERFMON_LDFLAGS_STAT) 
+		 
 
 if OPT_USE_ZLIB
 #  libhpcrun_o_LDFLAGS   += $(ZLIB_HPCLINK_LIB)
 endif
-
 
 #-----------------------------------------------------------
 # whirled peas
@@ -911,6 +914,10 @@ MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
 
 libhpcrun_la_SOURCES += utilities/last_func.c
 libhpcrun_o_SOURCES  += utilities/last_func.c
+
+# add lzma library at the end
+libhpcrun_la_LIBADD += $(LZMA_LDFLAGS_STAT) 
+libhpcrun_o_LDADD   += $(LZMA_LDFLAGS_STAT) 
 
 
 #-----------------------------------------------------------

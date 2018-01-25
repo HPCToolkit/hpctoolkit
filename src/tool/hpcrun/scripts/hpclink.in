@@ -424,7 +424,11 @@ done
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
-set -- $undef_args $wrap_args $libhpcrun "$@"
+
+# FIXME: add LZMA static library at the end of libhpcrun.o
+# Ideally the library is included in libhpcrun.o, but somwehow not all
+# routines are included
+set -- $undef_args $wrap_args $libhpcrun @LZMA_LDFLAGS_STAT@ "$@"
 set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
