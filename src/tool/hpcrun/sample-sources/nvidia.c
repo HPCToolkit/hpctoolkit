@@ -118,7 +118,7 @@
 #define FORALL_EM_TIME(macro)  \
   macro("EM_TIME (us)",    11)  
 
-#if CUPTI_API_VERSION == 10
+#if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
   macro("IM_INVALID",       0)	\
   macro("IM_HTOD_BYTES",    1)	\
@@ -144,7 +144,7 @@
   macro("EM_TIME (us)",     5)  
 #endif
 
-#if CUPTI_API_VERSION == 10
+#if CUPTI_API_VERSION >= 10
 #define FORALL_STL(macro)	\
   macro("STL_INVALID",      0)	\
   macro("STL_NONE",         1)	\
