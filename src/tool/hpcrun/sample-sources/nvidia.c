@@ -160,8 +160,26 @@
   macro("STL_OTHR",        11)	\
   macro("STL_SLEEP",       12)
 
+#define FORALL_STL_LAT(macro)	\
+  macro("STL_LAT_INVALID",  13)	\
+  macro("STL_LAT_NONE",     14)	\
+  macro("STL_LAT_IFETCH",   15)	\
+  macro("STL_LAT_EXC_DEP",  16)	\
+  macro("STL_LAT_MEM_DEP",  17)	\
+  macro("STL_LAT_TEX",      18)	\
+  macro("STL_LAT_SYNC",     19)	\
+  macro("STL_LAT_CMEM_DEP", 20)	\
+  macro("STL_LAT_PIPE_BSY", 21)	\
+  macro("STL_LAT_MEM_THR",  22)	\
+  macro("STL_LAT_NOSEL",    23)	\
+  macro("STL_LAT_OTHR",     24)	\
+  macro("STL_LAT_SLEEP",    25)
+
 #define FORALL_GPU_INST(macro)  \
-  macro("GPU_ISAMP",       13)  
+  macro("GPU_ISAMP",        26)  
+
+#define FORALL_GPU_INST_LAT(macro)  \
+  macro("GPU_LAT_ISAMP",    27)  
 #else
 #define FORALL_STL(macro)	\
   macro("STL_INVALID",      0)	\
@@ -177,8 +195,25 @@
   macro("STL_NOSEL",       10)	\
   macro("STL_OTHR",        11)
 
+#define FORALL_STL_LAT(macro)	  \
+  macro("STL_LAT_INVALID", 12)	\
+  macro("STL_LAT_NONE",    13)	\
+  macro("STL_LAT_IFETCH",  14)	\
+  macro("STL_LAT_EXC_DEP", 15)	\
+  macro("STL_LAT_MEM_DEP", 16)	\
+  macro("STL_LAT_TEX",     17)	\
+  macro("STL_LAT_SYNC",    18)	\
+  macro("STL_LAT_CMEM_DEP",19)	\
+  macro("STL_LAT_PIPE_BSY",20)	\
+  macro("STL_LAT_MEM_THR", 21)	\
+  macro("STL_LAT_NOSEL",   22)	\
+  macro("STL_LAT_OTHR",    23)
+
 #define FORALL_GPU_INST(macro)  \
-  macro("GPU_ISAMP",        12)  
+  macro("GPU_ISAMP",       24)  
+
+#define FORALL_GPU_INST_LAT(macro)  \
+  macro("GPU_LAT_ISAMP",   25)  
 #endif
 
 #define COUNT_FORALL_CLAUSE(a,b) + 1
@@ -206,8 +241,9 @@ static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
 
 
-int stall_metric_id[NUM_CLAUSES(FORALL_STL)+1];
+int stall_metric_id[NUM_CLAUSES(FORALL_STL)+NUM_CLAUSES(FORALL_STL_LAT)+2];
 int gpu_inst_metric_id;
+int gpu_inst_lat_metric_id;
 
 int em_metric_id[NUM_CLAUSES(FORALL_EM)+1];
 int em_time_metric_id;
@@ -222,12 +258,25 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
   switch (record->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
+#ifdef CUPTI_API_VERSION >= 10
+      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)record;
+#else
       CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)record;
+#endif
       if (activity_sample->stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity_sample->stallReason];
         metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->samples});
+
+        index = stall_metric_id[activity_sample->stallReason+NUM_CLAUSES(FORALL_STL)];
+        metrics = hpcrun_reify_metric_set(node, index);
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->latencySamples});
+
+        metrics = hpcrun_reify_metric_set(node, gpu_inst_metric_id);
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->samples});
+
+        metrics = hpcrun_reify_metric_set(node, gpu_inst_lat_metric_id);
+        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->latencySamples});
       }
       break;
     }
@@ -238,6 +287,8 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
         int index = em_metric_id[activity_memcpy->copyKind];
         metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
+
+        metrics = hpcrun_reify_metric_set(node, em_time_metric_id);
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity_memcpy->end - activity_memcpy->start});
       }
       break;
@@ -249,6 +300,8 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
         int index = im_metric_id[activity_unified->counterKind];
         metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
+
+        metrics = hpcrun_reify_metric_set(node, im_time_metric_id);
         hpcrun_metric_std_inc(im_time_metric_id, metrics, (cct_metric_data_t){.i = activity_unified->timestamp});
       }
       break;
@@ -333,8 +386,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   ke_kind = hpcrun_metrics_new_kind();
   FORALL_STL(declare_stall_metric);	
+  FORALL_STL_LAT(declare_stall_metric);	
   FORALL_GPU_INST(declare_stall_metric);
+  FORALL_GPU_INST_LAT(declare_stall_metric);
   gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
+  gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
   hpcrun_close_kind(ke_kind);
 
 #define declare_im_metric(name, index) \

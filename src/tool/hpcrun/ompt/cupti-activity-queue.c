@@ -17,11 +17,21 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
+#ifdef CUPTI_API_VERSION >= 10
+      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
+      entry->activity = (CUpti_ActivityPCSampling3 *)hpcrun_malloc(sizeof(CUpti_ActivityPCSampling3));
+      ((CUpti_ActivityPCSampling3 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;
+      ((CUpti_ActivityPCSampling3 *)entry->activity)->stallReason = activity_sample->stallReason;
+      ((CUpti_ActivityPCSampling3 *)entry->activity)->samples = activity_sample->samples;
+      ((CUpti_ActivityPCSampling3 *)entry->activity)->latencySamples = activity_sample->latencySamples;
+#else
       CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
       entry->activity = (CUpti_ActivityPCSampling2 *)hpcrun_malloc(sizeof(CUpti_ActivityPCSampling2));
       ((CUpti_ActivityPCSampling2 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;
       ((CUpti_ActivityPCSampling2 *)entry->activity)->stallReason = activity_sample->stallReason;
       ((CUpti_ActivityPCSampling2 *)entry->activity)->samples = activity_sample->samples;
+      ((CUpti_ActivityPCSampling2 *)entry->activity)->latencySamples = activity_sample->latencySamples;
+#endif
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMCPY:

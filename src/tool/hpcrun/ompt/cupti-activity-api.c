@@ -27,10 +27,15 @@ cupti_process_unknown
 static void
 cupti_process_sample
 (
- CUpti_ActivityPCSampling2 *sample,
+ void *record,
  void *state
 )
 {
+#ifdef CUPTI_API_VERSION >= 10
+  CUpti_ActivityPCSampling3 *sample = (CUpti_ActivityPCSampling3 *)record;
+#else
+  CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
+#endif
   PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
 	 "samples %u, latencySamples %u, stallreason %s\n",
 	 sample->sourceLocatorId,
@@ -240,7 +245,7 @@ cupti_process_activity
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
-    cupti_process_sample((CUpti_ActivityPCSampling2 *) activity, state);
+    cupti_process_sample(activity, state);
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
