@@ -105,6 +105,8 @@
  * macros
  *****************************************************************************/
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
 
@@ -994,10 +996,10 @@ ompt_target_callback(ompt_target_type_t kind,
 }
 
 #define FOREACH_OMPT_DATA_OP(macro)                                        \
-  macro(optype, ompt_target_data_alloc, ompt_op_alloc)                \
-  macro(optype, ompt_target_data_transfer_to_dev, ompt_op_copy_in)    \
-  macro(optype, ompt_target_data_transfer_from_dev, ompt_op_copy_out) \
-  macro(optype, ompt_target_data_delete, ompt_op_delete)
+  macro(op, ompt_target_data_alloc, ompt_op_alloc)                \
+  macro(op, ompt_target_data_transfer_to_dev, ompt_op_copy_in)    \
+  macro(op, ompt_target_data_transfer_from_dev, ompt_op_copy_out) \
+  macro(op, ompt_target_data_delete, ompt_op_delete)
 
 void
 ompt_data_op_callback(ompt_id_t target_id,
@@ -1007,7 +1009,7 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  uintptr_t op = 0;
+  uint64_t op = 0;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
@@ -1020,6 +1022,7 @@ ompt_data_op_callback(ompt_id_t target_id,
     default:
       break;
   }
+  PRINT("mem host_op_id %d op %d\n", host_op_id, op);
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }

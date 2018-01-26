@@ -40,6 +40,7 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *
       entry->activity = (CUpti_ActivityMemcpy *)hpcrun_malloc(sizeof(CUpti_ActivityMemcpy));
       ((CUpti_ActivityMemcpy *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_MEMCPY;
       ((CUpti_ActivityMemcpy *)entry->activity)->copyKind = activity_memcpy->copyKind;
+      ((CUpti_ActivityMemcpy *)entry->activity)->bytes = activity_memcpy->bytes;
       ((CUpti_ActivityMemcpy *)entry->activity)->end = activity_memcpy->end;
       ((CUpti_ActivityMemcpy *)entry->activity)->start = activity_memcpy->start;
       break;
@@ -51,6 +52,15 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *
       ((CUpti_ActivityUnifiedMemoryCounter *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER;
       ((CUpti_ActivityUnifiedMemoryCounter *)entry->activity)->counterKind = activity_unified->counterKind;
       ((CUpti_ActivityUnifiedMemoryCounter *)entry->activity)->timestamp = activity_unified->timestamp;
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_KERNEL:
+    {
+      CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)activity;
+      entry->activity = (CUpti_ActivityKernel4 *)hpcrun_malloc(sizeof(CUpti_ActivityKernel4));
+      ((CUpti_ActivityKernel4 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_KERNEL;
+      ((CUpti_ActivityKernel4 *)entry->activity)->start = activity_kernel->start;
+      ((CUpti_ActivityKernel4 *)entry->activity)->end = activity_kernel->end;
       break;
     }
     default:

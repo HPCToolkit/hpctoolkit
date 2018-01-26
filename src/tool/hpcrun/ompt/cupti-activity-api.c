@@ -129,7 +129,6 @@ cupti_process_correlation
   }
   PRINT("External CorrelationId %lu\n", external_id);
   PRINT("CorrelationId %lu\n", correlation_id);
-  PRINT("Activity Kind %u\n", ec->externalKind);
 }
 
 
@@ -204,13 +203,13 @@ cupti_process_activityAPI
  void *state
 )
 {
-  PRINT("driver and kernel\n");
+  PRINT("driver and runtime\n");
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_DRIVER:
     {
       break;
     }
-    case CUPTI_ACTIVITY_KIND_KERNEL:
+    case CUPTI_ACTIVITY_KIND_RUNTIME:
     {
       break;
     }
@@ -221,12 +220,23 @@ cupti_process_activityAPI
 
 
 static void
-cupti_process_runtime
+cupti_process_kernel
 (
- CUpti_ActivityEvent *activity, 
+ CUpti_ActivityKernel4 *activity, 
  void *state
 )
 {
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
+    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    if (node != NULL) {
+      cupti_activity_queue_push(queue, activity, node);
+    }
+  }
+  PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
 }
 
 
@@ -275,12 +285,16 @@ cupti_process_activity
     break;
 
   case CUPTI_ACTIVITY_KIND_DRIVER:
-  case CUPTI_ACTIVITY_KIND_KERNEL:
+  case CUPTI_ACTIVITY_KIND_RUNTIME:
     cupti_process_activityAPI((CUpti_ActivityAPI *) activity, state);
     break;
 
-  case CUPTI_ACTIVITY_KIND_RUNTIME:
-    cupti_process_runtime((CUpti_ActivityEvent *) activity, state);
+  case CUPTI_ACTIVITY_KIND_KERNEL:
+    PRINT("kernel kind\n");
+    cupti_process_kernel((CUpti_ActivityKernel4 *) activity, state);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_EVENT:
     break;
 
   default:

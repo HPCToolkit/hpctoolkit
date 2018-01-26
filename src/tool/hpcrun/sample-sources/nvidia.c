@@ -102,6 +102,11 @@
  * macros
  *****************************************************************************/
 
+#define FORALL_KE(macro)	  \
+  macro("KE_START",        0)     \
+  macro("KE_END",          1)     \
+  macro("KE_TIME (us)",    2)     \
+
 #define FORALL_EM(macro)	\
   macro("EM_INVALID",       0)	\
   macro("EM_HTOD_BYTES",    1)	\
@@ -216,6 +221,7 @@
   macro("GPU_LAT_ISAMP",   25)  
 #endif
 
+
 #define COUNT_FORALL_CLAUSE(a,b) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
@@ -251,6 +257,10 @@ int em_time_metric_id;
 int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
 int im_time_metric_id;
 
+int ke_metric_id[NUM_CLAUSES(FORALL_KE)+1];
+int ke_start_metric_id;
+int ke_end_metric_id;
+int ke_time_metric_id;
 
 void
 cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
@@ -286,7 +296,7 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
       if (activity_memcpy->copyKind != 0x7fffffff) {
         int index = em_metric_id[activity_memcpy->copyKind];
         metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_memcpy->bytes});
 
         metrics = hpcrun_reify_metric_set(node, em_time_metric_id);
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity_memcpy->end - activity_memcpy->start});
@@ -304,6 +314,19 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
         metrics = hpcrun_reify_metric_set(node, im_time_metric_id);
         hpcrun_metric_std_inc(im_time_metric_id, metrics, (cct_metric_data_t){.i = activity_unified->timestamp});
       }
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_KERNEL:
+    {
+      CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)record;
+      metric_set_t *metrics = hpcrun_reify_metric_set(node, ke_start_metric_id);
+      hpcrun_metric_std_inc(ke_start_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->start});
+
+      metrics = hpcrun_reify_metric_set(node, ke_end_metric_id);
+      hpcrun_metric_std_inc(ke_end_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->end});
+
+      metrics = hpcrun_reify_metric_set(node, ke_time_metric_id);
+      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->end - activity_kernel->start});
       break;
     }
     default:
@@ -410,6 +433,16 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_EM_TIME(declare_em_metric);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   hpcrun_close_kind(em_kind);
+
+#define declare_ke_metric(name, index) \
+  ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
+
+  ke_kind = hpcrun_metrics_new_kind();
+  FORALL_KE(declare_ke_metric);	
+  ke_start_metric_id = ke_metric_id[0];
+  ke_end_metric_id = ke_metric_id[1];
+  ke_time_metric_id = ke_metric_id[2];
+  hpcrun_close_kind(ke_kind);
 }
 
 static void
