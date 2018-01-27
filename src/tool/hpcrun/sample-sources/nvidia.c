@@ -398,7 +398,6 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-// TODO(keren): not invoked, why?
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);

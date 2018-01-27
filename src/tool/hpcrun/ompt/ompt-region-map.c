@@ -15,8 +15,6 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include "ompt-region-map.h"
-#include "ompt-cct-node-vector.h"
-
 
 
 /******************************************************************************
@@ -28,7 +26,6 @@ struct ompt_region_map_entry_s {
   uint64_t refcnt;
   int64_t device_id;  // -1 reserved for unknown devices
   cct_node_t *call_path;
-  struct ompt_cct_node_vector_t *vector; 
   struct ompt_region_map_entry_s *left;
   struct ompt_region_map_entry_s *right;
 }; 
@@ -59,7 +56,6 @@ ompt_region_map_entry_new(uint64_t region_id, cct_node_t *call_path, int64_t dev
   e->call_path = call_path;
   e->left = NULL;
   e->right = NULL;
-  e->vector = (ompt_cct_node_vector_t *)ompt_cct_node_vector_init();
 
   return e;
 }
@@ -113,17 +109,6 @@ ompt_region_map_lookup(uint64_t id)
 }
 
 
-cct_node_t *ompt_region_map_seq_lookup(ompt_region_map_entry_t *entry, uint64_t id)
-{
-  cct_node_t *result = NULL;
-
-  if (entry->vector) {
-    result = ompt_cct_node_vector_get(entry->vector, id);
-  }
-
-  return result;
-}
-
 
 void
 ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path, int64_t device_id)
@@ -157,14 +142,6 @@ ompt_region_map_insert(uint64_t region_id, cct_node_t *call_path, int64_t device
   ompt_region_map_root = entry;
 
   spinlock_unlock(&ompt_region_map_lock);
-}
-
-
-void ompt_region_map_child_insert(ompt_region_map_entry_t *entry, cct_node_t *cct_node)
-{
-  if (entry->vector) {
-    ompt_cct_node_vector_push_back(entry->vector, cct_node);
-  }
 }
 
 
@@ -203,14 +180,6 @@ uint64_t
 ompt_region_map_entry_refcnt_get(ompt_region_map_entry_t *entry) 
 {
   return entry->refcnt;
-}
-
-
-void 
-ompt_region_map_entry_callpath_set(ompt_region_map_entry_t *entry, 
-				  cct_node_t *call_path)
-{
-  entry->call_path = call_path;
 }
 
 

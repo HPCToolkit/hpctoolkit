@@ -82,6 +82,7 @@
 #include "ompt-region-map.h"
 #include "ompt-host-op-map.h"
 #include "ompt-device-map.h"
+#include "ompt-target-map.h"
 
 #define HAVE_CUDA_H 1
 
@@ -371,8 +372,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
   hpcrun_safe_enter();
 
   // record the task creation context into task structure (in omp runtime)
-  cct_node_t *cct_node =
-    hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL).sample_node;
+  hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 
@@ -756,7 +756,10 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 
 //--------------------------------------------------------------------------
 // Adds an (opid, cct_node_t *) entry to the concurrent map by finding
-// the cct_node_t * associated with target_id from the thread_local variable
+// the cct_node_t * associated with target_id from the thread_local variable.
+// ompt_host_op_seq_id is useful, because when a pc that invokes a target region
+// is recorded multiple times (e.g. in a for or while loop), we accumulate different
+// op nodes together.
 //--------------------------------------------------------------------------
 void
 hpcrun_op_id_map_insert(ompt_id_t host_op_id,
@@ -767,12 +770,11 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
   if (entry != NULL) {
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
     cct_node_t *cct_child = NULL;
-    if ((cct_child = ompt_region_map_seq_lookup(entry, ompt_host_op_seq_id)) == NULL) {
-      cct_addr_t frm = { .ip_norm = ip };  // FIXME(keren): define union type for cct_addr_t
+    if ((cct_child = ompt_target_map_seq_lookup(cct_node, ompt_host_op_seq_id)) == NULL) {
+      cct_addr_t frm = { .ip_norm = ip };
       cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
-      ompt_region_map_child_insert(entry, cct_child);
+      ompt_target_map_child_insert(cct_node, cct_child);
     }
-    // FIXME(keren): problem with seq id, not in while loop
     ompt_host_op_map_insert(host_op_id, ompt_host_op_seq_id, entry);
     ompt_host_op_seq_id++;
   }
@@ -794,9 +796,8 @@ hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
   if (entry != NULL) {
     ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
     int host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
-    node = ompt_region_map_seq_lookup(region_map_entry, host_op_seq_id);
-    // FIXME(keren): remove host_op_id
-    //ompt_host_op_map_refcnt_update(host_op_id, 0);
+    cct_node_t *callpath = ompt_region_map_entry_callpath_get(region_map_entry);
+    node = ompt_target_map_seq_lookup(callpath, host_op_seq_id);
   }
   return node;
 }
@@ -882,11 +883,10 @@ ompt_callback_buffer_complete(uint64_t device_id,
                               int buffer_owned)
 {
   // signal advance to return pointer to first record
-  // TODO: separate it from ompt
   ompt_buffer_cursor_t next = begin;
   int status = 0;
   do {
-    CUpti_Activity *activity = (CUpti_Activity *)next; // TODO(keren): separate it
+    CUpti_Activity *activity = (CUpti_Activity *)next;
     cupti_activity_handle(activity);
     status = cupti_advance_buffer_cursor(buffer, bytes, next, &next);
   } while(status);
@@ -990,6 +990,10 @@ ompt_target_callback(ompt_target_type_t kind,
   hpcrun_safe_enter();
   
   cct_node_t *node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+  if (ompt_target_map_lookup(node) == NULL) {
+    ompt_target_map_insert(node);
+  }
+
   hpcrun_safe_exit();
   td->overhead--;
   hpcrun_op_id_map_record_target(target_id, node, device_num);
@@ -1022,7 +1026,6 @@ ompt_data_op_callback(ompt_id_t target_id,
     default:
       break;
   }
-  PRINT("mem host_op_id %d op %d\n", host_op_id, op);
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
   hpcrun_op_id_map_insert(host_op_id, target_id, ip);
 }

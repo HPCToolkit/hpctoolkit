@@ -24,6 +24,7 @@ struct ompt_cct_node_vector_s {
   uint64_t capacity;
 }; 
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 ompt_cct_node_vector_t *ompt_cct_node_vector_init()
 {
@@ -55,6 +56,8 @@ void ompt_cct_node_vector_push_back(ompt_cct_node_vector_t *vector, cct_node_t *
   if (vector->size == vector->capacity) {
     ompt_cct_node_vector_reserve(vector, vector->capacity * 2);
   }
+
+  PRINT("size %d update\n", vector->size);
   vector->nodes[vector->size] = node;
   vector->size++;
 }

@@ -2,6 +2,10 @@
 #define _hpctoolkit_ompt_cct_node_vector_h_
 
 /******************************************************************************
+ * hpcrun customized structure for dynamic vector
+ *****************************************************************************/
+
+/******************************************************************************
  * system includes
  *****************************************************************************/
 
@@ -25,5 +29,3 @@ void ompt_cct_node_vector_push_back(ompt_cct_node_vector_t *vector, cct_node_t *
 cct_node_t *ompt_cct_node_vector_get(ompt_cct_node_vector_t *vector, uint64_t host_op_seq_id);
 
 #endif
-
-

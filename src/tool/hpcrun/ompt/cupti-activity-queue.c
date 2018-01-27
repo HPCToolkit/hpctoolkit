@@ -17,7 +17,7 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
-#ifdef CUPTI_API_VERSION >= 10
+#if CUPTI_API_VERSION >= 10
       CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
       entry->activity = (CUpti_ActivityPCSampling3 *)hpcrun_malloc(sizeof(CUpti_ActivityPCSampling3));
       ((CUpti_ActivityPCSampling3 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;

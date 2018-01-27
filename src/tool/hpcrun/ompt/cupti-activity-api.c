@@ -31,7 +31,7 @@ cupti_process_sample
  void *state
 )
 {
-#ifdef CUPTI_API_VERSION >= 10
+#if CUPTI_API_VERSION >= 10
   CUpti_ActivityPCSampling3 *sample = (CUpti_ActivityPCSampling3 *)record;
 #else
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;

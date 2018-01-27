@@ -23,7 +23,7 @@
  *****************************************************************************/
 
 struct ompt_function_id_map_entry_s {
-  uint64_t function_id;
+  uint64_t function_id;  // cupti function id
   uint64_t refcnt;
   uint64_t function_index;
   uint64_t cubin_id;
