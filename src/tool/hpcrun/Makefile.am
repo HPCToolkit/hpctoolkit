@@ -284,7 +284,6 @@ MY_BASE_FILES =				\
 	sample-sources/blame-shift/undirected.c    \
 	sample-sources/omp-mutex.c      \
 	sample-sources/omp-idle.c       \
-	sample-sources/nvidia.c         \
         sample-sources/common.c         \
 	sample-sources/display.c		\
 	sample-sources/ga.c		\
@@ -312,6 +311,7 @@ MY_BASE_FILES =				\
 	cct/cct_bundle.c		\
 	cct/cct_ctxt.c			\
 	cct/cct.c               	\
+	cct/cct-node-vector.c     \
 	\
 	cct2metrics.c                   \
 	\
@@ -334,8 +334,6 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
-	\
-	ompt/cubin-symbols.c            \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
@@ -345,11 +343,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-region-map.c          \
 	ompt/ompt-device-map.c          \
 	ompt/ompt-parallel-region-map.c \
-	ompt/ompt-host-op-map.c         \
-	ompt/ompt-function-id-map.c     \
-	ompt/ompt-cubin-id-map.c        \
-	ompt/ompt-target-map.c        \
-	ompt/ompt-cct-node-vector.c     \
+	ompt/ompt-target-map.c          \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	ompt/ompt-task-map.c            \
@@ -434,10 +428,15 @@ if OPT_PAPI_CUPTI
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = ompt/cupti-activity-strings.c   \
-								 ompt/cupti-activity-api.c       \
-								 ompt/cupti-activity-queue.c     \
-								 ompt/cupti-correlation-id-map.c      
+MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
+								 sample-sources/nvidia/cubin-id-map.c             \
+								 sample-sources/nvidia/cubin-symbols.c            \
+								 sample-sources/nvidia/cupti-activity-api.c       \
+								 sample-sources/nvidia/cupti-activity-queue.c     \
+								 sample-sources/nvidia/cupti-activity-strings.c   \
+								 sample-sources/nvidia/cupti-correlation-id-map.c \
+								 sample-sources/nvidia/cupti-function-id-map.c    \
+								 sample-sources/nvidia/cupti-host-op-map.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

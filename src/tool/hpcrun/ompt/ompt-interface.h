@@ -31,8 +31,7 @@ extern void ompt_idle_blame_shift_request();
 //   returns 1 if the current state represents a form of overhead
 //------------------------------------------------------------------------------
 extern int hpcrun_ompt_state_is_overhead();
-extern cct_node_t* hpcrun_op_id_map_lookup(ompt_id_t host_op_id);
-extern ip_normalized_t hpcrun_cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset);
+extern cct_node_t* hpcrun_ompt_op_id_map_lookup(ompt_id_t host_op_id);
 
 extern ompt_idle_t ompt_idle_placeholder_fn;
 

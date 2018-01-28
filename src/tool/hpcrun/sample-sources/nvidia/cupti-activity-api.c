@@ -1,15 +1,21 @@
 #include <stdio.h>
 
 #include <hpcrun/cct2metrics.h>
-#include <hpcrun/sample-sources/nvidia.h>
 
+#define HPCRUN_OMPT_ENABLE 1
+
+#if HPCRUN_OMPT_ENABLE
+#include <hpcrun/ompt/ompt-interface.h>
+#endif
+
+#include "nvidia.h"
+#include "cubin-id-map.h"
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
 #include "cupti-activity-queue.h"
-#include "ompt-function-id-map.h"
-#include "ompt-host-op-map.h"
-#include "ompt-interface.h"
+#include "cupti-function-id-map.h"
+#include "cupti-host-op-map.h"
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
@@ -48,15 +54,18 @@ cupti_process_sample
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
   PRINT("external_id %d\n", external_id);
-  ompt_function_id_map_entry_t *entry = ompt_function_id_map_lookup(sample->functionId);
+  cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(sample->functionId);
   if (entry != NULL) {
-    uint64_t function_index = ompt_function_id_map_entry_function_index_get(entry);
-    uint64_t cubin_id = ompt_function_id_map_entry_cubin_id_get(entry);
-    ip_normalized_t ip = hpcrun_cubin_id_transform(cubin_id, function_index, sample->pcOffset);
+    uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
+    uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
+    ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, sample->pcOffset);
     cct_addr_t frm = { .ip_norm = ip };
-    cct_node_t *cct_node = hpcrun_op_id_map_lookup(external_id);
-    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
+    // TODO(keren): directly link to target node
+#if HPCRUN_OMPT_ENABLE
+    cct_node_t *cct_node = hpcrun_ompt_op_id_map_lookup(external_id);
+#endif
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     if (cct_node != NULL) {
       cct_node_t *cct_child = NULL;
       if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
@@ -93,7 +102,7 @@ cupti_process_function
 	 af->moduleId,
 	 af->functionIndex,
 	 af->name);
-  ompt_function_id_map_insert(af->id, af->functionIndex, af->moduleId);
+  cupti_function_id_map_insert(af->id, af->functionIndex, af->moduleId);
 }
 
 
@@ -120,7 +129,7 @@ cupti_process_correlation
 {
   uint64_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
-  if (hpcrun_op_id_map_lookup(external_id) != NULL) {
+  if (hpcrun_ompt_op_id_map_lookup(external_id) != NULL) {
     if (cupti_correlation_id_map_lookup(correlation_id) != NULL) {
       cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
     } else {
@@ -142,9 +151,9 @@ cupti_process_memcpy
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, activity, node);
     }
@@ -165,9 +174,9 @@ cupti_process_memcpy2
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, activity, node);
     }
@@ -203,7 +212,6 @@ cupti_process_activityAPI
  void *state
 )
 {
-  PRINT("driver and runtime\n");
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_DRIVER:
     {
@@ -229,9 +237,9 @@ cupti_process_kernel
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    ompt_host_op_map_entry_t *host_op_entry = ompt_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = ompt_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = hpcrun_op_id_map_lookup(external_id);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, activity, node);
     }
@@ -290,7 +298,6 @@ cupti_process_activity
     break;
 
   case CUPTI_ACTIVITY_KIND_KERNEL:
-    PRINT("kernel kind\n");
     cupti_process_kernel((CUpti_ActivityKernel4 *) activity, state);
     break;
 

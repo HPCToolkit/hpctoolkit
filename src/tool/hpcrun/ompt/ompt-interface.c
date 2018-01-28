@@ -70,6 +70,7 @@
 #include <hpcrun/ompt/ompt-task.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/cct/cct-node-vector.h>
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/hpcrun-initializers.h>
 #include <hpcrun/main.h>
@@ -80,17 +81,19 @@
 #include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
 #include "ompt-region-map.h"
-#include "ompt-host-op-map.h"
 #include "ompt-device-map.h"
 #include "ompt-target-map.h"
+
 
 #define HAVE_CUDA_H 1
 
 #if HAVE_CUDA_H
-#include "ompt-cubin-id-map.h"
-#include "cubin-symbols.h"
-#include "cupti-activity-api.h"
-#include "cupti-activity-queue.h"
+#include "sample-sources/nvidia/nvidia.h"
+#include "sample-sources/nvidia/cubin-id-map.h"
+#include "sample-sources/nvidia/cubin-symbols.h"
+#include "sample-sources/nvidia/cupti-activity-api.h"
+#include "sample-sources/nvidia/cupti-activity-queue.h"
+#include "sample-sources/nvidia/cupti-host-op-map.h"
 #endif
 
 #include "sample-sources/sample-filters.h"
@@ -98,7 +101,6 @@
 #include "sample-sources/blame-shift/undirected.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
-#include "sample-sources/nvidia.h"
 
 #include "sample-sources/idle.h"
 
@@ -738,7 +740,7 @@ ompt_idle_blame_shift_request()
 }
 
 //*****************************************************************************
-// map opid operations
+// interface operations
 //*****************************************************************************
 
 //--------------------------------------------------------------------------
@@ -762,9 +764,9 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 // op nodes together.
 //--------------------------------------------------------------------------
 void
-hpcrun_op_id_map_insert(ompt_id_t host_op_id,
-                        ompt_id_t target_id,
-                        ip_normalized_t ip)
+hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
+                             ompt_id_t target_id,
+                             ip_normalized_t ip)
 {
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
@@ -775,7 +777,8 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
       cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
       ompt_target_map_child_insert(cct_node, cct_child);
     }
-    ompt_host_op_map_insert(host_op_id, ompt_host_op_seq_id, entry);
+    // TODO(keren): generalization, replace cupti with sth. called device_map
+    cupti_host_op_map_insert(host_op_id, ompt_host_op_seq_id, cct_node);
     ompt_host_op_seq_id++;
   }
 }
@@ -788,34 +791,20 @@ hpcrun_op_id_map_insert(ompt_id_t host_op_id,
 // context for the target region. For now, this cct_node_t * will be in the thread CCT.
 // Eventually, this function might return a pointer to a separate CCT that will be used by a device
 //--------------------------------------------------------------------------
+// TODO(keren): directly link to the target node
 cct_node_t *
-hpcrun_op_id_map_lookup(ompt_id_t host_op_id)
+hpcrun_ompt_op_id_map_lookup(ompt_id_t host_op_id)
 {
-  ompt_host_op_map_entry_t *entry = ompt_host_op_map_lookup(host_op_id);
+  cupti_host_op_map_entry_t *entry = cupti_host_op_map_lookup(host_op_id);
   cct_node_t *node = NULL;
   if (entry != NULL) {
-    ompt_region_map_entry_t *region_map_entry = ompt_host_op_map_entry_region_map_entry_get(entry);
-    int host_op_seq_id = ompt_host_op_map_entry_seq_id_get(entry);
-    cct_node_t *callpath = ompt_region_map_entry_callpath_get(region_map_entry);
+    cct_node_t *callpath = cupti_host_op_map_entry_target_get(entry);
+    uint64_t host_op_seq_id = cupti_host_op_map_entry_seq_id_get(entry);
     node = ompt_target_map_seq_lookup(callpath, host_op_seq_id);
   }
   return node;
 }
 
-
-ip_normalized_t
-hpcrun_cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset)
-{
-  ompt_cubin_id_map_entry_t *entry = ompt_cubin_id_map_lookup(cubin_id);
-  ip_normalized_t ip;
-  if (entry != NULL) {
-    uint64_t hpctoolkit_module_id = ompt_cubin_id_map_entry_hpctoolkit_id_get(entry);
-    const Elf_SymbolVector *vector = ompt_cubin_id_map_entry_efl_vector_get(entry);
-    ip.lm_id = (uint16_t)hpctoolkit_module_id;
-    ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
-  }
-  return ip;
-}
 
 //*****************************************************************************
 // device operations
@@ -852,17 +841,19 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 }
 
 
-#define BUFFER_SIZE (1024 * 1024 * 8)
-
 void
 hpcrun_ompt_device_finalizer(void *args)
 {
   if (ompt_stop_flag) {
     ompt_stop_trace(ompt_device);
     ompt_stop_flag = false;
+    // TODO(keren): replace cupti with sth. called device queue
     cupti_activity_queue_apply(cupti_attribute_activity);
   }
 }
+
+
+#define BUFFER_SIZE (1024 * 1024 * 8)
 
 void 
 ompt_callback_buffer_request(uint64_t device_id,
@@ -886,6 +877,7 @@ ompt_callback_buffer_complete(uint64_t device_id,
   ompt_buffer_cursor_t next = begin;
   int status = 0;
   do {
+    // TODO(keren): replace cupti_activity_handle with device_activity handle
     CUpti_Activity *activity = (CUpti_Activity *)next;
     cupti_activity_handle(activity);
     status = cupti_advance_buffer_cursor(buffer, bytes, next, &next);
@@ -951,12 +943,11 @@ ompt_device_load(uint64_t device_num,
   char device_file[MAXPATHLEN]; 
   assert(filename);
   sprintf(device_file, "%s@0x%lx", filename, (unsigned long) file_addr);
-  // FIXME
   uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-  ompt_cubin_id_map_entry_t *entry = ompt_cubin_id_map_lookup(module_id);
+  cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
   if (entry == NULL) {
     Elf_SymbolVector *vector = computeCubinFunctionOffsets(host_addr, bytes);
-    ompt_cubin_id_map_insert(module_id, hpctoolkit_module_id, vector);
+    cubin_id_map_insert(module_id, hpctoolkit_module_id, vector);
   }
 }
 
@@ -965,7 +956,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
-  ompt_cubin_id_map_refcnt_update(module_id, 0);
+  cubin_id_map_refcnt_update(module_id, 0);
 }
 
 
@@ -1027,7 +1018,7 @@ ompt_data_op_callback(ompt_id_t target_id,
       break;
   }
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
-  hpcrun_op_id_map_insert(host_op_id, target_id, ip);
+  hpcrun_ompt_op_id_map_insert(host_op_id, target_id, ip);
 }
 
 
@@ -1036,7 +1027,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
-  hpcrun_op_id_map_insert(host_op_id, target_id, ip);
+  hpcrun_ompt_op_id_map_insert(host_op_id, target_id, ip);
 }
 
 
@@ -1076,4 +1067,3 @@ prepare_device()
   ompt_set_callback(ompt_callback_target_submit, ompt_submit_callback);
   ompt_set_callback(ompt_callback_target_map, ompt_map_callback);
 }
-

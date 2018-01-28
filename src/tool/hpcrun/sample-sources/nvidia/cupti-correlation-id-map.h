@@ -1,5 +1,5 @@
-#ifndef _hpctoolkit_cupti_correlation_id_map_h_
-#define _hpctoolkit_cupti_correlation_id_map_h_
+#ifndef _HPCTOOLKIT_CUPTI_CORRELATION_ID_MAP_H_
+#define _HPCTOOLKIT_CUPTI_CORRELATION_ID_MAP_H_
 
 /******************************************************************************
  * system includes

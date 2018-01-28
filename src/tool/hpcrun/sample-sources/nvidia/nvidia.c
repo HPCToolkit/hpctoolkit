@@ -82,9 +82,9 @@
  *****************************************************************************/
 
 #include "nvidia.h"
-#include "simple_oo.h"
-#include "sample_source_obj.h"
-#include "common.h"
+#include "../simple_oo.h"
+#include "../sample_source_obj.h"
+#include "../common.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -462,15 +462,8 @@ METHOD_FN(display_events)
 #define ss_name ompt_nvidia_gpu
 #define ss_cls SS_HARDWARE
 
-#include "ss_obj.h"
+#include "../ss_obj.h"
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-
-
-
-
-
-
-

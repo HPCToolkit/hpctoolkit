@@ -1,5 +1,5 @@
-#ifndef _cupti_activity_queue_
-#define _cupti_activity_queue_
+#ifndef _HPCTOOLKIT_CUPTI_ACTIVITY_QUEUE_
+#define _HPCTOOLKIT_CUPTI_ACTIVITY_QUEUE_
 
 #include <cupti.h>
 #include <cupti_activity.h>

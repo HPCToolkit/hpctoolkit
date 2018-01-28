@@ -1,5 +1,5 @@
-#ifndef _CUPTI_ACTIVITY_API_H_
-#define _CUPTI_ACTIVITY_API_H_
+#ifndef _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
+#define _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
 
 #include <cupti.h>
 

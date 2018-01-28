@@ -12,11 +12,11 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/ompt/ompt-target-map.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
-#include "ompt-cct-node-vector.h"
+#include <hpcrun/cct/cct-node-vector.h>
 
+#include "ompt-target-map.h"
 
 
 /******************************************************************************
@@ -26,7 +26,7 @@
 struct ompt_target_map_entry_s {
   cct_node_t *target;  // cupti function id
   uint64_t refcnt;
-  ompt_cct_node_vector_t *vector;
+  cct_node_vector_t *vector;
   struct ompt_target_map_entry_s *left;
   struct ompt_target_map_entry_s *right;
 }; 
@@ -52,7 +52,7 @@ ompt_target_map_entry_new(cct_node_t *target)
   ompt_target_map_entry_t *e;
   e = (ompt_target_map_entry_t *)hpcrun_malloc(sizeof(ompt_target_map_entry_t));
   e->target = target;
-  e->vector = (ompt_cct_node_vector_t *)ompt_cct_node_vector_init();
+  e->vector = (cct_node_vector_t *)cct_node_vector_init();
   e->refcnt = 0;
   e->left = NULL;
   e->right = NULL;
@@ -178,14 +178,14 @@ ompt_target_map_refcnt_update(cct_node_t *target, int val)
 void ompt_target_map_child_insert(cct_node_t *target, cct_node_t *cct_node)
 {
   ompt_target_map_entry_t *entry = ompt_target_map_lookup(target);
-  ompt_cct_node_vector_push_back(entry->vector, cct_node);
+  cct_node_vector_push_back(entry->vector, cct_node);
 }
 
 
 cct_node_t *ompt_target_map_seq_lookup(cct_node_t *target, uint64_t id)
 {
   ompt_target_map_entry_t *entry = ompt_target_map_lookup(target);
-  return ompt_cct_node_vector_get(entry->vector, id);
+  return cct_node_vector_get(entry->vector, id);
 }
 
 

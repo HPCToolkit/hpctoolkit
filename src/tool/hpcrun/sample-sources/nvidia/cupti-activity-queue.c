@@ -10,6 +10,7 @@ cupti_activity_queue_head()
   return &cupti_activity_queue;
 }
 
+// TODO(keren): replace explicit copy with memcpy
 void
 cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *activity, cct_node_t *cct_node)
 {

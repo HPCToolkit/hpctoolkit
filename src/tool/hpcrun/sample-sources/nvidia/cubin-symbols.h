@@ -54,8 +54,8 @@
 //***************************************************************************
 //
 
-#ifndef _CUBIN_SYMBOLS_H_
-#define _CUBIN_SYMBOLS_H_
+#ifndef _HPCTOOLKIT_CUBIN_SYMBOLS_H_
+#define _HPCTOOLKIT_CUBIN_SYMBOLS_H_
 
 //******************************************************************************
 // system includes

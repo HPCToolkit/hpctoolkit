@@ -14,8 +14,8 @@
 #include <lib/prof-lean/splay-macros.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
-#include "cupti-correlation-id-map.h"
 
+#include "cupti-correlation-id-map.h"
 
 
 /******************************************************************************

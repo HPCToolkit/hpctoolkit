@@ -1,5 +1,5 @@
-#ifndef device_finalizers_h
-#define device_finalizers_h
+#ifndef _HPCTOOLKIT_DEVICE_FINALIZERS_H_
+#define _HPCTOOLKIT_DEVICE_FINALIZERS_H_
 
 typedef void (*device_finalizer_fn_t)(void* args);
 

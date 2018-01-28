@@ -1,5 +1,5 @@
-#ifndef _hpctoolkit_ompt_host_op_map_h_
-#define _hpctoolkit_ompt_host_op_map_h_
+#ifndef _HPCTOOLKIT_CUPTI_HOST_OP_MAP_H_
+#define _HPCTOOLKIT_CUPTI_HOST_OP_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -14,7 +14,6 @@
  *****************************************************************************/
 
 #include <hpcrun/cct/cct.h>
-#include <hpcrun/ompt/ompt-region-map.h>
 
 #include "cupti-activity-queue.h"
 
@@ -23,7 +22,7 @@
  * type definitions 
  *****************************************************************************/
 
-typedef struct ompt_host_op_map_entry_s ompt_host_op_map_entry_t;
+typedef struct cupti_host_op_map_entry_s cupti_host_op_map_entry_t;
 
 
 
@@ -31,21 +30,21 @@ typedef struct ompt_host_op_map_entry_s ompt_host_op_map_entry_t;
  * interface operations
  *****************************************************************************/
 
-ompt_host_op_map_entry_t *ompt_host_op_map_lookup(uint64_t id);
+cupti_host_op_map_entry_t *cupti_host_op_map_lookup(uint64_t id);
 
-void ompt_host_op_map_insert(uint64_t host_op_id,
+void cupti_host_op_map_insert(uint64_t host_op_id,
                              uint64_t host_op_seq_id,
-                             ompt_region_map_entry_t *map_entry);
+                             cct_node_t *target);
 
-bool ompt_host_op_map_refcnt_update(uint64_t host_op_id, int val);
+bool cupti_host_op_map_refcnt_update(uint64_t host_op_id, int val);
 
-uint64_t ompt_host_op_map_entry_refcnt_get(ompt_host_op_map_entry_t *entry);
+uint64_t cupti_host_op_map_entry_refcnt_get(cupti_host_op_map_entry_t *entry);
 
-ompt_region_map_entry_t *ompt_host_op_map_entry_region_map_entry_get(ompt_host_op_map_entry_t *entry);
+cct_node_t *cupti_host_op_map_entry_target_get(cupti_host_op_map_entry_t *entry);
 
-uint64_t ompt_host_op_map_entry_seq_id_get(ompt_host_op_map_entry_t *entry);
+uint64_t cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry);
 
-cupti_activity_queue_entry_t **ompt_host_op_map_entry_activity_queue_get(ompt_host_op_map_entry_t *entry);
+cupti_activity_queue_entry_t **cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry);
 
 #endif
 
