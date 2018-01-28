@@ -103,9 +103,10 @@
  *****************************************************************************/
 
 #define FORALL_KE(macro)	  \
-  macro("KE_START",        0)     \
-  macro("KE_END",          1)     \
-  macro("KE_TIME (us)",    2)     \
+  macro("KE_STATIC_MEM_BYTES",        0)     \
+  macro("KE_DYNAMIC_MEM_BYTES",       1)     \
+  macro("KE_LOCAL_MEM_BYTES",        2)     \
+  macro("KE_TIME (us)",    3)     \
 
 #define FORALL_EM(macro)	\
   macro("EM_INVALID",       0)	\
@@ -258,8 +259,9 @@ int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
 int im_time_metric_id;
 
 int ke_metric_id[NUM_CLAUSES(FORALL_KE)+1];
-int ke_start_metric_id;
-int ke_end_metric_id;
+int ke_static_shared_metric_id;
+int ke_dynamic_shared_metric_id;
+int ke_local_metric_id;
 int ke_time_metric_id;
 
 void
@@ -319,11 +321,14 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     case CUPTI_ACTIVITY_KIND_KERNEL:
     {
       CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)record;
-      metric_set_t *metrics = hpcrun_reify_metric_set(node, ke_start_metric_id);
-      hpcrun_metric_std_inc(ke_start_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->start});
+      metric_set_t *metrics = hpcrun_reify_metric_set(node, ke_static_shared_metric_id);
+      hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->staticSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(node, ke_end_metric_id);
-      hpcrun_metric_std_inc(ke_end_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->end});
+      metrics = hpcrun_reify_metric_set(node, ke_dynamic_shared_metric_id);
+      hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->dynamicSharedMemory});
+
+      metrics = hpcrun_reify_metric_set(node, ke_local_metric_id);
+      hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->localMemoryTotal});
 
       metrics = hpcrun_reify_metric_set(node, ke_time_metric_id);
       hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->end - activity_kernel->start});
@@ -438,9 +443,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   ke_kind = hpcrun_metrics_new_kind();
   FORALL_KE(declare_ke_metric);	
-  ke_start_metric_id = ke_metric_id[0];
-  ke_end_metric_id = ke_metric_id[1];
-  ke_time_metric_id = ke_metric_id[2];
+  ke_static_shared_metric_id = ke_metric_id[0];
+  ke_dynamic_shared_metric_id = ke_metric_id[1];
+  ke_local_metric_id = ke_metric_id[2];
+  ke_time_metric_id = ke_metric_id[3];
   hpcrun_close_kind(ke_kind);
 }
 
