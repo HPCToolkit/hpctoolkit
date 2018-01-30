@@ -95,11 +95,13 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 //******************************************************************************
-// local variables
+// typedef, structure or enum
 //******************************************************************************
 
 
-static uint16_t perf_kernel_lm_id;
+//******************************************************************************
+// local variables
+//******************************************************************************
 
 
 //******************************************************************************
@@ -127,11 +129,15 @@ perf_add_kernel_callchain(
   }
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
   if (data->nr > 0) {
+
+    core_profile_trace_data_t *cptd = &(TD_GET(core_profile_trace_data));
+
+    TMSG(LINUX_PERF, "add %d frames to lm %d", data->nr, cptd->perf_kernel_lm_id);
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
 
-      uint16_t lm_id = perf_kernel_lm_id;
+      uint16_t lm_id = cptd->perf_kernel_lm_id;
       ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
       cct_addr_t frm = { .ip_norm = npc };
       cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
@@ -268,30 +274,37 @@ perf_max_sample_rate()
 static bool
 is_perf_ksym_available()
 {
-  enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
-
   // if kernel symbols are available, we will attempt to collect kernel
   // callchains and add them to our call paths
-  static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
-  if (ksym_status == PERF_UNDEFINED) {
+  core_profile_trace_data_t *cptd = &(TD_GET(core_profile_trace_data));
+
+  if (cptd->ksym_status == PERF_UNDEFINED) {
     int level = perf_kernel_syms_avail();
 
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
-      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-      ksym_status = PERF_AVAILABLE;
+      cptd->perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+      TMSG(LINUX_PERF, "kernel module: %d", cptd->perf_kernel_lm_id);
+      cptd->ksym_status = PERF_AVAILABLE;
     } else {
-      ksym_status = PERF_UNAVAILABLE;
+      cptd->ksym_status = PERF_UNAVAILABLE;
     }
   }
-  return (ksym_status == PERF_AVAILABLE);
+  return (cptd->ksym_status == PERF_AVAILABLE);
 }
 
 
 /*************************************************************
  * Interface API
  **************************************************************/ 
+
+
+void
+perf_util_init_kernel_lm()
+{
+  is_perf_ksym_available();
+}
 
 //----------------------------------------------------------
 // generic default initialization for event attributes
