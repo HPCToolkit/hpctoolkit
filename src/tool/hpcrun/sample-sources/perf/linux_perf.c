@@ -659,8 +659,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-
-  self->evl.nevents = num_events;
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -701,6 +699,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       if (event_desc[i].metric_custom->register_fn != NULL) {
     	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
+        METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
       }
     }
@@ -752,6 +751,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
 
   if (num_events > 0)
