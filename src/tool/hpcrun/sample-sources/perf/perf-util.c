@@ -132,7 +132,6 @@ perf_add_kernel_callchain(
 
     core_profile_trace_data_t *cptd = &(TD_GET(core_profile_trace_data));
 
-    TMSG(LINUX_PERF, "add %d frames to lm %d", data->nr, cptd->perf_kernel_lm_id);
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
@@ -285,7 +284,6 @@ is_perf_ksym_available()
     if (level == 0 || level == 1) {
       hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
       cptd->perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-      TMSG(LINUX_PERF, "kernel module: %d", cptd->perf_kernel_lm_id);
       cptd->ksym_status = PERF_AVAILABLE;
     } else {
       cptd->ksym_status = PERF_UNAVAILABLE;
