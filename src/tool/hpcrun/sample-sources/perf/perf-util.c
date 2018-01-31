@@ -98,11 +98,13 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 //******************************************************************************
-// local variables
+// typedef, structure or enum
 //******************************************************************************
 
 
-static uint16_t perf_kernel_lm_id;
+//******************************************************************************
+// local variables
+//******************************************************************************
 
 
 //******************************************************************************
@@ -116,9 +118,8 @@ static uint16_t perf_kernel_lm_id;
 //******************************************************************************
 
 static cct_node_t *
-perf_insert_cct(cct_node_t *parent, u64 ip)
+perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
 {
-  uint16_t lm_id      = perf_kernel_lm_id;
   ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = ip };
   cct_addr_t frm      = { .ip_norm = npc };
 
@@ -143,11 +144,13 @@ perf_add_kernel_callchain(
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
   if (data->nr > 0) {
 
+    core_profile_trace_data_t *cptd = &(TD_GET(core_profile_trace_data));
+    
     // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
     // if we have call chain from the kernel, but no kernel symbol address available,
     // we collapse all kernel call chains into a single node
     if (perf_util_get_kptr_restrict() != 0) {
-      return perf_insert_cct(parent, 0);
+      return perf_insert_cct(cptd->perf_kernel_lm_id, parent, 0);
     }
 
     // add kernel IPs to the call chain top down, which is the 
@@ -285,13 +288,12 @@ perf_max_sample_rate()
 static bool
 is_perf_ksym_available()
 {
-  enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
-
   // if kernel symbols are available, we will attempt to collect kernel
   // callchains and add them to our call paths
-  static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
-  if (ksym_status == PERF_UNDEFINED) {
+  core_profile_trace_data_t *cptd = &(TD_GET(core_profile_trace_data));
+
+  if (cptd->ksym_status == PERF_UNDEFINED) {
     int level = perf_util_get_paranoid_level();
 
     if (level == 0 || level == 1) {
@@ -300,14 +302,13 @@ is_perf_ksym_available()
       char buffer[MAX_BUFFER_LINUX_KERNEL];
       OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
 
-      perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
-
-      ksym_status = PERF_AVAILABLE;
+      cptd->perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+      cptd->ksym_status = PERF_AVAILABLE;
     } else {
-      ksym_status = PERF_UNAVAILABLE;
+      cptd->ksym_status = PERF_UNAVAILABLE;
     }
   }
-  return (ksym_status == PERF_AVAILABLE);
+  return (cptd->ksym_status == PERF_AVAILABLE);
 }
 
 
@@ -325,6 +326,13 @@ perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
    return ret;
 }
 
+
+
+void
+perf_util_init_kernel_lm()
+{
+  is_perf_ksym_available();
+}
 
 //----------------------------------------------------------
 // generic default initialization for event attributes
