@@ -156,7 +156,7 @@ perf_add_kernel_callchain(
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
-      parent = perf_insert_cct(parent, data->ips[i]);
+      parent = perf_insert_cct(cptd->perf_kernel_lm_id, parent, data->ips[i]);
     }
   }
   return parent;
@@ -302,7 +302,7 @@ is_perf_ksym_available()
       char buffer[MAX_BUFFER_LINUX_KERNEL];
       OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
 
-      cptd->perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+      cptd->perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
       cptd->ksym_status = PERF_AVAILABLE;
     } else {
       cptd->ksym_status = PERF_UNAVAILABLE;
