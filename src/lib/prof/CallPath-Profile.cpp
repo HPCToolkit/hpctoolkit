@@ -138,6 +138,8 @@ std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 uint fake_load_module_id;
 std::set<uint> m_setFakeLoadModule;
 
+static uint fake_file_id;
+
 namespace CallPath {
 
 
@@ -162,6 +164,7 @@ Profile::Profile(const std::string name)
   m_structure = NULL;
 
   fake_load_module_id = 0;
+  fake_file_id = 0;
 
   canonicalize();
 }
@@ -581,11 +584,24 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // -------------------------------------------------------
         std::string completProcName;
 
-        Struct::LM *lm = strct->ancestorLM();
+        Struct::File *file = strct->ancestorFile();
+        uint file_id       = (file != NULL ? file->id() : 0);
+        Struct::LM *lm     = strct->ancestorLM();
         if (lm) {
           uint lm_id = lm->id();
           if (BinUtil::LM::isFakeLoadModule(lm->name().c_str())) {
-            lm_id = fake_load_module_id;
+            lm_id        = fake_load_module_id;
+
+            // Note: the same file of different load module have different file id.
+            //       to handle this issue, we need to make it consistent that the file
+            //       id of fake load module is the same
+
+            // if we haven't set fake_file_id, we need to set it with
+            //   the file id of this struct.
+            //   otherwise, we just reuse the fake_file_id to make it consistent
+            //   across different lm
+            fake_file_id = (fake_file_id == 0 ? file_id : fake_file_id);
+            file_id      = fake_file_id;
           }
           char buffer[MAX_PREFIX_CHARS];
           snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
@@ -594,7 +610,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
         // we need to allow the same function name from a different file
         char buffer[MAX_PREFIX_CHARS];
-        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", strct->ancestorFile()->id());
+        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
         completProcName.append(buffer);
 
         const char *lnm;
