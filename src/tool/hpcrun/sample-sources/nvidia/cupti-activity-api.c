@@ -42,34 +42,36 @@ cupti_process_sample
 #else
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
-  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-	 "samples %u, latencySamples %u, stallreason %s\n",
-	 sample->sourceLocatorId,
-	 sample->functionId,
-	 sample->pcOffset,
-	 sample->correlationId,
-	 sample->samples,
-	 sample->latencySamples,
-	 cupti_stall_reason_string(sample->stallReason));
+  //PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+	// "samples %u, latencySamples %u, stallreason %s\n",
+	// sample->sourceLocatorId,
+	// sample->functionId,
+	// sample->pcOffset,
+	// sample->correlationId,
+	// sample->samples,
+	// sample->latencySamples,
+	// cupti_stall_reason_string(sample->stallReason));
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
-  uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-  PRINT("external_id %d\n", external_id);
-  cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(sample->functionId);
-  if (entry != NULL) {
-    uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
-    uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
-    ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, sample->pcOffset);
-    cct_addr_t frm = { .ip_norm = ip };
-    // TODO(keren): directly link to target node
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    //PRINT("external_id %d\n", external_id);
+    cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(sample->functionId);
+    if (entry != NULL) {
+      uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
+      uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
+      ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, sample->pcOffset);
+      cct_addr_t frm = { .ip_norm = ip };
+      // TODO(keren): directly link to target node
 #if HPCRUN_OMPT_ENABLE
-    cct_node_t *cct_node = hpcrun_ompt_op_id_map_lookup(external_id);
+      cct_node_t *cct_node = hpcrun_ompt_op_id_map_lookup(external_id);
 #endif
-    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    if (cct_node != NULL) {
-      cct_node_t *cct_child = NULL;
-      if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
-        cupti_activity_queue_push(queue, sample, cct_child);
+      cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+      cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+      if (cct_node != NULL) {
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
+          cupti_activity_queue_push(queue, sample, cct_child);
+        }
       }
     }
   }
@@ -336,5 +338,15 @@ cupti_advance_buffer_cursor
   if (result) {
     *next = (CUpti_Activity *)cursor;
   }
+  return result;
+}
+
+
+bool
+cupti_activity_flush
+(
+)
+{
+  bool result = (cuptiActivityFlushAll(CUPTI_ACTIVITY_FLAG_FLUSH_FORCED) == CUPTI_SUCCESS);
   return result;
 }

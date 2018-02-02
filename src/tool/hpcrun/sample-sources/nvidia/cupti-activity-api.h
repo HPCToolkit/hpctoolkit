@@ -19,4 +19,10 @@ cupti_advance_buffer_cursor
   CUpti_Activity **next
 );
 
+
+extern bool
+cupti_activity_flush
+( 
+);
+
 #endif

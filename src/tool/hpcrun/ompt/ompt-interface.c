@@ -845,7 +845,7 @@ void
 hpcrun_ompt_device_finalizer(void *args)
 {
   if (ompt_stop_flag) {
-    ompt_stop_trace(ompt_device);
+    cupti_activity_flush();
     ompt_stop_flag = false;
     // TODO(keren): replace cupti with sth. called device queue
     cupti_activity_queue_apply(cupti_attribute_activity);
