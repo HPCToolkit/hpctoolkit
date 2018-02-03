@@ -374,7 +374,7 @@ void ompt_task_begin(ompt_task_id_t parent_task_id,
   hpcrun_safe_enter();
 
   // record the task creation context into task structure (in omp runtime)
-  hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL).sample_node;
+  hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL);
 
   hpcrun_safe_exit();
 
@@ -880,7 +880,7 @@ ompt_callback_buffer_complete(uint64_t device_id,
     // TODO(keren): replace cupti_activity_handle with device_activity handle
     CUpti_Activity *activity = (CUpti_Activity *)next;
     cupti_activity_handle(activity);
-    status = cupti_advance_buffer_cursor(buffer, bytes, next, &next);
+    status = cupti_advance_buffer_cursor(buffer, bytes, (CUpti_Activity *)next, (CUpti_Activity **)&next);
   } while(status);
 }
 

@@ -30,7 +30,7 @@ typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
 
 ompt_device_map_entry_t *ompt_device_map_lookup(uint64_t id);
 
-void ompt_device_map_insert(uint64_t device_id, ompt_device_t *ompt_device, char *type);
+void ompt_device_map_insert(uint64_t device_id, ompt_device_t *ompt_device, const char *type);
 
 bool ompt_device_map_refcnt_update(uint64_t device_id, int val);
 

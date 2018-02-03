@@ -12,10 +12,10 @@ cupti_activity_queue_head()
 
 // TODO(keren): replace explicit copy with memcpy
 void
-cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_Activity *activity, cct_node_t *cct_node)
+cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_ActivityKind kind, void *activity, cct_node_t *cct_node)
 {
   cupti_activity_queue_entry_t *entry = (cupti_activity_queue_entry_t *)hpcrun_malloc(sizeof(cupti_activity_queue_entry_t));
-  switch (activity->kind) {
+  switch (kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
 #if CUPTI_API_VERSION >= 10

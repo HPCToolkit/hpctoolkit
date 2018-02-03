@@ -26,7 +26,7 @@ struct ompt_device_map_entry_s {
   uint64_t device_id;
   uint64_t refcnt;
   ompt_device_t *device;
-  char *type;
+  const char *type;
   struct ompt_device_map_entry_s *left;
   struct ompt_device_map_entry_s *right;
 }; 
@@ -47,7 +47,7 @@ static spinlock_t ompt_device_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static ompt_device_map_entry_t *
-ompt_device_map_entry_new(uint64_t device_id, ompt_device_t *device, char *type)
+ompt_device_map_entry_new(uint64_t device_id, ompt_device_t *device, const char *type)
 {
   ompt_device_map_entry_t *e;
   e = (ompt_device_map_entry_t *)hpcrun_malloc(sizeof(ompt_device_map_entry_t));
@@ -111,7 +111,7 @@ ompt_device_map_lookup(uint64_t id)
 
 
 void
-ompt_device_map_insert(uint64_t device_id, ompt_device_t *device, char *type)
+ompt_device_map_insert(uint64_t device_id, ompt_device_t *device, const char *type)
 {
   ompt_device_map_entry_t *entry = ompt_device_map_entry_new(device_id, device, type);
 

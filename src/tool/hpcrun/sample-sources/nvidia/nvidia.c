@@ -270,14 +270,14 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
   switch (record->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
-#ifdef CUPTI_API_VERSION >= 10
+#if CUPTI_API_VERSION >= 10
       CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)record;
 #else
       CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
       if (activity_sample->stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity_sample->stallReason];
-        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->samples});
 
         index = stall_metric_id[activity_sample->stallReason+NUM_CLAUSES(FORALL_STL)];
@@ -297,7 +297,7 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
       CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)record;
       if (activity_memcpy->copyKind != 0x7fffffff) {
         int index = em_metric_id[activity_memcpy->copyKind];
-        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_memcpy->bytes});
 
         metrics = hpcrun_reify_metric_set(node, em_time_metric_id);
@@ -310,7 +310,7 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
       CUpti_ActivityUnifiedMemoryCounter *activity_unified = (CUpti_ActivityUnifiedMemoryCounter *)record;
       if (activity_unified->counterKind != 0x7fffffff) {
         int index = im_metric_id[activity_unified->counterKind];
-        metric_set_t *metrics = hpcrun_reify_metric_set(node, index);
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
 
         metrics = hpcrun_reify_metric_set(node, im_time_metric_id);
@@ -321,7 +321,7 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     case CUPTI_ACTIVITY_KIND_KERNEL:
     {
       CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)record;
-      metric_set_t *metrics = hpcrun_reify_metric_set(node, ke_static_shared_metric_id);
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(node, ke_static_shared_metric_id);
       hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->staticSharedMemory});
 
       metrics = hpcrun_reify_metric_set(node, ke_dynamic_shared_metric_id);

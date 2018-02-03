@@ -173,22 +173,22 @@ hpcrun_pre_allocate_metrics(size_t num)
 int
 hpcrun_get_num_kind_metrics()
 {
-  if (all_kinds_done) {
-    return (num_kind_metrics);
-  }
+  if (!all_kinds_done) {
+    metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
 
-  metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
-
-  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
-    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
-      metric_data[l->g_id].desc = &l->val;
-      metric_data[l->g_id].id = l->id;
-      metric_data[l->g_id].kind = kind;
-      metric_data[l->g_id].proc = l->proc;
+    for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+      for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+        metric_data[l->g_id].desc = &l->val;
+        metric_data[l->g_id].id = l->id;
+        metric_data[l->g_id].kind = kind;
+        metric_data[l->g_id].proc = l->proc;
+      }
     }
+
+    all_kinds_done = true;
   }
 
-  all_kinds_done = true;
+  return num_kind_metrics;
 }
 
 //

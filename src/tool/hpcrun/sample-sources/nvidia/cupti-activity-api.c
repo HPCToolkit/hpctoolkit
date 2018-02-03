@@ -70,7 +70,7 @@ cupti_process_sample
       if (cct_node != NULL) {
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
-          cupti_activity_queue_push(queue, sample, cct_child);
+          cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_PC_SAMPLING, (void *)sample, cct_child);
         }
       }
     }
@@ -157,7 +157,7 @@ cupti_process_memcpy
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
-      cupti_activity_queue_push(queue, activity, node);
+      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
     }
   }
   PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
@@ -180,7 +180,7 @@ cupti_process_memcpy2
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
-      cupti_activity_queue_push(queue, activity, node);
+      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY2, (void *)activity, node);
     }
   }
   PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
@@ -243,7 +243,7 @@ cupti_process_kernel
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
-      cupti_activity_queue_push(queue, activity, node);
+      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_KERNEL, (void *)activity, node);
     }
   }
   PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
