@@ -79,13 +79,6 @@ using std::endl;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include "LM.hpp"
-#include "Seg.hpp"
-#include "Insn.hpp"
-#include "Proc.hpp"
-
-#include "Dbg-LM.hpp"
-
 #include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/EmptyISA.hpp>
 #include <lib/isa/IA64ISA.hpp>
@@ -101,6 +94,13 @@ using std::endl;
 #include <lib/support/QuickSort.hpp>
 
 #include <include/linux_info.h>
+
+#include "LM.hpp"
+#include "Seg.hpp"
+#include "Insn.hpp"
+#include "Proc.hpp"
+#include "SimpleSymbolsFactories.hpp"
+#include "Dbg-LM.hpp"
 
 //***************************************************************************
 // macros
@@ -355,7 +355,8 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), ksyms(0)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils),
+    m_simpleSymbols(0)
 {
 }
 
@@ -405,7 +406,7 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
-  if (LM::isFakeLoadModule(filenm)) {
+  if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
     return;
   }
@@ -538,26 +539,10 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
-  if (LM::isFakeLoadModule(m_name.c_str())) {
-    ksyms = new KernelSymbols;
-
-    // remove the fake symbol < and >
-    std::string fname = m_name.substr( 1, m_name.size()-2 );
-
-    // check if any of the directory in the set has vmlinux.xxxx file
-
-    std::set<std::string>::iterator it;
-    for(it = directorySet.begin(); it != directorySet.end(); ++it) {
-      std::string dir  = *it;
-      std::string path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/" + fname;
-
-      struct stat buffer;
-      if (stat(path.c_str(), &buffer) == 0) {
-        m_name = LINUX_KERNEL_NAME;
-        ksyms->parseLinuxKernelSymbols(path);
-        break;
-      }
-    }
+  SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(m_name.c_str());
+  if (sf){
+    m_simpleSymbols = sf->create();
+    m_simpleSymbols->parse(directorySet, m_name.c_str());
     return;
   }
 
@@ -565,7 +550,6 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
   readSegs();
   computeNoReturns();
 }
-
 
 
 // relocate: Internally, all operations are performed on non-relocated
@@ -610,8 +594,8 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (ksyms) {
-    STATUS = ksyms->find(vma, func);  
+  if (m_simpleSymbols) {
+    STATUS = m_simpleSymbols->findEnclosingFunction(vma, func);
     return STATUS;
   }
 

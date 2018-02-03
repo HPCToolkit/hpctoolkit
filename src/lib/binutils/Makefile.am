@@ -77,7 +77,9 @@ MYSOURCES = \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
-	KernelSymbols.hpp KernelSymbols.cpp \
+	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
+	SimpleSymbols.hpp SimpleSymbols.cpp\
+	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
 	\
 	Dbg-LM.hpp Dbg-LM.cpp \
 	Dbg-Proc.hpp Dbg-Proc.cpp \

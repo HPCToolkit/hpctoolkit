@@ -135,10 +135,7 @@ std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
 // all fake load modules will be merged into one single load module
 // whoever the first one arrive, will be the main fake load module
-uint fake_load_module_id;
-std::set<uint> m_setFakeLoadModule;
-
-static uint fake_file_id;
+std::map<uint, uint> m_pairFakeLoadModule;
 
 namespace CallPath {
 
@@ -162,9 +159,6 @@ Profile::Profile(const std::string name)
   m_cct = new CCT::Tree(this);
 
   m_structure = NULL;
-
-  fake_load_module_id = 0;
-  fake_file_id = 0;
 
   canonicalize();
 }
@@ -539,13 +533,10 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
     if (type == 1) { // LoadModule
       nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
-
-      if (BinUtil::LM::isFakeLoadModule(nm)) {
-        if (fake_load_module_id == 0) {
-          fake_load_module_id = id;
-        } else {
-          m_setFakeLoadModule.insert(id);
-        }
+      SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
+      if (sf) {
+        sf->id(id);
+        m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
       }
     }
     else if (type == 2) { // File
@@ -589,20 +580,19 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         Struct::LM *lm     = strct->ancestorLM();
         if (lm) {
           uint lm_id = lm->id();
-          if (BinUtil::LM::isFakeLoadModule(lm->name().c_str())) {
-            lm_id        = fake_load_module_id;
-
-            // Note: the same file of different load module have different file id.
-            //       to handle this issue, we need to make it consistent that the file
-            //       id of fake load module is the same
+          SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
+          if (sf) {
+            lm_id = sf->id();
 
             // if we haven't set fake_file_id, we need to set it with
             //   the file id of this struct.
             //   otherwise, we just reuse the fake_file_id to make it consistent
             //   across different lm
-            fake_file_id = (fake_file_id == 0 ? file_id : fake_file_id);
-            file_id      = fake_file_id;
+
+            sf->fileId(file_id);
+            file_id = sf->fileId();
           }
+
           char buffer[MAX_PREFIX_CHARS];
           snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
           completProcName.append(buffer);

@@ -78,7 +78,7 @@
 #include "Dbg-LM.hpp"
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
-#include "KernelSymbols.hpp"
+#include "SimpleSymbols.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 #include <lib/isa/ISA.hpp>
@@ -181,7 +181,7 @@ public:
   // name: Return name of load module
   const std::string&
   name() const
-  { return m_name; }
+  { return m_simpleSymbols ? m_simpleSymbols->name() : m_name; }
 
   // type:  Return type of load module
   Type
@@ -347,7 +347,7 @@ public:
   Insn*
   findInsn(VMA vma, ushort opIndex) const
   {
-    if (ksyms) return NULL;
+    if (m_simpleSymbols) return NULL;
     VMA vma_ur = unrelocate(vma);
     VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     
@@ -595,7 +595,7 @@ private:
   RealPathMgr& m_realpathMgr;
 
   bool m_useBinutils;
-  KernelSymbols *ksyms;
+  SimpleSymbols *m_simpleSymbols;
 };
 
 } // namespace BinUtil

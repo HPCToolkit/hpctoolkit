@@ -107,8 +107,7 @@ namespace Prof {
 extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 extern std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
-extern uint fake_load_module_id;
-extern std::set<uint> m_setFakeLoadModule;
+extern std::map<uint, uint> m_pairFakeLoadModule;
 
 // local function to convert from the original procedure ID into a 
 // a "compact" id to reduce redundancy if the procedure of the same
@@ -122,6 +121,20 @@ getProcIdFromMap(uint proc_id)
     // the file ID should redirected to another file ID which has 
     // exactly the same filename
     id = Prof::m_mapProcIDs[proc_id];
+  }
+  return id;
+}
+
+// local method to convert from the original load module into
+// a compact ID to reduce redundancy.
+static uint
+getLoadModuleFromMap(uint lm_id)
+{
+  uint id = lm_id;
+  std::map<uint, uint>::iterator it = Prof::m_pairFakeLoadModule.find(lm_id);
+
+  if (it != Prof::m_pairFakeLoadModule.end()) {
+    id = it->second;
   }
   return id;
 }
@@ -1193,12 +1206,7 @@ ProcFrm::toStringMe(uint oFlags) const
   string self = ANode::toStringMe(oFlags);
   
   if (m_strct) {
-    uint lm_id = lmId();
-    std::set<uint>::iterator it = Prof::m_setFakeLoadModule.find(lm_id);
-
-    if (it != Prof::m_setFakeLoadModule.end()) {
-      lm_id = Prof::fake_load_module_id;
-    }
+    uint lm_id = getLoadModuleFromMap(lmId());
     string lm_nm = xml::MakeAttrNum(lm_id);
 
     uint file_id = getFileIdFromMap(fileId());

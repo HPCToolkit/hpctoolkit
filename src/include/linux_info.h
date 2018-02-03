@@ -1,6 +1,7 @@
 #ifndef linux_info_h
 
 #define LINUX_KERNEL_NAME_REAL          "vmlinux"
+#define LINUX_KERNEL_NAME_REAL_CHARS    7
 #define LINUX_KERNEL_NAME               "<"  LINUX_KERNEL_NAME_REAL  ">"
 #define LINUX_KERNEL_SYMBOL_FILE_SHORT  "kallsyms"
 #define LINUX_KERNEL_SYMBOL_FILE        "/proc/" LINUX_KERNEL_SYMBOL_FILE_SHORT

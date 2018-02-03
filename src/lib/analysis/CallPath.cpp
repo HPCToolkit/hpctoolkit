@@ -417,9 +417,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   }
 
   if (lm) {
-    if (lm->isPseudolLoadModule()) {
-      lmStrct->pretty_name(lm->getPseudoLoadModuleName());
-    }
+    lmStrct->pretty_name(lm->name().c_str());
   }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   

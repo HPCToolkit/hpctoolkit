@@ -80,7 +80,7 @@
 
 #include <lib/support/FileUtil.hpp> // dirname
 
-
+#include "../binutils/SimpleSymbolsFactories.hpp"
 
 //*************************** Forward Declarations ***************************
 
