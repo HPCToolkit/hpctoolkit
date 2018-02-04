@@ -248,7 +248,6 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   cptd->perf_event_info   = NULL;
   cptd->perf_kernel_lm_id = 0;
   cptd->ksym_status       = PERF_UNDEFINED;
-}
 
   cptd->scale_fn = NULL;
 }
