@@ -388,6 +388,7 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_DATA_SRC) {
+	  perf_read_u64(current_perf_mmap, &mmap_info->data_src);
 	  data_read++;
 	}
 #endif

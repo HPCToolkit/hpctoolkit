@@ -168,9 +168,14 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
    return ret;
 }
 
+
+// initialize kernel load module
+// perf sample-source has to call this in gen_event_set
+void
+perf_util_init_kernel_lm();
+
 int
 perf_attr_init(
-  u64 event_code, u64 event_type,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
