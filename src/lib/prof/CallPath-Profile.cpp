@@ -545,16 +545,24 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
       // ---------------------------------------
-      if (m_mapFiles.find(nm) == m_mapFiles.end()) {
+      Struct::LM *lm = strct->ancestorLM();
+      std::string lm_name;
+      if (lm) {
+        lm_name = lm->name();
+      }
+      std::string key = lm_name + ":" + nm;
+
+      if (m_mapFiles.find(key) == m_mapFiles.end()) {
         //  the filename is not in the list. Add it.
-        m_mapFiles[nm] = id;
+        m_mapFiles[key] = id;
 
       } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
           && nm[0] != '\0' )
-      { // WARNING: We do not allow redundancy unless for some specific files
+      {
+        // WARNING: We do not allow redundancy unless for some specific files
         // For "unknown-file" and empty file (alien case), we allow duplicates
         // Otherwise we remove duplicate filename, and use the existing one.
-        uint id_orig = m_mapFiles[nm];
+        uint id_orig   = m_mapFiles[key];
 
         // remember that this ID needs redirection to the existing ID
         Prof::m_mapFileIDs[id] = id_orig;
