@@ -95,14 +95,67 @@
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc = NULL;
-  void *func_end_pc = NULL;
-  load_module_t* lm = NULL;
-
-  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
+  load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+}
+
+step_state
+libunw_find_step(hpcrun_unw_cursor_t* cursor)
+{
+  // starting pc
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_word_t tmp;
+  void *pc;
+
+  // update for new pc
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
+  pc = (void *) tmp;
+  cursor->pc_unnorm = pc;
+  bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
+  if (!found)
+    {
+      TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
+      cursor->libunw_status = LIBUNW_FAIL;
+      return STEP_ERROR;
+    }
+  compute_normalized_ips(cursor);
+  TMSG(UNW, "unw_step: advance pc: %p\n", pc);
+  cursor->libunw_status = LIBUNW_OK;
+  return STEP_OK;
+}
+
+step_state
+libunw_take_step(hpcrun_unw_cursor_t* cursor)
+{
+  // starting pc
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_word_t tmp;
+  void *pc;
+
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
+  pc = (void *) tmp;
+
+  // full unwind: stop at libmonitor fence.  this is where we hope the
+  // unwind stops.
+  cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
+		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+  if (cursor->fence != FENCE_NONE)
+    {
+      TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
+      return STEP_STOP;
+    }
+
+  bitree_uwi_t* uw = cursor->unwr_info.btuwi;
+  if (!uw) {
+      TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+      return STEP_ERROR;
+  }
+  uwi_t *uwi = bitree_uwi_rootval(uw);
+  unw_apply_reg_state(unw_cursor, uwi->recipe);
+  return STEP_OK;
 }
 
 // Takes a sigaction() context pointer and makes a libunwind
@@ -114,20 +167,10 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   unw_cursor_t *unw_cursor = &(cursor->uc);
   unw_context_t *ctx = (unw_context_t *) context;
-  unw_word_t pc;
 
   if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
-    unw_get_reg(unw_cursor, UNW_REG_IP, &pc);
-  } else {
-    pc = 0;
+    libunw_find_step(cursor);
   }
-
-  cursor->pc_unnorm = (void *) pc;
-  cursor->libunw_status = LIBUNW_INIT;
-
-  compute_normalized_ips(cursor);
-
-  TMSG(UNW, "init cursor pc = %p\n", cursor->pc_unnorm);
 }
 
 //***************************************************************************
@@ -149,6 +192,8 @@ dwarf_reg_states_callback(void *token,
 {
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);
+  if (!u)
+    return (-1);
   bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
   uwi->interval.start = (uintptr_t)start_ip;
@@ -177,7 +222,8 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
    * we insist that it extend to the last address of this 
    * function range. but we can't rely on the so-called end of the function
    * really being all the way to the end.*/
-  if (bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
+  if (status == 0 &&
+      bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
     bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 
@@ -193,63 +239,16 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 // ----------------------------------------------------------
 // libunw_unw_step: 
 //   Given a cursor, step the cursor to the next (less deeply
-//   nested) frame.  Conforms to the semantics of libunwind's
-//   hpcrun_unw_step.  In particular, returns:
-//     > 0 : successfully advanced cursor to next frame
-//       0 : previous frame was the end of the unwind
-//     < 0 : error condition
+//   nested) frame using a recipe found previously, and find
+//   a new recipe for the next call.
 // ---------------------------------------------------------
 
 step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  // this should never be NULL
-  if (cursor == NULL) {
-    TMSG(UNW, "unw_step: internal error: cursor ptr is NULL\n");
+  if (STEP_OK != libunw_take_step(cursor))
+    return STEP_STOP;
+  if (STEP_OK != libunw_find_step(cursor))
     return STEP_ERROR;
-  }
-
-  // starting pc
-  unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
-
-  // full unwind: stop at libmonitor fence.  this is where we hope the
-  // unwind stops.
-  cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
-		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
-  if (cursor->fence != FENCE_NONE)
-    {
-      TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
-      return STEP_STOP;
-    }
-
-  //-----------------------------------------------------------
-  // compute unwind information for the caller's pc
-  //-----------------------------------------------------------
-  unwindr_info_t unwr_info;
-  bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &unwr_info);
-  if (!found)
-    {
-      TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
-      return STEP_ERROR;
-    }
-
-  bitree_uwi_t* uw = unwr_info.btuwi;
-  uwi_t *uwi = bitree_uwi_rootval(uw);
-  unw_apply_reg_state(unw_cursor, uwi->recipe);
-
-  // update for new pc
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
-
-  cursor->pc_unnorm = pc;
-
-  compute_normalized_ips(cursor);
-
-  TMSG(UNW, "unw_step: advance pc: %p\n", pc);
-  return STEP_OK;
+  return (STEP_OK);
 }

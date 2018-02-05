@@ -72,6 +72,8 @@
  * Macros
  *****************************************************************************/
 
+#define KERNEL_BLOCKING_DEBUG 0
+
 // -----------------------------------------------------
 // Predefined events
 // -----------------------------------------------------
@@ -110,7 +112,7 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
-    TMSG(LINUX_PERF, "old t: %llu, c: %d, p: %d, td: %d -- vs -- t: %llu, c: %d, p: %d, td: %d",
+    TMSG(LINUX_PERF, "old t: %l, c: %d, p: %d, td: %d -- vs -- t: %l, c: %d, p: %d, td: %d",
         time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
   }
@@ -212,8 +214,10 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
       // other event than cs occurs (it can be cycles, clocks or others)
 
       if ((mmap_data->time > 0) && (time_cs_out > 0) && (mmap_data->nr==0)) {
+#if KERNEL_BLOCKING_DEBUG
         unsigned int cpumode = mmap_data->header_misc & PERF_RECORD_MISC_CPUMODE_MASK;
         assert(cpumode == PERF_RECORD_MISC_USER);
+#endif
 
         blame_kernel_time(current_event, cct_kernel, mmap_data);
         // important: need to reset the value to inform that we are leaving the kernel
@@ -264,8 +268,11 @@ register_blocking(event_info_t *event_desc)
       PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
       PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
-  perf_attr_init(PERF_COUNT_SW_CONTEXT_SWITCHES, PERF_TYPE_SOFTWARE,
-      &(event_desc->attr),
+  struct perf_event_attr *attr = &(event_desc->attr);
+  attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
+  attr->type   = PERF_TYPE_SOFTWARE;
+
+  perf_attr_init( attr,
       true        /* use_period*/,
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */

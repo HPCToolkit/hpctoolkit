@@ -230,7 +230,35 @@ void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
+  ucontext_t* ctxt = (ucontext_t*)context;
+
+  save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
+  cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
+
   cursor->flags     = UnwFlg_StackTop;
+  bitree_uwi_t* intvl = NULL;
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
+  if (found) {
+	intvl = cursor->unwr_info.btuwi;
+	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
+	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
+	    }
+	    else {
+	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+	    }
+	  }
+  }
+  else {
+    EMSG("unw_init: cursor could NOT build an interval for initial pc = %p",
+	 cursor->pc_unnorm);
+  }
+
+  compute_normalized_ips(cursor);
+
+  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
+       cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
+  if (MYDBG) { ui_dump(intvl); }
 }
 
 
@@ -240,28 +268,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  step_state unw_res;
-  if (cursor->libunw_status == LIBUNW_FAIL) {
-    unw_word_t pc, sp;
-    pc = (unw_word_t)cursor->pc_unnorm;
-    sp = (unw_word_t)cursor->sp;
-    unw_set_reg(&cursor->uc, UNW_REG_IP, pc);
-    unw_set_reg(&cursor->uc, UNW_REG_SP, sp);
-    cursor->libunw_status = LIBUNW_OK;
-  }
-  unw_res = libunw_unw_step(cursor);
-  if (STEP_ERROR != unw_res) {
-    cursor->flags     = UnwFlg_NULL;
-    return (unw_res);
-  }
-  else {
-    unw_word_t pc, sp;
-    unw_get_reg(&cursor->uc, UNW_REG_IP, &pc);
-    unw_get_reg(&cursor->uc, UNW_REG_SP, &sp);
-    save_registers(cursor, (void*)pc, NULL, (void*)sp, NULL);
-    cursor->unwr_info.btuwi = NULL;
-    cursor->libunw_status = LIBUNW_FAIL;
-  }
   // current frame
   void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;

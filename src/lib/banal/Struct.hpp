@@ -66,6 +66,7 @@ makeStructure(std::string filenm,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
 	      std::ostream * dotFile,
+	      bool ourDemangle,
 	      ProcNameMgr* procNameMgr = NULL);
 
 } // namespace Struct
