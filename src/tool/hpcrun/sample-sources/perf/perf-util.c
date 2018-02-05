@@ -312,6 +312,25 @@ is_perf_ksym_available()
   return (ksym_status == PERF_AVAILABLE);
 }
 
+//----------------------------------------------------------
+// testing perf availability
+//----------------------------------------------------------
+static int
+perf_kernel_syms_avail()
+{
+  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
+  FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+  int level         = 3; // default : no access to perf event
+
+  if (ksyms != NULL && pe_paranoid != NULL) {
+    fscanf(pe_paranoid, "%d", &level) ;
+  }
+  if (ksyms)       fclose(ksyms);
+  if (pe_paranoid) fclose(pe_paranoid);
+
+  return level;
+}
+
 
 /*************************************************************
  * Interface API
