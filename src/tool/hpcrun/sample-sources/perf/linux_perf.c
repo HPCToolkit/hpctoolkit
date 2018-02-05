@@ -523,6 +523,8 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
+  perf_util_init();
+
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
 
@@ -849,8 +851,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   td->core_profile_trace_data.perf_event_info = aux_info;
   td->ss_info[self->sel_idx].ptr = event_thread;
-
-  perf_util_init_kernel_lm();
 
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list

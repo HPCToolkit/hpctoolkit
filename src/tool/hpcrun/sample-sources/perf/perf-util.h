@@ -163,10 +163,8 @@ perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
          int cpu, int group_fd, unsigned long flags);
 
 
-// initialize kernel load module
-// perf sample-source has to call this in gen_event_set
 void
-perf_util_init_kernel_lm();
+perf_util_init();
 
 int
 perf_util_attr_init(
