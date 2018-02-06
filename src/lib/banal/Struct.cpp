@@ -1556,6 +1556,8 @@ found_level:
 found_file:
 
   // min line of inline callsites
+  // fixme: code motion breaks this
+#if 0
   for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
 
@@ -1564,6 +1566,7 @@ found_file:
       line_ans = flp.line_num;
     }
   }
+#endif
 
   // min line of subloops
   for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
