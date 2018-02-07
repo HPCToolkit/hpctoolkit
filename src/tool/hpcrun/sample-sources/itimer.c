@@ -258,6 +258,7 @@ hpcrun_delete_real_timer(thread_data_t *td)
 #ifdef ENABLE_CLOCK_REALTIME
   if (td->timer_init) {
     ret = timer_delete(td->timerid);
+    td->timerid = NULL;
   }
   td->timer_init = false;
 #endif
@@ -321,6 +322,16 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 
   ret = hpcrun_start_timer(td);
+
+  if (td->timer_init == false) {
+    // when multiple threads are present, a thread might receive a shutdown
+    // signal while handling a sample. when a shutdown signal is received
+    // the thread's timer is deleted and timer_init is set to false.
+    // in this circumstance, restarting the timer will fail and that
+    // is appropriate.
+    return;
+  }
+
   if (ret != 0) {
     if (safe) {
       TMSG(ITIMER_CTL, "setitimer failed to start!!");
