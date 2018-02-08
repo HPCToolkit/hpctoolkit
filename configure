@@ -753,6 +753,7 @@ MONITOR
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
+LZMA_PROF_MPI_LIBS
 LZMA_LDFLAGS_STAT
 LZMA_LDFLAGS_DYN
 UNW_LIBUNW_FALSE
@@ -19946,6 +19947,7 @@ LZMA_LDFLAGS_STAT=
 LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
+LZMA_PROF_MPI_LIBS=
 
 # allow for older externals which doesn't define ext_lzma_prefix
 if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
@@ -19980,6 +19982,17 @@ case "$LZMA" in
     done
     if test "x$LZMA_LIB" = x ; then
       as_fn_error $? "invalid lzma directory: $LZMA" "$LINENO" 5
+    else
+      #
+      # hpcprof-mpi: same as hpclink if fully static, else default
+      #
+      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      if test $? = 0 ; then
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+      else
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+      fi
+
     fi
     ;;
   no )
@@ -19993,6 +20006,7 @@ esac
 $as_echo "$LZMA" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: lzma static: $LZMA_STATIC" >&5
 $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
+
 
 
 

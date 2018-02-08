@@ -1748,6 +1748,7 @@ LZMA_LDFLAGS_STAT=
 LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
+LZMA_PROF_MPI_LIBS=
 
 # allow for older externals which doesn't define ext_lzma_prefix
 if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
@@ -1780,6 +1781,17 @@ case "$LZMA" in
     done
     if test "x$LZMA_LIB" = x ; then
       AC_MSG_ERROR([invalid lzma directory: $LZMA])
+    else
+      #
+      # hpcprof-mpi: same as hpclink if fully static, else default
+      #
+      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      if test $? = 0 ; then
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+      else
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+      fi
+    
     fi
     ;;
   no )
@@ -1794,6 +1806,7 @@ AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
 
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
+AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
