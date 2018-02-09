@@ -437,7 +437,8 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cupti-activity-strings.c   \
 								 sample-sources/nvidia/cupti-correlation-id-map.c \
 								 sample-sources/nvidia/cupti-function-id-map.c    \
-								 sample-sources/nvidia/cupti-host-op-map.c
+								 sample-sources/nvidia/cupti-host-op-map.c        \
+								 sample-sources/nvidia/cupti-context-map.c 
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
