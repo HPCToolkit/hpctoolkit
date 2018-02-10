@@ -371,8 +371,6 @@ cupti_activity_flush
   return result;
 }
 
-
-
 //******************************************************************************
 // cupti functions for cuda
 //******************************************************************************
@@ -992,4 +990,18 @@ cupti_get_num_dropped_records
 )
 {
   HPCRUN_CUPTI_CALL(cuptiActivityGetNumDroppedRecords, (context, streamId, dropped));
+}
+
+
+bool
+cupti_pc_sampling_config
+(
+  CUcontext context,
+  CUpti_ActivityPCSamplingPeriod period
+)
+{
+  CUpti_ActivityPCSamplingConfig config;
+  config.samplingPeriod = period;
+  bool result = (cuptiActivityConfigurePCSampling(context, &config) == CUPTI_SUCCESS);
+  return result;
 }

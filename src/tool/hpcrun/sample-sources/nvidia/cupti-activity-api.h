@@ -29,6 +29,14 @@ cupti_activity_flush
 ( 
 );
 
+
+extern bool
+cupti_pc_sampling_config
+(
+  CUcontext context,
+  CUpti_ActivityPCSamplingPeriod period
+);
+
 //******************************************************************************
 // types
 //******************************************************************************
