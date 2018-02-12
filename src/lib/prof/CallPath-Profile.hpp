@@ -145,6 +145,11 @@ public:
     }
   }
 
+  void
+  copyDirectory(std::set<std::string> directorySet) {
+    m_directorySet.insert(directorySet.begin(), directorySet.end());
+  }
+
   const std::set<std::string>&
   directorySet() {
     return m_directorySet;

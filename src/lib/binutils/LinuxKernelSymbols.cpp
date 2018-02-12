@@ -82,6 +82,7 @@ getKernelFilename(const std::set<std::string> &directorySet, std::string virtual
     path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/" + fname;
 
     struct stat buffer;
+
     if (stat(path.c_str(), &buffer) == 0) {
       return path;
     }
@@ -108,15 +109,22 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
   std::string real_path = getKernelFilename(directorySet, virtual_path);
 
   if (real_path.empty()) {
-    
-  }
-  FILE *fp_in = fopen(real_path.c_str(), "r");
-  if (fp_in == NULL)
+    std::cerr << "Error: cannot find kernel file of load module " << pathname << " ds: "<< directorySet.size() << std::endl;
+    perror("LinuxKernelSymbols");
     return false;
+  }
+
+  FILE *fp_in = fopen(real_path.c_str(), "r");
+  if (fp_in == NULL) {
+    std::cerr << "Error: cannot open file: " << real_path <<std::endl;
+    return false;
+  }
 
   FILE *fp_deflate = tmpfile();
-  if (fp_deflate == NULL)
+  if (fp_deflate == NULL) {
+    std::cerr << "Error: cannot create temporary file" << std::endl;
     return false;
+  }
 
   FILE *fp_out = fp_deflate;
 
@@ -175,7 +183,6 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
     if (fp != fp_in)
       fclose(fp_in);
   }
-
   coalesce(chooseHighestBinding);
 
   return count() > 0;

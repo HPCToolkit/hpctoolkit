@@ -542,7 +542,9 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
   SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(m_name.c_str());
   if (sf){
     m_simpleSymbols = sf->create();
-    m_simpleSymbols->parse(directorySet, m_name.c_str());
+    if (! m_simpleSymbols->parse(directorySet, m_name.c_str())) {
+      std::cerr << "Unable to read symbols from load module " <<m_name << std::endl;
+    }
     return;
   }
 
