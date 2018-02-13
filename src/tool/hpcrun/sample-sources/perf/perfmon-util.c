@@ -376,11 +376,15 @@ int
 pfmu_init()
 {
   /* to allow encoding of events from non detected PMU models */
+#if 0
+  // need to comment this block because it the setenv interferes with
+  // HPCRUN_EVENT_LIST if we start this before the "support_events" step
   int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
-  if (ret != PFM_SUCCESS)
+  if (ret != 0)
     EMSG( "cannot force inactive encoding");
+#endif
 
-  ret = pfm_initialize();
+  int ret = pfm_initialize();
   if (ret != PFM_SUCCESS)
     EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
 

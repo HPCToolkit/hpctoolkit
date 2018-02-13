@@ -523,6 +523,11 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
+#ifdef ENABLE_PERFMON
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+#endif
+
   perf_util_init();
 
   // checking the option of multiplexing:
@@ -680,11 +685,6 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event %s", ev_str);
-
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
-#endif
 
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
