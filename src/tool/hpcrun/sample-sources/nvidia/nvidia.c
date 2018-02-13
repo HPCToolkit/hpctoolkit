@@ -264,6 +264,8 @@ int ke_dynamic_shared_metric_id;
 int ke_local_metric_id;
 int ke_time_metric_id;
 
+static int pc_sampling_frequency = 1;
+
 void
 cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
 {
@@ -337,6 +339,12 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
     default:
       break;
   }
+}
+
+
+extern int cupti_get_pc_sampling_frequency()
+{
+  return pc_sampling_frequency;
 }
 
 
@@ -448,6 +456,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_local_metric_id = ke_metric_id[2];
   ke_time_metric_id = ke_metric_id[3];
   hpcrun_close_kind(ke_kind);
+
+  // fetch the event string for the sample source
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  char name[10];
+  hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
 }
 
 static void

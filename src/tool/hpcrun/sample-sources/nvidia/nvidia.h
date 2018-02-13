@@ -6,4 +6,6 @@
 
 extern void cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node);
 
+extern int cupti_get_pc_sampling_frequency();
+
 #endif

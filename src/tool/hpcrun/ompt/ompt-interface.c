@@ -770,6 +770,7 @@ hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
 {
   ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
   if (entry != NULL) {
+    PRINT("target id %lu is not null for host_op_id %lu\n", target_id, host_op_id);
     cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
     cct_node_t *cct_child = NULL;
     if ((cct_child = ompt_target_map_seq_lookup(cct_node, ompt_host_op_seq_id)) == NULL) {
@@ -780,6 +781,8 @@ hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
     // TODO(keren): generalization, replace cupti with sth. called device_map
     cupti_host_op_map_insert(host_op_id, ompt_host_op_seq_id, cct_node);
     ompt_host_op_seq_id++;
+  } else {
+    PRINT("target id %lu is null for host_op_id %lu\n", target_id, host_op_id);
   }
 }
 
@@ -820,7 +823,8 @@ hpcrun_ompt_op_id_map_lookup(ompt_id_t host_op_id)
   macro(ompt_get_record_type) \
   macro(ompt_get_record_native) \
   macro(ompt_get_record_abstract) \
-  macro(ompt_advance_buffer_cursor) 
+  macro(ompt_advance_buffer_cursor) \
+  macro(ompt_set_pc_sampling_frequency) 
 
 #define ompt_decl_name(fn) \
   fn ## _t  fn;
@@ -906,6 +910,8 @@ ompt_trace_configure(ompt_device_t *device)
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
+
+  ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
 }
 
 

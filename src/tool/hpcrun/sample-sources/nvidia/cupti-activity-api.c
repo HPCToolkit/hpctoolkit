@@ -157,6 +157,8 @@ cupti_process_correlation
     } else {
       cupti_correlation_id_map_insert(correlation_id, external_id);
     }
+  } else {
+    PRINT("External CorrelationId %lu cannot be found\n", external_id);
   }
   PRINT("External CorrelationId %lu\n", external_id);
   PRINT("CorrelationId %lu\n", correlation_id);
@@ -179,6 +181,8 @@ cupti_process_memcpy
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
     }
+  } else {
+    PRINT("Memcpy copy CorrelationId %u cannot be found\n", activity->correlationId);
   }
   PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy copy kind %u\n", activity->copyKind);
@@ -993,7 +997,7 @@ cupti_get_num_dropped_records
 }
 
 
-bool
+void
 cupti_pc_sampling_config
 (
   CUcontext context,
@@ -1002,6 +1006,5 @@ cupti_pc_sampling_config
 {
   CUpti_ActivityPCSamplingConfig config;
   config.samplingPeriod = period;
-  bool result = (cuptiActivityConfigurePCSampling(context, &config) == CUPTI_SUCCESS);
-  return result;
+  HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 }

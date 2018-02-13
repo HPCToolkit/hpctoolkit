@@ -19,31 +19,18 @@ cupti_activity_queue_push(cupti_activity_queue_entry_t **queue, CUpti_ActivityKi
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
 #if CUPTI_API_VERSION >= 10
-      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
       entry->activity = (CUpti_ActivityPCSampling3 *)hpcrun_malloc(sizeof(CUpti_ActivityPCSampling3));
-      ((CUpti_ActivityPCSampling3 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;
-      ((CUpti_ActivityPCSampling3 *)entry->activity)->stallReason = activity_sample->stallReason;
-      ((CUpti_ActivityPCSampling3 *)entry->activity)->samples = activity_sample->samples;
-      ((CUpti_ActivityPCSampling3 *)entry->activity)->latencySamples = activity_sample->latencySamples;
+      memcpy(entry->activity, activity, sizeof(CUpti_ActivityPCSampling3));
 #else
-      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
       entry->activity = (CUpti_ActivityPCSampling2 *)hpcrun_malloc(sizeof(CUpti_ActivityPCSampling2));
-      ((CUpti_ActivityPCSampling2 *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;
-      ((CUpti_ActivityPCSampling2 *)entry->activity)->stallReason = activity_sample->stallReason;
-      ((CUpti_ActivityPCSampling2 *)entry->activity)->samples = activity_sample->samples;
-      ((CUpti_ActivityPCSampling2 *)entry->activity)->latencySamples = activity_sample->latencySamples;
+      memcpy(entry->activity, activity, sizeof(CUpti_ActivityPCSampling2));
 #endif
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
-      CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)activity;
       entry->activity = (CUpti_ActivityMemcpy *)hpcrun_malloc(sizeof(CUpti_ActivityMemcpy));
-      ((CUpti_ActivityMemcpy *)entry->activity)->kind = CUPTI_ACTIVITY_KIND_MEMCPY;
-      ((CUpti_ActivityMemcpy *)entry->activity)->copyKind = activity_memcpy->copyKind;
-      ((CUpti_ActivityMemcpy *)entry->activity)->bytes = activity_memcpy->bytes;
-      ((CUpti_ActivityMemcpy *)entry->activity)->end = activity_memcpy->end;
-      ((CUpti_ActivityMemcpy *)entry->activity)->start = activity_memcpy->start;
+      memcpy(entry->activity, activity, sizeof(CUpti_ActivityMemcpy));
       break;
     }
     case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:

@@ -708,6 +708,10 @@ OMPT_TARGET_API_FUNCTION(ompt_record_abstract_t *, ompt_get_record_abstract, (
     void *native_record
 ));
 
+OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling_frequency, (
+    ompt_device_t *device,
+    int pc_sampling_frequency
+));
 
 
 /****************************************************************************

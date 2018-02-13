@@ -30,7 +30,7 @@ cupti_activity_flush
 );
 
 
-extern bool
+extern void
 cupti_pc_sampling_config
 (
   CUcontext context,
