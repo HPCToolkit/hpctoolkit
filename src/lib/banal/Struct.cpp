@@ -1026,7 +1026,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\ncovered:\n"
 	 << covered.toString() << "\n"
 	 << "\ngaps:\n"
-	 << gaps.toString() << "\n";
+	 << ginfo->gapSet.toString() << "\n";
   }
   else {
     cout << "\ngaps: alt-file\n";
