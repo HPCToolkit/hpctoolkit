@@ -58,6 +58,7 @@
 // system includes
 //******************************************************************************
 
+#include <stdio.h>
 #include <string.h>
 
 
@@ -73,7 +74,6 @@
 
 #include "InputFile.hpp"
 #include "ElfHelper.hpp"
-
 
 
 
