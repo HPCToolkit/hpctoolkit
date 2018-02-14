@@ -78,8 +78,7 @@ call_is_push_next_addr_idiom(xed_decoded_inst_t* xptr, interval_arg_t* iarg)
  *****************************************************************************/
 
 unwind_interval*
-process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
   highwatermark_t *hw_tmp = &(iarg->highwatermark);
@@ -101,7 +100,7 @@ process_call(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iar
     x86registers_t reg = xr->reg;
     reg.sp_ra_pos += sizeof(void*);
     reg.sp_bp_pos += sizeof(void*);
-    next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg, m_alloc);
+    next = new_ui(nextInsn(iarg, xptr), xr->ra_status, &reg);
   }
 #ifdef USE_CALL_LOOKAHEAD
   next = call_lookahead(xptr, iarg->current, iarg->ins);

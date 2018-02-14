@@ -258,6 +258,7 @@ hpcrun_delete_real_timer(thread_data_t *td)
 #ifdef ENABLE_CLOCK_REALTIME
   if (td->timer_init) {
     ret = timer_delete(td->timerid);
+    td->timerid = NULL;
   }
   td->timer_init = false;
 #endif
@@ -321,6 +322,16 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 
   ret = hpcrun_start_timer(td);
+
+  if (td->timer_init == false) {
+    // when multiple threads are present, a thread might receive a shutdown
+    // signal while handling a sample. when a shutdown signal is received
+    // the thread's timer is deleted and timer_init is set to false.
+    // in this circumstance, restarting the timer will fail and that
+    // is appropriate.
+    return;
+  }
+
   if (ret != 0) {
     if (safe) {
       TMSG(ITIMER_CTL, "setitimer failed to start!!");
@@ -381,10 +392,9 @@ METHOD_FN(start)
     }
   }
 
-  // itimer is process-wide, so reopen the signal at start time
-  if (use_itimer) {
-    monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
-  }
+  // Since we block a thread's timer signal when stopping, we
+  // must unblock it when starting.
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
 
   hpcrun_restart_timer(self, 1);
 }
@@ -393,6 +403,13 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(ITIMER_CTL, "thread fini action");
+
+  // Delete the realtime timer to avoid a timer leak.
+  if (use_realtime || use_cputime) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    hpcrun_delete_real_timer(td);
+  }
+
 }
 
 static void
@@ -400,11 +417,13 @@ METHOD_FN(stop)
 {
   TMSG(ITIMER_CTL, "stop %s", the_event_name);
 
-  // itimer is process-wide, so it's worth blocking the signal in the
-  // current thread at stop time.
-  if (use_itimer) {
-    monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
-  }
+  // We have observed thread-centric profiling signals 
+  // (e.g., REALTIME) being delivered to a thread even after 
+  // we have stopped the thread's timer.  During thread
+  // finalization, this can cause a catastrophic error. 
+  // For that reason, we always block the thread's timer 
+  // signal when stopping. 
+  monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
 
   thread_data_t *td = hpcrun_get_thread_data();
   int rc = hpcrun_stop_timer(td);
@@ -420,13 +439,6 @@ METHOD_FN(shutdown)
 {
   METHOD_CALL(self, stop); // make sure stop has been called
   TMSG(ITIMER_CTL, "shutdown %s", the_event_name);
-
-  // delete the realtime timer to avoid a timer leak
-  if (use_realtime || use_cputime) {
-    thread_data_t *td = hpcrun_get_thread_data();
-    hpcrun_delete_real_timer(td);
-  }
-
   self->state = UNINIT;
 }
 

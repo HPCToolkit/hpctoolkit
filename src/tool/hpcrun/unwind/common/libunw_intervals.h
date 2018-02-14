@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2012, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,64 +43,23 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-
-// This overrides the malloc family of functions and provides two
-// metrics: number of bytes allocated and number of bytes freed per
-// dynamic context.  
 //
-// Override functions:
-// posix_memalign, memalign, valloc
-// malloc, calloc, free, realloc
+// This software was produced with support in part from the Defense Advanced
+// Research Projects Agency (DARPA) through AFRL Contract FA8650-09-C-1915. 
+// Nothing in this work should be construed as reflecting the official policy or
+// position of the Defense Department, the United States government, or
+// Rice University.
+//
+//***************************************************************************
 
-#ifndef __MEMORY_OVERRIDES_H__
-#define __MEMORY_OVERRIDES_H__
+#include "binarytree_uwi.h"
 
-#include <stdlib.h>
-#include "sample_event.h"
-#include "cct_insert_backtrace.h"
+void libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
-typedef struct mem_info_s {
-  long magic;
-  cct_node_t *context;
-  size_t bytes;
-  void *memblock;
-  void *rmemblock;
-  struct mem_info_s *left;
-  struct mem_info_s *right;
-} mem_info_t;
+btuwi_status_t libunw_build_intervals(char *beg_insn, unsigned int len);
 
-typedef void mem_action_fcn(void *, mem_info_t *);
-typedef sample_val_t sample_callpath(ucontext_t *, size_t);
+step_state libunw_find_step(hpcrun_unw_cursor_t* cursor);
 
-typedef struct mem_registry_s {
-  // Interface to add restriction for the minimum threshold
-  // of allocated bytes we want to collect
-  // If the allocation function allocates less than the threshold, 
-  // we will not collect the samples
-  size_t byte_threshold;
-  
-  mem_action_fcn  *action_fcn;
-  sample_callpath *sample_fcn;
+step_state libunw_take_step(hpcrun_unw_cursor_t* cursor);
 
-} mem_registry_t;
-
-int add_mem_registry(mem_registry_t mem_item);
-
-// ----------------------------------------------
-// API has to be implemented by external plugin
-// ----------------------------------------------
-
-// function needs to be implemented by the plugin
-// this function will be called by memory-overrides.c during the initialiation
-
-void mo_external_init();
-
-// function needs to be implemented by the plugin
-// this function returns true if the external is active.
-//  false otherwise
-
-int mo_external_active();
-
-int get_free_metric_id();
-
-#endif
+step_state libunw_unw_step(hpcrun_unw_cursor_t* cursor);

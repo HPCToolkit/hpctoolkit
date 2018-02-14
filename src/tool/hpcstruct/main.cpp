@@ -146,6 +146,7 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
+  bool ourDemangle = false;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
@@ -170,6 +171,7 @@ realmain(int argc, char* argv[])
       demangle_function = args.demangle_function.c_str();
     }
     hpctoolkit_demangler_init(demangle_library, demangle_function);
+    ourDemangle = true;
   }
 
 
@@ -211,7 +213,8 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName, procNameMgr);
+  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
+			       ourDemangle, procNameMgr);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

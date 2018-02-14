@@ -246,7 +246,7 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   // perf event support
   // ----------------------------------------
-  cptd->perf_event_info = NULL;
+  cptd->perf_event_info   = NULL;
 }
 
 

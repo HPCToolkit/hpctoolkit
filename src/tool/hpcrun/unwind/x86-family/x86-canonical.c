@@ -74,7 +74,7 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
 
 void 
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
-	bool irdebug, interval_arg_t *iarg, mem_alloc m_alloc)
+	bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *current             = iarg->current;
   unwind_interval *first               = iarg->first;
@@ -123,7 +123,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
 #endif
 	{
 	  reg.bp_status = bp_status;
-	*next = new_ui(nextInsn(iarg, xptr), ra_status, &reg, m_alloc);
+	*next = new_ui(nextInsn(iarg, xptr), ra_status, &reg);
 	iarg->restored_canonical = *next;
         set_ui_canonical(*next, UWI_RECIPE(iarg->canonical_interval)->prev_canonical);
         if (r1->reg.bp_status != BP_HOSED && bp_status == BP_HOSED) {

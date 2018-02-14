@@ -107,7 +107,11 @@ typedef struct {
 //******************************************************************************
 
 #define MAX_EVENT_NAME_CHARS 	256
+#define MAX_EVENT_DESC_CHARS 	4096
 
+#define EVENT_IS_PROFILABLE	 0
+#define EVENT_MAY_NOT_PROFILABLE 1
+#define EVENT_FATAL_ERROR	-1
 
 //******************************************************************************
 // forward declarations
@@ -137,7 +141,7 @@ event_has_pname(char *s)
  *  caller needs to check errno for the root cause
  */ 
 static int
-test_pmu(uint64_t code, uint64_t type) 
+create_event(uint64_t code, uint64_t type) 
 {
   struct perf_event_attr event_attr;
   memset(&event_attr, 0, sizeof(event_attr));
@@ -161,10 +165,33 @@ test_pmu(uint64_t code, uint64_t type)
 }
 
 /******************
+ * test a pmu if it's profilable or not
+ * @return 0 if it's fine. 1 otherwise
+ ******************/ 
+static int
+test_pmu(char *evname)
+{
+  u64  code, type;
+  
+  if (pfmu_getEventType(evname, &code, &type) >0 ) {
+    if (create_event(code, type)>=0) {
+      return EVENT_IS_PROFILABLE;
+    }
+  }
+  return EVENT_MAY_NOT_PROFILABLE;
+}
+
+/******************
  * show the information of a given pmu event
  * the display will be formatted by display library
+ *
+ * @param: perf event information
+ * @return: 
+ *   0 if profilable, 
+ *  -1 if there's a fatal error
+ *   1 otherwise
  ******************/
-static void
+static int
 show_event_info(pfm_event_info_t *info)
 {
   pfm_event_attr_info_t ainfo;
@@ -180,29 +207,46 @@ show_event_info(pfm_event_info_t *info)
   ret = pfm_get_pmu_info(info->pmu, &pinfo);
   if (ret) {
     EMSG( "cannot get pmu info: %s", pfm_strerror(ret));
-    return;
+    return EVENT_FATAL_ERROR;
   }
-  u64 code, type;
-  if (pfmu_getEventType(info->name, &code, &type) >0 ) {
-    if (test_pmu(code, type)>=0) {
 
-      char buffer[MAX_EVENT_NAME_CHARS];
+  char buffer[MAX_EVENT_NAME_CHARS];
+  char buffer_desc[MAX_EVENT_DESC_CHARS];
 
-      sprintf(buffer, "%s::%s", pinfo.name, info->name);
-      display_line_single(stdout);
-      display_event_info(stdout, buffer, info->desc);
+  sprintf(buffer, "%s::%s", pinfo.name, info->name);
+  int profilable = test_pmu(buffer);
 
-      pfm_for_each_event_attr(i, info) {
-        ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
-        if (ret == PFM_SUCCESS)
-        {
-          memset(buffer, 0, MAX_EVENT_NAME_CHARS);
-          sprintf(buffer, "%s::%s:%s", pinfo.name, info->name, ainfo.name);
-          display_event_info(stdout, buffer, ainfo.desc);
-        }
+  display_line_single(stdout);
+  
+  if (profilable == EVENT_IS_PROFILABLE) {
+    display_event_info(stdout, buffer, info->desc);
+  } else {
+    sprintf(buffer_desc, "%s (*)", info->desc);
+    display_event_info(stdout, buffer, buffer_desc);
+  }
+
+  pfm_for_each_event_attr(i, info) {
+    ret = pfm_get_event_attr_info(info->idx, i, PFM_OS_NONE, &ainfo);
+    if (ret == PFM_SUCCESS)
+    {
+      memset(buffer, 0, MAX_EVENT_NAME_CHARS);
+      sprintf(buffer, "%s::%s:%s", pinfo.name, info->name, ainfo.name);
+
+      if (test_pmu(buffer) == 0) {
+        display_event_info(stdout, buffer, ainfo.desc);
+	continue;
       }
+
+      // the counter may not be profilable. Perhaps requires more attributes/masks 
+      // or higher user privilege (like super user)
+      // add a sign to users so they know the event may not be profilable
+      sprintf(buffer_desc, "%s (*)", ainfo.desc);
+      display_event_info(stdout, buffer, buffer_desc);
+
+      profilable = EVENT_MAY_NOT_PROFILABLE;
     }
   }
+  return profilable;
 }
 
 /******************
@@ -214,6 +258,7 @@ show_info(char *event )
   pfm_pmu_info_t pinfo;
   pfm_event_info_t info;
   int i, j, ret, match = 0, pname;
+  int profilable;
 
   memset(&pinfo, 0, sizeof(pinfo));
   memset(&info, 0, sizeof(info));
@@ -242,11 +287,14 @@ show_info(char *event )
       if (ret != PFM_SUCCESS)
         EMSG( "cannot get event info: %s", pfm_strerror(ret));
       else {
-        show_event_info(&info);
+        profilable |= show_event_info(&info);
         match++;
       }
     }
   }
+  if (profilable != EVENT_IS_PROFILABLE) 
+    printf("(*) The counter may not be profilable.\n\n");
+  
   return match;
 }
 
@@ -254,6 +302,32 @@ show_info(char *event )
 //******************************************************************************
 // Supported operations
 //******************************************************************************
+
+/**
+ * get the complete perf event attribute for a given pmu
+ * @return 1 if successful
+ * -1 otherwise
+ */
+int
+pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr)
+{
+  pfm_perf_encode_arg_t arg;
+  char *fqstr = NULL;
+
+  arg.fstr = &fqstr;
+  arg.size = sizeof(pfm_perf_encode_arg_t);
+  struct perf_event_attr attr;
+  memset(&attr, 0, sizeof(struct perf_event_attr));
+
+  arg.attr = &attr;
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
+
+  if (ret == PFM_SUCCESS) {
+    memcpy(event_attr, arg.attr, sizeof(struct perf_event_attr));
+    return 1;
+  }
+  return -1;
+}
 
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
