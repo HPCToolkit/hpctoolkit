@@ -117,6 +117,9 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@OPT_USE_ZLIB_TRUE@am__append_1 = -L$(ZLIB_LIB) -lz
+@OPT_USE_ZLIB_TRUE@am__append_2 = -I$(ZLIB_INC) 
+@OPT_USE_ZLIB_TRUE@am__append_3 = -I$(ZLIB_INC)
 bin_PROGRAMS = hpcserver$(EXEEXT)
 subdir = src/tool/hpcserver
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -155,8 +158,9 @@ am__objects_1 = hpcserver-Args.$(OBJEXT) \
 	hpcserver-main.$(OBJEXT)
 am_hpcserver_OBJECTS = $(am__objects_1)
 hpcserver_OBJECTS = $(am_hpcserver_OBJECTS)
-am__DEPENDENCIES_1 = $(HPCLIB_Support)
-hpcserver_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_1 =
+am__DEPENDENCIES_2 = $(HPCLIB_Support) $(am__DEPENDENCIES_1)
+hpcserver_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -330,6 +334,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -342,8 +350,6 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OA_IFLAGS = @OA_IFLAGS@
-OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
@@ -370,14 +376,18 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
-SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -397,6 +407,14 @@ XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
 ZLIB_INC = @ZLIB_INC@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -491,14 +509,6 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	Args.cpp \
 	BaseDataFile.cpp \
@@ -519,13 +529,12 @@ MYSOURCES = \
 	main.cpp
 
 MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
-MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) \
+	@GNUBINUTILS_IFLAGS@ $(am__append_2)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) \
+	@GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@ $(am__append_3)
 MYLDFLAGS = -lz
-MYLDADD = \
-        @HOST_LIBTREPOSITORY@ \
-        $(HPCLIB_Support) 
-
+MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Support) $(am__append_1)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcserver_CXX = $(CXX)
 hpcserver_SOURCES = $(MYSOURCES) $(THREADSOURCES)

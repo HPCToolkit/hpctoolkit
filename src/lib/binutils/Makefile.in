@@ -139,7 +139,8 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbinutils_la-Demangler.lo libHPCbinutils_la-LM.lo \
+am__objects_1 = libHPCbinutils_la-Demangler.lo \
+	libHPCbinutils_la-KernelSymbols.lo libHPCbinutils_la-LM.lo \
 	libHPCbinutils_la-Seg.lo libHPCbinutils_la-Proc.lo \
 	libHPCbinutils_la-Insn.lo libHPCbinutils_la-Dbg-LM.lo \
 	libHPCbinutils_la-Dbg-Proc.lo libHPCbinutils_la-BinUtils.lo \
@@ -332,6 +333,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -344,8 +349,6 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OA_IFLAGS = @OA_IFLAGS@
-OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
@@ -372,14 +375,18 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
-SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -503,6 +510,7 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 #############################################################################
 MYSOURCES = \
         Demangler.hpp Demangler.cpp \
+	KernelSymbols.hpp KernelSymbols.cpp \
 	LM.hpp LM.cpp \
 	Seg.hpp Seg.cpp \
 	Proc.hpp Proc.cpp \
@@ -599,6 +607,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Demangler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Insn.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-KernelSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
@@ -631,6 +640,13 @@ libHPCbinutils_la-Demangler.lo: Demangler.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Demangler.cpp' object='libHPCbinutils_la-Demangler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Demangler.lo `test -f 'Demangler.cpp' || echo '$(srcdir)/'`Demangler.cpp
+
+libHPCbinutils_la-KernelSymbols.lo: KernelSymbols.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-KernelSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-KernelSymbols.Tpo -c -o libHPCbinutils_la-KernelSymbols.lo `test -f 'KernelSymbols.cpp' || echo '$(srcdir)/'`KernelSymbols.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-KernelSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-KernelSymbols.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='KernelSymbols.cpp' object='libHPCbinutils_la-KernelSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-KernelSymbols.lo `test -f 'KernelSymbols.cpp' || echo '$(srcdir)/'`KernelSymbols.cpp
 
 libHPCbinutils_la-LM.lo: LM.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LM.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LM.Tpo -c -o libHPCbinutils_la-LM.lo `test -f 'LM.cpp' || echo '$(srcdir)/'`LM.cpp

@@ -61,6 +61,10 @@
 #undef ss_str
 #undef reg_fn_name
 
+#ifndef ss_sort_order
+#define ss_sort_order  50
+#endif
+
 #include "ss-obj-name.h"
 
 #define obj_name() SS_OBJ_NAME(ss_name)
@@ -99,6 +103,7 @@ sample_source_t obj_name() = {
   .name = ss_str,
   .cls  = ss_cls,
   .state = UNINIT,
+  .sort_order = ss_sort_order,
 };
 
 

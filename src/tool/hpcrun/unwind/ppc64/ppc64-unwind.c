@@ -59,15 +59,18 @@
 #include <assert.h>
 
 
-//************************ libmonitor Include Files *************************
+//************************ External Include Files *************************
 
 #include <monitor.h>
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 
 //*************************** User Include Files ****************************
 
 #include <unwind/common/unwind.h>
 #include <unwind/common/unw-datatypes.h>
+#include <unwind/common/libunw_intervals.h>
 
 #include "ppc64-unwind-interval.h"
 
@@ -82,14 +85,6 @@
 
 #include <lib/isa-lean/power/instruction-set.h>
 #include <unwind/common/fence_enum.h>
-
-
-//***************************************************************************
-// external declarations
-//***************************************************************************
-
-extern void 
-hpcrun_set_real_siglongjmp(void);
 
 
 
@@ -108,10 +103,7 @@ hpcrun_set_real_siglongjmp(void);
 //
 // register codes (only 1 at the moment)
 //
-typedef enum {
-  UNW_REG_IP
-} unw_reg_code_t;
-
+typedef unw_frame_regnum_t unw_reg_code_t;
 
 typedef enum {
   UnwFlg_NULL = 0,
@@ -134,9 +126,19 @@ hpcrun_check_fence(void* ip);
 //***************************************************************************
 
 static void
+save_registers(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
+	       void *ra)
+{
+  cursor->pc_unnorm = pc;
+  cursor->bp        = bp;
+  cursor->sp        = sp;
+  cursor->ra        = ra;
+}
+
+static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
-  void *func_start_pc =  (void*) cursor->unwr_info.start;
+  void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
   load_module_t* lm = cursor->unwr_info.lm;
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
@@ -197,7 +199,6 @@ void
 hpcrun_unw_init(void)
 {
   uw_recipe_map_init();
-  hpcrun_set_real_siglongjmp();
 }
 
 int
@@ -208,7 +209,7 @@ hpcrun_unw_get_ip_norm_reg(hpcrun_unw_cursor_t* c, ip_normalized_t* reg_value)
 
 
 int
-hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, unw_word_t* reg_value)
+hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 {
   return hpcrun_unw_get_unnorm_reg(c, UNW_REG_IP, reg_value);
 }
@@ -228,17 +229,15 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 void 
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
+  libunw_unw_init_cursor(cursor, context);
   ucontext_t* ctxt = (ucontext_t*)context;
 
-  cursor->pc_unnorm = ucontext_pc(ctxt);
+  save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
   cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
-  cursor->ra        = NULL;
-  cursor->sp        = ucontext_sp(ctxt);
-  cursor->bp        = NULL;
-  cursor->flags     = UnwFlg_StackTop;
 
+  cursor->flags     = UnwFlg_StackTop;
   bitree_uwi_t* intvl = NULL;
-  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	intvl = cursor->unwr_info.btuwi;
 	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
@@ -269,12 +268,10 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-
   // current frame
   void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
-  unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);
 
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
@@ -285,6 +282,19 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   unwind_interval* nxt_intvl = NULL;
   
+  bitree_uwi_t* intvl = NULL;
+  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &cursor->unwr_info);
+  if (found) {
+    intvl = cursor->unwr_info.btuwi;
+    if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+      if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR)
+	unw_get_reg(&cursor->uc, UNW_PPC64_LR, &nxt_ra);
+      else
+	unw_get_reg(&cursor->uc, UWI_RECIPE(intvl)->ra_arg, &nxt_ra);
+      cursor->ra = (void*)nxt_ra;
+    }
+    compute_normalized_ips(cursor);
+  }
   if (!intvl) {
     TMSG(UNW, "error: missing interval for pc=%p", pc);
     return STEP_ERROR;
@@ -359,7 +369,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  bool found = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info));
+  found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
@@ -379,7 +389,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 	  // Sanity check SP: Once in a while SP is clobbered.
 	  if (isPossibleParentSP(nxt_sp, try_sp)) {
 		nxt_pc = getNxtPCFromSP(try_sp);
-		bool found2 = uw_recipe_map_lookup(nxt_pc, &(cursor->unwr_info));
+		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
 		}
@@ -412,10 +422,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
-  cursor->pc_unnorm = nxt_pc;
-  cursor->ra        = nxt_ra;
-  cursor->sp        = nxt_sp;
-  cursor->bp        = nxt_fp;
+  save_registers(cursor, nxt_pc, nxt_fp, nxt_sp, nxt_ra);
   cursor->flags     = UnwFlg_NULL;
 
   compute_normalized_ips(cursor);

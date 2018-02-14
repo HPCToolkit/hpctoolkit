@@ -56,24 +56,26 @@
 //***************************************************************************
 
 unwind_interval *
-process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg,
-	mem_alloc m_alloc)
+process_and(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
   const xed_operand_t* op0 = xed_inst_operand(xi,0);
   xed_operand_enum_t   op0_name = xed_operand_name(op0);
 
   if (op0_name == XED_OPERAND_REG0) {
-	xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
-	if (x86_isReg_SP(reg0) && UWI_RECIPE(iarg->current)->bp_status != BP_UNCHANGED) {
-	  //-----------------------------------------------------------------------
-	  // we are adjusting the stack pointer via 'and' instruction
-	  //-----------------------------------------------------------------------
-	  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
-		  RA_BP_FRAME, UWI_RECIPE(iarg->current)->sp_ra_pos, UWI_RECIPE(iarg->current)->bp_ra_pos,
-		  UWI_RECIPE(iarg->current)->bp_status, UWI_RECIPE(iarg->current)->sp_bp_pos,
-		  UWI_RECIPE(iarg->current)->bp_bp_pos, iarg->current, m_alloc);
-	}
+    xed_reg_enum_t reg0 = xed_decoded_inst_get_reg(xptr, op0_name);
+    if (x86_isReg_SP(reg0)) { 
+      x86recipe_t *xr = UWI_RECIPE(iarg->current);
+      if (xr->reg.bp_status != BP_UNCHANGED) {
+	//----------------------------------------------------------------------
+	// we are adjusting the stack pointer via 'and' instruction
+	//----------------------------------------------------------------------
+	next = new_ui(nextInsn(iarg, xptr), RA_BP_FRAME, &xr->reg);
+      } else {
+	// remember that SP was adjusted by masking bits
+	iarg->sp_realigned = true; 
+      }
+    }
   }
   return next;
 }

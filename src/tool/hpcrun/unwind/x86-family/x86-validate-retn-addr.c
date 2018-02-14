@@ -77,14 +77,6 @@
 
 
 //****************************************************************************
-// forward declarations 
-//****************************************************************************
-
-extern void *x86_get_branch_target(void *ins, xed_decoded_inst_t *xptr);
-
-
-
-//****************************************************************************
 // local types 
 //****************************************************************************
 
@@ -278,7 +270,7 @@ confirm_tail_call(void *addr, void *target_fn)
   TMSG(VALIDATE_UNW,"Checking routine %p for possible tail calls", callee);
 
   unwindr_info_t unwr_info;
-  bool found = uw_recipe_map_lookup(callee, &unwr_info);
+  bool found = uw_recipe_map_lookup(callee, NATIVE_UNWINDER, &unwr_info);
   if (found && (unwr_info.treestat == READY)
 	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
 	return contains_tail_call_to_f(callee, target_fn);
@@ -337,12 +329,12 @@ confirm_plt_call(void *addr, void *callee)
 
 #if 0
   unwind_interval *plt_callee_ui;
-  bool found = uw_recipe_map_lookup(plt_callee, NULL, &plt_callee_ui);
+  bool found = uw_recipe_map_lookup(plt_callee, NATIVE_UNWINDER, NULL, &plt_callee_ui);
   if (found && UWI_RECIPE(plt_callee_ui)->has_tail_calls) return contains_tail_call_to_f(plt_callee, callee);
 #else
 
   unwindr_info_t unwr_info;
-  bool found = uw_recipe_map_lookup(plt_callee, &unwr_info);
+  bool found = uw_recipe_map_lookup(plt_callee, NATIVE_UNWINDER, &unwr_info);
   if (found && (unwr_info.treestat == READY)
 	  && UWI_RECIPE(unwr_info.btuwi)->has_tail_calls)
 	return contains_tail_call_to_f(plt_callee, callee);
@@ -350,6 +342,13 @@ confirm_plt_call(void *addr, void *callee)
 #endif
 
   return UNW_ADDR_WRONG;
+}
+
+static int
+return_addr_valid(void *addr, unwindr_info_t *unwr_info)
+{
+  return (uw_recipe_map_lookup(addr, NATIVE_UNWINDER, unwr_info) &&
+	  unwr_info->treestat != NEVER);
 }
 
 //****************************************************************************
@@ -364,30 +363,31 @@ deep_validate_return_addr(void* addr, void* generic)
        addr);
 
   unwindr_info_t unwr_info;
-  if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
-	TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
+  if (!return_addr_valid(addr, &unwr_info) ) {
+    TMSG(VALIDATE_UNW,"unwind addr %p does NOT have function bounds, so it is invalid", addr);
     return status_is_wrong();
   }
 
-  if( uw_recipe_map_lookup(cursor->pc_unnorm, &unwr_info) ) {
-	 void* callee = (void*)unwr_info.start;
-	    TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
-	    if (confirm_call(addr, callee)) {
-	      TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
-	      return UNW_ADDR_CONFIRMED;
-	    }
-	    validation_status result = confirm_plt_call(addr, callee);
-	    if (result != UNW_ADDR_WRONG) {
-	      TMSG(VALIDATE_UNW,
-		   "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
-		   addr);
-	      return result;
-	    }
-	    result = confirm_tail_call(addr, callee);
-	    if (result != UNW_ADDR_WRONG) {
-	      TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
-	      return result;
-	    }
+  if (!return_addr_valid(cursor->pc_unnorm, &unwr_info))
+    return status_is_wrong();
+
+  void* callee = (void*)unwr_info.interval.start;
+  TMSG(VALIDATE_UNW, "beginning of my routine = %p", callee);
+  if (confirm_call(addr, callee)) {
+    TMSG(VALIDATE_UNW, "Instruction preceeding %p is a call to this routine. Unwind confirmed", addr);
+    return UNW_ADDR_CONFIRMED;
+  }
+  validation_status result = confirm_plt_call(addr, callee);
+  if (result != UNW_ADDR_WRONG) {
+    TMSG(VALIDATE_UNW,
+	 "Instruction preceeding %p is a call through the PLT to this routine. Unwind confirmed",
+	 addr);
+    return result;
+  }
+  result = confirm_tail_call(addr, callee);
+  if (result != UNW_ADDR_WRONG) {
+    TMSG(VALIDATE_UNW,"Instruction preceeding %p is a call to a routine that has tail calls. Unwind is LIKELY ok", addr);
+    return result;
   }
 
   void* call_ins;
@@ -413,9 +413,7 @@ dbg_val(void *addr, void *pc)
 validation_status
 validate_return_addr(void *addr, void *generic)
 {
-    unwindr_info_t unwr_info;
-	if( !uw_recipe_map_lookup(addr, &unwr_info) ) {
-    return UNW_ADDR_WRONG;
-  }
-  return UNW_ADDR_PROBABLE;
+  unwindr_info_t unwr_info;
+  return return_addr_valid(addr, &unwr_info) ?
+    UNW_ADDR_PROBABLE : UNW_ADDR_WRONG;
 }

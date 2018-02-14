@@ -156,7 +156,8 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-WordSet.lo libHPCsupport_la-HashTable.lo \
 	libHPCsupport_la-HashTableSortedIterator.lo \
 	libHPCsupport_la-PointerStack.lo libHPCsupport_la-QuickSort.lo \
-	libHPCsupport_la-Unique.lo
+	libHPCsupport_la-Unique.lo libHPCsupport_la-VarMap.lo \
+	libHPCsupport_la-ExprEval.lo
 am_libHPCsupport_la_OBJECTS = $(am__objects_1)
 libHPCsupport_la_OBJECTS = $(am_libHPCsupport_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -345,6 +346,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -357,8 +362,6 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OA_IFLAGS = @OA_IFLAGS@
-OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
@@ -385,14 +388,18 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
-SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -549,7 +556,11 @@ MYSOURCES = \
 	\
 	PointerStack.hpp PointerStack.cpp \
 	QuickSort.hpp QuickSort.cpp \
-	Unique.hpp Unique.cpp
+	Unique.hpp Unique.cpp \
+	\
+	BaseVarMap.hpp \
+	VarMap.hpp VarMap.cpp \
+	ExprEval.hpp ExprEval.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
@@ -634,6 +645,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CStrUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CmdLineParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Exception.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-ExprEval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileNameMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-FileUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-HashTable.Plo@am__quote@
@@ -654,6 +666,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StrUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Unique.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-VarMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-WordSet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-diagnostics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-findinstall.Plo@am__quote@
@@ -897,6 +910,20 @@ libHPCsupport_la-Unique.lo: Unique.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Unique.cpp' object='libHPCsupport_la-Unique.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Unique.lo `test -f 'Unique.cpp' || echo '$(srcdir)/'`Unique.cpp
+
+libHPCsupport_la-VarMap.lo: VarMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-VarMap.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-VarMap.Tpo -c -o libHPCsupport_la-VarMap.lo `test -f 'VarMap.cpp' || echo '$(srcdir)/'`VarMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_la-VarMap.Tpo $(DEPDIR)/libHPCsupport_la-VarMap.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='VarMap.cpp' object='libHPCsupport_la-VarMap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-VarMap.lo `test -f 'VarMap.cpp' || echo '$(srcdir)/'`VarMap.cpp
+
+libHPCsupport_la-ExprEval.lo: ExprEval.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-ExprEval.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-ExprEval.Tpo -c -o libHPCsupport_la-ExprEval.lo `test -f 'ExprEval.cpp' || echo '$(srcdir)/'`ExprEval.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_la-ExprEval.Tpo $(DEPDIR)/libHPCsupport_la-ExprEval.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ExprEval.cpp' object='libHPCsupport_la-ExprEval.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-ExprEval.lo `test -f 'ExprEval.cpp' || echo '$(srcdir)/'`ExprEval.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

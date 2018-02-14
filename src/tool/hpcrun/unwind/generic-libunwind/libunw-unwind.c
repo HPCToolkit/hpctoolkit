@@ -96,26 +96,13 @@
 
 #include <fnbounds/fnbounds_interface.h>
 #include <messages/messages.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <unwind/common/unw-datatypes.h>
 #include <unwind/common/unwind.h>
+#include <unwind/common/uw_recipe_map.h>
+#include <unwind/common/binarytree_uwi.h>
+#include <unwind/common/libunw_intervals.h>
 #include <utilities/arch/context-pc.h>
-
-//************************************************
-// private functions
-//************************************************
-
-static void
-compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
-{
-  void *func_start_pc = NULL;
-  void *func_end_pc = NULL;
-  load_module_t* lm = NULL;
-
-  fnbounds_enclosing_addr(cursor->pc_unnorm, &func_start_pc, &func_end_pc, &lm);
-
-  cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
-  cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
-}
 
 //************************************************
 // interface functions
@@ -125,12 +112,10 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 // hpcrun_unw_init
 // ----------------------------------------------------------
 
-extern void hpcrun_set_real_siglongjmp(void);
-
 void
 hpcrun_unw_init(void)
 {
-  hpcrun_set_real_siglongjmp();
+  uw_recipe_map_init();
 }
 
 
@@ -180,92 +165,19 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* c)
 // except for pc_norm and pc_unnorm.
 //
 void
-hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* h_cursor, void* context)
+hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
-  unw_cursor_t *cursor = &(h_cursor->uc);
-  unw_context_t *ctx = (unw_context_t *) context;
-  unw_word_t pc;
-
-  if (ctx != NULL && unw_init_local(cursor, ctx) == 0) {
-    unw_get_reg(cursor, UNW_REG_IP, &pc);
-  } else {
-    pc = 0;
-  }
-
-  h_cursor->sp = NULL;
-  h_cursor->bp = NULL;
-  h_cursor->pc_unnorm = (void *) pc;
-  h_cursor->intvl = &(h_cursor->real_intvl);
-  h_cursor->real_intvl.lm = NULL;
-
-  compute_normalized_ips(h_cursor);
-
-  TMSG(UNW, "init cursor pc = %p\n", h_cursor->pc_unnorm);
+  libunw_unw_init_cursor(cursor, context);
 }
 
-
-// ----------------------------------------------------------
-// hpcrun_unw_step: 
-//   Given a cursor, step the cursor to the next (less deeply
-//   nested) frame.  Conforms to the semantics of libunwind's
-//   hpcrun_unw_step.  In particular, returns:
-//     > 0 : successfully advanced cursor to next frame
-//       0 : previous frame was the end of the unwind
-//     < 0 : error condition
-// ---------------------------------------------------------
-
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* h_cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  // this should never be NULL
-  if (h_cursor == NULL) {
-    TMSG(UNW, "unw_step: internal error: cursor ptr is NULL\n");
-    return STEP_ERROR;
-  }
+  return libunw_unw_step(cursor);
+}
 
-  // starting pc
-  unw_cursor_t *cursor = &(h_cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  unw_get_reg(cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
-
-  // full unwind: stop at libmonitor fence.  this is where we hope the
-  // unwind stops.
-  if (monitor_unwind_process_bottom_frame(pc)
-      || monitor_unwind_thread_bottom_frame(pc))
-  {
-    TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
-    return STEP_STOP;
-  }
-
-  int ret = unw_step(cursor);
-
-  // step error, almost never happens with libunwind.
-  if (ret < 0) {
-    TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
-    return STEP_ERROR;
-  }
-
-  // we prefer to stop at monitor fence, but must also stop here.
-  if (ret == 0) {
-    TMSG(UNW, "unw_step: stop at unw_step: %p\n", pc);
-    return STEP_STOP;
-  }
-
-  // update for new pc
-  unw_get_reg(cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
-
-  h_cursor->sp = NULL;
-  h_cursor->bp = NULL;
-  h_cursor->pc_unnorm = pc;
-  h_cursor->intvl = &(h_cursor->real_intvl);
-  h_cursor->real_intvl.lm = NULL;
-
-  compute_normalized_ips(h_cursor);
-
-  TMSG(UNW, "unw_step: advance pc: %p\n", pc);
-  return STEP_OK;
+btuwi_status_t
+build_intervals(char  *ins, unsigned int len, unwinder_t uw)
+{
+  return libunw_build_intervals(ins, len);
 }

@@ -115,13 +115,13 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
 
   ret = dwarf_srclines(dw_die, &linebuf, &count, &dw_error);
   if (ret != DW_DLV_OK) {
-    warnx("dwarf_srclines failed");
+    // warnx("dwarf_srclines failed");
     return;
   }
 
   ret = dwarf_srcfiles(dw_die, &file_names, &file_count, &dw_error);
   if (ret != DW_DLV_OK) {
-    warnx("dwarf_srcfiles failed");
+    // warnx("dwarf_srcfiles failed");
     return;
   }
 
@@ -146,17 +146,17 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
 
     ret = dwarf_lineaddr(linebuf[n], &addr, &dw_error);
     if (ret != DW_DLV_OK) {
-      warnx("dwarf_lineaddr failed");
+      // warnx("dwarf_lineaddr failed");
     }
 
     ret = dwarf_lineno(linebuf[n], &lineno, &dw_error);
     if (ret != DW_DLV_OK) {
-      warnx("dwarf_lineno failed");
+      // warnx("dwarf_lineno failed");
     }
 
     ret = dwarf_line_srcfileno(linebuf[n], &fileno, &dw_error);
     if (ret != DW_DLV_OK) {
-      warnx("dwarf_line_srcfileno failed");
+      // warnx("dwarf_line_srcfileno failed");
     }
 
     if (fileno > 0 && fileno <= ufile_count && lineno > 0) {
@@ -165,7 +165,7 @@ LineMap::do_line_map(Dwarf_Debug dw_dbg, Dwarf_Die dw_die)
 
     ret = dwarf_lineendsequence(linebuf[n], &is_end, &dw_error);
     if (ret != DW_DLV_OK) {
-      warnx("dwarf_lineendsequence failed");
+      // warnx("dwarf_lineendsequence failed");
     }
 
 #if DEBUG_RAW_LINE_MAP
@@ -267,7 +267,7 @@ LineMap::do_dwarf(const char *filenm)
 
   ret = dwarf_finish(dw_dbg, &dw_error);
   if (ret != DW_DLV_OK) {
-    warnx("dwarf_finish failed");
+    // warnx("dwarf_finish failed");
   }
   close(fd);
 }

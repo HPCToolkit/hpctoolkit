@@ -53,14 +53,21 @@
 
 //*************************** User Include Files ****************************
 
-#include "ildmod_stat.h"
 #include "binarytree_uwi.h"
+#include <hpcrun/loadmap.h>
+#include "interval_t.h"
 
-//******************************* Types *************************************
+//******************************************************************************
+// type
+//******************************************************************************
+
+// Tree status
+typedef enum {
+  NEVER, DEFERRED, FORTHCOMING, READY
+} tree_stat_t;
 
 typedef struct unwindr_info_s {
-  uintptr_t start;
-  uintptr_t end;
+  interval_t interval;
   load_module_t *lm;
   tree_stat_t treestat;
   bitree_uwi_t *btuwi;

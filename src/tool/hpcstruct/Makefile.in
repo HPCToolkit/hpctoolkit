@@ -16,9 +16,6 @@
 
 # -*-Mode: makefile;-*-
 
-#############################################################################
-#############################################################################
-
 # -*-Mode: makefile;-*-
 
 #############################################################################
@@ -118,12 +115,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_1 = -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
-@OPT_ENABLE_BANAL_WITH_PARSEAPI_TRUE@am__append_2 = -DBANAL_USE_PARSEAPI
-@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_3 = @OA_LDFLAGS@
-@OPT_ENABLE_BANAL_WITH_OA_TRUE@am__append_4 = @OA_IFLAGS@
-@USE_BOOST_LIBS_TRUE@am__append_5 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_USE_ZLIB_TRUE@am__append_6 = -L$(ZLIB_LIB) -lz
+@USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -150,16 +143,14 @@ am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@am__DEPENDENCIES_4 =  \
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	$(am__DEPENDENCIES_1)
-@USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_6 = $(HPCLIB_Analysis) $(HPCLIB_Banal) $(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
-	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_1)
-hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_6)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_5 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_1)
+hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_5)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -230,24 +221,6 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
 SOURCES = $(hpcstruct_bin_SOURCES)
 DIST_SOURCES = $(hpcstruct_bin_SOURCES)
 am__can_run_installinfo = \
@@ -281,9 +254,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/hpcstruct.in \
 	$(top_srcdir)/src/Makeinclude.rules
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
-#############################################################################
-# Automake rules
-#############################################################################
+#----------------------------------------------------------------------
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
@@ -298,13 +269,7 @@ BACK_END_LABEL = @BACK_END_LABEL@
 BOOST_COPY = @BOOST_COPY@
 BOOST_INC = @BOOST_INC@
 
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
+#----------------------------------------------------------------------
 BOOST_LIB = @BOOST_LIB@
 BOOST_LIB_LIST = @BOOST_LIB_LIST@
 CC = @CC@
@@ -389,6 +354,10 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -401,8 +370,6 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OA_IFLAGS = @OA_IFLAGS@
-OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
@@ -429,14 +396,18 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
-SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -519,8 +490,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 wordsize_cflag = @wordsize_cflag@
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
@@ -550,35 +519,32 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+MYSOURCES = main.cpp Args.cpp
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@GNUBINUTILS_IFLAGS@
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
-	$(am__append_2) $(am__append_4)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
 	-ldl
 
 MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_Prof) $(HPCLIB_Binutils) $(HPCLIB_ISA) $(MY_LIB_XED) \
-	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(MY_LIB_CFG) $(MY_LIB_Symtab) @GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_5) $(am__append_6)
-MY_LIB_CFG = $(am__append_1) $(am__append_3)
-@OPT_ENABLE_BANAL_WITH_SYMTAB_FALSE@MY_LIB_Symtab = 
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBDWARF_LIB) -ldwarf \
-@OPT_ENABLE_BANAL_WITH_SYMTAB_TRUE@	-L$(LIBELF_LIB) -lelf
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) $(MY_LIB_XED) $(HPCLIB_XML) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) $(MY_LIB_CFG) @GNUBINUTILS_LDLIBS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1) $(am__append_2)
+MY_LIB_CFG = \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
+	-L$(LIBDWARF_LIB) -ldwarf  \
+	-L$(LIBELF_LIB) -lelf
 
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcstruct
 hpcstruct_bin_SOURCES = $(MYSOURCES)
-hpcstruct_bin_CFLAGS = $(MYCFLAGS)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
 hpcstruct_bin_LDADD = $(MYLDADD)
@@ -900,7 +866,6 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@OPT_HPCSTRUCT_LAUNCH_SCRIPT_TRUE@install-exec-hook:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-pkglibexecPROGRAMS \
@@ -931,8 +896,7 @@ install-dvi: install-dvi-am
 install-dvi-am:
 
 install-exec-am: install-binSCRIPTS install-pkglibexecPROGRAMS
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
+
 install-html: install-html-am
 
 install-html-am:
@@ -973,7 +937,7 @@ ps-am:
 
 uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
-.MAKE: install-am install-exec-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
 	clean-libtool clean-pkglibexecPROGRAMS cscopelist-am ctags \
@@ -981,15 +945,14 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binSCRIPTS \
 	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkglibexecPROGRAMS \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-binSCRIPTS \
-	uninstall-pkglibexecPROGRAMS
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglibexecPROGRAMS install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
 .PRECIOUS: Makefile
 
@@ -1008,11 +971,6 @@ endef
 
 #############################################################################
 
-@OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE@install-exec-hook:
-@OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE@	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-@OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE@	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
-@OPT_HPCSTRUCT_LAUNCH_SCRIPT_FALSE@	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@
 
@@ -1021,9 +979,7 @@ endef
 
 #############################################################################
 
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

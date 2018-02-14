@@ -126,14 +126,11 @@ new_ui(
 	sp_ty_t sp_ty,
 	ra_ty_t ra_ty,
 	int sp_arg,
-	int ra_arg,
-	unwind_interval *prev,
-	mem_alloc m_alloc);
+	int ra_arg);
 
 #if 0
 ppc64recipe_t *
-ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-		mem_alloc m_alloc);
+ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg);
 #endif
 
 /*
