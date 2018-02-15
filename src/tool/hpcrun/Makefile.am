@@ -303,8 +303,8 @@ MY_BASE_FILES =				\
 	cct/cct.c               	\
 	\
 	cct2metrics.c                   \
-	\
-	trampoline/common/trampoline.c  \
+##	\
+##	trampoline/common/trampoline.c  \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
@@ -329,6 +329,14 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
+
+if HOST_CPU_PPC
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_eager.c
+else
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_lazy.c
+endif
 
 if OPT_PERFMON
 MY_BASE_FILES +=  			\

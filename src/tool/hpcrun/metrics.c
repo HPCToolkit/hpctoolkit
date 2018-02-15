@@ -396,6 +396,27 @@ hpcrun_set_metric_info(int metric_id, const char* name)
                                   MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
+void hpcrun_set_metric_showPercent(int metric_id, uint8_t showPercent)
+{
+  if (has_set_max_metrics) {
+    EMSG("Can only set showPercent field of a metric before the metric table is finalized.");
+    return;
+  }
+
+  metric_desc_t* mdesc = NULL;
+  for (metric_list_t* l = metric_data; l; l = l->next) {
+    if (l->id == metric_id) {
+      mdesc = &(l->val);
+      break;
+    }
+  }
+  if (! mdesc) {
+    EMSG("Metric id is NULL (likely unallocated), unable to set showPercent field.");
+    return;
+  }
+
+  mdesc->flags.fields.showPercent = showPercent;
+}
 
 //
 // hpcrun_set_metric_name function is primarily used by
