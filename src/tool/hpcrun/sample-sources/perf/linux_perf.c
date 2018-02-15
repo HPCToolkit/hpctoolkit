@@ -267,9 +267,9 @@ copy_kallsyms()
 
   char  dest[PATH_MAX], kernel_name[PATH_MAX];
   char  dest_directory[PATH_MAX];
-  char *hpctoolkit_directory = get_output_directory();
+  const char *output_directory = hpcrun_files_output_directory();
 
-  snprintf(dest_directory, PATH_MAX, "%s/%s", hpctoolkit_directory,
+  snprintf(dest_directory, PATH_MAX, "%s/%s", output_directory,
            DIRECTORY_FILE_COLLECTION);
 
   OSUtil_setCustomKernelName(kernel_name, PATH_MAX);

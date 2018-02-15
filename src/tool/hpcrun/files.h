@@ -50,11 +50,11 @@
 //*****************************************************************************
 
 void hpcrun_files_set_directory();
-char* get_output_directory();
-
 void hpcrun_files_set_executable(char *execname);   
+
 const char *hpcrun_files_executable_pathname();
 const char *hpcrun_files_executable_name();
+const char *hpcrun_files_output_directory();
 
 int hpcrun_open_log_file(void);
 int hpcrun_open_trace_file(int thread);
