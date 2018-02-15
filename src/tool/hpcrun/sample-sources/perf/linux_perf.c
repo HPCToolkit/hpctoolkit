@@ -270,7 +270,7 @@ copy_kallsyms()
   const char *output_directory = hpcrun_files_output_directory();
 
   snprintf(dest_directory, PATH_MAX, "%s/%s", output_directory,
-           DIRECTORY_FILE_COLLECTION);
+           KERNEL_SYMBOLS_DIRECTORY);
 
   OSUtil_setCustomKernelName(kernel_name, PATH_MAX);
 

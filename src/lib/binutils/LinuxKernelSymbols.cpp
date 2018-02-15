@@ -79,7 +79,7 @@ getKernelFilename(const std::set<std::string> &directorySet, std::string virtual
   std::set<std::string>::iterator it;
   for(it = directorySet.begin(); it != directorySet.end(); ++it) {
     std::string dir  = *it;
-    path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/" + fname;
+    path = dir + "/" + KERNEL_SYMBOLS_DIRECTORY + "/" + fname;
 
     struct stat buffer;
 
@@ -197,7 +197,7 @@ LinuxKernelSymbolsFactory::match(const char *pathname)
 
   bool prefix_correct = pathname[0] == '<';
   bool suffix_correct = pathname[strlen(pathname)-1] == '>';
-  bool name_correct   = 0<=strncmp(pathname+1, LINUX_KERNEL_NAME_REAL, LINUX_KERNEL_NAME_REAL_CHARS);
+  bool name_correct   = 0<=strncmp(pathname+1, LINUX_KERNEL_NAME_REAL, strlen(LINUX_KERNEL_NAME_REAL));
 
   return prefix_correct && suffix_correct && name_correct;
 }
