@@ -137,10 +137,7 @@
 //***************************************************************
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
-// laks: please do not modify the template for host-id.
-//       if you really need to change it, you should apply the same
-//       thing in linux_perf.c
-#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%08lx-%u-%d.%s"
+#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
 
 #define FILES_RANDOM_GEN  4
 #define FILES_MAX_GEN     11

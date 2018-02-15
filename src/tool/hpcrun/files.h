@@ -47,6 +47,9 @@
 #ifndef files_h
 #define files_h
 
+
+//*****************************************************************************
+// forward declarations
 //*****************************************************************************
 
 void hpcrun_files_set_directory();
@@ -61,6 +64,8 @@ int hpcrun_open_trace_file(int thread);
 int hpcrun_open_profile_file(int rank, int thread);
 int hpcrun_rename_log_file(int rank);
 int hpcrun_rename_trace_file(int rank, int thread);
+
+
 
 //*****************************************************************************
 

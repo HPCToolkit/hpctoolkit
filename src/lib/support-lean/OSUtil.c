@@ -80,7 +80,7 @@
 
 //*************************** macros **************************
 
-#define PATTERN_KERNEL_NAME    "%s.%08lx"
+#define PATTERN_KERNEL_NAME    "%s." HOSTID_FORMAT
 
 //*************************** Forward Declarations **************************
 
