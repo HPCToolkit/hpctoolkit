@@ -82,7 +82,7 @@
 #include <utilities/tokenize.h>
 #include <cct/cct.h>
 
-#if defined (HOST_CPU_x86_64)
+#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)
 
 #include <messages/messages.h>
 
@@ -169,6 +169,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // FIXME: MetricFlags_Ty_Final
   hpcrun_set_metric_info(metric_id, HPCRUN_METRIC_RetCnt);
+  hpcrun_set_metric_showPercent(metric_id, 0);
 
   METHOD_CALL(self, store_event, RETCNT_EVENT, IRRELEVANT);
   METHOD_CALL(self, store_metric_id, RETCNT_EVENT, metric_id);

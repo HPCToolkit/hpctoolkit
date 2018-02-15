@@ -143,6 +143,8 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 
 metric_desc_t* hpcrun_set_metric_info(int metric_id, const char* name);
 
+void hpcrun_set_metric_showPercent(int metric_id, uint8_t showPercent);
+
 void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
