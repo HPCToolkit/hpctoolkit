@@ -80,7 +80,7 @@
 
 //*************************** macros **************************
 
-#define PATTERN_KERNEL_NAME    "%s." HOSTID_FORMAT
+#define KERNEL_NAME_FORMAT    "%s." HOSTID_FORMAT
 
 //*************************** Forward Declarations **************************
 
@@ -190,7 +190,7 @@ OSUtil_hostid()
 int
 OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
 {
-  int n = snprintf(buffer, max_chars, PATTERN_KERNEL_NAME,
+  int n = snprintf(buffer, max_chars, KERNEL_NAME_FORMAT,
            LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
 
   return n;
@@ -200,7 +200,7 @@ OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
 int
 OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars)
 {
-  int n = snprintf(buffer, max_chars, "<" PATTERN_KERNEL_NAME ">",
+  int n = snprintf(buffer, max_chars, "<" KERNEL_NAME_FORMAT ">",
            LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
 
   return n;
