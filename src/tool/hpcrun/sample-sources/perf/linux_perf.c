@@ -193,7 +193,9 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 //******************************************************************************
 
 #ifndef ENABLE_PERFMON
-static const char *event_name = "CPU_CYCLES";
+static const char *event_name    = "CPU_CYCLES";
+static const uint64_t event_code = PERF_COUNT_HW_CPU_CYCLES;
+static const uint64_t event_type = PERF_TYPE_HARDWARE;
 #endif
 
 //******************************************************************************
@@ -244,6 +246,19 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
   }
 }
 
+static int
+perf_get_pmu_support(const char *name, struct perf_event_attr *event_attr)
+{
+  int isPMU = 0;
+#ifdef ENABLE_PERFMON
+  isPMU = pfmu_getEventAttribute(name, event_attr);
+#else
+  memset(event_attr, 0, sizeof(struct perf_event_attr));
+  event_attr->config = event_code;
+  event_attr->type   = event_type;
+#endif
+  return isPMU;
+}
 
 //----------------------------------------------------------
 // initialization
@@ -708,7 +723,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     struct perf_event_attr *event_attr = &(event_desc[i].attr);
 
-    int isPMU = pfmu_getEventAttribute(name, event_attr);
+    int isPMU = perf_get_pmu_support(name, event_attr);
     if (isPMU < 0)
       // case for unknown event
       // it is impossible to be here, unless the code is buggy
