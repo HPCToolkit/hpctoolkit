@@ -83,6 +83,7 @@ using std::set;
 
 #include "CCT-Tree.hpp"
 #include "CallPath-Profile.hpp" // for CCT::Tree::metadata()
+#include "MetricDataAccessorInband.hpp" 
 
 #include <lib/xml/xml.hpp> 
 
@@ -577,9 +578,10 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
     const Metric::DerivedDesc* mm = dynamic_cast<const Metric::DerivedDesc*>(m);
     if (mm && mm->expr()) {
       const Metric::AExpr* expr = mm->expr();
-      expr->evalNF(*this);
+      MetricDataAccessorInband mda(*this);
+      expr->evalNF(mda);
       if (doFinal) {
-	double val = expr->eval(*this);
+	double val = expr->eval(mda);
 	demandMetric(mId, numMetrics/*size*/) = val;
       }
     }
