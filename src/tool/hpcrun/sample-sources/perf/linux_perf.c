@@ -230,9 +230,18 @@ extern __thread bool hpcrun_thread_suppress_sample;
 static void
 perf_start_all(int nevents, event_thread_t *event_thread)
 {
-  int i;
+  int i, ret;
+
   for(i=0; i<nevents; i++) {
-    ioctl(event_thread[i].fd, PERF_EVENT_IOC_ENABLE, 0);
+    int fd = event_thread[i].fd;
+    if (fd<0) 
+      continue; 
+ 
+    ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
+
+    if (ret == -1) {
+      EMSG("Can't enable event with fd: %d: %s", fd, strerror(errno));
+    }
   }
 }
 
@@ -242,9 +251,17 @@ perf_start_all(int nevents, event_thread_t *event_thread)
 static void
 perf_stop_all(int nevents, event_thread_t *event_thread)
 {
-  int i;
+  int i, ret;
+
   for(i=0; i<nevents; i++) {
-    ioctl(event_thread[i].fd, PERF_EVENT_IOC_DISABLE, 0);
+    int fd = event_thread[i].fd;
+    if (fd<0) 
+      continue; 
+ 
+    ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+    if (ret == -1) {
+      EMSG("Can't disable event with fd: %d: %s", fd, strerror(errno));
+    }
   }
 }
 
@@ -386,7 +403,11 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
       event->id, et->fd, strerror(errno));
   }
 
-  ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
+  ret = ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
+  if (ret == -1) {
+    EMSG("Can't reset event %d, fd: %d: %s", 
+      event->id, et->fd, strerror(errno));
+  }
   return (ret >= 0);
 }
 
@@ -588,17 +609,15 @@ METHOD_FN(start)
   }
 
   int nevents = (self->evl).nevents;
+  //int ret     = 0;
 
   event_thread_t *event_thread = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
   for (int i=0; i<nevents; i++)
   {
-    int ret = ioctl(event_thread[i].fd, PERF_EVENT_IOC_RESET, 0);
-    if (ret == -1) {
-      TMSG(LINUX_PERF, "error fd %d in IOC_RESET: %s", event_thread[i].fd, strerror(errno));
-    }
+    int fd = event_thread[i].fd;
 
-    restart_perf_event( event_thread[i].fd );
+    restart_perf_event( fd );
   }
 
   thread_data_t* td = hpcrun_get_thread_data();
@@ -933,9 +952,9 @@ restart_perf_event(int fd)
     TMSG(LINUX_PERF, "error fd %d in PERF_EVENT_IOC_RESET: %s", fd, strerror(errno));
   }
 
-  ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
+  ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 1);
   if (ret == -1) {
-    TMSG(LINUX_PERF, "error fd %d in IOC_REFRESH: %s", fd, strerror(errno));
+    TMSG(LINUX_PERF, "error fd %d in IOC_ENABLE: %s", fd, strerror(errno));
   }
   return ret;
 }
@@ -1038,7 +1057,6 @@ perf_event_handler(
        siginfo->si_code, fd);
     hpcrun_safe_exit();
 
-    restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
 
     return 1; // tell monitor the signal has not been handled.
@@ -1066,8 +1084,6 @@ perf_event_handler(
     kernel_block_handler(current, sv, &mmap_data);
 
   } while (more_data);
-
-  restart_perf_event(fd);
 
   perf_start_all(nevents, event_thread);
 
