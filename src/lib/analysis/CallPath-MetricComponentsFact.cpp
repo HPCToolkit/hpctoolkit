@@ -76,6 +76,8 @@ using std::string;
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 
+#include <lib/prof/MetricAccessorInband.hpp>
+
 //*************************** Forward Declarations ***************************
 
 
@@ -341,8 +343,10 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   uint metricBalancedId = metricBalanceIds[0];
   Metric::AExprIncr* metricBalancedExpr = dynamic_cast<Metric::DerivedIncrDesc*>(metricMgr->metric(metricBalancedId))->expr();
 
+  // create a copy of the CCT Metric Data
   Metric::IData cctRoot_mdata(*cctRoot);
-  metricBalancedExpr->finalize(cctRoot_mdata);
+  MetricAccessorInband mai(cctRoot_mdata);
+  metricBalancedExpr->finalize(mai);
   
   double balancedThreshold = 1.2 * cctRoot_mdata.demandMetric(metricBalancedId);
 
@@ -417,7 +421,8 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
   // Find balanced nodes (use finalized metric values)
   // -------------------------------------------------------
   Metric::IData node_mdata(*node);
-  balancedExpr->finalize(node_mdata);
+  MetricAccessorInband mai(node_mdata);
+  balancedExpr->finalize(mai);
   
   bool isComp = (!isFrame ||
 		 (/*isFrame &&*/
