@@ -410,7 +410,7 @@ hpcrun_files_set_directory()
 
 
 const char *
-hpcrun_files_get_output_directory()
+hpcrun_files_output_directory()
 {
   return output_directory;
 }
