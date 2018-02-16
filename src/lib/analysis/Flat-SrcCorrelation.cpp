@@ -73,7 +73,7 @@ using std::vector;
 
 #include <lib/profxml/PGMReader.hpp>
 
-#include <lib/prof/MetricDataAccessorInband.hpp>
+#include <lib/prof/MetricAccessorInband.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 #include <lib/prof/Flat-ProfileData.hpp>
 
@@ -943,7 +943,7 @@ Driver::computeDerivedBatch(Prof::Struct::Tree& structure,
     for (uint mId = mBegId; mId < mEndId; ++mId) {
       const Prof::Metric::AExpr* expr = mExprVec[mId];
       if (expr) {
-	MetricDataAccessorInband mda(*it.current());
+	MetricAccessorInband mda(*it.current());
 	double val = expr->eval(mda);
 	// if (!Prof::Metric::AExpr::isok(val)) ...
 	it.current()->demandMetric(mId, numMetrics/*size*/) = val;

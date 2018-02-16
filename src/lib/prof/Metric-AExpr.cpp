@@ -130,7 +130,7 @@ Const::dumpMe(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double
-Neg::eval(const MetricDataAccessor &mdata) const
+Neg::eval(const MetricAccessor &mdata) const
 {
   double z = m_expr->eval(mdata);
 
@@ -166,7 +166,7 @@ Var::dumpMe(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double
-Power::eval(const MetricDataAccessor &mdata) const
+Power::eval(const MetricAccessor &mdata) const
 {
   double b = m_base->eval(mdata);
   double e = m_exponent->eval(mdata);
@@ -194,7 +194,7 @@ Power::dumpMe(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double
-Divide::eval(const MetricDataAccessor &mdata) const
+Divide::eval(const MetricAccessor &mdata) const
 {
   double n = m_numerator->eval(mdata);
   double d = m_denominator->eval(mdata);
@@ -226,7 +226,7 @@ Divide::dumpMe(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double
-Minus::eval(const MetricDataAccessor &mdata) const
+Minus::eval(const MetricAccessor &mdata) const
 {
   double m = m_minuend->eval(mdata);
   double s = m_subtrahend->eval(mdata);
@@ -262,7 +262,7 @@ Plus::~Plus()
 
 
 double
-Plus::eval(const MetricDataAccessor &mdata) const
+Plus::eval(const MetricAccessor &mdata) const
 {
   double z = evalSum(mdata, m_opands, m_sz);
 
@@ -295,7 +295,7 @@ Times::~Times()
 
 
 double
-Times::eval(const MetricDataAccessor &mdata) const
+Times::eval(const MetricAccessor &mdata) const
 {
   double z = 1.0;
   for (uint i = 0; i < m_sz; ++i) {
@@ -332,7 +332,7 @@ Max::~Max()
 
 
 double
-Max::eval(const MetricDataAccessor &mdata) const
+Max::eval(const MetricAccessor &mdata) const
 {
   double z = m_opands[0]->eval(mdata);
   for (uint i = 1; i < m_sz; ++i) {
@@ -369,7 +369,7 @@ Min::~Min()
 
 
 double
-Min::eval(const MetricDataAccessor &mdata) const
+Min::eval(const MetricAccessor &mdata) const
 {
   double z = DBL_MAX;
   for (uint i = 0; i < m_sz; ++i) {
@@ -410,7 +410,7 @@ Mean::~Mean()
 
 
 double
-Mean::eval(const MetricDataAccessor &mdata) const
+Mean::eval(const MetricAccessor &mdata) const
 {
   double z = evalMean(mdata, m_opands, m_sz);
 
@@ -443,7 +443,7 @@ StdDev::~StdDev()
 
 
 double
-StdDev::eval(const MetricDataAccessor &mdata) const
+StdDev::eval(const MetricAccessor &mdata) const
 {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double z = sqrt(v_m.first);
@@ -477,7 +477,7 @@ CoefVar::~CoefVar()
 
 
 double
-CoefVar::eval(const MetricDataAccessor &mdata) const
+CoefVar::eval(const MetricAccessor &mdata) const
 {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
@@ -516,7 +516,7 @@ RStdDev::~RStdDev()
 
 
 double
-RStdDev::eval(const MetricDataAccessor &mdata) const
+RStdDev::eval(const MetricAccessor &mdata) const
 {
   std::pair<double, double> v_m = evalVariance(mdata, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
