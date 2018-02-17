@@ -86,7 +86,10 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_end - td->cached_bt, td->cached_frame_count);
   for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
-    TMSG(TRAMP, "ra loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+      TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
+            f->cursor.pc_unnorm, f->cursor.ra_loc, 
+            f->cursor.sp, f->cursor.bp);
+      TMSG(TRAMP, "***frame ra_loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
   }
 }
 

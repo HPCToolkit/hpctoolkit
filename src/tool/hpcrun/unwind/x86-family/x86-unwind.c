@@ -237,15 +237,28 @@ void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
-  if (cursor->libunw_status == LIBUNW_OK)
+  if (cursor->libunw_status == LIBUNW_OK) {
+    TMSG(UNW, "unw_init1: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
+    
+    void *pc, **bp, *sp;
+    pc = cursor->pc_unnorm;
+    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+    save_registers(cursor, pc, bp, sp, NULL);
+    TMSG(UNW, "unw_init2: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
     return;
+  }
 
   void *pc, **bp, *sp;
   unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
   unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
   save_registers(cursor, pc, bp, sp, NULL);
-
+  TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
+  
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
 
   if (!found) {
@@ -410,15 +423,19 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 
   if (cursor->libunw_status == LIBUNW_OK) {
     unw_res = libunw_take_step(cursor);
-    if (unw_res == STEP_STOP)
-      return (STEP_STOP);
-    if (libunw_find_step(cursor) == STEP_OK)
-      return (STEP_OK);
+    
     void *pc, **bp, *sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
+    save_registers(cursor, pc, bp, sp, (void *)sp - 8);
+    TMSG(UNW, "unw_step: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
+        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
+    
+    if (unw_res == STEP_STOP)
+      return (STEP_STOP);
+    if (libunw_find_step(cursor) == STEP_OK)
+      return (STEP_OK);
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){
