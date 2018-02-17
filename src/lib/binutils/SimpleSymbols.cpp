@@ -231,6 +231,9 @@ SimpleSymbols::dump()
 SimpleSymbol *
 SimpleSymbols::find(uint64_t vma)
 {
+  if (R->simple_symbols.size() <1)
+    return NULL;
+
   sort();
 
   int first = 0;
@@ -255,6 +258,7 @@ SimpleSymbols::find(uint64_t vma)
       return R->simple_symbols[first];
     }
   }
+  return NULL;
 }
 
 
