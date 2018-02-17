@@ -86,10 +86,10 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_end - td->cached_bt, td->cached_frame_count);
   for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
-      TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
-            f->cursor.pc_unnorm, f->cursor.ra_loc, 
-            f->cursor.sp, f->cursor.bp);
-      TMSG(TRAMP, "***frame ra_loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+      //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
+      //      f->cursor.pc_unnorm, f->cursor.ra_loc, 
+      //      f->cursor.sp, f->cursor.bp);
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
   }
 }
 
@@ -99,6 +99,8 @@ hpcrun_init_trampoline_info(void)
   thread_data_t* td   = hpcrun_get_thread_data();
 
   TMSG(TRAMP, "INIT called, tramp state zeroed");
+  TMSG(TRAMP, "TRAMPOLINE addr = %p", hpcrun_trampoline);
+
   td->tramp_present   = false;
   td->tramp_retn_addr = NULL;
   td->tramp_loc       = NULL;

@@ -228,7 +228,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 	// we have encountered a trampoline in the middle of an unwind.
 	bt->has_tramp = true;
 	// no need to unwind further. the outer frames are already known.
-
+        TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
 	bt->fence = FENCE_TRAMP;
 	ret = STEP_STOP;
 	break;
