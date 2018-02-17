@@ -109,14 +109,15 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
   std::string real_path = getKernelFilename(directorySet, virtual_path);
 
   if (real_path.empty()) {
-    std::cerr << "Error: cannot find kernel symbols file " << pathname << " ds: "<< directorySet.size() << std::endl;
+    std::cerr << "Warning: cannot find kernel symbols file " << pathname << 
+       " ds: "<< directorySet.size() << std::endl;
     perror("LinuxKernelSymbols");
     return false;
   }
 
   FILE *fp_in = fopen(real_path.c_str(), "r");
   if (fp_in == NULL) {
-    std::cerr << "Error: cannot open file: " << real_path <<std::endl;
+    std::cerr << "Warning: cannot open file: " << real_path <<std::endl;
     return false;
   }
 
