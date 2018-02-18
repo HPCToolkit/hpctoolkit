@@ -137,10 +137,6 @@ cupti_buffer_cursor_isvalid
 extern void
 cupti_correlation_enable
 (
- CUcontext context,
- cupti_load_callback_t load_callback,
- cupti_load_callback_t unload_callback,
- cupti_correlation_callback_t callback_fn
 );
 
 
@@ -154,7 +150,6 @@ cupti_correlation_disable
 extern cupti_set_status_t 
 cupti_set_monitoring
 (
- CUcontext context,
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
 );
@@ -171,8 +166,6 @@ cupti_device_get_timestamp
 extern void 
 cupti_trace_init
 (
- CUpti_BuffersCallbackRequestFunc buffer_request, 
- CUpti_BuffersCallbackCompleteFunc buffer_complete
 );
 
 
@@ -203,6 +196,17 @@ cupti_get_num_dropped_records
  CUcontext context,
  uint32_t streamId,
  size_t* dropped 
+);
+
+
+extern void 
+cupti_buffer_completion_callback
+(
+ CUcontext ctx,
+ uint32_t streamId,
+ uint8_t *buffer,
+ size_t size,
+ size_t validSize
 );
 
 #endif
