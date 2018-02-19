@@ -731,7 +731,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
 
-	  pinfo = new ProcInfo(func, NULL, "", "", 0, true);
+	  pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
 	}
       }
