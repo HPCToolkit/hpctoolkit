@@ -548,7 +548,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       Struct::LM *lm = strct->ancestorLM();
       std::string lm_name;
       if (lm) {
-        lm_name = lm->name();
+        // use pretty_name for the key to unify different names of vmlinux 
+        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+        lm_name = lm->pretty_name();
       }
       std::string key = lm_name + ":" + nm;
 
