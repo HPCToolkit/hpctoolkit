@@ -64,6 +64,8 @@
 
 #include <map>
 
+class ElfFile;
+
 //----------------------------------------------------------------------
 
 // One segment in the raw line map from libdwarf.
@@ -105,11 +107,11 @@ private:
 
   void do_line_map(Dwarf_Debug, Dwarf_Die);
   void do_comp_unit(Dwarf_Debug, int, int, long, long);
-  void do_dwarf(const char *);
+  void do_dwarf(ElfFile *elf);
 
 public:
   LineMap();
-  void readFile(const char *);
+  void readFile(ElfFile *elf);
   void getLineRange(VMA, LineRange &);
 };
 

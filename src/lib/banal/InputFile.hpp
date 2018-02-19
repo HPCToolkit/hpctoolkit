@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,95 +42,52 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: InputFile.hpp
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   Open a file and return a vector that will contain a pointer to the
+//   Elf representation of that file as well pointers to any Elf files
+//   nested inside.
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
 
-//************************* System Include Files ****************************
+#ifndef __InputFile_hpp__
+#define __InputFile_hpp__
 
-#include <iostream>
+//******************************************************************************
+// system includes
+//******************************************************************************
+
 #include <string>
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
 
-//*************************** Forward Declarations **************************
+//******************************************************************************
+// forward declarations 
+//******************************************************************************
 
-//***************************************************************************
+class ElfFileVector;
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
+//******************************************************************************
+// type definitions
+//******************************************************************************
 
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
+class InputFile {
 public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
+  InputFile() { filevector = 0; }
+  bool openFile(std::string &filename);
+  std::string &fileName() { return filename; }
+  const char *CfileName() { return filename.c_str(); }
+  ElfFileVector *fileVector() { return filevector; }
 private:
-  void
-  Ctor();
+  std::string filename;
+  ElfFileVector *filevector;
+};
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif

@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,95 +42,129 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: ElfHelper.cpp
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   implementation of a function that scans an elf file and returns a vector
+//   of sections 
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
 
-//************************* System Include Files ****************************
+//******************************************************************************
+// system includes
+//******************************************************************************
 
-#include <iostream>
-#include <string>
+#include <err.h>
+#include <gelf.h>
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
 
-//*************************** Forward Declarations **************************
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-//***************************************************************************
+#include "ElfHelper.hpp"
+#include "RelocateCubin.hpp"
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
+#include <Elf_X.h> // ensure EM_CUDA defined
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
+#include <include/hpctoolkit-config.h>
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
 
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+//******************************************************************************
+// macros
+//******************************************************************************
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
+#ifndef NULL
+#define NULL 0
+#endif
 
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
 
-  void
-  ddump() const;
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+//******************************************************************************
+// interface functions 
+//******************************************************************************
 
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
+bool
+ElfFile::open
+(
+ char *_memPtr,
+ size_t _memLen,
+ std::string _fileName
+)
+{
+  memPtr = _memPtr;
+  memLen = _memLen;
+  fileName = _fileName;
 
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
+  elf_version(EV_CURRENT);
+  elf = elf_memory(memPtr, memLen);
+  if (elf == 0) {
+    return false;
+  }
+  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
+  if (!ehdr) {
+    return false;
+  }
+#ifdef EM_CUDA
 
-  // Parsed Data: arguments
-  std::string in_filenm;
+  if (ehdr->e_machine == EM_CUDA) {
+#ifdef DYNINST_USE_CUDA
+    relocateCubin(memPtr, elf);
+#else
+    elf_end(elf);
+    return false;
+#endif
+  }
 
-private:
-  void
-  Ctor();
+#endif
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
+  return true;
+}
 
-#endif // Args_hpp 
+
+ElfFile::~ElfFile() 
+{
+  elf_end(elf);
+}
+
+
+// assemble a vector of pointers to each section in an elf binary
+ElfSectionVector *
+elfGetSectionVector
+(
+ Elf *elf
+)
+{
+  ElfSectionVector *sections = new ElfSectionVector;
+  bool nonempty = false;
+  if (elf) {
+    Elf_Scn *scn = NULL;
+    while ((scn = elf_nextscn(elf, scn)) != NULL) {
+      sections->push_back(scn);
+      nonempty = true;
+    }
+  }
+  if (nonempty) return sections;
+  else {
+    delete sections;
+    return NULL;
+  }
+}
+
+
+char *
+elfSectionGetData
+(
+ char *obj_ptr,
+ GElf_Shdr *shdr
+)
+{
+  char *sectionData = obj_ptr + shdr->sh_offset;
+  return sectionData;
+}

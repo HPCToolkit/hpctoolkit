@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,95 +42,83 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: ElfHelper.hpp
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   Interface for a module that scans an elf file and returns a vector
+//   of sections 
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef __ElfHelper_hpp__
+#define __ElfHelper_hpp__
 
-//************************* System Include Files ****************************
 
-#include <iostream>
+//******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <vector>
 #include <string>
 
-//*************************** User Include Files ****************************
+#include <libelf.h>
+#include <gelf.h>
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
 
-//*************************** Forward Declarations **************************
+//******************************************************************************
+// macros
+//******************************************************************************
 
-//***************************************************************************
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
+//******************************************************************************
+// type definitions
+//******************************************************************************
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
+class ElfFile {
 public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
+  ElfFile() { memPtr = 0; elf = 0; memLen = 0; }
+  bool open(char *_memPtr, size_t _memLen, std::string _fileName);
+  ~ElfFile();
+  Elf *getElf() { return elf; };
+  char *getMemory() { return memPtr; };
+  size_t getLength() { return memLen; };
+  std::string getFileName() { return fileName; };
 private:
-  void
-  Ctor();
+  char *memPtr;
+  size_t memLen;
+  Elf *elf;
+  std::string fileName;
+};
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
 
-#endif // Args_hpp 
+class ElfFileVector : public std::vector<ElfFile *> {};
+
+
+class ElfSectionVector : public std::vector<Elf_Scn *> {};
+
+
+
+//******************************************************************************
+// interface functions
+//******************************************************************************
+
+ElfSectionVector *
+elfGetSectionVector
+(
+ Elf *elf
+);
+
+
+char *
+elfSectionGetData
+(
+ char *obj_ptr,
+ GElf_Shdr *shdr
+);
+
+
+
+#endif

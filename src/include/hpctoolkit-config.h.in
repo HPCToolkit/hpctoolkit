@@ -3,6 +3,15 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* dyninst uses Instruction::Ptr */
+#undef DYNINST_INSTRUCTION_PTR
+
+/* dyninst supports cuda */
+#undef DYNINST_USE_CUDA
+
+/* dyninst built with libdw */
+#undef DYNINST_USE_LIBDW
+
 /* Binutils has support for ia64 */
 #undef ENABLE_BINUTILS_IA64
 

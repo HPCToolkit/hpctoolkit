@@ -57,17 +57,18 @@
 
 #include <lib/support/ProcNameMgr.hpp>
 
+#include "InputFile.hpp"
+
 namespace BAnal {
 namespace Struct {
 
 void
-makeStructure(std::string filenm,
-	      std::string gaps_filenm,
+makeStructure(InputFile & inputFile,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
-	      std::ostream * dotFile,
+	      std::string gaps_filenm,
 	      bool ourDemangle,
-	      ProcNameMgr* procNameMgr = NULL);
+	      ProcNameMgr * procNameMgr = NULL);
 
 } // namespace Struct
 } // namespace BAnal

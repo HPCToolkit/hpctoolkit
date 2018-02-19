@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -46,93 +44,32 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: relocate_cubin.hpp
 //
 // Purpose:
-//   [The purpose of this file]
+//   Interface definition for in-memory cubin relocation.
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   The associated implementation performs in-memory relocation of a cubin so
+//   that all text segments and functions are non-overlapping. Following
+//   relocation
+//     - each text segment begins at its offset in the segment
+//     - each function, which is in a unique text segment, has its symbol
+//       adjusted to point to the new position of the function in its relocated
+//       text segment
+//     - addresses in line map entries are adjusted to account for the new
+//       offsets of the instructions to which they refer
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef __RelocateCubin_hpp__
+#define __RelocateCubin_hpp__
 
-//************************* System Include Files ****************************
+bool
+relocateCubin
+(
+ char *cubin_ptr,
+ Elf *cubin_elf
+);
 
-#include <iostream>
-#include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
-
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif

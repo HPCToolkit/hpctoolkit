@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,95 +42,37 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: Fatbin.hpp
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   Interface for a routine that inspects and Elf module and collects
+//   nested Elf modules.
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef __Fatbin_hpp__
+#define __Fatbin_hpp__
 
-//************************* System Include Files ****************************
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-#include <iostream>
-#include <string>
+#include "ElfHelper.hpp"
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
 
-//*************************** Forward Declarations **************************
+//******************************************************************************
+// interface functions
+//******************************************************************************
 
-//***************************************************************************
+bool
+findCubins
+(
+ ElfFile *elfFile,
+ ElfFileVector *elfFileVector
+);
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
-
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
-
-  void
-  printError(std::ostream& os, const std::string& msg) const;
-
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
-
-  void
-  ddump() const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-  // Parsed Data: optional arguments
-  std::string lush_agent;
-  std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
-  std::string dbgProcGlob;
-
-  std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif
