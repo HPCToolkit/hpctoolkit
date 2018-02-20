@@ -55,7 +55,6 @@
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
-#include <papi.h>
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
@@ -421,30 +420,6 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
-
-  //char* evlist = METHOD_CALL(self, get_event_str);
-  //char* event = start_tok(evlist);
-
-  //if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
-  //  // specify desired monitoring
-  //  cupti_set_monitoring(kernel_invocation_activities);
-
-  //  cupti_set_monitoring(kernel_execution_activities);
-
-  //  cupti_set_monitoring(driver_activities);
-
-  //  cupti_set_monitoring(data_motion_explicit_activities);
-
-  //  cupti_set_monitoring(runtime_activities);
-
-  //  cupti_trace_init();
-
-  //  // cannot set pc sampling frequency without knowing context
-  //  // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
-  //  cupti_subscribe_callbacks();
-
-  //  cupti_correlation_enable();
-  //}
 }
 
 static void
@@ -552,6 +527,27 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* event = start_tok(evlist);
   char name[10];
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
+
+  if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
+    // specify desired monitoring
+    cupti_set_monitoring(kernel_invocation_activities);
+
+    cupti_set_monitoring(kernel_execution_activities);
+
+    cupti_set_monitoring(driver_activities);
+
+    cupti_set_monitoring(data_motion_explicit_activities);
+
+    cupti_set_monitoring(runtime_activities);
+
+    cupti_trace_init();
+
+    // cannot set pc sampling frequency without knowing context
+    // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
+    cupti_subscribe_callbacks();
+
+    cupti_correlation_enable();
+  }
 }
 
 static void
