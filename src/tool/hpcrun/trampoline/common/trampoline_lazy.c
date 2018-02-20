@@ -89,7 +89,8 @@ hpcrun_trampoline_bt_dump(void)
       //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
       //      f->cursor.pc_unnorm, f->cursor.ra_loc, 
       //      f->cursor.sp, f->cursor.bp);
-      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+              f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
 

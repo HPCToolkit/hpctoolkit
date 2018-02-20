@@ -102,6 +102,7 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#include <trampoline/common/trampoline.h>
 
 //****************************************************************************
 // global data 
@@ -428,11 +429,21 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     
     // libunw_take_step() only updates PC.
     // Here, we need to update bp, sp, ra_loc.
-    void *pc, **bp, *sp;
+    void *pc, *bp, *sp;
+    unw_save_loc_t ip_loc;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    save_registers(cursor, pc, bp, sp, (void *)sp - 8);
+    
+    /**Source code changes to libunwind is needed to get ip_loc 
+     * as of 02/20/2018. Add the following line
+     *    case UNW_X86_64_RIP: loc = c->dwarf.loc[RIP]; break;
+     * below line 46 of libunwind/src/x86_64/Gget_save_loc.c
+     * so that libunwind will return ip_loc.
+     */
+    unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
+    save_registers(cursor, pc, bp, sp, 
+            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
     TMSG(UNW, "unw_step: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
         cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
     
