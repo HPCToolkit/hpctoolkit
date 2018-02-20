@@ -142,6 +142,7 @@ recordIfNvFatbin
  GElf_Shdr *shdr
  )
 {
+#if 0
   bool isFatbin = strcmp(elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name),
 			 CUDA_FATBIN_DATASECTION) == 0;
   if (isFatbin) { 
@@ -154,6 +155,9 @@ recordIfNvFatbin
     }
   }
   return isFatbin;
+#else  
+  return false;
+#endif
 }
 
 
