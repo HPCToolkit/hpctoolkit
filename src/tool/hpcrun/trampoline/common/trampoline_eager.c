@@ -97,7 +97,8 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_end - td->cached_bt, td->cached_frame_count);
   for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
-    TMSG(TRAMP, "ra loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+              f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
 
@@ -137,7 +138,8 @@ static bool hpcrun_trampoline_update(void* addr)
   if (node == NULL) return false;
 
   // Update corresponding values
-  TMSG(TRAMP, "Marded addr located at node %p, cached frame count reduced from %d to %d", node, td->cached_frame_count, count);
+  TMSG(TRAMP, "Marked addr located at node %p, cached frame count reduced from %d to %d", 
+          node, td->cached_frame_count, count);
   td->tramp_frame = frame;
   td->tramp_cct_node = node;
   td->cached_frame_count = count;
@@ -160,7 +162,7 @@ hpcrun_trampoline_at_entry(void* addr)
   bool ret = ((unsigned long)addr & 1 == 1);
   if (ret) {
     ret = hpcrun_trampoline_update(addr);
-    if (!ret) TMSG(TRAMP, "Marded addr found but failed to locate correspoding frame");
+    if (!ret) TMSG(TRAMP, "Marked addr found but failed to locate corresponding frame");
   }
   return ret;
 }
