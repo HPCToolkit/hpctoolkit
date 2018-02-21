@@ -263,6 +263,9 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   ret.sample_node = node;
 
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+  leaf_func = addr->ip_norm;
+
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
