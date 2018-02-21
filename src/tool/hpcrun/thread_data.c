@@ -248,9 +248,6 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   cptd->perf_event_info   = NULL;
 }
 
-  cptd->scale_fn = NULL;
-}
-
 #ifdef ENABLE_CUDA
 static inline void gpu_data_init(gpu_data_t * gpu_data)
 {
