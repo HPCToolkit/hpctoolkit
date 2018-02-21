@@ -471,6 +471,8 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
+  pfmu_init();
+
   perf_util_init();
 
   // checking the option of multiplexing:
@@ -610,11 +612,6 @@ METHOD_FN(shutdown)
 
   perf_thread_fini(nevents, event_thread);
 
-#ifdef ENABLE_PERFMON
-  // terminate perfmon
-  pfmu_fini();
-#endif
-
   self->state = UNINIT;
   TMSG(LINUX_PERF, "shutdown OK");
 }
@@ -628,11 +625,6 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event %s", ev_str);
-
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
-#endif
 
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
@@ -827,10 +819,7 @@ METHOD_FN(display_events)
   display_header(stdout, "Available Linux perf events");
 
 #ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
   pfmu_showEventList();
-  pfmu_fini();
 #else
   printf("Name\t\tDescription\n");
   display_line_single(stdout);
