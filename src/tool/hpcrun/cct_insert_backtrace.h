@@ -97,7 +97,6 @@ bool thread_stop,
 				void *data);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-	ip_normalized_t *leaf_func,  // JMC
 	int metricId, hpcrun_metricVal_t metricIncr,
 	int skipInner, int isSync, void *data);
 
