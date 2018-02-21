@@ -42,13 +42,6 @@ typedef struct core_profile_trace_data_t {
   // Perf support
   // ----------------------------------------
 
-  // these variables are local per thread 
-  // sometimes when a program forks, its child can add another load module or
-  // even unload a loaded load module. Thus, each thread should store its own
-  // kernel load module id.
-  uint16_t perf_kernel_lm_id;
-  enum perf_ksym_e ksym_status;
-
   metric_aux_info_t *perf_event_info;
 
 } core_profile_trace_data_t;

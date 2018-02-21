@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -193,7 +193,9 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 //******************************************************************************
 
 #ifndef ENABLE_PERFMON
-static const char *event_name = "CPU_CYCLES";
+static const char *event_name    = "CPU_CYCLES";
+static const uint64_t event_code = PERF_COUNT_HW_CPU_CYCLES;
+static const uint64_t event_type = PERF_TYPE_HARDWARE;
 #endif
 
 //******************************************************************************
@@ -245,6 +247,19 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
   }
 }
 
+static int
+perf_get_pmu_support(const char *name, struct perf_event_attr *event_attr)
+{
+  int isPMU = 0;
+#ifdef ENABLE_PERFMON
+  isPMU = pfmu_getEventAttribute(name, event_attr);
+#else
+  memset(event_attr, 0, sizeof(struct perf_event_attr));
+  event_attr->config = event_code;
+  event_attr->type   = event_type;
+#endif
+  return isPMU;
+}
 
 //----------------------------------------------------------
 // initialization
@@ -457,6 +472,8 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
+  perf_util_init();
+
   // checking the option of multiplexing:
   // the env variable is set by hpcrun or by user (case for static exec)
 
@@ -660,8 +677,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-
-  self->evl.nevents = num_events;
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -703,13 +718,14 @@ METHOD_FN(process_event_list, int lush_metrics)
       if (event_desc[i].metric_custom->register_fn != NULL) {
     	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
+        METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
       }
     }
 
     struct perf_event_attr *event_attr = &(event_desc[i].attr);
 
-    int isPMU = pfmu_getEventAttribute(name, event_attr);
+    int isPMU = perf_get_pmu_support(name, event_attr);
     if (isPMU < 0)
       // case for unknown event
       // it is impossible to be here, unless the code is buggy
@@ -754,6 +770,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
   hpcrun_close_kind(lnux_kind);
 
@@ -785,8 +802,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   td->core_profile_trace_data.perf_event_info = aux_info;
   td->ss_info[self->sel_idx].ptr = event_thread;
-
-  perf_util_init_kernel_lm();
 
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,6 +90,7 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
 
 #include <Symtab.h>
@@ -157,7 +158,7 @@ namespace Inline {
 
 // These functions return true on success.
 Symtab *
-openSymtab(string filename)
+openSymtab(ElfFile *elfFile)
 {
   bool ret = false;
 
@@ -168,7 +169,7 @@ openSymtab(string filename)
   if (sigsetjmp(jbuf, 1) == 0) {
     // normal return
     jbuf_active = 1;
-    ret = Symtab::openFile(the_symtab, filename);
+    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(), elfFile->getFileName());
     if (ret) {
       the_symtab->parseTypesNow();
       the_symtab->parseFunctionRanges();
@@ -181,7 +182,7 @@ openSymtab(string filename)
   jbuf_active = 0;
 
   if (! ret) {
-    DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << filename);
+    DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
     DIAG_WMsgIf(1, "The static inline support does not work cross platform,");
     DIAG_WMsgIf(1, "so check that this file has the same arch type as hpctoolkit.");
     the_symtab = NULL;

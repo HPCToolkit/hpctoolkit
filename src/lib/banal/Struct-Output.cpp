@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -175,7 +175,7 @@ printStructFileBegin(ostream * os, ostream * gaps, string filenm)
       << "<!DOCTYPE HPCToolkitStructure [\n"
       << hpcstruct_xml_head
       << "]>\n"
-      << "<HPCToolkitStructure i=\"0\" version=\"4.6\" n=\"\">\n";
+      << "<HPCToolkitStructure i=\"0\" version=\"4.7\" n=\"\">\n";
 
   if (gaps != NULL) {
     *gaps << "This file describes the unclaimed vma ranges (gaps) in the control\n"
@@ -285,6 +285,9 @@ printProc(ostream * os, ostream * gaps, string gaps_file,
 
   if (pinfo->linkName != pinfo->prettyName) {
     *os << STRING("ln", pinfo->linkName);
+  }
+  if (pinfo->symbol_index != 0) {
+    *os << NUMBER("s", pinfo->symbol_index);
   }
   *os << NUMBER("l", pinfo->line_num)
       << VRANGE(pinfo->entry_vma, 1)

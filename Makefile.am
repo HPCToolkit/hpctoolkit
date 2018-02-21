@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -131,7 +131,9 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_date_time*)
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_system*)
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_thread*)
+	$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
+	$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)

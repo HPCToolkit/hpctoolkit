@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,8 @@
 
 #include <map>
 
+class ElfFile;
+
 //----------------------------------------------------------------------
 
 // One segment in the raw line map from libdwarf.
@@ -105,11 +107,11 @@ private:
 
   void do_line_map(Dwarf_Debug, Dwarf_Die);
   void do_comp_unit(Dwarf_Debug, int, int, long, long);
-  void do_dwarf(const char *);
+  void do_dwarf(ElfFile *elf);
 
 public:
   LineMap();
-  void readFile(const char *);
+  void readFile(ElfFile *elf);
   void getLineRange(VMA, LineRange &);
 };
 
