@@ -448,8 +448,6 @@ pfmu_showEventList()
 
   show_info(argv_all);
 
-//  pfm_terminate();
-
   return 0;
 }
 
