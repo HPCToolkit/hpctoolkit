@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -167,9 +167,6 @@ Options: Output:\n\
                        Write hpcstruct file to <file>.\n\
                        Use '--output=-' to write output to stdout.\n\
   --compact            Generate compact output, eliminating extra white space\n\
-  --dot                Generate dot (graphviz) output file.\n\
-  --dot-file <file>    Write dot output to <file>, implies --dot.\n\
-                       Use '--dot-file=-' to write output to stdout.\n\
 ";
 
 // Possible extensions:
@@ -212,10 +209,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   {  0 , "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "dot",             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "dot-file",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
-    NULL },
 
   // General
   { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
@@ -262,7 +255,6 @@ Args::Ctor()
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
-  doDot = false;
   prettyPrintOutput = true;
   useBinutils = false;
   show_gaps = false;
@@ -417,13 +409,6 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("compact")) {
       prettyPrintOutput = false;
-    }
-    if (parser.isOpt("dot")) {
-      doDot = true;
-    }
-    if (parser.isOpt("dot-file")) {
-      dot_filenm = parser.getOptArg("dot-file");
-      doDot = true;
     }
 
     // Check for required arguments

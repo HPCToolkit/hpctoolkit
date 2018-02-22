@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,9 +109,7 @@
 
 #include <include/linux_info.h> 
 
-#ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
-#endif
 
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
@@ -196,9 +194,6 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 // constants
 //******************************************************************************
 
-#ifndef ENABLE_PERFMON
-static const char *event_name = "CPU_CYCLES";
-#endif
 
 //******************************************************************************
 // local variables
@@ -265,6 +260,11 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
   }
 }
 
+static int
+perf_get_pmu_support(const char *name, struct perf_event_attr *event_attr)
+{
+  return pfmu_getEventAttribute(name, event_attr);
+}
 
 /****
  * copy /proc/kallsyms file into hpctoolkit output directory
@@ -544,10 +544,7 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
   pfmu_init();
-#endif
 
   perf_util_init();
 
@@ -686,11 +683,6 @@ METHOD_FN(shutdown)
 
   perf_thread_fini(nevents, event_thread);
 
-#ifdef ENABLE_PERFMON
-  // terminate perfmon
-  pfmu_fini();
-#endif
-
   self->state = UNINIT;
   TMSG(LINUX_PERF, "shutdown OK");
 }
@@ -719,11 +711,7 @@ METHOD_FN(supports_event, const char *ev_str)
     return true;
 
   // this is not a predefined event, we need to consult to perfmon (if enabled)
-#ifdef ENABLE_PERFMON
   return pfmu_isSupported(ev_tmp) >= 0;
-#else
-  return (strncmp(event_name, ev_str, strlen(event_name)) == 0);
-#endif
 }
 
 
@@ -747,8 +735,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-
-  self->evl.nevents = num_events;
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -789,13 +775,14 @@ METHOD_FN(process_event_list, int lush_metrics)
       if (event_desc[i].metric_custom->register_fn != NULL) {
     	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
+        METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
       }
     }
 
     struct perf_event_attr *event_attr = &(event_desc[i].attr);
 
-    int isPMU = pfmu_getEventAttribute(name, event_attr);
+    int isPMU = perf_get_pmu_support(name, event_attr);
     if (isPMU < 0)
       // case for unknown event
       // it is impossible to be here, unless the code is buggy
@@ -840,6 +827,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
 
   if (num_events > 0)
@@ -897,19 +885,7 @@ METHOD_FN(display_events)
 
   display_header(stdout, "Available Linux perf events");
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
   pfmu_showEventList();
-  pfmu_fini();
-#else
-  printf("Name\t\tDescription\n");
-  display_line_single(stdout);
-
-  printf("%s\tTotal cycles.\n",
-   "PERF_COUNT_HW_CPU_CYCLES");
-  printf("\n");
-#endif
   printf("\n");
 }
 

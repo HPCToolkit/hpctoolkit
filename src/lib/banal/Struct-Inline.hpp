@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,8 @@
 
 #include <Symtab.h>
 #include <Function.h>
+
+class ElfFile;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
@@ -330,7 +332,7 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(std::string filename);
+Symtab * openSymtab(ElfFile *elfFile); 
 bool closeSymtab();
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 

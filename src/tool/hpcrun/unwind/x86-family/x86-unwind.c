@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -412,13 +412,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     unw_res = libunw_take_step(cursor);
     if (unw_res == STEP_STOP)
       return (STEP_STOP);
-    if (libunw_find_step(cursor) == STEP_OK)
-      return (STEP_OK);
     void *pc, **bp, *sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
     save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
+    if (libunw_find_step(cursor) == STEP_OK)
+      return (STEP_OK);
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){

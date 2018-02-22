@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -384,9 +384,14 @@ pfmu_init()
     EMSG( "cannot force inactive encoding");
 #endif
 
+  // pfm_initialize is idempotent, so it is not a problem if
+  // another library (e.g., PAPI) also calls this.
   int ret = pfm_initialize();
-  if (ret != PFM_SUCCESS)
-    EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
+
+  if (ret != PFM_SUCCESS) {
+    EMSG( "libpfm: cannot initialize: %s", pfm_strerror(ret));
+    return -1;
+  }
 
   return 1;
 }
@@ -449,8 +454,6 @@ pfmu_showEventList()
   display_line_single(stdout);
 
   show_info(argv_all);
-
-  pfm_terminate();
 
   return 0;
 }

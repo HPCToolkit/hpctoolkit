@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -119,8 +119,6 @@ public:
   std::string dbgProcGlob;
 
   std::string out_filenm;
-  std::string dot_filenm;
-  bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false

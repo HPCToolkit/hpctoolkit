@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -101,13 +101,18 @@ MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
-MYLDADD = $(HPCLIB_SupportLean) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf
+MYLDADD = libeh_frames.a  \
+	$(HPCLIB_SupportLean) \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 
 if USE_BOOST_LIBS
   MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
+
+if OPT_DYNINST_LIBDW
+  MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
+else
+  MYLDADD += -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 if OPT_USE_ZLIB
@@ -123,8 +128,14 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
+noinst_LIBRARIES = libeh_frames.a
+
 pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
+
+libeh_frames_a_SOURCES = eh-frames.cpp
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBDWARF_INC)
+libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
