@@ -52,6 +52,20 @@
 #  where <symbol> is a symbol name passed to the linker (may be used
 #  multiple times).
 #
+
+#------------------------------------------------------------ 
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  For some environments,
+# the setting below prevents darshan from being linked into a 
+# static executable and thus avoids the potential for conflict.
+# In other settings, only unloading the darshan module will help.
+# Thus, the setting below can do us no harm and helps sometimes.
+# ------------------------------------------------------------
+export DARSHAN_DISABLE=1
+
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
@@ -78,7 +92,6 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
 extra_wrap_names=
 extra_hpc_files=
-
 # Compiler and flags for array of fnbounds addresses.
 CC='@CC@ @CFLAGS@'
 
@@ -91,7 +104,6 @@ undef_names=
 
 # Space-separated list of libs (without -l) not to repeat on command line.
 no_repeat_list='hugetlbfs'
-
 #------------------------------------------------------------
 
 cleanup()
