@@ -62,11 +62,11 @@ private:
 
 public:
   bool   isVariable(char *expr);
-  double getValue(int var);
+  double getValue(unsigned int var);
   int    getErrorCode();
 
   VarMap(hpcrun_metricVal_t *metrics, 
-    metric_desc_t* m_list_metric_desc, size_t num_metrics);
+    metric_desc_t* m_list_metric_desc, unsigned int num_metrics);
 };
 
 
