@@ -4,58 +4,6 @@
 #include <cupti.h>
 
 //******************************************************************************
-// APIs for both cuda and ompt
-//******************************************************************************
-
-extern void
-cupti_activity_handle
-(
- CUpti_Activity *activity
-);
-
-
-extern bool
-cupti_advance_buffer_cursor
-(
-  uint8_t *buffer,
-  size_t size,
-  CUpti_Activity *current,
-  CUpti_Activity **next
-);
-
-
-extern bool
-cupti_activity_flush
-( 
-);
-
-
-extern void
-cupti_pc_sampling_config
-(
-  CUcontext context,
-  CUpti_ActivityPCSamplingPeriod period
-);
-
-//******************************************************************************
-// types
-//******************************************************************************
-
-typedef void (*cupti_correlation_callback_t)
-(
- uint64_t *id
-);
-
-
-typedef void (*cupti_load_callback_t)
-(
- int module_id, 
- const void *cubin, 
- size_t cubin_size
-);
-
-
-//******************************************************************************
 // constants
 //******************************************************************************
 
@@ -90,10 +38,16 @@ typedef enum {
 } cupti_set_status_t;
 
 
-
 //******************************************************************************
 // interface functions
 //******************************************************************************
+
+extern void
+cupti_activity_process
+(
+ CUpti_Activity *activity
+);
+
 
 extern void 
 cupti_buffer_alloc 
@@ -105,32 +59,14 @@ cupti_buffer_alloc
 
 
 extern void
-cupti_subscribe_callbacks
+cupti_callbacks_subscribe
 (
 );
 
 
 extern void
-cupti_unsubscribe_callbacks
+cupti_callbacks_unsubscribe
 (
-);
-
-
-extern bool
-cupti_buffer_cursor_advance
-(
- uint8_t *buffer,
- size_t validSize,
- CUpti_Activity **activity
-);
-
-
-extern bool
-cupti_buffer_cursor_isvalid
-(
- uint8_t *buffer,
- size_t validSize,
- CUpti_Activity *activity
 );
 
 
@@ -148,7 +84,7 @@ cupti_correlation_disable
 
 
 extern cupti_set_status_t 
-cupti_set_monitoring
+cupti_monitoring_set
 (
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
@@ -156,7 +92,7 @@ cupti_set_monitoring
 
 
 extern void
-cupti_device_get_timestamp
+cupti_device_timestamp_get
 (
  CUcontext context,
  uint64_t *time
@@ -191,7 +127,7 @@ cupti_trace_finalize
 
 
 extern void
-cupti_get_num_dropped_records
+cupti_num_dropped_records_get
 (
  CUcontext context,
  uint32_t streamId,
@@ -208,5 +144,14 @@ cupti_buffer_completion_callback
  size_t size,
  size_t validSize
 );
+
+
+extern void
+cupti_pc_sampling_config
+(
+  CUcontext context,
+  CUpti_ActivityPCSamplingPeriod period
+);
+
 
 #endif

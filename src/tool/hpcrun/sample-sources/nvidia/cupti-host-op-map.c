@@ -28,11 +28,11 @@ struct cupti_host_op_map_entry_s {
   uint64_t refcnt;
   uint64_t host_op_seq_id;
   cupti_activity_queue_entry_t **cupti_activity_queue;
-  cct_node_t *target;
+  cct_node_t *target_node;
+  cct_node_t *host_op_node;
   struct cupti_host_op_map_entry_s *left;
   struct cupti_host_op_map_entry_s *right;
 }; 
-
 
 
 /******************************************************************************
@@ -43,22 +43,23 @@ static cupti_host_op_map_entry_t *cupti_host_op_map_root = NULL;
 static spinlock_t cupti_host_op_map_lock = SPINLOCK_UNLOCKED;
 
 
-
 /******************************************************************************
  * private operations
  *****************************************************************************/
 
 static cupti_host_op_map_entry_t *
 cupti_host_op_map_entry_new(uint64_t host_op_id,
-                           uint64_t host_op_seq_id,
-                           cct_node_t *target)
+                            uint64_t host_op_seq_id,
+                            cct_node_t *target_node,
+                            cct_node_t *host_op_node)
 {
   cupti_host_op_map_entry_t *e;
   e = (cupti_host_op_map_entry_t *)hpcrun_malloc(sizeof(cupti_host_op_map_entry_t));
   e->host_op_id = host_op_id;
   e->refcnt = 0;
   e->host_op_seq_id = host_op_seq_id;
-  e->target = target;
+  e->target_node = target_node;
+  e->host_op_node = host_op_node;
   e->left = NULL;
   e->right = NULL;
   e->cupti_activity_queue = cupti_activity_queue_head();
@@ -116,10 +117,11 @@ cupti_host_op_map_lookup(uint64_t id)
 
 void
 cupti_host_op_map_insert(uint64_t host_op_id,
-                        uint64_t host_op_seq_id,
-                        cct_node_t *target)
+                         uint64_t host_op_seq_id,
+                         cct_node_t *target_node,
+                         cct_node_t *host_op_node)
 {
-  cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(host_op_id, host_op_seq_id, target);
+  cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(host_op_id, host_op_seq_id, target_node, host_op_node);
 
   TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_seq_id);
 
@@ -187,7 +189,7 @@ cupti_host_op_map_refcnt_update(uint64_t host_op_id, int val)
 cct_node_t *
 cupti_host_op_map_entry_target_get(cupti_host_op_map_entry_t *entry)
 {
-  return entry->target;
+  return entry->target_node;
 }
 
 
@@ -197,11 +199,13 @@ cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry)
   return entry->host_op_seq_id;
 }
 
+
 cupti_activity_queue_entry_t **
 cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry)
 {
   return entry->cupti_activity_queue;
 }
+
 
 /******************************************************************************
  * debugging code

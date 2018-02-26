@@ -91,7 +91,7 @@
 #include "sample-sources/nvidia/nvidia.h"
 #include "sample-sources/nvidia/cubin-id-map.h"
 #include "sample-sources/nvidia/cubin-symbols.h"
-#include "sample-sources/nvidia/cupti-activity-api.h"
+#include "sample-sources/nvidia/cupti-ompt-api.h"
 #include "sample-sources/nvidia/cupti-activity-queue.h"
 #include "sample-sources/nvidia/cupti-host-op-map.h"
 #endif
@@ -779,7 +779,7 @@ hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
       ompt_target_map_child_insert(cct_node, cct_child);
     }
     // TODO(keren): generalization, replace cupti with sth. called device_map
-    cupti_host_op_map_insert(host_op_id, ompt_host_op_seq_id, cct_node);
+    cupti_host_op_map_insert(host_op_id, ompt_host_op_seq_id, cct_node, NULL);
     ompt_host_op_seq_id++;
   } else {
     PRINT("target id %lu is null for host_op_id %lu\n", target_id, host_op_id);
@@ -849,7 +849,7 @@ void
 hpcrun_ompt_device_finalizer(void *args)
 {
   if (ompt_stop_flag) {
-    cupti_activity_flush();
+    cupti_ompt_activity_flush();
     ompt_stop_flag = false;
     // TODO(keren): replace cupti with sth. called device queue
     cupti_activity_queue_apply(cupti_attribute_activity);
@@ -883,8 +883,8 @@ ompt_callback_buffer_complete(uint64_t device_id,
   do {
     // TODO(keren): replace cupti_activity_handle with device_activity handle
     CUpti_Activity *activity = (CUpti_Activity *)next;
-    cupti_activity_handle(activity);
-    status = cupti_advance_buffer_cursor(buffer, bytes, (CUpti_Activity *)next, (CUpti_Activity **)&next);
+    cupti_ompt_activity_process(activity);
+    status = cupti_ompt_buffer_cursor_advance(buffer, bytes, (CUpti_Activity *)next, (CUpti_Activity **)&next);
   } while(status);
 }
 

@@ -432,13 +432,13 @@ if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cubin-id-map.c             \
 								 sample-sources/nvidia/cubin-symbols.c            \
+								 sample-sources/nvidia/cupti-ompt-api.c       \
 								 sample-sources/nvidia/cupti-activity-api.c       \
 								 sample-sources/nvidia/cupti-activity-queue.c     \
 								 sample-sources/nvidia/cupti-activity-strings.c   \
 								 sample-sources/nvidia/cupti-correlation-id-map.c \
 								 sample-sources/nvidia/cupti-function-id-map.c    \
-								 sample-sources/nvidia/cupti-host-op-map.c        \
-								 sample-sources/nvidia/cupti-context-map.c 
+								 sample-sources/nvidia/cupti-host-op-map.c 
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

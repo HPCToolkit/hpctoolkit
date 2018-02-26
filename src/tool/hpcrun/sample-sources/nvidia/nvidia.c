@@ -81,6 +81,7 @@
  *****************************************************************************/
 
 #include "nvidia.h"
+#include "cupti-activity-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -233,75 +234,6 @@
 
 #define OMPT_NVIDIA "nvidia-ompt" 
 #define CUDA_NVIDIA "nvidia-cuda" 
-
-
-/******************************************************************************
- * forward declarations 
- *****************************************************************************/
-
-//******************************************************************************
-// constants
-//******************************************************************************
-
-CUpti_ActivityKind
-external_correlation_activities[] = {
-  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION, 
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-data_motion_explicit_activities[] = {
-  CUPTI_ACTIVITY_KIND_MEMCPY2,
-  CUPTI_ACTIVITY_KIND_MEMCPY, 
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-data_motion_implicit_activities[] = {
-  CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-kernel_invocation_activities[] = {
-  CUPTI_ACTIVITY_KIND_KERNEL,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-kernel_execution_activities[] = {
-  CUPTI_ACTIVITY_KIND_CONTEXT,
-  CUPTI_ACTIVITY_KIND_FUNCTION,
-  CUPTI_ACTIVITY_KIND_PC_SAMPLING,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-overhead_activities[] = {
-  CUPTI_ACTIVITY_KIND_OVERHEAD,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-driver_activities[] = {
-  CUPTI_ACTIVITY_KIND_DEVICE,
-  CUPTI_ACTIVITY_KIND_DRIVER,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
-
-
-CUpti_ActivityKind
-runtime_activities[] = {
-  CUPTI_ACTIVITY_KIND_DEVICE,
-  CUPTI_ACTIVITY_KIND_RUNTIME,
-  CUPTI_ACTIVITY_KIND_INVALID
-};
 
 /******************************************************************************
  * local variables 
@@ -521,7 +453,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_time_metric_id = ke_metric_id[3];
   hpcrun_close_kind(ke_kind);
 
-  // fetch the event string for the sample source
+  // Fetch the event string for the sample source
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
@@ -529,7 +461,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
 
   if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
-    // specify desired monitoring
+    // Specify desired monitoring
     cupti_set_monitoring(kernel_invocation_activities);
 
     cupti_set_monitoring(kernel_execution_activities);
@@ -542,7 +474,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     cupti_trace_init();
 
-    // cannot set pc sampling frequency without knowing context
+    // Cannot set pc sampling frequency without knowing context
     // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
     cupti_subscribe_callbacks();
 
