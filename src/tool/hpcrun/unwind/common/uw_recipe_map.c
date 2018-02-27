@@ -117,7 +117,7 @@ typedef struct ilmstat_btuwi_pair_s {
   interval_t interval;
   load_module_t *lm;
   _Atomic(tree_stat_t) stat;
-  bitree_uwi_t *btuwi[NUM_UNWINDERS];
+  bitree_uwi_t *btuwi;
 } ilmstat_btuwi_pair_t;
 
 //******************************************************************************
@@ -169,7 +169,7 @@ ilmstat__btuwi_pair_init(ilmstat_btuwi_pair_t *node,
   node->lm = lm;
   node->interval.start = start;
   node->interval.end = end;
-  node->btuwi[0] = node->btuwi[1] = NULL;
+  node->btuwi = NULL;
   return node;
 }
 
@@ -184,7 +184,7 @@ ilmstat_btuwi_pair_build(uintptr_t start, uintptr_t end, load_module_t *lm,
 static inline void
 push_free_pair(ilmstat_btuwi_pair_t **list, ilmstat_btuwi_pair_t *pair)
 {
-  pair->btuwi[0] = (bitree_uwi_t *)*list;
+  pair->btuwi = (bitree_uwi_t *)*list;
   *list = pair;
 }
 
@@ -192,7 +192,7 @@ static inline ilmstat_btuwi_pair_t *
 pop_free_pair(ilmstat_btuwi_pair_t **list)
 {
   ilmstat_btuwi_pair_t *head = *list;
-  *list = (ilmstat_btuwi_pair_t *)head->btuwi[0];
+  *list = (ilmstat_btuwi_pair_t *)head->btuwi;
   return head;
 }
 
@@ -255,8 +255,7 @@ static void
 ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
 {
   if (!pair) return;
-  bitree_uwi_free(0, pair->btuwi[0]);
-  bitree_uwi_free(0, pair->btuwi[1]);
+  bitree_uwi_free(0, pair->btuwi);
 
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
@@ -328,10 +327,10 @@ ildmod_stat_tostr(void* ilms, char str[])
  * Return the result in the parameter str.
  */
 static void
-ilmstat_btuwi_pair_tostr_indent(void* itp, unwinder_t uw, char* indents, char str[])
+ilmstat_btuwi_pair_tostr_indent(void* itp, char* indents, char str[])
 {
   ilmstat_btuwi_pair_t* it_pair = (ilmstat_btuwi_pair_t*)itp;
-  bitree_uwi_t *tree = it_pair->btuwi[uw];
+  bitree_uwi_t *tree = it_pair->btuwi;
   char firststr[MAX_ILDMODSTAT_STR];
   char secondstr[MAX_TREE_STR];
   ildmod_stat_tostr(it_pair, firststr);
@@ -662,7 +661,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 	   fcn_start, fcn_end);
       return false;
     }
-    ilm_btui->btuwi[uw] = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
+    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
     current_btuwi = NULL;
     atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
   }
@@ -677,7 +676,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
 
-  bitree_uwi_t *btuwi = ilm_btui->btuwi[uw];
+  bitree_uwi_t *btuwi = ilm_btui->btuwi;
   unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = READY;
   unwr_info->lm         = ilm_btui->lm;
@@ -714,8 +713,7 @@ cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
   // print the binary tree with the proper indentation:
   char itpairstr[max_ilmstat_btuwi_pair_len()];
   ilmstat_btuwi_pair_t* node_val = (ilmstat_btuwi_pair_t*)nodeval;
-  ilmstat_btuwi_pair_tostr_indent(node_val, DWARF_UNWINDER, cskl_itpair_treeIndent, itpairstr);
-  ilmstat_btuwi_pair_tostr_indent(node_val, NATIVE_UNWINDER, cskl_itpair_treeIndent, itpairstr);
+  ilmstat_btuwi_pair_tostr_indent(node_val, cskl_itpair_treeIndent, itpairstr);
 
   // add new line:
   cskl_append_node_str(itpairstr, str, max_cskl_str_len);
