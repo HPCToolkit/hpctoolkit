@@ -53,19 +53,6 @@
 #  multiple times).
 #
 
-#------------------------------------------------------------ 
-# The darshan I/O characterization library
-# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
-# applications by default on several DOE supercomputers. Darshan
-# intercepts file operations performed within signal handlers while
-# profiling, which can cause deadlock.  For some environments,
-# the setting below prevents darshan from being linked into a 
-# static executable and thus avoids the potential for conflict.
-# In other settings, only unloading the darshan module will help.
-# Thus, the setting below can do us no harm and helps sometimes.
-# ------------------------------------------------------------
-export DARSHAN_DISABLE=1
-
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
@@ -134,6 +121,28 @@ unable_to_link()
     die "unable to link"
 }
 
+
+#------------------------------------------------------------
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  Refuse to link HPCToolkit 
+# into applications if darshan will be included.
+#------------------------------------------------------------
+check_darshan()
+{
+    darshan_msg="darshan is incompatible with HPCToolkit. Unload darshan from your environment before using hpclink."
+    if test "${PE_PKGCONFIG_LIBS/darshan//}" != "${PE_PKGCONFIG_LIBS}" ; then
+        if test "$1" == "die" ; then
+           die $darshan_msg
+        else
+           echo -e "\nwarning:" $darshan_msg
+        fi
+    fi
+}
+
+
 #------------------------------------------------------------
 # Usage Message
 #------------------------------------------------------------
@@ -191,6 +200,7 @@ Options: Linking
                        This is to force the linker to pull in a reference
                        for that symbol.  May be used multiple times.
 EOF
+    check_darshan "mesg"
     exit 0
 }
 
@@ -303,6 +313,8 @@ do
 	    ;;
     esac
 done
+
+check_darshan "die"
 
 #
 # In a cross-compile link, we use fnbounds from the front-end tree and
