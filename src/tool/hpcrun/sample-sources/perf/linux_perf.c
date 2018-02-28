@@ -177,9 +177,6 @@ struct event_threshold_s {
 // forward declarations 
 //******************************************************************************
 
-static int
-restart_perf_event(int fd);
-
 static bool 
 perf_thread_init(event_info_t *event, event_thread_t *et);
 
@@ -605,17 +602,11 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents = (self->evl).nevents;
-  //int ret     = 0;
+  int nevents        = (self->evl).nevents;
+  event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
-  event_thread_t *event_thread = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
-
-  for (int i=0; i<nevents; i++)
-  {
-    int fd = event_thread[i].fd;
-
-    restart_perf_event( fd );
-  }
+  //  enable all perf_events
+  perf_start_all(nevents, et);
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
@@ -731,8 +722,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   int num_events = 0;
 
   // TODO: stupid way to count the number of events
-  // manually, setup the number of events. In theory, this is to be done
-  //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
   
@@ -910,30 +899,7 @@ read_fd(int fd)
 }
 
 
-// ------------------------------------------------------------
-// Refresh a disabled perf event
-// returns -1 if error, non-negative is success (any returns from ioctl)
-// ------------------------------------------------------------
 
-static int
-restart_perf_event(int fd)
-{
-  if (fd < 0) {
-    TMSG(LINUX_PERF, "Unable to start event: fd is not valid");
-    return -1;
-  }
-
-  int ret = ioctl(fd, PERF_EVENT_IOC_RESET, 0);
-  if (ret == -1) {
-    TMSG(LINUX_PERF, "error fd %d in PERF_EVENT_IOC_RESET: %s", fd, strerror(errno));
-  }
-
-  ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 1);
-  if (ret == -1) {
-    TMSG(LINUX_PERF, "error fd %d in IOC_ENABLE: %s", fd, strerror(errno));
-  }
-  return ret;
-}
 /***************************************************************************
  * object
  ***************************************************************************/

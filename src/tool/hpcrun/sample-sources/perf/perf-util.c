@@ -418,13 +418,14 @@ perf_util_attr_init(
   attr->exclude_hv     = 1;
 
   if (is_perf_ksym_available()) {
-    /* Records kernel call-chain when we have privilege */
+    /* We have rights to record and interpret kernel callchains */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
     attr->exclude_kernel           = 0;
 #endif
   }
+
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   return true;
