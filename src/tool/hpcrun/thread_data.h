@@ -231,6 +231,8 @@ typedef struct thread_data_t {
   frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
   cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 
+  uint32_t dLCA; // distance to LCA
+  
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------

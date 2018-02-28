@@ -598,7 +598,8 @@ static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
 typedef struct hpctrace_hdr_flags_bitfield {
   bool isDataCentric : 1;
-  uint64_t unused    : 63;
+  bool isLCARecorded : 1;
+  uint64_t unused    : 62;
 } hpctrace_hdr_flags_bitfield;
 
 
@@ -662,6 +663,16 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 typedef struct hpctrace_fmt_datum_t {
   uint64_t time; // microseconds
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
+  
+  /** dLCA = CCT leaf node's distance to Least Common Ancestor (LCA) with the previous sample.
+   *  dLCA is only valid when trampoline is used. 
+   *  dLCA = INT_MAX when trampoline failed at this sample.
+   * 
+   *  In the future, dLCA can be compressed into the timestamp.
+   *  Timestamp uses no more than 52 bits, allowing 12 bits 
+   *  to encode dLCA.
+   */
+  uint32_t dLCA; 
   uint32_t metricId;
 } hpctrace_fmt_datum_t;
 
