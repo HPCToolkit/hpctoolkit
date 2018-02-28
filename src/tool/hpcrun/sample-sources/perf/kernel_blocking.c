@@ -58,9 +58,7 @@
 // #include <linux/version.h> // not used anymore. the build will decide if the
                            // kernel is recent enough or not
 
-#ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
-#endif
 
 #include "kernel_blocking.h"
 

@@ -136,8 +136,6 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
-  metric_aux_info_t info_data;
-
 } event_info_t;
 
 
