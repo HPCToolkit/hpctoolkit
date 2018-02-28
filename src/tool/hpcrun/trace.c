@@ -90,7 +90,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime);
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime);
 
 
 //*********************************************************************
@@ -153,6 +153,13 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     flags.fields.isDataCentric = false;
 #endif
 
+#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
+    flags.fields.isLCARecorded = true;
+    ENABLE(USE_TRAMP);
+#else
+    flags.fields.isLCARecorded = false;
+#endif
+    
     ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
@@ -164,13 +171,13 @@ void
 hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
 {
 	if (tracing && hpcrun_sample_prob_active()) {
-        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, microtime);
+        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, microtime);
 	}
 }
 
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id, uint32_t dLCA)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -179,7 +186,7 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint met
     uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
-    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, microtime);
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
   }
 
 }
@@ -208,7 +215,7 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 // private operations
 //*********************************************************************
 
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime)
 {
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = microtime;
@@ -224,12 +231,19 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
+    trace_datum.dLCA = dLCA;
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
     flags.fields.isDataCentric = true;
 #else
     flags.fields.isDataCentric = false;
+#endif
+    
+#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
+    flags.fields.isLCARecorded = true;
+#else
+    flags.fields.isLCARecorded = false;
 #endif
     
     int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);

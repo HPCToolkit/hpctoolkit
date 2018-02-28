@@ -909,6 +909,14 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
     k++;
   }
 
+  if (flags.fields.isLCARecorded) {
+    uint32_t dLCA = x->dLCA;
+    for (shift = 24; shift >= 0; shift -= 8) {
+      buf[k] = (dLCA >> shift) & 0xff;
+      k++;
+    }
+  }
+
   if (flags.fields.isDataCentric) {
     uint32_t metricId = x->metricId;
     for (shift = 24; shift >= 0; shift -= 8) {
@@ -916,7 +924,7 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
       k++;
     }
   }
-
+  
   if (hpcio_outbuf_write(outbuf, buf, k) != k) {
     return HPCFMT_ERR;
   }

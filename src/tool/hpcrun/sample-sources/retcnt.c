@@ -224,6 +224,8 @@ hpcrun_retcnt_inc(cct_node_t* node, int incr)
 {
   int metric_id = hpcrun_event2metric(&_retcnt_obj, RETCNT_EVENT);
 
+  if (metric_id == -1) return;
+  
   TMSG(TRAMP, "Increment retcnt (metric id = %d), by %d", metric_id, incr);
   cct_metric_data_increment(metric_id,
 			    node,
