@@ -2176,7 +2176,7 @@ AC_ARG_WITH([perfmon],
 AC_MSG_CHECKING([for perfmon])
 
 if test -f "${PERFMON}/include/perfmon/pfmlib.h"; then
-  PERFMON_CFLAGS="-I${PERFMON}/include -D ENABLE_PERFMON"
+  PERFMON_CFLAGS="-I${PERFMON}/include -DENABLE_PERFMON"
   OPT_PERFMON=yes
 fi
 
