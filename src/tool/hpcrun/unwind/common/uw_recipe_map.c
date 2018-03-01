@@ -411,10 +411,11 @@ cskl_ilmstat_btuwi_free(void *anode)
 
 static bool
 uw_recipe_map_cmp_del_bulk_unsynch(
-	const interval_t *ival, unwinder_t uw)
+	ilmstat_btuwi_pair_t* lo,
+	ilmstat_btuwi_pair_t* hi,
+	unwinder_t uw)
 {
-  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], ival->start, ival->end,
-				   cskl_ilmstat_btuwi_free);
+  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], lo, hi, cskl_ilmstat_btuwi_free);
 }
 
 static void
@@ -433,7 +434,7 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 
   uintptr_t s0 = ilmstat_btuwi->interval.start;
   uintptr_t e0 = ilmstat_btuwi->interval.end;
-  uw_recipe_map_cmp_del_bulk_unsynch(&ilmstat_btuwi->interval, uw);
+  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi, uw);
   uw_recipe_map_poison(s0, start, uw);
   uw_recipe_map_poison(end, e0, uw);
 }
@@ -442,25 +443,25 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 static void
 uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 {
-  if (start > 1) {
+  if (start > 0) {
     ilmstat_btuwi_pair_t* ileft = uw_recipe_map_inrange_find(start - 1, uw);
     if (ileft) { 
       if ((ileft->interval.end == start) &&
           (NEVER == atomic_load_explicit(&ileft->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
-        uw_recipe_map_cmp_del_bulk_unsynch(&ileft->interval, uw);
         start = ileft->interval.start;
+        uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft, uw);
       }
     }
   }
-  if (end < UINTPTR_MAX - 1) {
+  if (end < UINTPTR_MAX) {
     ilmstat_btuwi_pair_t* iright = uw_recipe_map_inrange_find(end+1, uw);
     if (iright) { 
       if ((iright->interval.start == end) &&
           (NEVER == atomic_load_explicit(&iright->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
-        uw_recipe_map_cmp_del_bulk_unsynch(&iright->interval, uw);
         end = iright->interval.end;
+        uw_recipe_map_cmp_del_bulk_unsynch(iright, iright, uw);
       }
     }
   }
