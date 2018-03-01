@@ -3591,6 +3591,7 @@ AC_CONFIG_FILES([ \
   src/lib/support/Makefile \
   src/lib/support-lean/Makefile \
   src/lib/xml/Makefile \
+  src/lib/trace-analysis/Makefile \
 ])
 
 

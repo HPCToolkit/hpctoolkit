@@ -100,6 +100,7 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(HPCLIB_TraceAnalysis) \
 	@XERCES_LDLIBS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
