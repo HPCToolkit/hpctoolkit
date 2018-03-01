@@ -78,6 +78,7 @@ SUBDIRS += \
 	profxml \
 	xml \
 	support \
+	trace-analysis \
 	stubs-gcc_s
 endif
 

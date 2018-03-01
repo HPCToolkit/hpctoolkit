@@ -66,51 +66,24 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
-
 #############################################################################
 # Local settings
 #############################################################################
 
-XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
-
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+	TraceAnalysis.hpp TraceAnalysis.cpp
 
+# GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 
-MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
-	@HOST_CXXFLAGS@ \
-	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@ \
-	@LZMA_LDFLAGS_DYN@
-
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	$(HPCLIB_TraceAnalysis) \
-	@LZMA_LDFLAGS_STAT@ \
-	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCPROF_LDFLAGS@
-
-if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_LIB_FLAGS)
+if IS_HOST_AR
+  MYAR = @HOST_AR@
 else
-MY_LIB_XED =
+  MYAR = $(AR) cru
 endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -118,28 +91,20 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
+noinst_LTLIBRARIES = libHPCtrace-analysis.la
 
-bin_SCRIPTS = hpcprof
-
-pkglibexec_PROGRAMS = hpcprof-bin
-
-hpcprof_bin_SOURCES  = $(MYSOURCES)
-hpcprof_bin_CFLAGS   = $(MYCFLAGS)
-hpcprof_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcprof_bin_LDADD    = $(MYLDADD)
+libHPCtrace_analysis_la_SOURCES  = $(MYSOURCES)
+libHPCtrace_analysis_la_CFLAGS   = $(MYCFLAGS)
+libHPCtrace_analysis_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCtrace_analysis_la_AR       = $(MYAR)
+libHPCtrace_analysis_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-install-exec-hook:
-	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof$(EXEEXT))
-
 
 #############################################################################
 # Common rules
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
+
 

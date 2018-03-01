@@ -89,6 +89,8 @@ using std::vector;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
+#include <lib/trace-analysis/TraceAnalysis.hpp>
+
 #include <lib/banal/Struct.hpp>
 
 #include <lib/binutils/VMAInterval.hpp>
@@ -390,18 +392,8 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // 4. Trace Analysis
   // ------------------------------------------------------------
-  if (myRank == rootRank) {
-    if (args.traceAnalysis) {
-        std::cout << std::endl << "Trace analysis turned on" << std::endl;
-        const Prof::LoadMap* loadmap = profGbl->loadmap();
-        for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-             i <= loadmap->size(); ++i) {
-          Prof::LoadMap::LM* lm = loadmap->lm(i);
-          if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-            std::cout << "executable: " << lm->name() << std::endl;
-          }
-        }
-    }
+  if (args.traceAnalysis) {
+    TraceAnalysis::analysis(profGbl, myRank, numRanks);
   }
   
   // -------------------------------------------------------

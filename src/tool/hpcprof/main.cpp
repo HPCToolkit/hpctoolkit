@@ -76,6 +76,8 @@ using std::string;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
+#include <lib/trace-analysis/TraceAnalysis.hpp>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
 
@@ -237,15 +239,7 @@ realmain(int argc, char* const* argv)
   // 4. Trace Analysis
   // ------------------------------------------------------------
   if (args.traceAnalysis) {
-      std::cout << std::endl << "Trace analysis turned on" << std::endl;
-      const Prof::LoadMap* loadmap = prof->loadmap();
-      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-           i <= loadmap->size(); ++i) {
-        Prof::LoadMap::LM* lm = loadmap->lm(i);
-        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          std::cout << "executable: " << lm->name() << std::endl;
-        }
-      }
+    TraceAnalysis::analysis(prof, 0, 1);
   }
 
   // -------------------------------------------------------
