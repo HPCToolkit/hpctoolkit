@@ -543,7 +543,8 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
   if (sf){
     m_simpleSymbols = sf->create();
     if (! m_simpleSymbols->parse(directorySet, m_name.c_str())) {
-      std::cerr << "Unable to read symbols from load module " <<m_name << std::endl;
+      // Warning: we cannot parse the load module. 
+      // this is not a problem, so we can safely ignore the case
     }
     return;
   }
