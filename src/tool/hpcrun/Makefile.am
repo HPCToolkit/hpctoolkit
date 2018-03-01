@@ -336,33 +336,30 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
+if OPT_ENABLE_PERF_EVENT
+MY_BASE_FILES +=  \
+	sample-sources/perf/event_custom.c  \
+	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf-util.c     \
+	sample-sources/perf/perf_mmap.c
+
 if OPT_PERFMON
-MY_BASE_FILES +=  			\
-	sample-sources/perf/perfmon-util.c	
+MY_BASE_FILES += sample-sources/perf/perfmon-util.c
 else
-MY_BASE_FILES +=  			\
-	sample-sources/perf/perfmon-util-dummy.c 
+MY_BASE_FILES += sample-sources/perf/perfmon-util-dummy.c
 endif
+
+if OPT_ENABLE_KERNEL_4_3
+MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
+else
+MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
+endif
+endif
+
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\
 ## 	sample-sources/mpi.c
 ## endif
-
-if OPT_ENABLE_PERF_EVENT
-MY_BASE_FILES +=  			\
-	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/linux_perf.c	\
-	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	
-endif
-
-if OPT_ENABLE_KERNEL_4_3
-MY_BASE_FILES +=  			\
-	sample-sources/perf/kernel_blocking.c	
-else
-MY_BASE_FILES +=  			\
-	sample-sources/perf/kernel_blocking_stub.c	
-endif
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
