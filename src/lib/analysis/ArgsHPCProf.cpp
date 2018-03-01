@@ -134,6 +134,9 @@ Options: Source Code and Static Structure:\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
 \n\
+Options: Trace Analysis and Executables:\n\
+  -T, --trace-analysis Turn on automated trace analysis.\n\
+\n\
 Options: Metrics:\n\
   -M <metric>, --metric <metric>\n\
                        Specify metrics to compute, where <metric> is one of\n\
@@ -191,6 +194,10 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
   { 'N', "normalize",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
+  // Trace Analysis
+  { 'T', "trace-analysis",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+     
   // Metrics
   { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
@@ -413,6 +420,12 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       db_addStructId = true;
     }
 
+    // Trace analysis options
+    traceAnalysis = false;
+    if (parser.isOpt("trace-analysis")) {
+      traceAnalysis = true;
+    }
+    
     // Check for required arguments
     uint numArgs = parser.getNumArgs();
     if ( !(numArgs >= 1) ) {

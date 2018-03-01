@@ -127,6 +127,8 @@ public:
   // Structure files
   std::vector<std::string> structureFiles;
 
+  bool traceAnalysis;
+  
   // Group files
   std::vector<std::string> groupFiles;
 
