@@ -4,11 +4,13 @@
 #include <limits.h>  // PATH_MAX
 #include <stdio.h>   // sprintf
 #include <unistd.h>
+#include <sys/stat.h>  // mkdir
 
 #include <hpcrun/cct2metrics.h>
 #include <lib/prof-lean/spinlock.h>
 #include "nvidia.h"
 #include "cubin-id-map.h"
+#include "cubin-md5-map.h"
 #include "cupti-activity-api.h"
 #include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
@@ -34,7 +36,7 @@
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
-static __thread uint64_t cupti_correlation_id = 1;
+static uint64_t cupti_correlation_id = 1;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -165,19 +167,18 @@ cupti_error_report
 static bool
 cupti_write_cubin
 (
+ const char *file_name,
  const void *cubin,
- size_t cubin_size,
- const char *file_name
+ size_t cubin_size
 )
 {
-  char name[PATH_MAX];
   int fd;
-  bool ret;
-  fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (fd >= 0) {
     // success
+    // another process already wrote [vdso]
     if (errno == EEXIST) {
-      // another process already wrote [vdso]
+      close(fd);
       return true;
     }
     if (write(fd, cubin, cubin_size) != cubin_size) {
@@ -194,6 +195,7 @@ cupti_write_cubin
   }
 }
 
+
 #define FILE_NAME_LEN 256
 
 static void
@@ -204,16 +206,28 @@ cupti_load_callback_cuda
  size_t cubin_size
 )
 {
-  char cubin_file[FILE_NAME_LEN];
+  // Compute md5 for cubin and store it into a map
+  cubin_md5_map_entry_t *entry = cubin_md5_map_lookup(module_id);
+  unsigned char *md5;
+  if (entry == NULL) {
+    cubin_md5_map_insert(module_id, cubin, cubin_size);
+  }
+  md5 = cubin_md5_map_entry_md5_get(entry);
+
+  // Write a file if does not exist
   bool file_flag;
-  sprintf(cubin_file, "cubin-%d", module_id);
   spinlock_lock(&files_lock);
-  file_flag = cupti_write_cubin(cubin, cubin_size, cubin_file);
+  if (file_flag == false) {
+    char file_name[PATH_MAX];
+    mkdir("cubins", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
+    sprintf(file_name, "cubins/%s", md5);
+    file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
+  }
   spinlock_unlock(&files_lock);
 
   if (file_flag) {
     char device_file[PATH_MAX]; 
-    sprintf(device_file, "%s@0x%lx", cubin_file, (unsigned long)NULL);
+    sprintf(device_file, "%s@0x%lx", md5, (unsigned long)NULL);
     uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
@@ -242,6 +256,7 @@ cupti_correlation_callback_cuda
  uint64_t *id 
 )
 {
+  // TODO(keren): include atomic.h
   *id = __sync_fetch_and_add(&cupti_correlation_id, 1);
   kind_info_t *cupti_host_op_kind = hpcrun_metrics_new_kind();
   int cupti_host_op_metric_id = hpcrun_set_new_metric_info(cupti_host_op_kind, "CUPTI_HOST_OP_KIND"); 
