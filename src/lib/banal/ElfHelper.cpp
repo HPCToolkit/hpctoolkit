@@ -67,6 +67,8 @@
 // local includes
 //******************************************************************************
 
+#include <lib/support/diagnostics.h>
+
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
@@ -109,6 +111,7 @@ ElfFile::open
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
   if (!ehdr) {
+    DIAG_EMsg("not an ELF binary: " << _fileName);
     return false;
   }
 #ifdef EM_CUDA
