@@ -206,32 +206,30 @@ cskiplist_node_is_removable(csklnode_t *candidate, int layer)
 
 /**
  * pre-conditions:
- * preds[] and succs[] are arrays of csklnode_t* of length cskl->max_height.
+ * preds[] is an array of csklnode_t* of length cskl->max_height.
  *
  * post-conditions:
  *   if val is in cskl, return the first layer where val is found,
  *     otherwise return NO_LAYER.
  *
- *   preds[i]->val < val <= succs[i] for i = low..cskl->max_height-1, where
+ *   preds[i]->val < val <= preds[i]->nexts[i] for i = low..cskl->max_height-1, where
  *     low = (ft == cskiplist_find_full)? 0: found_layer, in other words,
  *   preds[i] is the node that precedes the found node at level i
- *   succs[i] is the node that follows the found node at level i.
  *
  *   if val is found,
- *     val == succs[cskiplist_find_helper(compare, val, preds, succs, ft)]
+ *     val == preds[i]->nexts[i], where
+ *     i == cskiplist_find_helper(compare, val, preds, ft)
  */
 static int
 cskiplist_find_helper
 (val_cmp compare,   // comparator used for searching
-	cskiplist_t *cskl,         // the skiplist
+	int max_height,		// number of list levels
+	csklnode_t *pred,	// full node < val
 	void* val,            // the value we are seeking
 	csklnode_t *preds[],    // return value: nodes < val
-	csklnode_t *succs[],    // return value: nodes >= val
 	cskiplist_find_type ft) // is info needed at all layers?
 {
-  int    max_height = cskl->max_height;
   int found_layer = NO_LAYER;
-  csklnode_t *pred  = cskl->left_sentinel; // invariant: pred->val < val
   for (int layer = max_height-1; layer >= 0; layer--) {
 	csklnode_t *current = pred->nexts[layer];
 
@@ -244,20 +242,17 @@ cskiplist_find_helper
 	// loop exit condition: val <= curr->val
 	// loop invariant: pred->val < val
 
-	// remember the 'layer' node < val:
+	// remember the last 'layer' node < val:
 	preds[layer] = pred; // preds[layer]->val < val, by the loop invariant
-	// remember the 'layer' node >= val:
-	succs[layer] = current; // val <= succs[layer]->val, by the loop exit condition
 
 	if (found_layer == NO_LAYER &&    // if we haven't already found a match
 		compare(current->val, val) == 0) { // and the current val is a match
 	  found_layer = layer;            // remember the layer where we matched
+	  // found_layer is the first layer from the top where val is found.
+	  // some clients of find don't need results for layers below found_layer
+	  if (ft == cskiplist_find_early_exit)
+	    break;
 	}
-	// if found_layer != NO_LAYER, found_layer is the first layer from the top
-	// where val is found.
-
-	// some clients of find don't need results for layers below found_layer
-	if (found_layer != NO_LAYER && ft == cskiplist_find_early_exit) break;
   }
 
   return found_layer;
@@ -271,12 +266,11 @@ cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
 
   int     max_height  = cskl->max_height;
   csklnode_t *preds[max_height];
-  csklnode_t *succs[max_height];
-  int layer = cskiplist_find_helper(compare, cskl, value, preds, succs,
+  int layer = cskiplist_find_helper(compare, max_height, cskl->left_sentinel, value, preds,
 	  cskiplist_find_early_exit);
   csklnode_t *node = NULL;
   if (layer != NO_LAYER) {
-	node = succs[layer];
+	node = preds[layer]->nexts[layer];
 	if (!node->fully_linked || node->marked)
 	  node = NULL;
   }
@@ -323,7 +317,6 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   int max_height = cskl->max_height;
 
   csklnode_t* lpreds[max_height];
-  csklnode_t* other[max_height];
   csklnode_t* hsuccs[max_height];
 
   // Acquire lock before writing:
@@ -333,13 +326,14 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   //----------------------------------------------------------------------------
   // Look for a node matching low
   //----------------------------------------------------------------------------
-  cskiplist_find_helper(cmpfn, cskl, lo, lpreds, other, cskiplist_find_full);
+  cskiplist_find_helper(cmpfn, max_height, cskl->left_sentinel, lo, lpreds, cskiplist_find_full);
   csklnode_t *first = lpreds[0]->nexts[0];
 
   //----------------------------------------------------------------------------
   // Look for a node matching high
   //----------------------------------------------------------------------------
-  int hlayer = cskiplist_find_helper(cmpfn, cskl, hi, other, hsuccs, cskiplist_find_full);
+  int hlayer = cskiplist_find_helper(cmpfn, max_height, lpreds[max_height-1],
+				     hi, hsuccs, cskiplist_find_full);
 
   //
   //----------------------------------------------------------------------------
@@ -348,12 +342,12 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   int layer = max_height - 1;
   while (layer > hlayer) {
 	// Splice out nodes at layer.
-	lpreds[layer]->nexts[layer] = hsuccs[layer];
+	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer];
 	layer--;
   }
   while (layer >= 0) {
 	// Splice out nodes at layer, including found node.
-	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer];
+	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer]->nexts[layer];
 	layer--;
   }
   csklnode_t *last = lpreds[0]->nexts[0];
@@ -452,10 +446,9 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	mem_alloc m_alloc)
 {
   int max_height = cskl->max_height;
-  int my_height  = random_level(cskl->max_height);
+  int my_height  = random_level(max_height);
 
   csklnode_t *preds[max_height];
-  csklnode_t *succs[max_height];
   mcs_node_t mcs_nodes[max_height];
   csklnode_t *node;
 
@@ -464,11 +457,11 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	pfq_rwlock_read_lock(&cskl->lock);
 
 	int found_layer= cskiplist_find_helper(cskl->compare,
-		cskl, value, preds, succs,
+		max_height, cskl->left_sentinel, value, preds,
 		cskiplist_find_full);
 
 	if (found_layer != NO_LAYER) {
-	  node = succs[found_layer];
+	  node = preds[found_layer]->nexts[found_layer];
 	  if (!node->marked) {
 		while (!node->fully_linked);
 		break;
@@ -501,7 +494,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	bool valid = true;
 	for (int layer = 0; valid && (layer < my_height); layer++) {
 	  pred=preds[layer];
-	  succ=succs[layer];
+	  succ=pred->nexts[layer];
 	  if (pred != prevPred) {
 		mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		highestLocked = layer;
@@ -524,7 +517,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 
 	// link it in at levels [0 .. my_height-1]
 	for (int layer = 0; layer < my_height; layer++) {
-	  node->nexts[layer] = succs[layer];
+	  node->nexts[layer] = preds[layer]->nexts[layer];
 	  preds[layer]->nexts[layer] = node;
 	}
 
@@ -554,15 +547,14 @@ cskl_delete(cskiplist_t *cskl, void *value)
 
   for (;;) {
 	csklnode_t     *preds[max_height];
-	csklnode_t     *succs[max_height];
 	mcs_node_t  mcs_nodes[max_height];
 	int         height = -1;
 
 	//--------------------------------------------------------------------------
 	// Look for a node matching v
 	//--------------------------------------------------------------------------
-	int layer = cskiplist_find_helper(cskl->compare, cskl, value,
-		preds, succs, cskiplist_find_full);
+	int layer = cskiplist_find_helper(cskl->compare, max_height, cskl->left_sentinel, value,
+		preds, cskiplist_find_full);
 
 	//--------------------------------------------------------------------------
 	// A matching node is available to remove. We may have marked it earlier as
@@ -570,13 +562,13 @@ cskl_delete(cskiplist_t *cskl, void *value)
 	//--------------------------------------------------------------------------
 	if (node_is_marked ||
 		(layer != NO_LAYER &&
-			cskiplist_node_is_removable(succs[layer], layer))) {
+			cskiplist_node_is_removable(preds[layer]->nexts[layer], layer))) {
 
 	  //------------------------------------------------------------------------
 	  // if I haven't already marked this node for deletion, do so.
 	  //------------------------------------------------------------------------
 	  if (!node_is_marked) {
-		node = succs[layer];
+		node = preds[layer]->nexts[layer];
 		height = node->height;
 		mcs_lock(&node->lock, &mcs_nodes[layer]);
 		if (node->marked) {
@@ -606,7 +598,7 @@ cskl_delete(cskiplist_t *cskl, void *value)
 	  bool valid = true;
 	  for (int layer = 0; valid && (layer < height); layer++) {
 		pred = preds[layer];
-		succ = succs[layer];
+		succ = pred->nexts[layer];
 		if (pred != prevPred) {
 		  mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		  highestLocked = layer;
@@ -688,15 +680,16 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   // Acquire lock before reading the cskiplist to build its string representation:
   pfq_rwlock_read_lock(&cskl->lock);
 
+  int max_height = cskl->max_height;
   csklnode_t *node = cskl->left_sentinel;
-  node_tostr(node->val, node->height, cskl->max_height, csklstr, max_cskl_str_len); // abstract function
+  node_tostr(node->val, node->height, max_height, csklstr, max_cskl_str_len); // abstract function
 
   char temp_buff[max_cskl_str_len/2];
   int str_len = strlen(csklstr);
   for (node = node->nexts[0]; node; node = node->nexts[0]) {
-	cskl_links_tostr(cskl->max_height, temp_buff, max_cskl_str_len);
+	cskl_links_tostr(max_height, temp_buff, max_cskl_str_len);
 	strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
-	node_tostr(node->val, node->height, cskl->max_height, temp_buff, max_cskl_str_len);  // abstract function
+	node_tostr(node->val, node->height, max_height, temp_buff, max_cskl_str_len);  // abstract function
 	str_len = strlen(csklstr);
 	strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
 	str_len = strlen(csklstr);
