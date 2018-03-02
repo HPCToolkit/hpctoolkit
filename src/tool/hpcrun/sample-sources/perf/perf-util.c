@@ -107,8 +107,10 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 //******************************************************************************
 
 static uint16_t perf_kernel_lm_id = 0;
-enum perf_ksym_e ksym_status = PERF_UNDEFINED;
+
 static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
+
+static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
 
 //******************************************************************************
@@ -137,10 +139,21 @@ perf_get_kernel_lm_id()
     // ensure that this is initialized only once per process
     spinlock_lock(&perf_lock);
     if (perf_kernel_lm_id == 0) {
-      char buffer[MAX_BUFFER_LINUX_KERNEL];
-      OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
 
-      perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
+      // in case of kptr_restrict = 0, we want to copy kernel symbol for each node
+      // if the value of kptr_restric != 0, all nodes has <vmlinux> module, and
+      //   all calls to the kernel will be from address zero
+
+      if (perf_util_get_kptr_restrict() == 0) {
+
+        char buffer[MAX_BUFFER_LINUX_KERNEL];
+        OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
+        perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
+
+      } else {
+        perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+
+      }
     }
     spinlock_unlock(&perf_lock);
   }

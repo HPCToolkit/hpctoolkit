@@ -256,14 +256,37 @@ hpcrun_sample_callpath(void* context, int metricId,
   ret.sample_node = node;
 
   cct_addr_t *addr = hpcrun_cct_addr(node);
-  ip_normalized_t leaf_func = addr->ip_norm;
+  ip_normalized_t leaf_ip = addr->ip_norm;
+
+  if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
+    // the call chain sampled has as its leaf an instruction in a user
+    // procedure. we know this because leaf_ip matches the first entry
+    // in the backtrace buffer.  samples in kernel space yield a
+    // leaf_ip that is not logged in the backtrace buffer. for user
+    // space samples, the first entry in the backtrace buffer includes
+    // not only the normalized IP of the call chain leaf but also the
+    // IP of the first instruction in the enclosing function, which we
+    // use to uniquely represent the function itself. in this case, we
+    // adjust leaf_ip to point to the first IP of its enclosing
+    // function to simplify processing of procedure-level traces for
+    // call chains that are completely in user space.
+
+    // when call chain tracing is enabled, tracing arbitrary leaf IPs
+    // for user space call chains is messy because it can cause
+    // trace-ids to be marked on multiple call chain leaves
+    // (instructions) that belong to the same source-level
+    // statement. collapsing these when call path traces are present
+    // leaves us with many trace-ids referring to the same source
+    // construct. trust me: merging here is easier :-).
+    leaf_ip = td->btbuf_beg->the_function;
+  }
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
-    cct_addr_t frm = { .ip_norm = leaf_func };
+    cct_addr_t frm = { .ip_norm = leaf_ip };
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy =
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);

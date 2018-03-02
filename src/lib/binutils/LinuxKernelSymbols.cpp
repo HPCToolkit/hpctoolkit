@@ -117,7 +117,8 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
 
   FILE *fp_in = fopen(real_path.c_str(), "r");
   if (fp_in == NULL) {
-    std::cerr << "Warning: cannot open file: " << real_path <<std::endl;
+    // there is nothing critical if we cannot open pseudo load module.
+    // we just cannot find the address. 
     return false;
   }
 

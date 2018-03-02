@@ -42,71 +42,18 @@
 // ******************************************************* EndRiceCopyright *
 
 //
-// Utility interface for perfmon
+// Dummy interface for perfmon functions used in linux_perf.c, for the
+// case that perfmon is not available.
 //
 
 
+//******************************************************************************
+// include files
+//******************************************************************************
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <sys/types.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <inttypes.h>
-#include <stdarg.h>
-#include <errno.h>
-#include <unistd.h>
-#include <string.h>
-#include <regex.h>
-
-/******************************************************************************
- * linux specific headers
- *****************************************************************************/
 #include <linux/perf_event.h>
-
-/******************************************************************************
- * hpcrun includes
- *****************************************************************************/
-
-#include <hpcrun/messages/messages.h>
-#include "perf-util.h"    // u64, u32 and perf_mmap_data_t
-#include "sample-sources/display.h"
-
-/******************************************************************************
- * perfmon
- *****************************************************************************/
-#include <perfmon/pfmlib.h>
-
-
-//******************************************************************************
-// data structure
-//******************************************************************************
-
-
-
-
-//******************************************************************************
-// Constants
-//******************************************************************************
-
-#define MAX_EVENT_NAME_CHARS 	256
-#define MAX_EVENT_DESC_CHARS 	4096
-
-#define EVENT_IS_PROFILABLE	 0
-#define EVENT_MAY_NOT_PROFILABLE 1
-#define EVENT_FATAL_ERROR	-1
-
-//******************************************************************************
-// forward declarations
-//******************************************************************************
-
-
-//******************************************************************************
-// local operations
-//******************************************************************************
-
+#include "perfmon-util.h"
+#include "perf-util.h"
 
 
 //******************************************************************************
@@ -123,6 +70,7 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
 {
   return -1;
 }
+
 
 // return 0 or positive if the event exists, -1 otherwise
 // if the event exist, code and type are the code and type of the event
@@ -156,11 +104,13 @@ pfmu_init()
   return -1;
 }
 
+
 void
 pfmu_fini()
 {
-  pfm_terminate();
+  return;
 }
+
 
 /*
  * interface function to print the list of supported PMUs
@@ -170,4 +120,3 @@ pfmu_showEventList()
 {
   return -1;
 }
-

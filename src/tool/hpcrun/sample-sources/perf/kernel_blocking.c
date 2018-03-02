@@ -58,8 +58,6 @@
 // #include <linux/version.h> // not used anymore. the build will decide if the
                            // kernel is recent enough or not
 
-#include "perfmon-util.h"
-
 #include "kernel_blocking.h"
 
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
