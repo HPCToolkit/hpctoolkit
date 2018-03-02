@@ -424,13 +424,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   pe_header_t hdr;
   pe_mmap_t *current_perf_mmap = current->mmap;
 
-  TMSG(LINUX_PERF, "perf mmap: %p", current_perf_mmap);
-
-  if (current_perf_mmap < (void*)100) {
-    EMSG("incorrect address of current_perf_mmap: %p", current_perf_mmap);
-    hpcrun_abort("perf sample-event memory error");
-  }
-
   int read_successfully = perf_read_header(current_perf_mmap, &hdr);
   if (read_successfully != 0) {
     return 0;
