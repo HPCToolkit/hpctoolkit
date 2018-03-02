@@ -126,8 +126,15 @@ static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 static cct_node_t *
 perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
 {
-  ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = ip };
+  ip_normalized_t npc;
   cct_addr_t frm      = { .ip_norm = npc };
+
+  memset(&npc, 0, sizeof(ip_normalized_t));
+  npc.lm_id = lm_id;
+  npc.lm_ip = ip;
+
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = npc;
 
   return hpcrun_cct_insert_addr(parent, &frm);
 }
