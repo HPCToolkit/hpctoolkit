@@ -183,8 +183,6 @@ openSymtab(ElfFile *elfFile)
 
   if (! ret) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
-    DIAG_WMsgIf(1, "The static inline support does not work cross platform,");
-    DIAG_WMsgIf(1, "so check that this file has the same arch type as hpctoolkit.");
     the_symtab = NULL;
   }
 
