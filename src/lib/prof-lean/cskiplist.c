@@ -80,9 +80,6 @@
 
 #define NO_LAYER -1
 
-#define AFTER_HIGH(succs, layer, found) \
-	(layer <= found ? succs[layer]->nexts[layer] : succs[layer])
-
 // number of bytes in a skip list node with L levels
 #define SIZEOF_CSKLNODE_T(L) (sizeof(csklnode_t) + sizeof(void*) * L)
 
@@ -324,7 +321,6 @@ static bool
 cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_free m_free)
 {
   int max_height = cskl->max_height;
-  bool removed_something = false;
 
   csklnode_t* lpreds[max_height];
   csklnode_t* other[max_height];
@@ -338,22 +334,29 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   // Look for a node matching low
   //----------------------------------------------------------------------------
   cskiplist_find_helper(cmpfn, cskl, lo, lpreds, other, cskiplist_find_full);
+  csklnode_t *first = lpreds[0]->nexts[0];
 
   //----------------------------------------------------------------------------
   // Look for a node matching high
   //----------------------------------------------------------------------------
   int hlayer = cskiplist_find_helper(cmpfn, cskl, hi, other, hsuccs, cskiplist_find_full);
-  csklnode_t *first = lpreds[0]->nexts[0];
-  csklnode_t *last = AFTER_HIGH(hsuccs, 0, hlayer);
 
   //
   //----------------------------------------------------------------------------
   // Complete the deletion: Splice out node at all layers from 0..max_height-1
   //----------------------------------------------------------------------------
-  for (int layer = max_height - 1; layer >= 0; layer--) {
-	// Splice out node at layer.
-	lpreds[layer]->nexts[layer] = AFTER_HIGH(hsuccs, layer, hlayer);
+  int layer = max_height - 1;
+  while (layer > hlayer) {
+	// Splice out nodes at layer.
+	lpreds[layer]->nexts[layer] = hsuccs[layer];
+	layer--;
   }
+  while (layer >= 0) {
+	// Splice out nodes at layer, including found node.
+	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer];
+	layer--;
+  }
+  csklnode_t *last = lpreds[0]->nexts[0];
 
   //----------------------------------------------------------------------------
   // Delete all of the nodes between first and last.
@@ -363,13 +366,12 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 	csklnode_t *next = node->nexts[0]; // remember the pointer before trashing node
 	m_free(node); // delete node
 	node = next;
-	removed_something = true;
   }
 
   // Release lock after writing:
   pfq_rwlock_write_unlock(&cskl->lock, &me);
 
-  return removed_something;
+  return first != last;
 }
 
 //******************************************************************************
