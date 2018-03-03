@@ -230,7 +230,7 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
   stat.count = b.count;
-  stat.errcode = status;
+  stat.error = status;
   stat.first = bitree_uwi_rightsubtree(dummy);
 
   return stat; 
