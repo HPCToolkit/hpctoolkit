@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = subdir-objects
 
 #############################################################################
 # Common settings
@@ -71,11 +71,23 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	TraceAnalysis.hpp TraceAnalysis.cpp
+	TraceAnalysis.hpp TraceAnalysis.cpp \
+	TraceAnalysisCommon.hpp \
+	cfg/CFGNode.hpp \
+	cfg/BinaryAnalyzer.hpp cfg/BinaryAnalyzer.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+BOOST_INC = @BOOST_INC@
+LIBDWARF_INC = @LIBDWARF_INC@
+SYMTABAPI_INC = @SYMTABAPI_INC@
+
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@GNUBINUTILS_IFLAGS@  \
+	-I$(BOOST_INC)  \
+	-I$(LIBDWARF_INC)  \
+	-I$(SYMTABAPI_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

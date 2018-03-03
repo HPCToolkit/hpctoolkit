@@ -45,23 +45,100 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.hpp
+ * File:   CFGNode.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 2, 2018, 1:16 AM
  */
 
-#ifndef TRACEANALYSIS_HPP
-#define TRACEANALYSIS_HPP
+#ifndef CFGNODE_HPP
+#define CFGNODE_HPP
 
 #include <string>
 using std::string;
 
-#include <lib/analysis/CallPath.hpp>
+#include <unordered_map>
+using std::unordered_map;
+
+#include <unordered_set>
+using std::unordered_set;
+
+#include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, int myRank, int numRanks);
+  class CFGANode {
+  public:
+    const VMA vma;
+    
+    CFGANode(VMA vma) : vma(vma) {}
+    //CFGNode(const CFGNode& orig);
+    virtual ~CFGANode() {}
+    
+    virtual std::string toString() = 0;
+  };
+  
+  class CFGCall : public CFGANode {
+  public:
+    CFGCall(VMA vma) : CFGANode(vma) {}
+    virtual ~CFGCall() {}
+    
+    virtual string toString() {
+      std::stringstream sstream;
+      sstream << "call_0x" << std::hex << vma;
+      return sstream.str();
+    }
+  };
+  
+  class CFGAGraph : public CFGANode {
+  public:
+    const string label;
+    unordered_map<VMA, unordered_set<VMA>> successorMap;
+    
+    CFGAGraph(VMA vma, string label) : CFGANode(vma), label(label) {}
+    virtual ~CFGAGraph() {}
+    
+    void setSuccessorMap(const unordered_map<VMA, unordered_set<VMA>>& map) {
+      successorMap = map;
+    }
+    
+    virtual string toDetailedString() {
+      std::stringstream sstream;
+      sstream << toString() << ":\n";
+      for (auto mit = successorMap.begin(); mit != successorMap.end(); ++mit) {
+        sstream << "  0x" << std::hex << mit->first << " -> [";
+        for (auto sit = (mit->second).begin(); sit != (mit->second).end(); ++sit)
+          sstream << "0x" << std::hex << *sit << ",";
+        sstream << "]\n";
+      }
+      sstream << "\n";
+      return sstream.str();
+    }
+  };
+  
+  class CFGLoop : public CFGAGraph {
+  public:
+    CFGLoop(VMA vma, string label) : CFGAGraph(vma, label) {}
+    virtual ~CFGLoop() {}
+    
+    virtual string toString() {
+      std::stringstream sstream;
+      sstream << "loop @ 0x" << std::hex << vma;
+      return sstream.str();
+    }
+  };
+  
+  class CFGFunc : public CFGAGraph {
+  public:
+    CFGFunc(VMA vma, string label) : CFGAGraph(vma, label) {}
+    virtual ~CFGFunc() {}
+    
+    virtual string toString() {
+      std::stringstream sstream;
+      sstream << "func " << label << " @ 0x" << std::hex << vma;
+      return sstream.str();
+    }
+  };
 }
 
-#endif /* TRACEANALYSIS_HPP */
+#endif /* CFGNODE_HPP */
 

@@ -70,6 +70,13 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB   = @LIBELF_LIB@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
@@ -99,9 +106,19 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(HPCLIB_TraceAnalysis) \
+	$(MY_LIB_CFG) \
 	@XERCES_LDLIBS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
+
+MY_LIB_CFG = \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
+	-L$(LIBDWARF_LIB) -ldwarf  \
+	-L$(LIBELF_LIB) -lelf
+
+if USE_BOOST_LIBS
+MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
 
 if HOST_CPU_X86_FAMILY
 MY_LIB_XED = $(XED2_LIB_FLAGS)
