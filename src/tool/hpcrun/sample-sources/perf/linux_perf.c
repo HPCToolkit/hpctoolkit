@@ -327,7 +327,7 @@ perf_init()
   // copy /proc/kallsyms file into hpctoolkit output directory
   // only if the value of kptr_restric is zero
 
-  if (perf_util_get_kptr_restrict() == 0 && perf_util_get_paranoid_level()<2) {
+  if (perf_util_is_ksym_available()) {
     //copy the kernel symbol table
     int ret = copy_kallsyms();
     TMSG(LINUX_PERF, "copy_kallsyms result: %d", ret);

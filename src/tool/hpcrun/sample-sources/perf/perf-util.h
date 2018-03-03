@@ -171,9 +171,7 @@ perf_util_attr_init(
   u64  sampletype
 );
 
-int
-perf_util_get_kptr_restrict();
+bool
+perf_util_is_ksym_available();
 
-int
-perf_util_get_paranoid_level();
 #endif

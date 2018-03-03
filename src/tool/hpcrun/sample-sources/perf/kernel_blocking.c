@@ -55,8 +55,6 @@
  */
 #include <assert.h>
 #include <include/linux_info.h>
-// #include <linux/version.h> // not used anymore. the build will decide if the
-                           // kernel is recent enough or not
 
 #include "kernel_blocking.h"
 
