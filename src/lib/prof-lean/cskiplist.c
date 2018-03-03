@@ -318,6 +318,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
 
   csklnode_t* lpreds[max_height];
   csklnode_t* hsuccs[max_height];
+  csklnode_t** succs;
 
   // Acquire lock before writing:
   pfq_rwlock_node_t me;
@@ -326,29 +327,35 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   //----------------------------------------------------------------------------
   // Look for a node matching low
   //----------------------------------------------------------------------------
-  cskiplist_find_helper(cmpfn, max_height, cskl->left_sentinel, lo, lpreds, cskiplist_find_full);
+  int hlayer = cskiplist_find_helper(cmpfn, max_height, cskl->left_sentinel, lo, lpreds,
+				     cskiplist_find_full);
   csklnode_t *first = lpreds[0]->nexts[0];
+  if (lo == hi)
+    succs = lpreds;
+  else {
+    //----------------------------------------------------------------------------
+    // Look for a node matching high
+    //----------------------------------------------------------------------------
+    succs = &hsuccs[0];
+    hlayer = cskiplist_find_helper(cmpfn, max_height, lpreds[max_height-1],
+				   hi, succs, cskiplist_find_full);
 
-  //----------------------------------------------------------------------------
-  // Look for a node matching high
-  //----------------------------------------------------------------------------
-  int hlayer = cskiplist_find_helper(cmpfn, max_height, lpreds[max_height-1],
-				     hi, hsuccs, cskiplist_find_full);
-
-  //
-  //----------------------------------------------------------------------------
-  // Complete the deletion: Splice out node at all layers from 0..max_height-1
-  //----------------------------------------------------------------------------
-  int layer = max_height - 1;
-  while (layer > hlayer) {
-	// Splice out nodes at layer.
-	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer];
-	layer--;
+    //
+    //----------------------------------------------------------------------------
+    // Complete the deletion: Splice out node at all layers from 0..max_height-1
+    //----------------------------------------------------------------------------
+    int layer = max_height - 1;
+    while (layer > hlayer) {
+      // Splice out nodes at layer.
+      lpreds[layer]->nexts[layer] = succs[layer]->nexts[layer];
+      layer--;
+    }
   }
-  while (layer >= 0) {
+  
+  while (hlayer >= 0) {
 	// Splice out nodes at layer, including found node.
-	lpreds[layer]->nexts[layer] = hsuccs[layer]->nexts[layer]->nexts[layer];
-	layer--;
+	lpreds[hlayer]->nexts[hlayer] = succs[hlayer]->nexts[hlayer]->nexts[hlayer];
+	hlayer--;
   }
   csklnode_t *last = lpreds[0]->nexts[0];
 

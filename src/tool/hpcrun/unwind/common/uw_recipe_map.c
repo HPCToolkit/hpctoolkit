@@ -411,11 +411,10 @@ cskl_ilmstat_btuwi_free(void *anode)
 
 static bool
 uw_recipe_map_cmp_del_bulk_unsynch(
-	ilmstat_btuwi_pair_t* lo,
-	ilmstat_btuwi_pair_t* hi,
+	ilmstat_btuwi_pair_t* key,
 	unwinder_t uw)
 {
-  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], lo, hi, cskl_ilmstat_btuwi_free);
+  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], key, key, cskl_ilmstat_btuwi_free);
 }
 
 static void
@@ -434,7 +433,7 @@ uw_recipe_map_unpoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 
   uintptr_t s0 = ilmstat_btuwi->interval.start;
   uintptr_t e0 = ilmstat_btuwi->interval.end;
-  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, ilmstat_btuwi, uw);
+  uw_recipe_map_cmp_del_bulk_unsynch(ilmstat_btuwi, uw);
   uw_recipe_map_poison(s0, start, uw);
   uw_recipe_map_poison(end, e0, uw);
 }
@@ -450,7 +449,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
           (NEVER == atomic_load_explicit(&ileft->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the left
         start = ileft->interval.start;
-        uw_recipe_map_cmp_del_bulk_unsynch(ileft, ileft, uw);
+        uw_recipe_map_cmp_del_bulk_unsynch(ileft, uw);
       }
     }
   }
@@ -461,7 +460,7 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
           (NEVER == atomic_load_explicit(&iright->stat, memory_order_acquire))) {
         // poisoned interval adjacent on the right
         end = iright->interval.end;
-        uw_recipe_map_cmp_del_bulk_unsynch(iright, iright, uw);
+        uw_recipe_map_cmp_del_bulk_unsynch(iright, uw);
       }
     }
   }
