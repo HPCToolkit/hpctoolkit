@@ -45,36 +45,18 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.cpp
+ * File:   TraceAnalysisCommon.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 2, 2018, 11:59 AM
  */
 
-#include "TraceAnalysis.hpp"
-#include "cfg/CFGNode.hpp"
-#include "cfg/BinaryAnalyzer.hpp"
+#ifndef TRACEANALYSISCOMMON_HPP
+#define TRACEANALYSISCOMMON_HPP
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, int myRank, int numRanks) {
-    if (myRank == 0) {
-      BinaryAnalyzer ba;
-      bool flag = true;
-      
-      std::cout << std::endl << "Trace analysis turned on" << std::endl;
-      const Prof::LoadMap* loadmap = prof->loadmap();
-      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-           i <= loadmap->size(); ++i) {
-        Prof::LoadMap::LM* lm = loadmap->lm(i);
-        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          std::cout << "executable: " << lm->name() << std::endl;
-          if (flag) {
-            ba.parse(lm->name());
-            flag = false;
-          }
-        }
-      }
-    }
-    return true;
-  }
+  typedef unsigned long VMA; // Virtual Memory Address
 }
+
+#endif /* TRACEANALYSISCOMMON_HPP */
+

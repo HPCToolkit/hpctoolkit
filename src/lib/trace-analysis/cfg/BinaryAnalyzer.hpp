@@ -45,36 +45,39 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.cpp
+ * File:   BinaryAnalyzer.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 1, 2018, 11:40 PM
  */
 
-#include "TraceAnalysis.hpp"
-#include "cfg/CFGNode.hpp"
-#include "cfg/BinaryAnalyzer.hpp"
+#ifndef BINARYANALYZER_HPP
+#define BINARYANALYZER_HPP
+
+#include <string>
+using std::string;
+
+#include <lib/analysis/CallPath.hpp>
+
+#include "../TraceAnalysisCommon.hpp"
+#include "CFGNode.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, int myRank, int numRanks) {
-    if (myRank == 0) {
-      BinaryAnalyzer ba;
-      bool flag = true;
-      
-      std::cout << std::endl << "Trace analysis turned on" << std::endl;
-      const Prof::LoadMap* loadmap = prof->loadmap();
-      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-           i <= loadmap->size(); ++i) {
-        Prof::LoadMap::LM* lm = loadmap->lm(i);
-        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          std::cout << "executable: " << lm->name() << std::endl;
-          if (flag) {
-            ba.parse(lm->name());
-            flag = false;
-          }
-        }
-      }
-    }
-    return true;
-  }
+    
+  class BinaryAnalyzer {
+  public:
+    BinaryAnalyzer();
+    BinaryAnalyzer(const BinaryAnalyzer& orig);
+    virtual ~BinaryAnalyzer();
+
+    bool parse(const string& filename);
+
+  private:
+    unordered_map<VMA, CFGFunc*> CFGFuncMap;
+    unordered_map<VMA, CFGLoop*> CFGLoopMap;
+  };
+
 }
+
+#endif /* BINARYANALYZER_HPP */
+
