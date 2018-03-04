@@ -179,6 +179,7 @@ cupti_write_cubin
 )
 {
   int fd;
+  errno = 0;
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (errno == EEXIST) {
     close(fd);
@@ -381,7 +382,7 @@ cupti_subscriber_callback
 
       if (cb_info->callbackSite == CUPTI_API_ENTER) {
         uint64_t correlation_id;
-        cupti_correlation_callback_cuda(&correlation_id);
+        cupti_correlation_callback(&correlation_id);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
@@ -406,13 +407,13 @@ cupti_subscriber_callback
       #endif
       {
         if (cb_info->callbackSite == CUPTI_API_ENTER) {
-          uint64_t correlation_id;
-          cupti_correlation_callback_cuda(&correlation_id);
+          uint64_t correlation_id = 0;
+          cupti_correlation_callback(&correlation_id);
           PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
           HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
         }
         if (cb_info->callbackSite == CUPTI_API_EXIT) {
-          uint64_t correlation_id;
+          uint64_t correlation_id = 0;
           HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
           PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
         }
