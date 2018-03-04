@@ -23,6 +23,31 @@
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
+static void
+cupti_error_callback // __attribute__((unused))
+(
+ const char *type, 
+ const char *fn, 
+ const char *error_string
+)
+{
+  PRINT("%s: function %s failed with error %s\n", type, fn, error_string);
+  exit(-1);
+} 
+
+
+static void
+cupti_error_report
+(
+ CUptiResult error, 
+ const char *fn
+)
+{
+  const char *error_string;
+  cuptiGetResultString(error, &error_string);
+  cupti_error_callback("CUPTI result error", fn, error_string);
+} 
+
 //-------------------------------------------------------------
 // General functions
 //-------------------------------------------------------------

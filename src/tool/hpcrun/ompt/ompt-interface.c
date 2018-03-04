@@ -801,7 +801,7 @@ hpcrun_ompt_op_id_map_lookup(ompt_id_t host_op_id)
   cupti_host_op_map_entry_t *entry = cupti_host_op_map_lookup(host_op_id);
   cct_node_t *node = NULL;
   if (entry != NULL) {
-    cct_node_t *callpath = cupti_host_op_map_entry_target_get(entry);
+    cct_node_t *callpath = cupti_host_op_map_entry_target_node_get(entry);
     uint64_t host_op_seq_id = cupti_host_op_map_entry_seq_id_get(entry);
     node = ompt_target_map_seq_lookup(callpath, host_op_seq_id);
   }
@@ -974,6 +974,7 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
+  PRINT("target_id %d callback\n", target_id);
   ompt_stop_flag = true;
   ompt_device_map_entry_t *entry = ompt_device_map_lookup(device_num);
   ompt_device = ompt_device_map_entry_device_get(entry);

@@ -5,9 +5,13 @@
 #include <stdio.h>   // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
+#include <openssl/md5.h>
 
 #include <hpcrun/cct2metrics.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
 #include <lib/prof-lean/spinlock.h>
+
 #include "nvidia.h"
 #include "cubin-id-map.h"
 #include "cubin-md5-map.h"
@@ -40,6 +44,8 @@ static uint64_t cupti_correlation_id = 1;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
+static kind_info_t *cupti_host_op_kind;
+int cupti_host_op_metric_id = 0;
 
 //******************************************************************************
 // types
@@ -174,13 +180,12 @@ cupti_write_cubin
 {
   int fd;
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (errno == EEXIST) {
+    close(fd);
+    return true;
+  }
   if (fd >= 0) {
-    // success
-    // another process already wrote [vdso]
-    if (errno == EEXIST) {
-      close(fd);
-      return true;
-    }
+    // Success
     if (write(fd, cubin, cubin_size) != cubin_size) {
       close(fd);
       return false;   
@@ -196,8 +201,6 @@ cupti_write_cubin
 }
 
 
-#define FILE_NAME_LEN 256
-
 static void
 cupti_load_callback_cuda
 (
@@ -211,23 +214,30 @@ cupti_load_callback_cuda
   unsigned char *md5;
   if (entry == NULL) {
     cubin_md5_map_insert(module_id, cubin, cubin_size);
+    entry = cubin_md5_map_lookup(module_id);
   }
   md5 = cubin_md5_map_entry_md5_get(entry);
+
+  // Create file name
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  mkdir("cubins", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  used += sprintf(&file_name[used], "cubins/");
+  for (i = 0; i < MD5_DIGEST_LENGTH; ++i) {
+    used += sprintf(&file_name[used], "%02x", md5[i]);
+  }
+  used += sprintf(&file_name[used], ".cubin");
 
   // Write a file if does not exist
   bool file_flag;
   spinlock_lock(&files_lock);
-  if (file_flag == false) {
-    char file_name[PATH_MAX];
-    mkdir("cubins", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH); 
-    sprintf(file_name, "cubins/%s", md5);
-    file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
-  }
+  file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
   spinlock_unlock(&files_lock);
 
   if (file_flag) {
     char device_file[PATH_MAX]; 
-    sprintf(device_file, "%s@0x%lx", md5, (unsigned long)NULL);
+    sprintf(device_file, "%s@0x%lx", file_name, (unsigned long)NULL);
     uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
@@ -258,9 +268,6 @@ cupti_correlation_callback_cuda
 {
   // TODO(keren): include atomic.h
   *id = __sync_fetch_and_add(&cupti_correlation_id, 1);
-  kind_info_t *cupti_host_op_kind = hpcrun_metrics_new_kind();
-  int cupti_host_op_metric_id = hpcrun_set_new_metric_info(cupti_host_op_kind, "CUPTI_HOST_OP_KIND"); 
-  hpcrun_close_kind(cupti_host_op_kind);
   
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   ucontext_t uc;
@@ -285,8 +292,6 @@ cupti_subscriber_callback
  const CUpti_CallbackData *cb_info
 )
 {
-  PRINT("enter cupti_subscriber_callback\n");
-
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -417,8 +422,6 @@ cupti_subscriber_callback
         break;
     }
   }
-
-  PRINT("exit cupti_subscriber_callback\n");
 }
 
 //******************************************************************************
@@ -630,8 +633,10 @@ cupti_correlation_enable
 (
 )
 {
+  PRINT("enter cupti_correlation_enable\n");
   cupti_correlation_enabled = true;
   HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
+  PRINT("exit cupti_correlation_enable\n");
 }
 
 
@@ -800,7 +805,7 @@ cupti_memcpy_process
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(external_id);
+    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
     }
@@ -824,7 +829,7 @@ cupti_memcpy2_process
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(external_id);
+    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY2, (void *)activity, node);
     }
@@ -884,7 +889,7 @@ cupti_kernel_process
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
     cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(external_id);
+    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_KERNEL, (void *)activity, node);
     }
@@ -961,4 +966,18 @@ cupti_activity_process
     cupti_unknown_process(activity);
     break;
   }
+}
+
+//******************************************************************************
+// metrics init
+//******************************************************************************
+
+extern void
+cupti_metrics_init
+(
+)
+{
+  cupti_host_op_kind = hpcrun_metrics_new_kind();
+  cupti_host_op_metric_id = hpcrun_set_new_metric_info(cupti_host_op_kind, "CUPTI_HOST_OP_KIND"); 
+  hpcrun_close_kind(cupti_host_op_kind);
 }

@@ -133,6 +133,7 @@ cubin_md5_map_insert(uint64_t cubin_id, const void *cubin, size_t size)
     }
   } else {
       cubin_md5_map_entry_t *entry = cubin_md5_map_entry_new(cubin_id, cubin, size);
+      entry->left = entry->right = NULL;
       cubin_md5_map_root = entry;
   }
 

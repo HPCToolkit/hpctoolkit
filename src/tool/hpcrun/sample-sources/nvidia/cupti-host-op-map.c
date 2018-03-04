@@ -187,7 +187,7 @@ cupti_host_op_map_refcnt_update(uint64_t host_op_id, int val)
 
 
 cct_node_t *
-cupti_host_op_map_entry_target_get(cupti_host_op_map_entry_t *entry)
+cupti_host_op_map_entry_target_node_get(cupti_host_op_map_entry_t *entry)
 {
   return entry->target_node;
 }
@@ -204,6 +204,12 @@ cupti_activity_queue_entry_t **
 cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry)
 {
   return entry->cupti_activity_queue;
+}
+
+cct_node_t *
+cupti_host_op_map_entry_host_op_node_get(cupti_host_op_map_entry_t *entry)
+{
+  return entry->host_op_node;
 }
 
 

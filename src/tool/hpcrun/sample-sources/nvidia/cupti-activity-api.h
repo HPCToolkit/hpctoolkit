@@ -154,4 +154,10 @@ cupti_pc_sampling_config
 );
 
 
+extern void
+cupti_metrics_init
+(
+);
+
+
 #endif

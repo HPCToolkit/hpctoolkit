@@ -262,6 +262,69 @@ int ke_time_metric_id;
 
 static int pc_sampling_frequency = 1;
 
+//******************************************************************************
+// constants
+//******************************************************************************
+
+CUpti_ActivityKind
+external_correlation_activities[] = { 
+  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION, 
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+data_motion_explicit_activities[] = { 
+  CUPTI_ACTIVITY_KIND_MEMCPY2,
+  CUPTI_ACTIVITY_KIND_MEMCPY, 
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+data_motion_implicit_activities[] = { 
+  CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER,
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+kernel_invocation_activities[] = { 
+  CUPTI_ACTIVITY_KIND_KERNEL,
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+kernel_execution_activities[] = {
+  CUPTI_ACTIVITY_KIND_CONTEXT,
+  CUPTI_ACTIVITY_KIND_FUNCTION,
+  CUPTI_ACTIVITY_KIND_PC_SAMPLING,
+  CUPTI_ACTIVITY_KIND_INVALID
+};                                   
+
+CUpti_ActivityKind
+overhead_activities[] = {
+  CUPTI_ACTIVITY_KIND_OVERHEAD,
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+driver_activities[] = {
+  CUPTI_ACTIVITY_KIND_DEVICE,
+  CUPTI_ACTIVITY_KIND_DRIVER,
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
+
+CUpti_ActivityKind
+runtime_activities[] = {
+  CUPTI_ACTIVITY_KIND_DEVICE,
+  CUPTI_ACTIVITY_KIND_RUNTIME,
+  CUPTI_ACTIVITY_KIND_INVALID
+};
+
 void
 cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
 {
@@ -462,21 +525,23 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
     // Specify desired monitoring
-    cupti_set_monitoring(kernel_invocation_activities);
+    cupti_monitoring_set(kernel_invocation_activities, true);
+                        
+    cupti_monitoring_set(kernel_execution_activities, true);
+                        
+    cupti_monitoring_set(driver_activities, true);
+                        
+    cupti_monitoring_set(data_motion_explicit_activities, true);
+                        
+    cupti_monitoring_set(runtime_activities, true);
 
-    cupti_set_monitoring(kernel_execution_activities);
-
-    cupti_set_monitoring(driver_activities);
-
-    cupti_set_monitoring(data_motion_explicit_activities);
-
-    cupti_set_monitoring(runtime_activities);
+    cupti_metrics_init();
 
     cupti_trace_init();
 
     // Cannot set pc sampling frequency without knowing context
     // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
-    cupti_subscribe_callbacks();
+    cupti_callbacks_subscribe();
 
     cupti_correlation_enable();
   }
