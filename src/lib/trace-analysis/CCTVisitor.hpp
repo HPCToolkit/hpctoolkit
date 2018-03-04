@@ -45,14 +45,14 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   BinaryAnalyzer.hpp
+ * File:   CCTVisitor.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 1, 2018, 11:40 PM
+ * Created on March 3, 2018, 10:58 PM
  */
 
-#ifndef BINARYANALYZER_HPP
-#define BINARYANALYZER_HPP
+#ifndef CCTVISITOR_HPP
+#define CCTVISITOR_HPP
 
 #include <string>
 using std::string;
@@ -62,25 +62,24 @@ using std::unordered_map;
 
 #include <lib/analysis/CallPath.hpp>
 
-#include "../TraceAnalysisCommon.hpp"
-#include "CFGNode.hpp"
-
 namespace TraceAnalysis {
-    
-  class BinaryAnalyzer {
+  
+  class CCTVisitor {
   public:
-    BinaryAnalyzer();
-    BinaryAnalyzer(const BinaryAnalyzer& orig);
-    virtual ~BinaryAnalyzer();
+    CCTVisitor(Prof::CCT::Tree* cct) : cct(cct), visited(false) {}
+    CCTVisitor(const CCTVisitor& orig) {}
+    virtual ~CCTVisitor() {}
 
-    bool parse(const string& filename);
-
+    const unordered_map<uint, Prof::CCT::ADynNode*>& getCpidMap();
   private:
-    unordered_map<VMA, CFGFunc*> CFGFuncMap;
-    unordered_map<VMA, CFGLoop*> CFGLoopMap;
+    Prof::CCT::Tree* cct;
+    bool visited;
+    unordered_map<uint, Prof::CCT::ADynNode*> cpidMap;
+    
+    void visit(Prof::CCT::ANode* node);
   };
-
+  
 }
 
-#endif /* BINARYANALYZER_HPP */
+#endif /* CCTVISITOR_HPP */
 

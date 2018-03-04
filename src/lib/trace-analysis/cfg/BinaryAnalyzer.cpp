@@ -322,11 +322,11 @@ namespace TraceAnalysis {
 
   BinaryAnalyzer::~BinaryAnalyzer() {
     for (auto it = CFGFuncMap.begin(); it != CFGFuncMap.end(); ++it) {
-      std::cout << it->second->toDetailedString();
+      //std::cout << it->second->toDetailedString();
       delete it->second;
     }
     for (auto it = CFGLoopMap.begin(); it != CFGLoopMap.end(); ++it) {
-      std::cout << it->second->toDetailedString();
+      //std::cout << it->second->toDetailedString();
       delete it->second;
     }
   }
