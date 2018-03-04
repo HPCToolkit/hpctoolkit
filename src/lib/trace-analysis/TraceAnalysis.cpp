@@ -54,6 +54,7 @@
 #include "TraceAnalysis.hpp"
 #include "cfg/CFGNode.hpp"
 #include "cfg/BinaryAnalyzer.hpp"
+#include "CCTVisitor.hpp"
 
 namespace TraceAnalysis {
   bool analysis(Prof::CallPath::Profile* prof, int myRank, int numRanks) {
@@ -62,6 +63,8 @@ namespace TraceAnalysis {
       bool flag = true;
       
       std::cout << std::endl << "Trace analysis turned on" << std::endl;
+      
+      // Step 1: analyze binary files to get CFGs for later analysis
       const Prof::LoadMap* loadmap = prof->loadmap();
       for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
            i <= loadmap->size(); ++i) {
@@ -74,6 +77,13 @@ namespace TraceAnalysis {
           }
         }
       }
+      
+      // Step 2: visit CCT to build an cpid to CCTNode map.
+      CCTVisitor cctVisitor(prof->cct());
+      const unordered_map<uint, Prof::CCT::ADynNode*>& cpidMap = cctVisitor.getCpidMap();
+      for (auto mit = cpidMap.begin(); mit != cpidMap.end(); ++mit)
+        std::cout << "0x" << std::hex << mit->first << ", ";
+      std::cout << std::endl;
     }
     return true;
   }

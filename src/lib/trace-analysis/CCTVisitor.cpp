@@ -45,42 +45,42 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   BinaryAnalyzer.hpp
+ * File:   CCTVisitor.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
- *
- * Created on March 1, 2018, 11:40 PM
+ * 
+ * Created on March 3, 2018, 10:58 PM
  */
 
-#ifndef BINARYANALYZER_HPP
-#define BINARYANALYZER_HPP
-
-#include <string>
-using std::string;
-
-#include <unordered_map>
-using std::unordered_map;
-
-#include <lib/analysis/CallPath.hpp>
-
-#include "../TraceAnalysisCommon.hpp"
-#include "CFGNode.hpp"
+#include "CCTVisitor.hpp"
 
 namespace TraceAnalysis {
+
+  void CCTVisitor::visit(Prof::CCT::ANode* node) {
+    if (node == NULL)
+      return;
     
-  class BinaryAnalyzer {
-  public:
-    BinaryAnalyzer();
-    BinaryAnalyzer(const BinaryAnalyzer& orig);
-    virtual ~BinaryAnalyzer();
+    if (node->firstChild() == NULL) {
+      // Reached leaf node, add node cpid to map if it is ADynNode.
+      Prof::CCT::ADynNode* dynNode = dynamic_cast<Prof::CCT::ADynNode*>(node);
+      if (dynNode != NULL)
+        cpidMap[dynNode->cpId()] = dynNode;
+    } else
+      visit(node->firstChild());
+    
+    if (node->nextSibling() != NULL)
+      visit(node->nextSibling());
+  }
+  
+  const unordered_map<uint, Prof::CCT::ADynNode*>& CCTVisitor::getCpidMap() {
+    if (visited) return cpidMap;
+ 
+    if (cct == NULL || cct->root() == NULL) {
+      return cpidMap;
+    }
+    
+    visit(cct->root()->firstChild());
+    visited = true;
 
-    bool parse(const string& filename);
-
-  private:
-    unordered_map<VMA, CFGFunc*> CFGFuncMap;
-    unordered_map<VMA, CFGLoop*> CFGLoopMap;
-  };
-
+    return cpidMap;
+  }
 }
-
-#endif /* BINARYANALYZER_HPP */
-

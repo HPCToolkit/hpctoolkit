@@ -74,7 +74,8 @@ MYSOURCES = \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp \
 	cfg/CFGNode.hpp \
-	cfg/BinaryAnalyzer.hpp cfg/BinaryAnalyzer.cpp
+	cfg/BinaryAnalyzer.hpp cfg/BinaryAnalyzer.cpp \
+	CCTVisitor.hpp CCTVisitor.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 BOOST_INC = @BOOST_INC@
