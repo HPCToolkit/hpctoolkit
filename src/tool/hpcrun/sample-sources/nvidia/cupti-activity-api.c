@@ -11,6 +11,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include "nvidia.h"
 #include "cubin-id-map.h"
@@ -40,7 +41,7 @@
 
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
-static uint64_t cupti_correlation_id = 1;
+static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -268,7 +269,7 @@ cupti_correlation_callback_cuda
 )
 {
   // TODO(keren): include atomic.h
-  *id = __sync_fetch_and_add(&cupti_correlation_id, 1);
+  *id = atomic_fetch_add_explicit(&cupti_correlation_id, 1, memory_order_acquire);
   
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   ucontext_t uc;
