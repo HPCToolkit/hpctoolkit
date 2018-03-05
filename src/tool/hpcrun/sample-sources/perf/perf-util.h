@@ -178,4 +178,7 @@ perf_util_get_kptr_restrict();
 
 int
 perf_util_get_paranoid_level();
+
+int
+perf_util_get_max_sample_rate();
 #endif

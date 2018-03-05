@@ -127,14 +127,14 @@
 
 #define LINUX_PERF_DEBUG 0
 
-// default the number of samples per second
-// linux perf tool has default of 4000. It looks very high but
-// visually the overhead is still small for them.
-// however, for some machines, the overhead is significant, and
-//  somehow it causes the kernel to adjust the period threshold to
-//  less than 100.
-// 300 samples per sec looks has relatively similar percentage
-// with perf tool
+// default number of samples per second per thread
+//
+// linux perf has a default of 4000. this seems high, but the overhead for perf
+// is still small.  however, for some processors (e.g., KNL), overhead 
+// at such a high sampling rate is significant and as a result, the kernel
+// will adjust the threshold to less than 100.
+//
+// 300 samples per sec with hpctoolkit has a similar overhead as perf
 #define DEFAULT_THRESHOLD  300
 
 #ifndef sigev_notify_thread_id
@@ -169,7 +169,7 @@
 
 enum threshold_e { PERIOD, FREQUENCY };
 struct event_threshold_s {
-  long             threshold_num;
+  long             threshold_val;
   enum threshold_e threshold_type;
 };
 
@@ -369,8 +369,13 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
-    EMSG("Linux perf event open %d (%d) failed: %s",
-          event->id, event->attr.config, strerror(errno));
+    EMSG("Linux perf event open failed"
+         " id: %d, fd: %d, skid: %d,"
+         " config: %d, type: %d, sample_freq: %d,"
+         " freq: %d, error: %s",
+         event->id, et->fd, event->attr.precise_ip, 
+         event->attr.config, event->attr.type, event->attr.sample_freq, 
+         event->attr.freq, strerror(errno));
     return false;
   }
 
@@ -512,23 +517,31 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   return sv;
 }
 
-
 /***
- * get the default event count threshold by looking from the environment variable
- * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
+ * (1) ensure that the default rate for frequency-based sampling is below the maximum.
+ * (2) if the environment variable HPCRUN_PERF_COUNT is set, use it to set the threshold
  */
-static struct event_threshold_s
-init_default_count()
+static void
+set_default_threshold()
 {
-  const char *str_val= getenv("HPCRUN_PERF_COUNT");
-  if (str_val == NULL) {
-    return default_threshold;
-  }
-  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
-  if (res == 1)
-    default_threshold.threshold_type = PERIOD;
+  static int initialized = 0;
 
-  return default_threshold;
+  if (!initialized) {
+    int max_rate_m1 = perf_util_get_max_sample_rate() - 1;
+    if (default_threshold.threshold_val > max_rate_m1) {
+      default_threshold.threshold_val = max_rate_m1;
+    }
+    const char *val_str = getenv("HPCRUN_PERF_COUNT");
+    if (val_str != NULL) {
+      TMSG(LINUX_PERF, "HPCRUN_PERF_COUNT = %s", val_str);
+      int res = hpcrun_extract_threshold(val_str, &default_threshold.threshold_val, max_rate_m1);
+      if (res == 1) {
+        default_threshold.threshold_type = PERIOD;
+      }
+    }
+    initialized = 1;
+  }
+  TMSG(LINUX_PERF, "default threshold = %d", default_threshold.threshold_val);
 }
 
 /******************************************************************************
@@ -704,7 +717,7 @@ METHOD_FN(supports_event, const char *ev_str)
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
   char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) ;
+  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
 
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL)
@@ -750,7 +763,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   int i=0;
 
-  default_threshold = init_default_count();
+  set_default_threshold();
 
   // ----------------------------------------------------------------------
   // for each perf's event, create the metric descriptor which will be used later
@@ -763,7 +776,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
     int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
-        default_threshold.threshold_num);
+        default_threshold.threshold_val);
 
     // ------------------------------------------------------------
     // need a special case if we have our own customized  predefined  event
