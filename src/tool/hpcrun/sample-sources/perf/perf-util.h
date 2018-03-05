@@ -136,8 +136,6 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
-  metric_aux_info_t info_data;
-
 } event_info_t;
 
 
@@ -173,8 +171,8 @@ perf_util_attr_init(
   u64  sampletype
 );
 
-int
-perf_util_get_kptr_restrict();
+bool
+perf_util_is_ksym_available();
 
 int
 perf_util_get_paranoid_level();
