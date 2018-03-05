@@ -327,15 +327,19 @@ perf_util_get_paranoid_level()
 // returns the maximum sample rate of this node
 // based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
 //----------------------------------------------------------
-static int
-perf_max_sample_rate()
+int
+perf_util_get_max_sample_rate()
 {
-  FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
-  int max_sample_rate  = -1;
+  static int initialized = 0;
+  static int max_sample_rate  = 300; // unless otherwise limited
+  if (!initialized) {
+    FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
 
-  if (perf_rate_file != NULL) {
-    fscanf(perf_rate_file, "%d", &max_sample_rate);
-    fclose(perf_rate_file);
+    if (perf_rate_file != NULL) {
+      fscanf(perf_rate_file, "%d", &max_sample_rate);
+      fclose(perf_rate_file);
+    }
+    initialized = 1;
   }
   return max_sample_rate;
 }
@@ -447,12 +451,13 @@ perf_util_attr_init(
   attr->freq   = (usePeriod ? 0 : 1);
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
-  int max_sample_rate = perf_max_sample_rate();
+  int max_sample_rate = perf_util_get_max_sample_rate();
 
-  if (attr->freq == 1 && threshold > max_sample_rate) {
-    EMSG("WARNING: the rate %d is higher than the supported sample rate %d. Adjusted to the max rate.",
-          threshold, max_sample_rate);
-    attr->sample_period = max_sample_rate-1;
+  if (attr->freq == 1 && threshold >= max_sample_rate) {
+    int our_rate = max_sample_rate - 1;
+    EMSG("WARNING: Lowered specified sample rate %d to %d, below max sample rate of %d.",
+          threshold, our_rate, max_sample_rate);
+    attr->sample_period = our_rate;
   }
 
   attr->disabled      = 1;                 /* the counter will be enabled later  */

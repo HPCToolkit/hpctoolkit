@@ -174,4 +174,9 @@ perf_util_attr_init(
 bool
 perf_util_is_ksym_available();
 
+int
+perf_util_get_paranoid_level();
+
+int
+perf_util_get_max_sample_rate();
 #endif
