@@ -56,6 +56,7 @@
 
 namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
+  typedef long Time; // Virtual Memory Address
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

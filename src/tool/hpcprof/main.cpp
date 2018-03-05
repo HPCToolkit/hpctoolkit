@@ -239,7 +239,7 @@ realmain(int argc, char* const* argv)
   // 4. Trace Analysis
   // ------------------------------------------------------------
   if (args.traceAnalysis) {
-    TraceAnalysis::analysis(prof, 0, 1);
+    TraceAnalysis::analysis(prof, args.profileFiles, 0, 1);
   }
 
   // -------------------------------------------------------
