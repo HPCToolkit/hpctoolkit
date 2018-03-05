@@ -45,25 +45,76 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.hpp
+ * File:   TCT-Node.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 4, 2018, 11:22 PM
  */
 
-#ifndef TRACEANALYSIS_HPP
-#define TRACEANALYSIS_HPP
+#ifndef TCT_NODE_HPP
+#define TCT_NODE_HPP
 
 #include <string>
-#include <vector>
 using std::string;
+
+#include <vector>
 using std::vector;
 
-#include <lib/analysis/CallPath.hpp>
+#include "../TraceAnalysisCommon.hpp"
+#include "TCT-Time.hpp"
+#include "../cfg/CFGNode.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, vector<string> profDirs, int myRank, int numRanks);
+  
+  // Temporal Context Tree Abstract Node
+  class TCTANode {
+  public:
+    TCTANode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA vma) :
+        id(id), name(name), depth(depth), time(NULL), 
+        cfgGraph(cfgGraph), vma(vma), weight(1) {}
+    TCTANode(const TCTANode& orig) : id(orig.id), name(orig.name), depth(orig.depth),
+        cfgGraph(orig.cfgGraph), vma(orig.vma), weight(orig.weight) {
+      if (orig.time == NULL) time = NULL;
+      else time = orig.time->duplicate();
+    }
+    virtual ~TCTANode() {
+      if (time != NULL) delete time;
+    }
+    virtual TCTANode* duplicate() = 0;
+    
+  protected:
+    const int id;
+    const string name;
+    int depth;
+    
+    TCTATime* time;
+    
+    const CFGAGraph* cfgGraph; // The CFGAGraph node that contains the control flow graph for this node.
+    const VMA vma; // RA for call sites or VMA for loops.
+    
+    int weight;
+  };
+  
+  class TCTATraceNode : public TCTANode {
+  public:
+    TCTATraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA vma) :
+      TCTANode(id, name, depth, cfgGraph, vma) {
+      time = new TCTTraceTime();
+    }
+    TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
+      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
+        children.insert((*it)->duplicate());
+    }
+    ~TCTATraceNode() {
+      for (auto it = children.begin(); it != children.end(); it++)
+        delete (*it);
+    }
+    
+  protected:
+    vector<TCTANode*> children;
+  };
+  
 }
 
-#endif /* TRACEANALYSIS_HPP */
+#endif /* TCT_NODE_HPP */
 

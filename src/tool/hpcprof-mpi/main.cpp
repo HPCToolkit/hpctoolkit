@@ -384,7 +384,7 @@ realmain(int argc, char* const* argv)
   // 4. Trace Analysis
   // ------------------------------------------------------------
   if (args.traceAnalysis) {
-    TraceAnalysis::analysis(profGbl, myRank, numRanks);
+    TraceAnalysis::analysis(profGbl, args.profileFiles, myRank, numRanks);
   }
   
   // -------------------------------------------------------
