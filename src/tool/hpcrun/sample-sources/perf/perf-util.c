@@ -139,6 +139,26 @@ perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
   return hpcrun_cct_insert_addr(parent, &frm);
 }
 
+
+/***
+ * retrieve the value of kptr_restrict
+ */
+static int
+perf_util_get_kptr_restrict()
+{
+  static int privilege = -1;
+
+  if (privilege >= 0)
+    return privilege;
+
+  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &privilege);
+    fclose(fp);
+  }
+  return privilege;
+}
+
 static uint16_t 
 perf_get_kernel_lm_id() 
 {
@@ -322,24 +342,14 @@ perf_max_sample_rate()
 
 
 //----------------------------------------------------------
-// Interface to see if the kernel symbol is available
-// this function caches the value so that we don't need
-//   enquiry the same question all the time.
-//----------------------------------------------------------
-static bool
-is_perf_ksym_available()
-{
-  return (ksym_status == PERF_AVAILABLE);
-}
-
-//----------------------------------------------------------
 // testing perf availability
 //----------------------------------------------------------
 static int
-perf_kernel_syms_avail()
+perf_util_kernel_syms_avail()
 {
   FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
   FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+
   int level         = 3; // default : no access to perf event
 
   if (ksyms != NULL && pe_paranoid != NULL) {
@@ -352,38 +362,59 @@ perf_kernel_syms_avail()
 }
 
 
+
 /*************************************************************
  * Interface API
  **************************************************************/ 
 
+//----------------------------------------------------------
+// initialize perf_util. Need to be called as earliest as possible
+//----------------------------------------------------------
 void
 perf_util_init()
 {
-  // if kernel symbols are available, we will attempt to collect kernel
-  // callchains and add them to our call paths
-  // if kernel symbols are available, we will attempt to collect kernel
-  // callchains and add them to our call paths
-
-  int level = perf_kernel_syms_avail();
-
   // perf_kernel_lm_id must be set for each process. here, we clear it 
   // because it is too early to allocate a load module. it will be set 
   // later, exactly once per process if ksym_status == PERF_AVAILABLE.
   perf_kernel_lm_id = 0; 
 
-  if (level == 0 || level == 1) {
+  // if kernel symbols are available, we will attempt to collect kernel
+  // callchains and add them to our call paths
+
+  ksym_status = PERF_UNAVAILABLE;
+
+  // Conditions for the sample to include kernel if:
+  // 1. kptr_restric   = 0    (zero)
+  // 2. paranoid_level < 2    (zero or one)
+  // 3. linux version  > 3.7
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+  int level     = perf_util_kernel_syms_avail();
+  int krestrict = perf_util_get_kptr_restrict();
+
+  if (krestrict == 0 && (level == 0 || level == 1)) {
     hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
     ksym_status = PERF_AVAILABLE;
-  } else {
-    ksym_status = PERF_UNAVAILABLE;
   }
+#endif
 }
 
 
-/*************************************************************
- * Interface API
- **************************************************************/ 
+//----------------------------------------------------------
+// Interface to see if the kernel symbol is available
+// this function caches the value so that we don't need
+//   enquiry the same question all the time.
+//----------------------------------------------------------
+bool
+perf_util_is_ksym_available()
+{
+  return (ksym_status == PERF_AVAILABLE);
+}
 
+
+//----------------------------------------------------------
+// create a new event
+//----------------------------------------------------------
 long
 perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
          int cpu, int group_fd, unsigned long flags)
@@ -393,8 +424,6 @@ perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
    ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
    return ret;
 }
-
-
 
 //----------------------------------------------------------
 // generic default initialization for event attributes
@@ -437,15 +466,13 @@ perf_util_attr_init(
   attr->exclude_kernel = 1;
   attr->exclude_hv     = 1;
 
-  if (is_perf_ksym_available()) {
+  if (perf_util_is_ksym_available()) {
     /* We have rights to record and interpret kernel callchains */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
 #endif
-    attr->exclude_kernel  = 0;
-    attr->exclude_hv      = 0;
-    attr->exclude_idle    = 0;
+    attr->exclude_kernel           = 0;
   }
 
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
@@ -453,22 +480,3 @@ perf_util_attr_init(
   return true;
 }
 
-
-/***
- * retrieve the value of kptr_restrict
- */
-int
-perf_util_get_kptr_restrict()
-{
-  static int privilege = -1;
-
-  if (privilege >= 0)
-    return privilege;
-
-  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
-  if (fp != NULL) {
-    fscanf(fp, "%d", &privilege);
-    fclose(fp);
-  }
-  return privilege;
-}

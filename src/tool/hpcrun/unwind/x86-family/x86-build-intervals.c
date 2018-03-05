@@ -178,7 +178,7 @@ x86_build_intervals(void *ins, unsigned int len, int noisy)
   UWI_END_ADDR(iarg.current) = (uintptr_t)end;
 
   status.first_undecoded_ins = iarg.ins;
-  status.errcode = error_count;
+  status.error   = error_count;
   status.first   = iarg.first;
 
   x86_fix_unwind_intervals(iarg.beg, len, &status);
