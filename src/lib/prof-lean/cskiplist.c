@@ -426,9 +426,10 @@ cskl_new(
 
   // create sentinel nodes
   csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
-  csklnode_t *right = cskl->right_sentinel = csklnode_malloc(rsentinel, max_height, max_height, m_alloc);
+  csklnode_t *right = cskl->right_sentinel = csklnode_malloc(rsentinel, 0, 0, m_alloc);
   // hook sentinel nodes in empty list
-  for(int i = 0; i < max_height; left->nexts[i++] = right);
+  for(int i = 0; i < max_height; i++)
+    left->nexts[i] = right;
 
   return cskl;
 }
