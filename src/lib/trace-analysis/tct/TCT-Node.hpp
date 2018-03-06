@@ -62,25 +62,33 @@ using std::vector;
 
 #include "../TraceAnalysisCommon.hpp"
 #include "TCT-Time.hpp"
-#include "../cfg/CFGNode.hpp"
 
 namespace TraceAnalysis {
   
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
-    TCTANode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA vma) :
+    TCTANode(int id, string name, int depth, VMA vma, VMA ra) :
         id(id), name(name), depth(depth), time(NULL), 
-        cfgGraph(cfgGraph), vma(vma), weight(1) {}
+        vma(vma), ra(ra), weight(1) {}
     TCTANode(const TCTANode& orig) : id(orig.id), name(orig.name), depth(orig.depth),
-        cfgGraph(orig.cfgGraph), vma(orig.vma), weight(orig.weight) {
+        vma(orig.vma), ra(orig.ra), weight(orig.weight) {
       if (orig.time == NULL) time = NULL;
       else time = orig.time->duplicate();
     }
     virtual ~TCTANode() {
       if (time != NULL) delete time;
     }
+    // returns a pointer to a duplicate of this object. 
+    // Caller responsible for deallocating the duplicate.
     virtual TCTANode* duplicate() = 0;
+    
+    // returns a pointer to a void duplicate of this object. 
+    // Caller responsible for deallocating the void duplicate.
+    virtual TCTANode* voidDuplicate() = 0;
+    
+    // Print contents of an object to a string for debugging purpose.
+    virtual string toString(int maxDepth, Time minDuration) = 0;
     
   protected:
     const int id;
@@ -89,29 +97,65 @@ namespace TraceAnalysis {
     
     TCTATime* time;
     
-    const CFGAGraph* cfgGraph; // The CFGAGraph node that contains the control flow graph for this node.
-    const VMA vma; // RA for call sites or VMA for loops.
+    // VMA for functions or loops
+    const VMA vma; 
+    // RA for call sites or VMA for loops.
+    const VMA ra; 
     
     int weight;
   };
   
   class TCTATraceNode : public TCTANode {
   public:
-    TCTATraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA vma) :
-      TCTANode(id, name, depth, cfgGraph, vma) {
+    TCTATraceNode(int id, string name, int depth, VMA vma, VMA ra) :
+      TCTANode(id, name, depth, vma, ra) {
       time = new TCTTraceTime();
     }
     TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
       for (auto it = orig.children.begin(); it != orig.children.end(); it++)
-        children.insert((*it)->duplicate());
+        children.push_back((*it)->duplicate());
     }
-    ~TCTATraceNode() {
+    virtual ~TCTATraceNode() {
       for (auto it = children.begin(); it != children.end(); it++)
         delete (*it);
     }
     
+    virtual string toString(int maxDepth, Time minDuration);
+    
   protected:
     vector<TCTANode*> children;
+  };
+  
+  class TCTFunctionTraceNode : public TCTATraceNode {
+  public:
+    TCTFunctionTraceNode(int id, string name, int depth, VMA vma, VMA ra) :
+      TCTATraceNode(id, name, depth, vma, ra) {}
+    TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
+    virtual ~TCTFunctionTraceNode() {}
+    
+    virtual TCTANode* duplicate() {
+      return new TCTFunctionTraceNode(*this);
+    }
+    virtual TCTANode* voidDuplicate() {
+      return new TCTFunctionTraceNode(id, name, depth, vma, ra);
+    }
+  };
+  
+  class TCTIterationTraceNode: public TCTATraceNode {
+  public:
+    TCTIterationTraceNode(int id, int iterNum, int depth, VMA vma) :
+      TCTATraceNode(id, "ITER_#" + std::to_string(iterNum), depth, vma, vma) {}
+    TCTIterationTraceNode(int id, string name, int depth, VMA vma) :
+      TCTATraceNode(id, name, depth, vma, vma) {}
+    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
+    virtual ~TCTIterationTraceNode() {}
+    
+    virtual TCTANode* duplicate() {
+      return new TCTIterationTraceNode(*this);
+    }
+    virtual TCTANode* voidDuplicate() {
+      return new TCTIterationTraceNode(id, name, depth, vma);
+    }
   };
   
 }

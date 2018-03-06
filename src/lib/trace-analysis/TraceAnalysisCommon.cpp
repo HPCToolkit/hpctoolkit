@@ -45,25 +45,30 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.hpp
+ * File:   TraceAnalysisCommon.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 5, 2018, 2:00 PM
  */
 
-#ifndef TRACEANALYSIS_HPP
-#define TRACEANALYSIS_HPP
-
-#include <string>
-#include <vector>
-using std::string;
-using std::vector;
-
-#include <lib/analysis/CallPath.hpp>
+#include "TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+  string vmaToHexString(VMA vma) {
+    static const char* digits = "0123456789abcdef";
+    
+    size_t hex_len = 6;
+    for (; hex_len < sizeof(VMA)*2; hex_len++)
+      if ((vma >> (hex_len*4)) == 0) break;
+    
+    std::string rc(hex_len,'0');
+    for (size_t i=0, j=(hex_len-1)*4 ; i<hex_len; ++i,j-=4)
+        rc[i] = digits[(vma>>j) & 0x0f];
+    return rc;
+  }
+  
+  string timeToString(Time time) {
+    double t = (double)time / 1000000.0;
+    return std::to_string(t) + "s";
+  }
 }
-
-#endif /* TRACEANALYSIS_HPP */
-

@@ -231,10 +231,7 @@ namespace TraceAnalysis {
         loop->getLoopEntries(entryBlocks);
         VMA loopAddr = (*(entryBlocks.begin()))->start();
         
-        std::stringstream sstream;
-        sstream << "loop_0x" << std::hex << loopAddr;
-        
-        CFGLoop* cfgLoop = new CFGLoop(loopAddr, sstream.str());
+        CFGLoop* cfgLoop = new CFGLoop(loopAddr);
 
         vector<Block*> blist;
         loop->getLoopBasicBlocks(blist);

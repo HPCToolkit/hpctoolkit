@@ -54,9 +54,15 @@
 #ifndef TRACEANALYSISCOMMON_HPP
 #define TRACEANALYSISCOMMON_HPP
 
+#include <string>
+using std::string;
+
 namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
   typedef long Time; // Virtual Memory Address
+  
+  string vmaToHexString(VMA vma);
+  string timeToString(Time time);
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

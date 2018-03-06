@@ -71,7 +71,6 @@ namespace TraceAnalysis {
     const VMA vma;
     
     CFGANode(VMA vma) : vma(vma) {}
-    //CFGNode(const CFGNode& orig);
     virtual ~CFGANode() {}
     
     virtual std::string toString() = 0;
@@ -83,9 +82,7 @@ namespace TraceAnalysis {
     virtual ~CFGCall() {}
     
     virtual string toString() {
-      std::stringstream sstream;
-      sstream << "call_0x" << std::hex << vma;
-      return sstream.str();
+      return "call_0x" + vmaToHexString(vma);
     }
   };
   
@@ -102,28 +99,25 @@ namespace TraceAnalysis {
     }
     
     virtual string toDetailedString() {
-      std::stringstream sstream;
-      sstream << toString() << ":\n";
+      string str = toString() + ":\n";
       for (auto mit = successorMap.begin(); mit != successorMap.end(); ++mit) {
-        sstream << "  0x" << std::hex << mit->first << " -> [";
+        str += "  0x" + vmaToHexString(mit->first) + " -> [";
         for (auto sit = (mit->second).begin(); sit != (mit->second).end(); ++sit)
-          sstream << "0x" << std::hex << *sit << ",";
-        sstream << "]\n";
+          str += "0x" + vmaToHexString(*sit) + ",";
+        str += "]\n";
       }
-      sstream << "\n";
-      return sstream.str();
+      str +="\n";
+      return str;
     }
   };
   
   class CFGLoop : public CFGAGraph {
   public:
-    CFGLoop(VMA vma, string label) : CFGAGraph(vma, label) {}
+    CFGLoop(VMA vma) : CFGAGraph(vma, "loop_0x" + vmaToHexString(vma)) {}
     virtual ~CFGLoop() {}
     
     virtual string toString() {
-      std::stringstream sstream;
-      sstream << "loop @ 0x" << std::hex << vma;
-      return sstream.str();
+      return "loop @ 0x" + vmaToHexString(vma);
     }
   };
   
@@ -133,9 +127,7 @@ namespace TraceAnalysis {
     virtual ~CFGFunc() {}
     
     virtual string toString() {
-      std::stringstream sstream;
-      sstream << "func " << label << " @ 0x" << std::hex << vma;
-      return sstream.str();
+      return "func " + label + " @ 0x" + vmaToHexString(vma);
     }
   };
 }

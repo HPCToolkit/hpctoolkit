@@ -45,25 +45,28 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.hpp
+ * File:   TCT-Node.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 5, 2018, 3:08 PM
  */
 
-#ifndef TRACEANALYSIS_HPP
-#define TRACEANALYSIS_HPP
-
-#include <string>
-#include <vector>
-using std::string;
-using std::vector;
-
-#include <lib/analysis/CallPath.hpp>
+#include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+  string TCTATraceNode::toString(int maxDepth, Time minDuration) {
+    string ret;
+    
+    for (int i = 0; i < depth; i++) ret += "  ";
+    ret += name + "(" + std::to_string(id) + ")";
+    
+    ret += "\n";
+    
+    if (depth >= maxDepth) return ret;
+    if (time->getDuration() < minDuration) return ret;
+    
+    for (auto it = children.begin(); it != children.end(); it++)
+      ret += (*it)->toString(maxDepth, minDuration);
+    return ret;
+  }
 }
-
-#endif /* TRACEANALYSIS_HPP */
-
