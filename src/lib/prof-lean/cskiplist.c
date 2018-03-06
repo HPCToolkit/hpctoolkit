@@ -119,8 +119,8 @@ csklnode_alloc_node(int height, mem_alloc m_alloc)
 {
   csklnode_t* node = (csklnode_t*)m_alloc(SIZEOF_CSKLNODE_T(height));
   node->height = height;
-  node->fully_linked = 0;
-  node->marked = 0;
+  node->fully_linked = false;
+  node->marked = false;
   mcs_init(&(node->lock));
   return node;
 }
@@ -422,6 +422,8 @@ cskl_free(void* anode)
   for (int i = 0; i < node->height; i++) {
 	node->nexts[i] = NULL;
   }
+  node->fully_linked = false;
+  node->marked = false;
   mcs_lock(&GFCN_lock, &me);
   node->nexts[0] = GF_cskl_nodes;
   GF_cskl_nodes = node;
