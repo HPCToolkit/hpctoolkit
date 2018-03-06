@@ -46,6 +46,7 @@ extern ompt_idle_t ompt_idle_placeholder_fn;
 #define OMPT_DEVICE_OPERATION 0xFFFF
 
 enum {
+  ompt_op_none,
   ompt_op_alloc,
   ompt_op_copy_in,
   ompt_op_copy_out,

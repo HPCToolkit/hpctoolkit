@@ -409,7 +409,7 @@ cupti_subscriber_callback
       {
         if (cb_info->callbackSite == CUPTI_API_ENTER) {
           uint64_t correlation_id = 0;
-          cupti_correlation_callback(&correlation_id);
+          //cupti_correlation_callback(&correlation_id);
           PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
           HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
         }

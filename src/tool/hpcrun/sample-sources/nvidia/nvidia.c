@@ -101,6 +101,7 @@
 /******************************************************************************
  * macros
  *****************************************************************************/
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 #define FORALL_KE(macro)	  \
   macro("KE_STATIC_MEM_BYTES",        0)     \
@@ -137,7 +138,7 @@
   macro("IM_DTOD_BYTES",    8)
 
 #define FORALL_IM_TIME(macro)  \
-  macro("EM_TIME (us)",     9)  
+  macro("IM_TIME (us)",     9)  
 #else
 #define FORALL_IM(macro)	\
   macro("IM_INVALID",       0)	\
@@ -147,7 +148,7 @@
   macro("IM_GPU_PF",        4)
 
 #define FORALL_IM_TIME(macro)  \
-  macro("EM_TIME (us)",     5)  
+  macro("IM_TIME (us)",     5)  
 #endif
 
 #if CUPTI_API_VERSION >= 10
