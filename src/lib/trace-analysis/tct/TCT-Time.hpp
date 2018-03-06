@@ -54,6 +54,9 @@
 #ifndef TCT_TIME_HPP
 #define TCT_TIME_HPP
 
+#include <string>
+using std::string;
+
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
@@ -71,6 +74,8 @@ namespace TraceAnalysis {
     virtual Time getMaxDuration() = 0;
     
     virtual TCTATime* duplicate() = 0;
+    
+    virtual string toString() = 0;
   };
   
   // Temporal Context Tree Trace Time
@@ -104,6 +109,11 @@ namespace TraceAnalysis {
       return new TCTTraceTime(*this);
     }
     
+    virtual string toString() {
+      return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
+              + timeToString((endTimeInclusive + endTimeExclusive)/2);
+    }
+    
     void shiftTime(Time offset) {
       startTimeExclusive += offset;
       startTimeInclusive += offset;
@@ -121,30 +131,41 @@ namespace TraceAnalysis {
   class TCTDuration : public TCTATime {
   public:
     TCTDuration() : TCTATime() {
-      minDuration = 0;
-      maxDuration = 0;
+      minDurationInclusive = 0;
+      maxDurationInclusive = 0;
+      minDurationExclusive = 0;
+      maxDurationExclusive = 0;
     }
     TCTDuration(const TCTDuration& orig) : TCTATime(orig) {
-      minDuration = orig.minDuration;
-      maxDuration = orig.maxDuration;
+      minDurationInclusive = orig.minDurationInclusive;
+      maxDurationInclusive = orig.maxDurationInclusive;
+      minDurationExclusive = orig.minDurationExclusive;
+      maxDurationExclusive = orig.maxDurationExclusive;
     }
     virtual ~TCTDuration() {}
     
     virtual Time getMinDuration() {
-      return minDuration;
+      return minDurationInclusive;
     }
     
     virtual Time getMaxDuration() {
-      return maxDuration;
+      return maxDurationInclusive;
     }
     
     virtual TCTATime* duplicate() {
       return new TCTDuration(*this);
     }
     
+    virtual string toString() {
+      return " In-time = " + timeToString((minDurationInclusive + maxDurationInclusive)/2) + 
+             " Ex-time = " + timeToString((minDurationExclusive + maxDurationExclusive)/2);
+    }
+    
   private:
-    Time minDuration;
-    Time maxDuration;
+    Time minDurationInclusive;
+    Time maxDurationInclusive;
+    Time minDurationExclusive;
+    Time maxDurationExclusive;
   };
 }
 

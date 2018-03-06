@@ -72,9 +72,11 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
-	TraceAnalysisCommon.hpp \
+	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
 	cfg/CFGNode.hpp \
 	cfg/BinaryAnalyzer.hpp cfg/BinaryAnalyzer.cpp \
+	tct/TCT-Time.hpp \
+	tct/TCT-Node.hpp tct/TCT-Node.cpp \
 	CCTVisitor.hpp CCTVisitor.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.

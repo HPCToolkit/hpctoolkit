@@ -82,7 +82,7 @@ namespace TraceAnalysis {
   struct timeval startTime;
   struct timeval curTime;
   
-  bool analysis(Prof::CallPath::Profile* prof, vector<string> profDirs, int myRank, int numRanks) {
+  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
     if (myRank == 0) {
       printf("\nTrace analysis turned on.\n");
       
@@ -105,44 +105,43 @@ namespace TraceAnalysis {
           }
         }
       }
-      
+
       // Step 2: visit CCT to build an cpid to CCTNode map.
       CCTVisitor cctVisitor(prof->cct());
       const unordered_map<uint, Prof::CCT::ADynNode*>& cpidMap = cctVisitor.getCpidMap();
       printf("\ncpids: ");
-      for (auto it = cpidMap.begin(); it != cpidMap.end(); ++it)
+      for (auto it = cpidMap.begin(); it != cpidMap.end(); ++it) 
         printf("0x%x, ", it->first);
       printf("\n\n");
       
       // Step 3: get a list of trace files.
       printf("Trace files:\n");
-      for (auto it = profDirs.begin(); it != profDirs.end(); ++it) {
-        string path = *it;
-        if (FileUtil::isDir(path.c_str())) {
-          // ensure 'path' ends in '/'
-          if (path[path.length() - 1] != '/') {
-            path += "/";
-          }
+      string path = dbDir;
+      if (FileUtil::isDir(path.c_str())) {
+        // ensure 'path' ends in '/'
+        if (path[path.length() - 1] != '/') {
+          path += "/";
+        }
 
-          struct dirent** dirEntries = NULL;
-          int dirEntriesSz = scandir(path.c_str(), &dirEntries,
-                                     hpctraceFileFilter, alphasort);
-          if (dirEntriesSz > 0) {
-            for (int i = 0; i < dirEntriesSz; ++i) {
-              printf("  %s%s\n", path.c_str(), dirEntries[i]->d_name);
-              free(dirEntries[i]);
-            }
-            free(dirEntries);
+        struct dirent** dirEntries = NULL;
+        int dirEntriesSz = scandir(path.c_str(), &dirEntries,
+                                   hpctraceFileFilter, alphasort);
+        if (dirEntriesSz > 0) {
+          for (int i = 0; i < dirEntriesSz; ++i) {
+            printf("  %s%s\n", path.c_str(), dirEntries[i]->d_name);
+            free(dirEntries[i]);
           }
+          free(dirEntries);
         }
       }
       
       gettimeofday(&curTime, NULL);
       long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
                   + curTime.tv_usec - startTime.tv_usec;
-      printf("\nTrace analysis init ended at %ld.%ld%ld%lds.\n", timeDiff/1000000,
-              timeDiff/100000%10, timeDiff/10000%10, timeDiff/1000%10);      
-      printf("Trace analysis init ended at %ld us.\n", timeDiff);
+      printf("\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
+      
+      TCTANode* node = new TCTFunctionTraceNode(0,"",0,0,0);
+      delete node;
     }
     return true;
   }
