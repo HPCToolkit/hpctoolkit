@@ -158,6 +158,17 @@ csklnode_alloc_from_lfl(
 }
 
 /*
+ * return node to lfl
+ */
+static void
+csklnode_free_to_lfl(csklnode_t *node)
+{
+  node->nexts[0] = _lf_cskl_nodes;
+  _lf_cskl_nodes = node;
+}
+
+
+/*
  * trylock GF_cskl_nodes;
  * if GF_cskl_nodes != NULL, transfer a bunch of nodes to _lf_cskl_nodes,
  * otherwise add a few nodes to _lf_cskl_nodes.
@@ -470,7 +481,6 @@ cskl_insert(cskiplist_t *cskl, void *value,
 
   // allocate my node
   csklnode_t *new_node = csklnode_malloc(value, max_height, m_alloc);
-  int my_height = new_node->height;
 
   for (;;) {
 	// Acquire lock before reading:
@@ -483,6 +493,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	if (found_layer != NO_LAYER) {
 	  node = preds[found_layer]->nexts[found_layer];
 	  if (!node->marked) {
+	  	csklnode_free_to_lfl(new_node);
 		while (!node->fully_linked);
 		break;
 	  }
@@ -508,21 +519,23 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// If the valid condition is not satisfied, unlock all of my predecessors
 	// and retry.
 	//--------------------------------------------------------------------------
+	int my_height = new_node->height;
 	mcs_node_t mcs_nodes[my_height];
 	int highestLocked = -1;
+	int layer;
 	csklnode_t *prevPred = NULL;
-	bool valid = true;
-	for (int layer = 0; valid && (layer < my_height); layer++) {
-	  csklnode_t *pred=preds[layer];
-	  csklnode_t *succ=pred->nexts[layer];
+	for (layer = 0; layer < my_height; layer++) {
+	  csklnode_t *pred = preds[layer];
+	  csklnode_t *succ = pred->nexts[layer];
 	  if (pred != prevPred) {
 		mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		highestLocked = layer;
 		prevPred = pred;
 	  }
-	  valid = !pred->marked && !succ->marked && pred->nexts[layer] == succ;
+	  if (pred->marked || succ->marked || pred->nexts[layer] != succ)
+	    break;
 	}
-	if (!valid) {
+	if (layer < my_height) {
 	  // unlock each of my predecessors, as necessary
 	  unlock_preds(preds, mcs_nodes, highestLocked);
 
@@ -532,13 +545,14 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	}
 
 	// link new node in at levels [0 .. my_height-1]
+	node = new_node;
 	for (int layer = 0; layer < my_height; layer++) {
-	  new_node->nexts[layer] = preds[layer]->nexts[layer];
-	  preds[layer]->nexts[layer] = new_node;
+	  node->nexts[layer] = preds[layer]->nexts[layer];
+	  preds[layer]->nexts[layer] = node;
 	}
 
 	// mark the node as usable
-	new_node->fully_linked = true;
+	node->fully_linked = true;
 
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
@@ -548,7 +562,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
   // Release lock before returning:
   pfq_rwlock_read_unlock(&cskl->lock);
 
-  return new_node;
+  return node;
 }
 
 /*
