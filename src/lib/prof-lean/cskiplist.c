@@ -112,6 +112,20 @@ static __thread  csklnode_t *_lf_cskl_nodes = NULL;  // thread local free csklno
 //******************************************************************************
 
 /*
+ * allocate a node of a specified height.
+ */
+static csklnode_t *
+csklnode_alloc_node(int height, mem_alloc m_alloc)
+{
+  csklnode_t* node = (csklnode_t*)m_alloc(SIZEOF_CSKLNODE_T(height));
+  node->height = height;
+  node->fully_linked = 0;
+  node->marked = 0;
+  mcs_init(&(node->lock));
+  return node;
+}
+
+/*
  * add a bunch of nodes to _lf_cskl_nodes
  */
 static void
@@ -120,10 +134,8 @@ csklnode_add_nodes_to_lfl(
 	mem_alloc m_alloc)
 {
   for (int i = 0; i < NUM_NODES; i++) {
-	csklnode_t* node = (csklnode_t*)m_alloc(SIZEOF_CSKLNODE_T(maxheight));
-	node->fully_linked = 0;
-	node->marked = 0;
-	mcs_init(&(node->lock));
+	int my_height  = random_level(maxheight);
+	csklnode_t* node = csklnode_alloc_node(my_height, m_alloc);
 	node->nexts[0] = _lf_cskl_nodes;
 	_lf_cskl_nodes = node;
   }
@@ -136,14 +148,12 @@ csklnode_add_nodes_to_lfl(
  */
 static csklnode_t*
 csklnode_alloc_from_lfl(
-	void* val,
-	int height)
+	void* val)
 {
   csklnode_t *ans = _lf_cskl_nodes;
   _lf_cskl_nodes = _lf_cskl_nodes->nexts[0];
   ans->nexts[0] = NULL;
   ans->val = val;
-  ans->height = height;
   return ans;
 }
 
@@ -181,7 +191,6 @@ csklnode_populate_lfl(
 static csklnode_t*
 csklnode_malloc(
 	void* val,
-	int height,
 	int maxheight,
 	mem_alloc m_alloc)
 {
@@ -193,7 +202,7 @@ csklnode_malloc(
   assert(_lf_cskl_nodes);
 #endif
 
-  return csklnode_alloc_from_lfl(val, height);
+  return csklnode_alloc_from_lfl(val);
 }
 
 static inline bool
@@ -425,8 +434,10 @@ cskl_new(
   pfq_rwlock_init(&cskl->lock);
 
   // create sentinel nodes
-  csklnode_t *left = cskl->left_sentinel   = csklnode_malloc(lsentinel, max_height, max_height, m_alloc);
-  csklnode_t *right = cskl->right_sentinel = csklnode_malloc(rsentinel, 0, 0, m_alloc);
+  csklnode_t *left = cskl->left_sentinel   = csklnode_alloc_node(max_height, m_alloc);
+  csklnode_t *right = cskl->right_sentinel = csklnode_alloc_node(0, m_alloc);
+  left->val = lsentinel;
+  right->val = rsentinel;
   // hook sentinel nodes in empty list
   for(int i = 0; i < max_height; i++)
     left->nexts[i] = right;
@@ -459,6 +470,11 @@ cskl_insert(cskiplist_t *cskl, void *value,
   csklnode_t *preds[max_height];
   mcs_node_t mcs_nodes[max_height];
   csklnode_t *node;
+  csklnode_t *new_node;
+
+  // allocate my node
+  new_node = csklnode_malloc(value, max_height, m_alloc);
+  my_height = new_node->height;
 
   for (;;) {
 	// Acquire lock before reading:
@@ -519,18 +535,14 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  continue;
 	}
 
-	// allocate my node
-//	node = csklnode_new(value, my_height, max_height, m_alloc);
-	node = csklnode_malloc(value, my_height, max_height, m_alloc);
-
-	// link it in at levels [0 .. my_height-1]
+	// link new node in at levels [0 .. my_height-1]
 	for (int layer = 0; layer < my_height; layer++) {
-	  node->nexts[layer] = preds[layer]->nexts[layer];
-	  preds[layer]->nexts[layer] = node;
+	  new_node->nexts[layer] = preds[layer]->nexts[layer];
+	  preds[layer]->nexts[layer] = new_node;
 	}
 
 	// mark the node as usable
-	node->fully_linked = true;
+	new_node->fully_linked = true;
 
 	// unlock each of my predecessors, as necessary
 	unlock_preds(preds, mcs_nodes, highestLocked);
@@ -540,7 +552,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
   // Release lock before returning:
   pfq_rwlock_read_unlock(&cskl->lock);
 
-  return node;
+  return new_node;
 }
 
 /*
