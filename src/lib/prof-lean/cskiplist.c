@@ -466,7 +466,6 @@ cskl_insert(cskiplist_t *cskl, void *value,
 {
   int max_height = cskl->max_height;
   csklnode_t *preds[max_height];
-  mcs_node_t mcs_nodes[max_height];
   csklnode_t *node;
 
   // allocate my node
@@ -509,13 +508,13 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	// If the valid condition is not satisfied, unlock all of my predecessors
 	// and retry.
 	//--------------------------------------------------------------------------
+	mcs_node_t mcs_nodes[my_height];
 	int highestLocked = -1;
-	csklnode_t *pred, *succ;
 	csklnode_t *prevPred = NULL;
 	bool valid = true;
 	for (int layer = 0; valid && (layer < my_height); layer++) {
-	  pred=preds[layer];
-	  succ=pred->nexts[layer];
+	  csklnode_t *pred=preds[layer];
+	  csklnode_t *succ=pred->nexts[layer];
 	  if (pred != prevPred) {
 		mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		highestLocked = layer;
@@ -564,7 +563,6 @@ cskl_delete(cskiplist_t *cskl, void *value)
 
   for (;;) {
 	csklnode_t     *preds[max_height];
-	mcs_node_t  mcs_nodes[max_height];
 	int         height = -1;
 
 	//--------------------------------------------------------------------------
@@ -584,6 +582,7 @@ cskl_delete(cskiplist_t *cskl, void *value)
 	  //------------------------------------------------------------------------
 	  // if I haven't already marked this node for deletion, do so.
 	  //------------------------------------------------------------------------
+	  mcs_node_t  mcs_nodes[layer + 1];
 	  if (!node_is_marked) {
 		node = preds[layer]->nexts[layer];
 		height = node->height;
