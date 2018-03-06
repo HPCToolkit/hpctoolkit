@@ -465,16 +465,13 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	mem_alloc m_alloc)
 {
   int max_height = cskl->max_height;
-  int my_height  = random_level(max_height);
-
   csklnode_t *preds[max_height];
   mcs_node_t mcs_nodes[max_height];
   csklnode_t *node;
-  csklnode_t *new_node;
 
   // allocate my node
-  new_node = csklnode_malloc(value, max_height, m_alloc);
-  my_height = new_node->height;
+  csklnode_t *new_node = csklnode_malloc(value, max_height, m_alloc);
+  int my_height = new_node->height;
 
   for (;;) {
 	// Acquire lock before reading:
