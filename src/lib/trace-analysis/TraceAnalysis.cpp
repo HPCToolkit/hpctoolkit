@@ -59,10 +59,11 @@
 #include <lib/support/FileUtil.hpp>
 
 #include "TraceAnalysis.hpp"
-#include "cfg/CFGNode.hpp"
-#include "cfg/BinaryAnalyzer.hpp"
+#include "BinaryAnalyzer.hpp"
 #include "CCTVisitor.hpp"
 #include "LocalTraceAnalyzer.hpp"
+
+#include "data/TCT-CFG.hpp"
 
 namespace TraceAnalysis {
   static int hpctraceFileFilter(const struct dirent* entry)
@@ -138,7 +139,8 @@ namespace TraceAnalysis {
       int begIdx = 0;
       int endIdx = traceFiles.size();
       for (int i = begIdx; i < endIdx; i++) {
-        LocalTraceAnalyzer analyzer(traceFiles[i], prof->traceMinTime());
+        LocalTraceAnalyzer analyzer(ba, cctVisitor, 
+                traceFiles[i], prof->traceMinTime());
         analyzer.analyze();
       }
       

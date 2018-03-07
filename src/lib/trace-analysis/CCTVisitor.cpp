@@ -58,6 +58,11 @@
 
 namespace TraceAnalysis {
 
+  CCTVisitor::CCTVisitor(Prof::CCT::Tree* cct) {
+    if (cct != NULL && cct->root() != NULL)
+      visit(cct->root()->firstChild());
+  }
+  
   void CCTVisitor::visit(Prof::CCT::ANode* node) {
     if (node == NULL)
       return;
@@ -75,15 +80,6 @@ namespace TraceAnalysis {
   }
   
   const unordered_map<uint, Prof::CCT::ADynNode*>& CCTVisitor::getCpidMap() {
-    if (visited) return cpidMap;
- 
-    if (cct == NULL || cct->root() == NULL) {
-      return cpidMap;
-    }
-    
-    visit(cct->root()->firstChild());
-    visited = true;
-
     return cpidMap;
   }
 }
