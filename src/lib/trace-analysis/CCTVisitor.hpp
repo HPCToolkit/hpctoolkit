@@ -69,14 +69,11 @@ namespace TraceAnalysis {
   
   class CCTVisitor {
   public:
-    CCTVisitor(Prof::CCT::Tree* cct) : cct(cct), visited(false) {}
-    CCTVisitor(const CCTVisitor& orig) {}
+    CCTVisitor(Prof::CCT::Tree* cct);
     virtual ~CCTVisitor() {}
 
     const unordered_map<uint, Prof::CCT::ADynNode*>& getCpidMap();
   private:
-    Prof::CCT::Tree* cct;
-    bool visited;
     unordered_map<uint, Prof::CCT::ADynNode*> cpidMap;
     
     void visit(Prof::CCT::ANode* node);

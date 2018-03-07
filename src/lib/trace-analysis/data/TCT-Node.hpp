@@ -63,6 +63,7 @@ using std::string;
 using std::vector;
 
 #include "../TraceAnalysisCommon.hpp"
+#include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 
 namespace TraceAnalysis {
@@ -70,11 +71,11 @@ namespace TraceAnalysis {
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
-    TCTANode(int id, string name, int depth, VMA vma, VMA ra) :
+    TCTANode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
         id(id), name(name), depth(depth), time(NULL), 
-        vma(vma), ra(ra), weight(1) {}
+        cfgGraph(cfgGraph), ra(ra), weight(1) {}
     TCTANode(const TCTANode& orig) : id(orig.id), name(orig.name), depth(orig.depth),
-        vma(orig.vma), ra(orig.ra), weight(orig.weight) {
+        cfgGraph(orig.cfgGraph), ra(orig.ra), weight(orig.weight) {
       if (orig.time == NULL) time = NULL;
       else time = orig.time->duplicate();
     }
@@ -99,8 +100,8 @@ namespace TraceAnalysis {
     
     TCTATime* time;
     
-    // VMA for functions or loops
-    const VMA vma; 
+    // CFG Abstract Graph for this node.
+    CFGAGraph* cfgGraph; 
     // RA for call sites or VMA for loops.
     const VMA ra; 
     
@@ -110,8 +111,8 @@ namespace TraceAnalysis {
   // Temporal Context Tree Abstract Trace Node
   class TCTATraceNode : public TCTANode {
   public:
-    TCTATraceNode(int id, string name, int depth, VMA vma, VMA ra) :
-      TCTANode(id, name, depth, vma, ra) {
+    TCTATraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
+      TCTANode(id, name, depth, cfgGraph, ra) {
       time = new TCTTraceTime();
     }
     TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
@@ -132,8 +133,8 @@ namespace TraceAnalysis {
   // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTATraceNode {
   public:
-    TCTFunctionTraceNode(int id, string name, int depth, VMA vma, VMA ra) :
-      TCTATraceNode(id, name, depth, vma, ra) {}
+    TCTFunctionTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
+      TCTATraceNode(id, name, depth, cfgGraph, ra) {}
     TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTFunctionTraceNode() {}
     
@@ -141,17 +142,17 @@ namespace TraceAnalysis {
       return new TCTFunctionTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTFunctionTraceNode(id, name, depth, vma, ra);
+      return new TCTFunctionTraceNode(id, name, depth, cfgGraph, ra);
     }
   };
   
   // Temporal Context Tree Iteration Trace Node
   class TCTIterationTraceNode : public TCTATraceNode {
   public:
-    TCTIterationTraceNode(int id, int iterNum, int depth, VMA vma) :
-      TCTATraceNode(id, "ITER_#" + std::to_string(iterNum), depth, vma, vma) {}
-    TCTIterationTraceNode(int id, string name, int depth, VMA vma) :
-      TCTATraceNode(id, name, depth, vma, vma) {}
+    TCTIterationTraceNode(int id, int iterNum, int depth, CFGAGraph* cfgGraph) :
+      TCTATraceNode(id, "ITER_#" + std::to_string(iterNum), depth, cfgGraph, cfgGraph->vma) {}
+    TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
+      TCTATraceNode(id, name, depth, cfgGraph, cfgGraph->vma) {}
     TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
     
@@ -159,14 +160,14 @@ namespace TraceAnalysis {
       return new TCTIterationTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTIterationTraceNode(id, name, depth, vma);
+      return new TCTIterationTraceNode(id, name, depth, cfgGraph);
     }
   };
   
   class TCTLoopTraceNode : public TCTATraceNode {
     public:
-    TCTLoopTraceNode(int id, string name, int depth, VMA vma) :
-      TCTATraceNode(id, name, depth, vma, vma) {}
+    TCTLoopTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
+      TCTATraceNode(id, name, depth, cfgGraph, cfgGraph->vma) {}
     TCTLoopTraceNode(const TCTLoopTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTLoopTraceNode() {}
     
@@ -174,7 +175,7 @@ namespace TraceAnalysis {
       return new TCTLoopTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTLoopTraceNode(id, name, depth, vma);
+      return new TCTLoopTraceNode(id, name, depth, cfgGraph);
     }
   };
 }

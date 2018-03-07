@@ -60,18 +60,23 @@
 using std::string;
 
 #include "TraceAnalysisCommon.hpp"
+#include "BinaryAnalyzer.hpp"
+#include "CCTVisitor.hpp"
 
 namespace TraceAnalysis {
   class TraceFileReader;
   
   class LocalTraceAnalyzer {
   public:
-    LocalTraceAnalyzer(string traceFileName, Time minTime);
+    LocalTraceAnalyzer(BinaryAnalyzer& binaryAnalyzer, CCTVisitor& cctVisitor, 
+            string traceFileName, Time minTime);
     virtual ~LocalTraceAnalyzer();
     
     void analyze();
   private:
-    TraceFileReader* reader;
+    BinaryAnalyzer& binaryAnalyzer;
+    CCTVisitor& cctVisitor;
+    TraceFileReader* const reader;
   };
 }
 

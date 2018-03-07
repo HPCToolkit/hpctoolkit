@@ -75,7 +75,6 @@ using namespace InstructionAPI;
 #include <lib/support/diagnostics.h>
 
 #include "BinaryAnalyzer.hpp"
-#include "CFGNode.hpp"
 
 namespace TraceAnalysis {
   class BinaryAnalyzerImpl {

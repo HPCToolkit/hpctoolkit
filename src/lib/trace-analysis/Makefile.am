@@ -71,12 +71,12 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	data/CFGNode.hpp \
+	data/TCT-Time.hpp \
+	data/TCT-Node.hpp data/TCT-Node.cpp \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
-	cfg/CFGNode.hpp \
-	cfg/BinaryAnalyzer.hpp cfg/BinaryAnalyzer.cpp \
-	tct/TCT-Time.hpp \
-	tct/TCT-Node.hpp tct/TCT-Node.cpp \
+	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \
 	CCTVisitor.hpp CCTVisitor.cpp \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp
 

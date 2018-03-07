@@ -90,9 +90,10 @@ namespace TraceAnalysis {
     hpctrace_fmt_hdr_t hdr;
   };
   
-  LocalTraceAnalyzer::LocalTraceAnalyzer(string filename, Time minTime) {
-    reader = new TraceFileReader(filename, minTime);
-  }
+  LocalTraceAnalyzer::LocalTraceAnalyzer(BinaryAnalyzer& binaryAnalyzer, 
+          CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
+          binaryAnalyzer(binaryAnalyzer), cctVisitor(cctVisitor),
+          reader(new TraceFileReader(traceFileName, minTime)) {}
 
   LocalTraceAnalyzer::~LocalTraceAnalyzer() {
     delete reader;

@@ -45,16 +45,16 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   CFGNode.hpp
+ * File:   BinaryAnalyzer.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 2, 2018, 1:16 AM
+ * Created on March 1, 2018, 11:40 PM
  * 
- * Stores control flows among call sites and loops.
+ * Analyzes execution binaries to derive control flows among call sites and loops.
  */
 
-#ifndef CFGNODE_HPP
-#define CFGNODE_HPP
+#ifndef BINARYANALYZER_HPP
+#define BINARYANALYZER_HPP
 
 #include <string>
 using std::string;
@@ -62,68 +62,25 @@ using std::string;
 #include <unordered_map>
 using std::unordered_map;
 
-#include <unordered_set>
-using std::unordered_set;
-
-#include "../TraceAnalysisCommon.hpp"
+#include "TraceAnalysisCommon.hpp"
+#include "data/TCT-CFG.hpp"
 
 namespace TraceAnalysis {
-  
-  // For each function or loop, stores control flows among call sites and sub-loops.
-  class CFGAGraph {
+    
+  class BinaryAnalyzer {
   public:
-    // VMA for the function or loop
-    const VMA vma;
-    const string label;
+    BinaryAnalyzer();
+    BinaryAnalyzer(const BinaryAnalyzer& orig);
+    virtual ~BinaryAnalyzer();
 
-  private:  
-    // Keys in the map are RAs of call sites and VMAs of sub-loops contained in the function or loop
-    // Value set for each key are a set of addresses that are successors of the key in the control flow.
-    unordered_map<VMA, unordered_set<VMA>> successorMap;
-    
-  public:
-    CFGAGraph(VMA vma, string label) : vma(vma), label(label) {}
-    virtual ~CFGAGraph() {}
-    
-    virtual void setSuccessorMap(const unordered_map<VMA, unordered_set<VMA>>& map) {
-      successorMap = map;
-    }
-    
-    virtual string toString() = 0;
-    
-    virtual string toDetailedString() {
-      string str = toString() + ":\n";
-      for (auto mit = successorMap.begin(); mit != successorMap.end(); ++mit) {
-        str += "  0x" + vmaToHexString(mit->first) + " -> [";
-        for (auto sit = (mit->second).begin(); sit != (mit->second).end(); ++sit)
-          str += "0x" + vmaToHexString(*sit) + ",";
-        str += "]\n";
-      }
-      str +="\n";
-      return str;
-    }
+    bool parse(const string& filename);
+
+  private:
+    unordered_map<VMA, CFGFunc*> CFGFuncMap;
+    unordered_map<VMA, CFGLoop*> CFGLoopMap;
   };
-  
-  class CFGLoop : public CFGAGraph {
-  public:
-    CFGLoop(VMA vma) : CFGAGraph(vma, "loop@0x" + vmaToHexString(vma)) {}
-    virtual ~CFGLoop() {}
-    
-    virtual string toString() {
-      return "loop @ 0x" + vmaToHexString(vma);
-    }
-  };
-  
-  class CFGFunc : public CFGAGraph {
-  public:
-    CFGFunc(VMA vma, string label) : CFGAGraph(vma, label) {}
-    virtual ~CFGFunc() {}
-    
-    virtual string toString() {
-      return "func " + label + " @ 0x" + vmaToHexString(vma);
-    }
-  };
+
 }
 
-#endif /* CFGNODE_HPP */
+#endif /* BINARYANALYZER_HPP */
 
