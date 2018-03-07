@@ -659,6 +659,7 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 //***************************************************************************
 
 #define HPCRUN_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+#define HPCRUN_FMT_DLCA_NULL (INT_MAX) // for Java, no UINT32_MAX
 
 typedef struct hpctrace_fmt_datum_t {
   uint64_t time; // microseconds

@@ -365,6 +365,14 @@ private:
   Prof::Struct::Tree* m_structure;
  
   bool m_remove_redundancy;
+  
+public:
+  uint64_t traceMinTime() {
+    return m_traceMinTime;
+  }
+  uint64_t traceMaxTime() {
+    return m_traceMaxTime;
+  }
 };
 
 } // namespace CallPath

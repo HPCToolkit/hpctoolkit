@@ -141,7 +141,7 @@ namespace TraceAnalysis {
     }
   };
   
-  class TCTIterationTraceNode: public TCTATraceNode {
+  class TCTIterationTraceNode : public TCTATraceNode {
   public:
     TCTIterationTraceNode(int id, int iterNum, int depth, VMA vma) :
       TCTATraceNode(id, "ITER_#" + std::to_string(iterNum), depth, vma, vma) {}
@@ -158,6 +158,20 @@ namespace TraceAnalysis {
     }
   };
   
+  class TCTLoopTraceNode : public TCTATraceNode {
+    public:
+    TCTLoopTraceNode(int id, string name, int depth, VMA vma) :
+      TCTATraceNode(id, name, depth, vma, vma) {}
+    TCTLoopTraceNode(const TCTLoopTraceNode& orig) : TCTATraceNode(orig) {}
+    virtual ~TCTLoopTraceNode() {}
+    
+    virtual TCTANode* duplicate() {
+      return new TCTLoopTraceNode(*this);
+    }
+    virtual TCTANode* voidDuplicate() {
+      return new TCTLoopTraceNode(id, name, depth, vma);
+    }
+  };
 }
 
 #endif /* TCT_NODE_HPP */

@@ -62,8 +62,7 @@
 #include "cfg/CFGNode.hpp"
 #include "cfg/BinaryAnalyzer.hpp"
 #include "CCTVisitor.hpp"
-
-#include "tct/TCT-Node.hpp"
+#include "LocalTraceAnalyzer.hpp"
 
 namespace TraceAnalysis {
   static int hpctraceFileFilter(const struct dirent* entry)
@@ -115,7 +114,7 @@ namespace TraceAnalysis {
       printf("\n\n");
       
       // Step 3: get a list of trace files.
-      printf("Trace files:\n");
+      vector<string> traceFiles;
       string path = dbDir;
       if (FileUtil::isDir(path.c_str())) {
         // ensure 'path' ends in '/'
@@ -128,20 +127,25 @@ namespace TraceAnalysis {
                                    hpctraceFileFilter, alphasort);
         if (dirEntriesSz > 0) {
           for (int i = 0; i < dirEntriesSz; ++i) {
-            printf("  %s%s\n", path.c_str(), dirEntries[i]->d_name);
+            traceFiles.push_back(path + dirEntries[i]->d_name);
             free(dirEntries[i]);
           }
           free(dirEntries);
         }
       }
       
+      // Step 4: analyze each trace file
+      int begIdx = 0;
+      int endIdx = traceFiles.size();
+      for (int i = begIdx; i < endIdx; i++) {
+        LocalTraceAnalyzer analyzer(traceFiles[i], prof->traceMinTime());
+        analyzer.analyze();
+      }
+      
       gettimeofday(&curTime, NULL);
       long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
                   + curTime.tv_usec - startTime.tv_usec;
       printf("\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
-      
-      TCTANode* node = new TCTFunctionTraceNode(0,"",0,0,0);
-      delete node;
     }
     return true;
   }
