@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  * 
  * Created on March 6, 2018, 11:27 PM
+ * 
+ * Analyzes traces for a rank/thread and generates a summary temporal context tree.
  */
 
 #include <stdio.h>
@@ -61,6 +63,7 @@ using std::string;
 
 namespace TraceAnalysis {
   
+  // Handles read from raw trace file.
   class TraceFileReader {
   public:
     TraceFileReader(const string filename, Time minTime) : minTime(minTime) {

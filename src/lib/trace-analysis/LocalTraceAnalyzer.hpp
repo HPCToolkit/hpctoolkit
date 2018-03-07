@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 6, 2018, 11:27 PM
+ * 
+ * Analyzes traces for a rank/thread and generates a summary temporal context tree.
  */
 
 #ifndef LOCALTRACEANALYZER_HPP

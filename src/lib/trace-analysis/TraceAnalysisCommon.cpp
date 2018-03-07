@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 5, 2018, 2:00 PM
+ * 
+ * Trace analysis common types and utilities.
  */
 
 #include "TraceAnalysisCommon.hpp"

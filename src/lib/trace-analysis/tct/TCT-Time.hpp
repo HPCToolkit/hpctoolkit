@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 4, 2018, 11:01 PM
+ * 
+ * Time structs in Temporal Context Tree. 
  */
 
 #ifndef TCT_TIME_HPP
@@ -128,21 +130,22 @@ namespace TraceAnalysis {
     Time endTimeExclusive;
   };
   
-  class TCTDuration : public TCTATime {
+  // Temporal Context Profile Time
+  class TCTProfileTime : public TCTATime {
   public:
-    TCTDuration() : TCTATime() {
+    TCTProfileTime() : TCTATime() {
       minDurationInclusive = 0;
       maxDurationInclusive = 0;
       minDurationExclusive = 0;
       maxDurationExclusive = 0;
     }
-    TCTDuration(const TCTDuration& orig) : TCTATime(orig) {
+    TCTProfileTime(const TCTProfileTime& orig) : TCTATime(orig) {
       minDurationInclusive = orig.minDurationInclusive;
       maxDurationInclusive = orig.maxDurationInclusive;
       minDurationExclusive = orig.minDurationExclusive;
       maxDurationExclusive = orig.maxDurationExclusive;
     }
-    virtual ~TCTDuration() {}
+    virtual ~TCTProfileTime() {}
     
     virtual Time getMinDuration() {
       return minDurationInclusive;
@@ -153,7 +156,7 @@ namespace TraceAnalysis {
     }
     
     virtual TCTATime* duplicate() {
-      return new TCTDuration(*this);
+      return new TCTProfileTime(*this);
     }
     
     virtual string toString() {

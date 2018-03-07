@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  * 
  * Created on March 1, 2018, 11:40 PM
+ * 
+ * Analyzes execution binaries to derive control flows among call sites and loops.
  */
 
 #include <unordered_map>

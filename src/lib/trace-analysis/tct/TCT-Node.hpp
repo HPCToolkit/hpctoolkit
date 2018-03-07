@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 4, 2018, 11:22 PM
+ * 
+ * Temporal Context Tree nodes.
  */
 
 #ifndef TCT_NODE_HPP
@@ -105,6 +107,7 @@ namespace TraceAnalysis {
     int weight;
   };
   
+  // Temporal Context Tree Abstract Trace Node
   class TCTATraceNode : public TCTANode {
   public:
     TCTATraceNode(int id, string name, int depth, VMA vma, VMA ra) :
@@ -126,6 +129,7 @@ namespace TraceAnalysis {
     vector<TCTANode*> children;
   };
   
+  // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTATraceNode {
   public:
     TCTFunctionTraceNode(int id, string name, int depth, VMA vma, VMA ra) :
@@ -141,6 +145,7 @@ namespace TraceAnalysis {
     }
   };
   
+  // Temporal Context Tree Iteration Trace Node
   class TCTIterationTraceNode : public TCTATraceNode {
   public:
     TCTIterationTraceNode(int id, int iterNum, int depth, VMA vma) :
