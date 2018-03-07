@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 5, 2018, 3:08 PM
+ * 
+ * Temporal Context Tree nodes.
  */
 
 #include "TCT-Node.hpp"

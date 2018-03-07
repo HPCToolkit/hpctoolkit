@@ -49,6 +49,8 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on March 2, 2018, 1:16 AM
+ * 
+ * Stores control flows among call sites and loops.
  */
 
 #ifndef CFGNODE_HPP
@@ -66,37 +68,28 @@ using std::unordered_set;
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  class CFGANode {
+  
+  // For each function or loop, stores control flows among call sites and sub-loops.
+  class CFGAGraph {
   public:
+    // VMA for the function or loop
     const VMA vma;
-    
-    CFGANode(VMA vma) : vma(vma) {}
-    virtual ~CFGANode() {}
-    
-    virtual std::string toString() = 0;
-  };
-  
-  class CFGCall : public CFGANode {
-  public:
-    CFGCall(VMA vma) : CFGANode(vma) {}
-    virtual ~CFGCall() {}
-    
-    virtual string toString() {
-      return "call_0x" + vmaToHexString(vma);
-    }
-  };
-  
-  class CFGAGraph : public CFGANode {
-  public:
     const string label;
+
+  private:  
+    // Keys in the map are RAs of call sites and VMAs of sub-loops contained in the function or loop
+    // Value set for each key are a set of addresses that are successors of the key in the control flow.
     unordered_map<VMA, unordered_set<VMA>> successorMap;
     
-    CFGAGraph(VMA vma, string label) : CFGANode(vma), label(label) {}
+  public:
+    CFGAGraph(VMA vma, string label) : vma(vma), label(label) {}
     virtual ~CFGAGraph() {}
     
-    void setSuccessorMap(const unordered_map<VMA, unordered_set<VMA>>& map) {
+    virtual void setSuccessorMap(const unordered_map<VMA, unordered_set<VMA>>& map) {
       successorMap = map;
     }
+    
+    virtual string toString() = 0;
     
     virtual string toDetailedString() {
       string str = toString() + ":\n";
@@ -113,7 +106,7 @@ namespace TraceAnalysis {
   
   class CFGLoop : public CFGAGraph {
   public:
-    CFGLoop(VMA vma) : CFGAGraph(vma, "loop_0x" + vmaToHexString(vma)) {}
+    CFGLoop(VMA vma) : CFGAGraph(vma, "loop@0x" + vmaToHexString(vma)) {}
     virtual ~CFGLoop() {}
     
     virtual string toString() {

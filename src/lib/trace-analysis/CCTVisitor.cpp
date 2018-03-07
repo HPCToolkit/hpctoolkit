@@ -49,6 +49,9 @@
  * Author: Lai Wei <lai.wei@rice.edu>
  * 
  * Created on March 3, 2018, 10:58 PM
+ * 
+ * Visitor of Calling Context Tree to extract a mapping of 
+ * call path id to call path.
  */
 
 #include "CCTVisitor.hpp"
