@@ -61,7 +61,7 @@ using std::string;
 
 namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
-  typedef long Time; // Virtual Memory Address
+  typedef int64_t Time; // Virtual Memory Address
   
   string vmaToHexString(VMA vma);
   string timeToString(Time time);

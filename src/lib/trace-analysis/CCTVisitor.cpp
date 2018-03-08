@@ -79,7 +79,9 @@ namespace TraceAnalysis {
       visit(node->nextSibling());
   }
   
-  const unordered_map<uint, Prof::CCT::ADynNode*>& CCTVisitor::getCpidMap() {
-    return cpidMap;
+  Prof::CCT::ADynNode* CCTVisitor::getLeafFrame(uint cpid) {
+    if (cpidMap.find(cpid) == cpidMap.end()) return NULL;
+    return cpidMap[cpid];
   }
+  
 }
