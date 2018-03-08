@@ -84,35 +84,25 @@ namespace TraceAnalysis {
   
   bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
     if (myRank == 0) {
-      printf("\nTrace analysis turned on.\n");
+      printf("Trace analysis turned on.\n");
       
       printf("Trace analysis init started at 0.000s.\n\n");
       gettimeofday(&startTime, NULL);
       
       // Step 1: analyze binary files to get CFGs for later analysis
       BinaryAnalyzer ba;
-      bool flag = true;
-      
       const Prof::LoadMap* loadmap = prof->loadmap();
       for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
            i <= loadmap->size(); ++i) {
         Prof::LoadMap::LM* lm = loadmap->lm(i);
         if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
           printf("Analyzing executable: %s\n", lm->name().c_str());
-          if (flag) {
-            ba.parse(lm->name());
-            flag = false;
-          }
+          ba.parse(lm->name());
         }
       }
 
       // Step 2: visit CCT to build an cpid to CCTNode map.
       CCTVisitor cctVisitor(prof->cct());
-      const unordered_map<uint, Prof::CCT::ADynNode*>& cpidMap = cctVisitor.getCpidMap();
-      printf("\ncpids: ");
-      for (auto it = cpidMap.begin(); it != cpidMap.end(); ++it) 
-        printf("0x%x, ", it->first);
-      printf("\n\n");
       
       // Step 3: get a list of trace files.
       vector<string> traceFiles;

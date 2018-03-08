@@ -45,43 +45,93 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   CCTVisitor.hpp
+ * File:   TraceFileReader.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 3, 2018, 10:58 PM
+ * Created on March 7, 2018, 10:21 PM
  * 
- * Visitor of Calling Context Tree to extract a mapping of 
- * call path id to call path.
+ * Reads raw trace files to extract call path samples.
  */
 
-#ifndef CCTVISITOR_HPP
-#define CCTVISITOR_HPP
+#ifndef TRACEFILEREADER_HPP
+#define TRACEFILEREADER_HPP
 
+#include <stdio.h>
 #include <string>
 using std::string;
+#include <vector>
+using std::vector;
 
-#include <unordered_map>
-using std::unordered_map;
-
-#include <lib/analysis/CallPath.hpp>
+#include "CCTVisitor.hpp"
+#include "TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
+  class CallPathSample;
+  class TraceFileReader;
   
-  class CCTVisitor {
-  public:
-    CCTVisitor(Prof::CCT::Tree* cct);
-    virtual ~CCTVisitor() {}
-
-    // Return the top frame of the call path associated with cpid.
-    // NULL if no such call path exist.
-    Prof::CCT::ADynNode* getLeafFrame(uint cpid);
-  private:
-    unordered_map<uint, Prof::CCT::ADynNode*> cpidMap;
+  // A frame on a call path.
+  class CallPathFrame {
+    friend class CallPathSample;
     
-    void visit(Prof::CCT::ANode* node);
+  public:
+    enum FrameType {
+      // Root frame
+      Root,
+      // Call frame
+      Func,
+      // Loop added to call path 
+      Loop
+    };
+    
+    const uint id;
+    const string name;
+    const VMA vma;
+    const FrameType type;
+    // ra is only valid when type == Func.
+    const VMA ra;
+    
+  private:
+    CallPathFrame(uint id, string name, VMA vma, FrameType type, VMA ra);
   };
   
+  // A sample of call path. 
+  // Post-mortem analysis has added "loop frames" to call paths.
+  class CallPathSample {
+    friend class TraceFileReader;
+    
+  public:
+    const Time timestamp;
+    const uint dLCA;
+  
+    // Return inclusive depth of the call path, which is number of frames minus one.
+    int getDepth();
+    // Return a frame at a given depth (0 \<= depth \<= getDepth()).
+    CallPathFrame& getFrameAtDepth(int depth);
+    
+  private:
+    vector<CallPathFrame> frames;
+    
+    CallPathSample(Time timestamp, uint dLCA, void* ptr);
+  };
+  
+  // Handles read from raw trace file.
+  class TraceFileReader {
+  public:
+    TraceFileReader(CCTVisitor& cctVisitor, string filename, Time minTime);
+    virtual ~TraceFileReader();
+
+    // Return a pointer to the next trace sample in the trace file.
+    // Return NULL when error or at end of file.
+    // Caller responsible for deallocating pointer.
+    CallPathSample* readNextSample();
+
+  private:
+    CCTVisitor& cctVisitor;
+    const Time minTime;
+    FILE* file;
+    void* hdr;
+  };
 }
 
-#endif /* CCTVISITOR_HPP */
+#endif /* TRACEFILEREADER_HPP */
 

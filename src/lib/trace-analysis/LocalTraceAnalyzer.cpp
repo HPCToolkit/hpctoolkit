@@ -56,57 +56,33 @@
 #include <stdio.h>
 #include <string>
 using std::string;
+#include <vector>
+using std::vector;
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include "LocalTraceAnalyzer.hpp"
 
 namespace TraceAnalysis {
-  
-  // Handles read from raw trace file.
-  class TraceFileReader {
-  public:
-    TraceFileReader(const string filename, Time minTime) : minTime(minTime) {
-      file = fopen(filename.c_str(),"r");
-      if (file != NULL) {
-        hpctrace_fmt_hdr_fread(&hdr, file);
-      }
-    }
-    virtual ~TraceFileReader() {
-      if (file != NULL) fclose(file);
-    }
 
-    // Read the next trace record in the trace file.
-    // Return true when successful; false when error or at end of file.
-    bool readNextTrace(hpctrace_fmt_datum_t* trace) {
-      int ret = hpctrace_fmt_datum_fread(trace, hdr.flags, file);
-      trace->time -= minTime;
-      if (ret == HPCFMT_OK) return true;
-      else return false;
-    }
-
-    const Time minTime;
-    FILE* file;
-    hpctrace_fmt_hdr_t hdr;
-  };
-  
   LocalTraceAnalyzer::LocalTraceAnalyzer(BinaryAnalyzer& binaryAnalyzer, 
           CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
-          binaryAnalyzer(binaryAnalyzer), cctVisitor(cctVisitor),
-          reader(new TraceFileReader(traceFileName, minTime)) {}
+          binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime) {}
 
-  LocalTraceAnalyzer::~LocalTraceAnalyzer() {
-    delete reader;
-  }
+  LocalTraceAnalyzer::~LocalTraceAnalyzer() {}
   
   void LocalTraceAnalyzer::analyze() {
-    if (reader->file == NULL) return;
-    
-    hpctrace_fmt_datum_t trace;
-    while (reader->readNextTrace(&trace)) {
-      printf("cpid=0x%x, time=%s, dLCA=%u.\n", trace.cpId, 
-              timeToString(trace.time).c_str(), trace.dLCA);
-    }
+    CallPathSample* sample = reader.readNextSample();
+    while (sample != NULL) {
+      printf("\nCall path at time %s, dLCA = %u.\n", timeToString(sample->timestamp).c_str(), sample->dLCA);
+      for (int i = 0; i <= sample->getDepth(); i++) {
+        CallPathFrame& frame = sample->getFrameAtDepth(i);
+        printf("  id=%u, name=%s, vma=0x%lx, type=%d, ra=0x%lx\n",
+                frame.id, frame.name.c_str(), frame.vma, frame.type, frame.ra);
+      }
+      delete sample;
+      sample = reader.readNextSample();
+    };
   }
 }
 
