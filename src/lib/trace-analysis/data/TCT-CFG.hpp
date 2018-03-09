@@ -68,9 +68,12 @@ using std::unordered_set;
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
+  class BinaryAnalyzer;
   
   // For each function or loop, stores control flows among call sites and sub-loops.
   class CFGAGraph {
+    friend class BinaryAnalyzer;
+    
   public:
     // VMA for the function or loop
     const VMA vma;
@@ -80,13 +83,29 @@ namespace TraceAnalysis {
     // Keys in the map are RAs of call sites and VMAs of sub-loops contained in the function or loop
     // Value set for each key are a set of addresses that are successors of the key in the control flow.
     unordered_map<VMA, unordered_set<VMA>> successorMap;
-    
+
   public:
     CFGAGraph(VMA vma, string label) : vma(vma), label(label) {}
     virtual ~CFGAGraph() {}
     
     virtual void setSuccessorMap(const unordered_map<VMA, unordered_set<VMA>>& map) {
       successorMap = map;
+    }
+    
+    virtual bool hasChild(VMA addr) {
+      return successorMap.find(addr) != successorMap.end();
+    }
+
+    // Return -1 if addr2 is a successor of addr1; 1 if addr1 is a successor of addr2;
+    // 0 when there is no clear relationship between addr1 and addr2, insluding the case that 
+    // addr1 or addr2 is not a child of this CFG.
+    virtual int compareChild(VMA addr1, VMA addr2) {
+      if (!hasChild(addr1)) return 0;
+      if (!hasChild(addr2)) return 0;
+      
+      if (successorMap[addr1].find(addr2) != successorMap[addr1].end()) return -1;
+      if (successorMap[addr2].find(addr1) != successorMap[addr2].end()) return 1;
+      return 0;
     }
     
     virtual string toString() = 0;

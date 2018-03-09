@@ -338,4 +338,16 @@ namespace TraceAnalysis {
     }
     return ret;
   }
+  
+
+  CFGFunc* BinaryAnalyzer::findFunc(VMA vma) {
+    if (CFGFuncMap.find(vma) == CFGFuncMap.end()) return NULL;
+    return CFGFuncMap[vma];
+  }
+
+
+  CFGLoop* BinaryAnalyzer::findLoop(VMA vma) {
+    if (CFGLoopMap.find(vma) == CFGLoopMap.end()) return NULL;
+    return CFGLoopMap[vma];
+  }
 }

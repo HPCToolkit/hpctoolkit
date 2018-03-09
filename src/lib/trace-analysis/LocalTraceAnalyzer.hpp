@@ -63,6 +63,7 @@ using std::string;
 #include "BinaryAnalyzer.hpp"
 #include "CCTVisitor.hpp"
 #include "TraceFileReader.hpp"
+#include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
   class LocalTraceAnalyzer {
