@@ -98,12 +98,12 @@ namespace TraceAnalysis {
     virtual ~TCTTraceTime() {}
     
     virtual Time getMinDuration() {
-      if (endTimeInclusive == startTimeExclusive) return 0; // for dummy trace time
+      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeInclusive - startTimeInclusive + 1;
     }
     
     virtual Time getMaxDuration() {
-      if (endTimeInclusive == startTimeExclusive) return 0; // for dummy trace time
+      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeExclusive - startTimeExclusive - 1;
     }
     
@@ -114,6 +114,16 @@ namespace TraceAnalysis {
     virtual string toString() {
       return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
               + timeToString((endTimeInclusive + endTimeExclusive)/2);
+    }
+    
+    void setStartTime(Time exclusive, Time inclusive) {
+      startTimeExclusive = exclusive;
+      startTimeInclusive = inclusive;
+    }
+    
+    void setEndTime(Time inclusive, Time exclusive) {
+      endTimeInclusive = inclusive;
+      endTimeExclusive = exclusive;
     }
     
     void shiftTime(Time offset) {

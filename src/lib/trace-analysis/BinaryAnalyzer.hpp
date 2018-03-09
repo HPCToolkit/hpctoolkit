@@ -75,6 +75,13 @@ namespace TraceAnalysis {
 
     bool parse(const string& filename);
 
+    // Return a pointer to CFGFunc associated with vma.
+    // NULL if no such CFGFunc exist.
+    CFGFunc* findFunc(VMA vma);
+    
+    // Return a pointer to CFGLoop associated with vma.
+    // NULL if no such CFGFunc exist.
+    CFGLoop* findLoop(VMA vma);
   private:
     unordered_map<VMA, CFGFunc*> CFGFuncMap;
     unordered_map<VMA, CFGLoop*> CFGLoopMap;

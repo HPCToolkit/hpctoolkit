@@ -53,7 +53,6 @@
  * Analyzes traces for a rank/thread and generates a summary temporal context tree.
  */
 
-#include <stdio.h>
 #include <string>
 using std::string;
 #include <vector>
@@ -71,18 +70,153 @@ namespace TraceAnalysis {
 
   LocalTraceAnalyzer::~LocalTraceAnalyzer() {}
   
-  void LocalTraceAnalyzer::analyze() {
-    CallPathSample* sample = reader.readNextSample();
-    while (sample != NULL) {
-      printf("\nCall path at time %s, dLCA = %u.\n", timeToString(sample->timestamp).c_str(), sample->dLCA);
-      for (int i = 0; i <= sample->getDepth(); i++) {
-        CallPathFrame& frame = sample->getFrameAtDepth(i);
-        printf("  id=%u, name=%s, vma=0x%lx, type=%d, ra=0x%lx\n",
-                frame.id, frame.name.c_str(), frame.vma, frame.type, frame.ra);
+  void pushActiveStack(vector<TCTATraceNode*>& activeStack, TCTATraceNode* node, 
+          Time startTimeExclusive, Time startTimeInclusive) {
+    // Iteration Detection
+    if (activeStack.back()->type == TCTANode::Iter) {
+      CFGAGraph* cfg = activeStack.back()->cfgGraph;
+      int prevRA = 0;
+      for (int i = activeStack.back()->getNumChild()-1; i >= 0 && !cfg->hasChild(prevRA); i--)
+        prevRA = activeStack.back()->getChild(i)->ra;
+      
+      // when both prevRA and thisRA is child of cfg, and thisRA is not a successor of prevRA
+      if (cfg->hasChild(prevRA) && cfg->hasChild(node->ra) && cfg->compareChild(prevRA, node->ra) != -1) {
+        // pop the old iteration
+        activeStack.back()->getTraceTime()->setEndTime(startTimeExclusive, startTimeInclusive);
+        activeStack.pop_back();
+        // push a new iteration
+        TCTATraceNode* node = new TCTIterationTraceNode(activeStack.back()->id, activeStack.back()->getNumChild(), 
+                activeStack.size(), cfg);
+        node->getTraceTime()->setStartTime(startTimeExclusive, startTimeInclusive);
+        activeStack.back()->addChild(node);
+        activeStack.push_back(node);
       }
-      delete sample;
-      sample = reader.readNextSample();
-    };
+    }
+    
+    if (node->type == TCTANode::Loop) {
+      //TODO: for loop nodes with NULL cfgGraph, convert to Profile Node.
+      
+      // for loops with valid cfgGraph
+      if (node->cfgGraph != NULL) {
+        // add to stack
+        node->getTraceTime()->setStartTime(startTimeExclusive, startTimeInclusive);
+        activeStack.back()->addChild(node);
+        activeStack.push_back(node);
+        // create a iteration
+        node = new TCTIterationTraceNode(activeStack.back()->id, activeStack.back()->getNumChild(), 
+                activeStack.size(), activeStack.back()->cfgGraph);
+        node->getTraceTime()->setStartTime(startTimeExclusive, startTimeInclusive);
+        activeStack.back()->addChild(node);
+        activeStack.push_back(node);
+        return;
+      }
+    }
+    
+    //TODO: for func and iter nodes, check if a sub-loop is "splitted".
+    //TODO: for func and iter nodes, check if there is undetected loop.
+    
+    node->getTraceTime()->setStartTime(startTimeExclusive, startTimeInclusive);
+    activeStack.back()->addChild(node);
+    activeStack.push_back(node);
+  }
+  
+  void popActiveStack(vector<TCTATraceNode*>& activeStack, 
+          Time endTimeInclusive, Time endTimeExclusive) {
+    if (activeStack.back()->type == TCTANode::Iter) {
+      // When need to pop loops, first pop iteration and then pop loop.
+      activeStack.back()->getTraceTime()->setEndTime(endTimeInclusive, endTimeExclusive);
+      activeStack.pop_back();
+    }
+    activeStack.back()->getTraceTime()->setEndTime(endTimeInclusive, endTimeExclusive);
+    activeStack.pop_back();
+  }
+  
+  int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
+    int depth = current->getDepth();
+    int dLCA = current->dLCA;
+    if (dLCA != HPCRUN_FMT_DLCA_NULL) {
+      while (depth > 0 && dLCA > 0) {
+        if (current->getFrameAtDepth(depth).type == CallPathFrame::Func)
+          dLCA--;
+        depth--;
+      }
+    }
+    
+    if (depth > prev->getDepth()) depth = prev->getDepth();
+    while (depth > 0 && prev->getFrameAtDepth(depth).id != current->getFrameAtDepth(depth).id)
+      depth--;
+    
+    return depth;
+  }
+  
+  void LocalTraceAnalyzer::analyze() {
+    // Init and process first sample
+    vector<TCTATraceNode*> activeStack;
+    CallPathSample* current = reader.readNextSample();
+    uint64_t numSamples = 0;
+    if (current != NULL) {
+      numSamples++;
+      for (int i = 0; i <= current->getDepth(); i++) {
+        CallPathFrame& frame = current->getFrameAtDepth(i);
+        if (frame.type == CallPathFrame::Root) {
+          TCTATraceNode* node = new TCTRootNode(frame.id, frame.name, activeStack.size());
+          node->getTraceTime()->setStartTime(0, current->timestamp);
+          activeStack.push_back(node);
+        } 
+        else if (frame.type == CallPathFrame::Loop) {
+          TCTATraceNode* node = new TCTLoopTraceNode(frame.id, frame.name, activeStack.size(), 
+                  binaryAnalyzer.findLoop(frame.vma));
+          pushActiveStack(activeStack, node, 0, current->timestamp);
+        }
+        else {
+          // frame.type == CallPathFrame::Func
+          TCTATraceNode* node = new TCTFunctionTraceNode(frame.id, frame.name, activeStack.size(),
+                  binaryAnalyzer.findFunc(frame.vma), frame.ra);
+          pushActiveStack(activeStack, node, 0, current->timestamp);
+        }
+      }
+    }
+    
+    CallPathSample* prev = current;
+    current = reader.readNextSample();
+    
+    while (current != NULL) {
+      numSamples++;
+      int lcaDepth = computeLCADepth(prev, current);
+      int prevDepth = prev->getDepth();
+      
+      while (prevDepth > lcaDepth) {
+        prevDepth--;
+        popActiveStack(activeStack, prev->timestamp, current->timestamp);
+      }
+      
+      for (int i = lcaDepth + 1; i <= current->getDepth(); i++) {
+        CallPathFrame& frame = current->getFrameAtDepth(i);
+        if (frame.type == CallPathFrame::Loop) {
+          TCTATraceNode* node = new TCTLoopTraceNode(frame.id, frame.name, activeStack.size(), 
+                  binaryAnalyzer.findLoop(frame.vma));
+          pushActiveStack(activeStack, node, prev->timestamp, current->timestamp);
+        } else {
+          // frame.type == CallPathFrame::Func
+          TCTATraceNode* node = new TCTFunctionTraceNode(frame.id, frame.name, activeStack.size(),
+                  binaryAnalyzer.findFunc(frame.vma), frame.ra);
+          pushActiveStack(activeStack, node, prev->timestamp, current->timestamp);
+        }
+      }
+      
+      delete prev;
+      prev = current;
+      current = reader.readNextSample();
+    }
+    
+    TCTATraceNode* root = activeStack[0];
+    while (activeStack.size() > 0)
+      popActiveStack(activeStack, prev->timestamp, prev->timestamp + 1);
+    
+    delete prev;
+    
+    printf("%s\n", root->toString(10, 0).c_str());
+    delete root;
   }
 }
 
