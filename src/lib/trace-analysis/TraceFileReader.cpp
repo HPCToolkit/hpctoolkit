@@ -145,7 +145,10 @@ namespace TraceAnalysis {
     CallPathSample* cp = new CallPathSample(trace.time - minTime, trace.dLCA,
             cctVisitor.getLeafFrame(trace.cpId));
     
-    //TODO: filter centain call paths, such as partial call paths
+    if (cp->getFrameAtDepth(0).name == "<partial call paths>") {
+      delete cp;
+      return readNextSample(); //TODO: may need to change dLCA for the next normal call path.
+    }
     
     return cp;
   }

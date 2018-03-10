@@ -65,10 +65,26 @@ namespace TraceAnalysis {
     ret += "\n";
     
     if (depth >= maxDepth) return ret;
-    //if (time->getDuration() < minDuration) return ret;
+    if (time->getDuration() < minDuration) return ret;
     
     for (auto it = children.begin(); it != children.end(); it++)
       ret += (*it)->toString(maxDepth, minDuration);
+    return ret;
+  }
+  
+  string TCTProfileNode::toString(int maxDepth, Time minDuration) {
+    string ret;
+    
+    for (int i = 0; i < depth; i++) ret += "  ";
+    ret += name + "(" + std::to_string(id) + ")";
+    ret += " " + time->toString();
+    ret += "\n";
+    
+    if (depth >= maxDepth) return ret;
+    if (time->getDuration() < minDuration) return ret;
+    
+    for (auto it = childMap.begin(); it != childMap.end(); it++)
+      ret += it->second->toString(maxDepth, minDuration);
     return ret;
   }
 }

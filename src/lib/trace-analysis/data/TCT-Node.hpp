@@ -62,11 +62,24 @@ using std::string;
 #include <vector>
 using std::vector;
 
+#include <map>
+using std::map;
+
+#include <set>
+using std::set;
+
 #include "../TraceAnalysisCommon.hpp"
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 
 namespace TraceAnalysis {
+  // Forward declarations
+  class TCTANode;
+  class TCTATraceNode;
+  class TCTFunctionTraceNode;
+  class TCTIterationTraceNode;
+  class TCTProfileNode;
+  class TCTRootNode;
   
   // Temporal Context Tree Abstract Node
   class TCTANode {
@@ -75,20 +88,30 @@ namespace TraceAnalysis {
       Root,
       Func,
       Iter,
-      Loop
+      Loop,
+      Prof
     };
     
     TCTANode(NodeType type, int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
         type(type), id(id), name(name), cfgGraph(cfgGraph), ra(ra), 
-        depth(depth), time(NULL), weight(1) {}
+        depth(depth), weight(1) {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), name(orig.name), 
         cfgGraph(orig.cfgGraph), ra(orig.ra), depth(orig.depth), weight(orig.weight) {
-      if (orig.time == NULL) time = NULL;
-      else time = orig.time->duplicate();
+      time = orig.time->duplicate();
+    }
+    TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), name(orig.name), 
+        cfgGraph(orig.cfgGraph), ra(orig.ra), depth(orig.depth), weight(orig.weight) {
+      time = orig.time->duplicate();
     }
     virtual ~TCTANode() {
-      if (time != NULL) delete time;
+      delete time;
     }
+    
+    virtual TCTTraceTime* getTraceTime() {
+      if (time->type == TCTATime::Trace) return (TCTTraceTime*)time;
+      else return NULL;
+    }
+        
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
     virtual TCTANode* duplicate() = 0;
@@ -99,6 +122,10 @@ namespace TraceAnalysis {
     
     // Print contents of an object to a string for debugging purpose.
     virtual string toString(int maxDepth, Time minDuration) = 0;
+    
+    // Add child to this node. Deallocation responsibility is transfered to this node.
+    // Child could be deallocated inside the call.
+    virtual void addChild(TCTANode* child) = 0;
     
     const NodeType type;
     const int id;
@@ -116,6 +143,7 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Abstract Trace Node
   class TCTATraceNode : public TCTANode {
+    friend class TCTProfileNode;
   public:
     TCTATraceNode(NodeType type, int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
       TCTANode(type, id, name, depth, cfgGraph, ra) {
@@ -130,10 +158,6 @@ namespace TraceAnalysis {
         delete (*it);
     }
     
-    virtual TCTTraceTime* getTraceTime() {
-      return (TCTTraceTime*)time;
-    }
-    
     virtual int getNumChild() {
       return children.size();
     }
@@ -142,8 +166,27 @@ namespace TraceAnalysis {
       return children[idx];
     }
     
-    virtual void addChild(TCTANode* node) {
-      children.push_back(node);
+    virtual void addChild(TCTANode* child) {
+      children.push_back(child);
+    }
+    
+    virtual TCTANode* removeChild(int idx) {
+      TCTANode* ret = getChild(idx);
+      children.erase(children.begin() + idx);
+      return ret;
+    }
+    
+    // Return true if any pair of children have the same id; false otherwise.
+    virtual bool hasDuplicateChild() {
+      set<int> idSet;
+      for (int i = 0; i < getNumChild(); i++)
+        if (idSet.find(getChild(i)->id) == idSet.end())
+          idSet.insert(getChild(i)->id);
+        else {
+          printf("Duplicate child detected:\n%s", toString(depth+1, 0).c_str());
+          return true;
+        }
+      return false;
     }
     
     virtual string toString(int maxDepth, Time minDuration);
@@ -205,7 +248,7 @@ namespace TraceAnalysis {
   };
   
   class TCTLoopTraceNode : public TCTATraceNode {
-    public:
+  public:
     TCTLoopTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Loop, id, name, depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
@@ -217,6 +260,91 @@ namespace TraceAnalysis {
     }
     virtual TCTANode* voidDuplicate() {
       return new TCTLoopTraceNode(id, name, depth, cfgGraph);
+    }
+  };
+  
+  class TCTProfileNode : public TCTANode {
+  public:
+    static TCTProfileNode* newProfileNode(TCTANode* node) {
+      if (node->type == TCTANode::Prof)
+        return new TCTProfileNode(*((TCTProfileNode*)node), true);
+      
+      return new TCTProfileNode(*((TCTATraceNode*)node));
+    }
+    
+    virtual ~TCTProfileNode() {
+      for (auto it = childMap.begin(); it != childMap.end(); it++)
+        delete it->second;
+    }
+    
+    virtual TCTANode* duplicate() {
+      return new TCTProfileNode(*this, true);
+    };
+    
+    virtual TCTANode* voidDuplicate() {
+      TCTProfileNode* ret = new TCTProfileNode(*this, false);
+      ret->time->clear();
+      return ret;
+    }
+    
+    virtual void addChild(TCTANode* child) {
+      TCTProfileNode* profChild = NULL; 
+      if (child->type == TCTANode::Prof)
+        profChild = (TCTProfileNode*) child;
+      else {
+        profChild = TCTProfileNode::newProfileNode(child);
+        delete child;
+      }
+      
+      if (childMap.find(profChild->id) == childMap.end())
+        childMap[profChild->id] = profChild;
+      else {
+        childMap[profChild->id]->merge(profChild);
+        delete profChild;
+      }
+    }
+    
+    virtual string toString(int maxDepth, Time minDuration);
+    
+  protected:
+    // Map id to child profile node.
+    map<int, TCTProfileNode*> childMap;
+    
+    TCTProfileNode(const TCTATraceNode& loop) : TCTANode (loop, Prof) {
+      for (auto it = loop.children.begin(); it != loop.children.end(); it++) {
+        TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
+        if (childMap.find(child->id) == childMap.end())
+          childMap[child->id] = child;
+        else {
+          childMap[child->id]->merge(child);
+          delete child;
+        }
+      }
+    }
+    
+    TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {
+      if (copyChildMap)
+        for (auto it = prof.childMap.begin(); it != prof.childMap.end(); it++)
+          childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+    }
+    
+    virtual void merge(TCTProfileNode* other) {
+      TCTProfileTime* profileTime = NULL; 
+      if (time->type == TCTATime::Profile)
+        profileTime = (TCTProfileTime*) time;
+      else {
+        profileTime = new TCTProfileTime(*time);
+        delete time;
+        time = profileTime;
+      }
+      
+      profileTime->merge(other->time);
+      for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
+        if (childMap.find(it->second->id) == childMap.end())
+          childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+        else
+          childMap[it->second->id]->merge(it->second);
+      }
     }
   };
 }

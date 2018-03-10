@@ -125,6 +125,11 @@ namespace TraceAnalysis {
         }
       }
       
+      gettimeofday(&curTime, NULL);
+      long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
+                  + curTime.tv_usec - startTime.tv_usec;
+      printf("\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
+      
       // Step 4: analyze each trace file
       int begIdx = 0;
       int endIdx = traceFiles.size();
@@ -135,9 +140,9 @@ namespace TraceAnalysis {
       }
       
       gettimeofday(&curTime, NULL);
-      long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
+      timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
                   + curTime.tv_usec - startTime.tv_usec;
-      printf("\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
+      printf("\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
     }
     return true;
   }
