@@ -65,9 +65,16 @@ namespace TraceAnalysis {
   // Temporal Context Tree Abstract Time
   class TCTATime {
   public:
-    TCTATime() {}
-    TCTATime(const TCTATime& orig) {}
+    enum TimeType {
+      Trace,
+      Profile
+    };
+    
+    TCTATime(TimeType type) : type(type) {}
+    TCTATime(const TCTATime& orig) : type(orig.type) {}
     virtual ~TCTATime() {}
+    
+    virtual void clear() = 0;
     
     virtual Time getDuration() {
       return getMinDuration() + getMaxDuration() / 2;
@@ -78,16 +85,15 @@ namespace TraceAnalysis {
     virtual TCTATime* duplicate() = 0;
     
     virtual string toString() = 0;
+    
+    const TimeType type;
   };
   
   // Temporal Context Tree Trace Time
   class TCTTraceTime : public TCTATime {
   public:
-    TCTTraceTime() : TCTATime() {
-      startTimeExclusive = 0;
-      startTimeInclusive = 0;
-      endTimeInclusive = 0;
-      endTimeExclusive = 0;
+    TCTTraceTime() : TCTATime(Trace) {
+      clear();
     }
     TCTTraceTime(const TCTTraceTime& orig) : TCTATime(orig) {
       startTimeExclusive = orig.startTimeExclusive;
@@ -96,6 +102,13 @@ namespace TraceAnalysis {
       endTimeExclusive = orig.endTimeExclusive;
     }
     virtual ~TCTTraceTime() {}
+    
+    virtual void clear() {
+      startTimeExclusive = 0;
+      startTimeInclusive = 0;
+      endTimeInclusive = 0;
+      endTimeExclusive = 0;
+    }
     
     virtual Time getMinDuration() {
       if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
@@ -126,6 +139,22 @@ namespace TraceAnalysis {
       endTimeExclusive = exclusive;
     }
     
+    Time getStartTimeExclusive() {
+      return startTimeExclusive;
+    }
+    
+    Time getStartTimeInclusive() {
+      return startTimeInclusive;
+    }
+    
+    Time getEndTimeInclusive() {
+      return endTimeInclusive;
+    }
+    
+    Time getEndTimeExclusive() {
+      return endTimeExclusive;
+    }
+    
     void shiftTime(Time offset) {
       startTimeExclusive += offset;
       startTimeInclusive += offset;
@@ -143,19 +172,27 @@ namespace TraceAnalysis {
   // Temporal Context Profile Time
   class TCTProfileTime : public TCTATime {
   public:
-    TCTProfileTime() : TCTATime() {
-      minDurationInclusive = 0;
-      maxDurationInclusive = 0;
-      minDurationExclusive = 0;
-      maxDurationExclusive = 0;
+    TCTProfileTime() : TCTATime(Profile) {
+      clear();
     }
     TCTProfileTime(const TCTProfileTime& orig) : TCTATime(orig) {
       minDurationInclusive = orig.minDurationInclusive;
       maxDurationInclusive = orig.maxDurationInclusive;
-      minDurationExclusive = orig.minDurationExclusive;
-      maxDurationExclusive = orig.maxDurationExclusive;
+      //minDurationExclusive = orig.minDurationExclusive;
+      //maxDurationExclusive = orig.maxDurationExclusive;
+    }
+    TCTProfileTime(TCTATime& other) : TCTATime(Profile) {
+      minDurationInclusive = other.getMinDuration();
+      maxDurationInclusive = other.getMaxDuration();
     }
     virtual ~TCTProfileTime() {}
+    
+    virtual void clear() {
+      minDurationInclusive = 0;
+      maxDurationInclusive = 0;
+      //minDurationExclusive = 0;
+      //maxDurationExclusive = 0;
+    }
     
     virtual Time getMinDuration() {
       return minDurationInclusive;
@@ -170,15 +207,19 @@ namespace TraceAnalysis {
     }
     
     virtual string toString() {
-      return " In-time = " + timeToString((minDurationInclusive + maxDurationInclusive)/2) + 
-             " Ex-time = " + timeToString((minDurationExclusive + maxDurationExclusive)/2);
+      return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
+             //+ " Ex-time = " + timeToString((minDurationExclusive + maxDurationExclusive)/2);
     }
     
+    virtual void merge(TCTATime* other) {
+      minDurationInclusive += other->getMinDuration();
+      maxDurationInclusive += other->getMaxDuration();
+    }
   private:
     Time minDurationInclusive;
     Time maxDurationInclusive;
-    Time minDurationExclusive;
-    Time maxDurationExclusive;
+    //Time minDurationExclusive;
+    //Time maxDurationExclusive;
   };
 }
 
