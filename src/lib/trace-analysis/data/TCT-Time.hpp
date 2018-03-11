@@ -76,11 +76,11 @@ namespace TraceAnalysis {
     
     virtual void clear() = 0;
     
-    virtual Time getDuration() {
+    virtual Time getDuration() const {
       return getMinDuration() + getMaxDuration() / 2;
     }
-    virtual Time getMinDuration() = 0;
-    virtual Time getMaxDuration() = 0;
+    virtual Time getMinDuration() const = 0;
+    virtual Time getMaxDuration() const = 0;
     
     virtual TCTATime* duplicate() = 0;
     
@@ -110,12 +110,12 @@ namespace TraceAnalysis {
       endTimeExclusive = 0;
     }
     
-    virtual Time getMinDuration() {
+    virtual Time getMinDuration() const {
       if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeInclusive - startTimeInclusive + 1;
     }
     
-    virtual Time getMaxDuration() {
+    virtual Time getMaxDuration() const {
       if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeExclusive - startTimeExclusive - 1;
     }
@@ -181,7 +181,7 @@ namespace TraceAnalysis {
       //minDurationExclusive = orig.minDurationExclusive;
       //maxDurationExclusive = orig.maxDurationExclusive;
     }
-    TCTProfileTime(TCTATime& other) : TCTATime(Profile) {
+    TCTProfileTime(const TCTATime& other) : TCTATime(Profile) {
       minDurationInclusive = other.getMinDuration();
       maxDurationInclusive = other.getMaxDuration();
     }
@@ -194,11 +194,11 @@ namespace TraceAnalysis {
       //maxDurationExclusive = 0;
     }
     
-    virtual Time getMinDuration() {
+    virtual Time getMinDuration() const {
       return minDurationInclusive;
     }
     
-    virtual Time getMaxDuration() {
+    virtual Time getMaxDuration() const {
       return maxDurationInclusive;
     }
     

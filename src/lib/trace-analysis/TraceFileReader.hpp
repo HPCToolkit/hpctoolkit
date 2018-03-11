@@ -84,6 +84,7 @@ namespace TraceAnalysis {
     };
     
     const uint id;
+    const uint procID;
     const string name;
     const VMA vma;
     const FrameType type;
@@ -91,7 +92,7 @@ namespace TraceAnalysis {
     const VMA ra;
     
   private:
-    CallPathFrame(uint id, string name, VMA vma, FrameType type, VMA ra);
+    CallPathFrame(uint id, uint procID, string name, VMA vma, FrameType type, VMA ra);
   };
   
   // A sample of call path. 
@@ -101,8 +102,10 @@ namespace TraceAnalysis {
     
   public:
     const Time timestamp;
-    const uint dLCA;
   
+    uint getDLCA() {
+      return dLCA;
+    }
     // Return inclusive depth of the call path, which is number of frames minus one.
     int getDepth();
     // Return a frame at a given depth (0 \<= depth \<= getDepth()).
@@ -110,6 +113,7 @@ namespace TraceAnalysis {
     
   private:
     vector<CallPathFrame> frames;
+    uint dLCA;
     
     CallPathSample(Time timestamp, uint dLCA, void* ptr);
   };
