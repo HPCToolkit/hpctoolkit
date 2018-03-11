@@ -81,6 +81,30 @@ namespace TraceAnalysis {
   class TCTProfileNode;
   class TCTRootNode;
   
+  class TCTID {
+  public:
+    const int id; // Calling Context Tree ID for call sites and loops.
+    const int procID; // Proc ID for call sites.
+    
+    TCTID(int id, int procID) : id(id), procID(procID) {}
+    TCTID(const TCTID& other) : id(other.id), procID(other.procID) {}
+    virtual ~TCTID() {}
+    
+    bool operator==(const TCTID& other) const {
+      return (id == other.id) && (procID == other.procID);
+    }
+    
+    bool operator< (const TCTID& other) const {
+      if (id < other.id) return true;
+      if (id == other.id && procID < other.procID) return true;
+      return false;
+    }
+    
+    string toString() const {
+      return "(" + std::to_string(id) + "," + std::to_string(procID) + ")";
+    }
+  };
+  
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
@@ -92,8 +116,8 @@ namespace TraceAnalysis {
       Prof
     };
     
-    TCTANode(NodeType type, int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id), name(name), cfgGraph(cfgGraph), ra(ra), 
+    TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
+        type(type), id(id, procID), name(name), cfgGraph(cfgGraph), ra(ra), 
         depth(depth), weight(1) {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), name(orig.name), 
         cfgGraph(orig.cfgGraph), ra(orig.ra), depth(orig.depth), weight(orig.weight) {
@@ -111,6 +135,10 @@ namespace TraceAnalysis {
       if (time->type == TCTATime::Trace) return (TCTTraceTime*)time;
       else return NULL;
     }
+    
+    virtual int getDepth() {
+      return depth;
+    }
         
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
@@ -121,14 +149,14 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() = 0;
     
     // Print contents of an object to a string for debugging purpose.
-    virtual string toString(int maxDepth, Time minDuration) = 0;
+    virtual string toString(int maxDepth, Time minDuration);
     
     // Add child to this node. Deallocation responsibility is transfered to this node.
     // Child could be deallocated inside the call.
     virtual void addChild(TCTANode* child) = 0;
     
     const NodeType type;
-    const int id;
+    const TCTID id;
     const string name;
     // CFG Abstract Graph for this node.
     CFGAGraph* const cfgGraph; 
@@ -145,8 +173,8 @@ namespace TraceAnalysis {
   class TCTATraceNode : public TCTANode {
     friend class TCTProfileNode;
   public:
-    TCTATraceNode(NodeType type, int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-      TCTANode(type, id, name, depth, cfgGraph, ra) {
+    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
+      TCTANode(type, id, procID, name, depth, cfgGraph, ra) {
       time = new TCTTraceTime();
     }
     TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
@@ -176,19 +204,6 @@ namespace TraceAnalysis {
       return ret;
     }
     
-    // Return true if any pair of children have the same id; false otherwise.
-    virtual bool hasDuplicateChild() {
-      set<int> idSet;
-      for (int i = 0; i < getNumChild(); i++)
-        if (idSet.find(getChild(i)->id) == idSet.end())
-          idSet.insert(getChild(i)->id);
-        else {
-          printf("Duplicate child detected:\n%s", toString(depth+1, 0).c_str());
-          return true;
-        }
-      return false;
-    }
-    
     virtual string toString(int maxDepth, Time minDuration);
     
   protected:
@@ -198,8 +213,8 @@ namespace TraceAnalysis {
   // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTATraceNode {
   public:
-    TCTFunctionTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-      TCTATraceNode(Func, id, name, depth, cfgGraph, ra) {}
+    TCTFunctionTraceNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
+      TCTATraceNode(Func, id, procID, name, depth, cfgGraph, ra) {}
     TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTFunctionTraceNode() {}
     
@@ -207,15 +222,15 @@ namespace TraceAnalysis {
       return new TCTFunctionTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTFunctionTraceNode(id, name, depth, cfgGraph, ra);
+      return new TCTFunctionTraceNode(id.id, id.procID, name, depth, cfgGraph, ra);
     }
   };
   
   // Temporal Context Tree Root Node
   class TCTRootNode : public TCTATraceNode {
   public:
-    TCTRootNode(int id, string name, int depth) : 
-            TCTATraceNode(Root, id, name, depth, NULL, 0) {}
+    TCTRootNode(int id, int procID, string name, int depth) : 
+            TCTATraceNode(Root, id, procID, name, depth, NULL, 0) {}
     TCTRootNode(const TCTRootNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTRootNode() {}
     
@@ -223,7 +238,7 @@ namespace TraceAnalysis {
       return new TCTRootNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTRootNode(id, name, depth);
+      return new TCTRootNode(id.id, id.procID, name, depth);
     }
   };
   
@@ -231,10 +246,10 @@ namespace TraceAnalysis {
   class TCTIterationTraceNode : public TCTATraceNode {
   public:
     TCTIterationTraceNode(int id, uint64_t iterNum, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, "ITER_#" + std::to_string(iterNum), depth, 
+      TCTATraceNode(Iter, id, 0, "ITER_#" + std::to_string(iterNum), depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
     TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, name, depth, 
+      TCTATraceNode(Iter, id, 0, name, depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
     TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
@@ -243,14 +258,14 @@ namespace TraceAnalysis {
       return new TCTIterationTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTIterationTraceNode(id, name, depth, cfgGraph);
+      return new TCTIterationTraceNode(id.id, name, depth, cfgGraph);
     }
   };
   
   class TCTLoopTraceNode : public TCTATraceNode {
   public:
     TCTLoopTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Loop, id, name, depth, 
+      TCTATraceNode(Loop, id, 0, name, depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
     TCTLoopTraceNode(const TCTLoopTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTLoopTraceNode() {}
@@ -259,7 +274,7 @@ namespace TraceAnalysis {
       return new TCTLoopTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() {
-      return new TCTLoopTraceNode(id, name, depth, cfgGraph);
+      return new TCTLoopTraceNode(id.id, name, depth, cfgGraph);
     }
   };
   
@@ -308,7 +323,7 @@ namespace TraceAnalysis {
     
   protected:
     // Map id to child profile node.
-    map<int, TCTProfileNode*> childMap;
+    map<TCTID, TCTProfileNode*> childMap;
     
     TCTProfileNode(const TCTATraceNode& loop) : TCTANode (loop, Prof) {
       for (auto it = loop.children.begin(); it != loop.children.end(); it++) {

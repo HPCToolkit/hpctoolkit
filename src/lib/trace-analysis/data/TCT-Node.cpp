@@ -56,13 +56,24 @@
 #include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  string TCTATraceNode::toString(int maxDepth, Time minDuration) {
+  string TCTANode::toString(int maxDepth, Time minDuration) {
     string ret;
-    
+    /*
+    ret += "CFG-0x";
+    if (cfgGraph == NULL) ret += vmaToHexString(0);
+    else ret += vmaToHexString(cfgGraph->vma);
+    ret += " RA-0x" + vmaToHexString(ra) + " ";
+    */
     for (int i = 0; i < depth; i++) ret += "  ";
-    ret += name + "(" + std::to_string(id) + ")";
+    ret += name + id.toString();
     ret += " " + time->toString();
     ret += "\n";
+    
+    return ret;
+  }
+  
+  string TCTATraceNode::toString(int maxDepth, Time minDuration) {
+    string ret = TCTANode::toString(maxDepth, minDuration);
     
     if (depth >= maxDepth) return ret;
     if (time->getDuration() < minDuration) return ret;
@@ -73,12 +84,7 @@ namespace TraceAnalysis {
   }
   
   string TCTProfileNode::toString(int maxDepth, Time minDuration) {
-    string ret;
-    
-    for (int i = 0; i < depth; i++) ret += "  ";
-    ret += name + "(" + std::to_string(id) + ")";
-    ret += " " + time->toString();
-    ret += "\n";
+    string ret = TCTANode::toString(maxDepth, minDuration);
     
     if (depth >= maxDepth) return ret;
     if (time->getDuration() < minDuration) return ret;

@@ -60,8 +60,8 @@
 #include <lib/prof/NameMappings.hpp>
 
 namespace TraceAnalysis {
-  CallPathFrame::CallPathFrame(uint id, string name, VMA vma, FrameType type, VMA ra) :
-          id(id), name(name), vma(vma), type(type), ra(ra) {}
+  CallPathFrame::CallPathFrame(uint id, uint procID, string name, VMA vma, FrameType type, VMA ra) :
+          id(id), procID(procID), name(name), vma(vma), type(type), ra(ra) {}
   
   CallPathSample::CallPathSample(Time timestamp, uint dLCA, void* leafFrame) :
           timestamp(timestamp), dLCA(dLCA) {
@@ -71,6 +71,7 @@ namespace TraceAnalysis {
       if (cur->type() == cur->TyLoop) {
         CallPathFrame loop(
                 cur->id(), 
+                0,
                 "loop@" + std::to_string(cur->begLine()),
                 cur->structure()->vmaSet().begin()->beg(),
                 CallPathFrame::Loop,
@@ -85,6 +86,7 @@ namespace TraceAnalysis {
         name = normalize_name(name.c_str(), isFake);
         CallPathFrame func(
                 cur->id(),
+                last->id(),
                 name,
                 last->structure()->vmaSet().begin()->beg(),
                 CallPathFrame::Func,
@@ -103,6 +105,7 @@ namespace TraceAnalysis {
       name = normalize_name(name.c_str(), isFake);
       CallPathFrame func(
               cur->id(),
+              last->id(),
               name,
               0,
               CallPathFrame::Root,
@@ -147,7 +150,8 @@ namespace TraceAnalysis {
     
     if (cp->getFrameAtDepth(0).name == "<partial call paths>") {
       delete cp;
-      return readNextSample(); //TODO: may need to change dLCA for the next normal call path.
+      cp = readNextSample(); 
+      cp->dLCA = HPCRUN_FMT_DLCA_NULL;
     }
     
     return cp;
