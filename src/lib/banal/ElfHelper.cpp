@@ -105,13 +105,13 @@ ElfFile::open
 
   elf_version(EV_CURRENT);
   elf = elf_memory(memPtr, memLen);
-  if (elf == 0) {
+  if (elf == 0 || elf_kind(elf) != ELF_K_ELF) {
     return false;
   }
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
   if (!ehdr) {
-    DIAG_EMsg("not an ELF binary: " << _fileName);
+    DIAG_EMsg("failed to open ELF binary: " << _fileName);
     return false;
   }
 #ifdef EM_CUDA
