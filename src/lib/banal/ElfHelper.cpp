@@ -111,7 +111,6 @@ ElfFile::open
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
   if (!ehdr) {
-    DIAG_EMsg("failed to open ELF binary: " << _fileName);
     return false;
   }
 #ifdef EM_CUDA
