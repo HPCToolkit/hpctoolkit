@@ -90,6 +90,7 @@
 #include "sample-sources/common.h"
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/loadmap.h>
 #include <hpcrun/messages/messages.h>
@@ -102,8 +103,9 @@
 #include <hpcrun/utilities/arch/context-pc.h>
 
 #include <evlist.h>
-
+#include <limits.h>   // PATH_MAX
 #include <lib/prof-lean/hpcrun-metric.h> // prefix for metric helper
+#include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h> 
 
@@ -118,6 +120,8 @@
 #include "sample-sources/display.h" // api to display available events
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
+
+#include "lib/support-lean/compress.h"
 
 //******************************************************************************
 // macros
@@ -156,9 +160,9 @@
 
 #define PERF_MULTIPLEX_RANGE 1.2
 
-#define PATH_KERNEL_KPTR_RESTICT    "/proc/sys/kernel/kptr_restrict"
-#define PATH_KERNEL_PERF_PARANOID   "/proc/sys/kernel/perf_event_paranoid"
+#define FILE_BUFFER_SIZE (1024*1024)
 
+#define DEFAULT_COMPRESSION 5
 
 //******************************************************************************
 // type declarations
@@ -245,6 +249,60 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
 }
 
 
+/****
+ * copy /proc/kallsyms file into hpctoolkit output directory
+ * return
+ *  1 if the copy is successful
+ *  0 if the target file already exists
+ *  -1 if something wrong happens
+ */
+static int
+copy_kallsyms()
+{
+  char *source = LINUX_KERNEL_SYMBOL_FILE;
+
+  FILE *infile = fopen(source, "r");
+  if (infile == NULL)
+    return -1;
+
+  char  dest[PATH_MAX], kernel_name[PATH_MAX];
+  char  dest_directory[PATH_MAX];
+  char *hpctoolkit_directory = get_output_directory();
+
+  snprintf(dest_directory, PATH_MAX, "%s/%s", hpctoolkit_directory,
+           DIRECTORY_FILE_COLLECTION);
+
+  OSUtil_setCustomKernelName(kernel_name, PATH_MAX);
+
+  // we need to keep the host-id to be exactly the same template
+  // as the hpcrun file. If the filename format changes in hpcun
+  //  we need to adapt again here.
+
+  snprintf(dest, PATH_MAX, "%s/%s", dest_directory, kernel_name);
+
+  // test if the file already exist
+  struct stat st = {0};
+  if (stat(dest, &st) >= 0) {
+    return 0; // file already exists
+  }
+
+  mkdir(dest_directory, S_IRWXU | S_IRGRP | S_IXGRP);
+
+  FILE *outfile = fopen(dest, "wx");
+
+  if (outfile == NULL)
+    return -1;
+
+  compress_deflate(infile, outfile, DEFAULT_COMPRESSION);
+
+  fclose(infile);
+  fclose(outfile);
+
+  TMSG(LINUX_PERF, "copy %s into %s", source, dest);
+
+  return 1;
+}
+
 //----------------------------------------------------------
 // initialization
 //----------------------------------------------------------
@@ -252,6 +310,15 @@ perf_stop_all(int nevents, event_thread_t *event_thread)
 static void 
 perf_init()
 {
+  // copy /proc/kallsyms file into hpctoolkit output directory
+  // only if the value of kptr_restric is zero
+
+  if (perf_util_get_kptr_restrict() == 0 && perf_util_get_paranoid_level()<2) {
+    //copy the kernel symbol table
+    int ret = copy_kallsyms();
+    TMSG(LINUX_PERF, "copy_kallsyms result: %d", ret);
+  }
+
   perf_mmap_init();
 
   // initialize mask to block PERF_SIGNAL 
@@ -277,7 +344,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_event_open(&event->attr,
+  et->fd = perf_util_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
     event->id, et->fd, event->attr.precise_ip, event->attr.config,
@@ -456,6 +523,11 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
+#ifdef ENABLE_PERFMON
+  // perfmon is smart enough to detect if pfmu has been initialized or not
+  pfmu_init();
+#endif
+
   perf_util_init();
 
   // checking the option of multiplexing:
@@ -614,11 +686,6 @@ METHOD_FN(supports_event, const char *ev_str)
 {
   TMSG(LINUX_PERF, "supports event %s", ev_str);
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
-#endif
-
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
   }
@@ -721,7 +788,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_attr_init(event_attr, is_period, threshold, 0);
+    perf_util_attr_init(event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric
@@ -894,16 +961,6 @@ perf_event_handler(
 )
 {
   // ----------------------------------------------------------------------------
-  // disable all counters
-  // ----------------------------------------------------------------------------
-  sample_source_t *self = &obj_name();
-  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-
-  int nevents = self->evl.nevents;
-
-  perf_stop_all(nevents, event_thread);
-
-  // ----------------------------------------------------------------------------
   // check #0:
   // if the interrupt came while inside our code, then drop the sample
   // and return and avoid the potential for deadlock.
@@ -913,11 +970,20 @@ perf_event_handler(
 
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
-    restart_perf_event(siginfo->si_fd);
-    perf_start_all(nevents, event_thread);
 
     return 0; // tell monitor the signal has been handled.
   }
+
+  // ----------------------------------------------------------------------------
+  // disable all counters
+  // ----------------------------------------------------------------------------
+
+  sample_source_t *self = &obj_name();
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
+
+  int nevents = self->evl.nevents;
+
+  perf_stop_all(nevents, event_thread);
 
   // ----------------------------------------------------------------------------
   // check #1: check if signal generated by kernel for profiling
@@ -989,7 +1055,7 @@ perf_event_handler(
 
     // reading info from mmapped buffer
     more_data = read_perf_buffer(current, &mmap_data);
-    TMSG(LINUX_PERF, "record buffer: sid: %d, ip: %p, addr: %p, id: %d", mmap_data.sample_id, mmap_data.ip, mmap_data.addr, mmap_data.id);
+    //TMSG(LINUX_PERF, "record buffer: sid: %d, ip: %p, addr: %p, id: %d", mmap_data.sample_id, mmap_data.ip, mmap_data.addr, mmap_data.id);
 
     sample_val_t sv;
     memset(&sv, 0, sizeof(sample_val_t));

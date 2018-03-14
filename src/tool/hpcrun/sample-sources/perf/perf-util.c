@@ -53,6 +53,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>
 #include "perf-util.h"
@@ -77,6 +78,8 @@
 #define PERF_EVENT_SKID_ZERO_REQUESTED   2
 #define PERF_EVENT_SKID_CONSTANT         1
 #define PERF_EVENT_SKID_ARBITRARY        0
+
+#define MAX_BUFFER_LINUX_KERNEL 128
 
 
 //******************************************************************************
@@ -118,6 +121,15 @@ static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
 // implementation
 //******************************************************************************
 
+static cct_node_t *
+perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
+{
+  ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = ip };
+  cct_addr_t frm      = { .ip_norm = npc };
+
+  return hpcrun_cct_insert_addr(parent, &frm);
+}
+
 static uint16_t 
 perf_get_kernel_lm_id() 
 {
@@ -125,7 +137,10 @@ perf_get_kernel_lm_id()
     // ensure that this is initialized only once per process
     spinlock_lock(&perf_lock);
     if (perf_kernel_lm_id == 0) {
-      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+      char buffer[MAX_BUFFER_LINUX_KERNEL];
+      OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
+
+      perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
     }
     spinlock_unlock(&perf_lock);
   }
@@ -147,18 +162,22 @@ perf_add_kernel_callchain(
   if (data_aux == NULL)  {
     return parent;
   }
+
+
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
   if (data->nr > 0) {
+
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
+    // if we have call chain from the kernel, but no kernel symbol address available,
+    // we collapse all kernel call chains into a single node
+    if (perf_util_get_kptr_restrict() != 0) {
+      return perf_insert_cct(perf_get_kernel_lm_id(), parent, 0);
+    }
 
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_get_kernel_lm_id();
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
+      parent = perf_insert_cct(perf_get_kernel_lm_id(), parent, data->ips[i]);
     }
   }
   return parent;
@@ -192,7 +211,7 @@ getEnvLong(const char *env_var, long default_value)
 //    updated for the default precise ip.
 // @return the assigned precise ip 
 //----------------------------------------------------------
-u64
+static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
   static int precise_ip = -1;
@@ -209,7 +228,7 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // check the validity of the requested precision
     // if it returns -1 we need to use our own auto-detect precision
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -229,7 +248,7 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // ask sys to "create" the event
     // it returns -1 if it fails.
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -248,18 +267,17 @@ get_precise_ip(struct perf_event_attr *attr)
 // predicates that test perf availability
 //----------------------------------------------------------
 
-static int
-perf_kernel_syms_avail()
+int
+perf_util_get_paranoid_level()
 {
   FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
-  FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
   int level         = 3; // default : no access to perf event
 
-  if (ksyms != NULL && pe_paranoid != NULL) {
+  if (pe_paranoid != NULL) {
     fscanf(pe_paranoid, "%d", &level) ;
   }
-  if (ksyms)       fclose(ksyms);
-  if (pe_paranoid) fclose(pe_paranoid);
+  if (pe_paranoid)
+    fclose(pe_paranoid);
 
   return level;
 }
@@ -294,6 +312,25 @@ is_perf_ksym_available()
   return (ksym_status == PERF_AVAILABLE);
 }
 
+//----------------------------------------------------------
+// testing perf availability
+//----------------------------------------------------------
+static int
+perf_kernel_syms_avail()
+{
+  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
+  FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+  int level         = 3; // default : no access to perf event
+
+  if (ksyms != NULL && pe_paranoid != NULL) {
+    fscanf(pe_paranoid, "%d", &level) ;
+  }
+  if (ksyms)       fclose(ksyms);
+  if (pe_paranoid) fclose(pe_paranoid);
+
+  return level;
+}
+
 
 /*************************************************************
  * Interface API
@@ -323,11 +360,21 @@ perf_util_init()
 }
 
 
-void
-perf_util_init_kernel_lm()
+/*************************************************************
+ * Interface API
+ **************************************************************/ 
+
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
 {
-  is_perf_ksym_available();
+   int ret;
+
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
 }
+
+
 
 //----------------------------------------------------------
 // generic default initialization for event attributes
@@ -335,7 +382,7 @@ perf_util_init_kernel_lm()
 //   false otherwise.
 //----------------------------------------------------------
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -383,4 +430,24 @@ perf_attr_init(
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   return true;
+}
+
+
+/***
+ * retrieve the value of kptr_restrict
+ */
+int
+perf_util_get_kptr_restrict()
+{
+  static int privilege = -1;
+
+  if (privilege >= 0)
+    return privilege;
+
+  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &privilege);
+    fclose(fp);
+  }
+  return privilege;
 }

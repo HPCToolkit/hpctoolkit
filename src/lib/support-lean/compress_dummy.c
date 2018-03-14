@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,62 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-//*****************************************************************************
+#include "../support-lean/compress.h"
 
-void hpcrun_files_set_directory();
-char* get_output_directory();
+#define CHUNK 1024
 
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
+/* Compress from file source to file dest until EOF on source.
+It returns:
+     COMPRESS_OK on success,
+     COMPRESS_FAIL if the inflate data is invalid or the version is
+       incorrect,
+     COMPRESS_IO_ERROR is there is an error reading or writing the file
+     COMPRESS_NONE if compression is not needed.
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
+   The compression level must be Z_DEFAULT_COMPRESSION,
+   or between 0 and 9: 1 gives best speed, 9 gives best compression,
+   0 gives no compression at all (the input data is simply copied a
+   block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
+   between speed and compression (currently equivalent to level 6).
+ */
+int compress_deflate(FILE *source, FILE *dest, int level)
+{
+  char buffer[CHUNK];
 
-//*****************************************************************************
+  for(;;) {
+    ssize_t byteRead = read(source, buffer, sizeof(buffer));
 
-#endif // files_h
+    if (byteRead <= 0)
+      break;
+
+    fwrite(dest, buffer, byteRead);
+  }
+  return COMPRESS_NONE;
+}
+
+/* Decompress from file source to file dest until stream ends or EOF.
+   It returns:
+     DECOMPRESS_OK on success,
+     DECOMPRESS_FAIL if the deflate data is invalid or the version is
+       incorrect,
+     DECOMPRESS_IO_ERROR is there is an error reading or writing the file
+     DECOMPRESS_NONE if decompression is not needed.
+ */
+int
+compress_inflate(FILE *source, FILE *dest)
+{
+  return COMPRESS_NONE;
+}

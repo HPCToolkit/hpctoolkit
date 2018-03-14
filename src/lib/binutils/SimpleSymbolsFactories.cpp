@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,66 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+//******************************************************************************
+// system includes
+//******************************************************************************
 
-//*****************************************************************************
+#include <vector>
 
-void hpcrun_files_set_directory();
-char* get_output_directory();
 
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-//*****************************************************************************
+#include "SimpleSymbolsFactories.hpp"
+#include "LinuxKernelSymbols.hpp"
+//#include "VdsoSymbols.hpp"
 
-#endif // files_h
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+struct  SimpleSymbolsFactoriesRepr {
+  std::vector<SimpleSymbolsFactory *> factories;
+};
+
+
+
+//******************************************************************************
+// global data
+//******************************************************************************
+
+SimpleSymbolsFactories simpleSymbolsFactories;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+SimpleSymbolsFactories::SimpleSymbolsFactories
+(
+ void
+)
+{
+  R = new struct SimpleSymbolsFactoriesRepr; 
+  //R->factories.push_back(new VdsoSymbolsFactory);
+  R->factories.push_back(new LinuxKernelSymbolsFactory);
+}
+
+
+SimpleSymbolsFactory *
+SimpleSymbolsFactories::find
+(
+ const char *pathname
+)
+{
+  for (auto it = R->factories.begin();
+       it != R->factories.end(); ++it) {
+    if ((*it)->match(pathname)) return *it;
+  }
+  return NULL;
+}

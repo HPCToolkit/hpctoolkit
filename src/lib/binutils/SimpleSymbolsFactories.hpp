@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+#ifndef __SIMPLESYMBOLSFACTORIES__
+#define __SIMPLESYMBOLSFACTORIES__
 
-//*****************************************************************************
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-void hpcrun_files_set_directory();
-char* get_output_directory();
+#include "SimpleSymbols.hpp"
 
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
 
-//*****************************************************************************
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-#endif // files_h
+class SimpleSymbolsFactories {
+public:
+  SimpleSymbolsFactories();
+  SimpleSymbolsFactory *find(const char *pathname);
+private:
+  struct SimpleSymbolsFactoriesRepr *R;
+};
+
+
+
+//******************************************************************************
+// global variables
+//******************************************************************************
+
+extern SimpleSymbolsFactories simpleSymbolsFactories;
+
+#endif

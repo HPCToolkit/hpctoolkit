@@ -284,10 +284,19 @@ realmain(int argc, char* const* argv)
     profGbl = profLcl;
     profLcl = NULL;
   }
-  delete profLcl;
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
+
+  if (myRank != rootRank) {
+    // copy back the set of directory into the global profile
+    //
+    // during the broadcast we'll lose the information of directory set
+    // this directory set will be used later for kernel symbol looking to
+    // find vmlinux files
+    profGbl->copyDirectory(profLcl->directorySet());
+  }
+  delete profLcl;
 
   // -------------------------------------------------------
   // 1c. Add static structure to canonical CCT; form dense node ids

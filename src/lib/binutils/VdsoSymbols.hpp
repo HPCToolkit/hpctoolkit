@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+#ifndef __VDSOSYMBOLS_HPP__
+#define __VDSOSYMBOLS_HPP__
 
-//*****************************************************************************
+//******************************************************************************
+// global includes
+//******************************************************************************
 
-void hpcrun_files_set_directory();
-char* get_output_directory();
+#include <stdint.h>
 
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
 
-//*****************************************************************************
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-#endif // files_h
+#include "SimpleSymbols.hpp"
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+class VdsoSymbols : public SimpleSymbols {
+public:
+  VdsoSymbols();
+  bool parse(const char *pathname);
+};
+
+
+class VdsoSymbolsFactory : public SimpleSymbolsFactory {
+public:
+  bool match(const char *pathname);
+  SimpleSymbols *create();
+};
+
+#endif

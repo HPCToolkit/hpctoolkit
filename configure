@@ -700,6 +700,7 @@ OPT_BUILD_BACK_END_FALSE
 OPT_BUILD_BACK_END_TRUE
 BACK_END_LABEL
 ZLIB_COPY
+ZLIB_HPCLINK_LIB
 ZLIB_LIB
 ZLIB_INC
 OPT_USE_ZLIB_FALSE
@@ -750,7 +751,9 @@ OPT_INSTALL_MONITOR
 HPC_MONITOR
 MONITOR
 LZMA_LIB
+LZMA_INC
 LZMA_COPY
+LZMA_PROF_MPI_LIBS
 LZMA_LDFLAGS_STAT
 LZMA_LDFLAGS_DYN
 UNW_LIBUNW_FALSE
@@ -19941,8 +19944,10 @@ LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
+LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
+LZMA_PROF_MPI_LIBS=
 
 # allow for older externals which doesn't define ext_lzma_prefix
 if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
@@ -19967,6 +19972,7 @@ case "$LZMA" in
         LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
 	LZMA_COPY=yes
 	LZMA_LIB="$lzma_libdir"
+        LZMA_INC="${LZMA}/include"
 	if test -f "${lzma_libdir}/liblzma.a" ; then
 	  LZMA_STATIC=yes
 	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
@@ -19976,6 +19982,17 @@ case "$LZMA" in
     done
     if test "x$LZMA_LIB" = x ; then
       as_fn_error $? "invalid lzma directory: $LZMA" "$LINENO" 5
+    else
+      #
+      # hpcprof-mpi: same as hpclink if fully static, else default
+      #
+      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      if test $? = 0 ; then
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+      else
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+      fi
+
     fi
     ;;
   no )
@@ -19989,6 +20006,8 @@ esac
 $as_echo "$LZMA" >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: lzma static: $LZMA_STATIC" >&5
 $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
+
+
 
 
 
@@ -20934,6 +20953,7 @@ $as_echo_n "checking zlib... " >&6; }
 
 ZLIB_INC=no
 ZLIB_LIB=no
+ZLIB_HPCLINK_LIB=no
 ZLIB_COPY=no
 
 case "$ZLIB" in
@@ -20943,13 +20963,14 @@ case "$ZLIB" in
     fi
     ZLIB_INC="${ZLIB}/include"
     for lib in $multilib_path ; do
-      if test -f "${ZLIB}/${lib}/libz.so" ; then
+      if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
+	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
 	break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
-      as_fn_error $? "unable to find zlib.so in: $ZLIB" "$LINENO" 5
+      as_fn_error $? "unable to find zlib.so or zlib.a in: $ZLIB" "$LINENO" 5
     fi
     ZLIB_COPY=yes
     ;;
@@ -20970,6 +20991,7 @@ else
   OPT_USE_ZLIB_TRUE='#'
   OPT_USE_ZLIB_FALSE=
 fi
+
 
 
 

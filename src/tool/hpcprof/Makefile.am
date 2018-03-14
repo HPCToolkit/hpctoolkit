@@ -66,6 +66,7 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
+
 #############################################################################
 # Local settings
 #############################################################################
@@ -90,7 +91,8 @@ MYLDFLAGS = \
 	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@GNUBINUTILS_LDFLAGS@ \
+	@LZMA_LDFLAGS_DYN@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -107,6 +109,7 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(HPCLIB_TraceAnalysis) \
 	$(MY_LIB_CFG) \
+	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCPROF_LDFLAGS@

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,24 +44,68 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef files_h
-#define files_h
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-//*****************************************************************************
+#ifndef HPCTOOLKIT_COMPRESS_H
+#define HPCTOOLKIT_COMPRESS_H
 
-void hpcrun_files_set_directory();
-char* get_output_directory();
+#include <stdio.h>
 
-void hpcrun_files_set_executable(char *execname);   
-const char *hpcrun_files_executable_pathname();
-const char *hpcrun_files_executable_name();
 
-int hpcrun_open_log_file(void);
-int hpcrun_open_trace_file(int thread);
-int hpcrun_open_profile_file(int rank, int thread);
-int hpcrun_rename_log_file(int rank);
-int hpcrun_rename_trace_file(int rank, int thread);
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-//*****************************************************************************
+#define COMPRESSION_LEVEL_DEFAULT 6
 
-#endif // files_h
+enum compress_e {
+  COMPRESS_OK, COMPRESS_FAIL, COMPRESS_IO_ERROR, COMPRESS_NONE
+};
+
+/* Compress from file source to file dest until EOF on source.
+It returns:
+     COMPRESS_OK on success,
+     COMPRESS_FAIL if the inflate data is invalid or the version is
+       incorrect,
+     COMPRESS_IO_ERROR is there is an error reading or writing the file
+     COMPRESS_NONE if compression is not needed.
+
+   The compression level must be COMPRESSION_LEVEL_DEFAULT,
+   or between 0 and 9: 1 gives best speed, 9 gives best compression,
+   0 gives no compression at all (the input data is simply copied a
+   block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
+   between speed and compression (currently equivalent to level 6).
+ */
+enum compress_e
+compress_deflate(FILE *source, FILE *dest, int level);
+
+/* Decompress from file source to file dest until stream ends or EOF.
+   It returns:
+     COMPRESS_OK on success,
+     COMPRESS_FAIL if the deflate data is invalid or the version is
+       incorrect,
+     COMPRESS_IO_ERROR is there is an error reading or writing the file
+     COMPRESS_NONE if decompression is not needed.
+ */
+enum compress_e
+compress_inflate(FILE *source, FILE *dest);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif // HPCTOOLKIT_COMPRESS_H
