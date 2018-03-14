@@ -358,11 +358,9 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     }
   }
 
-  // make sure file and line are either both known or both unknown.
-  // this case probably never happens, but we do want to rely on it.
-  if (! svec.empty()
-      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
-  {
+  // a known file and unknown line is now legal, but we require that
+  // any line map must contain a file name
+  if (! svec.empty() && svec[0]->getFile() == "") {
     svec.clear();
   }
 }
@@ -530,6 +528,74 @@ findCodeRegion(RegionMap & codeMap, VMA vma)
 
 //----------------------------------------------------------------------
 
+// getProcLineMap -- helper for makeSkeleton() to find line map info
+// for the start of a Procedure.
+//
+// Some compilers, especially for CUDA binaries, and sometimes dyninst
+// or libdwarf, omit or fail to read line map info for the first few
+// bytes of a function.  Rather than returning 'unknown file', we try
+// scanning the first few hundred bytes in the proc.
+//
+static void
+getProcLineMap(StatementVector & svec, Offset vma, Offset end,
+	       SymtabAPI::Function * sym_func)
+{
+  svec.clear();
+
+  // try a full module lookup first
+  getStatement(svec, vma, sym_func);
+  if (! svec.empty()) {
+    return;
+  }
+
+  // confine further searches to the primary module
+  if (sym_func == NULL) {
+    return;
+  }
+  Module * mod = sym_func->getModule();
+
+  if (mod == NULL) {
+    return;
+  }
+
+  // retry every 'step' bytes, but double the step every 8 tries to
+  // make a logarithmic search
+  const int init_step = 2;
+  const int max_tries = 8;
+  int step = init_step;
+  int num_tries = 0;
+  end = std::min(end, vma + 800);
+
+  for (;;) {
+    // invariant: vma does not have line info, but next might
+    Offset next = vma + step;
+    if (next >= end) {
+      break;
+    }
+
+    mod->getSourceLines(svec, next);
+    num_tries++;
+
+    if (! svec.empty()) {
+      // rescan the range [vma, next) but start over with a small step
+      if (step <= init_step) {
+	break;
+      }
+      svec.clear();
+      step = init_step;
+      num_tries = 0;
+    }
+    else {
+      // advance vma and double the step after 8 tries
+      vma = next;
+      if (num_tries >= max_tries) {
+	step *= 2;
+	num_tries = 0;
+      }
+    }
+  }
+}
+
 // addProc -- helper for makeSkeleton() to locate and add one ProcInfo
 // object into the global file map.
 //
@@ -654,7 +720,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
       // line map for symtab func
       vector <Statement::Ptr> svec;
-      getStatement(svec, sym_start, sym_func);
+      getProcLineMap(svec, sym_start, sym_end, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
@@ -695,7 +761,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 	// line map for parseapi func
 	vector <Statement::Ptr> pvec;
-	getStatement(pvec, vma, sym_func);
+	getProcLineMap(pvec, vma, sym_end, sym_func);
 
 	if (! pvec.empty()) {
 	  parse_filenm = pvec[0]->getFile();
@@ -1886,8 +1952,8 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     VMA vma = cit->first;
     HeaderInfo * info = &(cit->second);
-    SrcFile::ln line;
-    string filenm;
+    SrcFile::ln line = 0;
+    string filenm = "";
 
     InlineSeqn seqn;
     analyzeAddr(seqn, vma);
