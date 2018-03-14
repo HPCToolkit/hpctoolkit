@@ -1609,6 +1609,10 @@ found_file:
   loop->getLoopEntries(entryBlocks);
   VMA entry_vma = (*(entryBlocks.begin()))->start();
 
+  for (auto bit = entryBlocks.begin(); bit != entryBlocks.end(); ++bit) {
+    entry_vma = std::min(entry_vma, (*bit)->start());
+  }
+
   LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
 				file_ans, base_ans, line_ans);
 
