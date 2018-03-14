@@ -410,6 +410,52 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000:       
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000:          
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_v4000:     
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_v3020:              
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_v3020:         
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_ptds_v7000:         
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_ptsz_v7000:    
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_ptds_v7000:     
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_v3020:             
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_v3020:         
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_v3020:       
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_v3020:       
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_v3020:     
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_v3020:    
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_v3020:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_v3020:        
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_v3020:      
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020:           
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_v3020:    
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_v3020:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_v3020:         
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_v3020:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_v3020:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_ptds_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_ptds_v7000:            
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_ptds_v7000:        
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_ptds_v7000:       
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_ptds_v7000:       
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_ptds_v7000:     
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_ptds_v7000:    
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_ptds_v7000:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_ptds_v7000:        
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_ptds_v7000:      
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_ptsz_v7000:           
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_ptsz_v7000:    
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_ptsz_v7000:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_ptsz_v7000:         
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_ptsz_v7000:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_ptsz_v7000:  
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000: 
       #if CUPTI_API_VERSION >= 10
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000:
