@@ -852,7 +852,7 @@ hpcrun_ompt_device_finalizer(void *args)
     cupti_ompt_activity_flush();
     ompt_stop_flag = false;
     // TODO(keren): replace cupti with sth. called device queue
-    cupti_activity_queue_apply(cupti_attribute_activity);
+    cupti_queue_apply_activity(cupti_activity_attribute);
   }
 }
 
@@ -911,7 +911,7 @@ ompt_trace_configure(ompt_device_t *device)
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
 
-  ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
+  ompt_set_pc_sampling_frequency(device, cupti_pc_sampling_frequency_get());
 }
 
 
@@ -1055,7 +1055,7 @@ void
 prepare_device()
 {
   device_finalizer.fn = hpcrun_ompt_device_finalizer;
-  device_finalizer_register(&device_finalizer);
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer);
 
   kind_info_t *ompt_target_kind = hpcrun_metrics_new_kind();
   ompt_target_metric_id = hpcrun_set_new_metric_info(ompt_target_kind, "OMPT_TARGET_KIND"); 

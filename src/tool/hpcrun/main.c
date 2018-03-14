@@ -620,7 +620,8 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
-    device_finalizer_apply();
+    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_shutdown);
 
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -724,7 +725,7 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    device_finalizer_apply();
+    device_finalizer_apply(device_finalizer_type_flush);
     
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));

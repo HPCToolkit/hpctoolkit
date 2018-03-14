@@ -85,6 +85,7 @@
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
+#include "../../device-finalizers.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -103,11 +104,23 @@
  *****************************************************************************/
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
+#define FORALL_ME(macro)	  \
+  macro("ME_UNKNOWN_BYTES",       0) \
+  macro("ME_PAGEABLE_BYTES",      1) \
+  macro("ME_PINNED_BYTES",        2) \
+  macro("ME_DEVICE_BYTES",        3) \
+  macro("ME_ARRAY_BYTES",         4) \
+  macro("ME_MANAGED_BYTES",       5) \
+  macro("ME_DEVICE_STATIC_BYTES", 6)
+
+#define FORALL_ME_TIME(macro) \
+  macro("ME_TIME (us)",           7)
+
 #define FORALL_KE(macro)	  \
-  macro("KE_STATIC_MEM_BYTES",        0)     \
-  macro("KE_DYNAMIC_MEM_BYTES",       1)     \
-  macro("KE_LOCAL_MEM_BYTES",        2)     \
-  macro("KE_TIME (us)",    3)     \
+  macro("KE_STATIC_MEM_BYTES",  0) \
+  macro("KE_DYNAMIC_MEM_BYTES", 1) \
+  macro("KE_LOCAL_MEM_BYTES",   2) \
+  macro("KE_TIME (us)",         3) \
 
 #define FORALL_EM(macro)	\
   macro("EM_INVALID",       0)	\
@@ -240,26 +253,35 @@
  * local variables 
  *****************************************************************************/
 
+// finalizers
+static device_finalizer_fn_entry_t device_finalizer_flush;
+static device_finalizer_fn_entry_t device_finalizer_shutdown;
+
+
+static kind_info_t* me_kind; // memory allocation
 static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
 
 
-int stall_metric_id[NUM_CLAUSES(FORALL_STL)+NUM_CLAUSES(FORALL_STL_LAT)+2];
-int gpu_inst_metric_id;
-int gpu_inst_lat_metric_id;
+static int stall_metric_id[NUM_CLAUSES(FORALL_STL)+NUM_CLAUSES(FORALL_STL_LAT)+2];
+static int gpu_inst_metric_id;
+static int gpu_inst_lat_metric_id;
 
-int em_metric_id[NUM_CLAUSES(FORALL_EM)+1];
-int em_time_metric_id;
+static int em_metric_id[NUM_CLAUSES(FORALL_EM)+1];
+static int em_time_metric_id;
 
-int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
-int im_time_metric_id;
+static int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
+static int im_time_metric_id;
 
-int ke_metric_id[NUM_CLAUSES(FORALL_KE)+1];
-int ke_static_shared_metric_id;
-int ke_dynamic_shared_metric_id;
-int ke_local_metric_id;
-int ke_time_metric_id;
+static int ke_metric_id[NUM_CLAUSES(FORALL_KE)];
+static int ke_static_shared_metric_id;
+static int ke_dynamic_shared_metric_id;
+static int ke_local_metric_id;
+static int ke_time_metric_id;
+
+static int me_metric_id[NUM_CLAUSES(FORALL_ME)+1];
+static int me_time_metric_id;
 
 static int pc_sampling_frequency = 1;
 
@@ -327,7 +349,7 @@ runtime_activities[] = {
 };
 
 void
-cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
+cupti_activity_attribute(CUpti_Activity *record, cct_node_t *node)
 {
   switch (record->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
@@ -402,7 +424,7 @@ cupti_attribute_activity(CUpti_Activity *record, cct_node_t *node)
 }
 
 
-extern int cupti_get_pc_sampling_frequency()
+extern int cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
 }
@@ -525,6 +547,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
 
   if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
+    // Register device finailzers
+    device_finalizer_flush.fn = cupti_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+    device_finalizer_shutdown.fn = cupti_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
     // Specify desired monitoring
     cupti_monitoring_set(kernel_invocation_activities, true);
                         
@@ -545,6 +573,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_callbacks_subscribe();
 
     cupti_correlation_enable();
+
+    cupti_trace_start();
   }
 }
 
@@ -563,7 +593,7 @@ METHOD_FN(display_events)
  * object
  ***************************************************************************/
 
-#define ss_name ompt_nvidia_gpu
+#define ss_name nvidia_gpu
 #define ss_cls SS_HARDWARE
 
 #include "../ss_obj.h"

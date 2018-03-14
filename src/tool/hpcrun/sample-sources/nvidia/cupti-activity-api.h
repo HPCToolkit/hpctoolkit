@@ -108,7 +108,6 @@ cupti_trace_init
 extern void 
 cupti_trace_start
 (
- CUcontext context
 );
 
 
@@ -159,5 +158,28 @@ cupti_metrics_init
 (
 );
 
+//******************************************************************************
+// finalizer
+//******************************************************************************
+
+
+extern void
+cupti_activity_flush
+(
+);
+
+
+extern void
+cupti_device_flush
+(
+ void *args
+);
+
+
+extern void
+cupti_device_shutdown
+(
+ void *args
+);
 
 #endif
