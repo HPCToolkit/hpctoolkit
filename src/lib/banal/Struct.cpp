@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -86,9 +86,12 @@
 #include <Function.h>
 #include <Instruction.h>
 #include <Module.h>
+#include <Region.h>
 #include <Symtab.h>
 
-#include "Linemap.hpp"
+#include <include/hpctoolkit-config.h>
+
+#include "ElfHelper.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -101,12 +104,32 @@ using namespace SymtabAPI;
 using namespace ParseAPI;
 using namespace std;
 
-#define USE_DYNINST_LINE_MAP    1
-#define USE_LIBDWARF_LINE_MAP   0
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#ifdef DYNINST_USE_CUDA
+#define SYMTAB_ARCH_CUDA(symtab) \
+  ((symtab)->getArchitecture() == Dyninst::Arch_cuda)
+#else
+#define SYMTAB_ARCH_CUDA(symtab) 0
+#endif
 
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
-#define DEBUG_GAPS        0
+#define DEBUG_SHOW_GAPS   0
+
+#if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
+#define DEBUG_ANY_ON  1
+#else
+#define DEBUG_ANY_ON  0
+#endif
+
+
+//******************************************************************************
+// variables
+//******************************************************************************
 
 // Copied from lib/prof/Struct-Tree.cpp
 static const string & unknown_file = "<unknown file>";
@@ -116,9 +139,6 @@ static const string & unknown_link = "_unknown_proc_";
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
 
-#if USE_LIBDWARF_LINE_MAP
-static LineMap * the_linemap = NULL;
-#endif
 
 //----------------------------------------------------------------------
 
@@ -126,9 +146,11 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class LineMapCache;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
+typedef map <VMA, Region *> RegionMap;
 typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
@@ -150,6 +172,13 @@ doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
 
 static void
+doCudaList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
+
+static void
+doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
+	       HPC::StringTable & strTab);
+
+static void
 addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static void
@@ -165,12 +194,20 @@ deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 
-#if DEBUG_CFG_SOURCE
+//----------------------------------------------------------------------
 
-#define DEBUG_MESG(expr)  std::cout << expr
+#if DEBUG_ANY_ON
+
+#define DEBUG_ANY(expr)  std::cout << expr
 
 static string
 debugPrettyName(const string &);
+
+static void
+debugElfHeader(ElfFile *);
+
+static void
+debugFuncHeader(FileInfo *, ProcInfo *, long, long, string = "");
 
 static void
 debugStmt(VMA, int, string &, SrcFile::ln);
@@ -182,11 +219,31 @@ debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
 
+#else  // ! DEBUG_ANY_ON
+
+#define DEBUG_ANY(expr)
+
+#endif
+
+#if DEBUG_CFG_SOURCE
+#define DEBUG_CFG(expr)  std::cout << expr
 #else
+#define DEBUG_CFG(expr)
+#endif
 
-#define DEBUG_MESG(expr)
+#if DEBUG_MAKE_SKEL
+#define DEBUG_SKEL(expr)  std::cout << expr
+#else
+#define DEBUG_SKEL(expr)
+#endif
 
-#endif  // DEBUG_CFG_SOURCE
+#if DEBUG_SHOW_GAPS
+#define DEBUG_GAPS(expr)  std::cout << expr
+#else
+#define DEBUG_GAPS(expr)
+#endif
+
+//----------------------------------------------------------------------
 
 // Info on candidates for loop header.
 class HeaderInfo {
@@ -213,73 +270,100 @@ public:
 
 //----------------------------------------------------------------------
 
-// Make a dot (graphviz) file for the Control-Flow Graph for each
-// procedure and write to the ostream 'dotFile'.
+// A simple cache of getStatement() that stores one line range.  This
+// saves extra calls to getSourceLines() if we don't need them.
+//
+class LineMapCache {
+private:
+  SymtabAPI::Function * sym_func;
+  string  cache_filenm;
+  uint    cache_line;
+  VMA  start;
+  VMA  end;
+
+public:
+  LineMapCache(SymtabAPI::Function * sf)
+  {
+    sym_func = sf;
+    cache_filenm = "";
+    cache_line = 0;
+    start = 1;
+    end = 0;
+  }
+
+  bool
+  getLineInfo(VMA vma, string & filenm, uint & line)
+  {
+    // try cache first
+    if (start <= vma && vma < end) {
+      filenm = cache_filenm;
+      line = cache_line;
+      return true;
+    }
+
+    // lookup with getStatement() and getSourceLines()
+    StatementVector svec;
+    getStatement(svec, vma, sym_func);
+
+    if (! svec.empty()) {
+      filenm = svec[0]->getFile();
+      line = svec[0]->getLine();
+      RealPathMgr::singleton().realpath(filenm);
+
+      cache_filenm = filenm;
+      cache_line = line;
+      start = svec[0]->startAddr();
+      end = svec[0]->endAddr();
+
+      return true;
+    }
+
+    // no line info available
+    filenm = "";
+    line = 0;
+    return false;
+  }
+};
+
+//----------------------------------------------------------------------
+
+// Line map info from SymtabAPI.  Try the Module associated with the
+// Symtab Function as a hint first, else look for other modules that
+// might contain vma.
 //
 static void
-makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
+getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 {
-  const CodeObject::funclist & funcList = code_obj->funcs();
+  svec.clear();
 
-  for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
+  // try the Module in sym_func first as a hint
+  if (sym_func != NULL) {
+    Module * mod = sym_func->getModule();
+
+    if (mod != NULL) {
+      mod->getSourceLines(svec, vma);
+    }
+  }
+
+  // else look for other modules
+  if (svec.empty()) {
+    set <Module *> modSet;
+    the_symtab->findModuleByOffset(modSet, vma);
+
+    for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
+      (*mit)->getSourceLines(svec, vma);
+      if (! svec.empty()) {
+	break;
+      }
+    }
+  }
+
+  // make sure file and line are either both known or both unknown.
+  // this case probably never happens, but we do want to rely on it.
+  if (! svec.empty()
+      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
   {
-    ParseAPI::Function * func = *fit;
-    map <Block *, int> blockNum;
-    map <Block *, int>::iterator mit;
-    int num;
-
-    *dotFile << "--------------------------------------------------\n"
-	     << "Procedure: '" << func->name() << "'\n\n"
-	     << "digraph " << func->name() << " {\n"
-	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
-
-    const ParseAPI::Function::blocklist & blist = func->blocks();
-
-    // write the list of nodes (blocks)
-    num = 1;
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      num++;
-
-      blockNum[block] = num;
-      *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << dec << "\" ];\n";
-    }
-    int endNum = num + 1;
-    *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
-
-    // in parseAPI, functions have a unique entry point
-    mit = blockNum.find(func->entry());
-    if (mit != blockNum.end()) {
-      *dotFile << "  1 -> " << mit->second << ";\n";
-    }
-
-    // write the list of internal edges
-    num = 1;
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      const ParseAPI::Block::edgelist & elist = block->targets();
-      num++;
-
-      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
-	mit = blockNum.find((*eit)->trg());
-	if (mit != blockNum.end()) {
-	  *dotFile << "  " << num << " -> " << mit->second << ";\n";
-	}
-      }
-    }
-
-    // add any exit edges
-    const ParseAPI::Function::const_blocklist & eblist = func->exitBlocks();
-    for (auto bit = eblist.begin(); bit != eblist.end(); ++bit) {
-      Block * block = *bit;
-      mit = blockNum.find(block);
-      if (mit != blockNum.end()) {
-	*dotFile << "  " << mit->second << " -> " << endNum << ";\n";
-      }
-    }
-
-    *dotFile << "}\n" << endl;
+    svec.clear();
   }
 }
 
@@ -289,92 +373,159 @@ makeDotFile(std::ostream * dotFile, CodeObject * code_obj)
 //
 // Read the binutils load module and the parseapi code object, iterate
 // over functions, loops and blocks, make an internal inline tree and
-// write an hpcstruct file to 'outFile'.  Also, write a dot (graphviz)
-// file if 'dotFile' is non-null.
+// write an hpcstruct file to 'outFile'.
 //
 void
-makeStructure(string filename,
-	      string gaps_filenm,
+makeStructure(InputFile & inputFile,
 	      ostream * outFile,
 	      ostream * gapsFile,
-	      ostream * dotFile,
+	      string gaps_filenm,
 	      bool ourDemangle,
 	      ProcNameMgr * procNmMgr)
 {
-  HPC::StringTable strTab;
+  ElfFileVector * elfFileVector = inputFile.fileVector();
+  string & sfilename = inputFile.fileName();
+  const char * cfilename = inputFile.CfileName();
+
+  if (elfFileVector == NULL || elfFileVector->empty()) {
+    return;
+  }
 
   // insert empty string "" first
+  HPC::StringTable strTab;
   strTab.str2index("");
 
-#if USE_LIBDWARF_LINE_MAP
-  the_linemap = new LineMap;
-  the_linemap->readFile(filename.c_str());
+  Output::printStructFileBegin(outFile, gapsFile, sfilename);
+
+  for (uint i = 0; i < elfFileVector->size(); i++) {
+    ElfFile *elfFile = (*elfFileVector)[i];
+
+#if DEBUG_ANY_ON
+    debugElfHeader(elfFile);
 #endif
 
-  Symtab * symtab = Inline::openSymtab(filename);
-  the_symtab = symtab;
+    Symtab * symtab = Inline::openSymtab(elfFile);
+    if (symtab == NULL) {
+      continue;
+    }
+    the_symtab = symtab;
+    int cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
-#if USE_DYNINST_LINE_MAP
-  vector <Module *> modVec;
-  the_symtab->getAllModules(modVec);
+    // pre-compute line map info
+    vector <Module *> modVec;
+    the_symtab->getAllModules(modVec);
 
-  for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
-    (*mit)->parseLineInformation();
-  }
-#endif
+    for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+      (*mit)->parseLineInformation();
+    }
 
-  SymtabCodeSource * code_src;
-  CodeObject * code_obj = NULL;
+    SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
+    CodeObject * code_obj = new CodeObject(code_src);
 
-  if (symtab != NULL) {
-    code_src = new SymtabCodeSource(symtab);
-    code_obj = new CodeObject(code_src);
-    code_obj->parse();
-  }
+    // don't run parseapi on cuda binary
+    if (! cuda_file) {
+      code_obj->parse();
+    }
 
-  string basename = FileUtil::basename(filename.c_str());
-  FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename, ourDemangle);
+    string basename = FileUtil::basename(cfilename);
+    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename, ourDemangle);
 
-  Output::printStructFileBegin(outFile, gapsFile, filename);
-  Output::printLoadModuleBegin(outFile, filename);
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-  // process the files in the skeleton map
-  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
-    FileInfo * finfo = fit->second;
+    // process the files in the skeleton map
+    for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+      FileInfo * finfo = fit->second;
 
-    Output::printFileBegin(outFile, finfo);
+      Output::printFileBegin(outFile, finfo);
 
-    // process the groups within one file
-    for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
-      GroupInfo * ginfo = git->second;
+      // process the groups within one file
+      for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+	GroupInfo * ginfo = git->second;
 
-      // make the inline tree for all funcs in one group
-      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-
-      for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-	ProcInfo * pinfo = pit->second;
-
-	if (! pinfo->gap_only) {
-	  Output::printProc(outFile, gapsFile, gaps_filenm,
-			    finfo, ginfo, pinfo, strTab);
+	// make the inline tree for all funcs in one group
+	if (cuda_file) {
+	  doCudaList(symtab, finfo, ginfo, strTab);
+	}
+	else {
+	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
 	}
 
-	delete pinfo->root;
-	pinfo->root = NULL;
+	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	  ProcInfo * pinfo = pit->second;
+
+	  if (! pinfo->gap_only) {
+	    Output::printProc(outFile, gapsFile, gaps_filenm,
+			      finfo, ginfo, pinfo, strTab);
+	  }
+
+	  delete pinfo->root;
+	  pinfo->root = NULL;
+	}
       }
+      Output::printFileEnd(outFile, finfo);
     }
-    Output::printFileEnd(outFile, finfo);
+
+    Output::printLoadModuleEnd(outFile);
+
+    delete code_obj;
+    delete code_src;
+    Inline::closeSymtab();
   }
 
-  Output::printLoadModuleEnd(outFile);
   Output::printStructFileEnd(outFile, gapsFile);
+}
 
-  // write CFG in dot (graphviz) format to file
-  if (dotFile != NULL) {
-    makeDotFile(dotFile, code_obj);
+//----------------------------------------------------------------------
+
+// codeMap is a map of all code regions from start vma to Region *.
+// Used to find the region containing a vma and thus the region's end.
+//
+static void
+makeCodeMap(RegionMap & codeMap)
+{
+  DEBUG_SKEL("\n");
+
+  vector <Region *> regVec;
+  the_symtab->getCodeRegions(regVec);
+
+  codeMap.clear();
+
+  for (auto it = regVec.begin(); it != regVec.end(); ++it) {
+    Region * reg = *it;
+    VMA start = reg->getMemOffset();
+
+    codeMap[start] = reg;
+
+    DEBUG_SKEL("code region:  0x" << hex << start
+	       << "--0x" << (start + reg->getMemSize()) << dec
+	       << "  " << reg->getRegionName() << "\n");
+  }
+}
+
+// Note: normally, code regions don't overlap, but if they do, then we
+// find the Region with the highest start address that contains vma.
+//
+// Returns: the Region containing vma, or else NULL.
+//
+static Region *
+findCodeRegion(RegionMap & codeMap, VMA vma)
+{
+  auto it = codeMap.upper_bound(vma);
+
+  // invariant: vma is not in range it...end
+  while (it != codeMap.begin()) {
+    --it;
+
+    Region * reg = it->second;
+    VMA start = reg->getMemOffset();
+    VMA end = start + reg->getMemSize();
+
+    if (start <= vma && vma < end) {
+      return reg;
+    }
   }
 
-  Inline::closeSymtab();
+  return NULL;
 }
 
 //----------------------------------------------------------------------
@@ -411,8 +562,12 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
   }
 
   ginfo->procMap[pinfo->entry_vma] = pinfo;
-}
 
+#if DEBUG_MAKE_SKEL
+  cout << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
+       << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
+#endif
+}
 
 // makeSkeleton -- the new buildLMSkeleton
 //
@@ -430,6 +585,10 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
 
+  // map of code regions to find end of region
+  RegionMap codeMap;
+  makeCodeMap(codeMap);
+
   // iterate over the ParseAPI Functions, order by vma
   const CodeObject::funclist & funcList = code_obj->funcs();
   map <VMA, ParseAPI::Function *> funcMap;
@@ -443,27 +602,53 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     ParseAPI::Function * func = fmit->second;
     SymtabAPI::Function * sym_func = NULL;
     VMA  vma = func->addr();
-    Region * region = the_symtab->findEnclosingRegion(vma);
-    VMA  reg_end = (region != NULL) ? (region->getMemOffset() + region->getMemSize()) : 0;
+
+    auto next_it = fmit;  ++next_it;
+    VMA  next_vma = (next_it != funcMap.end()) ? next_it->second->addr() : 0;
 
     stringstream buf;
     buf << "0x" << hex << vma << dec;
     string  vma_str = buf.str();
 
+    DEBUG_SKEL("\nskel:    " << vma_str << "  " << func->name() << "\n");
+
     // see if entry vma lies within a valid symtab function
-    if (the_symtab->getContainingFunction(vma, sym_func)
-	&& sym_func != NULL
-	&& sym_func->getRegion() == region)
+    bool found = the_symtab->getContainingFunction(vma, sym_func);
+    VMA  sym_start = 0;
+    VMA  sym_end = 0;
+
+    Region * region = NULL;
+    VMA  reg_start = 0;
+    VMA  reg_end = 0;
+
+    if (found && sym_func != NULL) {
+      sym_start = sym_func->getOffset();
+      sym_end = sym_start + sym_func->getSize();
+
+      region = sym_func->getRegion();
+      if (region != NULL) {
+	reg_start = region->getMemOffset();
+	reg_end = reg_start + region->getMemSize();
+      }
+    }
+
+    DEBUG_SKEL("symbol:  0x" << hex << sym_start << "--0x" << sym_end
+	       << "  next:  0x" << next_vma
+	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
+
+    // symtab doesn't recognize plt funcs and puts them in the wrong
+    // region.  to be a valid symbol, the func entry must lie within
+    // the symbol's region.
+    if (found && sym_func != NULL && region != NULL
+	&& reg_start <= vma && vma < reg_end)
     {
-      VMA sym_start = sym_func->getOffset();
-      VMA sym_end = sym_start + sym_func->getSize();
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
       string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
       SrcFile::ln line = 0;
 
       // symtab lets some funcs (_init) spill into the next region
-      if (region != NULL && sym_start < reg_end && reg_end < sym_end) {
+      if (sym_start < reg_end && reg_end < sym_end) {
 	sym_end = reg_end;
       }
 
@@ -483,6 +668,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	// names from symtab func.  this is the normal case (but other
 	// cases are also valid).
 	//
+	DEBUG_SKEL("(case 1)\n");
+
 	auto mangled_it = sym_func->mangled_names_begin();
 	auto pretty_it = sym_func->pretty_names_begin();
 
@@ -497,7 +684,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  }
 	}
 
-	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line);
+	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
+					sym_func->getFirstSymbol()->getIndex());
 	addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
       }
       else {
@@ -527,6 +715,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // case 2 -- outline func inside symtab func with same file
 	  // name.  use 'outline 0xxxxxx' proc name.
 	  //
+	  DEBUG_SKEL("(case 2)\n");
+
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
 	}
@@ -536,10 +726,12 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  // add proc info to both files: outline file for full parse
 	  // (but no gaps), and symtab file for gap only.
 	  //
+	  DEBUG_SKEL("(case 3)\n");
+
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
 	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
 
-	  pinfo = new ProcInfo(func, NULL, "", "", 0, true);
+	  pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
 	}
       }
@@ -554,11 +746,20 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
 
-      auto next_it = fmit;  ++next_it;
+      region = findCodeRegion(codeMap, vma);
+      reg_start = (region != NULL) ? region->getMemOffset() : 0;
+      reg_end = (region != NULL) ? (reg_start + region->getMemSize()) : 0;
+
+      DEBUG_SKEL("region:  0x" << hex << reg_start << "--0x" << reg_end << dec << "\n");
+      DEBUG_SKEL("(case 4)\n");
+
       if (next_it != funcMap.end()) {
-	end = next_it->second->addr();
+	end = next_vma;
+	if (region != NULL && vma < reg_end && reg_end < end) {
+	  end = reg_end;
+	}
       }
-      else if (region != NULL) {
+      else if (region != NULL && vma < reg_end) {
 	end = reg_end;
       }
       else {
@@ -572,6 +773,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 #if DEBUG_MAKE_SKEL
   // print the skeleton map
+  cout << "\n------------------------------------------------------------\n";
 
   for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
     auto finfo = fit->second;
@@ -587,7 +789,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 	cout << "\nentry:   0x" << hex << pinfo->entry_vma << dec
 	     << "  (" << num << "/" << size << ")\n"
-	     << "symbol:  0x" << hex << ginfo->start
+	     << "group:   0x" << hex << ginfo->start
 	     << "--0x" << ginfo->end << dec << "\n"
 	     << "file:    " << finfo->fileName << "\n"
 	     << "link:    " << pinfo->linkName << "\n"
@@ -671,6 +873,9 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     Address entry_addr = func->addr();
     num++;
 
+    // only used for cuda functions
+    pinfo->symbol_index = 0;
+
     // compute the inline seqn for the call site for this func, if
     // there is one.
     Inline::InlineSeqn prefix;
@@ -681,12 +886,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
 
 #if DEBUG_CFG_SOURCE
-    cout << "\n------------------------------------------------------------\n"
-	 << "func:  0x" << hex << entry_addr << dec
-	 << "  (" << num << "/" << num_funcs << ")"
-	 << "  link='" << pinfo->linkName << "'\n"
-	 << "parse:  '" << func->name() << "'\n"
-	 << "file:   '" << finfo->fileName << "'\n";
+    debugFuncHeader(finfo, pinfo, num, num_funcs);
 
     if (call_it != callMap.end()) {
       cout << "\ncall site prefix:  0x" << hex << call_it->second
@@ -724,7 +924,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // skip duplicated function, blocks already added
     if (! add_blocks) {
-      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
 
@@ -748,7 +948,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // skip duplicated function, blocks added just now
     if (num_contain > 1) {
-      DEBUG_MESG("\nskipping duplicated function:  '" << func->name() << "'\n");
+      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
       continue;
     }
 
@@ -756,8 +956,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     // symtab func, then do the full parse in the outline file
     // (alt-file) and use the symtab file for gaps only.
     if (pinfo->gap_only) {
-      DEBUG_MESG("\nskipping full parse (gap only) for function:  '"
-		 << func->name() << "'\n");
+      DEBUG_CFG("\nskipping full parse (gap only) for function:  '"
+		<< func->name() << "'\n");
       continue;
     }
 
@@ -767,9 +967,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     LoopList *llist =
 	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
 
-#if DEBUG_CFG_SOURCE
-    cout << "\nnon-loop blocks:\n";
-#endif
+    DEBUG_CFG("\nnon-loop blocks:\n");
 
     // process any blocks not in a loop
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
@@ -785,6 +983,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     for (auto it = llist->begin(); it != llist->end(); ++it) {
       mergeInlineLoop(root, empty, *it);
     }
+
 
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
@@ -826,7 +1025,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     }
   }
 
-#if DEBUG_GAPS
+#if DEBUG_SHOW_GAPS
   auto pit = ginfo->procMap.begin();
   ProcInfo * pinfo = pit->second;
 
@@ -841,7 +1040,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     cout << "\ncovered:\n"
 	 << covered.toString() << "\n"
 	 << "\ngaps:\n"
-	 << gaps.toString() << "\n";
+	 << ginfo->gapSet.toString() << "\n";
   }
   else {
     cout << "\ngaps: alt-file\n";
@@ -926,8 +1125,7 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 {
   TreeNode * root = new TreeNode;
 
-  DEBUG_MESG("\nbegin loop:  " << loopName << "  '"
-	     << func->name() << "'\n");
+  DEBUG_CFG("\nbegin loop:  " << loopName << "  '" << func->name() << "'\n");
 
   // add the inclusive blocks not contained in a subloop
   vector <Block *> blist;
@@ -956,58 +1154,94 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   }
   visited[block] = true;
 
-#if DEBUG_CFG_SOURCE
-  cout << "\nblock:\n";
-#endif
+  DEBUG_CFG("\nblock:\n");
 
-#if USE_DYNINST_LINE_MAP
-  // save the last symtab line map query
-  Offset low_vma = 1;
-  Offset high_vma = 0;
-  string cache_filenm = "";
-  SrcFile::ln cache_line = 0;
-#endif
+  LineMapCache lmcache (ginfo->sym_func);
 
   // iterate through the instructions in this block
+#ifdef DYNINST_INSTRUCTION_PTR
   map <Offset, Instruction::Ptr> imap;
+#else
+  map <Offset, Instruction> imap;
+#endif
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     Offset vma = iit->first;
-    int    len = iit->second->size();
     string filenm = "";
-    SrcFile::ln line = 0;
+    uint line = 0;
 
-#if USE_LIBDWARF_LINE_MAP
-    LineRange lr;
-
-    the_linemap->getLineRange(vma, lr);
-    filenm = lr.filenm;
-    line = lr.lineno;
+#ifdef DYNINST_INSTRUCTION_PTR
+    int  len = iit->second->size();
+#else
+    int  len = iit->second.size();
 #endif
 
-#if USE_DYNINST_LINE_MAP
-    if (low_vma <= vma && vma < high_vma) {
-      // use cached value
-      filenm = cache_filenm;
-      line = cache_line;
-    }
-    else {
-      StatementVector svec;
-      getStatement(svec, vma, ginfo->sym_func);
+    lmcache.getLineInfo(vma, filenm, line);
 
-      if (! svec.empty()) {
-	// use symtab value and save in cache
-	low_vma = svec[0]->startAddr();
-	high_vma = svec[0]->endAddr();
-	filenm = svec[0]->getFile();
-	RealPathMgr::singleton().realpath(filenm);
-	line = svec[0]->getLine();
-	cache_filenm = filenm;
-	cache_line = line;
-      }
-    }
+#if DEBUG_CFG_SOURCE
+    debugStmt(vma, len, filenm, line);
 #endif
+
+    addStmtToTree(root, strTab, vma, len, filenm, line);
+  }
+}
+
+//----------------------------------------------------------------------
+
+// CUDA functions
+//
+static void
+doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
+	   HPC::StringTable & strTab)
+{
+  // not sure if cuda generates multiple functions, but we'll handle
+  // this case until proven otherwise.
+  long num = 0;
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
+    num++;
+
+#if DEBUG_CFG_SOURCE
+    long num_funcs = ginfo->procMap.size();
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
+#endif
+
+    TreeNode * root = new TreeNode;
+
+    doCudaFunction(ginfo, func, root, strTab);
+
+    pinfo->root = root;
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
+    debugInlineTree(root, NULL, strTab, 0, true);
+#endif
+  }
+}
+
+//----------------------------------------------------------------------
+
+// Process one cuda function.
+//
+// We don't have cuda instruction parsing (yet), so just one flat
+// block per function and no loops.
+//
+static void
+doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
+	       HPC::StringTable & strTab)
+{
+  LineMapCache lmcache (ginfo->sym_func);
+
+  DEBUG_CFG("\ncuda blocks:\n");
+
+  int len = 4;
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
+    string filenm = "";
+    uint line = 0;
+
+    lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
     debugStmt(vma, len, filenm, line);
@@ -1072,48 +1306,6 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 //****************************************************************************
 // Support functions
 //****************************************************************************
-
-// Line map info from SymtabAPI.  Try the Module associated with the
-// Symtab Function as a hint first, else look for other modules that
-// might contain vma.
-//
-static void
-getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
-{
-  svec.clear();
-
-  // try the Module in sym_func first as a hint
-  if (sym_func != NULL) {
-    Module * mod = sym_func->getModule();
-
-    if (mod != NULL) {
-      mod->getSourceLines(svec, vma);
-    }
-  }
-
-  // else look for other modules
-  if (svec.empty()) {
-    set <Module *> modSet;
-    the_symtab->findModuleByOffset(modSet, vma);
-
-    for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma);
-      if (! svec.empty()) {
-	break;
-      }
-    }
-  }
-
-  // make sure file and line are either both known or both unknown.
-  // this case probably never happens, but we do want to rely on it.
-  if (! svec.empty()
-      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
-  {
-    svec.clear();
-  }
-}
-
-//----------------------------------------------------------------------
 
 // New heuristic for identifying loop header inside inline tree.
 // Start at the root, descend the inline tree and try to find where
@@ -1257,7 +1449,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     path.push_back(flp);
     depth_root++;
 
-    DEBUG_MESG("inline:  l=" << flp.line_num
+    DEBUG_CFG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
 	       << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
 	       << "'\n");
@@ -1378,6 +1570,8 @@ found_level:
 found_file:
 
   // min line of inline callsites
+  // fixme: code motion breaks this
+#if 0
   for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
 
@@ -1386,6 +1580,7 @@ found_file:
       line_ans = flp.line_num;
     }
   }
+#endif
 
   // min line of subloops
   for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
@@ -1407,7 +1602,7 @@ found_file:
     }
   }
 
-  DEBUG_MESG("\nheader:  l=" << line_ans << "  f='"
+  DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
 	     << strTab.index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
@@ -1531,7 +1726,7 @@ computeGaps(VMAIntervalSet & vset, VMAIntervalSet & gaps, VMA start, VMA end)
 // Debug functions
 //****************************************************************************
 
-#if DEBUG_CFG_SOURCE
+#if DEBUG_ANY_ON
 
 // Debug functions to display the raw input data from ParseAPI for
 // loops, blocks, stmts, file names, proc names and line numbers.
@@ -1575,6 +1770,39 @@ debugPrettyName(const string & procnm)
   }
 
   return ans;
+}
+
+//----------------------------------------------------------------------
+
+static void
+debugElfHeader(ElfFile * elfFile)
+{
+  size_t len = elfFile->getLength();
+
+  cout << "\n============================================================\n"
+       << "Elf File:  " << elfFile->getFileName() << "\n"
+       << "length:    0x" << hex << len << dec << "  (" << len << ")\n"
+       << "============================================================\n";
+}
+
+//----------------------------------------------------------------------
+
+static void
+debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
+		string label)
+{
+  ParseAPI::Function * func = pinfo->func;
+  Address entry_addr = func->addr();
+
+  cout << "\n------------------------------------------------------------\n";
+
+  if (label != "") { cout << label << " "; }
+
+  cout << "func:  0x" << hex << entry_addr << dec
+       << "  (" << num << "/" << num_funcs << ")"
+       << "  link='" << pinfo->linkName << "'\n"
+       << "parse:  '" << func->name() << "'\n"
+       << "file:   '" << finfo->fileName << "'\n";
 }
 
 //----------------------------------------------------------------------

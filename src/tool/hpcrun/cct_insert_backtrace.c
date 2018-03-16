@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -128,7 +128,6 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-	ip_normalized_t *leaf_func,
 	int metricId, hpcrun_metricVal_t metricIncr,
 	int skipInner, int isSync, void *data);
 
@@ -232,7 +231,7 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 //             
 
 cct_node_t*
-hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *leaf_func,
+hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 	             int metricId, hpcrun_metricVal_t metricIncr,
 		     int skipInner, int isSync, void *data)
 {
@@ -244,7 +243,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *l
   }
   else {
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
-    n = help_hpcrun_backtrace2cct(cct, context, leaf_func,
+    n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
 				  skipInner, isSync, data);
   }
@@ -368,7 +367,6 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
-                          ip_normalized_t *leaf_func,
 			  int metricId, 
 			  hpcrun_metricVal_t metricIncr,
 			  int skipInner, int isSync, void *data)
@@ -403,8 +401,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
  // bt.trace_pc = bt.begin->cursor.pc_unnorm;  // JMC
 
   cct_backtrace_finalize(&bt, isSync); 
-
-  *leaf_func = bt.begin->the_function;  // JMC
 
   if (bt.partial_unwind) {
     if (ENABLED(NO_PARTIAL_UNW)){

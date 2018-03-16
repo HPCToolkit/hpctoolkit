@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -217,17 +217,12 @@ hpcrun_sample_callpath(void* context, int metricId,
   // start of handling sample
   // --------------------------------------
   hpcrun_set_handling_sample(td);
-  ip_normalized_t leaf_func;
 
   td->btbuf_cur = NULL;
   td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-      // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-      //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
-
-      // Laks: copied from help_hpcrun_sample_callpath
       void* pc = hpcrun_context_pc(context);
 
       TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
@@ -240,10 +235,8 @@ hpcrun_sample_callpath(void* context, int metricId,
       if (data != NULL)
         data_aux = data->sample_data;
 
-      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId,
-          metricIncr,
-          skipInner, isSync, data_aux);
-      // end copied from help_hpcrun_sample_callpath
+      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, metricId,
+                                   metricIncr, skipInner, isSync, data_aux);
 
       if (ENABLED(DUMP_BACKTRACES)) {
         hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -254,7 +247,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
         metricId, metricIncr, skipInner, NULL);
-    leaf_func = td->btbuf_beg->the_function;
     hpcrun_cleanup_partial_unwind();
   }
   // --------------------------------------
@@ -262,6 +254,9 @@ hpcrun_sample_callpath(void* context, int metricId,
   // --------------------------------------
 
   ret.sample_node = node;
+
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+  ip_normalized_t leaf_func = addr->ip_norm;
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);

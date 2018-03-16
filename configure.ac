@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2017, Rice University
+dnl Copyright ((c)) 2002-2018, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -86,7 +86,7 @@ AC_INIT([hpctoolkit], [2017.11],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2017, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2018, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
@@ -1431,6 +1431,53 @@ AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
 
 
 #-------------------------------------------------
+# Option: --with-bzip=PATH
+#-------------------------------------------------
+
+# Location of libbz2.so.  This is just for copy-libs as an elfutils
+# prereq.  Toolkit doesn't directly call bzip, so we don't need an
+# include path here.  Note: this package is not built in externals.
+
+BZIP=no
+BZIP_COPY=no
+BZIP_LIB=no
+
+AC_ARG_WITH([bzip],
+  [AS_HELP_STRING([--with-bzip=PATH],
+      [path to bzip install directory])],
+  [BZIP="$withval"],
+  [])
+
+AC_MSG_CHECKING([for bzip])
+
+case "$BZIP" in
+  /* )
+    for lib in $multilib_path ; do
+      bzip_lib="${BZIP}/$lib"
+      if test -f "${bzip_lib}/libbz2.so" ; then
+        BZIP_LIB="$bzip_lib"
+	break
+      fi
+    done
+    if test "$BZIP_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libbz2.so in: $BZIP])
+    fi
+    BZIP_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([bzip directory must be absolute path: $BZIP])
+    ;;
+esac
+
+AC_MSG_RESULT([$BZIP])
+
+AC_SUBST([BZIP_COPY])
+AC_SUBST([BZIP_LIB])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -2271,6 +2318,8 @@ AC_SUBST([SYMTABAPI_LIB_LIST])
 AC_SUBST([SYMTABAPI_INC])
 AC_SUBST([SYMTABAPI_LIB])
 
+#-------------------------------------------------
+
 #
 # Chcek that ParseAPI includes CFG loop support.
 #
@@ -2308,8 +2357,136 @@ void get_blocks(LoopTreeNode * node)
   fi
 fi
 
+#
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There's not a good compile or link test for this, so we fall back on
+# ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+#
+use_libdw=no
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if dyninst built with libdw.so])
+
+  dyn_dwarf="${SYMTABAPI_LIB}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  AC_MSG_RESULT([$use_libdw])
+fi
+
+#
+# Test if dyninst supports cuda.
+#
+use_cuda=no
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if dyninst supports cuda])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+]])], [use_cuda=yes], [use_cuda=no])
+
+  AC_MSG_RESULT([$use_cuda])
+fi
+
+#
+# Test if ParseAPI uses Instruction or Instruction::Ptr.
+#
+use_instn_ptr=yes
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if parseapi uses Instruction::Ptr])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_instructions(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.size();
+}
+]])], [use_instn_ptr=yes], [use_instn_ptr=no])
+
+  AC_MSG_RESULT([$use_instn_ptr])
+fi
+
+if test "$use_instn_ptr" = yes ; then
+  AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
+fi
+
 AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"
+
+#
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+#
+dyninst_type=unset
+
+AC_ARG_WITH([dyninst-type],
+  [AS_HELP_STRING([--with-dyninst-type=TYPE],
+      [temp option for dyninst version (old, libdw, cuda),
+       only needed if autoconf fails to detect correctly])],
+  [dyninst_type="$withval"],
+  [])
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
+  esac
+
+  AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
+fi
+
+AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
+AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+
+if test "$use_libdw" = yes ; then
+  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+fi
+
+if test "$use_cuda" = yes ; then
+  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
+fi
+
+LIBDW_COPY="$use_libdw"
+AC_SUBST([LIBDW_COPY])
 
 
 #-------------------------------------------------
@@ -3679,6 +3856,7 @@ AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
+AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

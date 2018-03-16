@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,16 +66,11 @@
 #include <unistd.h>
 
 //*****************************************************************************
-// HPCToolkit Externals Include
-//*****************************************************************************
-
-#include <libdwarf.h>
-
-//*****************************************************************************
 // local includes
 //*****************************************************************************
 
 #include "code-ranges.h"
+#include "eh-frames.h"
 #include "process-ranges.h"
 #include "function-entries.h"
 #include "server.h"
@@ -102,8 +97,6 @@ using namespace SymtabAPI;
 #define USE_SYMTABAPI_EXCEPTION_BLOCKS
 
 #define STRLEN(s) (sizeof(s) - 1)
-
-#define DWARF_OK(e) (DW_DLV_OK == (e))
 
 //*****************************************************************************
 // forward declarations
@@ -226,9 +219,16 @@ char *
 cplus_demangle(char *s, int opts)
 {
 return strdup(s);
-}  
-
+}
 };
+
+
+// Callback from dwarf_eh_frame_info() in eh-frames.cpp.
+void
+add_frame_addr(void * addr)
+{
+  add_function_entry(addr, NULL, false, 0);
+}
 
 
 //*****************************************************************
@@ -359,80 +359,6 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
-// collect function start addresses from eh_frame info
-// (part of the DWARF info)
-// enter these start addresses into the reachable function
-// data structure
-
-static void
-seed_dwarf_info(int dwarf_fd)
-{
-  Dwarf_Debug dbg = NULL;
-  Dwarf_Error err;
-  Dwarf_Handler errhand = NULL;
-  Dwarf_Ptr errarg = NULL;
-
-  // Unless disabled, add eh_frame info to function entries
-  if(getenv("EH_NO")) {
-    close(dwarf_fd);
-    return;
-  }
-
-  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
-                             errhand, errarg,
-                             &dbg, &err))) {
-    if (verbose) fprintf(stderr, "dwarf init failed !!\n");
-    return;
-  }
-
-  Dwarf_Cie* cie_data = NULL;
-  Dwarf_Signed cie_element_count = 0;
-  Dwarf_Fde* fde_data = NULL;
-  Dwarf_Signed fde_element_count = 0;
-
-  int fres =
-    dwarf_get_fde_list_eh(dbg, &cie_data,
-                          &cie_element_count, &fde_data,
-                          &fde_element_count, &err);
-  if ( ! DWARF_OK(fres)) {
-    if (verbose) fprintf(stderr, "failed to get eh_frame element from DWARF\n");
-    return;
-  }
-
-  for (int i = 0; i < fde_element_count; i++) {
-    Dwarf_Addr low_pc = 0;
-    Dwarf_Unsigned func_length = 0;
-    Dwarf_Ptr fde_bytes = NULL;
-    Dwarf_Unsigned fde_bytes_length = 0;
-    Dwarf_Off cie_offset = 0;
-    Dwarf_Signed cie_index = 0;
-    Dwarf_Off fde_offset = 0;
-
-    int fres = dwarf_get_fde_range(fde_data[i],
-                                   &low_pc, &func_length,
-                                   &fde_bytes,
-                                   &fde_bytes_length,
-                                   &cie_offset, &cie_index,
-                                   &fde_offset, &err);
-    if (fres == DW_DLV_ERROR) {
-      fprintf(stderr, " error on dwarf_get_fde_range\n");
-      return;
-    }
-    if (fres == DW_DLV_NO_ENTRY) {
-      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
-      return;
-    }
-    if(getenv("EH_SHOW")) {
-      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
-    }
-
-    if (low_pc != (Dwarf_Addr) 0) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
-  }
-  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
-    fprintf(stderr, "dwarf finish fails ???\n");
-  }
-  close(dwarf_fd);
-}
 
 static void 
 dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
@@ -456,7 +382,7 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
     }
   }
 
-  seed_dwarf_info(dwarf_fd);
+  dwarf_eh_frame_info(dwarf_fd);
 
   process_code_ranges();
 
@@ -540,9 +466,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
   int relocatable = 0;
 
-  // open for dwarf usage
-  int dwarf_fd = open(filename, O_RDONLY);
-
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
   //-----------------------------------------------------------------
   // ensure that we don't infer function starts within try blocks or
@@ -595,7 +518,15 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 #endif
 
   if (syms->getObjectType() != obj_Unknown) {
+    int dwarf_fd = open(filename, O_RDONLY);
+
+    if (dwarf_fd < 0) {
+      fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
+    }
+
     dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    close(dwarf_fd);
+
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }
@@ -604,8 +535,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can
   //-----------------------------------------------------------------
-
-  close(dwarf_fd);
 
   Symtab::closeSymtab(syms);
 }
