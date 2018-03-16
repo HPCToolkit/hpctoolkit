@@ -1396,6 +1396,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
+  long empty_index = strTab.str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1558,8 +1559,8 @@ found_level:
 
   long proc_file = strTab.str2index(finfo->fileName);
   long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
-  long file_ans = 0;
-  long base_ans = 0;
+  long file_ans = empty_index;
+  long base_ans = empty_index;
   long line_ans = 0;
 
   // first choice is the file for the enclosing func that matches some
@@ -1568,7 +1569,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == proc_base) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == proc_base) {
 	file_ans = proc_file;
 	base_ans = proc_base;
 	goto found_file;
@@ -1583,7 +1585,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == flp.base_index) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == flp.base_index) {
 	file_ans = flp.file_index;
 	base_ans = flp.base_index;
 	goto found_file;
@@ -1596,7 +1599,7 @@ found_level:
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     HeaderInfo * info = &(cit->second);
 
-    if (info->depth == depth_root) {
+    if (info->depth == depth_root && info->base_index != empty_index) {
       file_ans = info->file_index;
       base_ans = info->base_index;
       goto found_file;
@@ -1604,34 +1607,44 @@ found_level:
   }
 
   // enclosing func file, but without exit cond
-  if (depth_root == 0) {
+  if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
     goto found_file;
   }
 
   // inline subtree, but without exit cond
-  if (root->nodeMap.begin() != root->nodeMap.end()) {
-    FLPIndex flp = root->nodeMap.begin()->first;
-    file_ans = flp.file_index;
-    base_ans = flp.base_index;
-    goto found_file;
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    if (flp.file_index != empty_index) {
+      file_ans = flp.file_index;
+      base_ans = flp.base_index;
+      goto found_file;
+    }
   }
 
   // subloop at root level
-  if (root->loopList.begin() != root->loopList.end()) {
-    LoopInfo * linfo = *(root->loopList.begin());
-    file_ans = linfo->file_index;
-    base_ans = linfo->base_index;
-    goto found_file;
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->file_index != empty_index) {
+      file_ans = linfo->file_index;
+      base_ans = linfo->base_index;
+      goto found_file;
+    }
   }
 
   // any stmt at root level
-  if (root->stmtMap.begin() != root->stmtMap.end()) {
-    StmtInfo * sinfo = root->stmtMap.begin()->second;
-    file_ans = sinfo->file_index;
-    base_ans = sinfo->base_index;
-    line_ans = sinfo->line_num;
+  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    if (sinfo->file_index != empty_index) {
+      file_ans = sinfo->file_index;
+      base_ans = sinfo->base_index;
+      line_ans = sinfo->line_num;
+      break;
+    }
   }
 found_file:
 
