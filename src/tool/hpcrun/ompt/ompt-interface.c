@@ -852,7 +852,7 @@ hpcrun_ompt_device_finalizer(void *args)
     cupti_ompt_activity_flush();
     ompt_stop_flag = false;
     // TODO(keren): replace cupti with sth. called device queue
-    cupti_queue_apply_activity(cupti_activity_attribute);
+    cupti_activity_queue_apply(cupti_activity_attribute);
   }
 }
 
