@@ -134,6 +134,7 @@ namespace TraceAnalysis {
       int begIdx = 0;
       int endIdx = traceFiles.size();
       for (int i = begIdx; i < endIdx; i++) {
+        printf("\nAnalyzing file #%d = %s.\n", i, traceFiles[i].c_str());
         LocalTraceAnalyzer analyzer(ba, cctVisitor, 
                 traceFiles[i], prof->traceMinTime());
         analyzer.analyze();

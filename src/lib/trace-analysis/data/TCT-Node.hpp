@@ -139,6 +139,10 @@ namespace TraceAnalysis {
     virtual int getDepth() {
       return depth;
     }
+    
+    virtual Time getDuration() {
+      return time->getDuration();
+    }
         
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.

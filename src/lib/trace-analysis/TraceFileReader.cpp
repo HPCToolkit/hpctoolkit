@@ -140,10 +140,17 @@ namespace TraceAnalysis {
   
   CallPathSample* TraceFileReader::readNextSample() {
     if (file == NULL) return NULL;
-    
+
     hpctrace_fmt_datum_t trace;
     int ret = hpctrace_fmt_datum_fread(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file);
     if (ret != HPCFMT_OK) return NULL;
+
+    while (cctVisitor.getLeafFrame(trace.cpId) == NULL) {
+      DIAG_Msg(1, "Invalid cpid " << trace.cpId);
+      ret = hpctrace_fmt_datum_fread(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file);
+      if (ret != HPCFMT_OK) return NULL;
+      trace.dLCA = HPCRUN_FMT_DLCA_NULL;
+    }
     
     CallPathSample* cp = new CallPathSample(trace.time - minTime, trace.dLCA,
             cctVisitor.getLeafFrame(trace.cpId));

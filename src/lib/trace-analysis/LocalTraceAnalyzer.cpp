@@ -183,6 +183,46 @@ namespace TraceAnalysis {
     
     pushOneNode(activeStack, node, startTimeExclusive, startTimeInclusive);
   }
+  
+  static void finalizeIterationDetection(TCTANode* node, long sampleInterval) {
+    if (node->type == TCTANode::Prof) {
+      return;
+    }
+    else if (node->type == TCTANode::Loop) {
+      TCTLoopTraceNode* loop = (TCTLoopTraceNode*) node;
+      if (loop->getNumChild() == 1) {
+        printf("%s", loop->toString(loop->getDepth(), 0).c_str());
+        finalizeIterationDetection(loop->getChild(0), sampleInterval);
+        return;
+      }
+        
+      Time minDuration = LONG_MAX;
+      for (int i = 0; i < loop->getNumChild(); i++)
+        if (loop->getChild(i)->getDuration() < minDuration)
+          minDuration = loop->getChild(i)->getDuration();
+      
+      string printStr = loop->toString(loop->getDepth(), 0);
+      printStr.pop_back();
+      printStr += " #iter = " + std::to_string(loop->getNumChild());
+      printStr += ", min = " + std::to_string(minDuration / sampleInterval);
+      if (minDuration / sampleInterval >= IterationDetectionACC)
+        printStr += ", ACC.\n";
+      else
+        printStr += ", DEC.\n";
+      
+      printf("%s", printStr.c_str());
+      
+      if (minDuration / sampleInterval >= IterationDetectionACC)
+        finalizeIterationDetection(loop->getChild(0), sampleInterval);
+      //TODO not finished yet.
+    } 
+    else {
+      TCTATraceNode* trace = (TCTATraceNode*) node;
+      printf("%s", trace->toString(trace->getDepth(), 0).c_str());
+      for (int i = 0; i < trace->getNumChild(); i++)
+        finalizeIterationDetection(trace->getChild(i), sampleInterval);
+    }
+  }
 
   int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
     int depth = current->getDepth();
@@ -243,7 +283,7 @@ namespace TraceAnalysis {
         }
       }
     }
-    
+
     // Process later samples
     CallPathSample* prev = current;
     current = reader.readNextSample();
@@ -282,6 +322,11 @@ namespace TraceAnalysis {
     while (activeStack.size() > 0)
       root = popActiveStack(activeStack, prev->timestamp, prev->timestamp + 1);
     delete prev;
+    
+    long sampleInterval = root->getDuration() / (numSamples - 1);
+    printf("Sampling interval = %ld\n", sampleInterval);
+    
+    finalizeIterationDetection(root, sampleInterval);
     
     printf("\n%s", root->toString(10, 0).c_str());
     
