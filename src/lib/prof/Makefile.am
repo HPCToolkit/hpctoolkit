@@ -71,6 +71,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	MetricAccessor.hpp MetricAccessorInband.hpp \
 	Metric-Mgr.hpp Metric-Mgr.cpp \
 	Metric-ADesc.hpp Metric-ADesc.cpp \
 	Metric-IData.hpp Metric-IData.cpp \
