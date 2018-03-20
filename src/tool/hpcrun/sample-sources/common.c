@@ -126,7 +126,7 @@ hpcrun_event2metric(sample_source_t* ss, int event_idx)
   int n_events = _p->nevents;
 
   if (event_idx >= n_events) {
-    EMSG("Trying to fetch metric %d an invalid event index."
+    TMSG(SAMPLE_SOURCE, "Trying to fetch metric %d an invalid event index."
 	 "Only %d events recorded for sample source %s. Returning -1", event_idx, n_events, ss->name);
     return -1; // Returning 0 is be misleading, as metric id 0 can be used by other events.
   }
