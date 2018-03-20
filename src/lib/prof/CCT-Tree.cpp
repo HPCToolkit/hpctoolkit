@@ -530,6 +530,10 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   //
   bool isFrame = (typeid(*n) == typeid(ProcFrm));
   bool isProc  = (typeid(*n) == typeid(Proc));
+
+  NonUniformDegreeTreeNode *parent = n->Parent();
+  bool isSingleAlien = isProc && (typeid(*parent) != typeid(Proc));
+
   bool isLogicalProc   = isFrame || isProc;
   AProcNode * frameNxt = (isLogicalProc) ? static_cast<AProcNode*>(n) : frame;
 
@@ -544,7 +548,7 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   // -------------------------------------------------------
   // Post-order visit
   // -------------------------------------------------------
-  if (typeid(*n) == typeid(CCT::Stmt)) {
+  if (typeid(*n) == typeid(CCT::Stmt)  ||  isSingleAlien) {
     ANode* n_parent = n->parent();
 
     for (VMAIntervalSet::const_iterator it = ivalset.begin();
