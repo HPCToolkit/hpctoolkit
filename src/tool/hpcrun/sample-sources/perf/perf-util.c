@@ -442,10 +442,11 @@ perf_util_attr_init(
 )
 {
   // by default, we always ask for sampling period information
+  // some PMUs is sensitive to the sample type.
+  // For instance, IDLE-CYCLES-BACKEND will fail if we set PERF_SAMPLE_ADDR.
+  // By default, we need to initialize sample_type as minimal as possible.
   unsigned int sample_type = sampletype 
-                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME 
-			     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
-                             | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
+                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
@@ -468,8 +469,8 @@ perf_util_attr_init(
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 #endif
 
-  attr->exclude_kernel = 1;
-  attr->exclude_hv     = 1;
+  attr->exclude_kernel = EXCLUDE;
+  attr->exclude_hv     = EXCLUDE;
 
   if (perf_util_is_ksym_available()) {
     /* We have rights to record and interpret kernel callchains */
@@ -477,7 +478,7 @@ perf_util_attr_init(
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
 #endif
-    attr->exclude_kernel           = 0;
+    attr->exclude_kernel           = INCLUDE;
   }
 
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
