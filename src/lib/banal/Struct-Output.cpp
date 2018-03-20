@@ -159,7 +159,7 @@ static void
 doLoopList(ostream *, int, TreeNode *, HPC::StringTable &);
 
 static void
-locateTree(TreeNode *, ScopeInfo &, bool = false);
+locateTree(TreeNode *, ScopeInfo &, HPC::StringTable &, bool = false);
 
 //----------------------------------------------------------------------
 
@@ -466,7 +466,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     long base_index = nit->first;
     ScopeInfo alien_scope(file_index, base_index);
 
-    locateTree(node, alien_scope, true);
+    locateTree(node, alien_scope, strTab, true);
 
     // guard alien
     doIndent(os, depth);
@@ -500,7 +500,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     string callname = BinUtil::demangleProcName(strTab.index2str(flp.proc_index));
     ScopeInfo subscope(0, 0);
 
-    locateTree(subtree, subscope);
+    locateTree(subtree, subscope, strTab);
 
     // outer, caller alien.  use file and line from flp call site, but
     // empty proc name.
@@ -616,9 +616,10 @@ doLoopList(ostream * os, int depth, TreeNode * node, HPC::StringTable & strTab)
 // otherwise try to guess the correct file.
 //
 static void
-locateTree(TreeNode * node, ScopeInfo & scope, bool use_file)
+locateTree(TreeNode * node, ScopeInfo & scope, HPC::StringTable & strTab, bool use_file)
 {
   const long max_line = LONG_MAX;
+  long empty_index = strTab.str2index("");
 
   if (node == NULL) {
     return;
@@ -633,7 +634,7 @@ locateTree(TreeNode * node, ScopeInfo & scope, bool use_file)
     for (auto nit = node->nodeMap.begin(); nit != node->nodeMap.end(); ++nit) {
       FLPIndex flp = nit->first;
 
-      if (flp.line_num != 0) {
+      if (flp.file_index != empty_index) {
 	scope.file_index = flp.file_index;
 	scope.base_index = flp.base_index;
 	goto found_file;
@@ -644,7 +645,7 @@ locateTree(TreeNode * node, ScopeInfo & scope, bool use_file)
     for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
       LoopInfo * linfo = *lit;
 
-      if (linfo->line_num != 0) {
+      if (linfo->file_index != empty_index) {
 	scope.file_index = linfo->file_index;
 	scope.base_index = linfo->base_index;
 	goto found_file;
@@ -655,7 +656,7 @@ locateTree(TreeNode * node, ScopeInfo & scope, bool use_file)
     for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
       StmtInfo * sinfo = sit->second;
 
-      if (sinfo->line_num != 0) {
+      if (sinfo->file_index != empty_index) {
 	scope.file_index = sinfo->file_index;
 	scope.base_index = sinfo->base_index;
 	goto found_file;

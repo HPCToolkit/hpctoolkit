@@ -358,11 +358,9 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     }
   }
 
-  // make sure file and line are either both known or both unknown.
-  // this case probably never happens, but we do want to rely on it.
-  if (! svec.empty()
-      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
-  {
+  // a known file and unknown line is now legal, but we require that
+  // any line map must contain a file name
+  if (! svec.empty() && svec[0]->getFile() == "") {
     svec.clear();
   }
 }
@@ -530,6 +528,74 @@ findCodeRegion(RegionMap & codeMap, VMA vma)
 
 //----------------------------------------------------------------------
 
+// getProcLineMap -- helper for makeSkeleton() to find line map info
+// for the start of a Procedure.
+//
+// Some compilers, especially for CUDA binaries, and sometimes dyninst
+// or libdwarf, omit or fail to read line map info for the first few
+// bytes of a function.  Rather than returning 'unknown file', we try
+// scanning the first few hundred bytes in the proc.
+//
+static void
+getProcLineMap(StatementVector & svec, Offset vma, Offset end,
+	       SymtabAPI::Function * sym_func)
+{
+  svec.clear();
+
+  // try a full module lookup first
+  getStatement(svec, vma, sym_func);
+  if (! svec.empty()) {
+    return;
+  }
+
+  // confine further searches to the primary module
+  if (sym_func == NULL) {
+    return;
+  }
+  Module * mod = sym_func->getModule();
+
+  if (mod == NULL) {
+    return;
+  }
+
+  // retry every 'step' bytes, but double the step every 8 tries to
+  // make a logarithmic search
+  const int init_step = 2;
+  const int max_tries = 8;
+  int step = init_step;
+  int num_tries = 0;
+  end = std::min(end, vma + 800);
+
+  for (;;) {
+    // invariant: vma does not have line info, but next might
+    Offset next = vma + step;
+    if (next >= end) {
+      break;
+    }
+
+    mod->getSourceLines(svec, next);
+    num_tries++;
+
+    if (! svec.empty()) {
+      // rescan the range [vma, next) but start over with a small step
+      if (step <= init_step) {
+	break;
+      }
+      svec.clear();
+      step = init_step;
+      num_tries = 0;
+    }
+    else {
+      // advance vma and double the step after 8 tries
+      vma = next;
+      if (num_tries >= max_tries) {
+	step *= 2;
+	num_tries = 0;
+      }
+    }
+  }
+}
+
 // addProc -- helper for makeSkeleton() to locate and add one ProcInfo
 // object into the global file map.
 //
@@ -654,7 +720,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
       // line map for symtab func
       vector <Statement::Ptr> svec;
-      getStatement(svec, sym_start, sym_func);
+      getProcLineMap(svec, sym_start, sym_end, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
@@ -695,7 +761,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 	// line map for parseapi func
 	vector <Statement::Ptr> pvec;
-	getStatement(pvec, vma, sym_func);
+	getProcLineMap(pvec, vma, sym_end, sym_func);
 
 	if (! pvec.empty()) {
 	  parse_filenm = pvec[0]->getFile();
@@ -1330,6 +1396,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
+  long empty_index = strTab.str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1492,8 +1559,8 @@ found_level:
 
   long proc_file = strTab.str2index(finfo->fileName);
   long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
-  long file_ans = 0;
-  long base_ans = 0;
+  long file_ans = empty_index;
+  long base_ans = empty_index;
   long line_ans = 0;
 
   // first choice is the file for the enclosing func that matches some
@@ -1502,7 +1569,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == proc_base) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == proc_base) {
 	file_ans = proc_file;
 	base_ans = proc_base;
 	goto found_file;
@@ -1517,7 +1585,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == flp.base_index) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == flp.base_index) {
 	file_ans = flp.file_index;
 	base_ans = flp.base_index;
 	goto found_file;
@@ -1530,7 +1599,7 @@ found_level:
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     HeaderInfo * info = &(cit->second);
 
-    if (info->depth == depth_root) {
+    if (info->depth == depth_root && info->base_index != empty_index) {
       file_ans = info->file_index;
       base_ans = info->base_index;
       goto found_file;
@@ -1538,34 +1607,44 @@ found_level:
   }
 
   // enclosing func file, but without exit cond
-  if (depth_root == 0) {
+  if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
     goto found_file;
   }
 
   // inline subtree, but without exit cond
-  if (root->nodeMap.begin() != root->nodeMap.end()) {
-    FLPIndex flp = root->nodeMap.begin()->first;
-    file_ans = flp.file_index;
-    base_ans = flp.base_index;
-    goto found_file;
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    if (flp.file_index != empty_index) {
+      file_ans = flp.file_index;
+      base_ans = flp.base_index;
+      goto found_file;
+    }
   }
 
   // subloop at root level
-  if (root->loopList.begin() != root->loopList.end()) {
-    LoopInfo * linfo = *(root->loopList.begin());
-    file_ans = linfo->file_index;
-    base_ans = linfo->base_index;
-    goto found_file;
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->file_index != empty_index) {
+      file_ans = linfo->file_index;
+      base_ans = linfo->base_index;
+      goto found_file;
+    }
   }
 
   // any stmt at root level
-  if (root->stmtMap.begin() != root->stmtMap.end()) {
-    StmtInfo * sinfo = root->stmtMap.begin()->second;
-    file_ans = sinfo->file_index;
-    base_ans = sinfo->base_index;
-    line_ans = sinfo->line_num;
+  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    if (sinfo->file_index != empty_index) {
+      file_ans = sinfo->file_index;
+      base_ans = sinfo->base_index;
+      line_ans = sinfo->line_num;
+      break;
+    }
   }
 found_file:
 
@@ -1608,6 +1687,10 @@ found_file:
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
   VMA entry_vma = (*(entryBlocks.begin()))->start();
+
+  for (auto bit = entryBlocks.begin(); bit != entryBlocks.end(); ++bit) {
+    entry_vma = std::min(entry_vma, (*bit)->start());
+  }
 
   LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
 				file_ans, base_ans, line_ans);
@@ -1882,8 +1965,8 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     VMA vma = cit->first;
     HeaderInfo * info = &(cit->second);
-    SrcFile::ln line;
-    string filenm;
+    SrcFile::ln line = 0;
+    string filenm = "";
 
     InlineSeqn seqn;
     analyzeAddr(seqn, vma);
