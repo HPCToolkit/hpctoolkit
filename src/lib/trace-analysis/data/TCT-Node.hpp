@@ -153,7 +153,7 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() = 0;
     
     // Print contents of an object to a string for debugging purpose.
-    virtual string toString(int maxDepth, Time minDuration);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
     // Add child to this node. Deallocation responsibility is transfered to this node.
     // Child could be deallocated inside the call.
@@ -208,7 +208,7 @@ namespace TraceAnalysis {
       return ret;
     }
     
-    virtual string toString(int maxDepth, Time minDuration);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
   protected:
     vector<TCTANode*> children;
@@ -323,7 +323,7 @@ namespace TraceAnalysis {
       }
     }
     
-    virtual string toString(int maxDepth, Time minDuration);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
   protected:
     // Map id to child profile node.

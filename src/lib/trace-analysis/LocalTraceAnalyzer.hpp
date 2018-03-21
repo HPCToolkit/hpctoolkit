@@ -74,8 +74,7 @@ namespace TraceAnalysis {
     
     void analyze();
   private:
-    BinaryAnalyzer& binaryAnalyzer;
-    TraceFileReader reader;
+    void* ptr;
   };
 }
 

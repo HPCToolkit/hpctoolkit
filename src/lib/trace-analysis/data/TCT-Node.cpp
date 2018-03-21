@@ -56,7 +56,7 @@
 #include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  string TCTANode::toString(int maxDepth, Time minDuration) {
+  string TCTANode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
     string ret;
     /*
     ret += "CFG-0x";
@@ -67,30 +67,32 @@ namespace TraceAnalysis {
     for (int i = 0; i < depth; i++) ret += "  ";
     ret += name + id.toString();
     ret += " " + time->toString();
+    if (samplingInterval != 0)
+      ret += ", " + std::to_string(getDuration()/samplingInterval) + " samples";
     ret += "\n";
     
     return ret;
   }
   
-  string TCTATraceNode::toString(int maxDepth, Time minDuration) {
-    string ret = TCTANode::toString(maxDepth, minDuration);
+  string TCTATraceNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
     if (time->getDuration() < minDuration) return ret;
     
     for (auto it = children.begin(); it != children.end(); it++)
-      ret += (*it)->toString(maxDepth, minDuration);
+      ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
     return ret;
   }
   
-  string TCTProfileNode::toString(int maxDepth, Time minDuration) {
-    string ret = TCTANode::toString(maxDepth, minDuration);
+  string TCTProfileNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
     if (time->getDuration() < minDuration) return ret;
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
-      ret += it->second->toString(maxDepth, minDuration);
+      ret += it->second->toString(maxDepth, minDuration, samplingInterval);
     return ret;
   }
 }

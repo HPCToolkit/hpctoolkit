@@ -77,7 +77,7 @@ namespace TraceAnalysis {
     virtual void clear() = 0;
     
     virtual Time getDuration() const {
-      return getMinDuration() + getMaxDuration() / 2;
+      return (getMinDuration() + getMaxDuration()) / 2;
     }
     virtual Time getMinDuration() const = 0;
     virtual Time getMaxDuration() const = 0;

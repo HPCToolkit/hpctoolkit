@@ -63,7 +63,8 @@ namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
   typedef int64_t Time; // Virtual Memory Address
   
-  const uint32_t IterationDetectionACC = 5;
+  const uint32_t IterationChildDurationThreshold = 3;
+  const uint32_t IterationNumChildThreshold = 5;
   
   string vmaToHexString(VMA vma);
   string timeToString(Time time);
