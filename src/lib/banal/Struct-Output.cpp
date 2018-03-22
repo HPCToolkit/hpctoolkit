@@ -77,6 +77,8 @@
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
+
 #include <lib/xml/xml.hpp>
 
 #include "Struct-Inline.hpp"
@@ -86,7 +88,6 @@
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
 
-#define GUARD_NAME  "<inline>"
 
 using namespace Inline;
 using namespace std;
