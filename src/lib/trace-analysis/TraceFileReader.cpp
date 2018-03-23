@@ -158,7 +158,8 @@ namespace TraceAnalysis {
     if (cp->getFrameAtDepth(0).name == "<partial call paths>") {
       delete cp;
       cp = readNextSample(); 
-      cp->dLCA = HPCRUN_FMT_DLCA_NULL;
+      if (cp != NULL)
+        cp->dLCA = HPCRUN_FMT_DLCA_NULL;
     }
     
     return cp;

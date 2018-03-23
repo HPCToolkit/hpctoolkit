@@ -65,6 +65,8 @@ namespace TraceAnalysis {
   
   const uint32_t IterationChildDurationThreshold = 3;
   const uint32_t IterationNumChildThreshold = 5;
+  const uint32_t IterationNumAccFuncThreshold = 2;
+  const uint32_t IterationNumAccLoopThreshold = 2;
   
   string vmaToHexString(VMA vma);
   string timeToString(Time time);

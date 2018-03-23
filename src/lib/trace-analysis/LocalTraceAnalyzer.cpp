@@ -162,7 +162,7 @@ namespace TraceAnalysis {
         TCTATraceNode* parent = (TCTATraceNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
-            bool printError = (i != parent->getNumChild() - 1);
+            bool printError = (i != parent->getNumChild() - 1 && node->getDepth() <= 3);
             if (printError) printf("Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
             if (printError) printf("%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
@@ -207,7 +207,7 @@ namespace TraceAnalysis {
         
         for (int k = 0; k < iter->getNumChild(); k++)
           if (iter->getChild(k)->getDuration() / samplingInterval 
-                  > IterationChildDurationThreshold) {
+                  >= IterationChildDurationThreshold) {
             if (iter->getChild(k)->type == TCTANode::Func) countFunc++;
             else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
           }
@@ -216,7 +216,9 @@ namespace TraceAnalysis {
         // and has less than two loop children passing the IterationChildDurationThreshold,
         // and the number of children doesn't pass the IterationNumChildThreshold,
         // children of this iteration may belong to distinct iterations in the execution.
-        if (countFunc < 1 && countLoop < 2 && iter->getNumChild() < 5)
+        if (countFunc < IterationNumAccFuncThreshold 
+                && countLoop < IterationNumAccLoopThreshold 
+                && iter->getNumChild() < IterationNumChildThreshold)
           return false;
       }
       return true;
