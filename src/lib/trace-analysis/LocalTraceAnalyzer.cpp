@@ -162,7 +162,7 @@ namespace TraceAnalysis {
         TCTATraceNode* parent = (TCTATraceNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
-            bool printError = (i != parent->getNumChild() - 1 && node->getDepth() <= 3);
+            bool printError = (i != parent->getNumChild() - 1);// && node->getDepth() <= 3);
             if (printError) printf("Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
             if (printError) printf("%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
@@ -182,7 +182,7 @@ namespace TraceAnalysis {
             while (parent->getNumChild() > i) {
               TCTANode* child = parent->removeChild(i);
               if (printError) printf("Deleting child %s:\n", child->id.toString().c_str());
-              if (printError) printf("%s", child->toString(INT_MAX, -LONG_MAX, 0).c_str());
+              if (printError) printf("%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
               delete child;
             }
 
@@ -284,32 +284,42 @@ namespace TraceAnalysis {
     }
 
     int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
-      int depth = current->getDepth();
+      int depth = prev->getDepth();
       int dLCA = current->getDLCA();
       if (dLCA != HPCRUN_FMT_DLCA_NULL) {
         while (depth > 0 && dLCA > 0) {
-          if (current->getFrameAtDepth(depth).type == CallPathFrame::Func)
+          if (prev->getFrameAtDepth(depth).type == CallPathFrame::Func)
             dLCA--;
           depth--;
         }
       }
       // when dLCA is no less than the number of call frames on call path,
       // dLCA must be wrong. Reset depth.
-      if (depth == 0) depth = current->getDepth();
+      string error = "";
+      if (depth == 0) {
+        depth = prev->getDepth();
+        error = "dLCA larger than number of call frames.";
+      }
 
-      if (depth > prev->getDepth()) depth = prev->getDepth();
+      if (depth > current->getDepth()) depth = current->getDepth();
       while (depth > 0 && (prev->getFrameAtDepth(depth).id != current->getFrameAtDepth(depth).id ||
               prev->getFrameAtDepth(depth).procID != current->getFrameAtDepth(depth).procID))
         depth--;
 
       if (depth == 0) {
-        printf("LCA Depth = 0:\n");
+        error += "LCA Depth = 0";
+      }
+      
+      if (error != "") {
+        printf("%s\n", error.c_str());
         printf("Prev = ");
         for (int i = 0; i < prev->getDepth(); i++)
-          printf(" %s, ", prev->getFrameAtDepth(i).name.c_str());
-        printf("\nCurr = ");
+          printf(" %s(%u,%u), ", prev->getFrameAtDepth(i).name.c_str(), 
+                  prev->getFrameAtDepth(i).id, prev->getFrameAtDepth(i).procID);
+        printf(".\nCurr = ");
         for (int i = 0; i < current->getDepth(); i++)
-          printf(" %s, ", current->getFrameAtDepth(i).name.c_str());
+          printf(" %s(%u,%u), ", current->getFrameAtDepth(i).name.c_str(),
+                  current->getFrameAtDepth(i).id, current->getFrameAtDepth(i).procID);
         printf(" dLCA = %u.\n", current->getDLCA());
       }
 

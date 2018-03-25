@@ -355,8 +355,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       // maintain invariants
       td->cached_frame_count = n_cached_frames + old_frame_count;
       td->tramp_frame = td->cached_bt + n_cached_frames;
-      // dLCA is the number of newly cached frames.
-      td->dLCA = n_cached_frames;
+      
       TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
 	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
     }

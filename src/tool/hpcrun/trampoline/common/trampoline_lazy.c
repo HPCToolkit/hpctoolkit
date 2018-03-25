@@ -157,6 +157,8 @@ hpcrun_trampoline_advance(void)
       && (node != NULL && cct_addr_eq(hpcrun_cct_addr(node), &tmp))
      )
     parent = node;
+  else
+    td->dLCA++;
   TMSG(TRAMP, " ... to node %p", parent);
   
   TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
