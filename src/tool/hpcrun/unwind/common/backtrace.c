@@ -279,10 +279,12 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       TMSG(TRAMP, "WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
 	   skipInner);
     }
-    TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
-    // adjust the returned backtrace according to the skipInner
-    bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
-    TMSG(BT, "* AFTER Skip inner correction, bt_beg = %p", bt_beg);
+    else {
+      TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
+      // adjust the returned backtrace according to the skipInner
+      bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+      TMSG(BT, "* AFTER Skip inner correction, bt_beg = %p", bt_beg);
+    }
   }
 
   bt->begin = bt_beg;         // returned backtrace begin
