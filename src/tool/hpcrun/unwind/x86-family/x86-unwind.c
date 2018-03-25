@@ -458,6 +458,10 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
   x86recipe_t *xr = UWI_RECIPE(uw);
+
+  if (xr == NULL) {
+    return STEP_ERROR;
+  }
   
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }
