@@ -612,7 +612,6 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 			    Metric::AExprIncr::FnTy fn)
 {
   MetricAccessorInterval tma(*this);
-  MetricAccessor *nma = &tma;
 
   for (uint mId = mBegId; mId < mEndId; ++mId) {
     const Metric::ADesc* m = mMgr.metric(mId);
@@ -622,15 +621,15 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
       const Metric::AExprIncr* expr = mm->expr();
       switch (fn) {
         case Metric::AExprIncr::FnInit:
-	  expr->initialize(*nma); break;
+	  expr->initialize(tma); break;
         case Metric::AExprIncr::FnInitSrc:
-	  expr->initializeSrc(*nma); break;
+	  expr->initializeSrc(tma); break;
         case Metric::AExprIncr::FnAccum:
-	  expr->accumulate(*nma); break;
+	  expr->accumulate(tma); break;
         case Metric::AExprIncr::FnCombine:
-	  expr->combine(*nma); break;
+	  expr->combine(tma); break;
         case Metric::AExprIncr::FnFini:
-	  expr->finalize(*nma); break;
+	  expr->finalize(tma); break;
         default:
 	  DIAG_Die(DIAG_UnexpectedInput);
       }
