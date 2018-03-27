@@ -574,7 +574,7 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
   uint numMetrics = mMgr.size();
   MetricAccessorInterval mda(*this);
 
-  for (uint mId = mBegId; mId < mEndId; ++mId) {
+  for (uint mId = mda.idx_ge(mBegId); mId < mEndId; mId = mda.idx_ge(mId+1)) {
     const Metric::ADesc* m = mMgr.metric(mId);
     const Metric::DerivedDesc* mm = dynamic_cast<const Metric::DerivedDesc*>(m);
     if (mm && mm->expr()) {
@@ -613,7 +613,7 @@ ANode::computeMetricsIncrMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 {
   MetricAccessorInterval tma(*this);
 
-  for (uint mId = mBegId; mId < mEndId; ++mId) {
+  for (uint mId = tma.idx_ge(mBegId); mId < mEndId; mId = tma.idx_ge(mId+1)) {
     const Metric::ADesc* m = mMgr.metric(mId);
     const Metric::DerivedIncrDesc* mm =
       dynamic_cast<const Metric::DerivedIncrDesc*>(m);

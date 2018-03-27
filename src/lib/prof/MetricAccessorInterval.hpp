@@ -110,6 +110,19 @@ public:
     return 0;
   }
 
+  virtual int idx_ge(int mId) const {
+    vector<double> dummy;
+    MI_Vec key = make_pair(make_pair(mId, mId+1), dummy);
+    set<MI_Vec>::iterator it = table.lower_bound(key);
+    if (it == table.end())
+      return INT_MAX;
+    int lo = it->first.first;
+    if (lo <= mId)
+      return mId;
+    return lo;
+    
+  }
+
 #include <iostream>
   void dump(void)
   {
