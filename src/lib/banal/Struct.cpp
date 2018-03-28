@@ -119,6 +119,7 @@ using namespace std;
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_SHOW_GAPS   0
+#define DEBUG_SKEL_SUMMARY  0
 
 #if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
 #define DEBUG_ANY_ON  1
@@ -498,6 +499,23 @@ makeCodeMap(RegionMap & codeMap)
 	       << "--0x" << (start + reg->getMemSize()) << dec
 	       << "  " << reg->getRegionName() << "\n");
   }
+
+#if DEBUG_MAKE_SKEL
+  // print the list of modules
+  vector <Module *> modVec;
+  the_symtab->getAllModules(modVec);
+
+  cout << "\n";
+  for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+    Module * mod = *mit;
+
+    if (mod != NULL) {
+      cout << "module:  0x" << hex << mod->addr() << dec
+	   << "  (lang " << mod->language() << ")"
+	   << "  " << mod->fullName() << "\n";
+    }
+  }
+#endif
 }
 
 // Note: normally, code regions don't overlap, but if they do, then we
@@ -630,7 +648,9 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
-  cout << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
+  cout << "link:    " << pinfo->linkName << "\n"
+       << "pretty:  " << pinfo->prettyName << "\n"
+       << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
        << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
@@ -812,6 +832,12 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
 
+      // symtab doesn't offer any guidance on demangling in this case
+      if (linknm != prettynm
+	  && prettynm.find_first_of("()<>") == string::npos) {
+	prettynm = linknm;
+      }
+
       region = findCodeRegion(codeMap, vma);
       reg_start = (region != NULL) ? region->getMemOffset() : 0;
       reg_end = (region != NULL) ? (reg_start + region->getMemSize()) : 0;
@@ -837,7 +863,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
     }
   }
 
-#if DEBUG_MAKE_SKEL
+#if DEBUG_SKEL_SUMMARY
   // print the skeleton map
   cout << "\n------------------------------------------------------------\n";
 
@@ -865,6 +891,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       }
     }
   }
+  cout << "\n";
 #endif
 
   return fileMap;
@@ -960,7 +987,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
 	cout << "inline:  l=" << pit->getLineNum()
 	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
 #endif
@@ -1050,7 +1077,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       mergeInlineLoop(root, empty, *it);
     }
 
-
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
       root = deleteInlinePrefix(root, prefix, strTab);
@@ -1070,7 +1096,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
 	cout << "inline:  l=" << pit->getLineNum()
 	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
     cout << "\n";
@@ -1518,7 +1544,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
     DEBUG_CFG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
-	       << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	       << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	       << "'\n");
   }
 found_level:
@@ -1531,7 +1557,7 @@ found_level:
       FLPIndex flp = nit->first;
       cout << "inline:  l=" << flp.line_num
 	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	   << "'\n";
     }
   }
@@ -1827,7 +1853,7 @@ computeGaps(VMAIntervalSet & vset, VMAIntervalSet & gaps, VMA start, VMA end)
 static string
 debugPrettyName(const string & procnm)
 {
-  string str = BinUtil::demangleProcName(procnm);
+  string str = procnm;
   string ans = "";
   size_t str_len = str.size();
   size_t pos = 0;
@@ -1903,7 +1929,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
     cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
 	 << "  f='" << nit->getFileName()
-	 << "'  p='" << debugPrettyName(nit->getProcName()) << "'\n";
+	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
 }
 
@@ -2010,7 +2036,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
 
       cout << "inline:  l=" << flp.line_num
 	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	   << "'\n";
       depth++;
     }
@@ -2045,7 +2071,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     }
     cout << "inline:  l=" << flp.line_num
 	 << "  f='"  << strTab.index2str(flp.file_index)
-	 << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	 << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	 << "'\n";
 
     debugInlineTree(nit->second, NULL, strTab, depth + 1, expand_loops);
