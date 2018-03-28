@@ -13,6 +13,9 @@ public:
   virtual double c_idx(int mId) const {
     return mdata.metric(mId);
   }
+  virtual int idx_ge(int mId) const {
+    return mId;
+  }
 private:
   Prof::Metric::IData &mdata;
 };
