@@ -65,7 +65,7 @@ bool VarMap::isVariable(char *expr)
 
 
 
-double VarMap::getValue(unsigned int var)
+double VarMap::getValue(int var)
 {
   if ( var>=0 && var<m_num_metrics )
     return hpcrun_fmt_metric_get_value(m_list_metric_desc[var], 
