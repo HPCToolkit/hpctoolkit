@@ -73,6 +73,7 @@
 #include <sample-sources/retcnt.h>
 #include <monitor.h>
 
+extern bool hpcrun_get_retain_recursion_mode();
 
 //******************************************************************************
 // interface operations
@@ -141,25 +142,21 @@ hpcrun_trampoline_advance(void)
   void* current_frame_sp = td->tramp_frame->ra_loc;
   if (! td->cached_frame_count ) return NULL;
 
-  td->tramp_frame++;
-  cct_addr_t tmp =
-    (cct_addr_t) {.as_info = td->tramp_frame->as_info,
-                  .ip_norm = td->tramp_frame->ip_norm,
-                  .lip = td->tramp_frame->lip};
-  
   TMSG(TRAMP, "Advance from node %p...", node);
   cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
   // Recursive frames may be merged in CCT.
-  // Therefore, when parent CCT node doesn't match the new tramp_frame
-  // and current CCT node matches the new tramp_frame,
-  // revert to current CCT node.
-  if ( (parent == NULL || !cct_addr_eq(hpcrun_cct_addr(parent), &tmp))
-      && (node != NULL && cct_addr_eq(hpcrun_cct_addr(node), &tmp))
+  // Therefore, revert to current CCT node when corresponding recursive frame is merged.
+  if (  !hpcrun_get_retain_recursion_mode()
+     && td->tramp_frame != td->cached_bt
+     && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
+     && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function))
      )
     parent = node;
   else
     td->dLCA++;
   TMSG(TRAMP, " ... to node %p", parent);
+  
+  td->tramp_frame++;
   
   TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
        td->cached_frame_count - 1);

@@ -141,6 +141,11 @@ hpcrun_set_retain_recursion_mode(bool mode)
   retain_recursion = mode;
 }
 
+bool
+hpcrun_get_retain_recursion_mode()
+{
+  return retain_recursion;
+}
 
 // See usage in header.
 cct_node_t*
