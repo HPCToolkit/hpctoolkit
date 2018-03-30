@@ -5,7 +5,7 @@
 #include "cupti-ompt-api.h"
 #include "nvidia.h"
 #include "cubin-id-map.h"
-#include "cupti-activity-strings.h"
+//#include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
 #include "cupti-activity-queue.h"
 #include "cupti-function-id-map.h"

@@ -1,6 +1,7 @@
 #ifndef _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
 #define _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
 
+#include <hpcrun/loadmap.h>
 #include <cupti.h>
 
 //******************************************************************************
@@ -162,7 +163,6 @@ cupti_metrics_init
 // finalizer
 //******************************************************************************
 
-
 extern void
 cupti_activity_flush
 (
@@ -180,6 +180,24 @@ extern void
 cupti_device_shutdown
 (
  void *args
+);
+
+//******************************************************************************
+// ignores
+//******************************************************************************
+
+extern bool
+cupti_lm_contains_fn
+(
+ const char *lm,
+ const char *fn
+);
+
+
+extern bool
+cupti_modules_ignore
+(
+ load_module_t *module
 );
 
 #endif

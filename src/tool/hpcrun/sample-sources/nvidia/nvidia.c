@@ -85,7 +85,6 @@
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
-#include "../../device-finalizers.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -93,6 +92,8 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/module-ignore-map.h>
+#include <hpcrun/device-finalizers.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -257,6 +258,8 @@
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
+// ignores
+static module_ignore_fn_entry_t module_ignore;
 
 static kind_info_t* me_kind; // memory allocation
 static kind_info_t* ke_kind; // kernel execution
@@ -552,6 +555,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    // Register ignore thread functions
+    module_ignore.fn = cupti_modules_ignore;
+    module_ignore_map_register(&module_ignore);
 
     // Specify desired monitoring
     cupti_monitoring_set(kernel_invocation_activities, true);

@@ -72,18 +72,23 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
         Demangler.hpp Demangler.cpp \
-	KernelSymbols.hpp KernelSymbols.cpp \
 	LM.hpp LM.cpp \
 	Seg.hpp Seg.cpp \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
+	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
+	SimpleSymbols.hpp SimpleSymbols.cpp\
+	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
+	\
 	Dbg-LM.hpp Dbg-LM.cpp \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp
+	VMAInterval.hpp VMAInterval.cpp 
 
+
+#############################################################################
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 
@@ -96,6 +101,7 @@ endif
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
+
 
 #############################################################################
 # Automake rules

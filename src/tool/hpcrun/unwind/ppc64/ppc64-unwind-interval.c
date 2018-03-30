@@ -700,7 +700,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
   stat.count = count;
-  stat.errcode = 0;
+  stat.error = 0;
   stat.first = beg_ui;
 
   return stat; 

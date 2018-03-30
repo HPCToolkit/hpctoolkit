@@ -111,6 +111,8 @@
 #include "term_handler.h"
 
 #include "device-finalizers.h"
+#include "module-ignore-map.h"
+#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -984,6 +986,19 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
+
+  void *thread_pre_create_address = monitor_get_thread_pre_create_address();
+  const char *module_name = lm_addr_to_module(thread_pre_create_address);
+  load_module_t *module = hpcrun_loadmap_findByName(module_name);
+  if (module_ignore_map_lookup(module) != NULL) {
+    return NULL;
+  } else {
+    if (module_ignore_map_ignore(module)) {
+      module_ignore_map_insert(module);
+      return NULL;
+    }
+  }
+  
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 
@@ -1059,7 +1074,6 @@ monitor_init_thread(int tid, void* data)
 		  }
 		});
 
-
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
@@ -1068,6 +1082,18 @@ monitor_init_thread(int tid, void* data)
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   hpcrun_safe_exit();
+
+  void *thread_begin_address = monitor_get_thread_begin_address();
+  const char *module_name = lm_addr_to_module(thread_begin_address);
+  load_module_t *module = hpcrun_loadmap_findByName(module_name);
+  if (module_ignore_map_lookup(module) != NULL) {
+    hpcrun_thread_suppress_sample = true;
+  } else {
+    if (module_ignore_map_ignore(module)) {
+      module_ignore_map_insert(module);
+      hpcrun_thread_suppress_sample = true;
+    }
+  }
 
   return thread_data;
 }

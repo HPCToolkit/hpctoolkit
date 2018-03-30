@@ -738,7 +738,8 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
   }
 
   if (!useStruct) {
-    lm->read(BinUtil::LM::ReadFlg_Seg);
+    std::set<std::string> dir;  // empty set of measurement directories
+    lm->read(dir, BinUtil::LM::ReadFlg_Seg);
   }
 
   Prof::Struct::LM* lmStrct =

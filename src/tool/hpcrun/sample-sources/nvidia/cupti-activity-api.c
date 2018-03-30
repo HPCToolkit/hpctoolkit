@@ -4,12 +4,14 @@
 #include <limits.h>  // PATH_MAX
 #include <stdio.h>   // sprintf
 #include <unistd.h>
+#include <dlfcn.h>  // dlopen
 #include <sys/stat.h>  // mkdir
 #include <openssl/md5.h>
 
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
+#include <hpcrun/files.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
 
@@ -17,11 +19,12 @@
 #include "cubin-id-map.h"
 #include "cubin-md5-map.h"
 #include "cupti-activity-api.h"
-#include "cupti-activity-strings.h"
+//#include "cupti-activity-strings.h"
 #include "cupti-correlation-id-map.h"
 #include "cupti-activity-queue.h"
 #include "cupti-function-id-map.h"
 #include "cupti-host-op-map.h"
+#include "cupti-callstack-ignore-map.h"
 
 //******************************************************************************
 // macros
@@ -187,7 +190,7 @@ cupti_write_cubin
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (errno == EEXIST) {
     close(fd);
-    return true;
+    return false;
   }
   if (fd >= 0) {
     // Success
@@ -225,17 +228,15 @@ cupti_load_callback_cuda
 
   // Create file name
   char file_name[PATH_MAX];
-  char file_path[PATH_MAX];
   size_t i;
   size_t used = 0;
-  mkdir("cubins", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  getcwd(file_path, PATH_MAX);
-  used += sprintf(&file_name[used], file_path);
-  used += sprintf(&file_name[used], "/cubins/");
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/cubins/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   for (i = 0; i < MD5_DIGEST_LENGTH; ++i) {
     used += sprintf(&file_name[used], "%02x", md5[i]);
   }
-  used += sprintf(&file_name[used], ".cubin");
+  used += sprintf(&file_name[used], "%s", ".cubin");
 
   // Write a file if does not exist
   bool file_flag;
@@ -245,7 +246,7 @@ cupti_load_callback_cuda
 
   if (file_flag) {
     char device_file[PATH_MAX]; 
-    sprintf(device_file, "%s@0x%lx", file_name, (unsigned long)cubin);
+    sprintf(device_file, "%s", file_name);
     uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
@@ -285,10 +286,43 @@ cupti_correlation_callback_cuda
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   td->overhead++;
   hpcrun_safe_enter();
+
   cct_node_t *node = hpcrun_sample_callpath(&uc, cupti_host_op_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+
   hpcrun_safe_exit();
   td->overhead--;
+
+  // Compress callpath
+  cct_node_t *child = node;
+  node = hpcrun_cct_parent(node);
+  cct_addr_t* node_addr = hpcrun_cct_addr(node);
+  load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+
+  // Skip libhpcrun
+  while (strstr(module->name, "libhpcrun") != NULL) {
+    hpcrun_cct_delete_self(node);
+    node = hpcrun_cct_parent(node);
+    node_addr = hpcrun_cct_addr(node);
+    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+  }
+
+  // Skip libcupti and libcuda
+  while (true) {
+    if (cupti_callstack_ignore_map_lookup(module) == NULL) {
+      if (cupti_callstack_ignore_map_ignore(module)) {
+        cupti_callstack_ignore_map_insert(module);
+      } else {
+        break;
+      }
+    }
+    hpcrun_cct_delete_self(node);
+    node = hpcrun_cct_parent(node);
+    node_addr = hpcrun_cct_addr(node);
+    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+  }
+
   cupti_host_op_map_insert(*id, 0, NULL, node);
+
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
 
@@ -745,14 +779,13 @@ cupti_sample_process
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
   PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-   "samples %u, latencySamples %u, stallreason %s\n",
+   "samples %u, latencySamples %u",
    sample->sourceLocatorId,
    sample->functionId,
    sample->pcOffset,
    sample->correlationId,
    sample->samples,
-   sample->latencySamples,
-   cupti_stall_reason_string(sample->stallReason));
+   sample->latencySamples);
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -1024,7 +1057,6 @@ cupti_metrics_init
 // finalizer
 //******************************************************************************
 
-
 void
 cupti_activity_flush
 (
@@ -1052,4 +1084,49 @@ cupti_device_shutdown(void *args)
   cupti_activity_flush();
   cupti_activity_queue_apply(cupti_activity_attribute);
   cupti_callbacks_unsubscribe();
+}
+
+//******************************************************************************
+// ignores
+//******************************************************************************
+
+bool
+cupti_lm_contains_fn(const char *lm, const char *fn)
+{
+  char resolved_path[PATH_MAX];
+
+  char *lm_real = realpath(lm, resolved_path);
+  //printf("query path = %s\n", lm_real);
+  //printf("query fn = %s\n", fn);
+  void *handle = dlopen(lm_real, RTLD_LAZY);
+  //printf("handle = %p\n", handle);
+  if (handle) {
+    void *fp = dlsym(handle, fn);
+    printf("fp = %p\n", fp);
+    if (fp) {
+      Dl_info dlinfo;
+      int res = dladdr(fp, &dlinfo);
+      if (res) {
+        char dli_fname_buf[PATH_MAX];
+        //printf("original path = %s\n", dlinfo.dli_fname);
+        char *dli_fname = realpath(dlinfo.dli_fname, dli_fname_buf);
+        //printf("found path = %s\n", dli_fname);
+        //printf("symbol = %s\n", dlinfo.dli_sname);
+        return strcmp(lm_real, dli_fname) == 0;
+      }
+    }
+  }
+  return false;
+}
+
+
+bool
+cupti_modules_ignore(load_module_t *module)
+{
+  if (cupti_lm_contains_fn(module->name, "cudaLaunchKernel") ||
+      cupti_lm_contains_fn(module->name, "cuLaunchKernel") ||
+      cupti_lm_contains_fn(module->name, "cuptiActivityEnable")) {
+    return true;
+  }
+  return false;
 }
