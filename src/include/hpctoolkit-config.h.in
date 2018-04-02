@@ -126,7 +126,7 @@
 /* HOST platform: MIPS64LE_LINUX */
 #undef HOST_PLATFORM_MIPS64LE_LINUX
 
-/* IBM BlueGene/P support */
+/* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
 /* HPCToolkit version */

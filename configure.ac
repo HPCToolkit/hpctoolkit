@@ -1040,6 +1040,89 @@ AC_MSG_NOTICE([*** INFO: post hpc tests: MPICC='${MPICC}' ***])
 AC_MSG_NOTICE([*** INFO: post hpc tests: MPICXX='${MPICXX}' ***])
 AC_MSG_NOTICE([*** INFO: post hpc tests: MPIF77='${MPIF77}' ***])
 
+
+#-------------------------------------------------
+# Option: --enable-bgq
+#-------------------------------------------------
+
+# Option to select blue gene front or back end.  Default is for back
+# end if system is powerpc and looks like blue gene.
+#
+# Some things (POSIX timers and perf events) won't run on the blue
+# gene back end, but this is hard to test for on the front end.
+
+bgq_explicit=no
+
+AC_ARG_ENABLE([bgq],
+  [AS_HELP_STRING([--enable-bgq],
+      [configure for blue gene/q back end, disable posix timers
+       and perf events (default auto-detect)])],
+  [bgq_explicit=yes],
+  [enable_bgq=check])
+
+# Treat this as blue gene if powerpc and /bgsys/drivers exists, or
+# else if explicitly set.
+
+AC_MSG_CHECKING([for blue gene/q back end])
+
+case "$host_cpu" in
+  *power* | *ppc* )
+    case "$enable_bgq" in
+      yes | no )
+        ;;
+      * )
+        if test -d /bgsys/drivers ; then enable_bgq=yes
+	else enable_bgq=no
+        fi
+        ;;
+    esac
+    ;;
+  * )
+    enable_bgq=no
+    ;;
+esac
+
+AC_MSG_RESULT([$enable_bgq])
+
+blue_gene_back_end=no
+host_extra_mesg=
+warn_bgq_backend=no
+
+if test "$enable_bgq" = yes ; then
+  blue_gene_back_end=yes
+  host_extra_mesg='(bgq back end)'
+
+  if test "$bgq_explicit" != yes ; then
+    warn_bgq_backend=yes
+  fi
+fi
+
+# Old --enable-bluegene option.  This is still used in itimer.c for
+# how we treat WALLCLOCK.
+
+if test "$blue_gene_back_end" = yes ; then
+  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM Blue Gene support])
+fi
+
+# Old --enable-bgq-cnk option.  This provides get_hw_tid() and
+# Kernel_ProcessorID(), but nothing uses it now.  If you want to
+# turn it back on, then fix the hard-coded paths in
+# hpcrun/utilities/bgq-cnk and do a proper config test.
+
+AM_CONDITIONAL([OPT_BGQ_BACKEND], false)
+
+# Old --with-upc and --with-upc-lib options.  These only applied to
+# blue gene/p which we no longer support.
+
+AM_CONDITIONAL([OPT_ENABLE_UPC], false)
+
+OPT_UPC_IFLAGS=
+OPT_UPC_LDFLAGS=
+
+AC_SUBST([OPT_UPC_IFLAGS])
+AC_SUBST([OPT_UPC_LDFLAGS])
+
+
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
 #----------------------------------------------------------------------------
@@ -2177,6 +2260,11 @@ then
   perfmon_mesg="(from papi) $OPT_PAPI"
   perfmon_is_from_papi=yes
 
+elif test "$blue_gene_back_end" = yes ; then
+  # disable separate perfmon for blue gene
+  PERFMON=no
+  perfmon_mesg='no (disabled for blue gene)'
+
 elif test "xperfmon_withval" != x && valid_perfmon_dir "$perfmon_withval"
 then
   # if --with-perfmon is set and works, use that
@@ -2280,6 +2368,14 @@ esac
 AC_MSG_RESULT([$perf_event_mesg])
 
 AC_MSG_NOTICE([perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID}])
+
+# Perf events won't run and throws an illegal instruction on blue gene
+# back end.
+if test "$blue_gene_back_end" = yes ; then
+  AC_MSG_NOTICE([disable perf events for blue gene back end])
+  perf_event=no
+  perf_event_mesg='no (disabled for blue gene)'
+fi
 
 # Perf events doesn't exactly require perfmon, but if not available,
 # then mnemonic names won't work.
@@ -3426,6 +3522,13 @@ int main()
 
 AC_MSG_RESULT([$ans])
 
+# The POSIX timers pass this test on blue gene, but they don't work on
+# the back end.
+if test "$blue_gene_back_end" = yes ; then
+  AC_MSG_NOTICE([disable POSIX timers for blue gene back end])
+  ans=no
+fi
+
 # If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
 if test "$ans" = yes ; then
@@ -3452,153 +3555,6 @@ fi
 
 LIBS="$ORIG_LIBS"
 AC_LANG_POP
-
-
-#-------------------------------------------------
-# enable-bluegene: BG/* support
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to enable IBM BlueGene/P support])
-
-OPT_ENABLE_IBM_BLUEGENE="no"
-
-AC_ARG_ENABLE([bluegene],
-  AS_HELP_STRING([--enable-bluegene],
-                 [Enable BlueGene/P support]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_IBM_BLUEGENE="yes" ;;
-     no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-bluegene]) ;;
-   esac],
-  [if test "$HOST_CPU_PPC" = yes && test -d /bgsys ; then
-     OPT_ENABLE_IBM_BLUEGENE=yes
-   fi])
-
-AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
-
-if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
-  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
-fi
-
-#-------------------------------------------------
-# Option: --enable-bgq-cnk=PATH
-#-------------------------------------------------
-#
-# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
-#
-enable_bgq=no
-AC_ARG_ENABLE([bgq-cnk],
-    [AS_HELP_STRING([--enable-bgq-cnk],
-	[enable BGQ- and cnk-specific options: build parts of hpcrun with
-	 back-end powerpc64-bgq-linux-gcc])],
-    [enable_bgq="yes"],
-    [])
-
-# Search for the back-end BGQ compiler on PATH and test for Blue
-# Gene/P (suppress the warning on P).
-
-ppc64_bgq_avail=
-if test -d /bgsys ; then
-    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
-else
-    ppc64_bgq_avail=no
-fi
-
-hpcrun_use_bgq_backend=no
-warn_bgq_backend=no
-
-case "$enable_bgq" in 
-    yes )
-	if test "$ppc64_bgq_avail" != yes ; then
-	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk])
-	fi
-	hpcrun_use_bgq_backend=yes
-	;;
-    no ) ;;
-    * )  ;;
-esac
-
-AC_SUBST([hpcrun_use_bgq_backend])
-AC_MSG_RESULT([$hpcrun_use_bgq_backend])
-AM_CONDITIONAL(OPT_BGQ_BACKEND, test "$hpcrun_use_bgq_backend" = "yes")
-
-#-------------------------------------------------
-# Option: --with-upc=PATH
-#-------------------------------------------------
-
-# The IBM BlueGene UPC sampling source, for which we need header and
-# library files.  On intrepid, these files are in:
-#   inc: /bgsys/drivers/ppcfloor/arch/include/spi
-#   lib: /bgsys/drivers/ppcfloor/runtime/SPI
-#
-# The --with-upc path is just the least common ancestor of these two
-# directories. but we may need to generalize this to --with-upc-inc
-# and --with-upc-lib.
-
-AC_MSG_CHECKING([for UPC])
-
-AC_ARG_WITH([upc],
-  AS_HELP_STRING([--with-upc=PATH],
-      [path to IBM BlueGene UPC installation]),
-  [error_if_missing=yes],
-  [if test "$OPT_ENABLE_IBM_BLUEGENE" = yes ; then
-     with_upc=/bgsys/drivers/ppcfloor
-   else
-     with_upc=no
-   fi
-   error_if_missing=no])
-
-AC_ARG_WITH([upc-lib],
-  AS_HELP_STRING([--with-upc-lib=LIBRARY],
-      [path to UPC library(s), absolute or relative to WITH_UPC/runtime/SPI]),
-  [],
-  [with_upc_lib=libSPI.cna.a])
-
-OPT_UPC=no
-OPT_UPC_IFLAGS=
-OPT_UPC_LDFLAGS=
-opt_upc_mesg=no
-
-case "${with_upc}" in
-  /* )
-    if test -f "${with_upc}/arch/include/spi/UPC.h"
-    then
-      OPT_UPC=yes
-      OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
-      opt_upc_mesg="$with_upc"
-      for lib in $with_upc_lib ; do
-	case "$lib" in
-	  /* ) abs_lib="$lib" ;;
-	  * )  abs_lib="${with_upc}/runtime/SPI/${lib}" ;;
-	esac
-	if test -f "$abs_lib" ; then
-	  OPT_UPC_LDFLAGS="${OPT_UPC_LDFLAGS} ${abs_lib}"
-	else
-	  OPT_UPC=no
-	  opt_upc_mesg=no
-	  if test "$error_if_missing" = yes ; then
-	    AC_MSG_ERROR([invalid UPC directory: $with_upc])
-	  fi
-	fi
-      done
-    else
-      if test "$error_if_missing" = yes ; then
-	AC_MSG_ERROR([invalid UPC directory: $with_upc])
-      fi
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([UPC directory must be absolute path: $with_upc])
-    ;;
-esac
-
-AC_MSG_RESULT([$opt_upc_mesg])
-
-AM_CONDITIONAL([OPT_ENABLE_UPC], [test "$OPT_UPC" = yes])
-AC_SUBST(OPT_UPC_IFLAGS)
-AC_SUBST(OPT_UPC_LDFLAGS)
 
 
 #-------------------------------------------------
@@ -3943,7 +3899,7 @@ AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
-AC_MSG_NOTICE([  host:   $host])
+AC_MSG_NOTICE([  host:   ${host} ${host_extra_mesg}])
 AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
@@ -3993,7 +3949,6 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
 
 if test "x$OA" != xno ; then
   AC_MSG_WARN([open analysis is deprecated and no longer used])
@@ -4008,16 +3963,17 @@ if test "$warn_config_site" = yes ; then
 fi
 
 if test "$warn_bgq_backend" = yes ; then
-    AC_MSG_NOTICE([])
-    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
-    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
-    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
+  AC_MSG_NOTICE([])
+  AC_MSG_NOTICE([Note: HPCToolkit is configured for Blue Gene/Q back end.])
+  AC_MSG_NOTICE([If you wanted to build for the front end (regular powerpc),])
+  AC_MSG_NOTICE([then re-run configure with '--disable-bgq'.])
 fi
 
 if test "$warn_papi_mismatch" = yes ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([PAPI is disabled due to possible conflict between perf events])
-  AC_MSG_WARN([and papi versions of perfmon.  Possible solutions:])
+  AC_MSG_WARN([and papi versions of perfmon (normally pfmlib.h is missing])
+  AC_MSG_WARN([from papi include dir).  Possible solutions:])
   AC_MSG_WARN([ 1. disable papi with:  --without-papi])
   AC_MSG_WARN([ 2. disable perf events with:  --disable-perf-events])
   AC_MSG_WARN([ 3. force enable both with:  --enable-force-papi])
