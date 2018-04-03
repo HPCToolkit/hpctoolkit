@@ -148,6 +148,7 @@ hpcrun_trampoline_advance(void)
   // Therefore, revert to current CCT node when corresponding recursive frame is merged.
   if (  !hpcrun_get_retain_recursion_mode()
      && td->tramp_frame != td->cached_bt
+     && td->tramp_frame != td->cached_bt_end-1
      && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
      && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function))
      )
