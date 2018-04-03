@@ -402,7 +402,6 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
           bt->last = td->btbuf_cur++;
         }
       }
->>>>>>> fe098e7... Further fixes on trampoline so that it works when recursive frames are merged.
     }
     else {
       TMSG(TRAMP, "No tramp found: cached backtrace size = %d", new_frame_count);
