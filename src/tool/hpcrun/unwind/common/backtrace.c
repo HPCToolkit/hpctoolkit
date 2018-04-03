@@ -71,6 +71,8 @@
 #include <trampoline/common/trampoline.h>
 #include <dbg_backtrace.h>
 
+extern bool hpcrun_get_retain_recursion_mode();
+
 //***************************************************************************
 // local constants & macros
 //***************************************************************************
@@ -328,6 +330,13 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
     if (tramp_found) {
       TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
       TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
+      
+      bool middle_of_recursion = 
+             td->tramp_frame != td->cached_bt
+          && td->tramp_frame != td->cached_bt_end-1
+          && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
+          && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function));
+      
       //
       // join current backtrace fragment to previous trampoline-marked prefix
       // and make this new conjoined backtrace the cached-backtrace
@@ -347,8 +356,8 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       memmove(td->cached_bt + n_cached_frames, prefix,
 	      sizeof(frame_t) * old_frame_count);
 
-      // put the new suffix in place
-      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * n_cached_frames);
+      // put the new suffix in place and update tramp_frame at the same time.
+      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
 
       // update the length of the conjoined backtrace
       td->cached_bt_end = td->cached_bt + n_cached_frames + old_frame_count;
@@ -358,6 +367,42 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       
       TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
 	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
+      
+      // When recursive frames are merged in CCT, special handling is needed.
+      if (!hpcrun_get_retain_recursion_mode()) {
+        // Locate the last frame on btbuf that refers to the same function as tramp_frame.
+        frame_t* recursion_last = td->tramp_frame;
+        while ( (recursion_last < td->cached_bt_end-1)
+                && ip_normalized_eq(&(recursion_last->the_function), &((recursion_last+1)->the_function)) ) {
+          recursion_last++;
+        }
+        
+        /* if the last frame isn't tramp_frame itself, tramp_frame is in a chain of recursive frames, 
+         * special handling is needed for correct insertion of frames into CCT.
+         * 
+         * In CCT, all recursive frames are represented with two CCT nodes:
+         * 
+         *   bar() -- parent of recursive function, where insertion of backtrace takes place.
+         *     |
+         *    r() -- upper CCT node of the recursive function, where we want tramp_cct_node points to.
+         *     |
+         *    r() -- lower CCT node of the recursive function
+        */
+        if (recursion_last != td->tramp_frame) {
+          // First, make sure that tramp_cct_node points to the upper CCT node of the recursive function.
+          
+          // if tramp_frame is the first recursive frame, tramp_cct_node is pointing to the lower CCT node of the recursive function.
+          if (!middle_of_recursion) 
+            // points tramp_cct_node to the upper CCT node of the recursive function.
+            td->tramp_cct_node = (td->tramp_cct_node) ? hpcrun_cct_parent(td->tramp_cct_node) : NULL;
+          
+          // Second, make sure that there are at least two frames for the recursive function on backtrace
+          // by inserting the last recursive frame into backtrace.
+          hpcrun_ensure_btbuf_avail();
+          memcpy(td->btbuf_cur, recursion_last, sizeof(frame_t));
+          bt->last = td->btbuf_cur++;
+        }
+      }
     }
     else {
       TMSG(TRAMP, "No tramp found: cached backtrace size = %d", new_frame_count);
