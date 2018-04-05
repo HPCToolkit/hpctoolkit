@@ -981,6 +981,14 @@ ompt_target_callback(ompt_target_type_t kind,
   ompt_device_map_entry_t *entry = ompt_device_map_lookup(device_num);
   ompt_device = ompt_device_map_entry_device_get(entry);
   ompt_host_op_seq_id = 0;
+
+  // process cupti records
+  cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
+  cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
+  cupti_activity_queue_splice(worker_queue, cupti_queue);
+  cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
+
+  // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   ucontext_t uc;
   getcontext(&uc);
