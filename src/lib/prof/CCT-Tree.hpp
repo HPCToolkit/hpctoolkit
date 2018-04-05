@@ -80,6 +80,7 @@
 #include "CCT-Merge.hpp"
 
 #include "Metric-Mgr.hpp"
+#include "MetricAccessorInterval.hpp"
 #include "Metric-ADesc.hpp"
 #include "Metric-IData.hpp"
 
@@ -285,7 +286,7 @@ class Stmt;
 // ---------------------------------------------------------
 class ANode
   : public NonUniformDegreeTreeNode,
-    public Metric::IData,
+    public MetricAccessorInterval,
     public Unique
 {
 public:
@@ -320,7 +321,6 @@ private:
 public:
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(parent),
-      Metric::IData(),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   {
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
@@ -329,7 +329,6 @@ public:
   ANode(ANodeTy type,
 	ANode* parent, Struct::ACodeNode* strct, const Metric::IData& metrics)
     : NonUniformDegreeTreeNode(parent),
-      Metric::IData(metrics),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   {
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
@@ -341,7 +340,6 @@ public:
   // deep copy of internals (but without children)
   ANode(const ANode& x)
     : NonUniformDegreeTreeNode(NULL),
-      Metric::IData(x),
       m_type(x.m_type), /*m_id: skip*/ m_strct(x.m_strct)
   {
     zeroLinks();
@@ -354,7 +352,7 @@ public:
   {
     if (this != &x) {
       //NonUniformDegreeTreeNode::operator=(x);
-      Metric::IData::operator=(x);
+      MetricAccessorInterval::operator=(x);
       m_type = x.m_type;
       // m_id: skip
       m_strct = x.m_strct;

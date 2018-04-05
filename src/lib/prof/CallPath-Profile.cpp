@@ -1941,9 +1941,9 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
     // Note: use n_fmt.num_metrics rather than n_dyn.numMetrics() to
     // support skipping the writing of metrics.
-    for (uint i = 0; i < n_fmt.num_metrics; ++i) {
+    for (uint i = n_dyn.idx_ge(0); i < n_fmt.num_metrics; i = n_dyn.idx_ge(i+1)) {
       hpcrun_metricVal_t m; // C99: (hpcrun_metricVal_t){.r = n_dyn.metric(i)};
-      m.r = n_dyn.metric(i);
+      m.r = n_dyn.c_idx(i);
       n_fmt.metrics[i] = m;
     }
   }

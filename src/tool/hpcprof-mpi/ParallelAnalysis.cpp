@@ -281,8 +281,8 @@ packMetrics(const Prof::CallPath::Profile& profile,
 
   for (Prof::CCT::ANodeIterator it(cct.root()); it.Current(); ++it) {
     Prof::CCT::ANode* n = it.current();
-    for (uint mId1 = 0, mId2 = mDrvdBeg; mId2 < mDrvdEnd; ++mId1, ++mId2) {
-      packedMetrics.idx(n->id(), mId1) = n->metric(mId2);
+    for (uint mId1 = 0; mId1 + mDrvdBeg < mDrvdEnd; ++mId1) {
+      packedMetrics.idx(n->id(), mId1) = n->c_idx(mId1 + mDrvdBeg);
     }
   }
 }
@@ -302,9 +302,9 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   DIAG_Assert(packedMetrics.numMetrics() == mEndId - mBegId, "");
 
   for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
-    for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
+    for (uint mId1 = 0; mId1 + mBegId < mEndId; ++mId1) {
       Prof::CCT::ANode* n = cct.findNode(nodeId);
-      n->demandMetric(mId2) = packedMetrics.idx(nodeId, mId1);
+      n->idx(mId1+mBegId) = packedMetrics.idx(nodeId, mId1);
     }
   }
 

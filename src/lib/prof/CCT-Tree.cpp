@@ -431,7 +431,8 @@ ANode::zeroMetricsDeep(uint mBegId, uint mEndId)
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
-    n->zeroMetrics(mBegId, mEndId);
+    for (unsigned int i = n->idx_ge(mBegId); i < mEndId; i = n->idx_ge(i+1))
+      n->idx(i) = 0.;
   }
 }
 
@@ -466,9 +467,9 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
 	const VMAInterval& ival = *it1;
 	uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
-	for (uint mId = mBegId; mId < mEndId; ++mId) {
-	  double mVal = n->demandMetric(mId, mEndId/*size*/);
-	  n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+	for (uint mId = n->idx_ge(mBegId); mId < mEndId; mId = n->idx_ge(mId+1)) {
+	  double mVal = n->c_idx(mId);
+	  n_parent->idx(mId) += mVal;
 	}
       }
     }
@@ -537,11 +538,11 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
       const VMAInterval& ival = *it;
       uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
-      for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+      for (uint mId = n->idx_ge(mBegId); mId < mEndId; mId = n->idx_ge(mId+1)) {
+	double mVal = n->c_idx(mId);
+	n_parent->idx(mId) += mVal;
 	if (frame && frame != n_parent) {
-	  frame->demandMetric(mId, mEndId/*size*/) += mVal;
+	  frame->idx(mId) += mVal;
 	}
       }
     }
@@ -571,7 +572,6 @@ void
 ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
 			bool doFinal)
 {
-  uint numMetrics = mMgr.size();
   MetricAccessorInterval mda(*this);
 
   for (uint mId = mda.idx_ge(mBegId); mId < mEndId; mId = mda.idx_ge(mId+1)) {
@@ -582,7 +582,7 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
       expr->evalNF(mda);
       if (doFinal) {
 	double val = expr->eval(mda);
-	demandMetric(mId, numMetrics/*size*/) = val;
+	idx(mId) = val;
       }
     }
   }
@@ -666,9 +666,9 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
 	}
 	numIncl++;
 	
-	double total = root->metric(mId); // root->metric(m->partner()->id());
+	double total = root->c_idx(mId); // root->metric(m->partner()->id());
 	
-	double pct = x->metric(mId) * 100 / total;
+	double pct = x->c_idx(mId) * 100 / total;
 	if (pct >= thresholdPct) {
 	  isImportant = true;
 	  break;
@@ -852,7 +852,6 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
   return effctLst;
 }
 
-
 MergeEffect
 ANode::merge(ANode* y)
 {
@@ -882,14 +881,8 @@ ANode::mergeMe(const ANode& y, MergeContext* GCC_ATTR_UNUSED mrgCtxt,
 {
   ANode* x = this;
   
-  uint x_end = metricBegIdx + y.numMetrics(); // open upper bound
-  if ( !(x_end <= x->numMetrics()) ) {
-    ensureMetricsSize(x_end);
-  }
-
-  for (uint x_i = metricBegIdx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    x->metric(x_i) += y.metric(y_i);
-  }
+  for (uint y_i = y.idx_ge(0); y_i < INT_MAX; y_i = y.idx_ge(y_i + 1))
+    x->idx(metricBegIdx + y_i) += y.c_idx(y_i);
   
   MergeEffect noopEffect;
   return noopEffect;
@@ -966,7 +959,6 @@ ANode::findDynChild(const ADynNode& y_dyn)
   return NULL;
 }
 
-
 MergeEffectList*
 ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
 {
@@ -998,7 +990,7 @@ ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
     // -----------------------------------------------------
     // 2. Make space for the metrics of CCT::Tree x
     // -----------------------------------------------------
-    n->insertMetricsBefore(newMetrics);
+    n->idx_shift(newMetrics);
   }
   
   return effctLst;
@@ -1151,8 +1143,8 @@ ADynNode::writeDyn(std::ostream& o, uint GCC_ATTR_UNUSED oFlags,
     << hex << m_lip << " [lip " << lip_str() << "]" << dec;
 
   o << p << " [metrics";
-  for (uint i = 0; i < numMetrics(); ++i) {
-    o << " " << metric(i);
+  for (uint i = idx_ge(0); i < INT_MAX; i = idx_ge(i+1)) {
+    o << " " << i << ":" << c_idx(i);
   }
   o << "]" << endl;
 }
@@ -1415,9 +1407,7 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
 		    uint oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
-  bool doMetrics = ((oFlags & Tree::OFlg_LeafMetricsOnly)
-		    ? isLeaf() && hasMetrics(metricBeg, metricEnd)
-		    : hasMetrics(metricBeg, metricEnd));
+  bool doMetrics = (oFlags & Tree::OFlg_LeafMetricsOnly) && isLeaf();
   bool isXMLLeaf = isLeaf() && !doMetrics;
 
   // 1. Write element name
@@ -1432,7 +1422,10 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, metricBeg, metricEnd, oFlags, pfx);
+    os << pfx;
+    for (unsigned i = idx_ge(metricBeg); i < metricEnd; i = idx_ge(i + 1))
+      os << "<M n" << xml::MakeAttrNum(i) 
+	 << " v" << xml::MakeAttrNum(c_idx(i)) << "/>";
     os << "\n";
   }
 

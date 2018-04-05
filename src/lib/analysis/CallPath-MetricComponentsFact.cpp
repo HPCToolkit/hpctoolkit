@@ -165,11 +165,8 @@ MetricComponentsFact::make(Prof::CCT::ANode* node,
       uint mId_src = m_src[i];
       uint mId_dst = m_dst[i];
 
-      if (stmt->hasMetric(mId_src)) {
-	double mval = stmt->metric(mId_src);
-	stmt->demandMetric(mId_dst) += mval;
-	stmt->metric(mId_src) = 0.0;
-      }
+      stmt->idx(mId_dst) += stmt->c_idx(mId_src);
+      stmt->idx(mId_src) = 0.0;
     }
   }
 
@@ -344,11 +341,11 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   Metric::AExprIncr* metricBalancedExpr = dynamic_cast<Metric::DerivedIncrDesc*>(metricMgr->metric(metricBalancedId))->expr();
 
   // create a copy of the CCT Metric Data
-  Metric::IData cctRoot_mdata(*cctRoot);
-  MetricAccessorInband mai(cctRoot_mdata);
+  MetricAccessorInterval cctRoot_mdata(*cctRoot);
+  MetricAccessorInterval mai(cctRoot_mdata);
   metricBalancedExpr->finalize(mai);
   
-  double balancedThreshold = 1.2 * cctRoot_mdata.demandMetric(metricBalancedId);
+  double balancedThreshold = 1.2 * cctRoot_mdata.c_idx(metricBalancedId);
 
   makeMetrics(cctRoot, metricSrcIds,
 	      metricImbalInclIds, metricImbalExclIds, metricIdleInclIds,
@@ -402,16 +399,16 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
       uint mId_imbalExcl = m_imbalExcl[i];
       uint mId_idleIncl  = m_idleIncl[i];
 
-      double mval = node->demandMetric(mId_src);
+      double mval = node->c_idx(mId_src);
 
-      balancedNode->demandMetric(mId_imbalIncl) += mval; // FIXME: combine fn
-      balancedNode->demandMetric(mId_imbalExcl) += mval; // FIXME: combine fn
+      balancedNode->idx(mId_imbalIncl) += mval; // FIXME: combine fn
+      balancedNode->idx(mId_imbalExcl) += mval; // FIXME: combine fn
 
       if (balancedNode != balancedFrm && balancedNodeFrm == balancedFrm) {
-	balancedFrm->demandMetric(mId_imbalExcl) += mval; // FIXME: combine fn
+	balancedFrm->idx(mId_imbalExcl) += mval; // FIXME: combine fn
       }
 
-      node->demandMetric(mId_idleIncl) += mval; // FIXME: combine fn
+      node->idx(mId_idleIncl) += mval; // FIXME: combine fn
     }
     
     return; // do not recur down this subtree
@@ -420,14 +417,14 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
   // -------------------------------------------------------
   // Find balanced nodes (use finalized metric values)
   // -------------------------------------------------------
-  Metric::IData node_mdata(*node);
-  MetricAccessorInband mai(node_mdata);
+  MetricAccessorInterval node_mdata(*node);
+  MetricAccessorInterval mai(node_mdata);
   balancedExpr->finalize(mai);
   
   bool isComp = (!isFrame ||
 		 (/*isFrame &&*/
 		  !isMPIFrame(static_cast<Prof::CCT::ProcFrm*>(node))));
-  bool isBalanced = (node_mdata.demandMetric(mId_bal) <= balancedThreshold);
+  bool isBalanced = (node_mdata.idx(mId_bal) <= balancedThreshold);
 
   CCT::ANode* balancedFrmNxt = ((isFrame && isBalanced && isComp) ?
 				node : balancedFrm);
