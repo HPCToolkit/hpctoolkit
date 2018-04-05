@@ -29,8 +29,6 @@ private:
   int cacheItem;
 
   void flush(void) {
-    if (cacheIter == table.end() && cacheVal == 0)
-      return;
     if (cacheIter != table.end()) {
       MI_Vec copy(*cacheIter);
       copy.second[cacheItem - cacheIter->first.first] = cacheVal;
@@ -38,6 +36,8 @@ private:
       cacheIter = table.insert(cacheIter, copy);
       return;
     }
+    if (cacheVal == 0)
+      return;
     MetricInterval ival;
     vector<double> val;
     ival = make_pair(cacheItem, cacheItem+1);
@@ -81,12 +81,24 @@ private:
   }
  
 public:
+  MetricAccessorInterval(void):
+    table(), cacheIter(table.end()), cacheVal(0.), cacheItem(-1)
+  {
+  }
+
+  MetricAccessorInterval(const MetricAccessorInterval &src):
+    table(src.table), cacheIter(table.end()), cacheVal(src.cacheVal),
+    cacheItem(src.cacheItem)
+  {
+  }
+
   MetricAccessorInterval(Prof::Metric::IData &_mdata):
     table(), cacheIter(table.end()), cacheVal(0.), cacheItem(-1)
   {
     for (unsigned i = 0; i < _mdata.numMetrics(); ++i)
       idx(i) = _mdata.metric(i);
   }
+
   virtual double &idx(int mId, int size = 0) {
     if (cacheItem == mId)
        return cacheVal;
@@ -125,6 +137,20 @@ public:
     if (mId < lo)
       return lo;
     return mId;
+  }
+
+  virtual void idx_shift(int npos) {
+    MetricAccessorInterval old;
+    flush();
+    table.swap(old.table);
+    cacheItem += npos;
+    for (cacheIter = old.table.begin(); cacheIter != old.table.end(); cacheIter++) {
+      MI_Vec copy(*cacheIter);
+      copy.first.first = cacheIter->first.first + npos;
+      copy.first.second = cacheIter->first.second + npos;
+      table.insert(copy);
+    }
+    lookup(cacheItem);
   }
 
 #include <iostream>
