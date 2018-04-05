@@ -95,7 +95,7 @@ cupti_sample_process
       // TODO(keren): directly link to target node
       cct_node_t *cct_node = hpcrun_ompt_op_id_map_lookup(external_id);
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-      cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+      cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
       if (cct_node != NULL) {
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
@@ -180,7 +180,7 @@ cupti_memcpy_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
@@ -204,7 +204,7 @@ cupti_memcpy2_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY2, (void *)activity, node);
@@ -264,7 +264,7 @@ cupti_kernel_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = hpcrun_ompt_op_id_map_lookup(external_id);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_KERNEL, (void *)activity, node);

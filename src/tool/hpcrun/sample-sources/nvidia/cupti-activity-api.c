@@ -275,8 +275,7 @@ cupti_correlation_callback_cuda
  uint64_t *id 
 )
 {
-  // TODO(keren): include atomic.h
-  *id = atomic_fetch_add_explicit(&cupti_correlation_id, 1, memory_order_acquire);
+  *id = atomic_fetch_add(&cupti_correlation_id, 1);
   
   PRINT("enter cupti_correlation_callback_cuda %u\n", *id);
   hpcrun_metricVal_t zero_metric_incr = {.i = 1};
@@ -798,7 +797,7 @@ cupti_sample_process
       cct_addr_t frm = { .ip_norm = ip };
       // TODO(keren): directly link to target node
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-      cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+      cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
       cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       if (host_op_node != NULL) {
         cct_node_t *cct_child = NULL;
@@ -884,7 +883,7 @@ cupti_memcpy_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
@@ -908,7 +907,7 @@ cupti_memcpy2_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY2, (void *)activity, node);
@@ -968,7 +967,7 @@ cupti_kernel_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_entry_t **queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
+    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
     cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
     if (node != NULL) {
       cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_KERNEL, (void *)activity, node);
@@ -1073,7 +1072,10 @@ cupti_device_flush(void *args)
     cupti_stop_flag = false;
     cupti_activity_flush();
     // TODO(keren): replace cupti with sth. called device queue
-    cupti_activity_queue_apply(cupti_activity_attribute);
+    cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
+    cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
+    cupti_activity_queue_splice(worker_queue, cupti_queue);
+    cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
   }
 }
 
@@ -1082,7 +1084,10 @@ void
 cupti_device_shutdown(void *args)
 {
   cupti_activity_flush();
-  cupti_activity_queue_apply(cupti_activity_attribute);
+  cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
+  cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
+  cupti_activity_queue_splice(worker_queue, cupti_queue);
+  cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
   cupti_callbacks_unsubscribe();
 }
 

@@ -27,7 +27,7 @@ struct cupti_host_op_map_entry_s {
   uint64_t host_op_id;
   uint64_t refcnt;
   uint64_t host_op_seq_id;
-  cupti_activity_queue_entry_t **cupti_activity_queue;
+  cupti_activity_queue_t *cupti_activity_queue;
   cct_node_t *target_node;
   cct_node_t *host_op_node;
   struct cupti_host_op_map_entry_s *left;
@@ -62,7 +62,7 @@ cupti_host_op_map_entry_new(uint64_t host_op_id,
   e->host_op_node = host_op_node;
   e->left = NULL;
   e->right = NULL;
-  e->cupti_activity_queue = cupti_activity_queue_head();
+  e->cupti_activity_queue = cupti_activity_queue_cupti_get();
 
   return e;
 }
@@ -200,11 +200,12 @@ cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry)
 }
 
 
-cupti_activity_queue_entry_t **
+cupti_activity_queue_t *
 cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry)
 {
   return entry->cupti_activity_queue;
 }
+
 
 cct_node_t *
 cupti_host_op_map_entry_host_op_node_get(cupti_host_op_map_entry_t *entry)

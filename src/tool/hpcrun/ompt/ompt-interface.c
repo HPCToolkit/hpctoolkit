@@ -63,7 +63,6 @@
  * local includes
  *****************************************************************************/
 
-#include <lib/prof-lean/spinlock.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/ompt/ompt-region.h>
@@ -852,7 +851,10 @@ hpcrun_ompt_device_finalizer(void *args)
     cupti_ompt_activity_flush();
     ompt_stop_flag = false;
     // TODO(keren): replace cupti with sth. called device queue
-    cupti_activity_queue_apply(cupti_activity_attribute);
+    cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
+    cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
+    cupti_activity_queue_splice(worker_queue, cupti_queue);
+    cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
   }
 }
 

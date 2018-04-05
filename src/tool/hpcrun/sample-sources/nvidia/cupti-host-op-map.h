@@ -47,7 +47,7 @@ cct_node_t *cupti_host_op_map_entry_host_op_node_get(cupti_host_op_map_entry_t *
 
 uint64_t cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry);
 
-cupti_activity_queue_entry_t **cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry);
+cupti_activity_queue_t *cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry);
 
 #endif
 
