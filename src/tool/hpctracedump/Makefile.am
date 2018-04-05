@@ -61,52 +61,56 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
 # Local settings
 #############################################################################
+
+MYSOURCES = \
+	main.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+
+MYLDFLAGS = \
+	@HPC_LT_LDFLAGS@ \
+	@HOST_CXXFLAGS@ \
+	@GNUBINUTILS_LDFLAGS@
+
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
+	@GNUBINUTILS_LDLIBS@ 
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
-	hpcstruct \
-	hpcprof \
-	hpcproftt \
-	hpclump \
-	hpctracedump \
-	misc
+pkglibexec_PROGRAMS = hpctracedump 
 
-if OPT_ENABLE_HPCSERVER
-SUBDIRS += hpcserver
-endif
-endif
+hpctracedump_SOURCES  = $(MYSOURCES)
+hpctracedump_CFLAGS   = $(MYCFLAGS)
+hpctracedump_CXXFLAGS = $(MYCXXFLAGS)
+hpctracedump_LDFLAGS  = $(MYLDFLAGS)
+hpctracedump_LDADD    = $(MYLDADD)
 
-if OPT_ENABLE_HPCRUN_FLAT
-SUBDIRS += hpcrun-flat \
-	hpcprof-flat
-endif
+MOSTLYCLEANFILES = $(MYCLEAN)
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds
-endif
-
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi 
-
-if OPT_ENABLE_HPCSERVER
-  SUBDIRS += hpcserver/mpi
-endif
-endif
-
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+
