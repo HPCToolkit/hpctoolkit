@@ -1792,8 +1792,10 @@ LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
+LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
+LZMA_PROF_MPI_LIBS=
 
 # allow for older externals which doesn't define ext_lzma_prefix
 if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
@@ -1816,6 +1818,7 @@ case "$LZMA" in
         LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
 	LZMA_COPY=yes
 	LZMA_LIB="$lzma_libdir"
+        LZMA_INC="${LZMA}/include"
 	if test -f "${lzma_libdir}/liblzma.a" ; then
 	  LZMA_STATIC=yes
 	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
@@ -1825,6 +1828,17 @@ case "$LZMA" in
     done
     if test "x$LZMA_LIB" = x ; then
       AC_MSG_ERROR([invalid lzma directory: $LZMA])
+    else
+      #
+      # hpcprof-mpi: same as hpclink if fully static, else default
+      #
+      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      if test $? = 0 ; then
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+      else
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+      fi
+    
     fi
     ;;
   no )
@@ -1839,7 +1853,9 @@ AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
 
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
+AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
+AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
 
 
@@ -1927,108 +1943,84 @@ fi
 
 
 #-------------------------------------------------
-# with-papi
+# Option: --with-papi=PATH
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether configured with PAPI])
-
-#HPC_DEF_CHECK_CXX_PAPI_LINK
-
-OPT_HAVE_PAPI=no
+OPT_PAPI=no
 OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
-OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
 
 AC_ARG_WITH([papi],
-  AS_HELP_STRING([--with-papi=PATH],
-                 [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_PAPI=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-papi requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_PAPI=${withval}
-   fi],
-  [if test -f /usr/local/papi/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local/papi
-   elif test -f /usr/local/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local
-  fi])
+  [AS_HELP_STRING([--with-papi=PATH],
+      [path to papi install directory])],
+  [OPT_PAPI="$withval"],
+  [])
 
+AC_ARG_ENABLE([force-papi],
+  [AS_HELP_STRING([--enable-force-papi],
+      [force using both papi and perf events, if configure can't verify
+       that papi and perfmon match])],
+  [force_papi="$enableval"],
+  [force_papi=no])
 
-# Allow <papi_install_path> to either point to a true installation or
-# simply a build.  In the latter case, the papi library and header
-# will have a different location.
-#   <papi-install-path>/ include/papi.h
-#                        lib/libpapi.so
-#                        lib64/libpapi.so
-#   <papi-build-path>/ papi.h
-#                      libpapi.so
-# Note: same test is in hpctoolkit-oss's Makefile.quick
-#
-if test "$OPT_HAVE_PAPI" = "yes" ; then
-  if test -f "${OPT_PAPI}/include/papi.h"; then
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
-  elif test -f "${OPT_PAPI}/papi.h" ; then
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
-  else
-    AC_MSG_ERROR([no papi.h in ${OPT_PAPI}/include])
-  fi
-  
-  for lib in ${LIB_SEARCH_PATH} ; do
-    if test -r "${OPT_PAPI}/${lib}/libpapi.so" \
-       || test -f "${OPT_PAPI}/${lib}/libpapi.a"
-    then
-      OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
-      OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-      if test -f "${OPT_PAPI}/${lib}/libpapi.so" ; then
-	OPT_PAPI_DYNAMIC=yes
-      fi
-      if test -f "${OPT_PAPI}/${lib}/libpapi.a" ; then
-	OPT_PAPI_STATIC=yes
-      fi
-      break
+AC_MSG_CHECKING([for papi])
+
+case "$OPT_PAPI" in
+  /* )
+    if test ! -f "${OPT_PAPI}/include/papi.h" ; then
+      AC_MSG_ERROR([unable to find papi.h in: $OPT_PAPI])
     fi
-  done
-  if test -z "${OPT_PAPI_LIBPATH}" ; then
-    AC_MSG_ERROR([no libpapi.so or libpapi.a in $LIB_SEARCH_PATH])
-  fi
-fi
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
 
-# Check for PAPI > 3.0 [skip for now]
+    for lib in $multilib_path ; do
+      lib_dir="${OPT_PAPI}/$lib"
+      if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
+      then
+        OPT_PAPI_LIBPATH="$lib_dir"
+        OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+	if test -f "${lib_dir}/libpapi.so" ; then
+          OPT_PAPI_DYNAMIC=yes
+        fi
+        if test -f "${lib_dir}/libpapi.a" ; then
+          OPT_PAPI_STATIC=yes
+	fi
+	break
+      fi
+    done
 
-if test "${OPT_HAVE_PAPI}" = "yes"; then
-  AC_MSG_RESULT([yes (${OPT_PAPI})])
-  AC_MSG_NOTICE([PAPI shared libpapi.so: $OPT_PAPI_DYNAMIC])
-  AC_MSG_NOTICE([PAPI static libpapi.a: $OPT_PAPI_STATIC])
-else
-  AC_MSG_RESULT([no])
+    if test "x$OPT_PAPI_LIBPATH" = x ; then
+      AC_MSG_ERROR([unable to find libpapi in: $OPT_PAPI])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([papi directory must be absolute path: $OPT_PAPI])
+    ;;
+esac
+
+AC_MSG_RESULT([$OPT_PAPI])
+
+if test "$OPT_PAPI" != no ; then
+  AC_MSG_NOTICE([papi shared libpapi.so: $OPT_PAPI_DYNAMIC])
+  AC_MSG_NOTICE([papi static libpapi.a: $OPT_PAPI_STATIC])
 fi
 
 # The dynamic case also needs libpapi.so's prerequisite libraries
-# (-lperfctr, -lpfm).  In the static case, libpapi.a already includes
-# these functions.  At least, that's what we've seen so far.
-#
+# (-lpfm).  In the static case, libpapi.a already includes these
+# functions.  At least, that's what we've seen so far.
+
 papi_extra_libs=
 so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
 if test -f "$so_file" ; then
-  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lperfctr"
-  fi
   ldd "$so_file" | grep libpfm >/dev/null 2>&1
   if test $? = 0 ; then
     papi_extra_libs="${papi_extra_libs} -lpfm"
   fi
 fi
-
-AM_CONDITIONAL(OPT_PAPI_DYNAMIC, test "$OPT_PAPI_DYNAMIC" = yes)
-AM_CONDITIONAL(OPT_PAPI_STATIC,  test "$OPT_PAPI_STATIC" = yes)
 
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
@@ -2036,32 +2028,32 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST([papi_extra_libs])
 
+
+#-------------------------------------------------
+# Option: --enable-papi-c
+#-------------------------------------------------
+
 # Option to use the new papi-c.c sample source file.  This is mostly
 # temporary until the new file integrates both component and
 # non-component PAPI.  Requires PAPI 5.1 or later.
 
+use_papi_c=yes
+
 AC_ARG_ENABLE([papi-c],
-  AS_HELP_STRING([--enable-papi-c],
-      [use new papi component sample source, requires papi 5.1 or later]),
+  [AS_HELP_STRING([--enable-papi-c],
+      [use component papi, if available (default yes)])],
   [use_papi_c="$enableval"],
-  [use_papi_c=check])
+  [])
 
-AC_MSG_CHECKING([whether to use new papi component])
-
-case "$use_papi_c" in
-  no | check ) ;;
-  * ) use_papi_c=yes ;;
-esac
-
-if test "$OPT_HAVE_PAPI" = no ; then
+if test "$OPT_PAPI" = no || test "$use_papi_c" != yes ; then
   use_papi_c=no
-fi
+else
+  AC_MSG_CHECKING([for component papi])
 
-if test "$use_papi_c" = check ; then
   ORIG_CFLAGS="$CFLAGS"
   ORIG_LIBS="$LIBS"
   CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
-  LIBS="$OPT_PAPI_LDFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
@@ -2076,34 +2068,33 @@ int main()
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
   LIBS="$ORIG_LIBS"
+
+  AC_MSG_RESULT([$use_papi_c])
 fi
 
-AC_MSG_RESULT([$use_papi_c])
 
-AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
+#-------------------------------------------------
+# Option: --enable-papi-c-cupti
+#-------------------------------------------------
+
+use_papi_c_cupti=no
 
 AC_ARG_ENABLE([papi-c-cupti],
-  AS_HELP_STRING([--enable-papi-c-cupti],
-      [enable component PAPI's CUPTI functionality (requires papi-c with cuda component installed]),
+  [AS_HELP_STRING([--enable-papi-c-cupti],
+      [use papi CUPTI support, if available (default no), requires
+       papi cuda component])],
   [use_papi_c_cupti="$enableval"],
-  [use_papi_c_cupti=no])
+  [])
 
-AC_MSG_CHECKING([whether to use component papi CUPTI functionality])
-
-case "$use_papi_c_cupti" in
-  no ) ;;
-  * ) use_papi_c_cupti=yes ;;
-esac
-
-if test "$use_papi_c" = no ; then
+if test "$use_papi_c" = no || test "$use_papi_c_cupti" != yes ; then
   use_papi_c_cupti=no
-fi
+else
+  AC_MSG_CHECKING([for papi cuda component])
 
-if test "$use_papi_c_component" = yes ; then
   ORIG_CFLAGS="$CFLAGS"
   ORIG_LIBS="$LIBS"
   CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
-  LIBS="$OPT_PAPI_LDFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
@@ -2119,84 +2110,123 @@ int main()
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
   LIBS="$ORIG_LIBS"
-fi
 
-AC_MSG_RESULT([$use_papi_c_cupti])
-AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
+  AC_MSG_RESULT([$use_papi_c_cupti])
+fi
 
 
 #-------------------------------------------------
 # Option: --with-perfmon=PATH
-#
-# If specified, then use PATH as the root of the perfmon tree
-# May be absolute or relative path.
-#
-# Note: using perfmon is not strictly necessary, but if not used,
-# then you cannot use event name PMU
 #-------------------------------------------------
 
 PERFMON=no
 PERFMON_STATIC=no
 PERFMON_COPY=no
+OPT_PERFMON=no
 
 PERFMON_CFLAGS=
 PERFMON_LDFLAGS_DYN=
 PERFMON_LDFLAGS_STAT=
 PERFMON_LIB=
 
-OPT_PERFMON=
-
-if test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x ; then
-  PERFMON="$ext_perfmon_prefix"
-fi
-
 AC_ARG_WITH([perfmon],
   [AS_HELP_STRING([--with-perfmon=PATH],
-	  [path to perfmon2 (pfmlib4) build or install directory
-	   (default is NO)])],
-  [PERFMON="$withval"],
-  [])
+      [path to perfmon2 (libpfm4) install directory])],
+  [perfmon_withval="$withval"],
+  [perfmon_withval= ])
+
+# Returns: success (0) if $1 is a valid perfmon install directory.
+# Needs header file and at least one library.
+valid_perfmon_dir()
+{
+  dir="$1"
+
+  if test "x$dir" = x  \
+     || test ! -f "${dir}/include/perfmon/pfmlib.h" ; then
+    return 1
+  fi
+
+  for lib in $multilib_path ; do
+    if test -f "${dir}/${lib}/libpfm.a"  \
+       || test -f "${dir}/${lib}/libpfm.so" ; then
+      return 0
+    fi
+  done
+
+  return 1
+}
 
 AC_MSG_CHECKING([for perfmon])
 
-if test -f "${PERFMON}/include/perfmon/pfmlib.h"; then
-  PERFMON_CFLAGS="-I${PERFMON}/include -D ENABLE_PERFMON"
-  OPT_PERFMON=yes
+perfmon_mesg=
+perfmon_is_from_papi=no
+
+# First, find which perfmon directory, if any.
+
+if test "x$perfmon_withval" = xno
+then
+  # if explicitly set to no, then leave disabled
+  PERFMON=no
+  perfmon_mesg='no (disabled)'
+
+elif test "x$OPT_PAPI" != xno && valid_perfmon_dir "$OPT_PAPI"
+then
+  # if --with-papi exists and includes perfmon, use that to keep papi
+  # and perfmon consistent.
+  PERFMON="$OPT_PAPI"
+  perfmon_mesg="(from papi) $OPT_PAPI"
+  perfmon_is_from_papi=yes
+
+elif test "xperfmon_withval" != x && valid_perfmon_dir "$perfmon_withval"
+then
+  # if --with-perfmon is set and works, use that
+  PERFMON="$perfmon_withval"
+  perfmon_mesg="$perfmon_withval"
+
+elif test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x  \
+     && valid_perfmon_dir "$ext_perfmon_prefix"
+then
+  # if value from externals works, use that
+  PERFMON="$ext_perfmon_prefix"
+  perfmon_mesg="$ext_perfmon_prefix"
+
+else
+  # give up, nothing works
+  PERFMON=no
+  perfmon_mesg=no
 fi
 
+AC_MSG_RESULT([$perfmon_mesg])
+
+# Second, set the flags variables, etc.
+
 case "$PERFMON" in
- /* )
- for lib in $multilib_path ; do
-   perfmon_libdir="${PERFMON}/$lib"
-   if test -f "${perfmon_libdir}/libpfm.a"; then
-     PERFMON_STATIC=yes
-     PERFMON_LDFLAGS_STAT="${perfmon_libdir}/libpfm.a"
-     PERFMON_LIB="$perfmon_libdir"
-   fi
-   if test -f "${perfmon_libdir}/libpfm.so"; then
-     PERFMON_LDFLAGS_DYN="-L${perfmon_libdir} -lpfm"
-     PERFMON_COPY=yes
-     PERFMON_LIB="$perfmon_libdir"
-   fi
-   if test "x$PERFMON_LIB" != x;  then
-     break
-   fi
- done
- if test "x$PERFMON_LIB" = x ; then
-   AC_MSG_NOTICE([Perfmon lib: $lib])
-   AC_MSG_ERROR([invalid Perfmon Libpf4 directory: $PERFMON])
- fi
- ;;
- no )
-   ;;
- *)
-   AC_MSG_ERROR([Perfmon directory must be absolute path: $PERFMON])
+  /* )
+    PERFMON_CFLAGS="-I${PERFMON}/include -DENABLE_PERFMON"
+    OPT_PERFMON=yes
+
+    for lib in $multilib_path ; do
+      lib_dir="${PERFMON}/$lib"
+      if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
+      then
+        PERFMON_LIB="$lib_dir"
+	PERFMON_COPY=yes
+	if test -f "${lib_dir}/libpfm.so" ; then
+	  PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
+        fi
+        if test -f "${lib_dir}/libpfm.a" ; then
+	  PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
+          PERFMON_STATIC=yes
+	fi
+        break
+      fi
+    done
+
+    if test "x$PERFMON_LIB" = x ; then
+      AC_MSG_ERROR([unable to find libpfm in: $PERFMON])
+    fi
+    ;;
 esac
-
-AC_MSG_RESULT([$PERFMON])
-AC_MSG_NOTICE([Perfmon static: $PERFMON_STATIC])
-
-AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
 
 AC_SUBST([PERFMON_CFLAGS])
 AC_SUBST([PERFMON_LIB])
@@ -2204,60 +2234,149 @@ AC_SUBST([PERFMON_LDFLAGS_DYN])
 AC_SUBST([PERFMON_LDFLAGS_STAT])
 AC_SUBST([PERFMON_COPY])
 
+AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
+
+
 #-------------------------------------------------
-# check if perf event is available
+# Option: --enable-perf-events
 #-------------------------------------------------
 
-AC_MSG_CHECKING([if perf event is available])
+# This option is mostly for compute nodes where it's hard to run a
+# config test.
 
-PERF_EVENT_PARANOID="-1"
+AC_ARG_ENABLE([perf-events],
+  [AS_HELP_STRING([--enable-perf-events],
+      [force enable or disable perf events in hpcrun (normally 2.6.32 or later),
+       only needed if fails to auto-detect correctly])],
+  [perf_event="$enableval"],
+  [perf_event=check])
+
 PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
-PERF_EVENT_AVAIL="no"
+PERF_EVENT_PARANOID="-1"
 
-if test -f $PERF_EVENT_PARANOID_PATH; then
+if test -f "$PERF_EVENT_PARANOID_PATH" ; then
   PERF_EVENT_PARANOID=`cat "$PERF_EVENT_PARANOID_PATH"`
 fi
 
-AC_COMPILE_IFELSE([
-AC_LANG_SOURCE([[
-#include <linux/perf_event.h>
+AC_MSG_CHECKING([for perf events])
 
+case "$perf_event" in
+  yes ) perf_event_mesg="yes (forced)" ;;
+  no )  perf_event_mesg="no (disabled)" ;;
+  * )
+    AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
 static struct perf_event_attr attr;
 void check_kernel()
 {
   attr.sample_id_all = 1;
 }
 ]])], [perf_event=yes], [perf_event=no])
+    perf_event_mesg="$perf_event"
+    ;;
+esac
 
+AC_MSG_RESULT([$perf_event_mesg])
 
-AC_MSG_RESULT([$perf_event])
-AC_MSG_NOTICE([value of perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID} ])
+AC_MSG_NOTICE([perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID}])
 
-AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" != no])
+# Perf events doesn't exactly require perfmon, but if not available,
+# then mnemonic names won't work.
 
-# substitution
+warn_no_perfmon=no
+
+if test "$perf_event" = yes && test "$PERFMON" = no ; then
+  AC_MSG_WARN([perf events is enabled but perfmon is not available])
+  warn_no_perfmon=yes
+fi
+
 AC_SUBST([PERF_EVENT_PARANOID])
 
+AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" = yes])
+
+
 #-------------------------------------------------
-# check if the kernel is 4.3 or newer
+# Option: --enable-kernel-blocking
 #-------------------------------------------------
 
-AC_MSG_CHECKING([if the kernel is 4.3 or newer])
+# Again, the option is mostly for compute nodes.
 
-AC_COMPILE_IFELSE([
-AC_LANG_SOURCE([[
+AC_ARG_ENABLE([kernel-blocking],
+  [AS_HELP_STRING([--enable-kernel-blocking],
+      [force enable or disable kernel blocking support in perf events
+       (normally 4.3 or later), only needed if fails to auto-detect correctly])],
+  [kernel_blocking="$enableval"],
+  [kernel_blocking=check])
+
+if test "$perf_event" = no ; then
+  kernel_blocking=no
+  kernel_blocking_mesg="no (perf-events is off)"
+else
+  AC_MSG_CHECKING([for kernel blocking in perf events])
+
+  case "$kernel_blocking" in
+    yes ) kernel_blocking_mesg="yes (forced)" ;;
+    no )  kernel_blocking_mesg="no (disabled)" ;;
+    * )
+      AC_COMPILE_IFELSE([
+      AC_LANG_SOURCE([[
 #include <linux/perf_event.h>
-
 static struct perf_event_attr attr;
 void check_kernel()
 {
   attr.context_switch = 1;
 }
-]])], [kernel_4_3=yes], [kernel_4_3=no])
+]])], [kernel_blocking=yes], [kernel_blocking=no])
+    kernel_blocking_mesg="$kernel_blocking"
+    ;;
+  esac
 
-AC_MSG_RESULT([$kernel_4_3])
+  AC_MSG_RESULT([$kernel_blocking])
+fi
 
-AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_4_3" = yes])
+AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_blocking" = yes])
+
+
+#-------------------------------------------------
+# Test consistency of papi and perfmon
+#-------------------------------------------------
+
+warn_papi_mismatch=no
+
+papi_mesg="$OPT_PAPI"
+
+if test "$OPT_PAPI" != no && test "$perf_event" = yes  \
+   && test "$PERFMON" != no && test "$perfmon_is_from_papi" = no
+then
+  AC_MSG_WARN([unable to verify that papi and perfmon are consistent])
+
+  if test "$force_papi" = yes ; then
+    AC_MSG_WARN([force using papi])
+    papi_mesg="(force enable) $OPT_PAPI"
+
+  else
+    AC_MSG_WARN([disable papi due to possible conflict with perfmon])
+    papi_mesg='no (disabled due to conflict with perfmon)'
+    warn_papi_mismatch=yes
+
+    OPT_PAPI=no
+    OPT_PAPI_DYNAMIC=no
+    OPT_PAPI_STATIC=no
+    OPT_PAPI_IFLAGS=
+    OPT_PAPI_LDFLAGS=
+    OPT_PAPI_LIBPATH=
+    use_papi_c=no
+    use_papi_c_cupti=no
+  fi
+fi
+
+# AC-SUBST can be anywhere, but AM-CONDITIONAL reads the value now.
+
+AM_CONDITIONAL(OPT_PAPI_DYNAMIC, [test "$OPT_PAPI_DYNAMIC" = yes])
+AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
+AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
+AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 
 #-------------------------------------------------
@@ -2713,6 +2832,7 @@ AC_MSG_CHECKING([zlib])
 
 ZLIB_INC=no
 ZLIB_LIB=no
+ZLIB_HPCLINK_LIB=no
 ZLIB_COPY=no
 
 case "$ZLIB" in
@@ -2722,13 +2842,14 @@ case "$ZLIB" in
     fi
     ZLIB_INC="${ZLIB}/include"
     for lib in $multilib_path ; do
-      if test -f "${ZLIB}/${lib}/libz.so" ; then
+      if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
+	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
 	break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
-      AC_MSG_ERROR([unable to find zlib.so in: $ZLIB])
+      AC_MSG_ERROR([unable to find zlib.so or zlib.a in: $ZLIB])
     fi
     ZLIB_COPY=yes
     ;;
@@ -2745,6 +2866,7 @@ AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
 AC_SUBST([ZLIB_INC])
 AC_SUBST([ZLIB_LIB])
+AC_SUBST([ZLIB_HPCLINK_LIB])
 AC_SUBST([ZLIB_COPY])
 
 
@@ -3503,9 +3625,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 AC_ARG_WITH([cuda],
   AS_HELP_STRING([--with-cuda=PATH],
@@ -3574,9 +3693,16 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 #-------------------------------------------------
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
+OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
 OPT_CUPTI_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
+fi
 
 AC_ARG_WITH([cupti],
   AS_HELP_STRING([--with-cupti=PATH],
@@ -3592,12 +3718,6 @@ AC_ARG_WITH([cupti],
 #
 # Valid cupti library
 #
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
-   fi
-fi
-
 if test "$use_papi_c_cupti" != no; then
    if test "$OPT_HAVE_CUPTI" = yes; then
        OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
@@ -3611,10 +3731,56 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+ AC_ARG_WITH([cupti-include],
+  AS_HELP_STRING([--with-cupti-include=PATH],
+                 [use given CUPTI include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUPTI}/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+     else
+         AC_MSG_ERROR(['${OPT_CUPTI}/include/cupti.h' not found])
+     fi])  
+
+  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
+
+  AC_ARG_WITH([cupti-lib],
+  AS_HELP_STRING([--with-cupti-lib=PATH],
+                 [use given CUPTI lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUPTI}/${lib}/libcupti.so" 
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       AC_MSG_ERROR([libcupti.so not found])
+     fi
+   ] )
+
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -lcupti "
+
+fi
+
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
-AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI])
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -3834,7 +4000,7 @@ AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    $hpcstruct_mesg])
-AC_MSG_NOTICE([  perf-events:  ${perf_event}])
+AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -3863,12 +4029,12 @@ AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
-AC_MSG_NOTICE([  Perfmon:      ${PERFMON}])
+AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
-AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
+AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
@@ -3890,6 +4056,23 @@ if test "$warn_bgq_backend" = yes ; then
     AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
     AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
     AC_MSG_WARN([or else --disable-bgq to build for the front end.])
+fi
+
+if test "$warn_papi_mismatch" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([PAPI is disabled due to possible conflict between perf events])
+  AC_MSG_WARN([and papi versions of perfmon.  Possible solutions:])
+  AC_MSG_WARN([ 1. disable papi with:  --without-papi])
+  AC_MSG_WARN([ 2. disable perf events with:  --disable-perf-events])
+  AC_MSG_WARN([ 3. force enable both with:  --enable-force-papi])
+  AC_MSG_WARN([   if you're sure that papi was built with the same version])
+  AC_MSG_WARN([   of perfmon (but may deadlock or segfault if mismatched).])
+fi
+
+if test "$warn_no_perfmon" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Perf events is enabled, but perfmon is not available.])
+  AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
 if test "$warn_no_externals" = yes ; then

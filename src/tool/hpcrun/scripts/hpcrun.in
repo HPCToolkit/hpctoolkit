@@ -41,6 +41,16 @@
 # hpcrun -- set the environ variables for profiling with HPCToolkit
 # and launch the program.  See 'hpcrun -h' for a list of options.
 
+#------------------------------------------------------------ 
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  The setting below prevents
+# disables darshan at runtime, avoiding most of the problems.
+# ------------------------------------------------------------
+export DARSHAN_DISABLE=1
+
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
@@ -164,6 +174,9 @@ Options: Profiling (Defaults shown in curly brackets {})
                        
   -t, --trace          Generate a call path trace (in addition to a call
                        path profile).
+
+  --omp-serial-only    When profiling using the OMPT interface for OpenMP,
+                       suppress all samples not in serial code.
 
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
@@ -319,6 +332,13 @@ do
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
 	    ;;
+
+	# --------------------------------------------------
+
+	--omp-serial-only )
+	    export HPCRUN_OMP_SERIAL_ONLY=1
+	    ;;
+
 
 	# --------------------------------------------------
 

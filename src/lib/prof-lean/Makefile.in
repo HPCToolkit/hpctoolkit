@@ -328,9 +328,11 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
+LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LIB = @LZMA_LIB@
+LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -351,6 +353,7 @@ OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
@@ -399,6 +402,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
@@ -537,6 +541,19 @@ MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = 
 MYCLEAN = 
+
+#############################################################################
+# zlib
+#############################################################################
+
+#MYSOURCES += \
+#	compress.h compress.c
+
+#MYLIBADD   += -L$(ZLIB_LIB) -lz
+#MYCFLAGS   += -I$(ZLIB_INC) 
+
+#MYSOURCES += \
+#	compress.h compress_dummy.c
 
 #############################################################################
 # Automake rules

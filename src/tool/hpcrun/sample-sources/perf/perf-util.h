@@ -136,8 +136,6 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
-  metric_aux_info_t info_data;
-
 } event_info_t;
 
 
@@ -158,25 +156,27 @@ typedef struct event_thread_s {
 
 
 // calling perf event open system call
-static inline long
-perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
-
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags);
 
 
 void
 perf_util_init();
 
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
 );
 
+bool
+perf_util_is_ksym_available();
+
+int
+perf_util_get_paranoid_level();
+
+int
+perf_util_get_max_sample_rate();
 #endif

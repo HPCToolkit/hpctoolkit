@@ -52,7 +52,7 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
-// #include <hpcrun/unresolved.h>
+#include <hpcrun/unresolved.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
@@ -187,7 +187,7 @@ hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
     path = hpcrun_kernel_callpath(path, data_aux);
   }
 
-  metric_set_t* mset = hpcrun_reify_metric_set(path);
+  metric_data_list_t* mset = hpcrun_reify_metric_set(path, metric_id);
 
   metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
   if (upd_proc) {
@@ -398,8 +398,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
- // bt.trace_pc = bt.begin->cursor.pc_unnorm;  // JMC
-
   cct_backtrace_finalize(&bt, isSync); 
 
   if (bt.partial_unwind) {
@@ -416,8 +414,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
 					 metricId, metricIncr, data);
-
-  // *trace_pc = bt.trace_pc;  // JMC
 
   if (bt.n_trolls != 0) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

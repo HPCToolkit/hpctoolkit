@@ -57,12 +57,15 @@
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
+#include "../hpcrun-initializers.h"
+
 #include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-state-placeholders.h"
 #include "ompt-defer.h"
 #include "ompt-region.h"
 #include "ompt-task-map.h"
+#include "ompt-thread.h"
 
 #if defined(HOST_CPU_PPC) 
 #include "ppc64-gnu-omp.h"
@@ -81,8 +84,10 @@
 
 #if OMPT_DEBUG
 #define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
+#define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #else
 #define elide_debug_dump(t,i,o,r)
+#define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #endif
 
 
@@ -92,8 +97,10 @@
 
 static cct_backtrace_finalize_entry_t ompt_finalizer;
 
+static closure_t ompt_callstack_init_closure;
+
 static int ompt_eager_context = 0;
-static int ompt_callstack_debug = 0;
+static int ompt_callstack_debug = 1;
 
 
 
@@ -117,10 +124,27 @@ stack_dump(
     load_module_t* lm = hpcrun_loadmap_findById(x->ip_norm.lm_id);
     const char* lm_name = (lm) ? lm->name : "(null)";
 
-    EMSG("ip = %p (%p), load module = %s", ip, x->ip_norm.lm_ip, lm_name);
+    EMSG("ip = %p (%p), sp = %p, load module = %s", 
+	 ip, x->ip_norm.lm_ip, x->cursor.sp, lm_name);
   }
   EMSG("-----%s end", tag); 
   EMSG("<0x%lx>\n", region_id); 
+}
+
+
+static void 
+frame_dump() 
+{
+  EMSG("-----frame start"); 
+  for (int i=0;; i++) {
+    ompt_frame_t *frame = hpcrun_ompt_get_task_frame(i);
+    if (frame == NULL) break;
+
+    void *r = frame->reenter_runtime_frame;
+    void *e = frame->exit_runtime_frame;
+    EMSG("frame %d: (r=%p, e=%p)", i, r, e);
+  }
+  EMSG("-----frame end"); 
 }
 
 
@@ -174,6 +198,18 @@ ompt_elide_runtime_frame(
   int isSync
 )
 {
+  // eliding only if the thread is an OpenMP initial or worker thread 
+  switch(ompt_thread_type_get()) {
+  case ompt_thread_initial:
+    break;
+  case ompt_thread_worker:
+    if (hpcrun_ompt_get_parallel_id(0) != ompt_parallel_id_none) break;
+  case ompt_thread_other: 
+  case ompt_thread_unknown: 
+  default:
+    return;
+  }
+
   // collapse callstack if a thread is idle or waiting in a barrier
   switch(check_state()) {
   case ompt_state_wait_barrier:
@@ -204,6 +240,7 @@ ompt_elide_runtime_frame(
   TD_GET(omp_task_context) = 0;
 
   elide_debug_dump("ORIGINAL", *bt_inner, *bt_outer, region_id); 
+  elide_frame_dump();
 
   //---------------------------------------------------------------
   // handle all of the corner cases that can occur at the top of 
@@ -216,9 +253,10 @@ ompt_elide_runtime_frame(
     goto clip_base_frames;
   }
 
-  while ((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)) {
-    // corner case: the top frame has been set up, but not filled in. 
-    // ignore this frame.
+  while ((frame0->reenter_runtime_frame == 0) && 
+         (frame0->exit_runtime_frame == 0)) {
+    // corner case: the top frame has been set up, 
+    // but not filled in. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
 
     if (!frame0) {
@@ -228,7 +266,8 @@ ompt_elide_runtime_frame(
   }
 
   if (frame0->exit_runtime_frame && 
-      (((uint64_t) frame0->exit_runtime_frame) < ((uint64_t) (*bt_inner)->cursor.sp))) {
+      (((uint64_t) frame0->exit_runtime_frame) < 
+       ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
     // however, exit_runtime_frame points beyond the top of stack. the final call 
     // to user code hasn't been made yet. ignore this frame.
@@ -272,7 +311,7 @@ ompt_elide_runtime_frame(
     if (!frame0) break;
 
     ompt_task_id_t tid = hpcrun_ompt_get_task_id(i);
-    cct_node_t *omp_task_context = task_map_lookup(tid);
+    ompt_task_map_entry_t *omp_task_context = ompt_task_map_lookup(tid);
 
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
@@ -300,7 +339,7 @@ ompt_elide_runtime_frame(
     }
 
     if (exit0_flag && omp_task_context) {
-      TD_GET(omp_task_context) = omp_task_context;
+      TD_GET(omp_task_context) = omp_task_context->call_path;
       *bt_outer = exit0 - 1;
       break;
     }
@@ -320,21 +359,15 @@ ompt_elide_runtime_frame(
     }
 
     if (exit0 && reenter1) {
-// FIXME: IBM and INTEL need to agree
-#if 1
+      // FIXME: IBM and INTEL need to agree
       // laksono 2014.07.08: hack removing one more frame to avoid redundancy with the parent
       // It seems the last frame of the master is the same as the first frame of the workers thread
       // By eliminating the topmost frame we should avoid the appearance of the same frame twice 
       //  in the callpath
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner, 
 	      (exit0 - *bt_inner)*sizeof(frame_t));
+
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
-#else
-      // was missing a frame with intel's runtime; eliminate +1 -- johnmc
-      memmove(*bt_inner+(reenter1-exit0), *bt_inner, 
-	      (exit0 - *bt_inner)*sizeof(frame_t));
-      *bt_inner = *bt_inner + (reenter1 - exit0);
-#endif
       exit0 = reenter1 = NULL;
     } else if (exit0 && !reenter1) {
       // corner case: reenter1 is in the team master's stack, not mine. eliminate all
@@ -448,16 +481,19 @@ lookup_region_id(uint64_t region_id)
 
 
 cct_node_t *
-ompt_region_context(uint64_t region_id, 
-		    ompt_context_type_t ctype, 
-		    int levels_to_skip,
+ompt_region_context(uint64_t region_id,
+                    ompt_context_type_t ctype,
+                    int levels_to_skip,
                     int adjust_callsite)
 {
   cct_node_t *node;
   ucontext_t uc;
   getcontext(&uc);
 
-  node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
+
+  // levels to skip will be broken if inlining occurs.
+  hpcrun_metricVal_t zero = {.i = 0};
+  node = hpcrun_sample_callpath(&uc, 0, zero, 0, 1, NULL).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {
@@ -494,10 +530,12 @@ cct_node_t *
 ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip, 
                             int adjust_callsite)
 {
-  if (ompt_eager_context) 
+  if (ompt_eager_context) { 
     return ompt_region_context(region_id, ompt_context_begin, 
                                ++levels_to_skip, adjust_callsite);
-  else return NULL;
+  } else {
+    return NULL;
+  }
 }
 
 
@@ -520,6 +558,11 @@ ompt_backtrace_finalize(
   ompt_elide_runtime_frame(bt, region_id, isSync);
 }
 
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 cct_node_t *
 ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
@@ -554,16 +597,15 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
 
       cct_node_t *prefix = lookup_region_id(region_id);
       if (prefix) {
-	// full context is available now. use it.
-	cct_cursor = prefix;
+	      // full context is available now. use it.
+	      cct_cursor = prefix;
       } else {
-	// full context is not available. if the there is a node for region_id in 
-	// the unresolved tree, use it as the cursor to anchor the sample for now. 
-	// it will be resolved later. otherwise, use the default cursor.
-	prefix = 
-	  hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-			       &(ADDR2(UNRESOLVED, region_id)));
-	if (prefix) cct_cursor = prefix;
+	      // full context is not available. if the there is a node for region_id in 
+	      // the unresolved tree, use it as the cursor to anchor the sample for now. 
+	      // it will be resolved later. otherwise, use the default cursor.
+	      prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
+          &(ADDR2(UNRESOLVED, region_id)));
+	      if (prefix) cct_cursor = prefix;
       }
     }
   }
@@ -571,14 +613,25 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   return cct_cursor;
 }
 
-
-void 
-ompt_callstack_register_handlers(void)
+void
+ompt_callstack_init_deferred(void)
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
+}
 
+void
+ompt_callstack_init(void)
+{
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
   cct_backtrace_finalize_register(&ompt_finalizer);
   cct_cursor_finalize_register(ompt_cct_cursor_finalize);
+
+  // initialize closure for initializer
+  ompt_callstack_init_closure.fn = 
+    (closure_fn_t) ompt_callstack_init_deferred; 
+  ompt_callstack_init_closure.arg = 0;
+
+  // register closure
+  hpcrun_initializers_defer(&ompt_callstack_init_closure);
 }

@@ -88,6 +88,7 @@
 #include "fnbounds_interface.h"
 #include "fnbounds_table_interface.h"
 #include "hpcrun_dlfns.h"
+#include "hpcrun-initializers.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
@@ -109,6 +110,9 @@
 #include "sample_prob.h"
 #include "term_handler.h"
 
+#include "device-finalizers.h"
+#include "module-ignore-map.h"
+#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -362,9 +366,10 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-static sigjmp_buf ivd_jb;
-
 siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
+
+#ifndef USE_LIBUNW
+static sigjmp_buf ivd_jb;
 
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
@@ -372,6 +377,7 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
   (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
   return 0;
 }
+#endif
 
 //------------------------------------
 // process level 
@@ -511,6 +517,7 @@ hpcrun_init_internal(bool is_child)
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
+  hpcrun_initializers_apply();
   hpcrun_is_initialized_private = true;
 }
 
@@ -615,6 +622,8 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
+    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_shutdown);
 
     hpcrun_process_aux_cleanup_action();
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
@@ -718,11 +727,12 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
+    device_finalizer_apply(device_finalizer_type_flush);
+    
     hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
   }
 }
-
 
 //***************************************************************************
 // hpcrun debugging support 
@@ -976,6 +986,19 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
+
+  void *thread_pre_create_address = monitor_get_thread_pre_create_address();
+  const char *module_name = lm_addr_to_module(thread_pre_create_address);
+  load_module_t *module = hpcrun_loadmap_findByName(module_name);
+  if (module_ignore_map_lookup(module) != NULL) {
+    return NULL;
+  } else {
+    if (module_ignore_map_ignore(module)) {
+      module_ignore_map_insert(module);
+      return NULL;
+    }
+  }
+  
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 
@@ -1051,7 +1074,6 @@ monitor_init_thread(int tid, void* data)
 		  }
 		});
 
-
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
@@ -1060,6 +1082,18 @@ monitor_init_thread(int tid, void* data)
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   hpcrun_safe_exit();
+
+  void *thread_begin_address = monitor_get_thread_begin_address();
+  const char *module_name = lm_addr_to_module(thread_begin_address);
+  load_module_t *module = hpcrun_loadmap_findByName(module_name);
+  if (module_ignore_map_lookup(module) != NULL) {
+    hpcrun_thread_suppress_sample = true;
+  } else {
+    if (module_ignore_map_ignore(module)) {
+      module_ignore_map_insert(module);
+      hpcrun_thread_suppress_sample = true;
+    }
+  }
 
   return thread_data;
 }

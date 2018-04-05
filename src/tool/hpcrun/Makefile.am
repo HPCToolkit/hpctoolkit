@@ -166,10 +166,17 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
 MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
+
+ZLIB_LIB = @ZLIB_LIB@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
+ZLIB_INC = @ZLIB_INC@
+
+LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
@@ -208,9 +215,11 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
+# unwind/x86-family/x86-libunwind.c  # presently unused on x86
 
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
@@ -259,12 +268,14 @@ MY_BASE_FILES =				\
 	\
 	main.h main.c			\
 	disabled.c			\
-	cct_insert_backtrace.c          \
-	cct_backtrace_finalize.c        \
+        closure-registry.c              \
+        cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun-initializers.c		\
 	hpcrun_options.c		\
 	hpcrun_stats.c			\
 	loadmap.c			\
@@ -274,9 +285,13 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c          \
-	sample-sources/blame-shift/blame-map.c            \
-	sample-sources/common.c         \
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c   \
+	sample-sources/blame-shift/directed.c    \
+	sample-sources/blame-shift/undirected.c    \
+	sample-sources/omp-mutex.c      \
+	sample-sources/omp-idle.c       \
+        sample-sources/common.c         \
 	sample-sources/display.c		\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
@@ -285,14 +300,18 @@ MY_BASE_FILES =				\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-	sample-sources/retcnt.c         \
-	sample-sources/sync.c           \
+        sample-sources/retcnt.c         \
+        sample-sources/sample-filters.c \
+        sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	device-finalizers.c \
+	addr_to_module.c \
+	module-ignore-map.c \
 	threadmgr.c			\
 	trace.c				\
 	weak.c				\
@@ -301,6 +320,7 @@ MY_BASE_FILES =				\
 	cct/cct_bundle.c		\
 	cct/cct_ctxt.c			\
 	cct/cct.c               	\
+	cct/cct-node-vector.c     \
 	\
 	cct2metrics.c                   \
 	\
@@ -323,6 +343,19 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
+	ompt/ompt-callstack.c           \
+	ompt/ompt-defer.c               \
+	ompt/ompt-defer-write.c         \
+	ompt/ompt-interface.c           \
+	ompt/ompt-region.c              \
+	ompt/ompt-state-placeholders.c  \
+	ompt/ompt-region-map.c          \
+	ompt/ompt-device-map.c          \
+	ompt/ompt-parallel-region-map.c \
+	ompt/ompt-target-map.c          \
+	ompt/ompt-task.c                \
+	ompt/ompt-thread.c              \
+	ompt/ompt-task-map.c            \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -330,30 +363,30 @@ MY_BASE_FILES =				\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
 
+if OPT_ENABLE_PERF_EVENT
+MY_BASE_FILES +=  \
+	sample-sources/perf/event_custom.c  \
+	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf-util.c     \
+	sample-sources/perf/perf_mmap.c
+
 if OPT_PERFMON
-MY_BASE_FILES +=  			\
-	sample-sources/perf/perfmon-util.c	
+MY_BASE_FILES += sample-sources/perf/perfmon-util.c
+else
+MY_BASE_FILES += sample-sources/perf/perfmon-util-dummy.c
 endif
+
+if OPT_ENABLE_KERNEL_4_3
+MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
+else
+MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
+endif
+endif
+
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\
 ## 	sample-sources/mpi.c
 ## endif
-
-if OPT_ENABLE_PERF_EVENT
-MY_BASE_FILES +=  			\
-	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/linux_perf.c	\
-	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	
-endif
-
-if OPT_ENABLE_KERNEL_4_3
-MY_BASE_FILES +=  			\
-	sample-sources/perf/kernel_blocking.c	
-else
-MY_BASE_FILES +=  			\
-	sample-sources/perf/kernel_blocking_stub.c	
-endif
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
@@ -396,11 +429,25 @@ MY_PAPI_FILES = \
     sample-sources/papi-c.c \
     sample-sources/papi-c-extended-info.c
 else
-MY_PAPI_FILES = sample-sources/papi.c
+    MY_PAPI_FILES = sample-sources/papi.c
 endif
 
 if OPT_PAPI_CUPTI
-MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+    MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+endif
+
+if OPT_ENABLE_CUPTI
+MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
+								 sample-sources/nvidia/cubin-id-map.c               \
+								 sample-sources/nvidia/cubin-md5-map.c              \
+								 sample-sources/nvidia/cubin-symbols.c              \
+								 sample-sources/nvidia/cupti-ompt-api.c             \
+								 sample-sources/nvidia/cupti-activity-api.c         \
+								 sample-sources/nvidia/cupti-activity-queue.c       \
+								 sample-sources/nvidia/cupti-correlation-id-map.c   \
+								 sample-sources/nvidia/cupti-function-id-map.c      \
+								 sample-sources/nvidia/cupti-callstack-ignore-map.c \
+								 sample-sources/nvidia/cupti-host-op-map.c 
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -423,6 +470,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
+	-I$(srcdir)/ompt                \
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
@@ -679,7 +727,7 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -lelf -lcrypto \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
         $(PERFMON_LDFLAGS_DYN)
 
@@ -695,9 +743,13 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) $(LZMA_LDFLAGS_STAT) \
-						$(PERFMON_LDFLAGS_STAT)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
+			$(PERFMON_LDFLAGS_STAT) 
+		 
 
+if OPT_USE_ZLIB
+#  libhpcrun_o_LDFLAGS   += $(ZLIB_HPCLINK_LIB)
+endif
 
 #-----------------------------------------------------------
 # whirled peas
@@ -761,7 +813,7 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
-  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS)
+  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -818,8 +870,15 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 endif
 
+if OPT_ENABLE_CUPTI
+  libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
+  libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
+  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+  libhpcrun_la_LDFLAGS  += $(CUPTI_LD_FLGS)
+endif
+
 if OPT_PAPI_CUPTI
-libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+	libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 endif
 
 if OPT_PAPI_STATIC

@@ -373,14 +373,14 @@ METHOD_FN(process_event_list, int lush_metrics)
     //         to track the metric ids.
     //
     for (int i=0; i < NUM_METRICS_FOR_EVENT(event); i++) {
-      int metric_id = hpcrun_new_metric();
-      metrics[n_events][i] = metric_id;
+      int metric_id;
+      const char *name = NAME_FOR_EVENT_METRIC(event, i);
       
       if (METRIC_IS_STANDARD) {
       // For a standard updating metric (add some counts at each sample time), use
       // hpcrun_set_metric_info_and_period routine, as shown below
       //
-        hpcrun_set_metric_info_and_period(metric_id, NAME_FOR_EVENT_METRIC(event, i),
+        metric_id = hpcrun_set_new_metric_info_and_period(name,
                                           HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
                                           thresh, metric_property_none);
       }
@@ -388,12 +388,10 @@ METHOD_FN(process_event_list, int lush_metrics)
         // For a metric that updates in a NON standard fashion, use
         // hpcrun_set_metric_info_w_fn, and pass the updating function as the last argument
         //
-        hpcrun_set_metric_info_w_fn(metric_id, NAME_FOR_EVENT_METRIC(event, i),
-                                    YOUR_FLAG_VALUES, thresh,
-                                    YOUR_UPD_FN);
+        metric_id = hpcrun_set_new_metric_info_w_fn(name, YOUR_FLAG_VALUES, thresh, YOUR_UPD_FN);
       }
+      metrics[n_events++][i] = metric_id;
     }
-    n_events++;
   }
   
   // NOTE: some lush-aware event list processing may need to be done here ...

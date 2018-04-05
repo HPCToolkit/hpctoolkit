@@ -331,13 +331,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN];
-    int metric_id = hpcrun_new_metric(); /* weight */
-    METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(CUDA, "metric for event %d = %s", i, buffer);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      MetricFlags_ValFmt_Int,
-				      self->evl.events[i].thresh);
+    int metric_id = /* weight */
+      hpcrun_set_new_metric_info_and_period(strdup(buffer),
+					    MetricFlags_ValFmt_Int,
+					    self->evl.events[i].thresh);
+    METHOD_CALL(self, store_metric_id, i, metric_id);
   }
 }
 

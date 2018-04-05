@@ -72,6 +72,8 @@
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 
+
+
 //*******************************************************************
 // Macros
 //*******************************************************************
@@ -124,6 +126,8 @@ hpcrun_all_sources_ ##n(void)					     \
 // END Function Defining Macros
 //
 
+
+
 //*******************************************************************
 // Local variables
 //*******************************************************************
@@ -133,6 +137,8 @@ static sample_source_t** ss_insert     = &sample_sources;
 static size_t n_sources = 0;
 
 static __thread int ignore_thread = THREAD_DOINIT;
+
+
 
 //*******************************************************************
 // private functions 

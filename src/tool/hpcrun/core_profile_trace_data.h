@@ -23,6 +23,8 @@ typedef struct core_profile_trace_data_t {
   //hpcprof does not pick them up
   cct2metrics_t* cct2metrics_map;
 
+  // for metric scale (openmp uses)
+  void (*scale_fn)(void*);
   // ----------------------------------------
   // tracing
   // ----------------------------------------

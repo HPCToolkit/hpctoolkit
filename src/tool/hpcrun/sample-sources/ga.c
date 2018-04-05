@@ -183,35 +183,32 @@ METHOD_FN(process_event_list, int lush_metrics)
   
   TMSG(GA, "GA: %s sampling period: %"PRIu64, evName, hpcrun_ga_period);
 
+  kind_info_t *ga_kind = hpcrun_metrics_new_kind();
   // number of one-sided operations
-  hpcrun_ga_metricId_onesidedOp = hpcrun_new_metric();
-  hpcrun_set_metric_info(hpcrun_ga_metricId_onesidedOp, "1-sided op");
+  hpcrun_ga_metricId_onesidedOp = hpcrun_set_new_metric_info(ga_kind, "1-sided op");
 
   // number of collective operations
-  hpcrun_ga_metricId_collectiveOp = hpcrun_new_metric();
-  hpcrun_set_metric_info(hpcrun_ga_metricId_collectiveOp, "collective op");
+  hpcrun_ga_metricId_collectiveOp = hpcrun_set_new_metric_info(ga_kind, "collective op");
 
   // exposed latency
-  hpcrun_ga_metricId_latency = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(hpcrun_ga_metricId_latency, "latency (us)",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
+  hpcrun_ga_metricId_latency =
+    hpcrun_set_new_metric_info_and_period(ga_kind, "latency (us)",
+					  MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // exposed excess latency
-  //hpcrun_ga_metricId_latencyExcess = hpcrun_new_metric();
-  //hpcrun_set_metric_info(hpcrun_ga_metricId_latencyExcess, "exs lat (us)");
+  //hpcrun_ga_metricId_latencyExcess = hpcrun_set_new_metric_info("exs lat (us)");
 
-  hpcrun_ga_metricId_bytesXfr = hpcrun_new_metric();
-  hpcrun_set_metric_info(hpcrun_ga_metricId_bytesXfr, "bytes xfr");
+  hpcrun_ga_metricId_bytesXfr = hpcrun_set_new_metric_info(ga_kind, "bytes xfr");
 
 #if (GA_DataCentric_Prototype)
   for (int i = 0; i < hpcrun_ga_metricId_dataTblSz; ++i) {
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(i);
-    desc->metricId = hpcrun_new_metric();
     snprintf(desc->name, hpcrun_ga_metricId_dataStrLen, "ga-data-%d", i);
     desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
-    hpcrun_set_metric_info(desc->metricId, desc->name);
+    desc->metricId = hpcrun_set_new_metric_info(ga_kind, desc->name);
   }
 #endif
+  hpcrun_close_kind(ga_kind);
 }
 
 
@@ -264,7 +261,6 @@ hpcrun_ga_dataIdx_new(const char* name)
     hpcrun_ga_metricId_dataDesc_t* desc = hpcrun_ga_metricId_dataTbl_find(idx);
     strncpy(desc->name, name, hpcrun_ga_metricId_dataStrLen);
     desc->name[hpcrun_ga_metricId_dataStrLen - 1] = '\0';
-    //hpcrun_set_metric_name(desc->metricId, desc->name);
 
     TMSG(GA, "hpcrun_ga_dataIdx_new: %s -> metric %d", name, desc->metricId);
 

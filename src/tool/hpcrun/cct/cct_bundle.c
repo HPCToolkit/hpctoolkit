@@ -51,7 +51,7 @@
 #include <cct/cct_addr.h>
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
-
+#include <hpcrun/unresolved.h>
 
 //
 // Private Operations
@@ -87,6 +87,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // If there is a creation context (ie, this is a pthread),
   // then the creation context gets special treatment.
   //
+
   // If the -dd flag ATTACH_THREAD_CTXT is *set*, then
   // attach all thread-stopped call paths
   // to the call context prefix node instead of the top of the tree.
@@ -98,6 +99,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
     hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
+  bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
 }
 //

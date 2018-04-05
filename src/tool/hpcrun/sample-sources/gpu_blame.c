@@ -96,7 +96,7 @@
 
 #include <lib/support-lean/timer.h>
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift/blame-shift.h"
 
@@ -203,50 +203,33 @@ static void METHOD_FN(process_event_list, int lush_metrics)
 {
     
     TMSG(CPU_GPU_BLAME_CTL, "process event list, lush_metrics = %d", lush_metrics);
-
+    
+    kind_info_t *blame_kind = hpcrun_metrics_new_kind();
     // Create metrics for CPU/GPU blame shifting
     // cpu_idle_metric_id a.k.a CPU_IDLE measures the time when CPU is idle waiting for GPU to finish 
-    cpu_idle_metric_id = hpcrun_new_metric();
-    // cpu_idle_cause_metric_id a.k.a CPU_IDLE_CAUSE blames GPU kernels (CCT nodes which launched them) 
-    // that are keeping the CPU  idle 
-    cpu_idle_cause_metric_id = hpcrun_new_metric();
+    cpu_idle_metric_id = hpcrun_set_new_metric_info(blame_kind, "CPU_IDLE");
     // gpu_idle_metric_id a.k.a GPU_IDLE_CAUSE measures the time when GPU is idle and blames CPU CCT node
     // for not creating work
-    gpu_idle_metric_id = hpcrun_new_metric();
+    gpu_idle_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_IDLE_CAUSE");
+    // cpu_idle_cause_metric_id a.k.a CPU_IDLE_CAUSE blames GPU kernels (CCT nodes which launched them) 
+    // that are keeping the CPU  idle 
+    cpu_idle_cause_metric_id = hpcrun_set_new_metric_info_and_period(blame_kind, "CPU_IDLE_CAUSE",
+								     MetricFlags_ValFmt_Real, 1, metric_property_none);
     // gpu_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
-    gpu_time_metric_id = hpcrun_new_metric();
-    
-    
+    gpu_time_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_TIME");
     // h_to_d_data_xfer_metric_id is the number of bytes xfered from CPU to GPU
-    h_to_d_data_xfer_metric_id = hpcrun_new_metric();
-    
+    h_to_d_data_xfer_metric_id = hpcrun_set_new__metric_info(blame_kind, "H_TO_D_BYTES");
     // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
-    d_to_h_data_xfer_metric_id = hpcrun_new_metric();
-    
-    // d_to_d_data_xfer_metric_id is the number of bytes xfered from GPU to GPU
-    d_to_d_data_xfer_metric_id = hpcrun_new_metric();
-
+    d_to_h_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "D_TO_H_BYTES");
     // h_to_h_data_xfer_metric_id is the number of bytes xfered from CPU to CPU
-    h_to_h_data_xfer_metric_id = hpcrun_new_metric();
-
+    h_to_h_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "H_TO_H_BYTES");
+    // d_to_d_data_xfer_metric_id is the number of bytes xfered from GPU to GPU
+    d_to_d_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "D_TO_D_BYTES");
     // uva_data_xfer_metric_id is the number of bytes xfered over CUDA unified virtual address
-    uva_data_xfer_metric_id = hpcrun_new_metric();
-
+    uva_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "UVA_BYTES");
     // Accumulates the time between last kernel end to current Sync point as a potential GPU overload factor
-    gpu_overload_potential_metric_id =  hpcrun_new_metric(); 
+    gpu_overload_potential_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_OVERLOAD_POTENTIAL");
     
-    hpcrun_set_metric_info_and_period(cpu_idle_metric_id, "CPU_IDLE", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(gpu_idle_metric_id, "GPU_IDLE_CAUSE", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(cpu_idle_cause_metric_id, "CPU_IDLE_CAUSE", MetricFlags_ValFmt_Real, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(gpu_time_metric_id, "GPU_TIME", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    
-    hpcrun_set_metric_info_and_period(h_to_d_data_xfer_metric_id, "H_TO_D_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(d_to_h_data_xfer_metric_id, "D_TO_H_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(h_to_h_data_xfer_metric_id, "H_TO_H_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(d_to_d_data_xfer_metric_id, "D_TO_D_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(uva_data_xfer_metric_id, "UVA_BYTES", MetricFlags_ValFmt_Int, 1, metric_property_none);
-    hpcrun_set_metric_info_and_period(gpu_overload_potential_metric_id, "GPU_OVERLOAD_POTENTIAL", MetricFlags_ValFmt_Int, 1, metric_property_none);
-
     bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);

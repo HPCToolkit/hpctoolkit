@@ -300,8 +300,6 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_inf
 int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* fs)
 {
-  hpcfmt_int4_fwrite(metric_tbl->len, fs);
-
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
 
 	  // corner case: for other sampling sources than perf event, the

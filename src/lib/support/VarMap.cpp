@@ -50,7 +50,7 @@
 #define VAR_PREFIX '$'
 
 VarMap::VarMap(hpcrun_metricVal_t *metrics, metric_desc_t* list_metric_desc,
-   size_t num_metrics)
+   unsigned int num_metrics)
 {
   m_metrics          = metrics;
   m_list_metric_desc = list_metric_desc;
