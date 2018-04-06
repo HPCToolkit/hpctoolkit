@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2017, Rice University.
+# Copyright (c) 2002-2018, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -40,6 +40,16 @@
 #
 # hpcrun -- set the environ variables for profiling with HPCToolkit
 # and launch the program.  See 'hpcrun -h' for a list of options.
+
+#------------------------------------------------------------ 
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  The setting below prevents
+# disables darshan at runtime, avoiding most of the problems.
+# ------------------------------------------------------------
+export DARSHAN_DISABLE=1
 
 #------------------------------------------------------------
 # Values from configure

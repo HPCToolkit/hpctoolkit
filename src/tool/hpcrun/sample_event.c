@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -217,17 +217,12 @@ hpcrun_sample_callpath(void* context, int metricId,
   // start of handling sample
   // --------------------------------------
   hpcrun_set_handling_sample(td);
-  ip_normalized_t leaf_func;
 
   td->btbuf_cur = NULL;
   td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-      // node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-      //	  skipInner, isSync);  // TODO change the interface to return the function containing trace_pc.
-
-      // Laks: copied from help_hpcrun_sample_callpath
       void* pc = hpcrun_context_pc(context);
 
       TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
@@ -240,9 +235,8 @@ hpcrun_sample_callpath(void* context, int metricId,
       if (data != NULL)
         data_aux = &data->sample_custom_cct;
 
-      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, &leaf_func, metricId,
-          			   metricIncr, skipInner, isSync, data_aux);
-      // end copied from help_hpcrun_sample_callpath
+      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, metricId,
+                                   metricIncr, skipInner, isSync, data_aux);
 
       if (ENABLED(DUMP_BACKTRACES)) {
         hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
@@ -253,7 +247,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
         metricId, metricIncr, skipInner, NULL);
-    leaf_func = td->btbuf_beg->the_function;
     hpcrun_cleanup_partial_unwind();
   }
   // --------------------------------------
@@ -262,12 +255,41 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   ret.sample_node = node;
 
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+  ip_normalized_t leaf_ip = addr->ip_norm;
+
+  if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
+    // the call chain sampled has as its leaf an instruction in a user
+    // procedure. we know this because leaf_ip matches the first entry
+    // in the backtrace buffer.  samples in kernel space yield a
+    // leaf_ip that is not logged in the backtrace buffer. for user
+    // space samples, the first entry in the backtrace buffer includes
+    // not only the normalized IP of the call chain leaf but also the
+    // IP of the first instruction in the enclosing function, which we
+    // use to uniquely represent the function itself. in this case, we
+    // adjust leaf_ip to point to the first IP of its enclosing
+    // function to simplify processing of procedure-level traces for
+    // call chains that are completely in user space.
+
+    // when call chain tracing is enabled, tracing arbitrary leaf IPs
+    // for user space call chains is messy because it can cause
+    // trace-ids to be marked on multiple call chain leaves
+    // (instructions) that belong to the same source-level
+    // statement. collapsing these when call path traces are present
+    // leaves us with many trace-ids referring to the same source
+    // construct. trust me: merging here is easier :-).
+    leaf_ip = td->btbuf_beg->the_function;
+  }
+
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
-    cct_addr_t frm = { .ip_norm = leaf_func };
+    cct_addr_t frm;
+    memset(&frm, 0, sizeof(cct_addr_t));
+    frm.ip_norm = leaf_ip;
+
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy =
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);

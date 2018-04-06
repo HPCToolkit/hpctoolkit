@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,6 +79,11 @@ typedef struct event_custom_s {
 // --------------------------------------------------------------
 // Function interface
 // --------------------------------------------------------------
+
+/***
+ * create a custom event
+ */ 
+int event_custom_create_event(char *name);
 /**
  * find an event custom based on its event name.
  * @return event_custom_t if exists, NULL otherwise.
@@ -99,8 +104,10 @@ int event_custom_register(event_custom_t *event);
 void event_custom_display(FILE *std);
 
 /**
- * method to be called during signal delivery. If an event is recognized, it will delivered to the custom handler.
+ * method to be called during signal delivery. If an event is recognized, 
+ * it will delivered to the custom handler.
  **/ 
-int event_custom_handler(struct event_thread_s* event, void *context, sample_val_t sample, struct perf_mmap_data_s* data);
+int event_custom_handler(struct event_thread_s* event, void *context, 
+		sample_val_t sample, struct perf_mmap_data_s* data);
 
 #endif

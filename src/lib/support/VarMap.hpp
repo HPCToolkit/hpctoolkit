@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -62,11 +62,11 @@ private:
 
 public:
   bool   isVariable(char *expr);
-  double getValue(int var);
+  double getValue(unsigned int var);
   int    getErrorCode();
 
   VarMap(hpcrun_metricVal_t *metrics, 
-    metric_desc_t* m_list_metric_desc, size_t num_metrics);
+    metric_desc_t* m_list_metric_desc, unsigned int num_metrics);
 };
 
 

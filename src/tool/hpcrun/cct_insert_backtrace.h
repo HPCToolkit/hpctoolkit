@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -99,7 +99,6 @@ backtrace_info_t *bt, bool tramp_found, int metricId, hpcrun_metricVal_t metricI
 	struct cct_custom_update_s *custom_update);
 
 extern cct_node_t* hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context, 
-	ip_normalized_t *leaf_func,  // JMC
 	int metricId, hpcrun_metricVal_t metricIncr,
 	int skipInner, int isSync, struct cct_custom_update_s *custom_update);
 

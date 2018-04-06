@@ -70,8 +70,8 @@ typedef struct event_desc_list_s {
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
 
-static SLIST_HEAD(event_list_head, event_desc_list_s) list_event_desc_head =
-  SLIST_HEAD_INITIALIZER(event_list_head);
+static SLIST_HEAD(event_list_head, event_desc_list_s) list_event_desc_head = 
+                                SLIST_HEAD_INITIALIZER(event_list_head);
 
 
 

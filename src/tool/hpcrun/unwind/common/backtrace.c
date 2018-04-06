@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -161,7 +161,6 @@ hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner,
     lush_assoc_t as = lush_assoc_info__get_assoc(bt_inner[i].as_info);
     assert(as == LUSH_ASSOC_NULL || as == LUSH_ASSOC_1_to_1 ||
 	   as == LUSH_ASSOC_1_to_0);
-
   }
   return &bt_inner[skip];
 }

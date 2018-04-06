@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,21 +66,14 @@
 #include <unistd.h>
 
 //*****************************************************************************
-// HPCToolkit Externals Include
-//*****************************************************************************
-
-#include <libdwarf.h>
-
-//*****************************************************************************
 // local includes
 //*****************************************************************************
 
 #include "code-ranges.h"
+#include "eh-frames.h"
 #include "process-ranges.h"
 #include "function-entries.h"
 #include "server.h"
-#include "variable-entries.h"
-
 #include "syserv-mesg.h"
 #include "Symtab.h"
 #include "Symbol.h"
@@ -105,8 +98,6 @@ using namespace SymtabAPI;
 
 #define STRLEN(s) (sizeof(s) - 1)
 
-#define DWARF_OK(e) (DW_DLV_OK == (e))
-
 //*****************************************************************************
 // forward declarations
 //*****************************************************************************
@@ -118,19 +109,14 @@ static void setup_segv_handler(void);
 // local variables
 //*****************************************************************************
 
-enum query_type_e {QUERY_FUNCTION, QUERY_VARIABLE};
-static enum query_type_e query_type;
-
 // output is text mode unless C or server mode is specified.
-enum { MODE_TEXT = 1, MODE_C, MODE_SERVER };
 
+enum { MODE_TEXT = 1, MODE_C, MODE_SERVER };
 static int the_mode = MODE_TEXT;
 
 static bool verbose = false; // additional verbosity
 
 static jmp_buf segv_recover; // handle longjmp "restart" from segv
-
-
 
 //*****************************************************************
 // interface operations
@@ -146,8 +132,6 @@ main(int argc, char* argv[])
   char *object_file;
   int n, fdin, fdout;
 
-  query_type = QUERY_FUNCTION;
-
   for (n = 1; n < argc; n++) {
     if (strcmp(argv[n], "-c") == 0) {
       the_mode = MODE_C;
@@ -157,9 +141,6 @@ main(int argc, char* argv[])
     }
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
-    }
-    if (strcmp(argv[n], "-m") == 0) {
-      query_type = QUERY_VARIABLE;
     }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
@@ -204,10 +185,7 @@ main(int argc, char* argv[])
 
   setup_segv_handler();
   if ( ! setjmp(segv_recover) ) {
-    if (query_type == QUERY_VARIABLE)
-      dump_file_info_var(object_file, fn_discovery);
-    else
-      dump_file_info(object_file, fn_discovery);
+    dump_file_info(object_file, fn_discovery);
   }
   else {
     fprintf(stderr,
@@ -241,9 +219,16 @@ char *
 cplus_demangle(char *s, int opts)
 {
 return strdup(s);
-}  
-
+}
 };
+
+
+// Callback from dwarf_eh_frame_info() in eh-frames.cpp.
+void
+add_frame_addr(void * addr)
+{
+  add_function_entry(addr, NULL, false, 0);
+}
 
 
 //*****************************************************************
@@ -258,7 +243,6 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
-    "\t-m\tquery static memory variable address\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
@@ -375,80 +359,6 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
   note_section(syms, SECTION_FINI, fn_discovery);
 }
 
-// collect function start addresses from eh_frame info
-// (part of the DWARF info)
-// enter these start addresses into the reachable function
-// data structure
-
-static void
-seed_dwarf_info(int dwarf_fd)
-{
-  Dwarf_Debug dbg = NULL;
-  Dwarf_Error err;
-  Dwarf_Handler errhand = NULL;
-  Dwarf_Ptr errarg = NULL;
-
-  // Unless disabled, add eh_frame info to function entries
-  if(getenv("EH_NO")) {
-    close(dwarf_fd);
-    return;
-  }
-
-  if ( ! DWARF_OK(dwarf_init(dwarf_fd, DW_DLC_READ,
-                             errhand, errarg,
-                             &dbg, &err))) {
-    if (verbose) fprintf(stderr, "dwarf init failed !!\n");
-    return;
-  }
-
-  Dwarf_Cie* cie_data = NULL;
-  Dwarf_Signed cie_element_count = 0;
-  Dwarf_Fde* fde_data = NULL;
-  Dwarf_Signed fde_element_count = 0;
-
-  int fres =
-    dwarf_get_fde_list_eh(dbg, &cie_data,
-                          &cie_element_count, &fde_data,
-                          &fde_element_count, &err);
-  if ( ! DWARF_OK(fres)) {
-    if (verbose) fprintf(stderr, "failed to get eh_frame element from DWARF\n");
-    return;
-  }
-
-  for (int i = 0; i < fde_element_count; i++) {
-    Dwarf_Addr low_pc = 0;
-    Dwarf_Unsigned func_length = 0;
-    Dwarf_Ptr fde_bytes = NULL;
-    Dwarf_Unsigned fde_bytes_length = 0;
-    Dwarf_Off cie_offset = 0;
-    Dwarf_Signed cie_index = 0;
-    Dwarf_Off fde_offset = 0;
-
-    int fres = dwarf_get_fde_range(fde_data[i],
-                                   &low_pc, &func_length,
-                                   &fde_bytes,
-                                   &fde_bytes_length,
-                                   &cie_offset, &cie_index,
-                                   &fde_offset, &err);
-    if (fres == DW_DLV_ERROR) {
-      fprintf(stderr, " error on dwarf_get_fde_range\n");
-      return;
-    }
-    if (fres == DW_DLV_NO_ENTRY) {
-      fprintf(stderr, " NO_ENTRY error on dwarf_get_fde_range\n");
-      return;
-    }
-    if(getenv("EH_SHOW")) {
-      fprintf(stderr, " ---potential fn start = %p\n", reinterpret_cast<void*>(low_pc));
-    }
-
-    if (low_pc != (Dwarf_Addr) 0) add_function_entry(reinterpret_cast<void*>(low_pc), NULL, false, 0);
-  }
-  if ( ! DWARF_OK(dwarf_finish(dbg, &err))) {
-    fprintf(stderr, "dwarf finish fails ???\n");
-  }
-  close(dwarf_fd);
-}
 
 static void 
 dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
@@ -464,30 +374,17 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
   for (unsigned int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
-    if (s->getOffset() != 0) {
-
+    if (report_symbol(s) && s->getOffset() != 0) {
       string mname = s->getMangledName();
-
-      if (report_symbol(s)) {
-        // functions
-        add_function_entry((void *) s->getOffset(), &mname,
-         ((sl & Symbol::SL_GLOBAL) ||
-          (sl & Symbol::SL_WEAK)));
-      } else {
-        // static variables
-        add_variable_entry((void*)s->getOffset(), s->getSize(), &mname, 1);
-      }
+      add_function_entry((void *) s->getOffset(), &mname,
+			 ((sl & Symbol::SL_GLOBAL) ||
+			  (sl & Symbol::SL_WEAK)));
     }
   }
 
-  seed_dwarf_info(dwarf_fd);
+  dwarf_eh_frame_info(dwarf_fd);
 
   process_code_ranges();
-
-  //-----------------------------------------------------------------
-  // if data centric is supported, dump the variables
-  //-----------------------------------------------------------------
-  dump_variables();
 
   //-----------------------------------------------------------------
   // dump the address and comment for each function  
@@ -532,9 +429,9 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
   }
 
   // default is text mode
-  printf("num symbols = %ld, num variables = %ld, reference offset = 0x%" PRIxPTR ", "
+  printf("num symbols = %ld, reference offset = 0x%" PRIxPTR ", "
 	 "relocatable = %d\n",
-	 num_function_entries(), num_variable_entries(), ref_offset, is_relocatable);
+	 num_function_entries(), ref_offset, is_relocatable);
 }
 
 
@@ -569,9 +466,6 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
   int relocatable = 0;
 
-  // open for dwarf usage
-  int dwarf_fd = open(filename, O_RDONLY);
-
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
   //-----------------------------------------------------------------
   // ensure that we don't infer function starts within try blocks or
@@ -601,6 +495,8 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
+  syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+
 #ifdef __PPC64__
   {
     //-----------------------------------------------------------------
@@ -614,129 +510,31 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
     for (unsigned int i = 0; i < vec.size(); i++) {
       Symbol *s = vec[i];
       string mname = s->getMangledName();
-      if (s->getOffset() != 0) {
-        if (matches_contains(mname, "long_branch")) {
-          add_function_entry((void *) s->getOffset(), &mname, true);
-        }
+      if (matches_contains(mname, "long_branch") && s->getOffset() != 0) {
+	add_function_entry((void *) s->getOffset(), &mname, true);
       }
     }
   }
 #endif
 
-  //-----------------------------------------------------------------
-  // get function symbols
-  //-----------------------------------------------------------------
-  syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
-
   if (syms->getObjectType() != obj_Unknown) {
-    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
-    relocatable = syms->isExec() ? 0 : 1;
-    image_offset = syms->imageOffset();
-  }
+    int dwarf_fd = open(filename, O_RDONLY);
 
-  dump_header_info(relocatable, image_offset);
-
-  //-----------------------------------------------------------------
-  // free as many of the Symtab objects as we can
-  //-----------------------------------------------------------------
-
-  close(dwarf_fd);
-
-  Symtab::closeSymtab(syms);
-}
-
-
-void
-dump_file_info_var(const char *filename, DiscoverFnTy fn_discovery)
-{
-  Symtab *syms;
-  string sfile(filename);
-  vector<Symbol *> symvec;
-  uintptr_t image_offset = 0;
-
-  assert_file_is_readable(filename);
-
-  if ( ! Symtab::openFile(syms, sfile) ) {
-    fprintf(stderr,
-      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
-      "  -- file %s is readable, but Symtab::openFile fails !\n",
-      filename);
-    exit(1);
-  }
-  int relocatable = 0;
-
-  // open for dwarf usage
-  int dwarf_fd = open(filename, O_RDONLY);
-
-#ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS
-  //-----------------------------------------------------------------
-  // ensure that we don't infer function starts within try blocks or
-  // at the start of catch blocks
-  //-----------------------------------------------------------------
-  vector<ExceptionBlock *> exvec;
-  syms->getAllExceptions(exvec);
-
-  for (unsigned int i = 0; i < exvec.size(); i++) {
-    ExceptionBlock *e = exvec[i];
-
-#ifdef DUMP_EXCEPTION_BLOCK_INFO
-    printf("tryStart = %p tryEnd = %p, catchStart = %p\n", e->tryStart(),
-     e->tryEnd(), e->catchStart());
-#endif // DUMP_EXCEPTION_BLOCK_INFO
-    //-----------------------------------------------------------------
-    // prevent inference of function starts within the try block
-    //-----------------------------------------------------------------
-    add_protected_range((void *) e->tryStart(), (void *) e->tryEnd());
-
-    //-----------------------------------------------------------------
-    // prevent inference of a function start at the beginning of a
-    // catch block. the extent of the catch block is unknown.
-    //-----------------------------------------------------------------
-    long cs = e->catchStart();
-    add_protected_range((void *) cs, (void *) (cs + 1));
-  }
-#endif // USE_SYMTABAPI_EXCEPTION_BLOCKS
-
-#ifdef __PPC64__
-  {
-    //-----------------------------------------------------------------
-    // collect addresses of trampolines for long distance calls as per
-    // ppc64 abi. empirically, the linker on BG/Q enters these symbols
-    // with the type NOTYPE and a name that contains the substring
-    // "long_branch"
-    //-----------------------------------------------------------------
-    vector<Symbol *> vec;
-    syms->getAllSymbolsByType(vec, Symbol::ST_NOTYPE);
-    for (unsigned int i = 0; i < vec.size(); i++) {
-      Symbol *s = vec[i];
-      string mname = s->getMangledName();
-      if (s->getOffset() != 0) {
-        if (!matches_contains(mname, "long_branch")) {
-          add_variable_entry((void *) s->getOffset(), s->getSize(), &mname, 1)
-        }
-      }
+    if (dwarf_fd < 0) {
+      fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
     }
-  }
-#endif
 
-  //-----------------------------------------------------------------
-  // get variable addresses
-  //-----------------------------------------------------------------
-  syms->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
-
-  if (syms->getObjectType() != obj_Unknown) {
     dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    close(dwarf_fd);
+
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }
-
   dump_header_info(relocatable, image_offset);
 
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can
   //-----------------------------------------------------------------
-
-  close(dwarf_fd);
 
   Symtab::closeSymtab(syms);
 }

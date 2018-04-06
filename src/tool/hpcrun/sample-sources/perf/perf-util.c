@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
-#include <hpcrun/utilities/tokenize.h>
+#include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>
 #include "perf-util.h"
@@ -90,6 +90,8 @@
 // 300 samples per sec looks has relatively similar percentage
 // with perf tool
 #define DEFAULT_THRESHOLD  300
+#define MAX_BUFFER_LINUX_KERNEL 128
+
 
 //******************************************************************************
 // constants
@@ -107,11 +109,21 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 //******************************************************************************
-// local variables
+// typedef, structure or enum
 //******************************************************************************
 
 
-static uint16_t perf_kernel_lm_id;
+//******************************************************************************
+// local variables
+//******************************************************************************
+
+static uint16_t perf_kernel_lm_id = 0;
+
+static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
+
+static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
+
+static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
 
 //******************************************************************************
@@ -124,56 +136,105 @@ static uint16_t perf_kernel_lm_id;
 // implementation
 //******************************************************************************
 
-
-#if 0
-//
-// add user and kernel callchain
-//
 static cct_node_t *
-perf_add_callchain( cct_node_t        *parent_original, 
-		    perf_mmap_data_t  *data, 
-		    int               metric_id,
-		    cct_metric_data_t datum )
+perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
 {
-  cct_node_t *parent = parent_original;
+  ip_normalized_t npc;
+  cct_addr_t frm;
+
+  memset(&npc, 0, sizeof(ip_normalized_t));
+  npc.lm_id = lm_id;
+  npc.lm_ip = ip;
+
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = npc;
+
+  return hpcrun_cct_insert_addr(parent, &frm);
+}
+
+
+/***
+ * retrieve the value of kptr_restrict
+ */
+static int
+perf_util_get_kptr_restrict()
+{
+  static int privilege = -1;
+
+  if (privilege >= 0)
+    return privilege;
+
+  FILE *fp = fopen(LINUX_KERNEL_KPTR_RESTICT, "r");
+  if (fp != NULL) {
+    fscanf(fp, "%d", &privilege);
+    fclose(fp);
+  }
+  return privilege;
+}
+
+static uint16_t 
+perf_get_kernel_lm_id() 
+{
+  if (ksym_status == PERF_AVAILABLE && perf_kernel_lm_id == 0) {
+    // ensure that this is initialized only once per process
+    spinlock_lock(&perf_lock);
+    if (perf_kernel_lm_id == 0) {
+
+      // in case of kptr_restrict = 0, we want to copy kernel symbol for each node
+      // if the value of kptr_restric != 0, all nodes has <vmlinux> module, and
+      //   all calls to the kernel will be from address zero
+
+      if (perf_util_get_kptr_restrict() == 0) {
+
+        char buffer[MAX_BUFFER_LINUX_KERNEL];
+        OSUtil_setCustomKernelNameWrap(buffer, MAX_BUFFER_LINUX_KERNEL);
+        perf_kernel_lm_id = hpcrun_loadModule_add(buffer);
+
+      } else {
+        perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
+
+      }
+    }
+    spinlock_unlock(&perf_lock);
+  }
+  return perf_kernel_lm_id;
+}
+
+
+
+//----------------------------------------------------------
+// extend a user-mode callchain with kernel frames (if any)
+//----------------------------------------------------------
+cct_node_t *
+perf_util_add_kernel_callchain(
+  cct_node_t *leaf, void *data_aux
+)
+{
+  cct_node_t *parent = leaf;
   
-  // ------------------------------------------------------------------
-  // insert cct
-  // ------------------------------------------------------------------
-  if (data != NULL && data->nr > 0) {
+  if (data_aux == NULL)  {
+    return parent;
+  }
+
+
+  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+  if (data->nr > 0) {
+
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
+    // if we have call chain from the kernel, but no kernel symbol address available,
+    // we collapse all kernel call chains into a single node
+    if (perf_util_get_kptr_restrict() != 0) {
+      return perf_insert_cct(perf_get_kernel_lm_id(), parent, 0);
+    }
+
     // add kernel IPs to the call chain top down, which is the 
     // reverse of the order in which they appear in ips
     for (int i = data->nr - 1; i >= 0; i--) {
-
-      uint16_t lm_id = perf_kernel_lm_id;
-      // ------------------------------------------------------------------
-      // case if we want to include user call chain as well:
-      // Wild assumption : if hpcrun cannot find the load module of a certain
-      //   address, it is possible the address is from the kernel
-      // ------------------------------------------------------------------
-      void *addr = (void *) data->ips[i];
-      load_module_t *lm = hpcrun_loadmap_findByAddr(addr, addr+1);
-      if (lm != NULL) lm_id = lm->id;
-
-      // ------------------------------------------------------------------
-      ip_normalized_t npc = { .lm_id = lm_id, .lm_ip = data->ips[i] };
-      cct_addr_t frm = { .ip_norm = npc };
-      cct_node_t *child = hpcrun_cct_insert_addr(parent, &frm);
-      parent = child;
+      parent = perf_insert_cct(perf_get_kernel_lm_id(), parent, data->ips[i]);
     }
-  }
-  // ------------------------------------------------------------------
-  // adding metric to the leaf
-  // ------------------------------------------------------------------
-  metric_set_t* mset = hpcrun_reify_metric_set(parent);
-
-  metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
-  if (upd_proc) {
-    upd_proc(metric_id, mset, datum);
   }
   return parent;
 }
-#endif
 
 uint16_t
 get_perf_kernel_lm_id()
@@ -208,7 +269,7 @@ getEnvLong(const char *env_var, long default_value)
 //    updated for the default precise ip.
 // @return the assigned precise ip 
 //----------------------------------------------------------
-u64
+static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
   static int precise_ip = -1;
@@ -225,14 +286,15 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // check the validity of the requested precision
     // if it returns -1 we need to use our own auto-detect precision
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
       precise_ip = val;
       return precise_ip;
     }
-    EMSG("The kernel does not support the requested ip-precision: %d. hpcrun will use auto-detect ip-precision instead.", val);
+    EMSG("The kernel does not support the requested ip-precision: %d."
+         " hpcrun will use auto-detect ip-precision instead.", val);
   }
 
   // start with the most restrict skid (3) then 2, 1 and 0
@@ -244,7 +306,7 @@ get_precise_ip(struct perf_event_attr *attr)
 
     // ask sys to "create" the event
     // it returns -1 if it fails.
-    int ret = perf_event_open(attr,
+    int ret = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
@@ -263,11 +325,53 @@ get_precise_ip(struct perf_event_attr *attr)
 // predicates that test perf availability
 //----------------------------------------------------------
 
+int
+perf_util_get_paranoid_level()
+{
+  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
+  int level         = 3; // default : no access to perf event
+
+  if (pe_paranoid != NULL) {
+    fscanf(pe_paranoid, "%d", &level) ;
+  }
+  if (pe_paranoid)
+    fclose(pe_paranoid);
+
+  return level;
+}
+
+
+//----------------------------------------------------------
+// returns the maximum sample rate of this node
+// based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
+//----------------------------------------------------------
+int
+perf_util_get_max_sample_rate()
+{
+  static int initialized = 0;
+  static int max_sample_rate  = 300; // unless otherwise limited
+  if (!initialized) {
+    FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
+
+    if (perf_rate_file != NULL) {
+      fscanf(perf_rate_file, "%d", &max_sample_rate);
+      fclose(perf_rate_file);
+    }
+    initialized = 1;
+  }
+  return max_sample_rate;
+}
+
+
+//----------------------------------------------------------
+// testing perf availability
+//----------------------------------------------------------
 static int
-perf_kernel_syms_avail()
+perf_util_kernel_syms_avail()
 {
   FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
   FILE *ksyms       = fopen(LINUX_KERNEL_SYMBOL_FILE, "r");
+
   int level         = 3; // default : no access to perf event
 
   if (ksyms != NULL && pe_paranoid != NULL) {
@@ -280,21 +384,69 @@ perf_kernel_syms_avail()
 }
 
 
-//----------------------------------------------------------
-// returns the maximum sample rate of this node
-// based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
-//----------------------------------------------------------
-static int
-perf_max_sample_rate()
+/***
+ * (1) ensure that the default rate for frequency-based sampling is below the maximum.
+ * (2) if the environment variable HPCRUN_PERF_COUNT is set, use it to set the threshold
+ */
+static void
+set_default_threshold()
 {
-  FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
-  int max_sample_rate  = -1;
+  static int initialized = 0;
 
-  if (perf_rate_file != NULL) {
-    fscanf(perf_rate_file, "%d", &max_sample_rate);
-    fclose(perf_rate_file);
+  if (!initialized) {
+    int max_rate_m1 = perf_util_get_max_sample_rate() - 1;
+    if (default_threshold.threshold_num > max_rate_m1) {
+      default_threshold.threshold_num = max_rate_m1;
+    }
+    const char *val_str = getenv("HPCRUN_PERF_COUNT");
+    if (val_str != NULL) {
+      TMSG(LINUX_PERF, "HPCRUN_PERF_COUNT = %s", val_str);
+      int res = hpcrun_extract_threshold(val_str, &default_threshold.threshold_num, max_rate_m1);
+      if (res == 1) {
+        default_threshold.threshold_type = PERIOD;
+      }
+    }
+    initialized = 1;
   }
-  return max_sample_rate;
+  TMSG(LINUX_PERF, "default threshold = %d", default_threshold.threshold_num);
+}
+
+/*************************************************************
+ * Interface API
+ **************************************************************/ 
+
+//----------------------------------------------------------
+// initialize perf_util. Need to be called as earliest as possible
+//----------------------------------------------------------
+void
+perf_util_init()
+{
+  set_default_threshold();
+
+  // perf_kernel_lm_id must be set for each process. here, we clear it 
+  // because it is too early to allocate a load module. it will be set 
+  // later, exactly once per process if ksym_status == PERF_AVAILABLE.
+  perf_kernel_lm_id = 0; 
+
+  // if kernel symbols are available, we will attempt to collect kernel
+  // callchains and add them to our call paths
+
+  ksym_status = PERF_UNAVAILABLE;
+
+  // Conditions for the sample to include kernel if:
+  // 1. kptr_restric   = 0    (zero)
+  // 2. paranoid_level < 2    (zero or one)
+  // 3. linux version  > 3.7
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+  int level     = perf_util_kernel_syms_avail();
+  int krestrict = perf_util_get_kptr_restrict();
+
+  if (krestrict == 0 && (level == 0 || level == 1)) {
+    hpcrun_kernel_callpath_register(perf_util_add_kernel_callchain);
+    ksym_status = PERF_AVAILABLE;
+  }
+#endif
 }
 
 
@@ -303,58 +455,33 @@ perf_max_sample_rate()
 // this function caches the value so that we don't need
 //   enquiry the same question all the time.
 //----------------------------------------------------------
-static bool
-is_perf_ksym_available()
+bool
+perf_util_is_ksym_available()
 {
-  enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
-
-  // if kernel symbols are available, we will attempt to collect kernel
-  // callchains and add them to our call paths
-  static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
-
-  if (ksym_status == PERF_UNDEFINED) {
-  	int level = perf_kernel_syms_avail();
-
-    if (level == 0 || level == 1) {
-      perf_kernel_lm_id = hpcrun_loadModule_add(LINUX_KERNEL_NAME);
-      ksym_status = PERF_AVAILABLE;
-    } else {
-    	ksym_status = PERF_UNAVAILABLE;
-    }
-  }
   return (ksym_status == PERF_AVAILABLE);
 }
 
 
-/*************************************************************
- * Interface API
- **************************************************************/ 
-
-
-/***
- * get the default event count threshold by looking from the environment variable
- * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
- */
-struct event_threshold_s
-init_default_count()
+//----------------------------------------------------------
+// create a new event
+//----------------------------------------------------------
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
 {
-  static struct event_threshold_s default_threshold = {.threshold_num=0, .threshold_type=FREQUENCY};
-  if (default_threshold.threshold_num > 0)
-    return default_threshold;
+   int ret;
 
-  const char *str_val= getenv(HPCRUN_OPTION_PERF_COUNT);
-  if (str_val == NULL) {
-    default_threshold.threshold_num = DEFAULT_THRESHOLD;
-    return default_threshold;
-  }
-
-  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
-  if (res == 1)
-    default_threshold.threshold_type = PERIOD;
-
-  return default_threshold;
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
 }
 
+
+void
+perf_util_get_default_threshold(struct event_threshold_s *threshold)
+{
+  threshold->threshold_num  = default_threshold.threshold_num;
+  threshold->threshold_type = default_threshold.threshold_type;
+}
 
 
 //----------------------------------------------------------
@@ -363,28 +490,30 @@ init_default_count()
 //   false otherwise.
 //----------------------------------------------------------
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
 )
 {
   // by default, we always ask for sampling period information
+  // some PMUs is sensitive to the sample type.
+  // For instance, IDLE-CYCLES-BACKEND will fail if we set PERF_SAMPLE_ADDR.
+  // By default, we need to initialize sample_type as minimal as possible.
   unsigned int sample_type = sampletype 
-                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME 
-                             | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR 
-                             | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
+                             | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME;
 
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
-  int max_sample_rate = perf_max_sample_rate();
+  int max_sample_rate = perf_util_get_max_sample_rate();
 
-  if (attr->freq == 1 && threshold > max_sample_rate) {
-    EMSG("WARNING: the rate %d is higher than the supported sample rate %d. Adjusted to the max rate.",
-          threshold, max_sample_rate);
-    attr->sample_period = max_sample_rate-1;
+  if (attr->freq == 1 && threshold >= max_sample_rate) {
+    int our_rate = max_sample_rate - 1;
+    EMSG("WARNING: Lowered specified sample rate %d to %d, below max sample rate of %d.",
+          threshold, our_rate, max_sample_rate);
+    attr->sample_period = our_rate;
   }
 
   attr->disabled      = 1;                 /* the counter will be enabled later  */
@@ -395,21 +524,19 @@ perf_attr_init(
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 #endif
 
-  attr->exclude_kernel = 1;
-  attr->exclude_hv     = 1;
-  attr->exclude_idle   = 1;
+  attr->exclude_kernel = EXCLUDE;
+  attr->exclude_hv     = EXCLUDE;
 
-  if (is_perf_ksym_available()) {
-    /* Records kernel call-chain when we have privilege */
-    attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
+  if (perf_util_is_ksym_available()) {
+    /* We have rights to record and interpret kernel callchains */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+    attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
 #endif
-    attr->exclude_kernel 	   = 0;
-    attr->exclude_hv         = 0;
-    attr->exclude_idle       = 0;
+    attr->exclude_kernel           = INCLUDE;
   }
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
   return true;
 }
+

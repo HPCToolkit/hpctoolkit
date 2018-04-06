@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -156,7 +156,7 @@ create_event(uint64_t code, uint64_t type)
   event_attr.exclude_hv     = 1;
   event_attr.exclude_idle   = 1;
 
-  int fd = perf_event_open(&event_attr, 0, -1, -1, 0);
+  int fd = perf_util_event_open(&event_attr, 0, -1, -1, 0);
   if (fd == -1) {
     return -1;
   }
@@ -376,13 +376,22 @@ int
 pfmu_init()
 {
   /* to allow encoding of events from non detected PMU models */
+#if 0
+  // need to comment this block because it the setenv interferes with
+  // HPCRUN_EVENT_LIST if we start this before the "support_events" step
   int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
-  if (ret != PFM_SUCCESS)
+  if (ret != 0)
     EMSG( "cannot force inactive encoding");
+#endif
 
-  ret = pfm_initialize();
-  if (ret != PFM_SUCCESS)
-    EMSG( "cannot initialize libpfm: %s", pfm_strerror(ret));
+  // pfm_initialize is idempotent, so it is not a problem if
+  // another library (e.g., PAPI) also calls this.
+  int ret = pfm_initialize();
+
+  if (ret != PFM_SUCCESS) {
+    EMSG( "libpfm: cannot initialize: %s", pfm_strerror(ret));
+    return -1;
+  }
 
   return 1;
 }
@@ -445,8 +454,6 @@ pfmu_showEventList()
   display_line_single(stdout);
 
   show_info(argv_all);
-
-  pfm_terminate();
 
   return 0;
 }

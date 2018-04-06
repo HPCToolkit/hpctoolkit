@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -432,21 +432,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   mmap_info->header_type = hdr.type;
   mmap_info->header_misc = hdr.misc;
 
-#if 0
-	  /* this tmsg may cause data races when profiling an omp application (test2)
-	   sometimes it runs just fine, sometimes it's deadlock with the following call stacks:
-
-#0  0x00007f6f86cf2f25 in spinlock_lock (l=0x7f6f86f2bf08 <pmsg_lock>) at /home/la5/git/hpctoolkit/BUILD/../src/lib/prof-lean/spinlock.h:115
-#1  0x00007f6f86cf34f7 in hpcrun_write_msg_to_log (echo_stderr=false, add_thread_id=true, tag=0x7f6f86d0efad "LINUX_PERF", fmt=0x7f6f86d0efe0 "buffer header t: %d, s: %d, head: %d, tail: %d",)    box=0x7ffe9514a5e0) at ../../../../src/tool/hpcrun/messages/messages-async.c:238
-#2  0x00007f6f86cf30d5 in hpcrun_pmsg (tag=0x7f6f86d0efad "LINUX_PERF", fmt=0x7f6f86d0efe0 "buffer header t: %d, s: %d, head: %d, tail: %d"))    at ../../../../src/tool/hpcrun/messages/messages-async.c:154
-#3  0x00007f6f86ce949e in read_perf_buffer (current=0x7f6f845d1050, mmap_info=0x7ffe9514a760) at ../../../../src/tool/hpcrun/sample-sources/perf/perf_mmap.c:298
-#4  0x00007f6f86ce8c94 in perf_event_handler (sig=29, siginfo=0x7ffe9514aab0, context=0x7ffe9514a980) at ../../../../src/tool/hpcrun/sample-sources/perf/linux_perf.c:1269
-#5  0x00007f6f86ab23dd in monitor_signal_handler (sig=29, info=0x7ffe9514aab0, context=0x7ffe9514a980) at ../../libmonitor/src/signal.c:213
-#6  <signal handler called>
-	  */
-	  TMSG(LINUX_PERF, "buffer header t: %d, s: %d, head: %d, tail: %d", hdr.type, hdr.size,
-    		current_perf_mmap->data_tail, current_perf_mmap->data_head);
-#endif
   if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
         return 0;

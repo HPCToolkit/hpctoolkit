@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,8 +59,11 @@
 #define PERF_REQUEST_0_SKID      2
 #define PERF_WAKEUP_EACH_SAMPLE  1
 
-#define EXCLUDE_CALLCHAIN 1
-#define INCLUDE_CALLCHAIN 0
+#define EXCLUDE    1
+#define INCLUDE    0
+
+#define EXCLUDE_CALLCHAIN EXCLUDE
+#define INCLUDE_CALLCHAIN INCLUDE
 
 
 #ifndef u32
@@ -175,30 +178,39 @@ typedef struct event_thread_s {
 // API
 // --------------------------------------------------------------------
 
-// get the default threshold
-struct event_threshold_s init_default_count();
 
 // returns the id of kernel load module
 uint16_t get_perf_kernel_lm_id();
 
 // calling perf event open system call
-static inline long
-perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
+long
+perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags);
 
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
+
+void
+perf_util_init();
 
 int
-perf_attr_init(
+perf_util_attr_init(
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
 );
 
-u64 get_precise_ip(struct perf_event_attr *attr);
+bool
+perf_util_is_ksym_available();
+
+int
+perf_util_get_paranoid_level();
+
+int
+perf_util_get_max_sample_rate();
+
+cct_node_t *
+perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
+
+void
+perf_util_get_default_threshold(struct event_threshold_s *threshold);
 
 #endif

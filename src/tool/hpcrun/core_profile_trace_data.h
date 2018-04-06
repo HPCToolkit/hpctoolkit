@@ -9,6 +9,7 @@
 #include "epoch.h"
 #include "cct2metrics.h"
 
+enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
 
 
 typedef struct core_profile_trace_data_t {
@@ -38,6 +39,7 @@ typedef struct core_profile_trace_data_t {
   // ----------------------------------------
   // Perf support
   // ----------------------------------------
+
   metric_aux_info_t *perf_event_info;
 
 } core_profile_trace_data_t;

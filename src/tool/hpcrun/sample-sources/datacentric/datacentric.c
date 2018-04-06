@@ -151,7 +151,8 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
     if (node == (void*)DATA_STATIC_CONTEXT) {
       // looking for the static variables
       cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
-      cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
+      //cct_node_t *cursor = 
+	      hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
     }
   }
 
@@ -216,7 +217,9 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
 static int
 datacentric_register(event_custom_t *event)
 {
-  struct event_threshold_s threshold = init_default_count();
+  struct event_threshold_s threshold;
+  perf_util_get_default_threshold( &threshold );
+
   event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
   if (event_desc == NULL)
     return -1;

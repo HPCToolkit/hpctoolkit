@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -111,6 +111,22 @@ endif
 MYLIBADD = 
 
 MYCLEAN = 
+
+#############################################################################
+# zlib
+#############################################################################
+
+if OPT_USE_ZLIB
+#MYSOURCES += \
+#	compress.h compress.c
+
+#MYLIBADD   += -L$(ZLIB_LIB) -lz
+#MYCFLAGS   += -I$(ZLIB_INC) 
+
+else
+#MYSOURCES += \
+#	compress.h compress_dummy.c
+endif
 
 #############################################################################
 # Automake rules

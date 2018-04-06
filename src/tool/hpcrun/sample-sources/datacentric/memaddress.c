@@ -127,7 +127,8 @@ memcentric_register(event_custom_t *event)
 
   event_desc->metric_custom = event;
 
-  struct event_threshold_s threshold = init_default_count();
+  struct event_threshold_s threshold;
+  perf_util_get_default_threshold( &threshold );
 
   // ------------------------------------------
   // create metric page-fault
@@ -160,7 +161,7 @@ memcentric_register(event_custom_t *event)
   attr->config = PERF_COUNT_SW_PAGE_FAULTS;
   attr->type   = PERF_TYPE_SOFTWARE;
 
-  perf_attr_init(
+  perf_util_attr_init(
       attr,
       true                      /* use_period*/,
       threshold.threshold_num   /* use the default */,

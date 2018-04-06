@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -258,6 +258,7 @@ hpcrun_delete_real_timer(thread_data_t *td)
 #ifdef ENABLE_CLOCK_REALTIME
   if (td->timer_init) {
     ret = timer_delete(td->timerid);
+    td->timerid = NULL;
   }
   td->timer_init = false;
 #endif
@@ -265,12 +266,30 @@ hpcrun_delete_real_timer(thread_data_t *td)
   return ret;
 }
 
+// While handling a sample, the shutdown signal handler may asynchronously 
+// delete a thread's timer and set it to NULL. Calling timer_settime on a 
+// deleted timer will return an error. Calling timer_settime on a NULL
+// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...) 
+// is unsafe as td->timerid can be set to NULL immediately before it is 
+// loaded as an argument.  To avoid a SEGV, copy the timer into a local 
+// variable, test it, and only call timer_settime with a non-NULL timer. 
+static int
+hpcrun_settime(thread_data_t *td, struct itimerspec *spec)
+{
+  if (!td->timer_init) return -1; // fail: timer not initialized
+
+  timer_t mytimer = td->timerid;
+  if (mytimer == NULL) return -1; // fail: timer deleted
+
+  return timer_settime(mytimer, 0, spec, NULL);
+}
+
 static int
 hpcrun_start_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
-    return timer_settime(td->timerid, 0, &itspec_start, NULL);
+    return hpcrun_settime(td, &itspec_start);
   }
 #endif
 
@@ -282,10 +301,14 @@ hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
-    if (! td->timer_init) {
-      return 0;
-    }
-    return timer_settime(td->timerid, 0, &itspec_stop, NULL);
+    int ret = hpcrun_settime(td, &itspec_stop);
+
+    // If timer is invalid, it is not active; treat it as stopped
+    // and ignore any error code that may have been returned by
+    // hpcrun_settime
+    if ((!td->timer_init) || (!td->timerid)) return 0;
+
+    return ret;
   }
 #endif
 
@@ -321,6 +344,18 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 
   ret = hpcrun_start_timer(td);
+
+  if (use_realtime || use_cputime) {
+    if ((!td->timer_init) || (!td->timerid)) {
+      // When multiple threads are present, a thread might receive a shutdown
+      // signal while handling a sample. When a shutdown signal is received,
+      // the thread's timer is deleted and set to uninitialized.
+      // In this circumstance, restarting the timer will fail and that
+      // is appropriate. Return without futher action or reporting an error.
+      return;
+    }
+  }
+
   if (ret != 0) {
     if (safe) {
       TMSG(ITIMER_CTL, "setitimer failed to start!!");
