@@ -297,8 +297,9 @@ hpcrun_sample_callpath(void* context, int metricId,
     TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p", func_proxy);
     ret.trace_node = func_proxy;
 
-    // modify the persistent id
-    hpcrun_cct_persistent_id_trace_mutate(func_proxy);
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(func_proxy);
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
     TMSG(TRACE, "Appended func_proxy node to trace");
