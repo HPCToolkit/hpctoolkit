@@ -115,13 +115,13 @@ libunw_find_step(hpcrun_unw_cursor_t* cursor)
   pc = (void *) tmp;
   cursor->pc_unnorm = pc;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
+  compute_normalized_ips(cursor);
   if (!found)
     {
       TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
       cursor->libunw_status = LIBUNW_FAIL;
       return STEP_ERROR;
     }
-  compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   cursor->libunw_status = LIBUNW_OK;
   return STEP_OK;
