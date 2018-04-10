@@ -142,6 +142,9 @@ main(int argc, char* argv[])
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
     }
+    else if (strcmp(argv[n], "-m") == 0) {
+      // datacentric usage to query static variables
+    }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
       if (argc < n + 3 || sscanf(argv[n+1], "%d", &fdin) < 1

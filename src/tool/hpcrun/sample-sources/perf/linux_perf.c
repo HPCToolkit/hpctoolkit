@@ -707,16 +707,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   metric_desc_properties_t prop = metric_property_none;
   char *event;
-
   char *evlist = METHOD_CALL(self, get_event_str);
-  int num_events = 0;
-
-  // TODO: stupid way to count the number of events
-
-  for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-
-  self->evl.nevents = num_events;
-
   int i=0;
 
   struct event_threshold_s default_threshold;
@@ -792,7 +783,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
 
-  if (num_events > 0)
+  int nevents = self->evl.nevents;
+  if (nevents > 0)
     perf_init();
 }
 
