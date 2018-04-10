@@ -53,6 +53,8 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <hpcrun/utilities/tokenize.h>
+
 #include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>
@@ -443,7 +445,6 @@ perf_util_init()
   int krestrict = perf_util_get_kptr_restrict();
 
   if (krestrict == 0 && (level == 0 || level == 1)) {
-    hpcrun_kernel_callpath_register(perf_util_add_kernel_callchain);
     ksym_status = PERF_AVAILABLE;
   }
 #endif
