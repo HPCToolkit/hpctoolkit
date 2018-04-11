@@ -116,7 +116,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -148,8 +147,8 @@ am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
 	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_3)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -360,9 +359,11 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
+LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LIB = @LZMA_LIB@
+LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -431,6 +432,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
@@ -466,7 +468,6 @@ host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
-hpcrun_use_bgq_backend = @hpcrun_use_bgq_backend@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -482,7 +483,6 @@ my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
-ppc64_bgq_avail = @ppc64_bgq_avail@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -538,9 +538,9 @@ MYLDFLAGS = \
 MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) $(MY_LIB_XED) $(HPCLIB_XML) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	$(MY_ELF_DWARF) @GNUBINUTILS_LDLIBS@ @HOST_HPCSTRUCT_LDFLAGS@ \
-	$(am__append_1) $(am__append_2)
+	$(HPCLIB_SupportLean) $(LZMA_LDFLAGS_DYN) -L$(SYMTABAPI_LIB) \
+	$(SYMTABAPI_LIB_LIST) $(MY_ELF_DWARF) @GNUBINUTILS_LDLIBS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ $(am__append_1)
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 @OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 

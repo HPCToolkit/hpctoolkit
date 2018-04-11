@@ -50,7 +50,7 @@
 #define VAR_PREFIX '$'
 
 VarMap::VarMap(hpcrun_metricVal_t *metrics, metric_desc_t* list_metric_desc,
-   size_t num_metrics)
+   unsigned int num_metrics)
 {
   m_metrics          = metrics;
   m_list_metric_desc = list_metric_desc;
@@ -65,7 +65,7 @@ bool VarMap::isVariable(char *expr)
 
 
 
-double VarMap::getValue(int var)
+double VarMap::getValue(unsigned int var)
 {
   if ( var>=0 && var<m_num_metrics )
     return hpcrun_fmt_metric_get_value(m_list_metric_desc[var], 

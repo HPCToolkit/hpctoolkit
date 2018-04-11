@@ -345,7 +345,9 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
     BinUtil::LM* lm = new BinUtil::LM();
     try {
       lm->open(proflm->name().c_str());
-      lm->read(BinUtil::LM::ReadFlg_ALL);
+
+      std::set<std::string> dir;  // empty set of measurement directories
+      lm->read(dir, BinUtil::LM::ReadFlg_ALL);
     } 
     catch (...) {
       DIAG_EMsg("While reading " << proflm->name());

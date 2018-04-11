@@ -70,7 +70,6 @@
 #include <list>
 #include <map>
 
-#include <lib/binutils/LM.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -106,17 +105,22 @@ class InlineNode {
 private:
   std::string  m_filenm;
   std::string  m_procnm;
+  std::string  m_prettynm;
   SrcFile::ln  m_lineno;
 
 public:
-  InlineNode(std::string &file, std::string &proc, SrcFile::ln line) {
+  InlineNode(std::string &file, std::string &proc, std::string &pretty,
+	     SrcFile::ln line)
+  {
     m_filenm = file;
     m_procnm = proc;
+    m_prettynm = pretty;
     m_lineno = line;
   }
 
   std::string & getFileName() { return m_filenm; }
   std::string & getProcName() { return m_procnm; }
+  std::string & getPrettyName() { return m_prettynm; }
   SrcFile::ln getLineNum() { return m_lineno; }
 };
 
@@ -128,14 +132,16 @@ public:
   long  base_index;
   long  line_num;
   long  proc_index;
+  long  pretty_index;
 
   // constructor by index
-  FLPIndex(long file, long base, long line, long proc)
+  FLPIndex(long file, long base, long line, long proc, long pretty)
   {
     file_index = file;
     base_index = base;
     line_num = line;
     proc_index = proc;
+    pretty_index = pretty;
   }
 
   // constructor by InlineNode strings
@@ -147,6 +153,7 @@ public:
     base_index = strTab.str2index(FileUtil::basename(fname.c_str()));
     line_num = (long) node.getLineNum();
     proc_index = strTab.str2index(node.getProcName());
+    pretty_index = strTab.str2index(node.getPrettyName());
   }
 
   bool operator == (const FLPIndex rhs)
@@ -332,8 +339,9 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(ElfFile *elfFile); 
+Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
+
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
 void

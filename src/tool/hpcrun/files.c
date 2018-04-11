@@ -137,7 +137,7 @@
 //***************************************************************
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
-#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%08lx-%u-%d.%s"
+#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
 
 #define FILES_RANDOM_GEN  4
 #define FILES_MAX_GEN     11
@@ -150,12 +150,6 @@ struct fileid {
   long host;
   int  gen;
 };
-
-
-//***************************************************************
-// globals 
-//***************************************************************
-
 
 
 //***************************************************************
@@ -412,6 +406,13 @@ hpcrun_files_set_directory()
   if (!rpath) {
     hpcrun_abort("hpcrun: could not access directory `%s': %s", path, strerror(errno));
   }
+}
+
+
+const char *
+hpcrun_files_output_directory()
+{
+  return output_directory;
 }
 
 
