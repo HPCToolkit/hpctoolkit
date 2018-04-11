@@ -105,12 +105,6 @@ MYLDADD = \
         @HOST_LIBTREPOSITORY@ \
         $(HPCLIB_Support) 
 
-if OPT_USE_ZLIB
-MYLDADD    += -L$(ZLIB_LIB) -lz
-MYCFLAGS   += -I$(ZLIB_INC) 
-MYCXXFLAGS += -I$(ZLIB_INC)
-endif
-
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################

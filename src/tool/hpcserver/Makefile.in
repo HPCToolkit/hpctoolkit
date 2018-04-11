@@ -117,9 +117,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_USE_ZLIB_TRUE@am__append_1 = -L$(ZLIB_LIB) -lz
-@OPT_USE_ZLIB_TRUE@am__append_2 = -I$(ZLIB_INC) 
-@OPT_USE_ZLIB_TRUE@am__append_3 = -I$(ZLIB_INC)
 bin_PROGRAMS = hpcserver$(EXEEXT)
 subdir = src/tool/hpcserver
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -158,9 +155,8 @@ am__objects_1 = hpcserver-Args.$(OBJEXT) \
 	hpcserver-main.$(OBJEXT)
 am_hpcserver_OBJECTS = $(am__objects_1)
 hpcserver_OBJECTS = $(am_hpcserver_OBJECTS)
-am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(HPCLIB_Support) $(am__DEPENDENCIES_1)
-hpcserver_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_1 = $(HPCLIB_Support)
+hpcserver_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -338,9 +334,11 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
+LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LIB = @LZMA_LIB@
+LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -409,6 +407,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 
 #############################################################################
@@ -452,7 +451,6 @@ host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
-hpcrun_use_bgq_backend = @hpcrun_use_bgq_backend@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -468,7 +466,6 @@ my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
-ppc64_bgq_avail = @ppc64_bgq_avail@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -532,12 +529,13 @@ MYSOURCES = \
 	main.cpp
 
 MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
-MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) \
-	@GNUBINUTILS_IFLAGS@ $(am__append_2)
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) \
-	@GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@ $(am__append_3)
+MYCFLAGS = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 MYLDFLAGS = -lz
-MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Support) $(am__append_1)
+MYLDADD = \
+        @HOST_LIBTREPOSITORY@ \
+        $(HPCLIB_Support) 
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcserver_CXX = $(CXX)
 hpcserver_SOURCES = $(MYSOURCES) $(THREADSOURCES)
