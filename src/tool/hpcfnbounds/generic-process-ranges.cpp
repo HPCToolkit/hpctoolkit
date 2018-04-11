@@ -56,14 +56,12 @@
 void
 process_range_init(void)
 {
-  return;
 }
 
 
 void 
-process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
+process_range(const char *name, long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
 {
-  return;
 }
 
 

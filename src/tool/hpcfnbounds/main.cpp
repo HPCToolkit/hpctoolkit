@@ -73,6 +73,7 @@
 #include "eh-frames.h"
 #include "process-ranges.h"
 #include "function-entries.h"
+#include "sections.h"
 #include "server.h"
 #include "syserv-mesg.h"
 #include "Symtab.h"
@@ -85,12 +86,6 @@ using namespace SymtabAPI;
 //*****************************************************************************
 // macros
 //*****************************************************************************
-
-#define SECTION_SYMTAB ".symtab"
-#define SECTION_INIT   ".init"
-#define SECTION_FINI   ".fini"
-#define SECTION_TEXT   ".text"
-#define SECTION_PLT    ".plt"
 
 #define PATHSCALE_EXCEPTION_HANDLER_PREFIX "Handler."
 #define USE_PATHSCALE_SYMBOL_FILTER
@@ -324,12 +319,12 @@ code_range_comment(string &name, string section, const char *which)
 
 
 static void
-note_code_range(Region *s, long memaddr, DiscoverFnTy discover)
+note_code_range(const char *sname, Region *s, long memaddr, DiscoverFnTy discover)
 {
   char *start = (char *) s->getDiskOffset();
   char *end = start + s->getDiskSize();
   string ntmp;
-  new_code_range(start, end, memaddr, discover);
+  new_code_range(sname, start, end, memaddr, discover);
 
   add_function_entry(start, code_range_comment(ntmp, s->getRegionName(), "start"), true /* global */);
   add_function_entry(end, code_range_comment(ntmp, s->getRegionName(), "end"), true /* global */);
@@ -342,7 +337,7 @@ note_section(Symtab *syms, const char *sname, DiscoverFnTy discover)
   long memaddr = (long) syms->mem_image();
   Region *s;
   if (syms->findRegion(s, sname) && s) 
-    note_code_range(s, memaddr - syms->imageOffset(), discover);
+    note_code_range(sname, s, memaddr - syms->imageOffset(), discover);
 }
 
 
