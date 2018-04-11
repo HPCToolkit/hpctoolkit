@@ -81,9 +81,12 @@
 #include <string.h>
 
 #include <list>
+#include <set>
+#include <string>
 #include <utility>
 #include <vector>
 
+#include <lib/binutils/BinUtils.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
@@ -93,6 +96,7 @@
 #include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
 
+#include <Module.h>
 #include <Symtab.h>
 #include <Function.h>
 
@@ -112,6 +116,8 @@ static int jbuf_active = 0;
 
 static int num_queries = 0;
 static int num_errors = 0;
+
+#define DEBUG_INLINE_NAMES  0
 
 //***************************************************************************
 
@@ -169,7 +175,8 @@ openSymtab(ElfFile *elfFile)
   if (sigsetjmp(jbuf, 1) == 0) {
     // normal return
     jbuf_active = 1;
-    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(), elfFile->getFileName());
+    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(),
+			   elfFile->getFileName());
     if (ret) {
       the_symtab->parseTypesNow();
       the_symtab->parseFunctionRanges();
@@ -183,8 +190,6 @@ openSymtab(ElfFile *elfFile)
 
   if (! ret) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
-    DIAG_WMsgIf(1, "The static inline support does not work cross platform,");
-    DIAG_WMsgIf(1, "so check that this file has the same arch type as hpctoolkit.");
     the_symtab = NULL;
   }
 
@@ -211,6 +216,70 @@ closeSymtab()
   return ret;
 }
 
+//***************************************************************************
+
+// Lookup the Module (comp unit) containing 'vma' to see if it is from
+// a source file that mangles function names.  A full Symtab Function
+// already does this, but inlined functions do not, so we have to
+// decide this ourselves.
+//
+// Returns: true if 'vma' is from a C++ module (mangled names).
+//
+static string cplus_exts[] = {
+  ".C", ".cc", ".cpp", ".cxx", ".c++",
+  ".CC", ".CPP", ".CXX", ".hpp", ".hxx", ""
+};
+
+static bool
+analyzeDemangle(VMA vma)
+{
+  if (the_symtab == NULL) {
+    return false;
+  }
+
+  // find module (comp unit) containing vma
+  set <Module *> modSet;
+  the_symtab->findModuleByOffset(modSet, vma);
+
+  if (modSet.empty()) {
+    return false;
+  }
+
+  Module * mod = *(modSet.begin());
+  if (mod == NULL) {
+    return false;
+  }
+
+  // languages that need demangling
+  supportedLanguages lang = mod->language();
+  if (lang == lang_CPlusPlus || lang == lang_GnuCPlusPlus) {
+    return true;
+  }
+  if (lang != lang_Unknown) {
+    return false;
+  }
+
+  // if language is unknown, then try file name
+  string filenm = mod->fileName();
+  long file_len = filenm.length();
+
+  if (filenm == "") {
+    return false;
+  }
+
+  for (auto i = 0; cplus_exts[i] != ""; i++) {
+    string ext = cplus_exts[i];
+    long len = ext.length();
+
+    if (file_len > len && filenm.compare(file_len - len, len, ext) == 0) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
@@ -235,6 +304,8 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
     jbuf_active = 1;
     if (the_symtab->getContainingInlinedFunction(addr, func))
     {
+      bool demangle = analyzeDemangle(addr);
+
       parent = func->getInlinedParent();
       while (parent != NULL) {
 	//
@@ -245,10 +316,26 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	string filenm = callsite.first;
 	if (filenm != "") { RealPathMgr::singleton().realpath(filenm); }
 	long lineno = callsite.second;
-	string procnm = func->getName();
-        if (procnm == "") { procnm = UNKNOWN_PROC; }
 
-	nodelist.push_front(InlineNode(filenm, procnm, lineno));
+	// symtab does not provide mangled and pretty names for
+	// inlined functions, so we have to decide this ourselves
+	string procnm = func->getName();
+	string prettynm = procnm;
+
+        if (procnm == "") {
+	  procnm = UNKNOWN_PROC;
+	  prettynm = UNKNOWN_PROC;
+	}
+	else if (demangle) {
+	  prettynm = BinUtil::demangleProcName(procnm);
+	}
+
+#if DEBUG_INLINE_NAMES
+	cout << "raw-inline:  0x" << hex << addr << dec
+	     << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
+#endif
+
+	nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
 
 	func = parent;
 	parent = func->getInlinedParent();
@@ -349,6 +436,7 @@ StmtMap::insert(StmtInfo * sinfo)
   }
 }
 
+//***************************************************************************
 
 // Add one terminal statement to the inline tree and merge with
 // adjacent stmts if their file and line match.

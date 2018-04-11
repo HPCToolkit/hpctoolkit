@@ -76,6 +76,7 @@ SUBDIRS += \
 	hpcprof \
 	hpcproftt \
 	hpclump \
+	hpctracedump \
 	misc
 
 if OPT_ENABLE_HPCSERVER

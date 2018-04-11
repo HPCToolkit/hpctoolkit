@@ -155,7 +155,9 @@ realmain(int argc, char* const argv[])
   try {
     lm = new BinUtil::LM();
     lm->open(args.inputFile.c_str());
-    lm->read(BinUtil::LM::ReadFlg_ALL);
+
+    std::set<std::string> dir;  // empty set of measurement directories
+    lm->read(dir, BinUtil::LM::ReadFlg_ALL);
   }
   catch (...) {
     DIAG_EMsg("Exception encountered while reading '" << args.inputFile << "'");

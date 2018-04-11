@@ -55,12 +55,6 @@
  */
 #include <assert.h>
 #include <include/linux_info.h>
-// #include <linux/version.h> // not used anymore. the build will decide if the
-                           // kernel is recent enough or not
-
-#ifdef ENABLE_PERFMON
-#include "perfmon-util.h"
-#endif
 
 #include "kernel_blocking.h"
 
@@ -272,7 +266,7 @@ register_blocking(event_info_t *event_desc)
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
 
-  perf_attr_init( attr,
+  perf_util_attr_init( attr,
       true        /* use_period*/,
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */

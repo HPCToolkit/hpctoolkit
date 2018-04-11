@@ -181,34 +181,32 @@ normalizeProfileArgs(const StringVec& inPaths)
   NormalizeProfileArgs_t out;
 
   for (StringVec::const_iterator it = inPaths.begin(); 
-       it != inPaths.end(); ++it) {
+      it != inPaths.end(); ++it) {
     std::string path = *it; // copy
     if (FileUtil::isDir(path.c_str())) {
       // ensure 'path' ends in '/'
       if (path[path.length() - 1] != '/') {
-	path += "/";
+        path += "/";
       }
 
       struct dirent** dirEntries = NULL;
       int dirEntriesSz = scandir(path.c_str(), &dirEntries,
-				 hpcrunFileFilter, alphasort);
+          hpcrunFileFilter, alphasort);
       if (dirEntriesSz < 0) {
-	DIAG_Throw("could not read directory: " << path);
+        DIAG_Throw("could not read directory: " << path);
       }
       else {
-	out.groupMax++; // obtain next group;
-	for (int i = 0; i < dirEntriesSz; ++i) {
-	  string nm = path + dirEntries[i]->d_name;
-	  free(dirEntries[i]);
-	  out.paths->push_back(nm);
-	  out.pathLenMax = std::max(out.pathLenMax, (uint)nm.length());
-	  out.groupMap->push_back(out.groupMax);
-	}
-	free(dirEntries);
+        out.groupMax++; // obtain next group;
+        for (int i = 0; i < dirEntriesSz; ++i) {
+          string nm = path + dirEntries[i]->d_name;
+          free(dirEntries[i]);
+          out.paths->push_back(nm);
+          out.pathLenMax = std::max(out.pathLenMax, (uint)nm.length());
+          out.groupMap->push_back(out.groupMax);
+        }
+        free(dirEntries);
       }
-      
       // TODO: collect group
-
     }
     else {
       out.groupMax++; // obtain next group;
@@ -217,7 +215,7 @@ normalizeProfileArgs(const StringVec& inPaths)
       out.groupMap->push_back(out.groupMax);
     }
   }
-  
+
   return out;
 }
 

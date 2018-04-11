@@ -144,6 +144,9 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
+  // add the directory into the set of directories
+  prof->addDirectory(profileFiles[0]);
+
   for (uint i = 1; i < profileFiles.size(); ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
@@ -151,6 +154,9 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
 
     prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
+
+    // add the directory into the set of directories
+    prof->addDirectory(profileFiles[i]);
   }
   prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
@@ -343,17 +349,17 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   // iteration includes LoadMap::LMId_NULL
   // -------------------------------------------------------
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-       i <= loadmap->size(); ++i) {
+      i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
     if (lm->isUsed()) {
       try {
-	const string& lm_nm = lm->name();
-	
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
+        const string& lm_nm = lm->name();
+
+        Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
       }
       catch (const Diagnostics::Exception& x) {
-	errors += "  " + x.what() + "\n";
+        errors += "  " + x.what() + "\n";
       }
     }
   }
@@ -397,7 +403,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
-      lm->read(BinUtil::LM::ReadFlg_Proc);
+      lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
@@ -410,6 +416,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     }
   }
 
+  if (lm) {
+    lmStrct->pretty_name(lm->name().c_str());
+  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()

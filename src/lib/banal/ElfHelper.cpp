@@ -67,6 +67,8 @@
 // local includes
 //******************************************************************************
 
+#include <lib/support/diagnostics.h>
+
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
@@ -103,7 +105,7 @@ ElfFile::open
 
   elf_version(EV_CURRENT);
   elf = elf_memory(memPtr, memLen);
-  if (elf == 0) {
+  if (elf == 0 || elf_kind(elf) != ELF_K_ELF) {
     return false;
   }
   GElf_Ehdr ehdr_v; 
