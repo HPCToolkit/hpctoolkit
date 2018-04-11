@@ -246,8 +246,9 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  if (STEP_OK != libunw_take_step(cursor))
-    return STEP_STOP;
+  step_state result = libunw_take_step(cursor);
+  if (result != STEP_OK) 
+    return result;
   if (STEP_OK != libunw_find_step(cursor))
     return STEP_ERROR;
   return (STEP_OK);
