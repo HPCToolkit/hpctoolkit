@@ -375,10 +375,13 @@ pfmu_isSupported(const char *eventname)
 int
 pfmu_init()
 {
+  int ret;
+#if 0
   /* to allow encoding of events from non detected PMU models */
-  int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
+  ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
   if (ret != PFM_SUCCESS)
     EMSG( "libpfm: cannot force inactive encoding");
+#endif
 
   // pfm_initialize is idempotent, so it is not a problem if
   // another library (e.g., PAPI) also calls this.
