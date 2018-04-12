@@ -94,6 +94,7 @@ MYSOURCES = \
 	code-ranges.cpp \
 	function-entries.cpp \
 	intervals.cpp \
+	sections.cpp \
 	server.cpp
 
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
@@ -146,8 +147,12 @@ if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDADD    += $(XED2_LIB_FLAGS)
+else 
+if HOST_CPU_AARCH64
+  hpcfnbounds_bin_SOURCES  += arm-process-ranges.cpp
 else
   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+endif
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)

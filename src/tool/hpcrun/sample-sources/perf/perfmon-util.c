@@ -375,18 +375,20 @@ pfmu_isSupported(const char *eventname)
 int
 pfmu_init()
 {
-  /* to allow encoding of events from non detected PMU models */
+  int ret;
 #if 0
   // need to comment this block because it the setenv interferes with
   // HPCRUN_EVENT_LIST if we start this before the "support_events" step
-  int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
+
+  // to allow encoding of events from non detected PMU models
+  ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
   if (ret != 0)
     EMSG( "cannot force inactive encoding");
 #endif
 
   // pfm_initialize is idempotent, so it is not a problem if
   // another library (e.g., PAPI) also calls this.
-  int ret = pfm_initialize();
+  ret = pfm_initialize();
 
   if (ret != PFM_SUCCESS) {
     EMSG( "libpfm: cannot initialize: %s", pfm_strerror(ret));
