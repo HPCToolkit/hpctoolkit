@@ -905,7 +905,14 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
-    DIAG_Throw("error opening file");
+    if (errno == ENOENT) {
+      DIAG_Throw("file missing");
+    } else if (errno == EACCES) {
+      DIAG_Throw("file access denied");
+    }
+    else {
+      DIAG_Throw("error opening file");
+    }
   }
 
   char* fsBuf = new char[HPCIO_RWBufferSz];
