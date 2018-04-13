@@ -905,14 +905,16 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
-    if (errno == ENOENT) {
-      DIAG_Throw("file missing");
-    } else if (errno == EACCES) {
-      DIAG_Throw("file access denied");
-    }
-    else {
-      DIAG_Throw("error opening file");
-    }
+    if (errno == ENOENT)
+      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
+	      fnm);
+    else if (errno == EACCES)
+      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
+	      fnm);
+    else
+      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
+	      fnm);
+    exit(-1);
   }
 
   char* fsBuf = new char[HPCIO_RWBufferSz];
@@ -944,7 +946,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'fmt-hdr'");
+    fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
+	    "is not a profile or it is corrupted\n", filename);
+    exit(-1);
   }
   if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
