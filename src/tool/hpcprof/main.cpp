@@ -137,6 +137,12 @@ realmain(int argc, char* const* argv)
   // 0. Special checks
   // ------------------------------------------------------------
 
+  if (nArgs.paths->size() == 0) {
+    std::cerr << "ERROR: command line directories"
+      " contain no .hpcrun files; no database generated\n";
+    exit(-1);
+  }
+
   if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
     args.prof_metrics = Analysis::Args::MetricFlg_Thread;
   }
