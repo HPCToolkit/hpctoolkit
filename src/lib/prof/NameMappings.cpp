@@ -19,6 +19,7 @@
 #include <map>
 #include <string.h>
 
+#include <lib/support/dictionary.h>
 
 
 //******************************************************************************
@@ -88,7 +89,7 @@ static NameMapping renamingTable[] = {
 };
 
 static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, "<inline>", "<partial call paths>"
+  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>"
 };
 
 static NameMappings_t renamingMap;

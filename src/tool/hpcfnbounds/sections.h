@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,29 +44,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-// Generic (empty) definitions of the process range functions for
-// platforms that don't use this technique.
-//***************************************************************************
+#ifndef __section_h__
+#define __section_h__
 
-#include "process-ranges.h"
-#include "code-ranges.h"
+extern const char *SECTION_SYMTAB;
+extern const char *SECTION_INIT;
+extern const char *SECTION_FINI;
+extern const char *SECTION_PLT;
+extern const char *SECTION_TEXT;
 
-
-void
-process_range_init(void)
-{
-}
-
-
-void 
-process_range(const char *name, long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
-{
-}
-
-
-bool
-range_contains_control_flow(void *vstart, void *vend)
-{
-  return true;
-}
+#endif

@@ -93,6 +93,8 @@ using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/Trace.hpp>
 
+#include <lib/support/dictionary.h>
+
 //*************************** Forward Declarations ***************************
 
 
@@ -530,7 +532,34 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   //
   bool isFrame = (typeid(*n) == typeid(ProcFrm));
   bool isProc  = (typeid(*n) == typeid(Proc));
-  bool isLogicalProc   = isFrame || isProc;
+
+  bool isInlineMacro = false;
+  bool isInlineCall  = false;
+
+  NonUniformDegreeTreeNode *parent = n->Parent();
+  if (isProc && parent != NULL) {
+    // if this node and the parent are proc, it is possible this node is an
+    //  inline procedure callsite
+    std::string myprocname = n->structure()->name();
+
+    if (typeid(*parent) == typeid(Proc)) {
+      // check if this node is an inline procedure call.
+      //  a node is an inline proc call iff its parent is an empty proc and
+      //  the node itself is a non-empty proc
+
+      // condition 1: the myprocname of the parent must be empty
+      Struct::ACodeNode *strct = ((ANode*)parent)->structure();
+      bool isEmptyNameParent   = strct->name().empty();
+
+      // condition 2: the myprocname of the inline is not empty
+      bool isFullyNamed = !myprocname.empty();
+
+      isInlineCall  = isEmptyNameParent && isFullyNamed;
+    }
+    isInlineMacro = !isInlineCall && myprocname.compare(GUARD_NAME) == 0;
+  }
+
+  bool isLogicalProc   = isFrame || isInlineCall || isInlineMacro;
   AProcNode * frameNxt = (isLogicalProc) ? static_cast<AProcNode*>(n) : frame;
 
   // -------------------------------------------------------
@@ -544,20 +573,20 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   // -------------------------------------------------------
   // Post-order visit
   // -------------------------------------------------------
-  if (typeid(*n) == typeid(CCT::Stmt)) {
+  if (typeid(*n) == typeid(CCT::Stmt) || isInlineMacro) {
     ANode* n_parent = n->parent();
 
     for (VMAIntervalSet::const_iterator it = ivalset.begin();
-	 it != ivalset.end(); ++it) {
+        it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
       uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
       for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-	if (frame && frame != n_parent) {
-	  frame->demandMetric(mId, mEndId/*size*/) += mVal;
-	}
+        double mVal = n->demandMetric(mId, mEndId/*size*/);
+        n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+        if (frame && frame != n_parent) {
+          frame->demandMetric(mId, mEndId/*size*/) += mVal;
+        }
       }
     }
   }

@@ -44,29 +44,10 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-// Generic (empty) definitions of the process range functions for
-// platforms that don't use this technique.
-//***************************************************************************
+#ifndef __DICTIONARY_H__
+#define __DICTIONARY_H__
 
-#include "process-ranges.h"
-#include "code-ranges.h"
+#define GUARD_NAME  "<inline>"
 
 
-void
-process_range_init(void)
-{
-}
-
-
-void 
-process_range(const char *name, long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
-{
-}
-
-
-bool
-range_contains_control_flow(void *vstart, void *vend)
-{
-  return true;
-}
+#endif
