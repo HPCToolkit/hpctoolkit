@@ -153,12 +153,6 @@ realmain(int argc, char* const* argv)
     DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
   }
 
-  // -------------------------------------------------------
-  // 0. Make empty Experiment database (ensure file system works)
-  // -------------------------------------------------------
-
-  args.makeDatabaseDir();
-
   // ------------------------------------------------------------
   // 1a. Create canonical CCT // Normalize trace files
   // ------------------------------------------------------------
@@ -178,6 +172,12 @@ realmain(int argc, char* const* argv)
 
   prof->disable_redundancy(args.remove_redundancy);
 
+
+  // -------------------------------------------------------
+  // 0. Make empty Experiment database (ensure file system works)
+  // -------------------------------------------------------
+
+  args.makeDatabaseDir();
 
   // ------------------------------------------------------------
   // 1b. Add static structure to canonical CCT
