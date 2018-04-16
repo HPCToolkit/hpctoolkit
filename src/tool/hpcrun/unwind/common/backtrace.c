@@ -278,7 +278,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       // FIXME: For the moment, ignore skipInner issues with trampolines.
       //        Eventually, this will need to be addressed
       //
-      TMSG(TRAMP, "WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
+      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d) when TRAMP is on.", 
 	   skipInner);
     }
     else {
@@ -400,6 +400,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
           // by inserting the last recursive frame into backtrace.
           hpcrun_ensure_btbuf_avail();
           memcpy(td->btbuf_cur, recursion_last, sizeof(frame_t));
+          bt->begin = td->btbuf_beg;
           bt->last = td->btbuf_cur++;
         }
       }
