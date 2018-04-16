@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,95 +44,85 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
-// system include files
+//
+// File:
+//   src/tool/hpctracedump/main.cpp
+//
+// Purpose:
+//   a program that dumps a trace file recorded by hpcrun
+//
+// Description:
+//   driver program that uses library functions to read a trace file
+//
 //***************************************************************************
-
-#include <stdbool.h>
-
-#include <sys/types.h>
-#include <ucontext.h>
-
 
 //***************************************************************************
 // local include files
 //***************************************************************************
 
-#include "unwind.h"
+#include <lib/prof-lean/hpcfmt.h>
+#include <lib/prof-lean/hpcrun-fmt.h>
 
-#include "backtrace.h"
-#include "epoch.h"
-#include "monitor.h"
-#include "sample_event.h"
 
-#include <messages/messages.h>
 
 //***************************************************************************
-// 
+// interface functions
 //***************************************************************************
 
-
-#if (HPC_UNW_LITE)
-static int 
-hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
+int
+main(int argc, char **argv)
 {
-  // special trivial case: size == 0 (N.B.: permit size < 0)
-  if (size <= 0) {
-    return 0;
+  int ret;
+  if (argc < 2) {
+    fprintf(stderr, "usage: %s <filename>\n", argv[0]);
+    exit(-1);
+  }
+  char *fileName = argv[1];
+  char* infsBuf = new char[HPCIO_RWBufferSz];
+
+  FILE* infs = hpcio_fopen_r(fileName);
+
+  if (!infs) {
+    fprintf(stderr, "%s: error opening trace file %s\n", argv[0], fileName);
   }
 
-  // INVARIANT: 'size' > 0; 'buffer' is non-empty; 'context' is non-NULL
-  if ( !(size > 0 && buffer && context) ) {
-    return -1; // error
+  ret = setvbuf(infs, infsBuf, _IOFBF, HPCIO_RWBufferSz);
+
+  if (ret != 0) {
+    fprintf(stderr, "%s: setvbuf failed\n", argv[0]);
+    exit(-1);
   }
 
-  hpcrun_unw_init();
+  hpctrace_fmt_hdr_t hdr;
 
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
+  ret = hpctrace_fmt_hdr_fread(&hdr, infs);
 
-  int my_size = 0;
-  while (my_size < size) {
-    int ret;
+  if (ret != HPCFMT_OK) {
+    fprintf(stderr, "%s: unable to read header for %s\n", argv[0], fileName);
+    exit(-1);
+  }
 
-    void *ip = 0;
-    ret = hpcrun_unw_get_ip_reg(&cursor, &ip);
-    if (ret < 0) { /* ignore error */ }
+  // read and dump trace records until EOF 
+  while ( !feof(infs) ) {
+    hpctrace_fmt_datum_t datum;
 
-    buffer[my_size] = ip; // my_size < size
-    my_size++;
+    ret = hpctrace_fmt_datum_fread(&datum, hdr.flags, infs);
 
-    ret = hpcrun_unw_step(&cursor);
-    if (ret <= 0) {
-      // N.B. (ret < 0) indicates an unwind error, which we ignore
+    if (ret == HPCFMT_EOF) {
       break;
     }
-  }
-  
-  return my_size;
-}
-#endif
+    else if (ret == HPCFMT_ERR) {
+      fprintf(stderr, "%s: error reading trace file %s\n", argv[0], fileName);
+      exit(-1);
+    }
 
-
-#if (HPC_UNW_LITE)
-static int
-test_backtrace_lite(ucontext_t* context)
-{
-  const int bufsz = 100;
-
-  void* buffer[bufsz];
-  int sz = hpcrun_backtrace_lite(buffer, bufsz, context);
-
-  for (int i = 0; i < sz; ++i) {
-    TMSG(UNW, "backtrace_lite: pc=%p", buffer[i]);
+    printf("%d\n", datum.cpId);
   }
 
-  return sz;
+  hpcio_fclose(infs);
+
+  delete[] infsBuf;
+
+  return 0;
 }
-#endif
-
-
-//***************************************************************************
-// 
-//***************************************************************************

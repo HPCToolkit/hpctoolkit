@@ -654,14 +654,6 @@ OPT_CUDA_IFLAGS
 OPT_CUDA
 OPT_ENABLE_CUDA_FALSE
 OPT_ENABLE_CUDA_TRUE
-OPT_UPC_LDFLAGS
-OPT_UPC_IFLAGS
-OPT_ENABLE_UPC_FALSE
-OPT_ENABLE_UPC_TRUE
-OPT_BGQ_BACKEND_FALSE
-OPT_BGQ_BACKEND_TRUE
-hpcrun_use_bgq_backend
-ppc64_bgq_avail
 hpclink_extra_wrap_names
 OPT_ENABLE_LUSH_PTHREADS_FALSE
 OPT_ENABLE_LUSH_PTHREADS_TRUE
@@ -805,6 +797,12 @@ wordsize_cflag
 CXX_PATH
 CC_PATH
 hpc_ext_libs_dir
+OPT_UPC_LDFLAGS
+OPT_UPC_IFLAGS
+OPT_ENABLE_UPC_FALSE
+OPT_ENABLE_UPC_TRUE
+OPT_BGQ_BACKEND_FALSE
+OPT_BGQ_BACKEND_TRUE
 HOST_XPROF_LDFLAGS
 HOST_HPCPROFTT_LDFLAGS
 HOST_HPCPROF_FLAT_LDFLAGS
@@ -993,6 +991,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_endian
+enable_bgq
 with_dummy_blank_line
 with_externals
 with_binutils
@@ -1029,10 +1028,6 @@ enable_lush
 with_cilk
 enable_lush_pthreads
 enable_xop
-enable_bluegene
-enable_bgq_cnk
-with_upc
-with_upc_lib
 with_cuda
 with_cuda_include
 with_cuda_lib
@@ -1704,6 +1699,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-endian         host endianness (big, little), only needed if
                           autoconf fails to detect correctly
+  --enable-bgq            configure for blue gene/q back end, disable posix
+                          timers and perf events (default auto-detect)
   --enable-libunwind-primary
                           use libunwind as primary unwinder for hpcrun
                           (default no)
@@ -1733,9 +1730,6 @@ Optional Features:
   --enable-lush-pthreads  enable lush pthreads (temp)
   --enable-xop            include support for decoding AMD XOP instructions,
                           x86-64 only (default no)
-  --enable-bluegene       Enable BlueGene/P support
-  --enable-bgq-cnk        enable BGQ- and cnk-specific options: build parts of
-                          hpcrun with back-end powerpc64-bgq-linux-gcc
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-devtools       Build development tools (enable debugging)
@@ -1775,9 +1769,6 @@ Optional Packages:
   --with-xerces=PATH      use given XercesC installation
   --with-zlib=PATH        path to zlib install directory
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
-  --with-upc=PATH         path to IBM BlueGene UPC installation
-  --with-upc-lib=LIBRARY  path to UPC library(s), absolute or relative to
-                          WITH_UPC/runtime/SPI
   --with-cuda=PATH        use given CUDA installation (absolute path) with
                           hpcrun (default is NO)
   --with-cuda-include=PATH
@@ -19055,6 +19046,108 @@ $as_echo "$as_me: *** INFO: post hpc tests: MPICXX='${MPICXX}' ***" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: MPIF77='${MPIF77}' ***" >&5
 $as_echo "$as_me: *** INFO: post hpc tests: MPIF77='${MPIF77}' ***" >&6;}
 
+
+#-------------------------------------------------
+# Option: --enable-bgq
+#-------------------------------------------------
+
+# Option to select blue gene front or back end.  Default is for back
+# end if system is powerpc and looks like blue gene.
+#
+# Some things (POSIX timers and perf events) won't run on the blue
+# gene back end, but this is hard to test for on the front end.
+
+bgq_explicit=no
+
+# Check whether --enable-bgq was given.
+if test "${enable_bgq+set}" = set; then :
+  enableval=$enable_bgq; bgq_explicit=yes
+else
+  enable_bgq=check
+fi
+
+
+# Treat this as blue gene if powerpc and /bgsys/drivers exists, or
+# else if explicitly set.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for blue gene/q back end" >&5
+$as_echo_n "checking for blue gene/q back end... " >&6; }
+
+case "$host_cpu" in
+  *power* | *ppc* )
+    case "$enable_bgq" in
+      yes | no )
+        ;;
+      * )
+        if test -d /bgsys/drivers ; then enable_bgq=yes
+	else enable_bgq=no
+        fi
+        ;;
+    esac
+    ;;
+  * )
+    enable_bgq=no
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_bgq" >&5
+$as_echo "$enable_bgq" >&6; }
+
+blue_gene_back_end=no
+host_extra_mesg=
+warn_bgq_backend=no
+
+if test "$enable_bgq" = yes ; then
+  blue_gene_back_end=yes
+  host_extra_mesg='(bgq back end)'
+
+  if test "$bgq_explicit" != yes ; then
+    warn_bgq_backend=yes
+  fi
+fi
+
+# Old --enable-bluegene option.  This is still used in itimer.c for
+# how we treat WALLCLOCK.
+
+if test "$blue_gene_back_end" = yes ; then
+
+$as_echo "#define HOST_SYSTEM_IBM_BLUEGENE 1" >>confdefs.h
+
+fi
+
+# Old --enable-bgq-cnk option.  This provides get_hw_tid() and
+# Kernel_ProcessorID(), but nothing uses it now.  If you want to
+# turn it back on, then fix the hard-coded paths in
+# hpcrun/utilities/bgq-cnk and do a proper config test.
+
+ if false; then
+  OPT_BGQ_BACKEND_TRUE=
+  OPT_BGQ_BACKEND_FALSE='#'
+else
+  OPT_BGQ_BACKEND_TRUE='#'
+  OPT_BGQ_BACKEND_FALSE=
+fi
+
+
+# Old --with-upc and --with-upc-lib options.  These only applied to
+# blue gene/p which we no longer support.
+
+ if false; then
+  OPT_ENABLE_UPC_TRUE=
+  OPT_ENABLE_UPC_FALSE='#'
+else
+  OPT_ENABLE_UPC_TRUE='#'
+  OPT_ENABLE_UPC_FALSE=
+fi
+
+
+OPT_UPC_IFLAGS=
+OPT_UPC_LDFLAGS=
+
+
+
+
+
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
 #----------------------------------------------------------------------------
@@ -20474,6 +20567,11 @@ then
   perfmon_mesg="(from papi) $OPT_PAPI"
   perfmon_is_from_papi=yes
 
+elif test "$blue_gene_back_end" = yes ; then
+  # disable separate perfmon for blue gene
+  PERFMON=no
+  perfmon_mesg='no (disabled for blue gene)'
+
 elif test "xperfmon_withval" != x && valid_perfmon_dir "$perfmon_withval"
 then
   # if --with-perfmon is set and works, use that
@@ -20598,6 +20696,15 @@ $as_echo "$perf_event_mesg" >&6; }
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID}" >&5
 $as_echo "$as_me: perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID}" >&6;}
+
+# Perf events won't run and throws an illegal instruction on blue gene
+# back end.
+if test "$blue_gene_back_end" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: disable perf events for blue gene back end" >&5
+$as_echo "$as_me: disable perf events for blue gene back end" >&6;}
+  perf_event=no
+  perf_event_mesg='no (disabled for blue gene)'
+fi
 
 # Perf events doesn't exactly require perfmon, but if not available,
 # then mnemonic names won't work.
@@ -22154,6 +22261,14 @@ rm -f core conftest.err conftest.$ac_objext \
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
 $as_echo "$ans" >&6; }
 
+# The POSIX timers pass this test on blue gene, but they don't work on
+# the back end.
+if test "$blue_gene_back_end" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: disable POSIX timers for blue gene back end" >&5
+$as_echo "$as_me: disable POSIX timers for blue gene back end" >&6;}
+  ans=no
+fi
+
 # If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
 if test "$ans" = yes ; then
@@ -22199,218 +22314,6 @@ ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-
-#-------------------------------------------------
-# enable-bluegene: BG/* support
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable IBM BlueGene/P support" >&5
-$as_echo_n "checking whether to enable IBM BlueGene/P support... " >&6; }
-
-OPT_ENABLE_IBM_BLUEGENE="no"
-
-# Check whether --enable-bluegene was given.
-if test "${enable_bluegene+set}" = set; then :
-  enableval=$enable_bluegene; case "${enableval}" in
-     yes) OPT_ENABLE_IBM_BLUEGENE="yes" ;;
-     no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
-     *) as_fn_error $? "bad value ${enableval} for --enable-bluegene" "$LINENO" 5 ;;
-   esac
-else
-  if test "$HOST_CPU_PPC" = yes && test -d /bgsys ; then
-     OPT_ENABLE_IBM_BLUEGENE=yes
-   fi
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_IBM_BLUEGENE}" >&5
-$as_echo "${OPT_ENABLE_IBM_BLUEGENE}" >&6; }
-
-if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
-
-$as_echo "#define HOST_SYSTEM_IBM_BLUEGENE 1" >>confdefs.h
-
-fi
-
-#-------------------------------------------------
-# Option: --enable-bgq-cnk=PATH
-#-------------------------------------------------
-#
-# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
-#
-enable_bgq=no
-# Check whether --enable-bgq-cnk was given.
-if test "${enable_bgq_cnk+set}" = set; then :
-  enableval=$enable_bgq_cnk; enable_bgq="yes"
-fi
-
-
-# Search for the back-end BGQ compiler on PATH and test for Blue
-# Gene/P (suppress the warning on P).
-
-ppc64_bgq_avail=
-if test -d /bgsys ; then
-    # Extract the first word of "powerpc64-bgq-linux-gcc", so it can be a program name with args.
-set dummy powerpc64-bgq-linux-gcc; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_prog_ppc64_bgq_avail+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -n "$ppc64_bgq_avail"; then
-  ac_cv_prog_ppc64_bgq_avail="$ppc64_bgq_avail" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_ppc64_bgq_avail="yes"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  test -z "$ac_cv_prog_ppc64_bgq_avail" && ac_cv_prog_ppc64_bgq_avail="no"
-fi
-fi
-ppc64_bgq_avail=$ac_cv_prog_ppc64_bgq_avail
-if test -n "$ppc64_bgq_avail"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ppc64_bgq_avail" >&5
-$as_echo "$ppc64_bgq_avail" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-else
-    ppc64_bgq_avail=no
-fi
-
-hpcrun_use_bgq_backend=no
-warn_bgq_backend=no
-
-case "$enable_bgq" in
-    yes )
-	if test "$ppc64_bgq_avail" != yes ; then
-	    as_fn_error $? "unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk" "$LINENO" 5
-	fi
-	hpcrun_use_bgq_backend=yes
-	;;
-    no ) ;;
-    * )  ;;
-esac
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpcrun_use_bgq_backend" >&5
-$as_echo "$hpcrun_use_bgq_backend" >&6; }
- if test "$hpcrun_use_bgq_backend" = "yes"; then
-  OPT_BGQ_BACKEND_TRUE=
-  OPT_BGQ_BACKEND_FALSE='#'
-else
-  OPT_BGQ_BACKEND_TRUE='#'
-  OPT_BGQ_BACKEND_FALSE=
-fi
-
-
-#-------------------------------------------------
-# Option: --with-upc=PATH
-#-------------------------------------------------
-
-# The IBM BlueGene UPC sampling source, for which we need header and
-# library files.  On intrepid, these files are in:
-#   inc: /bgsys/drivers/ppcfloor/arch/include/spi
-#   lib: /bgsys/drivers/ppcfloor/runtime/SPI
-#
-# The --with-upc path is just the least common ancestor of these two
-# directories. but we may need to generalize this to --with-upc-inc
-# and --with-upc-lib.
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for UPC" >&5
-$as_echo_n "checking for UPC... " >&6; }
-
-
-# Check whether --with-upc was given.
-if test "${with_upc+set}" = set; then :
-  withval=$with_upc; error_if_missing=yes
-else
-  if test "$OPT_ENABLE_IBM_BLUEGENE" = yes ; then
-     with_upc=/bgsys/drivers/ppcfloor
-   else
-     with_upc=no
-   fi
-   error_if_missing=no
-fi
-
-
-
-# Check whether --with-upc-lib was given.
-if test "${with_upc_lib+set}" = set; then :
-  withval=$with_upc_lib;
-else
-  with_upc_lib=libSPI.cna.a
-fi
-
-
-OPT_UPC=no
-OPT_UPC_IFLAGS=
-OPT_UPC_LDFLAGS=
-opt_upc_mesg=no
-
-case "${with_upc}" in
-  /* )
-    if test -f "${with_upc}/arch/include/spi/UPC.h"
-    then
-      OPT_UPC=yes
-      OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
-      opt_upc_mesg="$with_upc"
-      for lib in $with_upc_lib ; do
-	case "$lib" in
-	  /* ) abs_lib="$lib" ;;
-	  * )  abs_lib="${with_upc}/runtime/SPI/${lib}" ;;
-	esac
-	if test -f "$abs_lib" ; then
-	  OPT_UPC_LDFLAGS="${OPT_UPC_LDFLAGS} ${abs_lib}"
-	else
-	  OPT_UPC=no
-	  opt_upc_mesg=no
-	  if test "$error_if_missing" = yes ; then
-	    as_fn_error $? "invalid UPC directory: $with_upc" "$LINENO" 5
-	  fi
-	fi
-      done
-    else
-      if test "$error_if_missing" = yes ; then
-	as_fn_error $? "invalid UPC directory: $with_upc" "$LINENO" 5
-      fi
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    as_fn_error $? "UPC directory must be absolute path: $with_upc" "$LINENO" 5
-    ;;
-esac
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $opt_upc_mesg" >&5
-$as_echo "$opt_upc_mesg" >&6; }
-
- if test "$OPT_UPC" = yes; then
-  OPT_ENABLE_UPC_TRUE=
-  OPT_ENABLE_UPC_FALSE='#'
-else
-  OPT_ENABLE_UPC_TRUE='#'
-  OPT_ENABLE_UPC_FALSE=
-fi
-
-
 
 
 
@@ -22755,7 +22658,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -22980,6 +22883,14 @@ if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
   as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_BGQ_BACKEND_TRUE}" && test -z "${OPT_BGQ_BACKEND_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_BGQ_BACKEND\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_HAVE_BINUTILS_IA64_TRUE}" && test -z "${OPT_HAVE_BINUTILS_IA64_FALSE}"; then
   as_fn_error $? "conditional \"OPT_HAVE_BINUTILS_IA64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23098,14 +23009,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_PTHREADS_TRUE}" && test -z "${OPT_ENABLE_LUSH_PTHREADS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_BGQ_BACKEND_TRUE}" && test -z "${OPT_BGQ_BACKEND_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_BGQ_BACKEND\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then
@@ -24118,6 +24021,7 @@ do
     "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
     "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
+    "src/tool/hpctracedump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpctracedump/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
     "src/tool/xprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/xprof/Makefile" ;;
     "src/lib/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/Makefile" ;;
@@ -25646,8 +25550,8 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   prefix: $prefix" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   build:  $build" >&5
 $as_echo "$as_me:   build:  $build" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   host:   $host" >&5
-$as_echo "$as_me:   host:   $host" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   host:   ${host} ${host_extra_mesg}" >&5
+$as_echo "$as_me:   host:   ${host} ${host_extra_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   host endian: $host_endian" >&5
 $as_echo "$as_me:   host endian: $host_endian" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
@@ -25746,8 +25650,6 @@ $as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   upc (BG/P):   ${opt_upc_mesg}" >&5
-$as_echo "$as_me:   upc (BG/P):   ${opt_upc_mesg}" >&6;}
 
 if test "x$OA" != xno ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: open analysis is deprecated and no longer used" >&5
@@ -25768,14 +25670,14 @@ $as_echo "$as_me: WARNING: from your environment and rerun configure." >&2;}
 fi
 
 if test "$warn_bgq_backend" = yes ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&5
-$as_echo "$as_me: WARNING: On the Blue Gene/Q compute nodes, hpcrun needs a separate," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&5
-$as_echo "$as_me: WARNING: back-end compiler.  Use --enable-bgq to build for the back end," >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: or else --disable-bgq to build for the front end." >&5
-$as_echo "$as_me: WARNING: or else --disable-bgq to build for the front end." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: Note: HPCToolkit is configured for Blue Gene/Q back end." >&5
+$as_echo "$as_me: Note: HPCToolkit is configured for Blue Gene/Q back end." >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: If you wanted to build for the front end (regular powerpc)," >&5
+$as_echo "$as_me: If you wanted to build for the front end (regular powerpc)," >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: then re-run configure with '--disable-bgq'." >&5
+$as_echo "$as_me: then re-run configure with '--disable-bgq'." >&6;}
 fi
 
 if test "$warn_papi_mismatch" = yes ; then
@@ -25783,8 +25685,10 @@ if test "$warn_papi_mismatch" = yes ; then
 $as_echo "$as_me: " >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: PAPI is disabled due to possible conflict between perf events" >&5
 $as_echo "$as_me: WARNING: PAPI is disabled due to possible conflict between perf events" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: and papi versions of perfmon.  Possible solutions:" >&5
-$as_echo "$as_me: WARNING: and papi versions of perfmon.  Possible solutions:" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: and papi versions of perfmon (normally pfmlib.h is missing" >&5
+$as_echo "$as_me: WARNING: and papi versions of perfmon (normally pfmlib.h is missing" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: from papi include dir).  Possible solutions:" >&5
+$as_echo "$as_me: WARNING: from papi include dir).  Possible solutions:" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:  1. disable papi with:  --without-papi" >&5
 $as_echo "$as_me: WARNING:  1. disable papi with:  --without-papi" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:  2. disable perf events with:  --disable-perf-events" >&5

@@ -73,10 +73,11 @@
 #include <ostream>
 #include <string>
 
-#include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
+
 #include <lib/xml/xml.hpp>
 
 #include "Struct-Inline.hpp"
@@ -85,8 +86,6 @@
 
 #define INDENT  "  "
 #define INIT_LM_INDEX  2
-
-#define GUARD_NAME  "<inline>"
 
 using namespace Inline;
 using namespace std;
@@ -497,7 +496,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
   for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
     FLPIndex flp = nit->first;
     TreeNode * subtree = nit->second;
-    string callname = BinUtil::demangleProcName(strTab.index2str(flp.proc_index));
+    string callname = strTab.index2str(flp.pretty_index);
     ScopeInfo subscope(0, 0);
 
     locateTree(subtree, subscope, strTab);
@@ -677,8 +676,8 @@ found_file:
 	&& flp.line_num < scope.line_num) {
       scope.line_num = flp.line_num;
     }
-  }	
- 
+  }
+
   for (auto lit = node->loopList.begin(); lit != node->loopList.end(); ++lit) {
     LoopInfo * linfo = *lit;
 

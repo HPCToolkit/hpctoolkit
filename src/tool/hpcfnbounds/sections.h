@@ -44,95 +44,13 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef __section_h__
+#define __section_h__
 
-//***************************************************************************
-// system include files
-//***************************************************************************
+extern const char *SECTION_SYMTAB;
+extern const char *SECTION_INIT;
+extern const char *SECTION_FINI;
+extern const char *SECTION_PLT;
+extern const char *SECTION_TEXT;
 
-#include <stdbool.h>
-
-#include <sys/types.h>
-#include <ucontext.h>
-
-
-//***************************************************************************
-// local include files
-//***************************************************************************
-
-#include "unwind.h"
-
-#include "backtrace.h"
-#include "epoch.h"
-#include "monitor.h"
-#include "sample_event.h"
-
-#include <messages/messages.h>
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-
-#if (HPC_UNW_LITE)
-static int 
-hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
-{
-  // special trivial case: size == 0 (N.B.: permit size < 0)
-  if (size <= 0) {
-    return 0;
-  }
-
-  // INVARIANT: 'size' > 0; 'buffer' is non-empty; 'context' is non-NULL
-  if ( !(size > 0 && buffer && context) ) {
-    return -1; // error
-  }
-
-  hpcrun_unw_init();
-
-  hpcrun_unw_cursor_t cursor;
-  hpcrun_unw_init_cursor(&cursor, context);
-
-  int my_size = 0;
-  while (my_size < size) {
-    int ret;
-
-    void *ip = 0;
-    ret = hpcrun_unw_get_ip_reg(&cursor, &ip);
-    if (ret < 0) { /* ignore error */ }
-
-    buffer[my_size] = ip; // my_size < size
-    my_size++;
-
-    ret = hpcrun_unw_step(&cursor);
-    if (ret <= 0) {
-      // N.B. (ret < 0) indicates an unwind error, which we ignore
-      break;
-    }
-  }
-  
-  return my_size;
-}
 #endif
-
-
-#if (HPC_UNW_LITE)
-static int
-test_backtrace_lite(ucontext_t* context)
-{
-  const int bufsz = 100;
-
-  void* buffer[bufsz];
-  int sz = hpcrun_backtrace_lite(buffer, bufsz, context);
-
-  for (int i = 0; i < sz; ++i) {
-    TMSG(UNW, "backtrace_lite: pc=%p", buffer[i]);
-  }
-
-  return sz;
-}
-#endif
-
-
-//***************************************************************************
-// 
-//***************************************************************************
