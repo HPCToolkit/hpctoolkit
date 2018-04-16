@@ -360,9 +360,9 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   // it returns -1 if it fails.
   et->fd = perf_util_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
-    event->id, et->fd, event->attr.precise_ip, event->attr.config,
-	event->attr.type, event->attr.sample_freq, event->attr.freq);
+  TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
+        et->fd, event->attr.precise_ip, event->attr.config,
+        event->attr.type, event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {

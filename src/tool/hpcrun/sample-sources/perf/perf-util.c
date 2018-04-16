@@ -302,12 +302,6 @@ getEnvLong(const char *env_var, long default_value)
 static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
-  static int precise_ip = -1;
-
-  // check if already computed
-  if (precise_ip >= 0)
-    return precise_ip;
-
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
   if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
@@ -320,8 +314,7 @@ get_precise_ip(struct perf_event_attr *attr)
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
-      precise_ip = val;
-      return precise_ip;
+      return val;
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
@@ -341,13 +334,11 @@ get_precise_ip(struct perf_event_attr *attr)
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
       close(ret);
-      precise_ip = i;
       // just quit when the returned value is correct
       return i;
     }
   }
-  precise_ip = 0;
-  return precise_ip;
+  return 0;
 }
 
 
@@ -499,6 +490,9 @@ perf_util_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
+  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
+                                              as precise as possible or  on the user's variable.  */
+
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
   int max_sample_rate = perf_util_get_max_sample_rate();
 
@@ -529,8 +523,6 @@ perf_util_attr_init(
     attr->exclude_kernel           = INCLUDE;
   }
 
-  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
   return true;
 }
 
