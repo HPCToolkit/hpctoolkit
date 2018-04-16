@@ -79,9 +79,7 @@
 #include "ompt-callstack.h"
 #include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
-#include "ompt-region-map.h"
 #include "ompt-device-map.h"
-#include "ompt-target-map.h"
 
 
 #define HAVE_CUDA_H 1
@@ -90,9 +88,8 @@
 #include "sample-sources/nvidia/nvidia.h"
 #include "sample-sources/nvidia/cubin-id-map.h"
 #include "sample-sources/nvidia/cubin-symbols.h"
-#include "sample-sources/nvidia/cupti-ompt-api.h"
-#include "sample-sources/nvidia/cupti-activity-queue.h"
-#include "sample-sources/nvidia/cupti-host-op-map.h"
+#include "sample-sources/nvidia/cupti-api.h"
+#include "sample-sources/nvidia/cupti-record.h"
 #endif
 
 #include "sample-sources/sample-filters.h"
@@ -164,9 +161,8 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //    nested marking.
 //-----------------------------------------
 static __thread int ompt_idle_count;
-static __thread int ompt_host_op_seq_id;
-static __thread bool ompt_stop_flag = false;
 static __thread ompt_device_t *ompt_device = NULL;
+static __thread cct_node_t *target_node = NULL;
 
 
 /******************************************************************************
@@ -738,22 +734,6 @@ ompt_idle_blame_shift_request()
   ompt_register_idle_metrics();
 }
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-//--------------------------------------------------------------------------
-// Records the (target id cct_node *) mapping in a thread local variable
-//--------------------------------------------------------------------------
-void
-hpcrun_op_id_map_record_target(ompt_id_t target_id,
-                               cct_node_t *node,
-                               uint64_t device_id)
-{
-  assert(target_id != 0);
-  ompt_region_map_insert((uint64_t) target_id, node, device_id);
-}
-
 
 //--------------------------------------------------------------------------
 // Adds an (opid, cct_node_t *) entry to the concurrent map by finding
@@ -764,47 +744,11 @@ hpcrun_op_id_map_record_target(ompt_id_t target_id,
 //--------------------------------------------------------------------------
 void
 hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
-                             ompt_id_t target_id,
                              ip_normalized_t ip)
 {
-  ompt_region_map_entry_t *entry = ompt_region_map_lookup(target_id);
-  if (entry != NULL) {
-    PRINT("target id %lu is not null for host_op_id %lu\n", target_id, host_op_id);
-    cct_node_t *cct_node = ompt_region_map_entry_callpath_get(entry);
-    cct_node_t *cct_child = NULL;
-    if ((cct_child = ompt_target_map_seq_lookup(cct_node, ompt_host_op_seq_id)) == NULL) {
-      cct_addr_t frm = { .ip_norm = ip };
-      cct_child = hpcrun_cct_insert_addr(cct_node, &frm);
-      ompt_target_map_child_insert(cct_node, cct_child);
-    }
-    // TODO(keren): generalization, replace cupti with sth. called device_map
-    cupti_host_op_map_insert(host_op_id, ompt_host_op_seq_id, cct_node, NULL);
-    ompt_host_op_seq_id++;
-  } else {
-    PRINT("target id %lu is null for host_op_id %lu\n", target_id, host_op_id);
-  }
-}
-
-
-//--------------------------------------------------------------------------
-// Look up the cct node associated with host_op_id in a map.
-// The map is mutable concurrent data structure. the GPU thread all CPU threads share it
-// this function will provide the pointer to the CCT node that represents the
-// context for the target region. For now, this cct_node_t * will be in the thread CCT.
-// Eventually, this function might return a pointer to a separate CCT that will be used by a device
-//--------------------------------------------------------------------------
-// TODO(keren): directly link to the target node
-cct_node_t *
-hpcrun_ompt_op_id_map_lookup(ompt_id_t host_op_id)
-{
-  cupti_host_op_map_entry_t *entry = cupti_host_op_map_lookup(host_op_id);
-  cct_node_t *node = NULL;
-  if (entry != NULL) {
-    cct_node_t *callpath = cupti_host_op_map_entry_target_node_get(entry);
-    uint64_t host_op_seq_id = cupti_host_op_map_entry_seq_id_get(entry);
-    node = ompt_target_map_seq_lookup(callpath, host_op_seq_id);
-  }
-  return node;
+  cct_addr_t frm = { .ip_norm = ip };
+  cct_node_t *cct_child = hpcrun_cct_insert_addr(target_node, &frm);
+  cupti_worker_notification_apply(host_op_id, cct_child);
 }
 
 
@@ -844,21 +788,6 @@ ompt_bind_names(ompt_function_lookup_t lookup)
 }
 
 
-void
-hpcrun_ompt_device_finalizer(void *args)
-{
-  if (ompt_stop_flag) {
-    cupti_ompt_activity_flush();
-    ompt_stop_flag = false;
-    // TODO(keren): replace cupti with sth. called device queue
-    cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
-    cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
-    cupti_activity_queue_splice(worker_queue, cupti_queue);
-    cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
-  }
-}
-
-
 #define BUFFER_SIZE (1024 * 1024 * 8)
 
 void 
@@ -879,14 +808,16 @@ ompt_callback_buffer_complete(uint64_t device_id,
                               ompt_buffer_cursor_t begin,
                               int buffer_owned)
 {
+  // handle notifications
+  cupti_cupti_notification_apply(cupti_notification_handle);
   // signal advance to return pointer to first record
   ompt_buffer_cursor_t next = begin;
   int status = 0;
   do {
     // TODO(keren): replace cupti_activity_handle with device_activity handle
     CUpti_Activity *activity = (CUpti_Activity *)next;
-    cupti_ompt_activity_process(activity);
-    status = cupti_ompt_buffer_cursor_advance(buffer, bytes, (CUpti_Activity *)next, (CUpti_Activity **)&next);
+    cupti_activity_process(activity);
+    status = cupti_buffer_cursor_advance(buffer, bytes, (CUpti_Activity **)&next);
   } while(status);
 }
 
@@ -977,16 +908,13 @@ ompt_target_callback(ompt_target_type_t kind,
                      const void *codeptr_ra)
 {
   PRINT("target_id %d callback\n", target_id);
-  ompt_stop_flag = true;
-  ompt_device_map_entry_t *entry = ompt_device_map_lookup(device_num);
-  ompt_device = ompt_device_map_entry_device_get(entry);
-  ompt_host_op_seq_id = 0;
+  // If a thread creates a target region, we init records
+  // and it must be flushed in the finalizer
+  cupti_record_init();
+  cupti_stop_flag_set();
 
   // process cupti records
-  cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
-  cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
-  cupti_activity_queue_splice(worker_queue, cupti_queue);
-  cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
+  cupti_worker_activity_apply(cupti_activity_handle);
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
@@ -997,14 +925,10 @@ ompt_target_callback(ompt_target_type_t kind,
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
   
-  cct_node_t *node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
-  if (ompt_target_map_lookup(node) == NULL) {
-    ompt_target_map_insert(node);
-  }
+  target_node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
 
   hpcrun_safe_exit();
   td->overhead--;
-  hpcrun_op_id_map_record_target(target_id, node, device_num);
 }
 
 #define FOREACH_OMPT_DATA_OP(macro)                                        \
@@ -1035,7 +959,7 @@ ompt_data_op_callback(ompt_id_t target_id,
       break;
   }
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
-  hpcrun_ompt_op_id_map_insert(host_op_id, target_id, ip);
+  hpcrun_ompt_op_id_map_insert(host_op_id, ip);
 }
 
 
@@ -1044,7 +968,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
-  hpcrun_ompt_op_id_map_insert(host_op_id, target_id, ip);
+  hpcrun_ompt_op_id_map_insert(host_op_id, ip);
 }
 
 
@@ -1064,7 +988,7 @@ ompt_map_callback(ompt_id_t target_id,
 void
 prepare_device()
 {
-  device_finalizer.fn = hpcrun_ompt_device_finalizer;
+  device_finalizer.fn = cupti_device_flush;
   device_finalizer_register(device_finalizer_type_flush, &device_finalizer);
 
   kind_info_t *ompt_target_kind = hpcrun_metrics_new_kind();

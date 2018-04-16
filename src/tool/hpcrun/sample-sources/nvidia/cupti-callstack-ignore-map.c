@@ -14,7 +14,7 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "cupti-activity-api.h"
+#include "cupti-api.h"
 #include "cupti-callstack-ignore-map.h"
 
 
