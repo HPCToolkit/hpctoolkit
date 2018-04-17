@@ -1,4 +1,5 @@
 #include <lib/prof-lean/stdatomic.h>
+#include <cupti_version.h>
 
 #include "cupti-stack.h"
 #include "cupti-node.h"

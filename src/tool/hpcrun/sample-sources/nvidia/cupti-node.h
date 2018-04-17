@@ -17,9 +17,43 @@ typedef struct cupti_node {
   cupti_entry_type_t type;
 } cupti_node_t;
 
+// pc sampling
+typedef struct cupti_pc_sampling {
+  uint32_t samples;
+  uint32_t latencySamples;
+  CUpti_ActivityPCSamplingStallReason stallReason;
+} cupti_pc_sampling_t;
+
+// memory
+typedef struct cupti_memcpy {
+  uint64_t start;
+  uint64_t end;
+  uint64_t bytes;
+  uint8_t copyKind;
+} cupti_memcpy_t;
+
+// kernel
+typedef struct cupti_kernel {
+  uint64_t start;
+  uint64_t end;
+  int32_t dynamicSharedMemory;
+  int32_t staticSharedMemory;
+  int32_t localMemoryTotal;
+} cupti_kernel_t;
+
+// generic activity entry
+typedef struct cupti_activity {
+  CUpti_ActivityKind kind;
+  union {
+    cupti_pc_sampling_t pc_sampling;
+    cupti_memcpy_t memcpy;
+    cupti_kernel_t kernel;
+  } data;
+} cupti_activity_t;
+
 // activity entry
 typedef struct cupti_entry_activity {
-  CUpti_Activity *activity;
+  cupti_activity_t activity;
   cct_node_t *cct_node;
 } cupti_entry_activity_t;
 

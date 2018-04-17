@@ -348,73 +348,53 @@ runtime_activities[] = {
 };
 
 void
-cupti_activity_attribute(CUpti_Activity *activity, cct_node_t *cct_node)
+cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 {
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
-#if CUPTI_API_VERSION >= 10
-      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
-#else
-      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
-#endif
-      if (activity_sample->stallReason != 0x7fffffff) {
-        int index = stall_metric_id[activity_sample->stallReason];
+      if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
+        int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->samples});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.samples});
 
-        index = stall_metric_id[activity_sample->stallReason+NUM_CLAUSES(FORALL_STL)];
+        index = stall_metric_id[activity->data.pc_sampling.stallReason+NUM_CLAUSES(FORALL_STL)];
         metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_sample->latencySamples});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->samples});
+        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.samples});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_lat_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i = activity_sample->latencySamples});
+        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
-      CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)activity;
-      if (activity_memcpy->copyKind != 0x7fffffff) {
-        int index = em_metric_id[activity_memcpy->copyKind];
+      if (activity->data.memcpy.copyKind != 0x7fffffff) {
+        int index = em_metric_id[activity->data.memcpy.copyKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity_memcpy->bytes});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
 
         metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
-        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity_memcpy->end - activity_memcpy->start});
-      }
-      break;
-    }
-    case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
-    {
-      CUpti_ActivityUnifiedMemoryCounter *activity_unified = (CUpti_ActivityUnifiedMemoryCounter *)activity;
-      if (activity_unified->counterKind != 0x7fffffff) {
-        int index = im_metric_id[activity_unified->counterKind];
-        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = 1});
-
-        metrics = hpcrun_reify_metric_set(cct_node, im_time_metric_id);
-        hpcrun_metric_std_inc(im_time_metric_id, metrics, (cct_metric_data_t){.i = activity_unified->timestamp});
+        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.memcpy.end - activity->data.memcpy.start});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_KERNEL:
     {
-      CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)activity;
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
-      hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->staticSharedMemory});
+      hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.staticSharedMemory});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_dynamic_shared_metric_id);
-      hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->dynamicSharedMemory});
+      hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.dynamicSharedMemory});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_local_metric_id);
-      hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->localMemoryTotal});
+      hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.localMemoryTotal});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
-      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity_kernel->end - activity_kernel->start});
+      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.end - activity->data.kernel.start});
       break;
     }
     default:

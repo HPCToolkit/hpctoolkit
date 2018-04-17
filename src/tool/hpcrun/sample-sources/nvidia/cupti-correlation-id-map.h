@@ -33,6 +33,8 @@ cupti_correlation_id_map_entry_t *cupti_correlation_id_map_lookup(uint64_t id);
 
 void cupti_correlation_id_map_insert(uint64_t correlation_id, uint64_t external_id);
 
+void cupti_correlation_id_map_delete(uint64_t correlation_id);
+
 uint64_t cupti_correlation_id_map_external_id_replace(uint64_t correlation_id, uint64_t external_id);
 
 bool cupti_correlation_id_map_refcnt_update(uint64_t correlation_id, int val);

@@ -608,7 +608,7 @@ cupti_buffer_completion_callback
   if (dropped != 0) { 
     PRINT("dropped %u activity records\n", (unsigned int) dropped);
   }    
-  //free(buffer);
+  free(buffer);
   PRINT("leave cupti_buffer_completion_callback\n"); 
 }
 
@@ -803,13 +803,14 @@ cupti_sample_process
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
   //PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-  // "samples %u, latencySamples %u\n",
+  // "samples %u, latencySamples %u stall %u\n",
   // sample->sourceLocatorId,
   // sample->functionId,
   // sample->pcOffset,
   // sample->correlationId,
   // sample->samples,
-  // sample->latencySamples);
+  // sample->latencySamples,
+  // sample->stallReason);
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -829,6 +830,7 @@ cupti_sample_process
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
           cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+          PRINT("cupti_sample_process %d\n", sample->stallReason);
           cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
         }
       }
@@ -1201,6 +1203,6 @@ cupti_activity_handle(cupti_node_t *node)
 {
   if (node->type == CUPTI_ENTRY_TYPE_ACTIVITY) {
     cupti_entry_activity_t *activity_entry = (cupti_entry_activity_t *)node->entry;
-    cupti_activity_attribute(activity_entry->activity, activity_entry->cct_node);
+    cupti_activity_attribute(&(activity_entry->activity), activity_entry->cct_node);
   }
 }

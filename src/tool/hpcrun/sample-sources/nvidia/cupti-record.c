@@ -1,5 +1,6 @@
 #include <lib/prof-lean/stdatomic.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include <cupti_version.h>
 #include "cupti-stack.h"
 #include "cupti-record.h"
 
@@ -14,6 +15,7 @@ static __thread cupti_record_t cupti_record = { .worker_notification_stack = NUL
                                                 .cupti_free_activity_stack = NULL };
 static __thread bool cupti_record_initialized = false;
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 void
 cupti_record_init()
@@ -100,6 +102,12 @@ cupti_cupti_notification_apply(cupti_stack_fn_t fn)
 void
 cupti_cupti_activity_apply(CUpti_Activity *activity, cct_node_t *cct_node, cupti_record_t *record)
 {
+#if CUPTI_API_VERSION >= 10
+      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
+#else
+      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
+#endif
+  PRINT("cupti_cupti_activity_apply %d\n", activity_sample->stallReason);
   cupti_stack_t *cupti_activity_stack = &(record->cupti_activity_stack);
   cupti_stack_t *cupti_free_activity_stack = &(record->cupti_free_activity_stack);
   cupti_node_t *node = cupti_stack_pop(cupti_free_activity_stack);

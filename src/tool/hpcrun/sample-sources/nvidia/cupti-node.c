@@ -1,22 +1,62 @@
 #include <lib/prof-lean/stdatomic.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include <cupti_version.h>
 #include <cupti_activity.h>
 #include "cupti-node.h"
+
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 void
 cupti_activity_node_set
 (
  cupti_node_t *cupti_node,
- CUpti_Activity* activity, 
+ CUpti_Activity *activity, 
  cct_node_t *cct_node,
  cct_node_t *next
 )
 {
   cupti_entry_activity_t *entry = (cupti_entry_activity_t *)(cupti_node->entry);
-  entry->activity = activity;
   entry->cct_node = cct_node;
   cupti_node->next = next;
   cupti_node->type = CUPTI_ENTRY_TYPE_ACTIVITY;
+  switch (activity->kind) {
+    case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
+    {
+#if CUPTI_API_VERSION >= 10
+      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
+#else
+      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
+#endif
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING;
+      entry->activity.data.pc_sampling.stallReason = activity_sample->stallReason;
+      entry->activity.data.pc_sampling.samples = activity_sample->samples;
+      entry->activity.data.pc_sampling.latencySamples = activity_sample->latencySamples;
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_MEMCPY:
+    {
+      CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_MEMCPY;
+      entry->activity.data.memcpy.copyKind = activity_memcpy->copyKind;
+      entry->activity.data.memcpy.bytes = activity_memcpy->bytes;
+      entry->activity.data.memcpy.start = activity_memcpy->start;
+      entry->activity.data.memcpy.end = activity_memcpy->end;
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_KERNEL:
+    {
+      CUpti_ActivityKernel4 *activity_kernel = (CUpti_ActivityKernel4 *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_KERNEL;
+      entry->activity.data.kernel.dynamicSharedMemory = activity_kernel->dynamicSharedMemory;
+      entry->activity.data.kernel.staticSharedMemory = activity_kernel->staticSharedMemory;
+      entry->activity.data.kernel.localMemoryTotal = activity_kernel->localMemoryTotal;
+      entry->activity.data.kernel.start = activity_kernel->start;
+      entry->activity.data.kernel.end = activity_kernel->end;
+      break;
+    }
+    default:
+      break;
+  }
 //  TODO(Keren): do not copy activities, we need another memory pool for activity buffer
 }
 
@@ -24,14 +64,19 @@ cupti_activity_node_set
 cupti_node_t *
 cupti_activity_node_new
 (
- CUpti_Activity* activity, 
+ CUpti_Activity *activity, 
  cct_node_t *cct_node,
  cct_node_t *next
 )
 {
   cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
-  cupti_entry_activity_t *entry = (cupti_entry_activity_t *)hpcrun_malloc(sizeof(cupti_entry_activity_t));
-  node->entry = entry;
+  node->entry = (cupti_entry_activity_t *)hpcrun_malloc(sizeof(cupti_entry_activity_t));
+#if CUPTI_API_VERSION >= 10
+      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
+#else
+      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
+#endif
+  PRINT("cupti_activity_node_new %d\n", activity_sample->stallReason);
   cupti_activity_node_set(node, activity, cct_node, next);
   return node;
 }

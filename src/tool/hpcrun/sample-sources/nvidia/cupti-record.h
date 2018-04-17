@@ -2,6 +2,7 @@
 #define _HPCTOOLKIT_CUPTI_RECORD_H_
 
 #include <lib/prof-lean/stdatomic.h>
+#include <cupti_activity.h>
 #include "cupti-stack.h"
 
 // record type
