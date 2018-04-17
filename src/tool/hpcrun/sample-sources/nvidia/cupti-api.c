@@ -802,14 +802,14 @@ cupti_sample_process
 #else
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
-  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-   "samples %u, latencySamples %u\n",
-   sample->sourceLocatorId,
-   sample->functionId,
-   sample->pcOffset,
-   sample->correlationId,
-   sample->samples,
-   sample->latencySamples);
+  //PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+  // "samples %u, latencySamples %u\n",
+  // sample->sourceLocatorId,
+  // sample->functionId,
+  // sample->pcOffset,
+  // sample->correlationId,
+  // sample->samples,
+  // sample->latencySamples);
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -822,7 +822,7 @@ cupti_sample_process
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
       if (host_op_entry != NULL) {
-        if (!cupti_host_op_map_samples_increase(external_id, 1)) {
+        if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
           cupti_correlation_id_map_delete(sample->correlationId);
         }
         cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);

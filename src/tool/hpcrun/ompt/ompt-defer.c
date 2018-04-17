@@ -24,7 +24,7 @@
 #include "ompt-callstack.h"
 
 #include "ompt-interface.h"
-#include "ompt-region-map.h"
+#include "ompt-parallel-region-map.h"
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -113,7 +113,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
-      ompt_region_map_refcnt_update(partial_region_id, 1L);
+      ompt_parallel_region_map_refcnt_update(partial_region_id, 1L);
       TMSG(DEFER_CTXT, "omp_resolve: get partial resolution to 0x%lx\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
@@ -126,7 +126,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
       TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx", my_region_id);
-      ompt_region_map_refcnt_update(my_region_id, -1L);
+      ompt_parallel_region_map_refcnt_update(my_region_id, -1L);
     }
   }
 }
@@ -254,7 +254,7 @@ void resolve_cntxt()
     // the end_team_fn) after the region record is deleted.
     // solution: consider such sample not in openmp region (need no
     // defer cntxt) 
-    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
+    if (ompt_parallel_region_map_refcnt_update(outer_region_id, 1L))
       hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
     else
       outer_region_id = 0;
@@ -274,8 +274,8 @@ void resolve_cntxt()
 #ifdef DEBUG_DEFER
   // debugging code
   if (innermost_region_id) {
-    ompt_region_map_entry_t *record = ompt_region_map_lookup(innermost_region_id);
-    if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
+    ompt_parallel_region_map_entry_t *record = ompt_parallel_region_map_lookup(innermost_region_id);
+    if (!record || (ompt_parallel_region_map_entry_refcnt_get(record) == 0)) {
       EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ", 
 	   innermost_region_id, initial_td_region, td->region_id);
     }
@@ -297,9 +297,9 @@ hpcrun_region_lookup(uint64_t id)
 {
   cct_node_t *result = NULL;
 
-  ompt_region_map_entry_t *record = ompt_region_map_lookup(id);
+  ompt_parallel_region_map_entry_t *record = ompt_parallel_region_map_lookup(id);
   if (record) {
-    result = ompt_region_map_entry_callpath_get(record);
+    result = ompt_parallel_region_map_entry_callpath_get(record);
   }
 
   return result;

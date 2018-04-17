@@ -742,8 +742,8 @@ ompt_idle_blame_shift_request()
 // is recorded multiple times (e.g. in a for or while loop), we accumulate different
 // op nodes together.
 //--------------------------------------------------------------------------
-void
-hpcrun_ompt_op_id_map_insert(ompt_id_t host_op_id,
+static void
+hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,
                              ip_normalized_t ip)
 {
   cct_addr_t frm = { .ip_norm = ip };
@@ -959,7 +959,7 @@ ompt_data_op_callback(ompt_id_t target_id,
       break;
   }
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
-  hpcrun_ompt_op_id_map_insert(host_op_id, ip);
+  hpcrun_ompt_op_id_notify(host_op_id, ip);
 }
 
 
@@ -968,7 +968,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
-  hpcrun_ompt_op_id_map_insert(host_op_id, ip);
+  hpcrun_ompt_op_id_notify(host_op_id, ip);
 }
 
 

@@ -18,6 +18,7 @@
 #include "cupti-host-op-map.h"
 #include "cupti-record.h"
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 /******************************************************************************
  * type definitions 
@@ -160,7 +161,9 @@ cupti_host_op_map_samples_increase(uint64_t host_op_id, int val)
 
   if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == host_op_id) {
     cupti_host_op_map_root->samples += val;
+    PRINT("total %d curr %d\n", cupti_host_op_map_root->total_samples, cupti_host_op_map_root->samples);
     if (cupti_host_op_map_root->samples == cupti_host_op_map_root->total_samples) {
+      PRINT("sample root deleted\n");
       cupti_host_op_map_delete_root();
       result = false;
     }
@@ -180,9 +183,12 @@ cupti_host_op_map_total_samples_update(uint64_t host_op_id, int val)
 
   cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, host_op_id);
 
+  PRINT("cupti_host_op_map_total_samples_update\n");
   if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == host_op_id) {
     cupti_host_op_map_root->total_samples = val;
+    PRINT("total %d curr %d\n", cupti_host_op_map_root->total_samples, cupti_host_op_map_root->samples);
     if (cupti_host_op_map_root->samples == cupti_host_op_map_root->total_samples) {
+      PRINT("sample root deleted\n");
       cupti_host_op_map_delete_root();
       result = false;
     }
