@@ -64,6 +64,7 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <string.h>
 #include <include/uint.h>
 
 #include <map>
@@ -670,6 +671,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
+  bool is_shared = ! (the_symtab->isExec());
 
   // map of code regions to find end of region
   RegionMap codeMap;
@@ -769,6 +771,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	    prettynm = *pretty_it;
 	  }
 	}
+	if (is_shared) {
+	  prettynm += " (" + basename + ")";
+	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
 					sym_func->getFirstSymbol()->getIndex());
@@ -792,6 +797,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	string parse_base = FileUtil::basename(parse_filenm.c_str());
 	stringstream buf;
 	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
+	if (is_shared) {
+	  buf << " (" << basename << ")";
+	}
 
 	linknm = func->name();
 	prettynm = buf.str();
@@ -856,6 +864,22 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       }
       else {
 	end = vma + 20;
+      }
+
+      // treat short parseapi functions with no symtab symbol as a plt
+      // stub.  not an ideal test, but I (krentel) can't find any
+      // counter examples.
+      if (end - vma <= 32) {
+	int len = linknm.length();
+	const char *str = linknm.c_str();
+
+	if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
+	  linknm += "@plt";
+	  prettynm += "@plt";
+	}
+      }
+      if (is_shared) {
+	prettynm += " (" + basename + ")";
       }
 
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
