@@ -804,7 +804,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
-    prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    prop = (strcasestr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun

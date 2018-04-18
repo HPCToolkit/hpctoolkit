@@ -292,6 +292,34 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
+/**
+ * set precise_ip attribute to the max value
+ *
+ * TODO: this method only works on some platforms, and not
+ *       general enough on all the platforms.
+ */
+static void
+set_max_precise_ip(struct perf_event_attr *attr)
+{
+  // start with the most restrict skid (3) then 2, 1 and 0
+  // this is specified in perf_event_open man page
+  // if there's a change in the specification, we need to change
+  // this one too (unfortunately)
+  for(int i=perf_skid_flavors-1; i>=0; i--) {
+	attr->precise_ip = perf_skid_precision[i];
+
+	// ask sys to "create" the event
+	// it returns -1 if it fails.
+	int ret = perf_util_event_open(attr,
+			THREAD_SELF, CPU_ANY,
+			GROUP_FD, PERF_FLAGS);
+	if (ret >= 0) {
+	  close(ret);
+	  // just quit when the returned value is correct
+	  return;
+	}
+  }
+}
 
 //----------------------------------------------------------
 // find the best precise ip value in this platform
@@ -318,27 +346,8 @@ get_precise_ip(struct perf_event_attr *attr)
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
+    set_max_precise_ip(attr);
   }
-#if 0
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-    attr->precise_ip = perf_skid_precision[i];
-
-    // ask sys to "create" the event
-    // it returns -1 if it fails.
-    int ret = perf_util_event_open(attr,
-            THREAD_SELF, CPU_ANY,
-            GROUP_FD, PERF_FLAGS);
-    if (ret >= 0) {
-      close(ret);
-      // just quit when the returned value is correct
-      return i;
-    }
-  }
-#endif
   return 0;
 }
 
