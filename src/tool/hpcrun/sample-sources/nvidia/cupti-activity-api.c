@@ -12,6 +12,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/files.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
 
@@ -25,6 +26,7 @@
 #include "cupti-function-id-map.h"
 #include "cupti-host-op-map.h"
 #include "cupti-callstack-ignore-map.h"
+
 
 //******************************************************************************
 // macros
@@ -42,7 +44,13 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
+#define CUPTI_ACTIVITY_DEBUG 0
+
+#if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 
@@ -566,10 +574,12 @@ cupti_buffer_completion_callback
   CUpti_Activity *record = NULL;
 
   if (validSize > 0) {
+    size_t processed = 0;
     do {
       status = cuptiActivityGetNextRecord(buffer, validSize, &record);
       if (status == CUPTI_SUCCESS) {
         cupti_activity_process(record);
+        processed++; 
       }   
       else if (status == CUPTI_ERROR_MAX_LIMIT_REACHED)
         break;
@@ -577,12 +587,13 @@ cupti_buffer_completion_callback
         exit(-1);
       }   
     } while (true);
+    hpcrun_stats_acc_trace_records_add(processed);
 
     // report any records dropped from the queue
-    size_t dropped;
+    size_t dropped = 0;
     cupti_num_dropped_records_get(ctx, streamId, &dropped);
     if (dropped != 0) {
-      printf("Dropped %u activity records\n", (unsigned int) dropped);
+      hpcrun_stats_acc_trace_records_dropped_add(dropped);
     }   
   }
 }
@@ -785,6 +796,7 @@ cupti_sample_process
    sample->correlationId,
    sample->samples,
    sample->latencySamples);
+
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -848,6 +860,9 @@ cupti_sampling_record_info_process
    sri->correlationId,
    (unsigned long long)sri->totalSamples,
    (unsigned long long)sri->droppedSamples);
+
+  hpcrun_stats_acc_samples_add(sri->totalSamples);
+  hpcrun_stats_acc_samples_dropped_add(sri->droppedSamples);
 }
 
 
@@ -1101,22 +1116,22 @@ cupti_lm_contains_fn(const char *lm, const char *fn)
   char resolved_path[PATH_MAX];
 
   char *lm_real = realpath(lm, resolved_path);
-  //printf("query path = %s\n", lm_real);
-  //printf("query fn = %s\n", fn);
+  PRINT("query path = %s\n", lm_real);
+  PRINT("query fn = %s\n", fn);
   void *handle = dlopen(lm_real, RTLD_LAZY);
-  //printf("handle = %p\n", handle);
+  PRINT("handle = %p\n", handle);
   if (handle) {
     void *fp = dlsym(handle, fn);
-    printf("fp = %p\n", fp);
+    PRINT("fp = %p\n", fp);
     if (fp) {
       Dl_info dlinfo;
       int res = dladdr(fp, &dlinfo);
       if (res) {
         char dli_fname_buf[PATH_MAX];
-        //printf("original path = %s\n", dlinfo.dli_fname);
+        PRINT("original path = %s\n", dlinfo.dli_fname);
         char *dli_fname = realpath(dlinfo.dli_fname, dli_fname_buf);
-        //printf("found path = %s\n", dli_fname);
-        //printf("symbol = %s\n", dlinfo.dli_sname);
+        PRINT("found path = %s\n", dli_fname);
+        PRINT("symbol = %s\n", dlinfo.dli_sname);
         return strcmp(lm_real, dli_fname) == 0;
       }
     }

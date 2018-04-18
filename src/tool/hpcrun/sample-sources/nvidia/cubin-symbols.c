@@ -85,6 +85,10 @@
 
 #define EM_CUDA 190
 
+#define CUDA_SYMBOL_DEBUG 0
+
+
+
 //******************************************************************************
 // type definitions
 //******************************************************************************
@@ -294,7 +298,9 @@ computeCubinFunctionOffsets
 	  if (ehdr) {
 		  if (ehdr->e_machine == EM_CUDA) {
 			  symbols = computeSymbolOffsets(cubin_ptr, elf);
+#if CUDA_SYMBOL_DEBUG
         printSymbols(symbols);
+#endif
 			  elf_end(elf);
 		  }
 	  }
