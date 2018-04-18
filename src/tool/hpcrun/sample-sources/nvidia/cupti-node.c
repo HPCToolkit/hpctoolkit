@@ -71,12 +71,6 @@ cupti_activity_node_new
 {
   cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
   node->entry = (cupti_entry_activity_t *)hpcrun_malloc(sizeof(cupti_entry_activity_t));
-#if CUPTI_API_VERSION >= 10
-      CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)activity;
-#else
-      CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)activity;
-#endif
-  PRINT("cupti_activity_node_new %d\n", activity_sample->stallReason);
   cupti_activity_node_set(node, activity, cct_node, next);
   return node;
 }

@@ -99,13 +99,21 @@ lm_addr_to_module
 {
   char *line = NULL;
   size_t len = 0;
+  char *module_path = NULL;
 
   FILE* loadmap = fopen("/proc/self/maps", "r");
 
-  for(; getline(&line, &len, loadmap) != -1;) {
-    lm_seg_t s;
-    lm_segment_parse(&s, line);
-    if (lm_segment_contains(&s, addr)) return strdup(lm_segment_path(&s));
+  if (loadmap) {
+    for(; getline(&line, &len, loadmap) != -1;) {
+      lm_seg_t s;
+      lm_segment_parse(&s, line);
+      if (lm_segment_contains(&s, addr)) {
+        module_path = strdup(lm_segment_path(&s));
+        break;
+      }
+    }
+    fclose(loadmap);
   }
-  return NULL;
+
+  return module_path;
 }

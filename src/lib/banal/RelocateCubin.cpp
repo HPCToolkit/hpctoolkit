@@ -102,6 +102,11 @@
 //---------------------------------------------------------
 #define R_NV_32                 0x01
 #define R_NV_64                 0x02
+#define R_NV_G32                0x03
+#define R_NV_G64                0x04
+
+#define RELOC_32(x) (x == R_NV_32 || x == R_NV_G32)
+#define RELOC_64(x) (x == R_NV_64 || x == R_NV_G64)
 
 
 
@@ -157,10 +162,10 @@ binding_name
 static void
 applyRelocation(void *addr, unsigned rel_type, uint64_t rel_value)
 {
-  if (rel_type == R_NV_64) {
+  if (RELOC_64(rel_type)) {
     uint64_t *addr64 = (uint64_t *) addr;
     *addr64 = rel_value;
-  } else if (rel_type == R_NV_32) {
+  } else if (RELOC_32(rel_type)) {
     uint32_t *addr32 = (uint32_t *) addr;
     *addr32 = rel_value;
   } else {

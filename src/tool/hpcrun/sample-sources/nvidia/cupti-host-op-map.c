@@ -18,7 +18,13 @@
 #include "cupti-host-op-map.h"
 #include "cupti-record.h"
 
+#define CUPTI_HOST_OP_MAP_DEBUG 0
+
+#if CUPTI_HOST_OP_MAP_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 /******************************************************************************
  * type definitions 

@@ -12,6 +12,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/files.h>
+#include <hpcrun/hpcrun_stats.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
 
@@ -24,6 +25,7 @@
 #include "cupti-host-op-map.h"
 #include "cupti-callstack-ignore-map.h"
 #include "cupti-record.h"
+
 
 //******************************************************************************
 // macros
@@ -41,7 +43,13 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
+#define CUPTI_ACTIVITY_DEBUG 0
+
+#if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 
@@ -595,21 +603,24 @@ cupti_buffer_completion_callback
 {
   // handle notifications
   cupti_cupti_notification_apply(cupti_notification_handle);
-  CUpti_Activity *activity = NULL; // signal advance to return pointer to first record
+
+  // signal advance to return pointer to first record
+  CUpti_Activity *activity = NULL;
   bool status = false;
-  // set activity to point to first record
+  size_t processed = 0;
   do {
     status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
     cupti_activity_process(activity);
+    ++processed;
   } while (status);
+  hpcrun_stats_acc_trace_records_add(processed);
 
   size_t dropped;
-  HPCRUN_CUPTI_CALL(cuptiActivityGetNumDroppedRecords, (ctx, streamId,& dropped));
+  cupti_num_dropped_records_get(ctx, streamId, &dropped);
   if (dropped != 0) { 
-    PRINT("dropped %u activity records\n", (unsigned int) dropped);
+    hpcrun_stats_acc_trace_records_dropped_add(dropped);
   }    
   free(buffer);
-  PRINT("leave cupti_buffer_completion_callback\n"); 
 }
 
 //-------------------------------------------------------------
@@ -802,15 +813,14 @@ cupti_sample_process
 #else
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
-  //PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-  // "samples %u, latencySamples %u stall %u\n",
-  // sample->sourceLocatorId,
-  // sample->functionId,
-  // sample->pcOffset,
-  // sample->correlationId,
-  // sample->samples,
-  // sample->latencySamples,
-  // sample->stallReason);
+  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+   "samples %u, latencySamples %u",
+   sample->sourceLocatorId,
+   sample->functionId,
+   sample->pcOffset,
+   sample->correlationId,
+   sample->samples,
+   sample->latencySamples);
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -884,6 +894,8 @@ cupti_sampling_record_info_process
       cupti_correlation_id_map_delete(sri->correlationId);
     }
   }
+  hpcrun_stats_acc_samples_add(sri->totalSamples);
+  hpcrun_stats_acc_samples_dropped_add(sri->droppedSamples);
 }
 
 
@@ -1149,22 +1161,22 @@ cupti_lm_contains_fn(const char *lm, const char *fn)
   char resolved_path[PATH_MAX];
 
   char *lm_real = realpath(lm, resolved_path);
-  //printf("query path = %s\n", lm_real);
-  //printf("query fn = %s\n", fn);
+  PRINT("query path = %s\n", lm_real);
+  PRINT("query fn = %s\n", fn);
   void *handle = dlopen(lm_real, RTLD_LAZY);
-  //printf("handle = %p\n", handle);
+  PRINT("handle = %p\n", handle);
   if (handle) {
     void *fp = dlsym(handle, fn);
-    printf("fp = %p\n", fp);
+    PRINT("fp = %p\n", fp);
     if (fp) {
       Dl_info dlinfo;
       int res = dladdr(fp, &dlinfo);
       if (res) {
         char dli_fname_buf[PATH_MAX];
-        //printf("original path = %s\n", dlinfo.dli_fname);
+        PRINT("original path = %s\n", dlinfo.dli_fname);
         char *dli_fname = realpath(dlinfo.dli_fname, dli_fname_buf);
-        //printf("found path = %s\n", dli_fname);
-        //printf("symbol = %s\n", dlinfo.dli_sname);
+        PRINT("found path = %s\n", dli_fname);
+        PRINT("symbol = %s\n", dlinfo.dli_sname);
         return strcmp(lm_real, dli_fname) == 0;
       }
     }

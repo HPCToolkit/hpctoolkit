@@ -92,6 +92,36 @@ long hpcrun_stats_num_samples_dropped(void);
 
 
 //-----------------------------
+// acc samples recorded
+//-----------------------------
+void hpcrun_stats_acc_samples_add(long value);
+long hpcrun_stats_acc_samples(void);
+
+
+//-----------------------------
+// acc samples dropped
+//-----------------------------
+//
+void hpcrun_stats_acc_samples_dropped_add(long value);
+long hpcrun_stats_acc_samples_dropped(void);
+
+
+//-----------------------------
+// acc trace records 
+//-----------------------------
+void hpcrun_stats_acc_trace_records_add(long value);
+long hpcrun_stats_acc_trace_records(void);
+
+
+//-----------------------------
+// acc trace records dropped
+//-----------------------------
+//
+void hpcrun_stats_acc_trace_records_dropped_add(long value);
+long hpcrun_stats_acc_trace_records_dropped(void);
+
+
+//-----------------------------
 // partial unwind samples
 //-----------------------------
 
