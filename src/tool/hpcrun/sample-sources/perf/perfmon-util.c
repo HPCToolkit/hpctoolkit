@@ -320,7 +320,7 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
   memset(&attr, 0, sizeof(struct perf_event_attr));
 
   arg.attr = &attr;
-  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
 
   if (ret == PFM_SUCCESS) {
     memcpy(event_attr, arg.attr, sizeof(struct perf_event_attr));
@@ -375,18 +375,20 @@ pfmu_isSupported(const char *eventname)
 int
 pfmu_init()
 {
-  /* to allow encoding of events from non detected PMU models */
+  int ret;
 #if 0
   // need to comment this block because it the setenv interferes with
   // HPCRUN_EVENT_LIST if we start this before the "support_events" step
-  int ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
+
+  // to allow encoding of events from non detected PMU models
+  ret = setenv("LIBPFM_ENCODE_INACTIVE", "1", 1);
   if (ret != 0)
     EMSG( "cannot force inactive encoding");
 #endif
 
   // pfm_initialize is idempotent, so it is not a problem if
   // another library (e.g., PAPI) also calls this.
-  int ret = pfm_initialize();
+  ret = pfm_initialize();
 
   if (ret != PFM_SUCCESS) {
     EMSG( "libpfm: cannot initialize: %s", pfm_strerror(ret));

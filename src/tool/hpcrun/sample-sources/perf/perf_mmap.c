@@ -83,7 +83,7 @@
 
 #define MMAP_OFFSET_0            0
 
-#define PERF_DATA_PAGE_EXP        0      // use 2^PERF_DATA_PAGE_EXP pages
+#define PERF_DATA_PAGE_EXP        1      // use 2^PERF_DATA_PAGE_EXP pages
 #define PERF_DATA_PAGES           (1 << PERF_DATA_PAGE_EXP)
 
 #define PERF_MMAP_SIZE(pagesz)    ((pagesz) * (PERF_DATA_PAGES + 1))
@@ -114,13 +114,22 @@ static size_t tail_mask  = 0;
 } */
 
 
+static u64
+perf_mmap_read_head(pe_mmap_t *hdr)
+{
+	u64 head = hdr->data_head;
+	rmb(); // required by the man page to issue a barrier for SMP-capable platforms
+	return head;
+}
+
 /***
  * number of reminder data in the buffer
  */
 static int
 num_of_more_perf_data(pe_mmap_t *hdr)
 {
-  return (hdr->data_head - hdr->data_tail);
+  u64 head = perf_mmap_read_head(hdr);
+  return (head - hdr->data_tail);
 }
 
 /***
@@ -153,8 +162,7 @@ perf_read(
   char *data = BUFFER_FRONT(current_perf_mmap);
 
   // compute bytes available in the circular buffer
-  u64 data_head          = current_perf_mmap->data_head;
-  rmb(); // required by the man page to issue a barrier for SMP-capable platforms
+  u64 data_head = perf_mmap_read_head(current_perf_mmap);
 
   size_t bytes_available = data_head - current_perf_mmap->data_tail;
 
@@ -293,7 +301,7 @@ static void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
   struct perf_event_mmap_page *hdr = current_perf_mmap;
-  u64 data_head = hdr->data_head;
+  u64 data_head = perf_mmap_read_head(current_perf_mmap);
   rmb();
 
   if ((hdr->data_tail + sz) > data_head)
@@ -459,15 +467,25 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (type & PERF_SAMPLE_CPU) {
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
+  } else if (hdr.type == PERF_RECORD_LOST_SAMPLES) {
+     u64 lost_samples;
+     perf_read_u64(current_perf_mmap, &lost_samples);
+     TMSG(LINUX_PERF, "[%d] lost samples %d",
+    		 current->fd, lost_samples);
+     skip_perf_data(current_perf_mmap, hdr.size-sizeof(lost_samples))
 #endif
+
   } else {
       // not a PERF_RECORD_SAMPLE nor PERF_RECORD_SWITCH
       // skip it
       if (hdr.size <= 0) {
         return 0;
       }
-      skip_perf_data(current_perf_mmap, hdr.size);
-      TMSG(LINUX_PERF, "skip header %d  %d : %d bytes", hdr.type, hdr.misc, hdr.size);
+      //skip_perf_data(current_perf_mmap, hdr.size);
+      TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
+    		  current->fd,
+    		  hdr.type, hdr.misc, hdr.size);
   }
 
   return (has_more_perf_data(current_perf_mmap));

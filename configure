@@ -12639,6 +12639,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -12647,7 +12650,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -16601,6 +16604,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -16609,7 +16615,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -22745,7 +22751,7 @@ BACK_END_LABEL=
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -24124,6 +24130,7 @@ do
     "src/tool/hpcserver/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/Makefile" ;;
     "src/tool/hpcserver/mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcserver/mpi/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
+    "src/tool/hpctracedump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpctracedump/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
     "src/tool/xprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/xprof/Makefile" ;;
     "src/lib/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/Makefile" ;;

@@ -365,7 +365,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   }
 
   if (!errors.empty()) {
-    DIAG_EMsg("Cannot fully process samples because of errors reading load modules:\n" << errors);
+    DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
 

@@ -3913,6 +3913,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
   src/tool/hpcstruct/Makefile \
+  src/tool/hpctracedump/Makefile \
   src/tool/misc/Makefile \
   src/tool/xprof/Makefile \
   src/lib/Makefile \

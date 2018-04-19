@@ -107,6 +107,8 @@ const int perf_skid_precision[] = {
   PERF_EVENT_SKID_ZERO_REQUIRED
 };
 
+const u64 anomalous_ip = 0xffffffffffffff80;
+
 const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
@@ -138,16 +140,56 @@ static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENC
 // implementation
 //******************************************************************************
 
-static cct_node_t *
-perf_insert_cct(uint16_t lm_id, cct_node_t *parent, u64 ip)
-{
-  ip_normalized_t npc;
-  cct_addr_t frm;
 
+/***
+ * if the input is a retained (leaf) cct node, return a sibling
+ * non-retained proxy.
+ */
+static cct_node_t *
+perf_split_retained_node(
+  cct_node_t *node
+)
+{
+  if (!hpcrun_cct_retained(node)) return node;
+
+  // node is retained. the caller of this routine would make it an
+  // interior node in the cct, which would cause trouble for hpcprof
+  // and hpctraceviewer. instead, use a sibling with that represents
+  // the machine code offset +1.
+
+  // extract the abstract address in the node
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+
+  // create an abstract address representing the next machine code address 
+  cct_addr_t sibling_addr = *addr;
+  sibling_addr.ip_norm.lm_ip++;
+
+  // get the necessary sibling to node
+  cct_node_t *sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(node), 
+					       &sibling_addr);
+
+  return sibling;
+}
+
+
+/***
+ * insert a cct node for a PC in a kernel call path
+ */
+static cct_node_t *
+perf_insert_cct(
+  uint16_t lm_id, 
+  cct_node_t *parent, 
+  u64 ip
+)
+{
+  parent = perf_split_retained_node(parent);
+
+  ip_normalized_t npc;
   memset(&npc, 0, sizeof(ip_normalized_t));
   npc.lm_id = lm_id;
   npc.lm_ip = ip;
 
+  cct_addr_t frm;
   memset(&frm, 0, sizeof(cct_addr_t));
   frm.ip_norm = npc;
 
@@ -209,7 +251,8 @@ perf_get_kernel_lm_id()
 //----------------------------------------------------------
 cct_node_t *
 perf_util_add_kernel_callchain(
-  cct_node_t *leaf, void *data_aux
+  cct_node_t *leaf, 
+  void *data_aux
 )
 {
   cct_node_t *parent = leaf;
@@ -218,21 +261,26 @@ perf_util_add_kernel_callchain(
     return parent;
   }
 
-
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
   if (data->nr > 0) {
+    uint16_t kernel_lm_id = perf_get_kernel_lm_id();
 
-    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
-    // if we have call chain from the kernel, but no kernel symbol address available,
-    // we collapse all kernel call chains into a single node
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44 
+    // if no kernel symbols are available, collapse the kernel call
+    // chain into a single node
     if (perf_util_get_kptr_restrict() != 0) {
-      return perf_insert_cct(perf_get_kernel_lm_id(), parent, 0);
+      return perf_insert_cct(kernel_lm_id, parent, 0);
     }
 
     // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips
-    for (int i = data->nr - 1; i >= 0; i--) {
-      parent = perf_insert_cct(perf_get_kernel_lm_id(), parent, data->ips[i]);
+    // reverse of the order in which they appear in ips[]
+    for (int i = data->nr - 1; i > 0; i--) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
+    }
+
+    // check ip[0] before adding as it often seems seems to be anomalous
+    if (data->ips[0] != anomalous_ip) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[0]);
     }
   }
   return parent;
@@ -264,6 +312,34 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
+/**
+ * set precise_ip attribute to the max value
+ *
+ * TODO: this method only works on some platforms, and not
+ *       general enough on all the platforms.
+ */
+static void
+set_max_precise_ip(struct perf_event_attr *attr)
+{
+  // start with the most restrict skid (3) then 2, 1 and 0
+  // this is specified in perf_event_open man page
+  // if there's a change in the specification, we need to change
+  // this one too (unfortunately)
+  for(int i=perf_skid_flavors-1; i>=0; i--) {
+	attr->precise_ip = perf_skid_precision[i];
+
+	// ask sys to "create" the event
+	// it returns -1 if it fails.
+	int ret = perf_util_event_open(attr,
+			THREAD_SELF, CPU_ANY,
+			GROUP_FD, PERF_FLAGS);
+	if (ret >= 0) {
+	  close(ret);
+	  // just quit when the returned value is correct
+	  return;
+	}
+  }
+}
 
 //----------------------------------------------------------
 // find the best precise ip value in this platform
@@ -274,12 +350,6 @@ getEnvLong(const char *env_var, long default_value)
 static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
-  static int precise_ip = -1;
-
-  // check if already computed
-  if (precise_ip >= 0)
-    return precise_ip;
-
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
   if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
@@ -292,34 +362,13 @@ get_precise_ip(struct perf_event_attr *attr)
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
-      precise_ip = val;
-      return precise_ip;
+      return val;
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
+    set_max_precise_ip(attr);
   }
-
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-    attr->precise_ip = perf_skid_precision[i];
-
-    // ask sys to "create" the event
-    // it returns -1 if it fails.
-    int ret = perf_util_event_open(attr,
-            THREAD_SELF, CPU_ANY,
-            GROUP_FD, PERF_FLAGS);
-    if (ret >= 0) {
-      close(ret);
-      precise_ip = i;
-      // just quit when the returned value is correct
-      return i;
-    }
-  }
-  precise_ip = 0;
-  return precise_ip;
+  return 0;
 }
 
 
@@ -507,6 +556,9 @@ perf_util_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
+  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
+                                              as precise as possible or  on the user's variable.  */
+
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
   int max_sample_rate = perf_util_get_max_sample_rate();
 
@@ -536,8 +588,6 @@ perf_util_attr_init(
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
-  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
   return true;
 }
 

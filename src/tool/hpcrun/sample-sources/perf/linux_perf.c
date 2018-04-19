@@ -351,10 +351,9 @@ perf_thread_init(event_thread_t *et)
   event_info_t *event = et->event;
   et->fd = perf_util_event_open(&(event->attr),
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
-
-  TMSG(LINUX_PERF, "dbg register event fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
-    	et->fd, et->event->attr.precise_ip, et->event->attr.config,
-	et->event->attr.type, et->event->attr.sample_freq, et->event->attr.freq);
+  TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
+        et->fd, event->attr.precise_ip, event->attr.config,
+        event->attr.type, event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
@@ -758,7 +757,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
-    prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    prop = (strcasestr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
