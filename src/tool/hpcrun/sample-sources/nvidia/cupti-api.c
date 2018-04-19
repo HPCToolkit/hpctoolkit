@@ -272,7 +272,7 @@ cupti_unload_callback_cuda
  size_t cubin_size
 )
 {
-  cubin_id_map_refcnt_update(module_id, 0);
+  cubin_id_map_delete(module_id);
 }
 
 

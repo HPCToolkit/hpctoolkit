@@ -65,13 +65,12 @@ typedef struct cupti_entry_notification {
 } cupti_entry_notification_t;
 
 // activity allocator
-extern
-cupti_node_t *
+extern cupti_node_t *
 cupti_activity_node_new
 (
  CUpti_Activity *activity,
  cct_node_t *cct_node,
- cct_node_t *next
+ cupti_node_t *next
 );
 
 
@@ -81,12 +80,11 @@ cupti_activity_node_set
  cupti_node_t *cupti_node,
  CUpti_Activity *activity,
  cct_node_t *cct_node,
- cct_node_t *next
+ cupti_node_t *next
 );
 
 // notification allocator
-extern
-cupti_node_t *
+extern cupti_node_t *
 cupti_notification_node_new
 (
  int64_t host_op_id,

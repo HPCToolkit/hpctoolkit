@@ -4,8 +4,6 @@
 
 #include <assert.h>
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -17,14 +15,12 @@
 
 #include "cubin-id-map.h"
 
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
 struct cubin_id_map_entry_s {
   uint64_t cubin_id;
-  uint64_t refcnt;
   uint64_t hpctoolkit_module_id;
   Elf_SymbolVector *elf_vector;
   struct cubin_id_map_entry_s *left;
@@ -48,7 +44,6 @@ cubin_id_map_entry_new(uint64_t cubin_id, Elf_SymbolVector *vector)
   cubin_id_map_entry_t *e;
   e = (cubin_id_map_entry_t *)hpcrun_malloc(sizeof(cubin_id_map_entry_t));
   e->cubin_id = cubin_id;
-  e->refcnt = 0;
   e->left = NULL;
   e->right = NULL;
   e->elf_vector = vector;
@@ -80,8 +75,6 @@ cubin_id_map_delete_root()
     cubin_id_map_root = cubin_id_map_root->left;
   }
 }
-
-
 
 /******************************************************************************
  * interface operations
@@ -145,41 +138,16 @@ cubin_id_map_insert(uint64_t cubin_id, uint64_t hpctoolkit_module_id, Elf_Symbol
 }
 
 
-// return true if record found; false otherwise
-bool
-cubin_id_map_refcnt_update(uint64_t cubin_id, int val)
+void
+cubin_id_map_delete
+(
+ uint64_t cubin_id
+)
 {
-  bool result = false; 
-
-  TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (update %d)", 
-       cubin_id, val);
-
-  spinlock_lock(&cubin_id_map_lock);
   cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, cubin_id);
-
-  if (cubin_id_map_root && 
-      cubin_id_map_root->cubin_id == cubin_id) {
-    uint64_t old = cubin_id_map_root->refcnt;
-    cubin_id_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	    cubin_id, old, cubin_id_map_root->refcnt);
-    if (cubin_id_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (deleting)",
-           cubin_id);
-      cubin_id_map_delete_root();
-    }
-    result = true;
+  if (cubin_id_map_root && cubin_id_map_root->cubin_id == cubin_id) {
+    cubin_id_map_delete_root();
   }
-
-  spinlock_unlock(&cubin_id_map_lock);
-  return result;
-}
-
-
-uint64_t 
-cubin_id_map_entry_refcnt_get(cubin_id_map_entry_t *entry) 
-{
-  return entry->refcnt;
 }
 
 
@@ -191,7 +159,7 @@ cubin_id_map_entry_hpctoolkit_id_get(cubin_id_map_entry_t *entry)
 
 
 Elf_SymbolVector *
-cubin_id_map_entry_efl_vector_get(cubin_id_map_entry_t *entry)
+cubin_id_map_entry_elf_vector_get(cubin_id_map_entry_t *entry)
 {
   return entry->elf_vector;
 }
@@ -208,13 +176,12 @@ cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset)
   ip_normalized_t ip;
   if (entry != NULL) {
     uint64_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
-    const Elf_SymbolVector *vector = cubin_id_map_entry_efl_vector_get(entry);
+    const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
   }
   return ip;
 }
-
 
 /******************************************************************************
  * debugging code

@@ -161,7 +161,6 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //    nested marking.
 //-----------------------------------------
 static __thread int ompt_idle_count;
-static __thread ompt_device_t *ompt_device = NULL;
 static __thread cct_node_t *target_node = NULL;
 
 
@@ -895,7 +894,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
-  cubin_id_map_refcnt_update(module_id, 0);
+  cubin_id_map_delete(module_id);
 }
 
 

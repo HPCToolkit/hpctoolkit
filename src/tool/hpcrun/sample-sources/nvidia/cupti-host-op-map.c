@@ -4,8 +4,6 @@
 
 #include <assert.h>
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -39,23 +37,18 @@ struct cupti_host_op_map_entry_s {
   struct cupti_host_op_map_entry_s *right;
 }; 
 
-
 /******************************************************************************
  * global data 
  *****************************************************************************/
 
 static cupti_host_op_map_entry_t *cupti_host_op_map_root = NULL;
-static spinlock_t cupti_host_op_map_lock = SPINLOCK_UNLOCKED;
-
 
 /******************************************************************************
  * private operations
  *****************************************************************************/
 
 static cupti_host_op_map_entry_t *
-cupti_host_op_map_entry_new(uint64_t host_op_id,
-                            cct_node_t *host_op_node,
-                            cupti_record_t *record)
+cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node, cupti_record_t *record)
 {
   cupti_host_op_map_entry_t *e;
   e = (cupti_host_op_map_entry_t *)hpcrun_malloc(sizeof(cupti_host_op_map_entry_t));
@@ -95,8 +88,6 @@ cupti_host_op_map_delete_root()
   }
 }
 
-
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -106,12 +97,10 @@ cupti_host_op_map_lookup(uint64_t id)
 {
   cupti_host_op_map_entry_t *result = NULL;
 
-  //spinlock_lock(&cupti_host_op_map_lock);
   cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, id);
   if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == id) {
     result = cupti_host_op_map_root;
   }
-  //spinlock_unlock(&cupti_host_op_map_lock);
 
   TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (record %p)", id, result);
   return result;
@@ -119,17 +108,13 @@ cupti_host_op_map_lookup(uint64_t id)
 
 
 void
-cupti_host_op_map_insert(uint64_t host_op_id,
-                         cct_node_t *host_op_node,
-                         cupti_record_t *record)
+cupti_host_op_map_insert(uint64_t host_op_id, cct_node_t *host_op_node, cupti_record_t *record)
 {
   cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(host_op_id, host_op_node, record);
 
   TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_node);
 
   entry->left = entry->right = NULL;
-
-  //spinlock_lock(&cupti_host_op_map_lock);
 
   if (cupti_host_op_map_root != NULL) {
     cupti_host_op_map_root = 
@@ -149,9 +134,8 @@ cupti_host_op_map_insert(uint64_t host_op_id,
       assert(0);
     }
   }
+  
   cupti_host_op_map_root = entry;
-
-  //spinlock_unlock(&cupti_host_op_map_lock);
 }
 
 
@@ -250,5 +234,3 @@ cupti_host_op_map_count()
 {
   return cupti_host_op_map_count_helper(cupti_host_op_map_root);
 }
-
-

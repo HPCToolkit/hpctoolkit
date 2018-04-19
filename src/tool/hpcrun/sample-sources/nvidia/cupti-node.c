@@ -4,15 +4,13 @@
 #include <cupti_activity.h>
 #include "cupti-node.h"
 
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-
 void
 cupti_activity_node_set
 (
  cupti_node_t *cupti_node,
  CUpti_Activity *activity, 
  cct_node_t *cct_node,
- cct_node_t *next
+ cupti_node_t *next
 )
 {
   cupti_entry_activity_t *entry = (cupti_entry_activity_t *)(cupti_node->entry);
@@ -57,7 +55,6 @@ cupti_activity_node_set
     default:
       break;
   }
-//  TODO(Keren): do not copy activities, we need another memory pool for activity buffer
 }
 
 
@@ -66,7 +63,7 @@ cupti_activity_node_new
 (
  CUpti_Activity *activity, 
  cct_node_t *cct_node,
- cct_node_t *next
+ cupti_node_t *next
 )
 {
   cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));

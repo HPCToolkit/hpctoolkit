@@ -105,7 +105,8 @@ typedef struct Elf_SectionVector {
 //******************************************************************************
 
 static int
-countSections(
+countSections
+(
  Elf *elf
 )
 {

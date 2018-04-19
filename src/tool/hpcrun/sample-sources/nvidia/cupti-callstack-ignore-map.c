@@ -17,14 +17,12 @@
 #include "cupti-api.h"
 #include "cupti-callstack-ignore-map.h"
 
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
 struct cupti_callstack_ignore_map_entry_s {
   load_module_t *module;
-  uint64_t refcnt;
   struct cupti_callstack_ignore_map_entry_s *left;
   struct cupti_callstack_ignore_map_entry_s *right;
 }; 
@@ -46,7 +44,6 @@ cupti_callstack_ignore_map_entry_new(load_module_t *module)
   cupti_callstack_ignore_map_entry_t *e;
   e = (cupti_callstack_ignore_map_entry_t *)hpcrun_malloc(sizeof(cupti_callstack_ignore_map_entry_t));
   e->module = module;
-  e->refcnt = 0;
   e->left = NULL;
   e->right = NULL;
 
@@ -77,8 +74,6 @@ cupti_callstack_ignore_map_delete_root()
     cupti_callstack_ignore_map_root = cupti_callstack_ignore_map_root->left;
   }
 }
-
-
 
 /******************************************************************************
  * interface operations
@@ -139,44 +134,6 @@ cupti_callstack_ignore_map_insert(load_module_t *module)
 }
 
 
-// return true if record found; false otherwise
-bool
-cupti_callstack_ignore_map_refcnt_update(load_module_t *module, int val)
-{
-  bool result = false; 
-
-  TMSG(DEFER_CTXT, "module map refcnt_update:module=0x%lx (update %d)", 
-       module, val);
-
-  spinlock_lock(&cupti_callstack_ignore_map_lock);
-  cupti_callstack_ignore_map_root = cupti_callstack_ignore_map_splay(cupti_callstack_ignore_map_root, module);
-
-  if (cupti_callstack_ignore_map_root && 
-      cupti_callstack_ignore_map_root->module == module) {
-    uint64_t old = cupti_callstack_ignore_map_root->refcnt;
-    cupti_callstack_ignore_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "module map refcnt_update:module=0x%lx (%ld --> %ld)", 
-	    module, old, cupti_callstack_ignore_map_root->refcnt);
-    if (cupti_callstack_ignore_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "module map refcnt_update: module=0x%lx (deleting)",
-           module);
-      cupti_callstack_ignore_map_delete_root();
-    }
-    result = true;
-  }
-
-  spinlock_unlock(&cupti_callstack_ignore_map_lock);
-  return result;
-}
-
-
-uint64_t 
-cupti_callstack_ignore_map_entry_refcnt_get(cupti_callstack_ignore_map_entry_t *entry) 
-{
-  return entry->refcnt;
-}
-
-
 bool
 cupti_callstack_ignore_map_ignore(load_module_t *module)
 {
@@ -187,7 +144,6 @@ cupti_callstack_ignore_map_ignore(load_module_t *module)
   }
   return false;
 }
-
 
 /******************************************************************************
  * debugging code
@@ -210,6 +166,3 @@ cupti_callstack_ignore_map_count()
 {
   return cupti_callstack_ignore_map_count_helper(cupti_callstack_ignore_map_root);
 }
-
-
-

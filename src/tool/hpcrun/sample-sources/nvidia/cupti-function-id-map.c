@@ -4,8 +4,6 @@
 
 #include <assert.h>
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -17,21 +15,17 @@
 
 #include "cupti-function-id-map.h"
 
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
 struct cupti_function_id_map_entry_s {
   uint64_t function_id;  // cupti function id
-  uint64_t refcnt;
   uint64_t function_index;
   uint64_t cubin_id;
   struct cupti_function_id_map_entry_s *left;
   struct cupti_function_id_map_entry_s *right;
 }; 
-
-
 
 /******************************************************************************
  * global data 
@@ -39,8 +33,6 @@ struct cupti_function_id_map_entry_s {
 
 static cupti_function_id_map_entry_t *cupti_function_id_map_root = NULL;
 static spinlock_t cupti_function_id_map_lock = SPINLOCK_UNLOCKED;
-
-
 
 /******************************************************************************
  * private operations
@@ -54,7 +46,6 @@ cupti_function_id_map_entry_new(uint64_t function_id, uint64_t function_index, u
   e->function_id = function_id;
   e->function_index = function_index;
   e->cubin_id = cubin_id;
-  e->refcnt = 0;
   e->left = NULL;
   e->right = NULL;
 
@@ -85,8 +76,6 @@ cupti_function_id_map_delete_root()
     cupti_function_id_map_root = cupti_function_id_map_root->left;
   }
 }
-
-
 
 /******************************************************************************
  * interface operations
@@ -145,44 +134,6 @@ cupti_function_id_map_insert(uint64_t function_id, uint64_t function_index, uint
 }
 
 
-// return true if record found; false otherwise
-bool
-cupti_function_id_map_refcnt_update(uint64_t function_id, int val)
-{
-  bool result = false; 
-
-  TMSG(DEFER_CTXT, "function_id map refcnt_update: id=0x%lx (update %d)", 
-       function_id, val);
-
-  spinlock_lock(&cupti_function_id_map_lock);
-  cupti_function_id_map_root = cupti_function_id_map_splay(cupti_function_id_map_root, function_id);
-
-  if (cupti_function_id_map_root && 
-      cupti_function_id_map_root->function_id == function_id) {
-    uint64_t old = cupti_function_id_map_root->refcnt;
-    cupti_function_id_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "function_id map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	 function_id, old, cupti_function_id_map_root->refcnt);
-    if (cupti_function_id_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "function_id map refcnt_update: id=0x%lx (deleting)",
-           function_id);
-      cupti_function_id_map_delete_root();
-    }
-    result = true;
-  }
-
-  spinlock_unlock(&cupti_function_id_map_lock);
-  return result;
-}
-
-
-uint64_t 
-cupti_function_id_map_entry_refcnt_get(cupti_function_id_map_entry_t *entry) 
-{
-  return entry->refcnt;
-}
-
-
 uint64_t 
 cupti_function_id_map_entry_function_index_get(cupti_function_id_map_entry_t *entry) 
 {
@@ -195,7 +146,6 @@ cupti_function_id_map_entry_cubin_id_get(cupti_function_id_map_entry_t *entry)
 {
   return entry->cubin_id;
 }
-
 
 /******************************************************************************
  * debugging code
@@ -218,4 +168,3 @@ cupti_function_id_map_count()
 {
   return cupti_function_id_map_count_helper(cupti_function_id_map_root);
 }
-

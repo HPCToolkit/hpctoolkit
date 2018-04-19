@@ -5,8 +5,6 @@
 #include <assert.h>
 #include <openssl/md5.h>  // MD5
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -18,14 +16,12 @@
 
 #include "cubin-md5-map.h"
 
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
 struct cubin_md5_map_entry_s {
   uint64_t cubin_id;
-  uint64_t refcnt;
   unsigned char md5[MD5_DIGEST_LENGTH];
   struct cubin_md5_map_entry_s *left;
   struct cubin_md5_map_entry_s *right;
@@ -48,7 +44,6 @@ cubin_md5_map_entry_new(uint64_t cubin_id, const void *cubin, size_t size)
   cubin_md5_map_entry_t *e;
   e = (cubin_md5_map_entry_t *)hpcrun_malloc(sizeof(cubin_md5_map_entry_t));
   e->cubin_id = cubin_id;
-  e->refcnt = 0;
   e->left = NULL;
   e->right = NULL;
   MD5(cubin, size, e->md5);
@@ -141,44 +136,6 @@ cubin_md5_map_insert(uint64_t cubin_id, const void *cubin, size_t size)
 }
 
 
-// return true if record found; false otherwise
-bool
-cubin_md5_map_refcnt_update(uint64_t cubin_id, int val)
-{
-  bool result = false; 
-
-  TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (update %d)", 
-       cubin_id, val);
-
-  spinlock_lock(&cubin_md5_map_lock);
-  cubin_md5_map_root = cubin_md5_map_splay(cubin_md5_map_root, cubin_id);
-
-  if (cubin_md5_map_root && 
-      cubin_md5_map_root->cubin_id == cubin_id) {
-    uint64_t old = cubin_md5_map_root->refcnt;
-    cubin_md5_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	    cubin_id, old, cubin_md5_map_root->refcnt);
-    if (cubin_md5_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "cubin_id map refcnt_update: id=0x%lx (deleting)",
-           cubin_id);
-      cubin_md5_map_delete_root();
-    }
-    result = true;
-  }
-
-  spinlock_unlock(&cubin_md5_map_lock);
-  return result;
-}
-
-
-uint64_t 
-cubin_md5_map_entry_refcnt_get(cubin_md5_map_entry_t *entry) 
-{
-  return entry->refcnt;
-}
-
-
 unsigned char *
 cubin_md5_map_entry_md5_get(cubin_md5_map_entry_t *entry)
 {
@@ -199,7 +156,6 @@ cubin_md5_map_count_helper(cubin_md5_map_entry_t *entry)
   } 
   return 0;
 }
-
 
 int 
 cubin_md5_map_count() 

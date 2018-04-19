@@ -75,7 +75,6 @@
 
 #include <monitor.h>
 
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -325,6 +324,7 @@ kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_INVALID
 };                                   
 
+
 CUpti_ActivityKind
 overhead_activities[] = {
   CUPTI_ACTIVITY_KIND_OVERHEAD,
@@ -346,6 +346,7 @@ runtime_activities[] = {
   CUPTI_ACTIVITY_KIND_RUNTIME,
   CUPTI_ACTIVITY_KIND_INVALID
 };
+
 
 void
 cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
@@ -403,11 +404,11 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 }
 
 
-extern int cupti_pc_sampling_frequency_get()
+int
+cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
 }
-
 
 /******************************************************************************
  * interface operations
@@ -551,7 +552,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     cupti_trace_init();
 
-    // Cannot set pc sampling frequency without knowing context
+    // Cannot set pc sampling frequency without knowing context,
     // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
     cupti_callbacks_subscribe();
 

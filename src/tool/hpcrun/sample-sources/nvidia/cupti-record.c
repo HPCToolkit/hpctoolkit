@@ -15,7 +15,6 @@ static __thread cupti_record_t cupti_record = { .worker_notification_stack = NUL
                                                 .cupti_free_activity_stack = NULL };
 static __thread bool cupti_record_initialized = false;
 
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
 
 void
 cupti_record_init()
