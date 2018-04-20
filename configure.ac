@@ -1178,6 +1178,170 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-spack=PATH
+#-------------------------------------------------
+
+# If specified, then use PATH as the directory containing the spack
+# packages.  This is not spack's install_tree prefix, but rather the
+# arch/compiler subdir that contains the spack packages, something
+# like:  .../linux-fedora26-x86_64/gcc-7.3.1/
+#
+# May be absolute or relative path.
+
+AC_ARG_WITH([spack],
+  [AS_HELP_STRING([--with-spack=PATH],
+      [path to spack arch/compiler install directory])],
+  [],
+  [with_spack=no])
+
+if test "x$with_spack" != xno ; then
+  dir=`(cd "$with_spack" 2>/dev/null && /bin/pwd)`
+  if test ! -d "$dir" ; then
+    AC_MSG_ERROR([bad spack install directory: $with_spack])
+  fi
+  with_spack="$dir"
+  warn_no_externals=no
+fi
+
+AC_MSG_NOTICE([spack install directory: $with_spack])
+
+
+#-------------------------------------------------
+# Default package prefixes from externals and spack.
+#-------------------------------------------------
+
+# The order of precedence is:
+#  1. --with-package  (highest)
+#  2. --with-spack
+#  3. --with-externals
+
+default_binutils_prefix=no
+default_boost_prefix=no
+default_bzip_prefix=no
+default_dyninst_prefix=no
+default_elfutils_prefix=no
+default_libdwarf_prefix=no
+default_libmonitor_prefix=no
+default_libunwind_prefix=no
+default_lzma_prefix=no
+default_perfmon_prefix=no
+default_xed2_prefix=no
+default_xerces_prefix=no
+default_zlib_prefix=no
+
+if test "$use_externals" = yes ; then
+  default_binutils_prefix="$ext_binutils_prefix"
+  default_boost_prefix="$ext_boost_prefix"
+  default_dyninst_prefix="$ext_symtabAPI_prefix"
+  default_elfutils_prefix="$ext_libelf_prefix"
+  default_libdwarf_prefix="$ext_libdwarf_prefix"
+  default_libmonitor_prefix="$ext_libmonitor_prefix"
+  default_libunwind_prefix="$ext_libunwind_prefix"
+  if test "x$ext_lzma_prefix" != x ; then
+    default_lzma_prefix="$ext_lzma_prefix"
+  fi
+  if test "x$ext_perfmon_prefix" != x ; then
+    default_perfmon_prefix="$ext_perfmon_prefix"
+  fi
+  default_xed2_prefix="$ext_xed2_prefix"
+  default_xerces_prefix="$ext_xerces_prefix"
+  default_zlib_prefix="$ext_zlib_prefix"
+fi
+
+# Return: success (0) and set 'spack_ans' to install prefix for given
+# package name ($1).  Warn if there are multiple dirs with same pkg
+# name and return the most recent one.  (Be careful not to spawn a
+# subshell.)
+
+mult_spack_pkgs=
+
+find_spack_pkg()
+{
+  base="$1"
+  spack_ans=no
+  mult=no
+
+  # allow symlink, if set
+  if test -d "${with_spack}/$base" ; then
+    spack_ans="${with_spack}/$base"
+    return 0
+  fi
+
+  for dir in "${with_spack}/${base}"-* ; do
+    if test -d "$dir" ; then
+      if test "$spack_ans" = no ; then
+        spack_ans="$dir"
+      else
+        mult=yes
+        if test "$dir" -nt "$spack_ans" ; then
+          spack_ans="$dir"
+        fi
+      fi
+    fi
+  done
+
+  if test "$mult" = yes ; then
+    AC_MSG_WARN([multiple spack packages for: $base])
+    mult_spack_pkgs="$mult_spack_pkgs $base"
+  fi
+
+  if test "$spack_ans" != no ; then
+    return 0
+  fi
+  return 1
+}
+
+if test "$with_spack" != no
+then
+  AC_MSG_NOTICE([checking spack packages ...])
+
+  if find_spack_pkg binutils ; then
+    default_binutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg boost ; then
+    default_boost_prefix="$spack_ans"
+  fi
+  if find_spack_pkg bzip2 ; then
+    default_bzip_prefix="$spack_ans"
+  fi
+  if find_spack_pkg dyninst ; then
+    default_dyninst_prefix="$spack_ans"
+  fi
+  if find_spack_pkg elfutils ; then
+    default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libdwarf ; then
+    default_libdwarf_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libmonitor ; then
+    default_libmonitor_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libunwind ; then
+    default_libunwind_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xz ; then
+    default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libpfm4 ; then
+    default_perfmon_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-xed ; then
+    default_xed2_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xerces-c ; then
+    default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg zlib ; then
+    default_zlib_prefix="$spack_ans"
+  fi
+
+  if test "x$mult_spack_pkgs" != x ; then
+    AC_MSG_WARN([multiple spack packages for: $mult_spack_pkgs])
+  fi
+fi
+
+
+#-------------------------------------------------
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
@@ -1281,14 +1445,11 @@ AC_SUBST([wordsize_cflag])
 # Check for GNU's binutils (binary interface)
 #-------------------------------------------------
 
-GNUBINUTILS=no
 GNUBINUTILS_IFLAGS=
 GNUBINUTILS_LDFLAGS=
 GNUBINUTILS_LDLIBS=
 
-if test "$use_externals" = yes ; then
-  GNUBINUTILS="$ext_binutils_prefix"
-fi
+GNUBINUTILS="$default_binutils_prefix"
 
 AC_ARG_WITH([binutils],
   [AS_HELP_STRING([--with-binutils=PATH],
@@ -1449,10 +1610,7 @@ AC_LANG_POP
 # Option: --with-boost=PATH
 #-------------------------------------------------
 
-BOOST=no
-if test "$use_externals" = yes ; then
-  BOOST="$ext_boost_prefix"
-fi
+BOOST="$default_boost_prefix"
 
 AC_ARG_WITH([boost],
   [AS_HELP_STRING([--with-boost=PATH],
@@ -1521,9 +1679,10 @@ AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
 # prereq.  Toolkit doesn't directly call bzip, so we don't need an
 # include path here.  Note: this package is not built in externals.
 
-BZIP=no
 BZIP_COPY=no
 BZIP_LIB=no
+
+BZIP="$default_bzip_prefix"
 
 AC_ARG_WITH([bzip],
   [AS_HELP_STRING([--with-bzip=PATH],
@@ -1564,10 +1723,7 @@ AC_SUBST([BZIP_LIB])
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
-LIBDWARF=no
-if test "$use_externals" = yes ; then
-    LIBDWARF="$ext_libdwarf_prefix"
-fi
+LIBDWARF="$default_libdwarf_prefix"
 
 AC_ARG_WITH([libdwarf],
   [AS_HELP_STRING([--with-libdwarf=PATH],
@@ -1607,10 +1763,7 @@ AC_SUBST([LIBDWARF_COPY])
 # Option: --with-libelf=PATH
 #-------------------------------------------------
 
-LIBELF=no
-if test "$use_externals" = yes ; then
-  LIBELF="$ext_libelf_prefix"
-fi
+LIBELF="$default_elfutils_prefix"
 
 AC_ARG_WITH([libelf],
   [AS_HELP_STRING([--with-libelf=PATH],
@@ -1661,12 +1814,10 @@ AC_SUBST([LIBELF_COPY])
 # Option: --with-libmonitor=PATH
 #-------------------------------------------------
 
-LIBMONITOR=no
 OPT_LIBMONITOR_DYNAMIC=no
 OPT_LIBMONITOR_STATIC=no
-if test "$use_externals" = yes ; then
-  LIBMONITOR="$ext_libmonitor_prefix"
-fi
+
+LIBMONITOR="$default_libmonitor_prefix"
 
 AC_ARG_WITH([libmonitor],
   [AS_HELP_STRING([--with-libmonitor=PATH],
@@ -1728,7 +1879,6 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # and dynamic versions separately.  But if libunwind is the primary
 # unwinder, then can't build hpcrun or hpclink without it.
 
-LIBUNWIND=no
 LIBUNWIND_STAT=no
 
 LIBUNWIND_IFLAGS=
@@ -1740,9 +1890,7 @@ LIBUNWIND_LDFLAGS_STAT=
 LIBUNWIND_COPY=no
 LIBUNWIND_LIB=
 
-if test "$use_externals" = yes ; then
-  LIBUNWIND="$ext_libunwind_prefix"
-fi
+LIBUNWIND="$default_libunwind_prefix"
 
 AC_ARG_WITH([libunwind],
   [AS_HELP_STRING([--with-libunwind=PATH],
@@ -1871,7 +2019,6 @@ AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 # Dynamically, add -llzma to libhpcrun.so and copy libs.
 # Statically, link liblzma.a into libhpcrun.o at build time.
 
-LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
@@ -1880,10 +2027,7 @@ LZMA_COPY=no
 LZMA_LIB=
 LZMA_PROF_MPI_LIBS=
 
-# allow for older externals which doesn't define ext_lzma_prefix
-if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
-  LZMA="$ext_lzma_prefix"
-fi
+LZMA="$default_lzma_prefix"
 
 AC_ARG_WITH([lzma],
   [AS_HELP_STRING([--with-lzma=PATH],
@@ -2271,12 +2415,12 @@ then
   PERFMON="$perfmon_withval"
   perfmon_mesg="$perfmon_withval"
 
-elif test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x  \
-     && valid_perfmon_dir "$ext_perfmon_prefix"
+elif test "$default_perfmon_prefix" != no  \
+     && valid_perfmon_dir "$default_perfmon_prefix"
 then
-  # if value from externals works, use that
-  PERFMON="$ext_perfmon_prefix"
-  perfmon_mesg="$ext_perfmon_prefix"
+  # if value from externals/spack works, use that
+  PERFMON="$default_perfmon_prefix"
+  perfmon_mesg="$default_perfmon_prefix"
 
 else
   # give up, nothing works
@@ -2481,10 +2625,7 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 # Now require full ParseAPI with CFG loop support or nothing.
 
-SYMTABAPI=no
-if test "$use_externals" = yes ; then
-  SYMTABAPI="$ext_symtabAPI_prefix"
-fi
+SYMTABAPI="$default_dyninst_prefix"
 
 AC_ARG_WITH([symtabAPI],
   [AS_HELP_STRING([--with-symtabAPI=PATH],
@@ -2716,7 +2857,6 @@ AC_SUBST([LIBDW_COPY])
 # XED with separate .so and .a without fPIC, so we test if .a can link
 # into a shared library.
 
-XED2=no
 XED2_INC=
 XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
@@ -2727,9 +2867,7 @@ XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
-if test "$use_externals" = yes ; then
-  XED2="$ext_xed2_prefix"
-fi
+XED2="$default_xed2_prefix"
 
 AC_ARG_WITH([xed2],
   [AS_HELP_STRING([--with-xed2=PATH],
@@ -2865,12 +3003,9 @@ AC_SUBST([XED2_COPY])
 # installations to optionally be given on configure line or in the
 # environment.
 
-AC_MSG_CHECKING([for XercesC])
+XERCES="$default_xerces_prefix"
 
-XERCES=no
-if test "$use_externals" = yes ; then
-  XERCES="$ext_xerces_prefix"
-fi
+AC_MSG_CHECKING([for XercesC])
 
 AC_ARG_WITH([xerces],
   AS_HELP_STRING([--with-xerces=PATH],
@@ -2913,10 +3048,7 @@ AC_SUBST([XERCES_LIB])
 # Option: --with-zlib=PATH
 #-------------------------------------------------
 
-ZLIB=no
-if test "$use_externals" = yes ; then
-  ZLIB="$ext_zlib_prefix"
-fi
+ZLIB="$default_zlib_prefix"
 
 AC_ARG_WITH([zlib],
   [AS_HELP_STRING([--with-zlib=PATH],
