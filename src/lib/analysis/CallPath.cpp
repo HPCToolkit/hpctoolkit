@@ -73,6 +73,7 @@ using std::string;
 
 #include <typeinfo>
 
+#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -123,6 +124,15 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
+
+
+static bool
+fileok(const char *pathname)
+{
+  struct stat s;
+  int result = stat(pathname, &s);
+  return result == 0;
+}
 
 
 namespace Analysis {
@@ -389,15 +399,11 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = ((lmStrct->childCount() > 0)
-		    || (loadmap_lm->id() == Prof::LoadMap::LMId_NULL));
+  bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
-      DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-    }
-  }
-  else {
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+  } else if (fileok(lm_nm.c_str()))  {
     DIAG_Msg(1, "Line map : " << lm_nm);
 
     try {
@@ -414,6 +420,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
       DIAG_EMsg("While reading '" << lm_nm << "'...");
       throw;
     }
+  } else if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
+    DIAG_WMsgIf(1, "Cannot fully process samples for load module " <<
+                lm_nm << ": " << sys_errlist[errno]);
   }
 
   if (lm) {
