@@ -76,6 +76,7 @@
 #include <sample-sources/retcnt.h>
 #include <monitor.h>
 
+extern bool hpcrun_get_retain_recursion_mode();
 
 //******************************************************************************
 // external declarations
@@ -119,18 +120,33 @@ static bool hpcrun_trampoline_update(void* addr)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
+  if (!td->tramp_present) return false; 
+
   frame_t* frame = td->tramp_frame;
   cct_node_t* node = td->tramp_cct_node;
   size_t count = td->cached_frame_count;
+  uint32_t dLCA = 0;
 
   // Locate which frame is marked
   while (count > 0) {
-    if (frame->ra_loc != NULL)
+    if (frame->ra_loc != NULL) {
       if (frame->ra_val == addr) break;
+	}
+    
+    cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+    if (  !hpcrun_get_retain_recursion_mode()
+       && frame != td->cached_bt
+       && frame != td->cached_bt_end-1
+       && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
+       && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
+       )
+      parent = node;
+    else
+      dLCA++;
+    node = parent;
     
     frame++;
     count--;
-    node = (node) ? hpcrun_cct_parent(node) : NULL;
   }
 
   // Check if valid
@@ -143,7 +159,6 @@ static bool hpcrun_trampoline_update(void* addr)
   td->tramp_frame = frame;
   td->tramp_cct_node = node;
   td->cached_frame_count = count;
-
   return true;
 }
 
@@ -161,8 +176,9 @@ hpcrun_trampoline_at_entry(void* addr)
 {
   bool ret = ((unsigned long)addr & 1 == 1);
   if (ret) {
+    // update trampoline statuses according to addr.
     ret = hpcrun_trampoline_update(addr);
-    if (!ret) TMSG(TRAMP, "Marked addr found but failed to locate corresponding frame");
+    if (!ret) EMSG("Marked addr for trampoline found but failed to locate corresponding frame");
   }
   return ret;
 }
@@ -191,23 +207,32 @@ hpcrun_trampoline_insert(cct_node_t* node)
       hpcrun_init_trampoline_info();
       return;
     }
-    if (!ra_loc) {
-      TMSG(TRAMP, "Tramp frame ra loc = NULL, skip marking this frame");
-      frame++;
-      node = hpcrun_cct_parent(node);
-      continue;
-    }
-    void* ra = *((void**) ra_loc);
-    if ((unsigned long)ra & 1 == 1) break; // RA has already been marked
-   
-    *((void**) ra_loc) = (void*)((unsigned long)ra | 1);
-    frame->ra_val = *((void**) ra_loc); // Take a copy of the value of marked RA
-    TMSG(TRAMP, "Marked return addr @ %p = %p", ra_loc, frame->ra_val);
+    if (ra_loc) {
+      void* ra = *((void**) ra_loc);
+      if ((unsigned long)ra & 1 == 1) {
+          frame->ra_val = ra; // ra_val of the first RA marked frame may have been reset. Take a copy of the value of marked RA
+		  break; // RA has already been marked
+	  }
 
-    hpcrun_retcnt_inc(node, 1); // Increasing return count eagerly.
+      *((void**) ra_loc) = (void*)((unsigned long)ra | 1);
+      frame->ra_val = *((void**) ra_loc); // Take a copy of the value of marked RA
+      TMSG(TRAMP, "Marked return addr @ %p = %p", ra_loc, frame->ra_val);
+
+      hpcrun_retcnt_inc(node, 1); // Increasing return count eagerly.
+    } else {
+      TMSG(TRAMP, "Tramp frame ra loc = NULL, skip marking this frame");
+    }
     
+    cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+    if (  !hpcrun_get_retain_recursion_mode()
+       && frame != td->cached_bt
+       && frame != td->cached_bt_end-1
+       && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
+       && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
+       )
+      parent = node;
+    node = parent;
     frame++;
-    node = hpcrun_cct_parent(node);
   }
 
   TMSG(TRAMP, "#%d frames are marked", frame - td->tramp_frame);
