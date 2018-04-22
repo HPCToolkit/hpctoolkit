@@ -58,8 +58,8 @@
 
 // list of event descriptions
 typedef struct event_desc_list_s {
-  event_info_t *event;
-  SLIST_ENTRY(events_list_s) entries;
+  event_info_t *event_info;
+  SLIST_ENTRY(event_desc_list_s) entries;
 } event_desc_list_t;
 
 
@@ -70,8 +70,8 @@ typedef struct event_desc_list_s {
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
 
-static SLIST_HEAD(event_list_head, event_desc_list_s) list_event_desc_head = 
-                                SLIST_HEAD_INITIALIZER(event_list_head);
+static SLIST_HEAD(event_desc_list_head_s, event_desc_list_s) list_event_desc_head = 
+                                SLIST_HEAD_INITIALIZER(event_desc_list_head_s);
 
 
 
@@ -91,7 +91,7 @@ event_desc_add(event_info_t *event)
   if (item == NULL)
     return -1;
 
-  item->event = event;
+  item->event_info = event;
 
   SLIST_INSERT_HEAD(&list_event_desc_head, item, entries);
   return 1;
@@ -103,8 +103,8 @@ event_desc_find(int metric)
   event_desc_list_t *item = NULL;
 
   SLIST_FOREACH(item, &list_event_desc_head, entries) {
-    if (item != NULL && item->event->metric == metric)
-      return item->event;
+    if (item != NULL && item->event_info->metric == metric)
+      return item->event_info;
   }
   return NULL;
 }
@@ -139,6 +139,6 @@ event_desc_get_next(event_desc_list_t *item)
 event_info_t*
 event_desc_get_event_info(event_desc_list_t *item)
 {
-  return item->event;
+  return item->event_info;
 }
 
