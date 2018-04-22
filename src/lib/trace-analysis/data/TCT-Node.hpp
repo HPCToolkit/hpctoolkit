@@ -146,11 +146,11 @@ namespace TraceAnalysis {
         
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
-    virtual TCTANode* duplicate() = 0;
+    virtual TCTANode* duplicate() const = 0;
     
     // returns a pointer to a void duplicate of this object. 
     // Caller responsible for deallocating the void duplicate.
-    virtual TCTANode* voidDuplicate() = 0;
+    virtual TCTANode* voidDuplicate() const = 0;
     
     // Print contents of an object to a string for debugging purpose.
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
@@ -202,6 +202,11 @@ namespace TraceAnalysis {
       children.push_back(child);
     }
     
+    virtual void replaceChild(int idx, TCTANode* child) {
+      delete children[idx];
+      children[idx] = child;
+    }
+    
     virtual TCTANode* removeChild(int idx) {
       TCTANode* ret = getChild(idx);
       children.erase(children.begin() + idx);
@@ -222,10 +227,10 @@ namespace TraceAnalysis {
     TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTFunctionTraceNode() {}
     
-    virtual TCTANode* duplicate() {
+    virtual TCTANode* duplicate() const {
       return new TCTFunctionTraceNode(*this);
     }
-    virtual TCTANode* voidDuplicate() {
+    virtual TCTANode* voidDuplicate() const {
       return new TCTFunctionTraceNode(id.id, id.procID, name, depth, cfgGraph, ra);
     }
   };
@@ -238,10 +243,10 @@ namespace TraceAnalysis {
     TCTRootNode(const TCTRootNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTRootNode() {}
     
-    virtual TCTANode* duplicate() {
+    virtual TCTANode* duplicate() const {
       return new TCTRootNode(*this);
     }
-    virtual TCTANode* voidDuplicate() {
+    virtual TCTANode* voidDuplicate() const {
       return new TCTRootNode(id.id, id.procID, name, depth);
     }
   };
@@ -258,10 +263,10 @@ namespace TraceAnalysis {
     TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
     
-    virtual TCTANode* duplicate() {
+    virtual TCTANode* duplicate() const {
       return new TCTIterationTraceNode(*this);
     }
-    virtual TCTANode* voidDuplicate() {
+    virtual TCTANode* voidDuplicate() const {
       return new TCTIterationTraceNode(id.id, name, depth, cfgGraph);
     }
   };
@@ -270,16 +275,58 @@ namespace TraceAnalysis {
   public:
     TCTLoopTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Loop, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
-    TCTLoopTraceNode(const TCTLoopTraceNode& orig) : TCTATraceNode(orig) {}
-    virtual ~TCTLoopTraceNode() {}
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), pendingIteration(NULL) {}
+    TCTLoopTraceNode(const TCTLoopTraceNode& orig) : TCTATraceNode(orig) {
+      if (orig.pendingIteration != NULL) {
+        pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
+        pendingIterationAccepted = orig.pendingIterationAccepted;
+      }
+    }
+    virtual ~TCTLoopTraceNode() {
+      if (pendingIteration != NULL) delete pendingIteration;
+    }
     
-    virtual TCTANode* duplicate() {
+    virtual TCTANode* duplicate() const {
       return new TCTLoopTraceNode(*this);
     }
-    virtual TCTANode* voidDuplicate() {
+    virtual TCTANode* voidDuplicate() const {
       return new TCTLoopTraceNode(id.id, name, depth, cfgGraph);
     }
+    
+    int getNumIteration() {
+      return this->getNumChild() + hasPendingIteration();
+    }
+    
+    bool hasPendingIteration() {
+      return (pendingIteration != NULL);
+    }
+    
+    bool isPendingIterationAccepted() {
+      return pendingIterationAccepted;
+    }
+    
+    TCTIterationTraceNode* popPendingIteration() {
+      pendingIteration = NULL;
+      return pendingIteration;
+    }
+    
+    bool pushPendingIteration(TCTIterationTraceNode* pendingIteration, bool accepted) {
+      if (hasPendingIteration()) return false;
+      this->pendingIteration = pendingIteration;
+      this->pendingIterationAccepted = accepted;
+      return true;
+    }
+    
+    bool finalizePendingIteration() {
+      if (!hasPendingIteration()) return false;
+      this->addChild(pendingIteration);
+      pendingIteration = NULL;
+      return true;
+    }
+  
+  private:
+    TCTIterationTraceNode* pendingIteration;
+    bool pendingIterationAccepted;
   };
   
   class TCTProfileNode : public TCTANode {
@@ -287,7 +334,8 @@ namespace TraceAnalysis {
     static TCTProfileNode* newProfileNode(TCTANode* node) {
       if (node->type == TCTANode::Prof)
         return new TCTProfileNode(*((TCTProfileNode*)node), true);
-      
+      if (node->type == TCTANode::Loop)
+        return new TCTProfileNode(*((TCTLoopTraceNode*)node));
       return new TCTProfileNode(*((TCTATraceNode*)node));
     }
     
@@ -296,11 +344,11 @@ namespace TraceAnalysis {
         delete it->second;
     }
     
-    virtual TCTANode* duplicate() {
+    virtual TCTANode* duplicate() const {
       return new TCTProfileNode(*this, true);
     };
     
-    virtual TCTANode* voidDuplicate() {
+    virtual TCTANode* voidDuplicate() const {
       TCTProfileNode* ret = new TCTProfileNode(*this, false);
       ret->time->clear();
       return ret;
@@ -325,12 +373,18 @@ namespace TraceAnalysis {
     
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
+    virtual void setDepth(int depth) {
+      this->depth = depth;
+      for (auto it = childMap.begin(); it != childMap.end(); it++)
+        it->second->setDepth(depth+1);
+    }
+    
   protected:
     // Map id to child profile node.
     map<TCTID, TCTProfileNode*> childMap;
     
-    TCTProfileNode(const TCTATraceNode& loop) : TCTANode (loop, Prof) {
-      for (auto it = loop.children.begin(); it != loop.children.end(); it++) {
+    TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
+      for (auto it = trace.children.begin(); it != trace.children.end(); it++) {
         TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
         if (childMap.find(child->id) == childMap.end())
           childMap[child->id] = child;
@@ -338,6 +392,20 @@ namespace TraceAnalysis {
           childMap[child->id]->merge(child);
           delete child;
         }
+      }
+    }
+    
+    TCTProfileNode(const TCTLoopTraceNode& loop) : TCTANode (loop, Prof) {
+      for (auto it = loop.children.begin(); it != loop.children.end(); it++) {
+        TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
+        child->setDepth(this->depth);
+        for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
+          if (childMap.find(iit->second->id) == childMap.end())
+            childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+          else
+            childMap[iit->second->id]->merge(iit->second);
+        }
+        delete child;
       }
     }
     

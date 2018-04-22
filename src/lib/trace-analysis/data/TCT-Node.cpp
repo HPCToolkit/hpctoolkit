@@ -78,7 +78,8 @@ namespace TraceAnalysis {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
-    if (time->getDuration() < minDuration) return ret;
+    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = children.begin(); it != children.end(); it++)
       ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
@@ -89,7 +90,8 @@ namespace TraceAnalysis {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
-    if (time->getDuration() < minDuration) return ret;
+    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       ret += it->second->toString(maxDepth, minDuration, samplingInterval);
