@@ -358,7 +358,6 @@ if OPT_PERF_MEM_DATA_SRC
 MY_BASE_FILES +=  			\
 	sample-sources/datacentric/datacentric.c	\
 	sample-sources/datacentric/memaddress.c		
-endif
 
 if OPT_IBS_OP
 MY_BASE_FILES +=  			\
@@ -372,14 +371,15 @@ MY_BASE_FILES +=  			\
 	sample-sources/datacentric/datadummy.c
 endif	# HOST_CPU_X86_64
 
-endif
+endif  # OPT_IBS_OP
+endif  # OPT_PERF_MEM_DATA_SRC
 
 if OPT_ENABLE_KERNEL_4_3
 MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
 else
 MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
-endif
-endif
+endif  # OPT_ENABLE_KERNEL_4_3
+endif  # OPT_ENABLE_PERF_EVENT
 
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\

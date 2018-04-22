@@ -318,8 +318,8 @@ getEnvLong(const char *env_var, long default_value)
  * TODO: this method only works on some platforms, and not
  *       general enough on all the platforms.
  */
-static void
-set_max_precise_ip(struct perf_event_attr *attr)
+u64
+perf_util_set_max_precise_ip(struct perf_event_attr *attr)
 {
   // start with the most restrict skid (3) then 2, 1 and 0
   // this is specified in perf_event_open man page
@@ -336,9 +336,10 @@ set_max_precise_ip(struct perf_event_attr *attr)
 	if (ret >= 0) {
 	  close(ret);
 	  // just quit when the returned value is correct
-	  return;
+	  return i;
 	}
   }
+  return 0;
 }
 
 //----------------------------------------------------------
@@ -347,8 +348,8 @@ set_max_precise_ip(struct perf_event_attr *attr)
 //    updated for the default precise ip.
 // @return the assigned precise ip 
 //----------------------------------------------------------
-static u64
-get_precise_ip(struct perf_event_attr *attr)
+u64
+perf_util_get_precise_ip(struct perf_event_attr *attr)
 {
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
@@ -366,8 +367,10 @@ get_precise_ip(struct perf_event_attr *attr)
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
-    set_max_precise_ip(attr);
+    perf_util_set_max_precise_ip(attr);
   }
+  // at the moment there is no way to be able to detect the highest
+  // precise_ip. We just return 0 to ensure it works everywhere
   return 0;
 }
 
@@ -556,7 +559,7 @@ perf_util_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
-  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
+  attr->precise_ip    = perf_util_get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */

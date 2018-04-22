@@ -79,6 +79,11 @@ static SLIST_HEAD(event_list_head, event_desc_list_s) list_event_desc_head =
 // Public functions
 //******************************************************************************
 
+/**
+ * add an event descriptor into the list
+ * return 1 if successful
+ * return -1 if fails
+ */
 int
 event_desc_add(event_info_t *event)
 {
@@ -89,7 +94,7 @@ event_desc_add(event_info_t *event)
   item->event = event;
 
   SLIST_INSERT_HEAD(&list_event_desc_head, item, entries);
-  return 0;
+  return 1;
 }
 
 event_info_t*

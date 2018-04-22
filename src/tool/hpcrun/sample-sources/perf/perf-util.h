@@ -213,4 +213,10 @@ perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
 void
 perf_util_get_default_threshold(struct event_threshold_s *threshold);
 
+u64
+perf_util_set_max_precise_ip(struct perf_event_attr *attr);
+
+u64
+perf_util_get_precise_ip(struct perf_event_attr *attr);
+
 #endif

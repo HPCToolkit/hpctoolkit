@@ -52,8 +52,10 @@
 
 #include "datacentric.h"
 
+// list of precise events
+
 #define EVNAME_SANDYBRIDGE_LATENCY  "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"
-#define EVNAME_SANDYBRIDGE_STORE    "MEM_TRANS_RETIRED:PRECISE_STORE"
+#define EVNAME_SANDYBRIDGE_STORE    "snb::MEM_TRANS_RETIRED:PRECISE_STORE"
 
 #define EVNAME_KNL_OFFCORE_RESP_0   "knl::OFFCORE_RESPONSE_0"
 #define EVNAME_KNL_CACHE_L2_HIT     "knl::MEM_UOPS_RETIRED:LD_L2_HIT"
@@ -72,47 +74,49 @@ static const char *evnames[] = {
     EVNAME_SANDYBRIDGE_STORE
 };
 
+static void
+set_default_perf_event_attr(struct perf_event_attr *attr, struct event_threshold_s *period)
+{
+	attr->size = sizeof(struct perf_event_attr);
+
+	attr->sample_period  = period->threshold_num;
+	attr->freq           = period->threshold_type == FREQUENCY ? 1 : 0;
+
+	attr->sample_type    = PERF_SAMPLE_RAW
+	                         | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+	                         | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
+	                         | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
+	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+	                         | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
+	#endif
+	                                    ;
+	attr->disabled      = 1;
+	attr->sample_id_all = 1;
+}
+
 int
 datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
 {
   int size = sizeof(evnames)/sizeof(const char*);
+  struct perf_event_attr *event_attr = &(event_desc->attr);
 
   for(int i=0; i<size ; i++) {
-    struct perf_event_attr *event_attr = &(event_desc->attr);
     int isPMU = pfmu_getEventAttribute(evnames[i], event_attr);
+    set_default_perf_event_attr(event_attr, period);
 
-    if (isPMU >= 0) {
-      // testing the feasibility;
-      event_desc->attr.precise_ip = get_precise_ip(&(event_desc->attr));  // as precise as possible
+    if (isPMU < 0) continue;
 
-      if (event_desc->attr.precise_ip > 0)
-        break;
-    }
+    event_attr->precise_ip = 2;
+
+    // testing the feasibility;
+	int ret = perf_util_event_open(event_attr,
+			THREAD_SELF, CPU_ANY,
+			GROUP_FD, PERF_FLAGS);
+	if (ret >= 0) {
+	  close(ret);
+	  // just quit when the returned value is correct
+	  break;
+	}
   }
-
-  event_desc->attr.size           = sizeof(struct perf_event_attr);
-  event_desc->attr.sample_period  = period->threshold_num;
-  event_desc->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
-
-  event_desc->attr.sample_type    = PERF_SAMPLE_RAW  
-                                    | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
-                                    | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
-                                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-                                    | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
-#endif
-                                    ;
-  event_desc->attr.disabled       = 1;
-  event_desc->attr.exclude_kernel = 0;
-  event_desc->attr.exclude_user   = 0;
-  event_desc->attr.exclude_hv     = 0;
-  event_desc->attr.exclude_guest  = 0;
-  event_desc->attr.exclude_idle   = 0;
-  event_desc->attr.exclude_host   = 0;
-  event_desc->attr.pinned         = 0;
-  event_desc->attr.mmap           = 1;
-
-  event_desc->attr.sample_id_all = 1;
-  event_desc->attr.read_format   = 0;
   return 1;
 }

@@ -160,14 +160,14 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/datacentric.c	\
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/memaddress.c		
 
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@am__append_19 = \
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@	sample-sources/datacentric/ibsop.c
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_19 = \
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/ibsop.c
 
-@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__append_20 = \
-@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@	sample-sources/datacentric/pmu_x86.c
+@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_20 = \
+@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_x86.c
 
-@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__append_21 = \
-@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@	sample-sources/datacentric/datadummy.c
+@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_21 = \
+@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/datadummy.c
 
 @OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_22 = sample-sources/perf/kernel_blocking.c
 @OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_23 = sample-sources/perf/kernel_blocking_stub.c
@@ -554,9 +554,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_9 = sample-sources/perf/libhpcrun_la-perfmon-util-dummy.lo
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_10 = sample-sources/datacentric/libhpcrun_la-datacentric.lo \
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_la-memaddress.lo
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@am__objects_11 = sample-sources/datacentric/libhpcrun_la-ibsop.lo
-@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__objects_12 = sample-sources/datacentric/libhpcrun_la-pmu_x86.lo
-@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__objects_13 = sample-sources/datacentric/libhpcrun_la-datadummy.lo
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_11 = sample-sources/datacentric/libhpcrun_la-ibsop.lo
+@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_12 = sample-sources/datacentric/libhpcrun_la-pmu_x86.lo
+@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_13 = sample-sources/datacentric/libhpcrun_la-datadummy.lo
 @OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_14 = sample-sources/perf/libhpcrun_la-kernel_blocking.lo
 @OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_15 = sample-sources/perf/libhpcrun_la-kernel_blocking_stub.lo
 am__objects_16 = utilities/libhpcrun_la-first_func.lo \
@@ -857,9 +857,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_46 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_47 = sample-sources/datacentric/libhpcrun_o-datacentric.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_o-memaddress.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@am__objects_48 = sample-sources/datacentric/libhpcrun_o-ibsop.$(OBJEXT)
-@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__objects_49 = sample-sources/datacentric/libhpcrun_o-pmu_x86.$(OBJEXT)
-@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@am__objects_50 = sample-sources/datacentric/libhpcrun_o-datadummy.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_48 = sample-sources/datacentric/libhpcrun_o-ibsop.$(OBJEXT)
+@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_49 = sample-sources/datacentric/libhpcrun_o-pmu_x86.$(OBJEXT)
+@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_50 = sample-sources/datacentric/libhpcrun_o-datadummy.$(OBJEXT)
 @OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_51 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
 @OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_52 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
 am__objects_53 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
