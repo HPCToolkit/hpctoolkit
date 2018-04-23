@@ -102,10 +102,9 @@ datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *peri
 
   for(int i=0; i<size ; i++) {
     int isPMU = pfmu_getEventAttribute(evnames[i], event_attr);
-    set_default_perf_event_attr(event_attr, period);
-
     if (isPMU < 0) continue;
 
+    set_default_perf_event_attr(event_attr, period);
     event_attr->precise_ip = 2;
 
     // testing the feasibility;

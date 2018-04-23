@@ -109,7 +109,7 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 8192
+#define MIN_BYTES 1024
 #define NUM_DATA_METRICS 2
 
 /******************************************************************************
