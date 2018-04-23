@@ -86,6 +86,17 @@ namespace TraceAnalysis {
     return ret;
   }
   
+  string TCTLoopNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
+    
+    if (depth >= maxDepth) return ret;
+    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    
+    for (auto it = iterations.begin(); it != iterations.end(); it++)
+      ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
+    return ret;
+  }
+  
   string TCTProfileNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     

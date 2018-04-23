@@ -96,8 +96,11 @@ namespace TraceAnalysis {
       activeStack.pop_back();
 
       if (activeStack.size() > 0) {
+        // When popping an iteration
         if (node->type == TCTANode::Iter) {
-          TCTLoopTraceNode* loop = (TCTLoopTraceNode*) activeStack.back();
+          // Its parent must be a loop
+          TCTLoopNode* loop = (TCTLoopNode*) activeStack.back();
+          // If the former (pending) iteration is rejected, convert the loop to a ProfileNode and replace the original loop node
           if (loop->hasPendingIteration() && !loop->isPendingIterationAccepted()) {
             loop->finalizePendingIteration();
             loop->pushPendingIteration((TCTIterationTraceNode*)node, false);
@@ -109,11 +112,12 @@ namespace TraceAnalysis {
             delete loop;
             return;
           }
+          // If the former (pending) iteration is accepted, finalize the former iteration and push the current one as the pending iteration. 
           if (loop->hasPendingIteration())
             loop->finalizePendingIteration();
           loop->pushPendingIteration((TCTIterationTraceNode*)node, acceptIteration((TCTIterationTraceNode*)node));
         }
-        else
+        else // In all other cases, add node as a child of its parent.
           activeStack.back()->addChild(node);
       }
     }
@@ -167,7 +171,7 @@ namespace TraceAnalysis {
           
           // push a new iteration when parent loop is still valid
           if (activeStack.back()->type == TCTANode::Loop) {
-            int iterNum = ((TCTLoopTraceNode*)activeStack.back())->getNumIteration();
+            int iterNum = ((TCTLoopNode*)activeStack.back())->getNumIteration();
             pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, iterNum, activeStack.size(), activeStack.back()->cfgGraph),
                   startTimeExclusive, startTimeInclusive);
           }
@@ -185,7 +189,7 @@ namespace TraceAnalysis {
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
             bool printError = (i != parent->getNumChild() - 1) && parent->name.find("<unknown procedure>") == string::npos;
-            if (printError) printf("Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
+            if (printError) printf("ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
             if (printError) printf("%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
             // and remove it from the parent (as it will be re-added later when popped from stack).
@@ -195,8 +199,8 @@ namespace TraceAnalysis {
 
             // if node is a loop, push the latest iteration onto stack.
             if (node->type == TCTANode::Loop) {
-              TCTLoopTraceNode* loop = (TCTLoopTraceNode*) node;
-              TCTANode* iter = loop->removeChild(loop->getNumChild()-1);
+              TCTLoopNode* loop = (TCTLoopNode*) node;
+              TCTANode* iter = loop->popPendingIteration();
               pushOneNode(iter, iter->getTraceTime()->getStartTimeExclusive(), iter->getTraceTime()->getStartTimeInclusive());
             }
 
@@ -215,6 +219,8 @@ namespace TraceAnalysis {
       return false;
     }
 
+    // Return true if we are confident that children of this iteration belong to
+    // one iteration in the execution.
     bool acceptIteration(TCTIterationTraceNode* iter) {
       int countFunc = 0;
       int countLoop = 0;
@@ -331,12 +337,14 @@ namespace TraceAnalysis {
     }
     */
 
+    // Finalize pending iterations in all loops.
+    // Returns a non-NULL pointer if a node need to be replaced.
     TCTANode* finalizeLoops(TCTANode* node) {
       if (node->type == TCTANode::Prof) {
         return NULL;
       }
       else if (node->type == TCTANode::Loop) {
-        TCTLoopTraceNode* loop = (TCTLoopTraceNode*) node;
+        TCTLoopNode* loop = (TCTLoopNode*) node;
         if (loop->hasPendingIteration() && !loop->isPendingIterationAccepted()) {
           loop->finalizePendingIteration();
           TCTProfileNode* prof = TCTProfileNode::newProfileNode(loop);
@@ -348,10 +356,12 @@ namespace TraceAnalysis {
           loop->finalizePendingIteration();
         printf("Loop accepted:\n%s", loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
         
-        for (int i = 0; i < loop->getNumChild(); i++) {
-          TCTANode* child = finalizeLoops(loop->getChild(i));
-          if (child != NULL)
-            loop->replaceChild(i, child);
+        for (int i = 0; i < loop->getNumIteration(); i++) {
+          TCTANode* child = finalizeLoops(loop->getIteration(i));
+          if (child != NULL) {
+            printf("ERROR: IterationNode is converted to ProfileNode.\n");
+            delete child;
+          }
         }
         return NULL;
       }
@@ -366,9 +376,10 @@ namespace TraceAnalysis {
       }
     }
     
+    // Compute LCA Depth of the previous and current sample.
     int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
       int depth = prev->getDepth();
-      int dLCA = current->getDLCA();
+      int dLCA = current->getDLCA(); // distance to LCA
       if (dLCA != HPCRUN_FMT_DLCA_NULL) {
         while (depth > 0 && dLCA > 0) {
           if (prev->getFrameAtDepth(depth).type == CallPathFrame::Func)
@@ -394,7 +405,7 @@ namespace TraceAnalysis {
       }
       
       if (error != "") {
-        printf("%s\n", error.c_str());
+        printf("ERROR: %s\n", error.c_str());
         printf("Prev = ");
         for (int i = 0; i < prev->getDepth(); i++)
           printf(" %s(%u,%u), ", prev->getFrameAtDepth(i).name.c_str(), 
@@ -409,6 +420,7 @@ namespace TraceAnalysis {
       return depth;
     }
     
+    // Frames whose children will be filtered.
     bool filterFrame(const CallPathFrame& frame) {
       if (frame.name.length() >= 5 && frame.name.substr(0, 5) == "PMPI_")
         return true;
@@ -431,7 +443,7 @@ namespace TraceAnalysis {
             pushOneNode(root, 0, current->timestamp);
           } 
           else if (frame.type == CallPathFrame::Loop) {
-            TCTANode* node = new TCTLoopTraceNode(frame.id, frame.name, activeStack.size(), 
+            TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
                     binaryAnalyzer.findLoop(frame.vma));
             pushActiveStack(node, 0, current->timestamp);
           }
@@ -456,20 +468,21 @@ namespace TraceAnalysis {
         int lcaDepth = computeLCADepth(prev, current);
         if (prevDepth > prev->getDepth()) prevDepth = prev->getDepth();
         
+        // pop all frames below LCA in the previous sample
         while (prevDepth > lcaDepth) {
           prevDepth--;
           popActiveStack(prev->timestamp, current->timestamp);
         }
         
-        if (prevDepth < lcaDepth)
-          lcaDepth = prevDepth;
+        if (prevDepth < lcaDepth) // when prevDepth is smaller than lcaDepth due to filtered frames
+          lcaDepth = prevDepth; // reset lcaDepth
         
         currentDepth = lcaDepth;
         if (!filterFrame(current->getFrameAtDepth(lcaDepth))) {
           for (currentDepth = lcaDepth + 1; currentDepth <= current->getDepth(); currentDepth++) {
             CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
             if (frame.type == CallPathFrame::Loop) {
-              TCTANode* node = new TCTLoopTraceNode(frame.id, frame.name, activeStack.size(), 
+              TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
                       binaryAnalyzer.findLoop(frame.vma));
               pushActiveStack(node, prev->timestamp, current->timestamp);
             } else {
