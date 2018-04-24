@@ -81,14 +81,14 @@ namespace TraceAnalysis {
       
       if (cur->type() == cur->TyCall) {
         // cur is call, last is proc.
-        string name = last->structure()->name();
+        string name = last->structure() != NULL ? last->structure()->name() : "";
         bool isFake;
         name = normalize_name(name.c_str(), isFake);
         CallPathFrame func(
                 cur->id(),
                 last->id(),
                 name,
-                last->structure()->vmaSet().begin()->beg(),
+                last->structure() != NULL ? last->structure()->vmaSet().begin()->beg() : 0,
                 CallPathFrame::Func,
                 ((Prof::CCT::Call*)cur)->lmRA());
         frames.push_back(func);

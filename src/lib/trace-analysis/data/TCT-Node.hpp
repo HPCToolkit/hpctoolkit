@@ -328,8 +328,9 @@ namespace TraceAnalysis {
     }
     
     TCTIterationTraceNode* popPendingIteration() {
+      TCTIterationTraceNode* ret = pendingIteration;
       pendingIteration = NULL;
-      return pendingIteration;
+      return ret;
     }
     
     void finalizePendingIteration();
