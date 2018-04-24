@@ -710,6 +710,10 @@ XED2_HPCRUN_LIBS
 XED2_LIB_FLAGS
 XED2_LIB_DIR
 XED2_INC
+TBB_COPY
+TBB_LIB_DIR
+TBB_LFLAGS
+TBB_IFLAGS
 LIBDW_COPY
 OPT_DYNINST_LIBDW_FALSE
 OPT_DYNINST_LIBDW_TRUE
@@ -1014,6 +1018,7 @@ enable_perf_events
 enable_kernel_blocking
 with_symtabAPI
 with_dyninst_type
+with_tbb
 with_xed2
 with_xerces
 with_zlib
@@ -1764,6 +1769,7 @@ Optional Packages:
   --with-dyninst-type=TYPE
                           temp option for dyninst version (old, libdw, cuda),
                           only needed if autoconf fails to detect correctly
+  --with-tbb=PATH         path to intel tbb install directory
   --with-xed2=PATH        path to xed2 install directory
   --with-xerces=PATH      use given XercesC installation
   --with-zlib=PATH        path to zlib install directory
@@ -19257,6 +19263,7 @@ default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
 default_perfmon_prefix=no
+default_tbb_prefix=no
 default_xed2_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
@@ -19358,6 +19365,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg libpfm4 ; then
     default_perfmon_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-tbb ; then
+    default_tbb_prefix="$spack_ans"
   fi
   if find_spack_pkg intel-xed ; then
     default_xed2_prefix="$spack_ans"
@@ -21299,6 +21309,55 @@ $as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
 fi
 
 LIBDW_COPY="$use_libdw"
+
+
+
+#-------------------------------------------------
+# Option: --with-tbb=PATH
+#-------------------------------------------------
+
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_LIB_DIR=
+TBB_COPY=no
+
+TBB="$default_tbb_prefix"
+
+
+# Check whether --with-tbb was given.
+if test "${with_tbb+set}" = set; then :
+  withval=$with_tbb; TBB="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for tbb" >&5
+$as_echo_n "checking for tbb... " >&6; }
+
+case "$TBB" in
+  /* )
+    if test -f "${TBB}/include/tbb/concurrent_hash_map.h" \
+        && test -f "${TBB}/lib/libtbb.so"
+    then : ; else
+      as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
+    fi
+    TBB_IFLAGS="-I${TBB}/include"
+    TBB_LFLAGS="-L${TBB}/lib -ltbb -ltbbmalloc"
+    TBB_LIB_DIR="${TBB}/lib"
+    TBB_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "tbb directory must be absolute path: $TBB" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $TBB" >&5
+$as_echo "$TBB" >&6; }
+
+
+
+
 
 
 
@@ -25723,6 +25782,8 @@ $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
 $as_echo "$as_me:   perfmon:      ${perfmon_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
 $as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   tbb:          ${TBB}" >&5
+$as_echo "$as_me:   tbb:          ${TBB}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5
 $as_echo "$as_me:   xed2:         ${XED2}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xerces:       ${XERCES}" >&5

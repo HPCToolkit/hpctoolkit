@@ -51,9 +51,14 @@ include $(top_srcdir)/src/Makeinclude.config
 #----------------------------------------------------------------------
 
 BOOST_INC = @BOOST_INC@
+BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
+
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBELF_INC = @LIBELF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
+TBB_IFLAGS = @TBB_IFLAGS@
+TBB_LFLAGS = @TBB_LFLAGS@
 
 if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
@@ -77,7 +82,8 @@ MYCXXFLAGS = \
 	-I$(BOOST_INC)  \
 	$(DWARF_IFLAGS) \
 	-I$(LIBELF_INC)  \
-	-I$(SYMTABAPI_INC)
+	-I$(SYMTABAPI_INC)  \
+	$(TBB_IFLAGS)
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
@@ -87,14 +93,19 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexec_PROGRAMS = dotgraph-bin
-
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
 
+if FALSE
+pkglibexec_PROGRAMS = dotgraph-bin
+
 dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) $(DWARF_IFLAGS) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
-dotgraph_bin_CXXFLAGS = @HOST_CXXFLAGS@
-dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
+dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
+dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) $(TBB_LFLAGS)
+
+if USE_BOOST_LIBS
+dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
+endif
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)

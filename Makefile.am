@@ -145,6 +145,8 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
 	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
 	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
+	$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
+	$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)

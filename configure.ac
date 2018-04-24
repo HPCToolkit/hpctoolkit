@@ -1225,6 +1225,7 @@ default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
 default_perfmon_prefix=no
+default_tbb_prefix=no
 default_xed2_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
@@ -1324,6 +1325,9 @@ then
   fi
   if find_spack_pkg libpfm4 ; then
     default_perfmon_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-tbb ; then
+    default_tbb_prefix="$spack_ans"
   fi
   if find_spack_pkg intel-xed ; then
     default_xed2_prefix="$spack_ans"
@@ -2846,6 +2850,52 @@ AC_SUBST([LIBDW_COPY])
 
 
 #-------------------------------------------------
+# Option: --with-tbb=PATH
+#-------------------------------------------------
+
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_LIB_DIR=
+TBB_COPY=no
+
+TBB="$default_tbb_prefix"
+
+AC_ARG_WITH([tbb],
+  [AS_HELP_STRING([--with-tbb=PATH],
+      [path to intel tbb install directory])],
+  [TBB="$withval"],
+  [])
+
+AC_MSG_CHECKING([for tbb])
+
+case "$TBB" in
+  /* )
+    if test -f "${TBB}/include/tbb/concurrent_hash_map.h" \
+        && test -f "${TBB}/lib/libtbb.so"
+    then : ; else
+      AC_MSG_ERROR([invalid tbb directory: $TBB])
+    fi
+    TBB_IFLAGS="-I${TBB}/include"
+    TBB_LFLAGS="-L${TBB}/lib -ltbb -ltbbmalloc"
+    TBB_LIB_DIR="${TBB}/lib"
+    TBB_COPY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([tbb directory must be absolute path: $TBB])
+    ;;
+esac
+
+AC_MSG_RESULT([$TBB])
+
+AC_SUBST([TBB_IFLAGS])
+AC_SUBST([TBB_LFLAGS])
+AC_SUBST([TBB_LIB_DIR])
+AC_SUBST([TBB_COPY])
+
+
+#-------------------------------------------------
 # Option: --with-xed2=PATH
 #-------------------------------------------------
 
@@ -4076,6 +4126,7 @@ AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
 AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
+AC_MSG_NOTICE([  tbb:          ${TBB}])
 AC_MSG_NOTICE([  xed2:         ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
