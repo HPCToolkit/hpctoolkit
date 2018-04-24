@@ -514,6 +514,23 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   return sv;
 }
 
+/**
+ * return the position of precise_ip modifier if exist
+ * if not exist, returns 0
+ */
+static size_t
+exist_precise_ip_modifier(const char *original_event)
+{
+  size_t len = strlen(original_event);
+  int is_precise = 0;
+  if (len > 2) {
+	// precise_ip modifier is either :p or :P at the end
+	is_precise = (original_event[len-2] == ':') &&
+				 (original_event[len-1] == 'p' || original_event[len-1] == 'P');
+    return len-2;
+  }
+  return 0;
+}
 
 /******************************************************************************
  * method functions
@@ -690,6 +707,10 @@ METHOD_FN(supports_event, const char *ev_str)
   if (event_custom_find(ev_tmp) != NULL)
     return true;
 
+  size_t precise_ip_pos = exist_precise_ip_modifier(ev_tmp);
+  if (precise_ip_pos > 0) {
+	  ev_tmp[precise_ip_pos] = '\0';
+  }
   // this is not a predefined event, we need to consult to perfmon (if enabled)
   return pfmu_isSupported(ev_tmp) >= 0;
 }
@@ -734,6 +755,11 @@ METHOD_FN(process_event_list, int lush_metrics)
       continue;
     }
 
+    size_t precise_ip_pos = exist_precise_ip_modifier(name);
+    if (precise_ip_pos > 0) {
+    	name[precise_ip_pos] = '\0';
+    }
+
     event_info_t *event = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
     struct perf_event_attr *event_attr = &event->attr;
 
@@ -751,6 +777,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     // ------------------------------------------------------------
     perf_util_attr_init(event_attr, is_period, threshold, 0);
 
+    if (precise_ip_pos>0) {
+    	perf_util_set_max_precise_ip(event_attr);
+    }
     // ------------------------------------------------------------
     // initialize the property of the metric
     // if the metric's name has "CYCLES" it mostly a cycle metric 

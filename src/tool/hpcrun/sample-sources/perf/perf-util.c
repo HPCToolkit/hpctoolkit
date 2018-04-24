@@ -216,6 +216,8 @@ perf_util_get_kptr_restrict()
   return privilege;
 }
 
+
+
 static uint16_t 
 perf_get_kernel_lm_id() 
 {
@@ -246,52 +248,6 @@ perf_get_kernel_lm_id()
 
 
 
-//----------------------------------------------------------
-// extend a user-mode callchain with kernel frames (if any)
-//----------------------------------------------------------
-cct_node_t *
-perf_util_add_kernel_callchain(
-  cct_node_t *leaf, 
-  void *data_aux
-)
-{
-  cct_node_t *parent = leaf;
-  
-  if (data_aux == NULL)  {
-    return parent;
-  }
-
-  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
-  if (data->nr > 0) {
-    uint16_t kernel_lm_id = perf_get_kernel_lm_id();
-
-    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44 
-    // if no kernel symbols are available, collapse the kernel call
-    // chain into a single node
-    if (perf_util_get_kptr_restrict() != 0) {
-      return perf_insert_cct(kernel_lm_id, parent, 0);
-    }
-
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips[]
-    for (int i = data->nr - 1; i > 0; i--) {
-      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
-    }
-
-    // check ip[0] before adding as it often seems seems to be anomalous
-    if (data->ips[0] != anomalous_ip) {
-      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[0]);
-    }
-  }
-  return parent;
-}
-
-uint16_t
-get_perf_kernel_lm_id()
-{
-  return perf_kernel_lm_id;
-}
-
 /*
  * get int long value of variable environment.
  * If the variable is not set, return the default value 
@@ -312,43 +268,13 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
-/**
- * set precise_ip attribute to the max value
- *
- * TODO: this method only works on some platforms, and not
- *       general enough on all the platforms.
- */
-u64
-perf_util_set_max_precise_ip(struct perf_event_attr *attr)
-{
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-	attr->precise_ip = perf_skid_precision[i];
-
-	// ask sys to "create" the event
-	// it returns -1 if it fails.
-	int ret = perf_util_event_open(attr,
-			THREAD_SELF, CPU_ANY,
-			GROUP_FD, PERF_FLAGS);
-	if (ret >= 0) {
-	  close(ret);
-	  // just quit when the returned value is correct
-	  return i;
-	}
-  }
-  return 0;
-}
-
 //----------------------------------------------------------
 // find the best precise ip value in this platform
 // @param current perf event attribute. This attribute can be
 //    updated for the default precise ip.
 // @return the assigned precise ip 
 //----------------------------------------------------------
-u64
+static u64
 perf_util_get_precise_ip(struct perf_event_attr *attr)
 {
   // check if user wants a specific ip-precision
@@ -375,31 +301,12 @@ perf_util_get_precise_ip(struct perf_event_attr *attr)
 }
 
 
-//----------------------------------------------------------
-// predicates that test perf availability
-//----------------------------------------------------------
-
-int
-perf_util_get_paranoid_level()
-{
-  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
-  int level         = 3; // default : no access to perf event
-
-  if (pe_paranoid != NULL) {
-    fscanf(pe_paranoid, "%d", &level) ;
-  }
-  if (pe_paranoid)
-    fclose(pe_paranoid);
-
-  return level;
-}
-
 
 //----------------------------------------------------------
 // returns the maximum sample rate of this node
 // based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
 //----------------------------------------------------------
-int
+static int
 perf_util_get_max_sample_rate()
 {
   static int initialized = 0;
@@ -538,6 +445,77 @@ perf_util_get_default_threshold(struct event_threshold_s *threshold)
 
 
 //----------------------------------------------------------
+// extend a user-mode callchain with kernel frames (if any)
+//----------------------------------------------------------
+cct_node_t *
+perf_util_add_kernel_callchain(
+  cct_node_t *leaf,
+  void *data_aux
+)
+{
+  cct_node_t *parent = leaf;
+
+  if (data_aux == NULL)  {
+    return parent;
+  }
+
+  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+  if (data->nr > 0) {
+    uint16_t kernel_lm_id = perf_get_kernel_lm_id();
+
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
+    // if no kernel symbols are available, collapse the kernel call
+    // chain into a single node
+    if (perf_util_get_kptr_restrict() != 0) {
+      return perf_insert_cct(kernel_lm_id, parent, 0);
+    }
+
+    // add kernel IPs to the call chain top down, which is the
+    // reverse of the order in which they appear in ips[]
+    for (int i = data->nr - 1; i > 0; i--) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
+    }
+
+    // check ip[0] before adding as it often seems seems to be anomalous
+    if (data->ips[0] != anomalous_ip) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[0]);
+    }
+  }
+  return parent;
+}
+
+
+/**
+ * set precise_ip attribute to the max value
+ *
+ * TODO: this method only works on some platforms, and not
+ *       general enough on all the platforms.
+ */
+u64
+perf_util_set_max_precise_ip(struct perf_event_attr *attr)
+{
+  // start with the most restrict skid (3) then 2, 1 and 0
+  // this is specified in perf_event_open man page
+  // if there's a change in the specification, we need to change
+  // this one too (unfortunately)
+  for(int i=perf_skid_flavors-1; i>=0; i--) {
+	attr->precise_ip = perf_skid_precision[i];
+
+	// ask sys to "create" the event
+	// it returns -1 if it fails.
+	int ret = perf_util_event_open(attr,
+			THREAD_SELF, CPU_ANY,
+			GROUP_FD, PERF_FLAGS);
+	if (ret >= 0) {
+	  close(ret);
+	  // just quit when the returned value is correct
+	  return i;
+	}
+  }
+  return 0;
+}
+
+//----------------------------------------------------------
 // generic default initialization for event attributes
 // return true if the initialization is successful,
 //   false otherwise.
@@ -559,7 +537,7 @@ perf_util_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
-  attr->precise_ip    = perf_util_get_precise_ip(attr);   /* the precision is either detected automatically
+  attr->precise_ip = perf_util_get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
 
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
@@ -575,13 +553,13 @@ perf_util_attr_init(
   attr->disabled      = 1;                 /* the counter will be enabled later  */
   attr->sample_type   = sample_type;
 
+  attr->exclude_kernel = EXCLUDE;
+  attr->exclude_hv     = EXCLUDE;
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 #endif
-
-  attr->exclude_kernel = EXCLUDE;
-  attr->exclude_hv     = EXCLUDE;
 
   if (perf_util_is_ksym_available()) {
     /* We have rights to record and interpret kernel callchains */

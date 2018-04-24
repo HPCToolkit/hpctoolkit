@@ -204,8 +204,6 @@ perf_util_is_ksym_available();
 int
 perf_util_get_paranoid_level();
 
-int
-perf_util_get_max_sample_rate();
 
 cct_node_t *
 perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
@@ -215,8 +213,5 @@ perf_util_get_default_threshold(struct event_threshold_s *threshold);
 
 u64
 perf_util_set_max_precise_ip(struct perf_event_attr *attr);
-
-u64
-perf_util_get_precise_ip(struct perf_event_attr *attr);
 
 #endif
