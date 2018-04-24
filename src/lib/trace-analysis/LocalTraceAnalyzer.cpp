@@ -100,21 +100,6 @@ namespace TraceAnalysis {
         if (node->type == TCTANode::Iter) {
           // Its parent must be a loop
           TCTLoopNode* loop = (TCTLoopNode*) activeStack.back();
-          // If the former (pending) iteration is rejected, convert the loop to a ProfileNode and replace the original loop node
-          if (loop->hasPendingIteration() && !loop->isPendingIterationAccepted()) {
-            loop->finalizePendingIteration();
-            loop->pushPendingIteration((TCTIterationTraceNode*)node, false);
-            loop->finalizePendingIteration();
-            activeStack.pop_back();
-            activeStack.push_back(TCTProfileNode::newProfileNode(loop));
-            //printf("Loop rejected:\n%s", loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
-            //printf("Converted to:\n%s\n", activeStack.back()->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
-            delete loop;
-            return;
-          }
-          // If the former (pending) iteration is accepted, finalize the former iteration and push the current one as the pending iteration. 
-          if (loop->hasPendingIteration())
-            loop->finalizePendingIteration();
           loop->pushPendingIteration((TCTIterationTraceNode*)node, acceptIteration((TCTIterationTraceNode*)node));
         }
         else // In all other cases, add node as a child of its parent.
@@ -169,13 +154,10 @@ namespace TraceAnalysis {
           // pop the old iteration
           popOneNode(startTimeExclusive, startTimeInclusive);
           
-          // push a new iteration when parent loop is still valid
-          if (activeStack.back()->type == TCTANode::Loop) {
-            int iterNum = ((TCTLoopNode*)activeStack.back())->getNumIteration();
-            pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, iterNum, activeStack.size(), activeStack.back()->cfgGraph),
-                  startTimeExclusive, startTimeInclusive);
-          }
-          // if the parent loop is converted to profile, do nothing
+          // push the new iteration
+          int iterNum = ((TCTLoopNode*)activeStack.back())->getNumIteration();
+          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, iterNum, activeStack.size(), activeStack.back()->cfgGraph),
+                startTimeExclusive, startTimeInclusive);
         }
       }
     }
@@ -188,7 +170,7 @@ namespace TraceAnalysis {
         TCTATraceNode* parent = (TCTATraceNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
-            bool printError = (i != parent->getNumChild() - 1) && parent->name.find("<unknown procedure>") == string::npos;
+            bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
             if (printError) printf("ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
             if (printError) printf("%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
@@ -345,25 +327,26 @@ namespace TraceAnalysis {
       }
       else if (node->type == TCTANode::Loop) {
         TCTLoopNode* loop = (TCTLoopNode*) node;
-        if (loop->hasPendingIteration() && !loop->isPendingIterationAccepted()) {
-          loop->finalizePendingIteration();
-          TCTProfileNode* prof = TCTProfileNode::newProfileNode(loop);
-          //printf("Loop rejected at last:\n%s", loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
-          //printf("Should be converted to:\n%s\n", prof->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
-          return prof;
-        }
-        if (loop->hasPendingIteration())
-          loop->finalizePendingIteration();
-        printf("Loop accepted:\n%s", loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
+        loop->finalizePendingIteration();
         
-        for (int i = 0; i < loop->getNumIteration(); i++) {
-          TCTANode* child = finalizeLoops(loop->getIteration(i));
+        for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
+          TCTANode* child = finalizeLoops(loop->getAcceptedIteration(i));
           if (child != NULL) {
             printf("ERROR: IterationNode is converted to ProfileNode.\n");
             delete child;
           }
         }
-        return NULL;
+          
+        double ratio = (double)loop->getDuration() * 100.0 / (double) root->getDuration();
+        if (loop->acceptLoop()) {
+          if (ratio >= 1)
+            printf("\nLoop accepted: %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
+          return NULL;
+        } else {
+          if (ratio >= 1)
+            printf("\nLoop rejected: %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
+          return TCTProfileNode::newProfileNode(loop);
+        }
       }
       else {
         TCTATraceNode* trace = (TCTATraceNode*) node;

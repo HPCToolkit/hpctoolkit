@@ -118,16 +118,16 @@ namespace TraceAnalysis {
     };
     
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id, procID), name(name), cfgGraph(cfgGraph), ra(ra), 
+        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), 
         depth(depth), weight(1) {
       time = new TCTTraceTime();
     }
-    TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), name(orig.name), 
-        cfgGraph(orig.cfgGraph), ra(orig.ra), depth(orig.depth), weight(orig.weight) {
+    TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight) {
       time = orig.time->duplicate();
     }
-    TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), name(orig.name), 
-        cfgGraph(orig.cfgGraph), ra(orig.ra), depth(orig.depth), weight(orig.weight) {
+    TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight) {
       time = orig.time->duplicate();
     }
     virtual ~TCTANode() {
@@ -139,12 +139,20 @@ namespace TraceAnalysis {
       else return NULL;
     }
     
+    virtual string getName() {
+      return name;
+    }
+    
     virtual int getDepth() {
       return depth;
     }
     
     virtual Time getDuration() {
       return time->getDuration();
+    }
+    
+    virtual int getWeight() {
+      return weight;
     }
         
     // returns a pointer to a duplicate of this object. 
@@ -164,13 +172,13 @@ namespace TraceAnalysis {
     
     const NodeType type;
     const TCTID id;
-    const string name;
     // CFG Abstract Graph for this node.
     CFGAGraph* const cfgGraph; 
     // RA for call sites or VMA for loops.
     const VMA ra; 
     
   protected:
+    string name;
     int depth;
     TCTATime* time;
     int weight;
@@ -278,20 +286,13 @@ namespace TraceAnalysis {
   public:
     TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
       TCTANode(Loop, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), pendingIteration(NULL) {}
-    TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
-      if (orig.pendingIteration != NULL) {
-        pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
-        pendingIterationAccepted = orig.pendingIterationAccepted;
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
+        numIteration = 0;
+        pendingIteration = NULL;
+        rejectedIterations = NULL;
       }
-      for (auto it = orig.iterations.begin(); it != orig.iterations.end(); it++)
-        iterations.push_back((TCTIterationTraceNode*)((*it)->duplicate()));
-    }
-    virtual ~TCTLoopNode() {
-      if (pendingIteration != NULL) delete pendingIteration;
-      for (auto it = iterations.begin(); it != iterations.end(); it++)
-        delete (*it);
-    }
+    TCTLoopNode(const TCTLoopNode& orig);
+    virtual ~TCTLoopNode();
     
     virtual TCTANode* duplicate() const {
       return new TCTLoopNode(*this);
@@ -308,21 +309,22 @@ namespace TraceAnalysis {
     }
     
     int getNumIteration() {
-      return iterations.size() + hasPendingIteration();
+      return numIteration + (pendingIteration != NULL);
     }
     
-    TCTIterationTraceNode* getIteration(uint idx) {
-      if (idx < iterations.size()) return iterations[idx];
-      if (idx == iterations.size()) return pendingIteration;
-      return NULL;
+    int getNumAcceptedIteration() {
+      return acceptedIterations.size(); 
     }
     
-    bool hasPendingIteration() {
-      return (pendingIteration != NULL);
+    TCTIterationTraceNode* getAcceptedIteration(uint idx) {
+      return acceptedIterations[idx];
     }
     
-    bool isPendingIterationAccepted() {
-      return pendingIterationAccepted;
+    void pushPendingIteration(TCTIterationTraceNode* pendingIteration, bool accepted) {
+      finalizePendingIteration();
+      
+      this->pendingIteration = pendingIteration;
+      this->pendingIterationAccepted = accepted;
     }
     
     TCTIterationTraceNode* popPendingIteration() {
@@ -330,30 +332,26 @@ namespace TraceAnalysis {
       return pendingIteration;
     }
     
-    bool pushPendingIteration(TCTIterationTraceNode* pendingIteration, bool accepted) {
-      if (hasPendingIteration()) return false;
-      this->pendingIteration = pendingIteration;
-      this->pendingIterationAccepted = accepted;
-      return true;
-    }
+    void finalizePendingIteration();
     
-    bool finalizePendingIteration() {
-      if (!hasPendingIteration()) return false;
-      iterations.push_back(pendingIteration);
-      pendingIteration = NULL;
-      return true;
-    }
+    bool acceptLoop();
   
   private:
-    // stores the last iteration, when may hasn't been finished yet.
+    int numIteration;
+    
+    // stores the last iteration, which may hasn't been finished yet.
     TCTIterationTraceNode* pendingIteration;
     // if the pending iteration passed the acceptIteration test.
     bool pendingIterationAccepted;
     
-    vector<TCTIterationTraceNode*> iterations;
+    // stores all accepted iterations
+    vector<TCTIterationTraceNode*> acceptedIterations;
+    // all rejected iterations are merged into a Profile node.
+    TCTProfileNode* rejectedIterations;
   };
   
   class TCTProfileNode : public TCTANode {
+    friend class TCTLoopNode;
   public:
     static TCTProfileNode* newProfileNode(TCTANode* node) {
       if (node->type == TCTANode::Prof)
@@ -378,22 +376,11 @@ namespace TraceAnalysis {
       return ret;
     }
     
-    virtual void addChild(TCTANode* child) {
-      TCTProfileNode* profChild = NULL; 
-      if (child->type == TCTANode::Prof)
-        profChild = (TCTProfileNode*) child;
-      else {
-        profChild = TCTProfileNode::newProfileNode(child);
-        delete child;
-      }
-      
-      if (childMap.find(profChild->id) == childMap.end())
-        childMap[profChild->id] = profChild;
-      else {
-        childMap[profChild->id]->merge(profChild);
-        delete profChild;
-      }
-    }
+    virtual void addChild(TCTANode* child);
+    
+    // Merge with the input profile node. Deallocation responsibility is NOT transfered.
+    // This node won't hold any reference to the input node or its children.
+    virtual void merge(TCTProfileNode* other);
     
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
@@ -407,56 +394,9 @@ namespace TraceAnalysis {
     // Map id to child profile node.
     map<TCTID, TCTProfileNode*> childMap;
     
-    TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
-      for (auto it = trace.children.begin(); it != trace.children.end(); it++) {
-        TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
-        if (childMap.find(child->id) == childMap.end())
-          childMap[child->id] = child;
-        else {
-          childMap[child->id]->merge(child);
-          delete child;
-        }
-      }
-    }
-    
-    TCTProfileNode(const TCTLoopNode& loop) : TCTANode (loop, Prof) {
-      for (auto it = loop.iterations.begin(); it != loop.iterations.end(); it++) {
-        TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
-        child->setDepth(this->depth);
-        for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
-          if (childMap.find(iit->second->id) == childMap.end())
-            childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
-          else
-            childMap[iit->second->id]->merge(iit->second);
-        }
-        delete child;
-      }
-    }
-    
-    TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {
-      if (copyChildMap)
-        for (auto it = prof.childMap.begin(); it != prof.childMap.end(); it++)
-          childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
-    }
-    
-    virtual void merge(TCTProfileNode* other) {
-      TCTProfileTime* profileTime = NULL; 
-      if (time->type == TCTATime::Profile)
-        profileTime = (TCTProfileTime*) time;
-      else {
-        profileTime = new TCTProfileTime(*time);
-        delete time;
-        time = profileTime;
-      }
-      
-      profileTime->merge(other->time);
-      for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
-        if (childMap.find(it->second->id) == childMap.end())
-          childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
-        else
-          childMap[it->second->id]->merge(it->second);
-      }
-    }
+    TCTProfileNode(const TCTATraceNode& trace);
+    TCTProfileNode(const TCTLoopNode& loop);
+    TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap);
   };
 }
 

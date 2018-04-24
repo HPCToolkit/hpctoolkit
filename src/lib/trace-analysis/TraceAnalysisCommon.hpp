@@ -68,6 +68,10 @@ namespace TraceAnalysis {
   const int IterationNumAccFuncThreshold = 1;
   const int IterationNumAccLoopThreshold = 2;
   
+  // If (duration of rejected iterations / duration of loop) is larger than
+  // LoopRejThreshold, the whole loop will be rejected.
+  const double LoopRejThreshold = 0.3; 
+  
   string vmaToHexString(VMA vma);
   string timeToString(Time time);
 }

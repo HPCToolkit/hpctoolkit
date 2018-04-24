@@ -88,12 +88,18 @@ namespace TraceAnalysis {
   
   string TCTLoopNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
+    ret.pop_back();
+    ret += ", # iterations = " + std::to_string(numIteration) + "\n";
     
     if (depth >= maxDepth) return ret;
     if (minDuration > 0 && time->getDuration() < minDuration) return ret;
     
-    for (auto it = iterations.begin(); it != iterations.end(); it++)
+    for (auto it = acceptedIterations.begin(); it != acceptedIterations.end(); it++)
       ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
+    
+    if (rejectedIterations != NULL)
+      ret += rejectedIterations->toString(maxDepth, minDuration, samplingInterval);
+    
     return ret;
   }
   
@@ -107,5 +113,136 @@ namespace TraceAnalysis {
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       ret += it->second->toString(maxDepth, minDuration, samplingInterval);
     return ret;
+  }
+  
+  TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
+    numIteration = orig.numIteration;
+    
+    if (orig.pendingIteration != NULL) {
+      pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
+      pendingIterationAccepted = orig.pendingIterationAccepted;
+    }
+    if (orig.rejectedIterations != NULL)
+      rejectedIterations = (TCTProfileNode*)(orig.rejectedIterations->duplicate());
+
+    for (auto it = orig.acceptedIterations.begin(); it != orig.acceptedIterations.end(); it++)
+      acceptedIterations.push_back((TCTIterationTraceNode*)((*it)->duplicate()));
+  }
+  
+  TCTLoopNode::~TCTLoopNode()  {
+    if (pendingIteration != NULL) delete pendingIteration;
+    if (rejectedIterations != NULL) delete rejectedIterations;
+
+    for (auto it = acceptedIterations.begin(); it != acceptedIterations.end(); it++)
+      delete (*it);
+  }
+  
+  void TCTLoopNode::finalizePendingIteration() {
+    if (pendingIteration == NULL) return;
+    
+    numIteration++;
+    
+    if (pendingIterationAccepted) 
+      acceptedIterations.push_back(pendingIteration);
+    else {
+      TCTProfileNode* prof = TCTProfileNode::newProfileNode(pendingIteration);
+      if (rejectedIterations != NULL) {
+        rejectedIterations->merge(prof);
+        delete prof;
+      } else {
+        rejectedIterations = prof;
+        rejectedIterations->name = "Rejected Iterations";
+      }
+      delete pendingIteration;
+    }
+    pendingIteration = NULL;
+  }
+  
+  bool TCTLoopNode::acceptLoop() {
+    if (rejectedIterations == NULL) return true;
+    
+    if (rejectedIterations->getDuration() >= getDuration() * LoopRejThreshold)
+      return false;
+    return true;
+  }
+  
+  TCTProfileNode::TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
+    for (auto it = trace.children.begin(); it != trace.children.end(); it++) {
+      TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
+      if (childMap.find(child->id) == childMap.end())
+        childMap[child->id] = child;
+      else {
+        childMap[child->id]->merge(child);
+        delete child;
+      }
+    }
+  }
+  
+  TCTProfileNode::TCTProfileNode(const TCTLoopNode& loop) : TCTANode (loop, Prof) {
+    for (auto it = loop.acceptedIterations.begin(); it != loop.acceptedIterations.end(); it++) {
+      TCTProfileNode* child = TCTProfileNode::newProfileNode(*it);
+      child->setDepth(this->depth);
+      for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
+        if (childMap.find(iit->second->id) == childMap.end())
+          childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+        else
+          childMap[iit->second->id]->merge(iit->second);
+      }
+      delete child;
+    }
+
+    if (loop.rejectedIterations != NULL) {
+      TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.rejectedIterations);
+      child->setDepth(this->depth);
+      for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
+        if (childMap.find(iit->second->id) == childMap.end())
+          childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+        else
+          childMap[iit->second->id]->merge(iit->second);
+      }
+      delete child;
+    }
+  }
+  
+  TCTProfileNode::TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {
+    if (copyChildMap)
+      for (auto it = prof.childMap.begin(); it != prof.childMap.end(); it++)
+        childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+  }
+  
+  void TCTProfileNode::addChild(TCTANode* child) {
+    TCTProfileNode* profChild = NULL; 
+    if (child->type == TCTANode::Prof)
+      profChild = (TCTProfileNode*) child;
+    else {
+      profChild = TCTProfileNode::newProfileNode(child);
+      delete child;
+    }
+
+    if (childMap.find(profChild->id) == childMap.end())
+      childMap[profChild->id] = profChild;
+    else {
+      childMap[profChild->id]->merge(profChild);
+      delete profChild;
+    }
+  }
+  
+  void TCTProfileNode::merge(TCTProfileNode* other) {
+    TCTProfileTime* profileTime = NULL; 
+    if (time->type == TCTATime::Profile)
+      profileTime = (TCTProfileTime*) time;
+    else {
+      profileTime = new TCTProfileTime(*time);
+      delete time;
+      time = profileTime;
+    }
+
+    profileTime->merge(other->time);
+    for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
+      if (childMap.find(it->second->id) == childMap.end())
+        childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+      else
+        childMap[it->second->id]->merge(it->second);
+    }
   }
 }
