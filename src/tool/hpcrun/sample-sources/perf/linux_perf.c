@@ -523,11 +523,14 @@ exist_precise_ip_modifier(const char *original_event)
 {
   size_t len = strlen(original_event);
   int is_precise = 0;
+
   if (len > 2) {
-	// precise_ip modifier is either :p or :P at the end
-	is_precise = (original_event[len-2] == ':') &&
-				 (original_event[len-1] == 'p' || original_event[len-1] == 'P');
-    return len-2;
+    // precise_ip modifier is either :p or :P at the end
+    is_precise = (original_event[len-2] == ':') &&
+        (original_event[len-1] == 'p' || original_event[len-1] == 'P');
+
+    if (is_precise)
+      return len-2;
   }
   return 0;
 }
@@ -608,7 +611,7 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents        = (self->evl).nevents;
+  int nevents        = event_desc_get_num(); //(self->evl).nevents;
   event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
   //  enable all perf_events
@@ -811,7 +814,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
 
-  int nevents = self->evl.nevents;
+  int nevents = event_desc_get_num(); //self->evl.nevents;
   if (nevents > 0)
     perf_init();
 }
@@ -846,7 +849,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   //  but there will be no samples
   int i = 0;
   for (event_desc_list_t* list = event_desc_get_first();
-       list != NULL && i<nevents;
+       list != NULL;
        list = event_desc_get_next(list), i++)
   {
     event_thread[i].event = event_desc_get_event_info(list);
@@ -939,7 +942,7 @@ perf_event_handler(
   sample_source_t *self = &obj_name();
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
 
-  int nevents = self->evl.nevents;
+  int nevents = event_desc_get_num(); //self->evl.nevents;
 
   perf_stop_all(nevents, event_thread);
 

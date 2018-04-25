@@ -499,18 +499,18 @@ perf_util_set_max_precise_ip(struct perf_event_attr *attr)
   // if there's a change in the specification, we need to change
   // this one too (unfortunately)
   for(int i=perf_skid_flavors-1; i>=0; i--) {
-	attr->precise_ip = perf_skid_precision[i];
+    attr->precise_ip = perf_skid_precision[i];
 
-	// ask sys to "create" the event
-	// it returns -1 if it fails.
-	int ret = perf_util_event_open(attr,
-			THREAD_SELF, CPU_ANY,
-			GROUP_FD, PERF_FLAGS);
-	if (ret >= 0) {
-	  close(ret);
-	  // just quit when the returned value is correct
-	  return i;
-	}
+    // ask sys to "create" the event
+    // it returns -1 if it fails.
+    int ret = perf_util_event_open(attr,
+        THREAD_SELF, CPU_ANY,
+        GROUP_FD, PERF_FLAGS);
+    if (ret >= 0) {
+      close(ret);
+      // just quit when the returned value is correct
+      return i;
+    }
   }
   return 0;
 }

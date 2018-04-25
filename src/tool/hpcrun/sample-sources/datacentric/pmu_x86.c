@@ -82,16 +82,22 @@ set_default_perf_event_attr(struct perf_event_attr *attr, struct event_threshold
 	attr->sample_period  = period->threshold_num;
 	attr->freq           = period->threshold_type == FREQUENCY ? 1 : 0;
 
-	attr->sample_type    = PERF_SAMPLE_RAW
-	                         | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
-	                         | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
-	                         | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
+	attr->sample_type    = PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN
+							 | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+							 | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
+							 | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
 	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-	                         | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
+							 | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
 	#endif
-	                                    ;
+										;
 	attr->disabled      = 1;
 	attr->sample_id_all = 1;
+	attr->exclude_hv     = EXCLUDE;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+	attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+	attr->exclude_callchain_user = EXCLUDE_CALLCHAIN;
+#endif
 }
 
 int
@@ -99,23 +105,33 @@ datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *peri
 {
   int size = sizeof(evnames)/sizeof(const char*);
   struct perf_event_attr *event_attr = &(event_desc->attr);
+  u64 sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN
+                    | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+                    | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
+                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+                    | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
+#endif
+           ;
 
   for(int i=0; i<size ; i++) {
     int isPMU = pfmu_getEventAttribute(evnames[i], event_attr);
     if (isPMU < 0) continue;
 
-    set_default_perf_event_attr(event_attr, period);
-    event_attr->precise_ip = 2;
+    //set_default_perf_event_attr(event_attr, period);
+    bool is_period = period->threshold_type == PERIOD;
+    perf_util_attr_init(event_attr, is_period, period->threshold_num, sample_type);
+    perf_util_set_max_precise_ip(event_attr);
 
     // testing the feasibility;
-	int ret = perf_util_event_open(event_attr,
+    int ret = perf_util_event_open(event_attr,
 			THREAD_SELF, CPU_ANY,
 			GROUP_FD, PERF_FLAGS);
-	if (ret >= 0) {
-	  close(ret);
-	  // just quit when the returned value is correct
-	  break;
-	}
+    if (ret >= 0) {
+      close(ret);
+      // just quit when the returned value is correct
+      break;
+    }
   }
   return 1;
 }
