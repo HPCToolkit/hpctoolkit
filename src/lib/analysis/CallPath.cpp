@@ -127,11 +127,9 @@ coalesceStmts(Prof::Struct::Tree& structure);
 
 
 static bool
-fileok(const char *pathname)
+pseudofile(const char *pathname)
 {
-  struct stat s;
-  int result = stat(pathname, &s);
-  return result == 0;
+  return pathname && pathname[0] == '[';
 }
 
 
@@ -403,8 +401,11 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   if (useStruct) {
     DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-  } else if (fileok(lm_nm.c_str()))  {
-    DIAG_Msg(1, "Line map : " << lm_nm);
+  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+    // no-op for this case
+  } else if (pseudofile(lm_nm.c_str()))  {
+    DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm);
+  } else {
 
     try {
       lm = new BinUtil::LM();
@@ -420,9 +421,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
       DIAG_EMsg("While reading '" << lm_nm << "'...");
       throw;
     }
-  } else if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
-    DIAG_WMsgIf(1, "Cannot fully process samples for load module " <<
-                lm_nm << ": " << sys_errlist[errno]);
+    DIAG_Msg(1, "Line map : " << lm_nm);
   }
 
   if (lm) {

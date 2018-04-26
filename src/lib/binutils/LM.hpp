@@ -165,19 +165,6 @@ public:
   read(const std::set<std::string> &directorySet, ReadFlg readflg/* = ReadFlg_Seg*/);
 
 
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
-  static bool
-  isFakeLoadModule(const char *lm) {
-    if (lm) {
-      if (lm[0] == '<' && lm[strlen(lm)-1] == '>') {
-        return (strncmp(lm+1, LINUX_KERNEL_NAME_REAL, 7) == 0);
-      }
-    }
-    return false;
-  }
-
   // name: Return name of load module
   const std::string&
   name() const

@@ -163,6 +163,8 @@ public:
 
   virtual void fileId(uint _id) = 0;
   virtual uint fileId() = 0;
+
+  virtual const char*unified_name() = 0;
 };
 
 #endif

@@ -247,6 +247,15 @@ LinuxKernelSymbolsFactory::fileId()
   return m_fileId;
 }
 
+
+
+const char*
+LinuxKernelSymbolsFactory::unified_name()
+{
+  return LINUX_KERNEL_NAME;
+}
+
+
 //******************************************************************************
 // unit test
 //******************************************************************************
