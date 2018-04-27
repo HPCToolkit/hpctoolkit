@@ -98,13 +98,15 @@ typedef struct memory_data_s {
   void *ibs_ptr;
   cct_node_t *data_node;
   void *pc;
+
   // for static data
   uint16_t lm_id;
   uintptr_t lm_ip;
 
-  int ldst; // whether it is a load/store instruction;
-  int in_malloc; // whether it is a malloc unwind
-  void *ea; //effective address
+  int ldst;       // whether it is a load/store instruction;
+  int in_malloc;  // whether it is a malloc unwind
+  void *ea;       //effective address
+
   // for address-centric analysis
   void *start;
   void *end;
@@ -267,7 +269,7 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
  
-  memory_data_t mem_data;
+  memory_data_t *mem_data;
 
 } thread_data_t;
 

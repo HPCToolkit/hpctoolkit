@@ -106,6 +106,9 @@ segv_handler (int signal_number, siginfo_t *si, void *context)
     mprotect (p, pagesize, PROT_READ | PROT_WRITE);
     return;
   }
+  if ( TD_GET(mem_data) == NULL)
+    return;
+
   hpcrun_safe_enter();
   if (!si || !si->si_addr) {
     hpcrun_safe_exit();
@@ -116,13 +119,13 @@ segv_handler (int signal_number, siginfo_t *si, void *context)
   if (data_node) {
     void *p = (void *)(((uint64_t)(uintptr_t) start + pagesize-1) & ~(pagesize-1));
     mprotect (p, (uint64_t)(uintptr_t) end - (uint64_t)(uintptr_t) p, PROT_READ|PROT_WRITE);
-    TD_GET(mem_data.data_node) = data_node;
-    TD_GET(mem_data.first_touch) = 1;
+    TD_GET(mem_data->data_node) = data_node;
+    TD_GET(mem_data->first_touch) = 1;
     hpcrun_sample_callpath(context, alloc_metric_id, 
 	(hpcrun_metricVal_t) {.i=0}, 
 	0/*skipInner*/, 0/*isSync*/, NULL);
-    TD_GET(mem_data.first_touch) = 0;
-    TD_GET(mem_data.data_node) = NULL;
+    TD_GET(mem_data->first_touch) = 0;
+    TD_GET(mem_data->data_node) = NULL;
   }
   else {
     void *p = (void *)(((uint64_t)(uintptr_t) si->si_addr) & ~(pagesize-1));
@@ -175,6 +178,16 @@ METHOD_FN(start)
 {
   TMSG(DATACENTRIC,"starting DATACENTRIC");
 
+  TD_GET(mem_data) = (memory_data_t *)malloc(sizeof(memory_data_t));
+
+  if (TD_GET(mem_data) == NULL) {
+    EMSG("Cannot allocate memory %d bytes. Datacentric is not started",
+        sizeof(memory_data_t));
+
+    return; // do not start it
+  }
+
+  memset(TD_GET(mem_data), 0, sizeof(memory_data_t));
   TD_GET(ss_state)[self->sel_idx] = START;
 }
 
