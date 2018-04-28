@@ -404,7 +404,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
   } else if (vdso_loadmodule(lm_nm.c_str()))  {
-    DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm);
+    DIAG_WMsgIf(1, "Cannot fully process samples for virtual load module " << lm_nm);
   } else {
 
     try {
