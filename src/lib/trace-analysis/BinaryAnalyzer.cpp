@@ -195,7 +195,8 @@ namespace TraceAnalysis {
         if (sinkAddr == 0) {
           // When every node has out edge, there must be some back edges 
           // that are not detected and removed.
-          DIAG_Msg(1, "Unknown back edges detected in " << cfgGraph->toString());
+          print_msg(MSG_PRIO_LOW, "ERROR: Unknown back edges detected in %s.\n", 
+                  cfgGraph->toString().c_str());
           return false;
         }
         
@@ -286,7 +287,7 @@ namespace TraceAnalysis {
       // open symtab, make code object and parse
       //
       if (! SymtabAPI::Symtab::openFile(the_symtab, filename)) {
-        DIAG_Msg(1, "Binary file not found: " << filename);
+        print_msg(MSG_PRIO_HIGH, "ERROR: Binary file not found: %s.\n", filename.c_str());
         return false;
       }
 

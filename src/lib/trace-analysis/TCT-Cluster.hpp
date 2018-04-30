@@ -45,47 +45,36 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysisCommon.hpp
+ * File:   TCT-Cluster.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 2, 2018, 11:59 AM
- * 
- * Trace analysis common types and utilities.
+ * Created on April 23, 2018, 12:35 AM
  */
 
-#ifndef TRACEANALYSISCOMMON_HPP
-#define TRACEANALYSISCOMMON_HPP
+#ifndef TCT_CLUSTER_HPP
+#define TCT_CLUSTER_HPP
 
-#include <string>
-using std::string;
+#include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  typedef unsigned long VMA; // Virtual Memory Address
-  typedef int64_t Time; // Virtual Memory Address
-  
-  // Parameters and functions for printing messages.
-  const int MSG_PRIO_LOW = 0;
-  const int MSG_PRIO_NORMAL = 1;
-  const int MSG_PRIO_HIGH = 2;
-  const int MSG_PRIO_MAX = 3;
-  void print_msg(int level, const char *fmt,...);
-  string vmaToHexString(VMA vma);
-  string timeToString(Time time);
-  
-  // Parameters for iteration identification.
-  const int ITER_CHILD_DUR_ACC = 5; // 5 samples
-  const int ITER_NUM_CHILD_ACC = 5;
-  const int ITER_NUM_FUNC_ACC = 1;
-  const int ITER_NUM_LOOP_ACC = 2;
-  // If (duration of rejected iterations / duration of loop) is larger than
-  // LOOP_REJ_THRESHOLD, the whole loop will be rejected.
-  const double LOOP_REJ_THRESHOLD = 0.3; 
-
-  // Parameters for clustering
-  const Time MIN_SAMPLE_PERIOD = 1000;
-  const uint MAX_SAMPLE_NOISE = 10;
-  const Time computeWeightedAverage(Time time1, int w1, Time time2, int w2);
+  class AbstractTCTCluster {
+  public:
+    AbstractTCTCluster(Time samplingPeriod): samplingPeriod(samplingPeriod){}
+    
+    TCTANode* mergeNode(TCTANode* node1, int weight1, TCTANode* node2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly);
+    TCTProfileNode* mergeProfileNode(TCTProfileNode* prof1, int weight1, TCTProfileNode* prof2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly);
+    TCTATraceNode* mergeTraceNode(TCTATraceNode* trace1, int weight1, TCTATraceNode* trace2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly);
+    virtual TCTLoopNode* mergeLoopNode(TCTLoopNode* loop1, int weight1, TCTLoopNode* loop2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly) = 0;
+  private:
+    Time samplingPeriod;
+    
+    Time computeRangeDiff(Time min1, Time max1, Time min2, Time max2);
+  };
 }
 
-#endif /* TRACEANALYSISCOMMON_HPP */
+#endif /* TCT_CLUSTER_HPP */
 

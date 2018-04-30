@@ -73,26 +73,26 @@ namespace TraceAnalysis {
     TCTRootNode* root;
     
     uint64_t numSamples;
-    Time samplingInterval;
+    Time samplingPeriod;
     
     LocalTraceAnalyzerImpl(BinaryAnalyzer& binaryAnalyzer, 
           CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
           binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime) {
       numSamples = 0;
-      samplingInterval = 0;
+      samplingPeriod = 0;
     }
 
     ~LocalTraceAnalyzerImpl() {}
     
       
     void pushOneNode(TCTANode* node, Time startTimeExclusive, Time startTimeInclusive) {
-      node->getTraceTime()->setStartTime(startTimeExclusive, startTimeInclusive);
+      node->getTime().setStartTime(startTimeExclusive, startTimeInclusive);
       activeStack.push_back(node);
     }
 
     void popOneNode(Time endTimeInclusive, Time endTimeExclusive) {
       TCTANode* node = activeStack.back();
-      node->getTraceTime()->setEndTime(endTimeInclusive, endTimeExclusive);
+      node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
       activeStack.pop_back();
 
       if (activeStack.size() > 0) {
@@ -171,30 +171,30 @@ namespace TraceAnalysis {
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
             bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
-            if (printError) printf("ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
-            if (printError) printf("%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
+            if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
+            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
             // and remove it from the parent (as it will be re-added later when popped from stack).
             delete node;
             node = parent->removeChild(i);
-            pushOneNode(node, node->getTraceTime()->getStartTimeExclusive(), node->getTraceTime()->getStartTimeInclusive());
+            pushOneNode(node, node->getTime().getStartTimeExclusive(), node->getTime().getStartTimeInclusive());
 
             // if node is a loop, push the latest iteration onto stack.
             if (node->type == TCTANode::Loop) {
               TCTLoopNode* loop = (TCTLoopNode*) node;
               TCTANode* iter = loop->popPendingIteration();
-              pushOneNode(iter, iter->getTraceTime()->getStartTimeExclusive(), iter->getTraceTime()->getStartTimeInclusive());
+              pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive());
             }
 
             // remove parent's children starting from i
             while (parent->getNumChild() > i) {
               TCTANode* child = parent->removeChild(i);
-              if (printError) printf("Deleting child %s:\n", child->id.toString().c_str());
-              if (printError) printf("%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+              if (printError) print_msg(MSG_PRIO_NORMAL, "Deleting child %s:\n", child->id.toString().c_str());
+              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
               delete child;
             }
 
-            if (printError) printf("\n");
+            if (printError) print_msg(MSG_PRIO_NORMAL, "\n");
             return true;
           }
       }
@@ -208,8 +208,8 @@ namespace TraceAnalysis {
       int countLoop = 0;
       
       for (int k = 0; k < iter->getNumChild(); k++)
-        if (iter->getChild(k)->getDuration() / samplingInterval 
-                >= IterationChildDurationThreshold) {
+        if (iter->getChild(k)->getDuration() / samplingPeriod 
+                >= ITER_CHILD_DUR_ACC) {
           if (iter->getChild(k)->type == TCTANode::Func) countFunc++;
           else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
         }
@@ -218,106 +218,13 @@ namespace TraceAnalysis {
       // and has less than two loop children passing the IterationChildDurationThreshold,
       // and the number of children doesn't pass the IterationNumChildThreshold,
       // children of this iteration may belong to distinct iterations in the execution.
-      if (countFunc < IterationNumAccFuncThreshold 
-              && countLoop < IterationNumAccLoopThreshold 
-              && iter->getNumChild() < IterationNumChildThreshold)
+      if (countFunc < ITER_NUM_FUNC_ACC 
+              && countLoop < ITER_NUM_LOOP_ACC 
+              && iter->getNumChild() < ITER_NUM_CHILD_ACC)
         return false;
       else
         return true;
     }
-    
-    
-    /*
-    uint32_t loopACCcnt;
-    uint32_t loopDECcnt;
-    vector<TCTLoopTraceNode*> topDECloops;
-    const static int maxNumDECloops = 10;
-    
-    bool acceptLoop(TCTLoopTraceNode* loop) {
-      for (int i = 0; i < loop->getNumChild(); i++) {
-        TCTIterationTraceNode* iter = (TCTIterationTraceNode*) loop->getChild(i);
-        
-        int countFunc = 0;
-        int countLoop = 0;
-        
-        for (int k = 0; k < iter->getNumChild(); k++)
-          if (iter->getChild(k)->getDuration() / samplingInterval 
-                  >= IterationChildDurationThreshold) {
-            if (iter->getChild(k)->type == TCTANode::Func) countFunc++;
-            else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
-          }
-        
-        // When an iteration has no func child passing the IterationChildDurationThreshold,
-        // and has less than two loop children passing the IterationChildDurationThreshold,
-        // and the number of children doesn't pass the IterationNumChildThreshold,
-        // children of this iteration may belong to distinct iterations in the execution.
-        if (countFunc < IterationNumAccFuncThreshold 
-                && countLoop < IterationNumAccLoopThreshold 
-                && iter->getNumChild() < IterationNumChildThreshold)
-          return false;
-      }
-      return true;
-    }
-    
-    void verifyIterationDetection(TCTANode* node) {
-      if (node->type == TCTANode::Prof) {
-        return;
-      }
-      else if (node->type == TCTANode::Loop) {
-        TCTLoopTraceNode* loop = (TCTLoopTraceNode*) node;
-        if (loop->getNumChild() == 1) {
-          //printf("%s", loop->toString(loop->getDepth(), 0).c_str());
-          verifyIterationDetection(loop->getChild(0));
-          return;
-        }
-
-        if (acceptLoop(loop)) {
-          loopACCcnt++;
-          printf("\n%s", loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
-
-          for (int i = 0; i < loop->getNumChild(); i++)
-            verifyIterationDetection(loop->getChild(i));
-        }
-        else {
-          loopDECcnt++;
-          
-          size_t i = 0;
-          for (; i < topDECloops.size(); i++) 
-            if (loop->getDuration() > topDECloops[i]->getDuration()) {
-              topDECloops.insert(topDECloops.begin() + i, loop);
-              break;
-            }
-          
-          if (i == topDECloops.size() && i < maxNumDECloops)
-            topDECloops.push_back(loop);
-          
-          if (topDECloops.size() > maxNumDECloops)
-            topDECloops.pop_back();
-        }
-      } 
-      else {
-        TCTATraceNode* trace = (TCTATraceNode*) node;
-        //printf("%s", trace->toString(trace->getDepth(), 0).c_str());
-        for (int i = 0; i < trace->getNumChild(); i++)
-          verifyIterationDetection(trace->getChild(i));
-      }
-    }
-    
-    void finalizeIterationDetection() {
-      loopACCcnt = 0;
-      loopDECcnt = 0;
-      
-      printf("\nList of accepted loops:\n");
-      verifyIterationDetection(root);
-      
-      printf("\nList of top %lu rejected loops:\n", topDECloops.size());
-      for (size_t i = 0; i < topDECloops.size(); i++) {
-          printf("\n%s", topDECloops[i]->toString(topDECloops[i]->getDepth()+2, 0, samplingInterval).c_str());
-      }
-      
-      printf("\n Num of ACC loop = %u, Num of REJ loop = %u.\n", loopACCcnt, loopDECcnt);
-    }
-    */
 
     // Finalize pending iterations in all loops.
     // Returns a non-NULL pointer if a node need to be replaced.
@@ -332,19 +239,19 @@ namespace TraceAnalysis {
         for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
           TCTANode* child = finalizeLoops(loop->getAcceptedIteration(i));
           if (child != NULL) {
-            printf("ERROR: IterationNode is converted to ProfileNode.\n");
+            print_msg(MSG_PRIO_MAX, "ERROR: IterationNode is converted to ProfileNode, which should never happen.\n");
             delete child;
           }
         }
           
         double ratio = (double)loop->getDuration() * 100.0 / (double) root->getDuration();
         if (loop->acceptLoop()) {
-          if (ratio >= 1)
-            printf("\nLoop accepted: %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
+          if (ratio >= 1 && loop->getNumIteration() > 1)
+            print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingPeriod).c_str());
           return NULL;
         } else {
           if (ratio >= 1)
-            printf("\nLoop rejected: %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingInterval).c_str());
+            print_msg(MSG_PRIO_LOW, "\nLoop rejected: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingPeriod).c_str());
           return TCTProfileNode::newProfileNode(loop);
         }
       }
@@ -388,16 +295,16 @@ namespace TraceAnalysis {
       }
       
       if (error != "") {
-        printf("ERROR: %s\n", error.c_str());
-        printf("Prev = ");
+        print_msg(MSG_PRIO_HIGH, "ERROR: %s\n", error.c_str());
+        print_msg(MSG_PRIO_HIGH, "Prev = ");
         for (int i = 0; i < prev->getDepth(); i++)
-          printf(" %s(%u,%u), ", prev->getFrameAtDepth(i).name.c_str(), 
+          print_msg(MSG_PRIO_HIGH, " %s(%u,%u), ", prev->getFrameAtDepth(i).name.c_str(), 
                   prev->getFrameAtDepth(i).id, prev->getFrameAtDepth(i).procID);
-        printf(".\nCurr = ");
+        print_msg(MSG_PRIO_HIGH, ".\nCurr = ");
         for (int i = 0; i < current->getDepth(); i++)
-          printf(" %s(%u,%u), ", current->getFrameAtDepth(i).name.c_str(),
+          print_msg(MSG_PRIO_HIGH, " %s(%u,%u), ", current->getFrameAtDepth(i).name.c_str(),
                   current->getFrameAtDepth(i).id, current->getFrameAtDepth(i).procID);
-        printf(" dLCA = %u.\n", current->getDLCA());
+        print_msg(MSG_PRIO_HIGH, " dLCA = %u.\n", current->getDLCA());
       }
 
       return depth;
@@ -447,7 +354,7 @@ namespace TraceAnalysis {
       current = reader.readNextSample();
       while (current != NULL) {
         numSamples++;
-        samplingInterval = (current->timestamp - startTime) / (numSamples - 1);
+        samplingPeriod = (current->timestamp - startTime) / (numSamples - 1);
         int lcaDepth = computeLCADepth(prev, current);
         if (prevDepth > prev->getDepth()) prevDepth = prev->getDepth();
         
@@ -491,11 +398,11 @@ namespace TraceAnalysis {
       
       delete prev;
 
-      printf("\nNum Samples = %lu, Sampling interval = %ld\n\n", numSamples, samplingInterval);
+      print_msg(MSG_PRIO_LOW, "\nNum Samples = %lu, Sampling interval = %ld\n\n", numSamples, samplingPeriod);
 
       finalizeLoops(root);
 
-      printf("\n\n\n\n%s", root->toString(10, samplingInterval * IterationChildDurationThreshold, samplingInterval).c_str());
+      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod * ITER_CHILD_DUR_ACC, samplingPeriod).c_str());
 
       delete root;
     }

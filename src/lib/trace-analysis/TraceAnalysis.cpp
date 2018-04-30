@@ -84,9 +84,9 @@ namespace TraceAnalysis {
   
   bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
     if (myRank == 0) {
-      printf("Trace analysis turned on.\n");
+      print_msg(MSG_PRIO_MAX, "Trace analysis turned on.\n");
       
-      printf("Trace analysis init started at 0.000s.\n\n");
+      print_msg(MSG_PRIO_MAX, "Trace analysis init started at 0.000s.\n\n");
       gettimeofday(&startTime, NULL);
       
       // Step 1: analyze binary files to get CFGs for later analysis
@@ -96,7 +96,7 @@ namespace TraceAnalysis {
            i <= loadmap->size(); ++i) {
         Prof::LoadMap::LM* lm = loadmap->lm(i);
         if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          printf("Analyzing executable: %s\n", lm->name().c_str());
+          print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
           ba.parse(lm->name());
         }
       }
@@ -128,13 +128,13 @@ namespace TraceAnalysis {
       gettimeofday(&curTime, NULL);
       long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
                   + curTime.tv_usec - startTime.tv_usec;
-      printf("\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
+      print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
       
       // Step 4: analyze each trace file
       int begIdx = 0;
       int endIdx = traceFiles.size();
       for (int i = begIdx; i < endIdx; i++) {
-        printf("\nAnalyzing file #%d = %s.\n", i, traceFiles[i].c_str());
+        print_msg(MSG_PRIO_MAX, "\nAnalyzing file #%d = %s.\n", i, traceFiles[i].c_str());
         LocalTraceAnalyzer analyzer(ba, cctVisitor, 
                 traceFiles[i], prof->traceMinTime());
         analyzer.analyze();
@@ -143,7 +143,7 @@ namespace TraceAnalysis {
       gettimeofday(&curTime, NULL);
       timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
                   + curTime.tv_usec - startTime.tv_usec;
-      printf("\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
+      print_msg(MSG_PRIO_MAX, "\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
     }
     return true;
   }

@@ -62,164 +62,33 @@ using std::string;
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  // Temporal Context Tree Abstract Time
-  class TCTATime {
+  // Temporal Context Tree Time
+  class TCTTime {
   public:
-    enum TimeType {
-      Trace,
-      Profile
-    };
+    TCTTime();
+    TCTTime(const TCTTime& orig);
+    virtual ~TCTTime();
     
-    TCTATime(TimeType type) : type(type) {}
-    TCTATime(const TCTATime& orig) : type(orig.type) {}
-    virtual ~TCTATime() {}
+    void clear();
     
-    virtual void clear() = 0;
+    Time getDuration();
+    Time getMinDuration();
+    Time getMaxDuration();
     
-    virtual Time getDuration() const {
-      return (getMinDuration() + getMaxDuration()) / 2;
-    }
-    virtual Time getMinDuration() const = 0;
-    virtual Time getMaxDuration() const = 0;
+    void setStartTime(Time exclusive, Time inclusive);
+    void setEndTime(Time exclusive, Time inclusive);
+    Time getStartTimeExclusive();
+    Time getStartTimeInclusive();
+    Time getEndTimeInclusive();
+    Time getEndTimeExclusive();
     
-    virtual TCTATime* duplicate() = 0;
+    void addTime(const TCTTime& other);
+    void setAsAverageTime(const TCTTime& time1, int weight1, const TCTTime& time2, int weight2);
     
-    virtual string toString() = 0;
-    
-    const TimeType type;
-  };
-  
-  // Temporal Context Tree Trace Time
-  class TCTTraceTime : public TCTATime {
-  public:
-    TCTTraceTime() : TCTATime(Trace) {
-      clear();
-    }
-    TCTTraceTime(const TCTTraceTime& orig) : TCTATime(orig) {
-      startTimeExclusive = orig.startTimeExclusive;
-      startTimeInclusive = orig.startTimeInclusive;
-      endTimeInclusive = orig.endTimeInclusive;
-      endTimeExclusive = orig.endTimeExclusive;
-    }
-    virtual ~TCTTraceTime() {}
-    
-    virtual void clear() {
-      startTimeExclusive = 0;
-      startTimeInclusive = 0;
-      endTimeInclusive = 0;
-      endTimeExclusive = 0;
-    }
-    
-    virtual Time getMinDuration() const {
-      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
-      return endTimeInclusive - startTimeInclusive + 1;
-    }
-    
-    virtual Time getMaxDuration() const {
-      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
-      return endTimeExclusive - startTimeExclusive - 1;
-    }
-    
-    virtual TCTATime* duplicate() {
-      return new TCTTraceTime(*this);
-    }
-    
-    virtual string toString() {
-      return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
-              + timeToString((endTimeInclusive + endTimeExclusive)/2);
-    }
-    
-    void setStartTime(Time exclusive, Time inclusive) {
-      startTimeExclusive = exclusive;
-      startTimeInclusive = inclusive;
-    }
-    
-    void setEndTime(Time inclusive, Time exclusive) {
-      endTimeInclusive = inclusive;
-      endTimeExclusive = exclusive;
-    }
-    
-    Time getStartTimeExclusive() {
-      return startTimeExclusive;
-    }
-    
-    Time getStartTimeInclusive() {
-      return startTimeInclusive;
-    }
-    
-    Time getEndTimeInclusive() {
-      return endTimeInclusive;
-    }
-    
-    Time getEndTimeExclusive() {
-      return endTimeExclusive;
-    }
-    
-    void shiftTime(Time offset) {
-      startTimeExclusive += offset;
-      startTimeInclusive += offset;
-      endTimeInclusive += offset;
-      endTimeExclusive += offset;
-    }
+    string toString();
     
   private:
-    Time startTimeExclusive;
-    Time startTimeInclusive;
-    Time endTimeInclusive;
-    Time endTimeExclusive;
-  };
-  
-  // Temporal Context Profile Time
-  class TCTProfileTime : public TCTATime {
-  public:
-    TCTProfileTime() : TCTATime(Profile) {
-      clear();
-    }
-    TCTProfileTime(const TCTProfileTime& orig) : TCTATime(orig) {
-      minDurationInclusive = orig.minDurationInclusive;
-      maxDurationInclusive = orig.maxDurationInclusive;
-      //minDurationExclusive = orig.minDurationExclusive;
-      //maxDurationExclusive = orig.maxDurationExclusive;
-    }
-    TCTProfileTime(const TCTATime& other) : TCTATime(Profile) {
-      minDurationInclusive = other.getMinDuration();
-      maxDurationInclusive = other.getMaxDuration();
-    }
-    virtual ~TCTProfileTime() {}
-    
-    virtual void clear() {
-      minDurationInclusive = 0;
-      maxDurationInclusive = 0;
-      //minDurationExclusive = 0;
-      //maxDurationExclusive = 0;
-    }
-    
-    virtual Time getMinDuration() const {
-      return minDurationInclusive;
-    }
-    
-    virtual Time getMaxDuration() const {
-      return maxDurationInclusive;
-    }
-    
-    virtual TCTATime* duplicate() {
-      return new TCTProfileTime(*this);
-    }
-    
-    virtual string toString() {
-      return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
-             //+ " Ex-time = " + timeToString((minDurationExclusive + maxDurationExclusive)/2);
-    }
-    
-    virtual void merge(TCTATime* other) {
-      minDurationInclusive += other->getMinDuration();
-      maxDurationInclusive += other->getMaxDuration();
-    }
-  private:
-    Time minDurationInclusive;
-    Time maxDurationInclusive;
-    //Time minDurationExclusive;
-    //Time maxDurationExclusive;
+    void* ptr;
   };
 }
 

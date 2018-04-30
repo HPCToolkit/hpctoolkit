@@ -66,7 +66,7 @@ namespace TraceAnalysis {
     */
     for (int i = 0; i < depth; i++) ret += "  ";
     ret += name + id.toString();
-    ret += " " + time->toString();
+    ret += " " + time.toString();
     if (samplingInterval != 0)
       ret += ", " + std::to_string(getDuration()/samplingInterval) + " samples";
     ret += "\n";
@@ -78,7 +78,7 @@ namespace TraceAnalysis {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
-    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = children.begin(); it != children.end(); it++)
@@ -92,7 +92,7 @@ namespace TraceAnalysis {
     ret += ", # iterations = " + std::to_string(numIteration) + "\n";
     
     if (depth >= maxDepth) return ret;
-    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     
     for (auto it = acceptedIterations.begin(); it != acceptedIterations.end(); it++)
       ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
@@ -107,7 +107,7 @@ namespace TraceAnalysis {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
-    if (minDuration > 0 && time->getDuration() < minDuration) return ret;
+    if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
@@ -161,7 +161,7 @@ namespace TraceAnalysis {
   bool TCTLoopNode::acceptLoop() {
     if (rejectedIterations == NULL) return true;
     
-    if (rejectedIterations->getDuration() >= getDuration() * LoopRejThreshold)
+    if (rejectedIterations->getDuration() >= getDuration() * LOOP_REJ_THRESHOLD)
       return false;
     return true;
   }
@@ -228,16 +228,7 @@ namespace TraceAnalysis {
   }
   
   void TCTProfileNode::merge(TCTProfileNode* other) {
-    TCTProfileTime* profileTime = NULL; 
-    if (time->type == TCTATime::Profile)
-      profileTime = (TCTProfileTime*) time;
-    else {
-      profileTime = new TCTProfileTime(*time);
-      delete time;
-      time = profileTime;
-    }
-
-    profileTime->merge(other->time);
+    time.addTime(other->time);
     for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
       if (childMap.find(it->second->id) == childMap.end())
         childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();

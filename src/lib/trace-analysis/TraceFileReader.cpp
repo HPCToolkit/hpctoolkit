@@ -146,7 +146,7 @@ namespace TraceAnalysis {
     if (ret != HPCFMT_OK) return NULL;
 
     while (cctVisitor.getLeafFrame(trace.cpId) == NULL) {
-      DIAG_Msg(1, "Invalid cpid " << trace.cpId);
+      print_msg(MSG_PRIO_LOW, "ERROR: Invalid cpid %u.\n", trace.cpId);
       ret = hpctrace_fmt_datum_fread(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file);
       if (ret != HPCFMT_OK) return NULL;
       trace.dLCA = HPCRUN_FMT_DLCA_NULL;

@@ -71,15 +71,16 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	data/CFGNode.hpp \
-	data/TCT-Time.hpp \
+	data/TCT-CFG.hpp \
+	data/TCT-Time.hpp data/TCT-Time.cpp \
 	data/TCT-Node.hpp data/TCT-Node.cpp \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
 	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \
 	CCTVisitor.hpp CCTVisitor.cpp \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
-	TraceFileReader.hpp TraceFileReader.cpp
+	TraceFileReader.hpp TraceFileReader.cpp \
+	TCT-Cluster.hpp TCT-Cluster.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 BOOST_INC = @BOOST_INC@

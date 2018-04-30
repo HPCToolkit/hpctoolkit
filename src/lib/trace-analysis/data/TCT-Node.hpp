@@ -106,6 +106,39 @@ namespace TraceAnalysis {
     }
   };
   
+  class TCTDiffScore {
+    friend class TCTANode;
+  public:
+    double getInclusive() {
+      return inclusive;
+    }
+    
+    double getExclusive() {
+      return exclusive;
+    }
+    
+    void setInclusive(double inclusive) {
+      this->inclusive = inclusive;
+    }
+    
+    void setExclusive(double exclusive) {
+      this->exclusive = exclusive;
+    }
+    
+    void clear() {
+      inclusive = 0;
+      exclusive = 0;
+    }
+    
+  private:
+    double inclusive;
+    double exclusive;
+    
+    TCTDiffScore() : inclusive(0), exclusive(0) {}
+    TCTDiffScore(const TCTDiffScore& other): inclusive(other.inclusive), exclusive(other.exclusive) {}
+    virtual ~TCTDiffScore() {}
+  };
+  
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
@@ -119,24 +152,18 @@ namespace TraceAnalysis {
     
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
         type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), 
-        depth(depth), weight(1) {
-      time = new TCTTraceTime();
-    }
+        depth(depth), weight(1), time(), diffScore() {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight) {
-      time = orig.time->duplicate();
-    }
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), 
+        time(orig.time), diffScore(orig.diffScore) {}
     TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight) {
-      time = orig.time->duplicate();
-    }
-    virtual ~TCTANode() {
-      delete time;
-    }
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight),
+        time(orig.time), diffScore(orig.diffScore) {}
     
-    virtual TCTTraceTime* getTraceTime() {
-      if (time->type == TCTATime::Trace) return (TCTTraceTime*)time;
-      else return NULL;
+    virtual ~TCTANode() {}
+    
+    virtual TCTTime& getTime() {
+      return time;
     }
     
     virtual string getName() {
@@ -148,11 +175,19 @@ namespace TraceAnalysis {
     }
     
     virtual Time getDuration() {
-      return time->getDuration();
+      return time.getDuration();
     }
     
     virtual int getWeight() {
       return weight;
+    }
+    
+    virtual void setWeight(int weight) {
+      this->weight = weight;
+    }
+    
+    virtual TCTDiffScore& getDiffScore() {
+      return diffScore;
     }
         
     // returns a pointer to a duplicate of this object. 
@@ -180,8 +215,9 @@ namespace TraceAnalysis {
   protected:
     string name;
     int depth;
-    TCTATime* time;
     int weight;
+    TCTTime time;
+    TCTDiffScore diffScore;
   };
   
   // Temporal Context Tree Abstract Trace Node
@@ -304,7 +340,7 @@ namespace TraceAnalysis {
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
     
     virtual void addChild(TCTANode* child) {
-      printf("ERROR: addChild() for loop node %s is not implemented.\n", name.c_str());
+      print_msg(MSG_PRIO_MAX, "ERROR: addChild() for loop node %s should never been called and is not implemented.\n", name.c_str());
       delete child;
     }
     
@@ -373,7 +409,8 @@ namespace TraceAnalysis {
     
     virtual TCTANode* voidDuplicate() const {
       TCTProfileNode* ret = new TCTProfileNode(*this, false);
-      ret->time->clear();
+      ret->time.clear();
+      ret->diffScore.clear();
       return ret;
     }
     

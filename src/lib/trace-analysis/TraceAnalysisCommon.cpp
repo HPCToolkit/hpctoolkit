@@ -53,6 +53,9 @@
  * Trace analysis common types and utilities.
  */
 
+#include <stdarg.h>
+#include <math.h>
+
 #include "TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
@@ -72,5 +75,24 @@ namespace TraceAnalysis {
   string timeToString(Time time) {
     double t = (double)time / 1000000.0;
     return std::to_string(t) + "s";
+  }
+  
+  #define MSG_LEVEL MSG_PRIO_LOW
+  void print_msg(int level, const char *fmt,...) {
+    if (level >= MSG_LEVEL) {
+      va_list args;
+      va_start(args, fmt);
+
+      vprintf(fmt, args);
+
+      va_end(args);
+    }
+  }
+  #undef MSG_LEVEL
+
+  const Time computeWeightedAverage(Time time1, int w1, Time time2, int w2) {
+    double total = (double)time1 * (double)w1 + (double)time2 * (double)w2;
+    double average = round(total / (double)(w1 + w2));
+    return (Time) average;
   }
 }
