@@ -73,6 +73,7 @@ using std::string;
 
 #include <typeinfo>
 
+#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -123,6 +124,13 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
+
+
+static bool
+vdso_loadmodule(const char *pathname)
+{
+  return pathname && strstr(pathname,  "vdso");
+}
 
 
 namespace Analysis {
@@ -389,16 +397,15 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = ((lmStrct->childCount() > 0)
-		    || (loadmap_lm->id() == Prof::LoadMap::LMId_NULL));
+  bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
-      DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-    }
-  }
-  else {
-    DIAG_Msg(1, "Line map : " << lm_nm);
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+    // no-op for this case
+  } else if (vdso_loadmodule(lm_nm.c_str()))  {
+    DIAG_WMsgIf(1, "Cannot fully process samples for virtual load module " << lm_nm);
+  } else {
 
     try {
       lm = new BinUtil::LM();
@@ -407,13 +414,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
-      DIAG_Throw(/*"While reading '" << lm_nm << "': " <<*/ x.what());
+      lm = NULL;
+      DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm << ": " << x.what());
     }
-    catch (...) {
-      delete lm;
-      DIAG_EMsg("While reading '" << lm_nm << "'...");
-      throw;
-    }
+    if (lm) DIAG_Msg(1, "Line map : " << lm_nm);
   }
 
   if (lm) {

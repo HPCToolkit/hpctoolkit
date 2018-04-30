@@ -537,6 +537,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       if (sf) {
         sf->id(id);
         m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+
+        nm = sf->unified_name();
       }
     }
     else if (type == 2) { // File
