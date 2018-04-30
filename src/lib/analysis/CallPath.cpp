@@ -127,9 +127,9 @@ coalesceStmts(Prof::Struct::Tree& structure);
 
 
 static bool
-pseudofile(const char *pathname)
+vdso_loadmodule(const char *pathname)
 {
-  return pathname && pathname[0] == '[';
+  return pathname && strstr(pathname,  "vdso");
 }
 
 
@@ -403,8 +403,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     DIAG_Msg(1, "STRUCTURE: " << lm_nm);
   } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  } else if (pseudofile(lm_nm.c_str()))  {
-    DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm);
+  } else if (vdso_loadmodule(lm_nm.c_str()))  {
+    DIAG_WMsgIf(1, "Cannot fully process samples for virtual load module " << lm_nm);
   } else {
 
     try {
@@ -414,14 +414,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
-      DIAG_Throw(/*"While reading '" << lm_nm << "': " <<*/ x.what());
+      lm = NULL;
+      DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm << ": " << x.what());
     }
-    catch (...) {
-      delete lm;
-      DIAG_EMsg("While reading '" << lm_nm << "'...");
-      throw;
-    }
-    DIAG_Msg(1, "Line map : " << lm_nm);
+    if (lm) DIAG_Msg(1, "Line map : " << lm_nm);
   }
 
   if (lm) {
