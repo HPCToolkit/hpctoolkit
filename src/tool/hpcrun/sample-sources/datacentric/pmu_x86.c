@@ -74,31 +74,6 @@ static const char *evnames[] = {
     EVNAME_SANDYBRIDGE_STORE
 };
 
-static void
-set_default_perf_event_attr(struct perf_event_attr *attr, struct event_threshold_s *period)
-{
-	attr->size = sizeof(struct perf_event_attr);
-
-	attr->sample_period  = period->threshold_num;
-	attr->freq           = period->threshold_type == FREQUENCY ? 1 : 0;
-
-	attr->sample_type    = PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN
-							 | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
-							 | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
-							 | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
-	#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-							 | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
-	#endif
-										;
-	attr->disabled      = 1;
-	attr->sample_id_all = 1;
-	attr->exclude_hv     = EXCLUDE;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
-	attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
-	attr->exclude_callchain_user = EXCLUDE_CALLCHAIN;
-#endif
-}
 
 int
 datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
