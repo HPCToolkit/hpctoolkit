@@ -44,7 +44,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 0
+#define CUPTI_ACTIVITY_DEBUG 1
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -255,7 +255,15 @@ cupti_load_callback_cuda
   if (file_flag) {
     char device_file[PATH_MAX]; 
     sprintf(device_file, "%s", file_name);
-    uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
+    uint64_t hpctoolkit_module_id;
+    load_module_t *module = NULL;
+    hpcrun_loadmap_lock();
+    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
+    } else {
+      hpctoolkit_module_id = module->id;
+    }
+    hpcrun_loadmap_unlock();
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
