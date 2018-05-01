@@ -840,7 +840,7 @@ cxx_c11_flag=
 ORIG_CXXFLAGS="$CXXFLAGS"
 AC_LANG_PUSH([C++])
 
-AC_MSG_CHECKING([CXXFLAGS for C++11 standard])
+AC_MSG_CHECKING([for CXX flag for C++11])
 
 for opt in $c11_list
 do
@@ -882,6 +882,176 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 AC_SUBST([cxx_c11_flag])
+
+#-------------------------------------------------
+
+# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
+# hpcfnbounds.
+#
+# Try --print-file-name first.  If that doesn't work, then try ldd.
+# If --print-file-name works, then its answer is more reliable because
+# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
+# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
+#
+# Of course, --print-file-name and libstdc++.so are GNU-specific.
+# (Intel icc seems to support both, but computes an answer based on
+# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
+# here?
+
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
+
+case "$libcxx_file" in
+  /* ) ;;
+  * )
+    src="hpc_hello.$$.cc"
+    obj="hpc_hello.$$.out"
+    rm -f "$src" "$obj"
+    cat <<"EOF" >"$src"
+main(){}
+EOF
+    ${CXX} -o "$obj" "$src"
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    rm -f "$src" "$obj"
+    ;;
+esac
+
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
+  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
+esac
+
+AC_SUBST([HPCRUN_LIBCXX_PATH])
+
+
+#-------------------------------------------------
+# CXXFLAGS for OpenMP
+#-------------------------------------------------
+
+# Find a CC/CXX flag for openmp, normally -fopenmp for gcc/g++.
+# We could add an ARG_VAR variable for this, but that's probably not
+# necessary.
+
+openmp_flag=no
+
+flag_list='-fopenmp -openmp -qopenmp -qsmp=omp'
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
+
+AC_MSG_CHECKING([for CXX flag for openmp])
+
+for flag in $flag_list
+do
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <iostream>
+#include <omp.h>
+void myprint(int len)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < len; i++) {
+    std::cout << i << "\n";
+  }
+}
+]])], [ans=yes], [ans=no])
+  if test "$ans" = yes ; then
+    openmp_flag="$flag"
+    break
+  fi
+done
+
+AC_MSG_RESULT([$openmp_flag])
+
+AC_LANG_POP
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# If unable to verify an openmp flag, then -fopenmp probably works.
+if test "x$openmp_flag" = xno ; then
+  AC_MSG_WARN([unable to find flag for openmp, using -fopenmp])
+  openmp_flag='-fopenmp'
+fi
+
+#-------------------------------------------------
+
+# Find the openmp library and its directory.  We add the directory to
+# the launch script for hpcstruct when using openmp.
+
+openmp_lib_list='libgomp libiomp libomp libxlsmp'
+
+src="conftest.$$.cpp"
+obj="conftest.$$.bin"
+
+rm -f "$src" "$obj"
+
+cat <<EOF >"$src"
+#include <iostream>
+#include <omp.h>
+int main(int argc, char **argv)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < argc; i++) {
+    std::cout << i << "\n";
+  }
+}
+EOF
+
+openmp_lib_name=no
+
+AC_MSG_CHECKING([for openmp library])
+
+$CXX -g $CXXFLAGS $openmp_flag "$src" -o "$obj" >/dev/null 2>&1
+
+if test $? -eq 0 && test -f "$obj" ; then
+  for lib in $openmp_lib_list ; do
+    base=`ldd "$obj" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib"`
+    if test "x$base" != x ; then
+      openmp_lib_name="$base"
+      break
+    fi
+  done
+else
+  AC_MSG_WARN([unable to compile openmp with $openmp_flag])
+fi
+
+AC_MSG_RESULT([$openmp_lib_name])
+
+if test "$openmp_lib_name" = no ; then
+  AC_MSG_WARN([unable to find openmp library])
+fi
+
+openmp_lib_dir=
+
+if test "$openmp_lib_name" != no ; then
+  AC_MSG_CHECKING([for openmp library directory])
+
+  name=`$CXX -print-file-name="$openmp_lib_name" 2>/dev/null`
+  if test ! -f "$name" ; then
+    name=`ldd "$obj" 2>/dev/null | grep -e "$openmp_lib_name" | $AWK '{print $3}'`
+  fi
+
+  if test -f "$name" ; then
+    dir=`dirname "$name"`
+    if test -d "$dir" ; then
+      openmp_lib_dir="$dir"
+    fi
+  fi
+
+  AC_MSG_RESULT([$openmp_lib_dir])
+
+  if test ! -d "$openmp_lib_dir" ; then
+    AC_MSG_WARN([unable to find openmp library directory])
+  fi
+fi
+
+rm -f "$src" "$obj"
 
 
 #-------------------------------------------------
@@ -2747,6 +2917,35 @@ if test "$SYMTABAPI" != no ; then
 fi
 
 #
+# Test if dyninst was built with openmp support.
+# Again, not really a good test.
+#
+dyninst_openmp=no
+
+if test "$SYMTABAPI" != no ; then
+  AC_MSG_CHECKING([if dyninst built openmp])
+
+  parseapi="${SYMTABAPI_LIB}/libparseAPI.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$parseapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        dyninst_openmp=yes
+	break
+      fi
+    done
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  AC_MSG_RESULT([$dyninst_openmp])
+fi
+
+#
 # Test if dyninst supports cuda.
 #
 use_cuda=no
@@ -3260,53 +3459,6 @@ AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
 
 
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
-#
-# FIXME (tallent): This is completely broken for cross-compiling
-# (there is no reason for the paths to be persistent).  Moreover, we
-# should not be responsible for configuring runtime paths for
-# libstdc++.
-#
-# Try --print-file-name first.  If that doesn't work, then try ldd.
-# If --print-file-name works, then its answer is more reliable because
-# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
-# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
-#
-# Of course, --print-file-name and libstdc++.so are GNU-specific.
-# (Intel icc seems to support both, but computes an answer based on
-# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
-# here?
-
-libcxx_file=`${CXX} -print-file-name=libstdc++.so`
-
-case "$libcxx_file" in
-  /* ) ;;
-  * )
-    src="hpc_hello.$$.cc"
-    obj="hpc_hello.$$.out"
-    rm -f "$src" "$obj"
-    cat <<"EOF" >"$src"
-main(){}
-EOF
-    ${CXX} -o "$obj" "$src"
-    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
-    rm -f "$src" "$obj"
-    ;;
-esac
-
-libcxx_dir=`dirname $libcxx_file`
-libcxx_base=`basename $libcxx_file`
-HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
-
-case "$HPCRUN_LIBCXX_PATH" in
-  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
-  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
-esac
-
-AC_SUBST([HPCRUN_LIBCXX_PATH])
-
-
 #-------------------------------------------------
 # enable-hpcrun-static:
 #-------------------------------------------------
@@ -3383,6 +3535,30 @@ case "$enable_hpcserver" in
 esac
 
 AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
+
+
+#-------------------------------------------------
+# enable-openmp
+#-------------------------------------------------
+
+# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
+# does.
+
+AC_ARG_ENABLE([openmp],
+  [AS_HELP_STRING([--enable-openmp],
+      [enable openmp support in hpcstruct (default is to test dyninst)])],
+  [],
+  [enable_openmp="$dyninst_openmp"])
+
+AC_MSG_CHECKING([whether to enable openmp in hpcstruct])
+AC_MSG_RESULT([$enable_openmp])
+
+case "$enable_openmp" in
+  yes | no ) ;;
+  * ) AC_MSG_WARN([bad value for enable-openmp: $enable_openmp])
+    enable_openmp="$dyninst_openmp"
+    ;;
+esac
 
 
 #-------------------------------------------------
