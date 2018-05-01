@@ -635,6 +635,16 @@ METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
 
+  METHOD_CALL(self, stop); // make sure stop has been called
+  // FIXME: add component shutdown code here
+
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
+  int nevents = (self->evl).nevents; 
+
+  perf_thread_fini(nevents, event_thread);
+
+  self->state = UNINIT;
+
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
 
