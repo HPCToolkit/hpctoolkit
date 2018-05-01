@@ -27,6 +27,7 @@
 #include "cupti-record.h"
 
 
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -821,6 +822,7 @@ cupti_sample_process
    sample->correlationId,
    sample->samples,
    sample->latencySamples);
+
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
