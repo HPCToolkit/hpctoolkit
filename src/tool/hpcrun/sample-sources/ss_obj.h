@@ -76,6 +76,7 @@ sample_source_t obj_name() = {
 
   .add_event     = hpcrun_ss_add_event,
   .store_event   = hpcrun_ss_store_event,
+  .store_event_and_info = hpcrun_ss_store_event_and_info,
   .store_metric_id = hpcrun_ss_store_metric_id,
   .get_event_str = hpcrun_ss_get_event_str,
   .started       = hpcrun_ss_started,

@@ -131,7 +131,7 @@ static int metric_memload = -1;
 #define P(a, b) PERF_MEM_##a##_##b
 
 static void
-datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
+datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if ( (current == NULL)      ||  (mmap_data == NULL) ||
@@ -215,21 +215,21 @@ datacentric_handler(event_thread_t *current, void *context, sample_val_t sv,
 
 
 static int
-datacentric_register(event_custom_t *event)
+datacentric_register(sample_source_t *self, event_custom_t *event)
 {
   struct event_threshold_s threshold;
   perf_util_get_default_threshold( &threshold );
 
-  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
-  if (event_desc == NULL)
+  event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_info == NULL)
     return -1;
 
-  memset(event_desc, 0, sizeof(event_info_t));
+  memset(event_info, 0, sizeof(event_info_t));
 
   // ------------------------------------------
   // hardware-specific data centric setup (if supported)
   // ------------------------------------------
-  int result = datacentric_hw_register(event_desc, &threshold);
+  int result = datacentric_hw_register(event_info, &threshold);
   if (result == 0)
     return 0;
 
@@ -244,13 +244,18 @@ datacentric_register(event_custom_t *event)
   // ------------------------------------------
   int metric = hpcrun_new_metric();
 
-  event_desc->metric        = metric;
-  event_desc->metric_custom = event;
-  event_desc->metric_desc   = hpcrun_set_metric_info_and_period(
+  event_info->metric_custom = event;
+  hpcrun_set_metric_info_and_period(
         metric, EVNAME_DATACENTRIC,
         MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  return event_desc_add(event_desc);
+  // ------------------------------------------
+  // Register the event to the global list
+  // ------------------------------------------
+  METHOD_CALL(self, store_event_and_info,
+      event_info->attr.config, 1, metric, event_info);;
+
+  return 1;
 }
 
 
@@ -266,8 +271,6 @@ datacentric_init()
   event_datacentric->desc         = "Experimental counter: counting the memory latency.";
   event_datacentric->register_fn  = datacentric_register;   // call backs
   event_datacentric->handler_fn   = datacentric_handler;
-  event_datacentric->metric_index = 0;        // these fields to be defined later
-  event_datacentric->metric_desc  = NULL;     // these fields to be defined later
   event_datacentric->handle_type  = EXCLUSIVE;// call me only for my events
 
   event_custom_register(event_datacentric);

@@ -53,8 +53,8 @@
 typedef struct event_custom_s event_custom_t;
 
 // callback functions
-typedef int  register_event_t(event_custom_t *event);
-typedef void event_handler_t(struct event_thread_s*, void *context, sample_val_t , struct perf_mmap_data_s* );
+typedef int  register_event_t(sample_source_t *self, event_custom_t *event);
+typedef void event_handler_t(struct event_info_s*, void *context, sample_val_t , perf_mmap_data_t* );
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
@@ -69,9 +69,6 @@ typedef struct event_custom_s {
   register_event_t *register_fn;// function to register the event
   event_handler_t  *handler_fn; // callback to be used during the sampling
 
-  int            metric_index; // hpcrun's index metric
-  metric_desc_t *metric_desc;  // pointer to predefined metric
-
   event_handle_type_t handle_type; // whether the handler will be called exclusively or inclusively (all events)
 
 } event_custom_t;
@@ -83,7 +80,7 @@ typedef struct event_custom_s {
 /***
  * create a custom event
  */ 
-int event_custom_create_event(char *name);
+int event_custom_create_event(sample_source_t *self, char *name);
 /**
  * find an event custom based on its event name.
  * @return event_custom_t if exists, NULL otherwise.
@@ -107,7 +104,7 @@ void event_custom_display(FILE *std);
  * method to be called during signal delivery. If an event is recognized, 
  * it will delivered to the custom handler.
  **/ 
-int event_custom_handler(struct event_thread_s* event, void *context, 
+int event_custom_handler(struct event_info_s* event, void *context,
 		sample_val_t sample, struct perf_mmap_data_s* data);
 
 #endif

@@ -293,7 +293,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
   return mmap_data->nr;
 }
 
-
+#if 0
 //----------------------------------------------------------
 // part of the buffer to be skipped
 //----------------------------------------------------------
@@ -309,6 +309,7 @@ skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 
   hdr->data_tail += sz;
 }
+#endif
 
 /**
  * parse mmapped buffer and copy the values into perf_mmap_data_t mmap_info.
@@ -316,10 +317,10 @@ skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
  * returns the number of read event attributes
  */
 static int
-parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_info )
+parse_buffer(int sample_type, pe_mmap_t *current_perf_mmap,
+    struct perf_event_attr *attr,
+    perf_mmap_data_t *mmap_info )
 {
-	pe_mmap_t *current_perf_mmap = current->mmap;
-
 	int data_read = 0;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)
 	if (sample_type & PERF_SAMPLE_IDENTIFIER) {
@@ -366,7 +367,7 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 	if (sample_type & PERF_SAMPLE_READ) {
 	  // to be used by datacentric event
 	  handle_struct_read_format(current_perf_mmap,
-	      current->event->attr.read_format);
+	      attr->read_format);
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
@@ -427,10 +428,10 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 //        false otherwise
 //----------------------------------------------------------
 int
-read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
+read_perf_buffer(pe_mmap_t *current_perf_mmap,
+    struct perf_event_attr *attr, perf_mmap_data_t *mmap_info)
 {
   pe_header_t hdr;
-  pe_mmap_t *current_perf_mmap = current->mmap;
 
   int read_successfully = perf_read_header(current_perf_mmap, &hdr);
   if (read_successfully != 0) {
@@ -444,8 +445,8 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (hdr.size <= 0) {
         return 0;
       }
-      int sample_type = current->event->attr.sample_type;
-      parse_buffer(sample_type, current, mmap_info);
+      int sample_type = attr->sample_type;
+      parse_buffer(sample_type, current_perf_mmap, attr, mmap_info);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   } else if (hdr.type == PERF_RECORD_SWITCH) {
@@ -455,7 +456,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       struct { uint32_t pid, tid; } pid;
       struct { uint32_t cpu, reserved; } cpu;
 
-      type = current->event->attr.sample_type;
+      type = attr->sample_type;
 
       if (type & PERF_SAMPLE_TID) {
         perf_read( current_perf_mmap, &pid, sizeof(pid)) ;
@@ -484,7 +485,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       }
       //skip_perf_data(current_perf_mmap, hdr.size);
       TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
-    		  current->fd,
+    		  attr->config,
     		  hdr.type, hdr.misc, hdr.size);
   }
 

@@ -54,7 +54,7 @@
 #define IBS_OP_TYPE_FILE "/sys/bus/event_source/devices/ibs_op/type"
 
 int
-datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period)
+datacentric_hw_register(event_info_t *event_info, struct event_threshold_s *period)
 {
   // get the type of ibs op
 
@@ -67,28 +67,28 @@ datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *peri
   }
   fscanf(ibs_file, "%d", &type);
 
-  event_desc->attr.config = (1ULL<<19);
-  event_desc->attr.type   = type;
-  event_desc->attr.sample_period  = period->threshold_num;
-  event_desc->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
+  event_info->attr.config = (1ULL<<19);
+  event_info->attr.type   = type;
+  event_info->attr.sample_period  = period->threshold_num;
+  event_info->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
 
-  event_desc->attr.sample_type    = PERF_SAMPLE_RAW
+  event_info->attr.sample_type    = PERF_SAMPLE_RAW
                                     | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
                                     | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
-  event_desc->attr.disabled       = 1;
-  event_desc->attr.exclude_kernel = 0;
-  event_desc->attr.exclude_user   = 0;
-  event_desc->attr.exclude_hv     = 0;
-  event_desc->attr.exclude_guest  = 0;
-  event_desc->attr.exclude_idle   = 0;
-  event_desc->attr.exclude_host   = 0;
-  event_desc->attr.pinned         = 0;
-  event_desc->attr.precise_ip     = 1;
-  event_desc->attr.mmap           = 1;
+  event_info->attr.disabled       = 1;
+  event_info->attr.exclude_kernel = 0;
+  event_info->attr.exclude_user   = 0;
+  event_info->attr.exclude_hv     = 0;
+  event_info->attr.exclude_guest  = 0;
+  event_info->attr.exclude_idle   = 0;
+  event_info->attr.exclude_host   = 0;
+  event_info->attr.pinned         = 0;
+  event_info->attr.precise_ip     = 1;
+  event_info->attr.mmap           = 1;
 
-  event_desc->attr.sample_id_all = 1;
-  event_desc->attr.read_format = 0;
+  event_info->attr.sample_id_all = 1;
+  event_info->attr.read_format = 0;
 
   return 1;
 }

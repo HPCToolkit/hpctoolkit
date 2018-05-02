@@ -145,13 +145,12 @@ struct event_custom_s;
 // main data structure to store the information of an event.
 // this structure is designed to be created once during the initialization.
 // this code doesn't work if the number of events change dynamically.
+//
+// this data is designed to be stored in evlist.h's _ev_t.event_info
 // --------------------------------------------------------------
 typedef struct event_info_s {
-  struct perf_event_attr attr; // the event attribute
-  int    metric;               // metric ID of the event (raw counter)
-  metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
-  // predefined metric
+  struct perf_event_attr attr; // the event attribute
   struct event_custom_s *metric_custom;	// pointer to the predefined metric
 
 } event_info_t;
@@ -168,7 +167,6 @@ typedef struct event_thread_s {
 
   pe_mmap_t    *mmap;  // mmap buffer
   int          fd;     // file descriptor of the event
-  event_info_t *event; // pointer to main event description
 
 } event_thread_t;
 

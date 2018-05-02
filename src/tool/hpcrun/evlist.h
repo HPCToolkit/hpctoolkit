@@ -54,6 +54,12 @@ typedef struct _ev_t {
   int event;
   long thresh;
   int metric_id;
+
+  // Generic additional info of the event, used by sample source.
+  // each sample source may have their own additional info.
+  // for instance, perf_event requires info of perf attribute for
+  // each event.
+  void *event_info;
 } _ev_t;
 
 

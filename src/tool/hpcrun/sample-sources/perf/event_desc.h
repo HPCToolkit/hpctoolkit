@@ -58,8 +58,6 @@ typedef struct event_desc_list_s event_desc_list_t;
 
 int event_desc_add(event_info_t *event);
 
-event_info_t* event_desc_find(int metric);
-
 int event_desc_get_num();
 
 event_desc_list_t* event_desc_get_first();

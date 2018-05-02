@@ -102,12 +102,12 @@ static __thread u32          pid = 0, tid = 0;  // last pid/tid
  *****************************************************************************/
 
 static void
-blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
+blame_kernel_time(cct_node_t *cct_kernel,
     perf_mmap_data_t *mmap_data)
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
-    TMSG(LINUX_PERF, "old t: %l, c: %d, p: %d, td: %d -- vs -- t: %l, c: %d, p: %d, td: %d",
+    TMSG(LINUX_PERF, "old t: %d, c: %d, p: %d, td: %d -- vs -- t: %d, c: %d, p: %d, td: %d",
         time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
   }
@@ -153,8 +153,8 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
  *    end if
  *  end if
  ***********************************************************************/
-void
-kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t sv,
+static void
+kernel_block_handler( event_info_t *current_event, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if (metric_blocking_index < 0)
@@ -195,11 +195,11 @@ kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t
     //   cct kernel
     // ----------------------------------------------------------------
 
-    if (current_event->event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
+    if (current_event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
 
       if (cct_kernel != NULL && time_cs_out > 0) {
         // corner case : context switch within a context switch !
-        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        blame_kernel_time(cct_kernel, mmap_data);
         time_cs_out  = 0;
       }
       // context switch inside the kernel:  record the new cct
@@ -214,7 +214,7 @@ kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t
         assert(cpumode == PERF_RECORD_MISC_USER);
 #endif
 
-        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        blame_kernel_time(cct_kernel, mmap_data);
         // important: need to reset the value to inform that we are leaving the kernel
         cct_kernel   = NULL;
         time_cs_out  = 0;
@@ -235,33 +235,31 @@ kernel_block_handler( event_thread_t *current_event, void *context, sample_val_t
  * - context switch metric to store the number of context switches
  ****************************************************************/
 static int
-register_blocking(event_custom_t *event)
+register_blocking(sample_source_t *self, event_custom_t *event)
 {
-  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
-  if (event_desc == NULL)
+  event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_info == NULL)
     return -1;
 
-  memset(event_desc, 0, sizeof(event_info_t));
+  memset(event_info, 0, sizeof(event_info_t));
 
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_custom = event;
+  event_info->metric_custom = event;
 
-  event_desc->metric_custom->metric_index = hpcrun_new_metric();
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
+  metric_blocking_index= hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(
+      metric_blocking_index, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
-
-  metric_blocking_index = event_desc->metric_custom->metric_index;
 
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
-  event_desc->metric      = hpcrun_new_metric();
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      event_desc->metric, EVNAME_CONTEXT_SWITCHES,
-      MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+  int metric_cs     = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(
+                         metric_cs, EVNAME_CONTEXT_SWITCHES,
+                         MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
   // ------------------------------------------
   // set context switch event description to be used when creating
@@ -272,7 +270,7 @@ register_blocking(event_custom_t *event)
       PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
       PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
-  struct perf_event_attr *attr = &(event_desc->attr);
+  struct perf_event_attr *attr = &(event_info->attr);
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
 
@@ -282,10 +280,15 @@ register_blocking(event_custom_t *event)
       sample_type /* need additional info for sample type */
   );
 
-  event_desc->attr.context_switch = 1;
-  event_desc->attr.sample_id_all = 1;
+  event_info->attr.context_switch = 1;
+  event_info->attr.sample_id_all = 1;
 
-  event_desc_add(event_desc);
+  event_info->metric_custom = event;
+
+  METHOD_CALL(self, store_event_and_info,
+                          attr->config, 1, metric_cs, event_info);;
+
+  //event_desc_add(event_desc);
 
   return 1;
 }
@@ -305,8 +308,6 @@ void kernel_blocking_init()
 					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
   event_kernel_blocking->handler_fn   = kernel_block_handler;
-  event_kernel_blocking->metric_index = 0;   			// these fields to be defined later
-  event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
   event_kernel_blocking->handle_type  = INCLUSIVE;// please call me for all events
 
   event_custom_register(event_kernel_blocking);

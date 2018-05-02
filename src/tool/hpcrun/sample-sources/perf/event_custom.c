@@ -125,8 +125,13 @@ event_custom_register(event_custom_t *event)
 // --------------------------------------------------------------
 // Create a custom event
 // --------------------------------------------------------------
+/**
+ * create and register an event if the name is part of customized event
+ * returns the number of created events
+ * returns 0 if the name is not part of custom events
+ */
 int
-event_custom_create_event(char *name)
+event_custom_create_event(sample_source_t *self, char *name)
 {
   event_custom_t *event = event_custom_find(name);
 
@@ -134,11 +139,11 @@ event_custom_create_event(char *name)
     return 0;
   }
 
-  return event->register_fn(event);
+  return event->register_fn(self, event);
 }
 
 int
-event_custom_handler(struct event_thread_s* current, void *context, sample_val_t sample, struct perf_mmap_data_s* data)
+event_custom_handler(struct event_info_s* current, void *context, sample_val_t sample, struct perf_mmap_data_s* data)
 {
   if (current == NULL)
     return 0;
@@ -150,7 +155,7 @@ event_custom_handler(struct event_thread_s* current, void *context, sample_val_t
     	if (item->event->handle_type == INCLUSIVE) {
     		item->event->handler_fn(current, context, sample, data);
 
-    	} else if (item->event == current->event->metric_custom) {
+    	} else if (item->event == current->metric_custom) {
     	  // exclusive event: make sure the event is the same is the current event
     		item->event->handler_fn(current, context, sample, data);
     	}

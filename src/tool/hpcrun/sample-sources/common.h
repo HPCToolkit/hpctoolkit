@@ -54,6 +54,8 @@
 
 void  METHOD_FN(hpcrun_ss_add_event, const char* ev);
 void  METHOD_FN(hpcrun_ss_store_event, int event_id, long thresh);
+int   METHOD_FN(hpcrun_ss_store_event_and_info, int event_id, long thresh,
+                int metric_id, void *info);
 void  METHOD_FN(hpcrun_ss_store_metric_id, int event_id, int metric_id);
 char* METHOD_FN(hpcrun_ss_get_event_str);
 bool  METHOD_FN(hpcrun_ss_started);

@@ -164,6 +164,10 @@
 
 #define DEFAULT_COMPRESSION 5
 
+#define PERIOD_THRESHOLD 1
+#define PERIOD_FREQUENCY 2
+#define PERIOD_DEFAULT 0
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -173,9 +177,6 @@
 //******************************************************************************
 // forward declarations 
 //******************************************************************************
-
-static bool 
-perf_thread_init(event_thread_t *et);
 
 static void 
 perf_thread_fini(int nevents, event_thread_t *event_thread);
@@ -344,16 +345,15 @@ perf_init()
 //  threshold: sampling threshold 
 //----------------------------------------------------------
 static bool
-perf_thread_init(event_thread_t *et)
+perf_thread_init(event_thread_t *et, struct perf_event_attr *attr)
 {
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  event_info_t *event = et->event;
-  et->fd = perf_util_event_open(&(event->attr),
+  et->fd = perf_util_event_open(attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
-        et->fd, event->attr.precise_ip, event->attr.config,
-        event->attr.type, event->attr.sample_freq, event->attr.freq);
+        et->fd, attr->precise_ip, attr->config,
+        attr->type, attr->sample_freq, attr->freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
@@ -361,9 +361,9 @@ perf_thread_init(event_thread_t *et)
          " fd: %d, skid: %d,"
          " config: %d, type: %d, sample_freq: %d,"
          " freq: %d, error: %s",
-         et->fd, event->attr.precise_ip, 
-         event->attr.config, event->attr.type, event->attr.sample_freq, 
-         event->attr.freq, strerror(errno));
+         et->fd, attr->precise_ip,
+         attr->config, attr->type, attr->sample_freq,
+         attr->freq, strerror(errno));
     return false;
   }
 
@@ -427,30 +427,36 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
 // get the index of the file descriptor
 // ---------------------------------------------
 
-static event_thread_t*
+static int
 get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 {
   for(int i=0; i<nevents; i++) {
     if (event_thread[i].fd == fd)
-      return &(event_thread[i]);
+      return i;
   }
-  return NULL; 
+  return -1;
 }
 
-
-static sample_val_t*
+/***
+ * record a sample.
+ * output: sample node sv if successful
+ *
+ * return 1 node of the sample if successful
+ * return 0 if fails
+ */
+static int
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
-    void* context, sample_val_t* sv)
+    void* context, int metric, int freq, sample_val_t *sv)
 {
-  if (current == NULL || current->event == NULL || current->event->metric < 0)
-    return NULL;
+  if (current == NULL)
+    return 0;
 
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
   // sampling taken by perf event kernel
   // ----------------------------------------------------------------------------
   uint64_t metric_inc = 1;
-  if (current->event->attr.freq==1 && mmap_data->period > 0)
+  if (freq==1 && mmap_data->period > 0)
     metric_inc = mmap_data->period;
 
   // ----------------------------------------------------------------------------
@@ -479,7 +485,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // set additional information for the metric description
   // ----------------------------------------------------------------------------
   thread_data_t *td = hpcrun_get_thread_data();
-  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->metric]);
+  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric]);
 
   // check if this event is multiplexed. we need to notify the user that a multiplexed
   //  event is not accurate at all.
@@ -507,11 +513,11 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 #endif
   info.sample_custom_cct.data_aux         = mmap_data;
 
-  *sv = hpcrun_sample_callpath(context, current->event->metric,
+  *sv = hpcrun_sample_callpath(context, metric,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
 
-  return sv;
+  return 1;
 }
 
 /**
@@ -611,7 +617,7 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents        = event_desc_get_num(); //(self->evl).nevents;
+  int nevents        = (self->evl).nevents;
   event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
   //  enable all perf_events
@@ -635,7 +641,7 @@ METHOD_FN(thread_fini_action)
   // FIXME: add component shutdown code here
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-  int nevents = event_desc_get_num(); //self->evl.nevents;
+  int nevents = self->evl.nevents;
 
   perf_thread_fini(nevents, event_thread);
 
@@ -667,7 +673,7 @@ METHOD_FN(stop)
   }
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-  int nevents  = (self->evl).nevents;
+  int nevents = self->evl.nevents;
 
   perf_stop_all(nevents, event_thread);
 
@@ -689,7 +695,7 @@ METHOD_FN(shutdown)
   // FIXME: add component shutdown code here
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
-  int nevents = event_desc_get_num(); //self->evl.nevents;
+  int nevents = self->evl.nevents;
 
   perf_thread_fini(nevents, event_thread);
 
@@ -764,10 +770,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     // This "customized" event will use one or more perf events
     // ------------------------------------------------------------
 
-    if (event_custom_create_event(name) > 0) {
+    if (event_custom_create_event(self, name) > 0) {
       continue;
     }
 
+    // remove precise_ip modifier from event's name when necessary
     size_t precise_ip_pos = exist_precise_ip_modifier(name);
     if (precise_ip_pos > 0) {
     	name[precise_ip_pos] = '\0';
@@ -782,7 +789,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       // it is impossible to be here, unless the code is buggy
       continue;
 
-    bool is_period = (period_type == 1);
+    bool is_period = (period_type == PERIOD_THRESHOLD);
 
     // ------------------------------------------------------------
     // initialize the generic perf event attributes for this event
@@ -803,7 +810,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
-    event->metric = hpcrun_new_metric();
+    int metric = hpcrun_new_metric();
    
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
@@ -812,19 +819,23 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (!is_period) {
       threshold = 1;
     }
-    event->metric_desc = hpcrun_set_metric_info_and_period(event->metric, name_dup,
+    metric_desc_t *metric_desc = hpcrun_set_metric_info_and_period(metric, name_dup,
             MetricFlags_ValFmt_Real, threshold, prop);
 
-    if (event->metric_desc == NULL) {
+    if (metric_desc == NULL) {
       EMSG("Error: unable to create metric #%d: %s", index, name);
     } else {
-      event->metric_desc->is_frequency_metric = (event->attr.freq == 1);
+      metric_desc->is_frequency_metric = (event->attr.freq == 1);
     }
-    event_desc_add(event);
-    METHOD_CALL(self, store_event, event_attr->config, threshold);
+
+    int index = METHOD_CALL(self, store_event_and_info,
+                         event_attr->config, threshold, metric, event);;
+    if (index < 0) {
+      EMSG("Error: cannot create event %s (%d)", name, event_attr->config);
+    }
   }
 
-  int nevents = event_desc_get_num(); //self->evl.nevents;
+  int nevents = self->evl.nevents;
   if (nevents > 0)
     perf_init();
 }
@@ -837,7 +848,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(LINUX_PERF, "gen_event_set");
 
-  int nevents 	  = event_desc_get_num();
+  int nevents 	  = self->evl.nevents;
   int num_metrics = hpcrun_get_num_metrics();
 
   // a list of event information, private for each thread
@@ -857,16 +868,16 @@ METHOD_FN(gen_event_set, int lush_metrics)
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
   //  but there will be no samples
-  int i = 0;
-  for (event_desc_list_t* list = event_desc_get_first();
-       list != NULL;
-       list = event_desc_get_next(list), i++)
+  int i;
+  for (i=0; i<nevents; i++)
   {
-    event_thread[i].event = event_desc_get_event_info(list);
+    event_thread_t *et  = &(event_thread[i]);
+    event_info_t *einfo = (event_info_t *) self->evl.events[i].event_info;
+    struct perf_event_attr *attr = &einfo->attr;
 
     // initialize this event. If it's valid, we set the metric for the event
-    if (!perf_thread_init( &(event_thread[i])) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize %s", event_thread[i].event->metric_desc->name);
+    if (!perf_thread_init(et, attr) ) {
+      TMSG(LINUX_PERF, "FAIL to initialize fd=%d", event_thread[i].fd);
     }
   }
 
@@ -952,7 +963,7 @@ perf_event_handler(
   sample_source_t *self = &obj_name();
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
 
-  int nevents = event_desc_get_num(); //self->evl.nevents;
+  int nevents = self->evl.nevents;
 
   perf_stop_all(nevents, event_thread);
 
@@ -1001,7 +1012,8 @@ perf_event_handler(
   // metrics. Perhaps we should throw away?
   // ----------------------------------------------------------------------------
 
-  event_thread_t *current = get_fd_index(nevents, fd, event_thread);
+  int event_index = get_fd_index(nevents, fd, event_thread);
+  event_thread_t *current = &(event_thread[event_index]);
 
   if (current == NULL) {
     // signal not from perf event
@@ -1017,6 +1029,8 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
   // parse the buffer until it finishes reading all buffers
   // ----------------------------------------------------------------------------
+  event_info_t *event_info = (event_info_t *)self->evl.events[event_index].event_info;
+  struct perf_event_attr *attr = &event_info->attr;
 
   int more_data = 0;
   do {
@@ -1024,15 +1038,21 @@ perf_event_handler(
     memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
 
     // reading info from mmapped buffer
-    more_data = read_perf_buffer(current, &mmap_data);
+    more_data = read_perf_buffer(current->mmap, attr, &mmap_data);
 
     sample_val_t sv;
     memset(&sv, 0, sizeof(sample_val_t));
 
-    if (mmap_data.header_type == PERF_RECORD_SAMPLE)
-      record_sample(current, &mmap_data, context, &sv);
+    event_info_t *event_info = (event_info_t*) self->evl.events[event_index].event_info;
 
-    event_custom_handler(current, context, sv, &mmap_data);
+    if (mmap_data.header_type == PERF_RECORD_SAMPLE) {
+
+      int freq   = event_info->attr.freq;
+      int metric = self->evl.events[event_index].metric_id;
+
+      record_sample(current, &mmap_data, context, metric, freq, &sv);
+    }
+    event_custom_handler(event_info, context, sv, &mmap_data);
 
   } while (more_data);
 

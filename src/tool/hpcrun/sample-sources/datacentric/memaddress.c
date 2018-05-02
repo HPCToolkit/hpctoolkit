@@ -80,9 +80,10 @@ FUNCTION_FOLDER(first_touch)
 /******************************************************************************
  * local variables
  *****************************************************************************/
+static int metric_page_fault = -1;
 
 static void
-memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
+memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
 {
   if ( (current == NULL)      ||  (mmap_data == NULL) ||
@@ -101,15 +102,14 @@ memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
     cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
     metric_set_t* mset = hpcrun_reify_metric_set(cursor);
-    int metric_custom = current->event->metric_custom->metric_index;
 
-    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, metric_custom);
+    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, metric_page_fault);
     if (loc->i == 0) {
       loc->i = mmap_data->addr;
     }
 
     thread_data_t *td = hpcrun_get_thread_data();
-    td->core_profile_trace_data.perf_event_info[metric_custom].num_samples++;
+    td->core_profile_trace_data.perf_event_info[metric_page_fault].num_samples++;
 
     TMSG(DATACENTRIC, "handling node %p, cct: %p, addr: %p", node, sv.sample_node, mmap_data->addr);
   }
@@ -117,15 +117,15 @@ memcentric_handler(event_thread_t *current, void *context, sample_val_t sv,
 
 
 static int
-memcentric_register(event_custom_t *event)
+memcentric_register(sample_source_t *self, event_custom_t *event)
 {
-  event_info_t *event_desc = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
-  if (event_desc == NULL)
+  event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_info == NULL)
     return -1;
 
-  memset(event_desc, 0, sizeof(event_info_t));
+  memset(event_info, 0, sizeof(event_info_t));
 
-  event_desc->metric_custom = event;
+  event_info->metric_custom = event;
 
   struct event_threshold_s threshold;
   perf_util_get_default_threshold( &threshold );
@@ -133,19 +133,17 @@ memcentric_register(event_custom_t *event)
   // ------------------------------------------
   // create metric page-fault
   // ------------------------------------------
-  int pagefault_metric = hpcrun_new_metric();
+  metric_page_fault = hpcrun_new_metric();
 
-  event_desc->metric = pagefault_metric;
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      pagefault_metric, "PAGE-FAULTS",
+  metric_desc_t *metric_desc = hpcrun_set_metric_info_and_period(
+      metric_page_fault, "PAGE-FAULTS",
       MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   // ------------------------------------------
   // create custom metric page-address
   // ------------------------------------------
   int page_address     = hpcrun_new_metric();
-  event_desc->metric_custom->metric_index = page_address;
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
+  hpcrun_set_metric_info_and_period(
       page_address, "PAGE-ADDR",
       MetricFlags_ValFmt_Int, 1 /* frequency*/, metric_property_none);
 
@@ -157,7 +155,7 @@ memcentric_register(event_custom_t *event)
       PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
   // set the default attributes for page fault
-  struct perf_event_attr *attr = &(event_desc->attr);
+  struct perf_event_attr *attr = &(event_info->attr);
   attr->config = PERF_COUNT_SW_PAGE_FAULTS;
   attr->type   = PERF_TYPE_SOFTWARE;
 
@@ -165,12 +163,13 @@ memcentric_register(event_custom_t *event)
       attr,
       true                      /* use_period*/,
       threshold.threshold_num   /* use the default */,
-      sample_type               /* need additional info for sample type */
+      sample_type               /* need additional info to gather memory address */
   );
+  perf_util_set_max_precise_ip(attr);
 
-  event_desc->attr.sample_id_all = 1;
+  event_info->attr.sample_id_all = 1;
 
-  event_desc_add(event_desc);
+  //event_desc_add(event_info);
   return 1;
 }
 
@@ -188,8 +187,6 @@ memcentric_init()
   event_memcentric->desc         = "Experimental counter: identifying first-touch memory address.";
   event_memcentric->register_fn  = memcentric_register;   // call backs
   event_memcentric->handler_fn   = memcentric_handler;
-  event_memcentric->metric_index = 0;        // these fields to be defined later
-  event_memcentric->metric_desc  = NULL;     // these fields to be defined later
   event_memcentric->handle_type  = EXCLUSIVE;// call me only for my events
 
   event_custom_register(event_memcentric);

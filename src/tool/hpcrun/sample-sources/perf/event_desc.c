@@ -97,17 +97,6 @@ event_desc_add(event_info_t *event)
   return 1;
 }
 
-event_info_t*
-event_desc_find(int metric)
-{
-  event_desc_list_t *item = NULL;
-
-  SLIST_FOREACH(item, &list_event_desc_head, entries) {
-    if (item != NULL && item->event_info->metric == metric)
-      return item->event_info;
-  }
-  return NULL;
-}
 
 int
 event_desc_get_num()
