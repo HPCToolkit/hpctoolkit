@@ -56,7 +56,7 @@
 #include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  string TCTANode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+  string TCTANode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
     string ret;
     /*
     ret += "CFG-0x";
@@ -69,12 +69,15 @@ namespace TraceAnalysis {
     ret += " " + time.toString();
     if (samplingInterval != 0)
       ret += ", " + std::to_string(getDuration()/samplingInterval) + " samples";
+    if (diffScore.getInclusive() > 0)
+      ret += ", DiffScore = " + std::to_string((long)diffScore.getInclusive())
+              + "/" + std::to_string((long)diffScore.getExclusive());
     ret += "\n";
     
     return ret;
   }
   
-  string TCTATraceNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+  string TCTATraceNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
@@ -86,7 +89,7 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  string TCTLoopNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+  string TCTLoopNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     ret.pop_back();
     ret += ", # iterations = " + std::to_string(numIteration) + "\n";
@@ -103,7 +106,7 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  string TCTProfileNode::toString(int maxDepth, Time minDuration, Time samplingInterval) {
+  string TCTProfileNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
     string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
     
     if (depth >= maxDepth) return ret;
@@ -113,6 +116,18 @@ namespace TraceAnalysis {
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       ret += it->second->toString(maxDepth, minDuration, samplingInterval);
     return ret;
+  }
+  
+  void TCTPerfLossMetric::initDurationMetric() {
+    maxDuration = node->getDuration();
+    minDuration = node->getDuration();
+    totalDuration = (double)node->getDuration() * (double)node->getWeight();
+  }
+  
+  void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {
+    maxDuration = std::max(rep1.maxDuration, rep2.maxDuration);
+    minDuration = std::min(rep1.minDuration, rep2.minDuration);
+    totalDuration = rep1.totalDuration + rep2.totalDuration;
   }
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
@@ -227,7 +242,7 @@ namespace TraceAnalysis {
     }
   }
   
-  void TCTProfileNode::merge(TCTProfileNode* other) {
+  void TCTProfileNode::merge(const TCTProfileNode* other) {
     time.addTime(other->time);
     for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
       if (childMap.find(it->second->id) == childMap.end())
@@ -235,5 +250,64 @@ namespace TraceAnalysis {
       else
         childMap[it->second->id]->merge(it->second);
     }
+  }
+  
+  void TCTProfileNode::getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const {
+    minExclusive = getMinDuration();
+    maxExclusive = getMaxDuration();
+    for (auto it = childMap.begin(); it != childMap.end(); it++) {
+      TCTProfileNode* child = it->second;
+      minExclusive -= child->getMaxDuration();
+      maxExclusive -= child->getMinDuration();
+    }
+  }
+  
+  void TCTATraceNode::getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const {
+    if (idx < 0 || idx > getNumChild()) {
+      print_msg(MSG_PRIO_MAX, "ERROR: wrong idx %d for getLastChildEndTime(). 0 <= idx <= %d should hold.\n", 
+              idx, getNumChild());
+      return;
+    }
+
+    if (idx == 0) {
+      inclusive = time.getStartTimeExclusive();
+      exclusive = time.getStartTimeInclusive();
+    }
+    else {
+      inclusive = getChild(idx-1)->getTime().getEndTimeInclusive();
+      exclusive = getChild(idx-1)->getTime().getEndTimeExclusive();
+    }
+  }
+  
+  void TCTATraceNode::getCurrChildStartTime(int idx, Time& exclusive, Time& inclusive) const {
+    if (idx < 0 || idx > getNumChild()) {
+      print_msg(MSG_PRIO_MAX, "ERROR: wrong idx %d for getCurrChildStartTime(). 0 <= idx <= %d should hold.\n", 
+              idx, getNumChild());
+      return;
+    }
+    
+    if (idx == getNumChild()) {
+      exclusive = time.getEndTimeInclusive();
+      inclusive = time.getEndTimeExclusive();
+    }
+    else {
+      exclusive = getChild(idx)->getTime().getStartTimeExclusive();
+      inclusive = getChild(idx)->getTime().getStartTimeInclusive();
+    }
+  }
+  
+  void TCTATraceNode::getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const {
+    if (idx < 0 || idx > getNumChild()) {
+      print_msg(MSG_PRIO_MAX, "ERROR: wrong idx %d for getGapBeforeChild(). 0 <= idx <= %d should hold.\n", 
+              idx, getNumChild());
+      return;
+    }
+
+    Time lastEndInclusive, lastEndExclusive, currStartExclusive, currStartInclusive;
+    getLastChildEndTime(idx, lastEndInclusive, lastEndExclusive);
+    getCurrChildStartTime(idx, currStartExclusive, currStartInclusive);
+    
+    minGap = currStartExclusive - lastEndExclusive + 1;
+    maxGap = currStartInclusive - lastEndInclusive - 1;
   }
 }

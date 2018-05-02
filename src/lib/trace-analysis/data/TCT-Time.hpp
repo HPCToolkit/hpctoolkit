@@ -71,21 +71,23 @@ namespace TraceAnalysis {
     
     void clear();
     
-    Time getDuration();
-    Time getMinDuration();
-    Time getMaxDuration();
+    Time getDuration() const;
+    Time getMinDuration() const;
+    Time getMaxDuration() const;
+    
+    void setDuration(Time min, Time max);
     
     void setStartTime(Time exclusive, Time inclusive);
-    void setEndTime(Time exclusive, Time inclusive);
-    Time getStartTimeExclusive();
-    Time getStartTimeInclusive();
-    Time getEndTimeInclusive();
-    Time getEndTimeExclusive();
+    void setEndTime(Time inclusive, Time exclusive);
+    Time getStartTimeExclusive() const;
+    Time getStartTimeInclusive() const;
+    Time getEndTimeInclusive() const;
+    Time getEndTimeExclusive() const;
     
     void addTime(const TCTTime& other);
     void setAsAverageTime(const TCTTime& time1, int weight1, const TCTTime& time2, int weight2);
     
-    string toString();
+    string toString() const;
     
   private:
     void* ptr;

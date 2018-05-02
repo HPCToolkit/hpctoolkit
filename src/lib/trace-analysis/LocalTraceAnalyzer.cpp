@@ -61,6 +61,9 @@ using std::vector;
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 #include "LocalTraceAnalyzer.hpp"
+#include "data/TCT-Node.hpp"
+#include "TraceFileReader.hpp"
+#include "TCT-Cluster.hpp"
 
 namespace TraceAnalysis {
 
@@ -72,12 +75,15 @@ namespace TraceAnalysis {
     vector<TCTANode*> activeStack;
     TCTRootNode* root;
     
+    AbstractTCTCluster cluster;
+    
     uint64_t numSamples;
     Time samplingPeriod;
     
     LocalTraceAnalyzerImpl(BinaryAnalyzer& binaryAnalyzer, 
           CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
-          binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime) {
+          binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime),
+          cluster(samplingPeriod) {
       numSamples = 0;
       samplingPeriod = 0;
     }
@@ -93,6 +99,7 @@ namespace TraceAnalysis {
     void popOneNode(Time endTimeInclusive, Time endTimeExclusive) {
       TCTANode* node = activeStack.back();
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
+      node->getPerfLossMetric().initDurationMetric();
       activeStack.pop_back();
 
       if (activeStack.size() > 0) {
@@ -246,8 +253,29 @@ namespace TraceAnalysis {
           
         double ratio = (double)loop->getDuration() * 100.0 / (double) root->getDuration();
         if (loop->acceptLoop()) {
-          if (ratio >= 1 && loop->getNumIteration() > 1)
+          if (ratio >= 1 && loop->getNumIteration() > 1) {
             print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingPeriod).c_str());
+            print_msg(MSG_PRIO_LOW, "Diff among iterations:\n");
+            TCTANode* highlight = NULL;
+            for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
+              for (int j = 0; j < loop->getNumAcceptedIteration(); j++) {
+                TCTANode* diffNode = cluster.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, false);
+                double diffRatio = 100.0 * diffNode->getDiffScore().getInclusive() / 
+                          (loop->getAcceptedIteration(i)->getDuration() + loop->getAcceptedIteration(j)->getDuration());
+                if (i == 0 && j == (loop->getNumAcceptedIteration() - 1) )
+                  highlight = diffNode;
+                else 
+                  delete diffNode;
+                print_msg(MSG_PRIO_LOW, "%.2lf%%\t", diffRatio);
+              }
+              print_msg(MSG_PRIO_LOW, "\n");
+            }
+            print_msg(MSG_PRIO_LOW, "Compare:\n%s%s", loop->getAcceptedIteration(0)->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str()
+                    , loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1)->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str());
+            print_msg(MSG_PRIO_LOW, "Highlighted diff node:\n%s\n", highlight->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str());
+            delete highlight;
+            print_msg(MSG_PRIO_LOW, "\n");
+          }
           return NULL;
         } else {
           if (ratio >= 1)

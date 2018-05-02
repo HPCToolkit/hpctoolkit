@@ -77,7 +77,7 @@ namespace TraceAnalysis {
     
     virtual TCTATime* duplicate() = 0;
     
-    virtual string toString() = 0;
+    virtual string toString() const = 0;
     
     const TimeType type;
   };
@@ -104,12 +104,12 @@ namespace TraceAnalysis {
     }
     
     virtual Time getMinDuration() const {
-      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
+      //if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeInclusive - startTimeInclusive + 1;
     }
     
     virtual Time getMaxDuration() const {
-      if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
+      //if (endTimeInclusive == startTimeExclusive) return 0; //TODO: for dummy trace time
       return endTimeExclusive - startTimeExclusive - 1;
     }
     
@@ -117,9 +117,12 @@ namespace TraceAnalysis {
       return new TCTTraceTime(*this);
     }
     
-    virtual string toString() {
-      return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
-              + timeToString((endTimeInclusive + endTimeExclusive)/2);
+    virtual string toString() const {
+      //return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
+      //        + timeToString((endTimeInclusive + endTimeExclusive)/2);
+      return //timeToString(startTimeExclusive) + "/" + timeToString(startTimeInclusive) + " ~ "
+        //+ timeToString(endTimeInclusive) + "/" + timeToString(endTimeExclusive) + 
+        ", Duration = " + timeToString(getMinDuration()) + "/" + timeToString(getMaxDuration());
     }
     
     Time startTimeExclusive;
@@ -161,8 +164,9 @@ namespace TraceAnalysis {
       return new TCTProfileTime(*this);
     }
     
-    virtual string toString() {
-      return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
+    virtual string toString() const {
+      //return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
+      return " Duration = " + timeToString(minDurationInclusive) + "/" + timeToString(maxDurationInclusive);
     }
 
     Time minDurationInclusive;
@@ -185,16 +189,25 @@ namespace TraceAnalysis {
     ((TCTATime*)ptr)->clear();
   }
   
-  Time TCTTime::getDuration() {
+  Time TCTTime::getDuration() const {
     return ((TCTATime*)ptr)->getDuration();
   }
   
-  Time TCTTime::getMinDuration() {
+  Time TCTTime::getMinDuration() const {
     return ((TCTATime*)ptr)->getMinDuration();
   }
   
-  Time TCTTime::getMaxDuration() {
+  Time TCTTime::getMaxDuration() const {
     return ((TCTATime*)ptr)->getMaxDuration();
+  }
+  
+  void TCTTime::setDuration(Time min, Time max) {
+    if (((TCTATime*)ptr)->type == TRACE) {
+      delete (TCTATime*)ptr;
+      ptr = new TCTProfileTime();
+    }
+    ((TCTProfileTime*)ptr)->minDurationInclusive = min;
+    ((TCTProfileTime*)ptr)->maxDurationInclusive = max;
   }
   
   TCTTraceTime* toTraceTime(void* ptr, const char* funcName) {
@@ -218,22 +231,22 @@ namespace TraceAnalysis {
     traceTime->endTimeInclusive = inclusive;
   }
 
-  Time TCTTime::getStartTimeExclusive() {
+  Time TCTTime::getStartTimeExclusive() const {
     TCTTraceTime* traceTime = toTraceTime(ptr, "getStartTimeExclusive");
     return traceTime->startTimeExclusive;
   }
 
-  Time TCTTime::getStartTimeInclusive() {
+  Time TCTTime::getStartTimeInclusive() const {
     TCTTraceTime* traceTime = toTraceTime(ptr, "getStartTimeInclusive");
     return traceTime->startTimeInclusive;
   }
 
-  Time TCTTime::getEndTimeInclusive() {
+  Time TCTTime::getEndTimeInclusive() const {
     TCTTraceTime* traceTime = toTraceTime(ptr, "getEndTimeInclusive");
     return traceTime->endTimeInclusive;
   }
 
-  Time TCTTime::getEndTimeExclusive() {
+  Time TCTTime::getEndTimeExclusive() const {
     TCTTraceTime* traceTime = toTraceTime(ptr, "getEndTimeExclusive");
     return traceTime->endTimeExclusive;
   }
@@ -301,7 +314,7 @@ namespace TraceAnalysis {
     
    */
 
-  string TCTTime::toString() {
+  string TCTTime::toString() const {
     return ((TCTATime*)ptr)->toString();
   }
 }

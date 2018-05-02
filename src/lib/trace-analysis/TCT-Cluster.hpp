@@ -59,18 +59,21 @@
 namespace TraceAnalysis {
   class AbstractTCTCluster {
   public:
-    AbstractTCTCluster(Time samplingPeriod): samplingPeriod(samplingPeriod){}
+    AbstractTCTCluster(const Time& samplingPeriod): samplingPeriod(samplingPeriod){}
     
-    TCTANode* mergeNode(TCTANode* node1, int weight1, TCTANode* node2, int weight2, 
+    /* Return the merged node of the input node1 and node2.
+     * Callee responsible for deallocating the merged node.
+     */
+    TCTANode* mergeNode(const TCTANode* node1, int weight1, const TCTANode* node2, int weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    TCTProfileNode* mergeProfileNode(TCTProfileNode* prof1, int weight1, TCTProfileNode* prof2, int weight2, 
+    TCTProfileNode* mergeProfileNode(const TCTProfileNode* prof1, int weight1, const TCTProfileNode* prof2, int weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    TCTATraceNode* mergeTraceNode(TCTATraceNode* trace1, int weight1, TCTATraceNode* trace2, int weight2, 
+    TCTANode* mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    virtual TCTLoopNode* mergeLoopNode(TCTLoopNode* loop1, int weight1, TCTLoopNode* loop2, int weight2, 
-            bool ifAccumulate, bool isScoreOnly) = 0;
+    //virtual TCTLoopNode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+    //        bool ifAccumulate, bool isScoreOnly) = 0;
   private:
-    Time samplingPeriod;
+    const Time& samplingPeriod;
     
     Time computeRangeDiff(Time min1, Time max1, Time min2, Time max2);
   };

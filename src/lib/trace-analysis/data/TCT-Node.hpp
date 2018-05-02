@@ -109,19 +109,16 @@ namespace TraceAnalysis {
   class TCTDiffScore {
     friend class TCTANode;
   public:
-    double getInclusive() {
+    double getInclusive() const {
       return inclusive;
     }
     
-    double getExclusive() {
+    double getExclusive() const {
       return exclusive;
     }
     
-    void setInclusive(double inclusive) {
+    void setScores(double inclusive, double exclusive) {
       this->inclusive = inclusive;
-    }
-    
-    void setExclusive(double exclusive) {
       this->exclusive = exclusive;
     }
     
@@ -139,6 +136,25 @@ namespace TraceAnalysis {
     virtual ~TCTDiffScore() {}
   };
   
+  // Records performance loss metrics
+  class TCTPerfLossMetric {
+    friend class TCTANode;
+  public:
+    void initDurationMetric();
+    void setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2);
+    
+  private:
+    TCTPerfLossMetric(TCTANode* node) : node(node) {}
+    virtual ~TCTPerfLossMetric() {}
+    
+    TCTANode* const node; // the TCTANode
+    
+    // Metrics that records durations of all instances represented by this TCTANode
+    Time minDuration;
+    Time maxDuration;
+    double totalDuration;
+  };
+  
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
@@ -152,13 +168,13 @@ namespace TraceAnalysis {
     
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
         type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), 
-        depth(depth), weight(1), time(), diffScore() {}
+        depth(depth), weight(1), time(), diffScore(), plm(this) {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
         ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), 
-        time(orig.time), diffScore(orig.diffScore) {}
+        time(orig.time), diffScore(orig.diffScore), plm(this) {}
     TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
         ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight),
-        time(orig.time), diffScore(orig.diffScore) {}
+        time(orig.time), diffScore(orig.diffScore), plm(this) {}
     
     virtual ~TCTANode() {}
     
@@ -166,19 +182,31 @@ namespace TraceAnalysis {
       return time;
     }
     
-    virtual string getName() {
+    virtual const TCTTime& getTime() const {
+      return time;
+    }
+    
+    virtual string getName() const {
       return name;
     }
     
-    virtual int getDepth() {
+    virtual int getDepth() const {
       return depth;
     }
     
-    virtual Time getDuration() {
+    virtual Time getDuration() const {
       return time.getDuration();
     }
     
-    virtual int getWeight() {
+    virtual Time getMinDuration() const {
+      return time.getMinDuration();
+    }
+        
+    virtual Time getMaxDuration() const {
+      return time.getMaxDuration();
+    }
+    
+    virtual int getWeight() const {
       return weight;
     }
     
@@ -189,7 +217,19 @@ namespace TraceAnalysis {
     virtual TCTDiffScore& getDiffScore() {
       return diffScore;
     }
-        
+    
+    virtual const TCTDiffScore& getDiffScore() const {
+      return diffScore;
+    }
+    
+    virtual TCTPerfLossMetric& getPerfLossMetric() {
+      return plm;
+    }
+    
+    virtual const TCTPerfLossMetric& getPerfLossMetric() const {
+      return plm;
+    }
+    
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
     virtual TCTANode* duplicate() const = 0;
@@ -199,7 +239,7 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const = 0;
     
     // Print contents of an object to a string for debugging purpose.
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
     // Add child to this node. Deallocation responsibility is transfered to this node.
     // Child could be deallocated inside the call.
@@ -218,6 +258,7 @@ namespace TraceAnalysis {
     int weight;
     TCTTime time;
     TCTDiffScore diffScore;
+    TCTPerfLossMetric plm;
   };
   
   // Temporal Context Tree Abstract Trace Node
@@ -235,11 +276,15 @@ namespace TraceAnalysis {
         delete (*it);
     }
     
-    virtual int getNumChild() {
+    virtual int getNumChild() const {
       return children.size();
     }
     
     virtual TCTANode* getChild(int idx) {
+      return children[idx];
+    }
+    
+    virtual const TCTANode* getChild(int idx) const {
       return children[idx];
     }
     
@@ -259,7 +304,20 @@ namespace TraceAnalysis {
       return ret;
     }
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
+    // Return the end time of child #(idx-1). 
+    // When idx = 0, return the start time of the node itself.
+    virtual void getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const;
+    
+    // Return the start time of child #(idx). 
+    // When idx = getNumChild(), return the end time of the node itself.
+    virtual void getCurrChildStartTime(int idx, Time& exclusive, Time& inclusive) const;
+    
+    // Return the gap between child #(idx-1) and #(idx).
+    // When idx = 0, return the gap before child #0.
+    // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
+    virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
+    
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
   protected:
     vector<TCTANode*> children;
@@ -337,7 +395,7 @@ namespace TraceAnalysis {
       return new TCTLoopNode(id.id, name, depth, cfgGraph);
     }
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
     virtual void addChild(TCTANode* child) {
       print_msg(MSG_PRIO_MAX, "ERROR: addChild() for loop node %s should never been called and is not implemented.\n", name.c_str());
@@ -390,7 +448,7 @@ namespace TraceAnalysis {
   class TCTProfileNode : public TCTANode {
     friend class TCTLoopNode;
   public:
-    static TCTProfileNode* newProfileNode(TCTANode* node) {
+    static TCTProfileNode* newProfileNode(const TCTANode* node) {
       if (node->type == TCTANode::Prof)
         return new TCTProfileNode(*((TCTProfileNode*)node), true);
       if (node->type == TCTANode::Loop)
@@ -416,11 +474,17 @@ namespace TraceAnalysis {
     
     virtual void addChild(TCTANode* child);
     
+    virtual const map<TCTID, TCTProfileNode*>& getChildMap() const {
+      return childMap;
+    }
+    
+    virtual void getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const;
+    
     // Merge with the input profile node. Deallocation responsibility is NOT transfered.
     // This node won't hold any reference to the input node or its children.
-    virtual void merge(TCTProfileNode* other);
+    virtual void merge(const TCTProfileNode* other);
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval);
+    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
     virtual void setDepth(int depth) {
       this->depth = depth;
