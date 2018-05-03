@@ -80,7 +80,7 @@ MYSOURCES = \
 	CCTVisitor.hpp CCTVisitor.cpp \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
 	TraceFileReader.hpp TraceFileReader.cpp \
-	TCT-Cluster.hpp TCT-Cluster.cpp
+	TraceCluster.hpp TraceCluster.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 BOOST_INC = @BOOST_INC@

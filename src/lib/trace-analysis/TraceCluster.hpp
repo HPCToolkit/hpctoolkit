@@ -45,21 +45,31 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TCT-Cluster.hpp
+ * File:   TraceCluster.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on April 23, 2018, 12:35 AM
  */
 
-#ifndef TCT_CLUSTER_HPP
-#define TCT_CLUSTER_HPP
+#ifndef TRACECLUSTER_HPP
+#define TRACECLUSTER_HPP
 
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  class AbstractTCTCluster {
+  // Forward declarations
+  class TCTANode;
+  class TCTATraceNode;
+  class TCTLoopNode;
+  class TCTProfileNode;
+  
+  class AbstractTraceCluster {
   public:
-    AbstractTCTCluster(const Time& samplingPeriod): samplingPeriod(samplingPeriod){}
+    AbstractTraceCluster(const Time& samplingPeriod) : samplingPeriod(samplingPeriod){}
+    
+    const Time& getSamplingPeriod() const {
+      return samplingPeriod;
+    }
     
     /* Return the merged node of the input node1 and node2.
      * Callee responsible for deallocating the merged node.
@@ -70,14 +80,22 @@ namespace TraceAnalysis {
             bool ifAccumulate, bool isScoreOnly);
     TCTANode* mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    //virtual TCTLoopNode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
-    //        bool ifAccumulate, bool isScoreOnly) = 0;
-  private:
+    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly) = 0;
+  protected:
     const Time& samplingPeriod;
     
     Time computeRangeDiff(Time min1, Time max1, Time min2, Time max2);
   };
+  
+  class LocalTraceCluster : public AbstractTraceCluster {
+  public:
+    LocalTraceCluster(const Time& samplingPeriod) : AbstractTraceCluster(samplingPeriod) {}
+    
+    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+            bool ifAccumulate, bool isScoreOnly);
+  };
 }
 
-#endif /* TCT_CLUSTER_HPP */
+#endif /* TRACECLUSTER_HPP */
 

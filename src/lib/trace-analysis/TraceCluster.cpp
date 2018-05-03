@@ -45,20 +45,20 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TCTCluster.cpp
+ * File:   TraceCluster.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on April 23, 2018, 12:47 AM
  */
 
-#include "TCT-Cluster.hpp"
+#include "TraceCluster.hpp"
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
   // Compute difference between two duration ranges (min1, max1) and (min2, max2).
   // Noise from sampling is considered.
   // Noise should be no more than MAX_SAMPLE_NOISE times sampling period.
-  Time AbstractTCTCluster::computeRangeDiff(Time min1, Time max1, Time min2, Time max2) {
+  Time AbstractTraceCluster::computeRangeDiff(Time min1, Time max1, Time min2, Time max2) {
     // Adjust duration ranges when noise is greater than MAX_SAMPLE_NOISE times sampling period.
     if (max1 - min1 > samplingPeriod * MAX_SAMPLE_NOISE) {
       Time mid1 = (max1 + min1) / 2;
@@ -79,7 +79,7 @@ namespace TraceAnalysis {
     return 0;
   }
   
-  TCTANode* AbstractTCTCluster::mergeNode(const TCTANode* node1, int weight1, const TCTANode* node2, int weight2, 
+  TCTANode* AbstractTraceCluster::mergeNode(const TCTANode* node1, int weight1, const TCTANode* node2, int weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     if (!(node1->id == node2->id))
       print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes with different id: %s vs %s.\n", 
@@ -108,17 +108,14 @@ namespace TraceAnalysis {
         return node1->voidDuplicate();
       }
       if (node1->type == TCTANode::Loop) {
-        TCTANode* temp = node1->voidDuplicate();
-        temp->setWeight(weight1+weight2);
-        return temp;
-        //return mergeLoopNode((TCTLoopNode*)node1, weight1, (TCTLoopNode*)node2, weight2, ifAccumulate, isScoreOnly);
+        return mergeLoopNode((TCTLoopNode*)node1, weight1, (TCTLoopNode*)node2, weight2, ifAccumulate, isScoreOnly);
       }
       else 
         return mergeTraceNode((TCTATraceNode*)node1, weight1, (TCTATraceNode*)node2, weight2, ifAccumulate, isScoreOnly);
     }
   }
   
-  TCTProfileNode* AbstractTCTCluster::mergeProfileNode(const TCTProfileNode* prof1, int weight1, const TCTProfileNode* prof2, int weight2, 
+  TCTProfileNode* AbstractTraceCluster::mergeProfileNode(const TCTProfileNode* prof1, int weight1, const TCTProfileNode* prof2, int weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTProfileNode* mergedProf = (TCTProfileNode*)prof1->voidDuplicate();
     if (!isScoreOnly) {
@@ -243,7 +240,7 @@ namespace TraceAnalysis {
     return mergedProf;
   }
   
-  TCTANode* AbstractTCTCluster::mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
+  TCTANode* AbstractTraceCluster::mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTATraceNode* mergedTrace = (TCTATraceNode*)trace1->voidDuplicate();
     if (!isScoreOnly) {
@@ -448,5 +445,15 @@ namespace TraceAnalysis {
     mergedTrace->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
     
     return mergedTrace;
+  }
+  
+  TCTANode* LocalTraceCluster::mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+          bool ifAccumulate, bool isScoreOnly) {
+    TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(loop1);
+    TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(loop2);
+    TCTProfileNode* merged = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
+    delete prof1;
+    delete prof2;
+    return merged;
   }
 }

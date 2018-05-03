@@ -69,6 +69,7 @@ using std::map;
 using std::set;
 
 #include "../TraceAnalysisCommon.hpp"
+#include "../TraceCluster.hpp"
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 
@@ -81,6 +82,8 @@ namespace TraceAnalysis {
   class TCTLoopNode;
   class TCTProfileNode;
   class TCTRootNode;
+  
+  class AbstractTraceCluster;
   
   class TCTID {
   public:
@@ -238,6 +241,10 @@ namespace TraceAnalysis {
     // Caller responsible for deallocating the void duplicate.
     virtual TCTANode* voidDuplicate() const = 0;
     
+    // finalize loops in the subtree.
+    // return a non-NULL pointer if a loop node needs to be replaced.
+    virtual TCTANode* finalizeLoops() = 0;
+    
     // Print contents of an object to a string for debugging purpose.
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
@@ -317,6 +324,15 @@ namespace TraceAnalysis {
     // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
     virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
     
+    virtual TCTANode* finalizeLoops() {
+      for (int i = 0; i < getNumChild(); i++) {
+        TCTANode* child = getChild(i)->finalizeLoops();
+        if (child != NULL)
+          replaceChild(i, child);
+      }
+      return NULL;
+    }
+    
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     
   protected:
@@ -378,9 +394,10 @@ namespace TraceAnalysis {
   class TCTLoopNode : public TCTANode {
     friend class TCTProfileNode;
   public:
-    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
+    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph, const AbstractTraceCluster& traceCluster):
       TCTANode(Loop, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma),
+      traceCluster(traceCluster) {
         numIteration = 0;
         pendingIteration = NULL;
         rejectedIterations = NULL;
@@ -392,7 +409,7 @@ namespace TraceAnalysis {
       return new TCTLoopNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      return new TCTLoopNode(id.id, name, depth, cfgGraph);
+      return new TCTLoopNode(id.id, name, depth, cfgGraph, traceCluster);
     }
     
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
@@ -414,11 +431,9 @@ namespace TraceAnalysis {
       return acceptedIterations[idx];
     }
     
-    void pushPendingIteration(TCTIterationTraceNode* pendingIteration, bool accepted) {
+    void pushPendingIteration(TCTIterationTraceNode* pendingIteration) {
       finalizePendingIteration();
-      
       this->pendingIteration = pendingIteration;
-      this->pendingIterationAccepted = accepted;
     }
     
     TCTIterationTraceNode* popPendingIteration() {
@@ -427,22 +442,28 @@ namespace TraceAnalysis {
       return ret;
     }
     
+    // Return true if we are confident that children of the pending iteration
+    // belong to one iteration in the execution.
+    bool acceptPendingIteration();
+    
     void finalizePendingIteration();
     
     bool acceptLoop();
+    
+    virtual TCTANode* finalizeLoops();
   
   private:
     int numIteration;
     
     // stores the last iteration, which may hasn't been finished yet.
     TCTIterationTraceNode* pendingIteration;
-    // if the pending iteration passed the acceptIteration test.
-    bool pendingIterationAccepted;
     
     // stores all accepted iterations
     vector<TCTIterationTraceNode*> acceptedIterations;
     // all rejected iterations are merged into a Profile node.
     TCTProfileNode* rejectedIterations;
+    
+    const AbstractTraceCluster& traceCluster;
   };
   
   class TCTProfileNode : public TCTANode {
@@ -483,6 +504,10 @@ namespace TraceAnalysis {
     // Merge with the input profile node. Deallocation responsibility is NOT transfered.
     // This node won't hold any reference to the input node or its children.
     virtual void merge(const TCTProfileNode* other);
+    
+    virtual TCTANode* finalizeLoops() {
+      return NULL;
+    }
     
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
     

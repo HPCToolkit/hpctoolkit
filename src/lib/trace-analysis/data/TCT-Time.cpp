@@ -118,11 +118,11 @@ namespace TraceAnalysis {
     }
     
     virtual string toString() const {
-      //return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
-      //        + timeToString((endTimeInclusive + endTimeExclusive)/2);
-      return //timeToString(startTimeExclusive) + "/" + timeToString(startTimeInclusive) + " ~ "
+      return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
+              + timeToString((endTimeInclusive + endTimeExclusive)/2);
+      //return //timeToString(startTimeExclusive) + "/" + timeToString(startTimeInclusive) + " ~ "
         //+ timeToString(endTimeInclusive) + "/" + timeToString(endTimeExclusive) + 
-        ", Duration = " + timeToString(getMinDuration()) + "/" + timeToString(getMaxDuration());
+        //", Duration = " + timeToString(getMinDuration()) + "/" + timeToString(getMaxDuration());
     }
     
     Time startTimeExclusive;
@@ -165,8 +165,8 @@ namespace TraceAnalysis {
     }
     
     virtual string toString() const {
-      //return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
-      return " Duration = " + timeToString(minDurationInclusive) + "/" + timeToString(maxDurationInclusive);
+      return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
+      //return " Duration = " + timeToString(minDurationInclusive) + "/" + timeToString(maxDurationInclusive);
     }
 
     Time minDurationInclusive;

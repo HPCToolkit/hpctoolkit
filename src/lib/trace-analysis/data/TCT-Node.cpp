@@ -130,12 +130,11 @@ namespace TraceAnalysis {
     totalDuration = rep1.totalDuration + rep2.totalDuration;
   }
   
-  TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
+  TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig), traceCluster(orig.traceCluster) {
     numIteration = orig.numIteration;
     
     if (orig.pendingIteration != NULL) {
       pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
-      pendingIterationAccepted = orig.pendingIterationAccepted;
     }
     if (orig.rejectedIterations != NULL)
       rejectedIterations = (TCTProfileNode*)(orig.rejectedIterations->duplicate());
@@ -152,12 +151,38 @@ namespace TraceAnalysis {
       delete (*it);
   }
   
+  bool TCTLoopNode::acceptPendingIteration() {
+    if (pendingIteration == NULL) return false;
+    
+    int countFunc = 0;
+    int countLoop = 0;
+
+    for (int k = 0; k < pendingIteration->getNumChild(); k++)
+      if (pendingIteration->getChild(k)->getDuration() / traceCluster.getSamplingPeriod() 
+              >= ITER_CHILD_DUR_ACC) {
+        if (pendingIteration->getChild(k)->type == TCTANode::Func) countFunc++;
+        else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
+      }
+
+    // When an iteration has no func child passing the IterationChildDurationThreshold,
+    // and has less than two loop children passing the IterationChildDurationThreshold,
+    // and the number of children doesn't pass the IterationNumChildThreshold,
+    // children of this iteration may belong to distinct iterations in the execution.
+    if (countFunc < ITER_NUM_FUNC_ACC 
+            && countLoop < ITER_NUM_LOOP_ACC 
+            && pendingIteration->getNumChild() < ITER_NUM_CHILD_ACC)
+      return false;
+    else
+      return true;
+  }
+  
   void TCTLoopNode::finalizePendingIteration() {
     if (pendingIteration == NULL) return;
     
     numIteration++;
+    pendingIteration->finalizeLoops();
     
-    if (pendingIterationAccepted) 
+    if (acceptPendingIteration()) 
       acceptedIterations.push_back(pendingIteration);
     else {
       TCTProfileNode* prof = TCTProfileNode::newProfileNode(pendingIteration);
@@ -179,6 +204,19 @@ namespace TraceAnalysis {
     if (rejectedIterations->getDuration() >= getDuration() * LOOP_REJ_THRESHOLD)
       return false;
     return true;
+  }
+  
+  TCTANode* TCTLoopNode::finalizeLoops() {
+    finalizePendingIteration();
+    if (acceptLoop()) {
+      if (getNumIteration() > 1)
+        print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0, traceCluster.getSamplingPeriod()).c_str());
+      return NULL;
+    } 
+    else {
+      //print_msg(MSG_PRIO_LOW, "\nLoop rejected:\n%s", toString(getDepth()+2, 0, traceCluster.getSamplingPeriod()).c_str());
+      return TCTProfileNode::newProfileNode(this);
+    }
   }
   
   TCTProfileNode::TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
@@ -217,6 +255,9 @@ namespace TraceAnalysis {
       }
       delete child;
     }
+    
+    if (loop.pendingIteration != NULL)
+      print_msg(MSG_PRIO_HIGH, "ERROR: Loop %s converted to profile with pending iteration not been processed.\n", loop.getName().c_str());
   }
   
   TCTProfileNode::TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {

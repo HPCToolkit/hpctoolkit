@@ -81,10 +81,15 @@ namespace TraceAnalysis {
   // LOOP_REJ_THRESHOLD, the whole loop will be rejected.
   const double LOOP_REJ_THRESHOLD = 0.3; 
 
-  // Parameters for clustering
+  // Parameters and functions for difference quantification.
   const Time MIN_SAMPLE_PERIOD = 1000;
   const uint MAX_SAMPLE_NOISE = 10;
   const Time computeWeightedAverage(Time time1, int w1, Time time2, int w2);
+  
+  // Parameters for clustering.
+  const int MAX_NUM_CLUSTER = 10;
+  const double MIN_DIFF_RATIO = 0.01;
+  const double REL_DIFF_RATIO = 0.25;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */
