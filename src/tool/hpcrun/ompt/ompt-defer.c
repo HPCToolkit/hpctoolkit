@@ -23,6 +23,8 @@
 #include "ompt-callback.h"
 #include "ompt-callstack.h"
 
+#include "ompt-thread.h"
+
 #include "ompt-interface.h"
 #include "ompt-region-map.h"
 
@@ -88,7 +90,6 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 static void
 omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 {
-
   cct_node_t *prefix;
   thread_data_t *td = (thread_data_t *)a;
   uint64_t my_region_id = (uint64_t)hpcrun_cct_addr(cct)->ip_norm.lm_ip;
@@ -201,19 +202,20 @@ is_partial_resolve(cct_node_t *prefix)
 
 void resolve_cntxt()
 {
+  return;
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
   thread_data_t *td = hpcrun_get_thread_data();
 
   //---------------------------------------------------------------------------
-  // step 1: 
-  // 
+  // step 1:
+  //
   // a pure worker thread's outermost region is the same as its innermost region.
-  // 
+  //
   // a sub-master thread's outermost region was memoized when the thread became
-  // a sub-master. the identity of the sub-master's outermost region in this case is 
+  // a sub-master. the identity of the sub-master's outermost region in this case is
   // available in td->outer_region_id.
   //
-  // the post condition for the following code is that outer_region_id contains 
+  // the post condition for the following code is that outer_region_id contains
   // the outermost region id in the current thread.
   //---------------------------------------------------------------------------
 
@@ -224,28 +226,28 @@ void resolve_cntxt()
     uint64_t enclosing_region_id = hpcrun_ompt_get_parallel_info_id(1);
     if (enclosing_region_id == 0) {
       // we are currently in a single level parallel region.
-      // forget the previously memoized outermost parallel region. 
+      // forget the previously memoized outermost parallel region.
       td->outer_region_id = 0;
     } else {
-      outer_region_id = td->outer_region_id; // outer region for submaster 
+      outer_region_id = td->outer_region_id; // outer region for submaster
     }
   }
 
-  // if outer_region_id has not already been set, it defaults to the innermost 
+  // if outer_region_id has not already been set, it defaults to the innermost
   // region.
   if (outer_region_id == 0) {
     outer_region_id = innermost_region_id;
   }
 
   TMSG(DEFER_CTXT, "resolve_cntxt: outermost region id is 0x%lx, "
-       "innermost region id is 0x%lx", outer_region_id, innermost_region_id); 
+       "innermost region id is 0x%lx", outer_region_id, innermost_region_id);
 
   //---------------------------------------------------------------------------
-  // step 2: 
+  // step 2:
   //
   // if we changed parallel regions, try to resolve contexts for past regions.
   //---------------------------------------------------------------------------
-  if (td->region_id != 0) { 
+  if (td->region_id != 0) {
     // we were in a parallel region when the last sample was received
     if (td->region_id != outer_region_id) {
       // the region we are in now (if any) differs from the region where
@@ -260,9 +262,9 @@ void resolve_cntxt()
   //
   // update the use count when come into a new omp region
   if ((td->region_id != outer_region_id) && (outer_region_id != 0)) {
-    // end_team_fn occurs at master thread, side threads may still 
+    // end_team_fn occurs at master thread, side threads may still
     // in a barrier waiting for work. Now the master thread may delete
-    // the record if no samples taken in it. But side threads may take 
+    // the record if no samples taken in it. But side threads may take
     // samples in the waiting region (which has the same region id with
     // the end_team_fn) after the region record is deleted.
     // solution: consider such sample not in openmp region (need no
@@ -270,10 +272,16 @@ void resolve_cntxt()
 
 
     // FIXME: Accomodate to region_data_t
+    // FIXME: Focus on this
+    // (ADDR2(UNRESOLVED, get from region_data)
+    // watch for monitoring variables
+
 //    if (ompt_region_map_refcnt_update(outer_region_id, 1L))
 //      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
 //    else
 //      outer_region_id = 0;
+
+
   }
 
 #ifdef DEBUG_DEFER
@@ -281,7 +289,7 @@ void resolve_cntxt()
 #endif
 
   //
-  // part 4: update the td->region_id, indicating the region where this thread 
+  // part 4: update the td->region_id, indicating the region where this thread
   // most-recently takes a sample.
   //
   // td->region_id represents the out-most parallel region id
@@ -292,44 +300,12 @@ void resolve_cntxt()
   if (innermost_region_id) {
     ompt_region_map_entry_t *record = ompt_region_map_lookup(innermost_region_id);
     if (!record || (ompt_region_map_entry_refcnt_get(record) == 0)) {
-      EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ", 
+      EMSG("no record found innermost_region_id=0x%lx initial_td_region_id=0x%lx td->region_id=0x%lx ",
 	   innermost_region_id, initial_td_region, td->region_id);
     }
   }
 #endif
 }
-
-
-struct cct_node_t {
-
-    // ---------------------------------------------------------
-    // a persistent node id is assigned for each node. this id
-    // is used both to reassemble a tree when reading it from
-    // a file as well as to identify call paths. a call path
-    // can simply be represented by the node id of the deepest
-    // node in the path.
-    // ---------------------------------------------------------
-    int32_t persistent_id;
-
-    // bundle abstract address components into a data type
-
-    cct_addr_t addr;
-
-    bool is_leaf;
-
-
-    // ---------------------------------------------------------
-    // tree structure
-    // ---------------------------------------------------------
-
-    // parent node and the beginning of the child list
-    struct cct_node_t* parent;
-    struct cct_node_t* children;
-
-    // left and right pointers for splay tree of siblings
-    struct cct_node_t* left;
-    struct cct_node_t* right;
-};
 
 void 
 resolve_cntxt_fini(thread_data_t *td)
@@ -355,4 +331,335 @@ hpcrun_region_lookup(uint64_t id)
 
   return result;
 }
+
+
+// vi3: Parts for resolving
+
+void
+set_next_pending(ompt_notification_t* notification){
+  // invalid value
+  notification->next = ompt_notification_invalid;
+}
+
+ompt_notification_t*
+get_next(ompt_notification_t* notification){
+  ompt_notification_t* curr_next = notification->next;
+  while (curr_next == ompt_notification_invalid) curr_next = notification->next;
+  return curr_next;
+}
+
+void
+enqueue_region(ompt_region_data_t* region_data, ompt_notification_t* new){
+  // Add new thread's notification to region's queue of notifications.
+  set_next_pending(new);
+  ompt_notification_t* old_head = (ompt_notification_t*)atomic_exchange(&region_data->head, new);
+  new->next = old_head;
+}
+
+ompt_notification_t* dequeue_region(ompt_region_data_t* region_data){
+  // Remove last added notification (thread) from region's queue of notifications.
+  ompt_notification_t* first = atomic_load(&region_data->head);
+  if(first){
+    ompt_notification_t* succ = get_next(first);
+    atomic_exchange(&region_data->head, succ);
+    first->next = ompt_notification_null;
+  }
+  return first;
+}
+
+void
+enqueue_thread(ompt_threads_queue_t* threads_queue, ompt_notification_t* new){
+  // Add notification to thread's queue.
+  set_next_pending(new);
+  ompt_notification_t* old_head = (ompt_notification_t*) atomic_exchange(&threads_queue->head, new);
+  new->next = old_head;
+}
+
+ompt_notification_t*
+dequeue_thread(ompt_threads_queue_t* threads_queue){
+  ompt_notification_t* first = atomic_load(&threads_queue->head);
+  if(first){
+    ompt_notification_t* succ = get_next(first);
+    atomic_exchange(&threads_queue->head, succ);
+    first->next = ompt_notification_null;
+  }
+  return first;
+}
+
+void add_to_list(ompt_region_data_t* region_data){
+
+//  printf("HERE IS REGION DATA ADDED: %p\n", region_data);
+  // old way of allocating
+  // ompt_thread_regions_list_t* new_region = (ompt_thread_regions_list_t*)hpcrun_malloc(sizeof(ompt_thread_regions_list_t));
+
+
+  ompt_thread_regions_list_t* new_region = hpcrun_ompt_thread_region_alloc();
+  new_region->region_data = region_data;
+  new_region->next = registered_regions;
+  if(registered_regions)
+    registered_regions->prev = new_region;
+  registered_regions = new_region;
+  new_region->prev = NULL;
+}
+
+void remove_from_list(ompt_region_data_t* region_data){
+  ompt_thread_regions_list_t* current = registered_regions;
+  while(current != NULL){
+    if(current->region_data == region_data){
+      if(current->prev){
+        current->prev->next = current->next;
+      } else{
+        registered_regions = current->next;
+      }
+
+      if(current->next){
+        current->next->prev = current->prev;
+      }
+
+      break;
+    }
+    current = current->next;
+  }
+  hpcrun_ompt_thread_region_free(current);
+}
+
+void
+register_to_region(ompt_region_data_t* region_data){
+  // push to stack
+  push_region_stack(region_data->region_id);
+  // create notification and enqueu to region's queue
+  ompt_notification_t* notification = hpcrun_ompt_notification_alloc();
+  notification->region_data = region_data;
+  notification->threads_queue = &threads_queue;
+  notification->next = NULL;
+  enqueue_region(region_data, notification);
+  // store region data to thread's queue
+  add_to_list(region_data);
+}
+
+void
+register_to_all_existing_regions(ompt_region_data_t* current_region, ompt_region_data_t* parent_region){
+  clear_region_stack();
+  // if only one parallel region, then is enough just to register thread to it
+  if(!parent_region){
+    register_to_region(current_region);
+    return;
+  }
+
+  // temporary array that contains all regions from nested regions subtree
+  // where thread belongs to
+  ompt_region_data_t* temp_regions[MAX_NESTING_LEVELS];
+  // add current and parent region
+  temp_regions[0] = current_region;
+  temp_regions[1] = parent_region;
+
+  // start from grandparent
+  int ancestor_level = 2;
+  ompt_region_data_t* current_ancestor = hpcrun_ompt_get_region_data(ancestor_level);
+  // while we have ancestor
+  while(current_ancestor){
+    // add ancestor region id to temporary array
+    temp_regions[ancestor_level] = current_ancestor;
+    // go one level upper in regions subtree
+    current_ancestor = hpcrun_ompt_get_region_data(++ancestor_level);
+  }
+
+  // on the ancestor_level we don't have any regions,
+  // so we are going one step deeper where is the top most region's of subtree
+  ancestor_level--;
+
+  // reversed temporary array is proper content of  stack
+
+  // go from the end of array, and push region's id to stack
+  while (ancestor_level){
+    register_to_region(temp_regions[ancestor_level--]);
+  }
+}
+
+void
+register_to_all_regions(){
+  // FIXME: maybe we should add thread local variable to store current region data
+  ompt_region_data_t* current_region = hpcrun_ompt_get_current_region_data();
+  // no parallel region
+  if(!current_region)
+    return;
+
+  // stack is empty, register thread to all existing regions
+  if(is_empty_region_stack()){
+    // we wil provide parent region data by calling helper function inlined
+    // with function for registration
+    register_to_all_existing_regions(current_region, hpcrun_ompt_get_parent_region_data());
+    return;
+  }
+
+  // is thread already register to region that is on the top of the stack
+  // if that is the case, nothing has to be done
+  uint64_t top = top_region_stack();
+  if(top == current_region->region_id){
+    return;
+  }
+
+  // Thread is not register to current region.
+
+  // If there is not parent region and stack is not clear, then regions
+  // from the stack should be removed. After that, all we need to do is to
+  // register thread to the current region, so that stack will only contain it.
+  ompt_region_data_t* parent_region = hpcrun_ompt_get_parent_region_data();
+  if (!parent_region){
+    register_to_all_existing_regions(current_region, NULL);
+    return;
+  }
+
+
+  // if parent region is at the top of the stack
+  // all we have to do is register thread to current region
+  if(top == parent_region->region_id){
+    register_to_region(current_region);
+    return;
+  }
+
+
+  // Thread is not registered to the current region and parent region is
+  // not on the stack, which means that thread change nested regions subtree (change the team).
+  // All regions from stack should be removed and regions from current subtree should be added.
+  register_to_all_existing_regions(current_region, parent_region);
+
+}
+
+
+
+void try_resolve_context(){
+//  return;
+  while(atomic_load(&threads_queue.head)){
+    ompt_notification_t* old_head = dequeue_thread(&threads_queue);
+
+    ompt_region_data_t* region_data = old_head->region_data;
+//    printf("\n\n\nResolving one region from idle!\n\n");
+    resolve_one_region_context(region_data);
+
+    hpcrun_ompt_notification_free(old_head);
+
+    if(atomic_load(&region_data->head)){
+      // send the information to new thread
+      ompt_notification_t* to_notify = dequeue_region(region_data);
+      enqueue_thread(to_notify->threads_queue, to_notify);
+    }else{
+      // notify creator of region that region_data can be put in region's freelist
+      hpcrun_ompt_region_free(region_data);
+    }
+
+    remove_from_list(region_data);
+
+  }
+}
+
+
+void resolve_one_region_context(ompt_region_data_t* region_data){
+
+  cct_node_t* call_path = region_data->call_path;
+
+  cct_node_t* root = region_root(call_path);
+  cct_node_t* prefix =  hpcrun_cct_insert_path_return_leaf(root, call_path);
+  cct_node_t* unr_root = hpcrun_get_thread_data()->core_profile_trace_data.epoch->csdata.unresolved_root;
+  cct_node_t* to_move = hpcrun_cct_find_addr(unr_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+
+  // FIXME: possible point of losing metrics (just skip this region, cause it is resolved already)
+  if(!to_move){
+    return;
+  }
+
+  hpcrun_cct_merge(prefix, to_move, merge_metrics, NULL);
+  // FIXME: this function requires freelist manipulation
+  // FIXME: is it safe just to delete, maybe it would cause some metrics lost
+  hpcrun_cct_delete_self(to_move);
+}
+
+
+void resolving_all_remaining_context(){
+
+  ompt_thread_regions_list_t* current = registered_regions;
+  ompt_thread_regions_list_t* previous;
+
+  while(current){
+    // FIXME: be sure that current->region_data is not NULL
+    resolve_one_region_context(current->region_data);
+    previous = current;
+    current = current->next;
+    // FIXME: call for now this function
+    remove_from_list(previous->region_data);
+  }
+
+  // FIXME: find all memory leaks
+
+}
+
+// DONE: Check the same for cct_node_t
+
+// prefix -> 140, 142, 190
+// to_move -> 140, 142
+
+
+// DONE:
+// short region test - done
+// long region test - done
+// tasking - done
+// nested taskin - done
+// regions with no sample took in it - done
+// regions created in for loop - done
+// TODO: deallocation when there is no one register to region
+
+
+
+
+
+// DONE: use stack for checking, and pop anything that is not parent of current regions (example below)
+/*
+ *            1
+ *          2    3
+ *        4  5  6  7
+ * */
+
+
+//struct s{
+//  next;
+//  insert | pop
+//  void *
+//};
+
+
+/*
+ * void insert_chain(item_type *first, item_type *last) {
+   // this loop is finite; even if the CAS fails because the worker is popping elements out of the queue,
+   // it can only fail a bounded number of times because
+   //   (1) the queue is of finite length at any time, and
+   //   (2) this thread is the only one inserting into the queue
+   do {
+        item_type *old_head = _head->load();
+        last->_next.store(old_head);
+   } while (! _head->compare_and_swap(old_head, first));
+  };
+
+  item_type *next() {
+     LFQ_DEBUG(assert(validate == this));
+     item_type *succ = _next.load();
+     return succ;
+};
+ *
+ *
+ * */
+
+
+
+// region_data
+// 10 -> 5 -> 1
+// 11 -> 10   5 -> 1
+
+// public free_list atomic_exchange NULL
+// private free_list
+
+
+
+
+
+
 

@@ -270,4 +270,9 @@ typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
 extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 			     merge_op_t merge, merge_op_arg_t arg);
 
+// allocation and free cct_node_t
+extern __thread cct_node_t* cct_node_freelist_head;
+cct_node_t* hpcrun_cct_node_alloc();
+void hpcrun_cct_node_free(cct_node_t *notification);
+
 #endif // cct_h

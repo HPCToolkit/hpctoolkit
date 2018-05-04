@@ -600,23 +600,69 @@ OMPT_API_FUNCTION(uint64_t, ompt_get_unique_id, (void));
 };
 #endif
 
-typedef struct cct_node_t cct_node_t;
+#include "../../../lib/prof-lean/stdatomic.h"
+#include "../cct/cct.h"
+
+//typedef struct cct_node_t cct_node_t;
 
 struct ompt_queue_data_s;
+struct ompt_notification_s;
+struct ompt_threads_queue_s;
+struct ompt_thread_region_freelist_s;
+
+// TODO:
+// base structure with next pointer
+// downcasting from (region|notificaton) to base while enqueing
+// upcasting from base to (region|notificaton) while dequeing
+
 
 typedef struct ompt_region_data_s {
-    uint64_t region_id;
-    uint64_t refcnt;
-    cct_node_t *call_path;
-    spinlock_t region_lock;
-    struct ompt_queue_data_s *thread_queue;
+  uint64_t region_id;
+  uint64_t refcnt;
+  cct_node_t *call_path;
+//  spinlock_t region_lock;
+  _Atomic (struct ompt_notification_s*) head;
+  // region freelist
+  struct ompt_region_data_s* next_freelist;
+  // region's freelist which belongs to thread
+  struct ompt_thread_region_freelist_s* thread_freelist;
 } ompt_region_data_t;
 
-typedef struct ompt_queue_data_s{
-    ompt_region_data_t* region_data;
-    struct ompt_queue_data_s* thread_queue;
-    struct ompt_queue_data_s* next;
-} ompt_queue_data_t;
+typedef struct ompt_notification_s{
+  ompt_region_data_t* region_data;
+  struct ompt_threads_queue_s* threads_queue;
+  struct ompt_notification_s* next;
+  // notification freelist
+  struct ompt_notification_s* next_freelist;
+} ompt_notification_t;
+
+#define ompt_notification_null (ompt_notification_t*)0
+#define ompt_notification_invalid (ompt_notification_t*)~0
+
+
+#define ompt_region_data_null (ompt_region_data_t*)0
+#define ompt_region_data_invalid (ompt_region_data_t*)~0
+
+
+typedef struct ompt_thread_regions_list_s{
+  ompt_region_data_t* region_data;
+  struct ompt_thread_regions_list_s* next;
+  struct ompt_thread_regions_list_s* prev;
+  // thread's region freelist
+  struct ompt_thread_regions_list_s* next_freelist;
+} ompt_thread_regions_list_t;
+
+
+typedef struct ompt_threads_queue_s{
+  _Atomic(ompt_notification_t*)head;
+} ompt_threads_queue_t;
+
+
+typedef struct ompt_thread_region_freelist_s{
+  _Atomic(ompt_region_data_t*) head;
+} ompt_thread_region_freelist_t;
+
+extern int ompt_eager_context;
 
 #endif
 

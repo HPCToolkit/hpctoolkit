@@ -118,6 +118,9 @@ struct cct_node_t {
   // left and right pointers for splay tree of siblings
   struct cct_node_t* left;
   struct cct_node_t* right;
+
+  // vi3: freelist manipulation
+  struct cct_node_t* next_freelist;
 };
 
 #if 0
@@ -125,7 +128,7 @@ struct cct_node_t {
 // cache of info from most recent splay
 //
 static struct {
-  cct_node_t* node;
+  cct_node_tt* node;
   bool found;
   cct_addr_t* addr;
 } splay_cache;
@@ -158,7 +161,8 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
     node = hpcrun_malloc_freeable(sz);
   }
   else {
-    node = hpcrun_malloc(sz);
+//    node = hpcrun_malloc(sz);
+    node = hpcrun_cct_node_alloc();
   }
 
   memset(node, 0, sz);
@@ -472,6 +476,8 @@ void
 hpcrun_cct_delete_self(cct_node_t *cct)
 {
   hpcrun_cct_delete_addr(cct->parent, &cct->addr);
+  // FIXME: is it enough just to call adding to freelist here
+  hpcrun_cct_node_free(cct);
 }
 
 //
@@ -728,6 +734,8 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
   if (! cct_a->children){
     cct_a->children = cct_b->children;
     hpcrun_cct_walkset(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
+    // FIXME: cct_b should not have children anymore
+//    cct_b->children = NULL;
   }
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
@@ -801,3 +809,40 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
   target->children = src;
   src->parent = target;
 }
+
+
+
+
+// FIXME: is this proper place for handling memory leaks caused by cct_node_t
+// frelist manipulation
+
+__thread cct_node_t* cct_node_freelist_head = NULL;
+
+
+// allocating and free cct_node_t
+cct_node_t*
+hpcrun_cct_node_alloc(){
+  // TODO: building tree and pull from the bottom
+  // make child of root and remove leaf
+
+  cct_node_t* first = cct_node_freelist_head;
+  // is there a hread
+  if(first){
+    // new head
+    cct_node_t* succ = first->next_freelist;
+    cct_node_freelist_head = succ;
+    return first;
+  }
+  // free list is empty
+  return (cct_node_t*)hpcrun_malloc(sizeof(cct_node_t));
+}
+
+
+void
+hpcrun_cct_node_free(cct_node_t *cct){
+  // add to freelist
+  cct->next_freelist = cct_node_freelist_head;
+  cct_node_freelist_head = cct;
+}
+
+

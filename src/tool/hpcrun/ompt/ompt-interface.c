@@ -49,7 +49,7 @@
  * ompt
  *****************************************************************************/
 
-#include <ompt.h>
+//#include <ompt.h>
 
 
 /******************************************************************************
@@ -333,14 +333,18 @@ ompt_thread_begin(ompt_thread_type_t thread_type,
   //printf("Thread begin... %d\n", thread_data->value);
   ompt_thread_type_set(thread_type);
   undirected_blame_thread_start(&omp_idle_blame_info);
-  thread_queue_data = NULL;
+
+  atomic_init(&threads_queue.head, ompt_notification_null);
+  atomic_init(&public_region_freelist.head, ompt_region_data_null);
+  registered_regions = NULL;
+  thread_data_t *td = hpcrun_get_thread_data();
+//  printf("Tree root begin: %p\n", td->core_profile_trace_data.epoch->csdata.tree_root);
 }
 
 
 static void
 ompt_thread_end(ompt_data_t *thread_data)
 {
-  //printf("Thread end...%p\n", thread_data);
   undirected_blame_thread_end(&omp_idle_blame_info);
 }
 
@@ -354,6 +358,8 @@ static void
 ompt_idle_begin()
 {
   undirected_blame_idle_begin(&omp_idle_blame_info);
+//  printf("Trying to resolve from idle: \n");
+  try_resolve_context();
 }
 
 
@@ -554,58 +560,6 @@ init_idle_blame_shift(const char *version)
 // itself.
 //-------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-struct cct_node_t {
-
-    // ---------------------------------------------------------
-    // a persistent node id is assigned for each node. this id
-    // is used both to reassemble a tree when reading it from
-    // a file as well as to identify call paths. a call path
-    // can simply be represented by the node id of the deepest
-    // node in the path.
-    // ---------------------------------------------------------
-    int32_t persistent_id;
-
-    // bundle abstract address components into a data type
-
-    cct_addr_t addr;
-
-    bool is_leaf;
-
-
-    // ---------------------------------------------------------
-    // tree structure
-    // ---------------------------------------------------------
-
-    // parent node and the beginning of the child list
-    struct cct_node_t* parent;
-    struct cct_node_t* children;
-
-    // left and right pointers for splay tree of siblings
-    struct cct_node_t* left;
-    struct cct_node_t* right;
-};
-
-
-
-
-
 int
 ompt_initialize(ompt_function_lookup_t lookup,
                   ompt_fns_t *fns)
@@ -781,8 +735,9 @@ int hpcrun_ompt_get_parallel_info(
   int *team_size)
 {
   if(ompt_initialized) {
-    ompt_get_parallel_info_fn(ancestor_level, parallel_data, team_size);
-    return 2;
+    // FIXME: changed at 2nd March 2018 16:43 CET
+    return ompt_get_parallel_info_fn(ancestor_level, parallel_data, team_size);
+//    return 2;
   }
   return 0;
 }
@@ -813,6 +768,8 @@ uint64_t hpcrun_ompt_get_parallel_info_id(int ancestor_level)
   hpcrun_ompt_get_parallel_info(ancestor_level, &parallel_info, &team_size);
   if(parallel_info == NULL) return 0;
   return parallel_info->value;
+//  ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_info->ptr;
+//  return region_data->region_id;
 }
 
 
@@ -863,4 +820,110 @@ ompt_idle_blame_shift_request()
 {
   ompt_idle_blame_requested = 1;
   ompt_register_idle_metrics();
+}
+
+
+// vi3: Part for allocation
+
+// allocating and free regions
+ompt_region_data_t*
+hpcrun_ompt_region_alloc(){
+  // nothing on the private freelist
+  if(!private_region_freelist_head){
+    // is there something in public freelist
+    if(atomic_load(&public_region_freelist.head)){
+      // clean public freelist
+      ompt_region_data_t* old_public_head =
+              (ompt_region_data_t*)atomic_exchange(&public_region_freelist.head, ompt_region_data_null);
+      private_region_freelist_head = old_public_head;
+    }else{
+      // both freelists are empty, so we need to allocate memory for region_data
+      return (ompt_region_data_t*)hpcrun_malloc(sizeof(ompt_region_data_t));
+    }
+  }
+
+  ompt_region_data_t* old_private_head = private_region_freelist_head;
+  private_region_freelist_head = old_private_head->next_freelist;
+  return old_private_head;
+}
+
+
+void
+hpcrun_ompt_region_free(ompt_region_data_t *region_data){
+  // add to freelist
+  region_data->next_freelist = ompt_region_data_invalid;
+  ompt_region_data_t* old_head =
+          (ompt_region_data_t*)atomic_exchange(&(region_data->thread_freelist->head), region_data);
+  region_data->next_freelist = old_head;
+}
+
+
+// allocating and free notifications
+ompt_notification_t*
+hpcrun_ompt_notification_alloc(){
+  ompt_notification_t* first = notification_freelist_head;
+  // is there a hread
+  if(first){
+    // new head
+    ompt_notification_t* succ = first->next_freelist;
+    notification_freelist_head = succ;
+    return first;
+  }
+  // free list is empty
+  return (ompt_notification_t*)hpcrun_malloc(sizeof(ompt_notification_t));
+}
+
+
+void
+hpcrun_ompt_notification_free(ompt_notification_t *notification){
+  // add to freelist
+  notification->next_freelist = notification_freelist_head;
+  notification_freelist_head = notification;
+}
+
+
+// allocate and free thread's region
+
+ompt_thread_regions_list_t*
+hpcrun_ompt_thread_region_alloc(){
+  ompt_thread_regions_list_t* first = thread_region_freelist_head;
+  // is there a hread
+  if(first){
+    // new head
+    ompt_thread_regions_list_t* succ = first->next_freelist;
+    thread_region_freelist_head = succ;
+    return first;
+  }
+  // free list is empty
+  return (ompt_thread_regions_list_t*)hpcrun_malloc(sizeof(ompt_thread_regions_list_t));
+}
+
+void
+hpcrun_ompt_thread_region_free(ompt_thread_regions_list_t *thread_region){
+  // add to freelist
+  thread_region->next_freelist = thread_region_freelist_head;
+  thread_region_freelist_head = thread_region;
+}
+
+
+// vi3: Helper function to get region_data
+ompt_region_data_t*
+hpcrun_ompt_get_region_data(int ancestor_level){
+  ompt_data_t* parallel_data = NULL;
+  int team_size;
+  int ret_val = hpcrun_ompt_get_parallel_info(ancestor_level, &parallel_data, &team_size);
+  // FIXME: potential problem if parallel info is unavailable and runtime returns 1
+  if(ret_val < 2)
+    return NULL;
+  return parallel_data ? (ompt_region_data_t*)parallel_data->ptr : NULL;
+}
+
+ompt_region_data_t*
+hpcrun_ompt_get_current_region_data(){
+  return hpcrun_ompt_get_region_data(0);
+}
+
+ompt_region_data_t*
+hpcrun_ompt_get_parent_region_data(){
+  return hpcrun_ompt_get_region_data(1);
 }

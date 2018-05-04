@@ -57,36 +57,45 @@ extern int omp_get_max_threads(void);
 ompt_region_data_t *
 ompt_region_data_new(uint64_t region_id, cct_node_t *call_path)
 {
-  ompt_region_data_t *e;
-  e = (ompt_region_data_t *)hpcrun_malloc(sizeof(ompt_region_data_t));
+  // old version of allocating
+  // ompt_region_data_t *e;
+  // e = (ompt_region_data_t *)hpcrun_malloc(sizeof(ompt_region_data_t));
+
+  // new version
+  ompt_region_data_t* e = hpcrun_ompt_region_alloc();
+
   e->region_id = region_id;
   e->refcnt = 0;
   e->call_path = call_path;
-  spinlock_unlock(&e->region_lock);
+//  spinlock_unlock(&e->region_lock);
+  atomic_init(&e->head, ompt_notification_null);
+  // parts for freelist
+  e->next_freelist = NULL;
+  e->thread_freelist = &public_region_freelist;
   return e;
 }
 
-bool
-ompt_region_data_refcnt_update(ompt_region_data_t* region_data, int val)
-{
-  bool result = false;
-  spinlock_lock(&region_data->region_lock);
-  if(region_data){
-    region_data->refcnt += val;
-    // FIXME: TODO: Decide when to delete region data
-    result = true;
-  }
-  spinlock_unlock(&region_data->region_lock);
-  return result;
-}
-
-uint64_t
-ompt_region_data_refcnt_get(ompt_region_data_t* region_data){
-  spinlock_lock(&region_data->region_lock);
-  uint64_t refcnt = region_data->refcnt;
-  spinlock_unlock(&region_data->region_lock);
-  return refcnt;
-}
+//bool
+//ompt_region_data_refcnt_update(ompt_region_data_t* region_data, int val)
+//{
+//  bool result = false;
+//  spinlock_lock(&region_data->region_lock);
+//  if(region_data){
+//    region_data->refcnt += val;
+//    // FIXME: TODO: Decide when to delete region data
+//    result = true;
+//  }
+//  spinlock_unlock(&region_data->region_lock);
+//  return result;
+//}
+//
+//uint64_t
+//ompt_region_data_refcnt_get(ompt_region_data_t* region_data){
+//  spinlock_lock(&region_data->region_lock);
+//  uint64_t refcnt = region_data->refcnt;
+//  spinlock_unlock(&region_data->region_lock);
+//  return refcnt;
+//}
 
 
 static void 
@@ -106,31 +115,23 @@ ompt_parallel_begin_internal(
 
   ompt_data_t *parent_region_info = NULL;
   int team_size = 0;
-  hpcrun_ompt_get_parallel_info(0, &parent_region_info, &team_size);
-
+  // FIXED: if we put 0 as previous, it would return the current parallel_data which is inside this function always different than NULL
+  hpcrun_ompt_get_parallel_info(1, &parent_region_info, &team_size);
   if (parent_region_info == NULL) {
     // mark the master thread in the outermost region
     // (the one that unwinds to FENCE_MAIN)
     td->master = 1;
   }
 
-  cct_node_t *callpath =
-   ompt_parallel_begin_context(region_id, ++levels_to_skip,
-                               invoker == ompt_invoker_program);
-
-  assert(region_id != 0);
-  region_data->call_path = callpath;
+  if(ompt_eager_context){
+     region_data->call_path =
+     ompt_parallel_begin_context(region_id, ++levels_to_skip,
+                                 invoker == ompt_invoker_program);
+  }
 
   hpcrun_safe_exit();
 
-
-  ompt_data_t *parent_region_info2 = NULL;
-  int team_size2 = 0;
-  hpcrun_ompt_get_parallel_info(10, &parent_region_info, &team_size);
-//  printf("This is ancestor level 2 %p.\n", parent_region_info2);
-
 }
-
 
 
 static void
@@ -143,22 +144,50 @@ ompt_parallel_end_internal(
 //  printf("Passed to internal. \n");
   hpcrun_safe_enter();
 
+
+
+
 //  ompt_region_map_entry_t *record = ompt_region_map_lookup(parallel_id);
-  ompt_region_data_t* record =(ompt_region_data_t*)parallel_data->ptr;
-  if (record) {
-    if (ompt_region_data_refcnt_get(record) > 0 ) {
-      //printf("Refcnt = %d\n", ompt_region_map_entry_refcnt_get(record));
-      // associate calling context with region if it is not already present
-      if (record->call_path == NULL) {
-        record->call_path = ompt_region_context(record->region_id, ompt_context_end,
-                                 ++levels_to_skip, invoker == ompt_invoker_program);
-      }
-    } else {
-      ompt_region_data_refcnt_update(record, 0L);
+
+  ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
+  // If we want to print all registered notifications
+//  ompt_notification_t* head = atomic_load(&region_data->head);
+//  int i = 0;
+//  for(; head && i<20; i++, head = head->next){
+//    printf("%d. %p\n", i, head);
+//  }
+
+  if(!ompt_eager_context){
+    // check if there is any thread registered
+    if(atomic_load(&region_data->head)){
+      region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
+                                   ++levels_to_skip, invoker == ompt_invoker_program);
+      // notify next thread
+      ompt_notification_t* to_notify = dequeue_region(region_data);
+      enqueue_thread(to_notify->threads_queue, to_notify);
+//      printf("Current head: %p\n", atomic_load(&region_data->head));
+
     }
-  } else {
-    assert(0);
   }
+
+  ompt_region_data_t* record =(ompt_region_data_t*)parallel_data->ptr;
+
+//  if (record) {
+//    if (ompt_region_data_refcnt_get(record) > 0 ) {
+//      //printf("Refcnt = %d\n", ompt_region_map_entry_refcnt_get(record));
+//      // associate calling context with region if it is not already present
+//      if (record->call_path == NULL) {
+//        record->call_path = ompt_region_context(record->region_id, ompt_context_end,
+//                                 ++levels_to_skip, invoker == ompt_invoker_program);
+//      }
+//    } else {
+//      ompt_region_data_refcnt_update(record, 0L);
+//    }
+//  } else {
+//    assert(0);
+//  }
+//
+//
   // FIXME: not using team_master but use another routine to
   // resolve team_master's tbd. Only with tasking, a team_master
   // need to resolve itself
@@ -168,6 +197,9 @@ ompt_parallel_end_internal(
     resolve_cntxt_fini(td);
     TD_GET(team_master) = 0;
   }
+
+
+  hpcrun_get_thread_data()->region_id = 0;
   hpcrun_safe_exit();
 
   //printf("Parallel region id: %lx.\n", parallel_data->value);
@@ -243,7 +275,7 @@ ompt_parallel_end(
   const void *codeptr_ra
 )
 {
-  printf("Parallel end...\n");
+//  printf("Parallel end...\n");
 
   uint64_t parallel_id = parallel_data->value;
   //printf("Parallel end... region id = %lx\n", parallel_id);
@@ -280,7 +312,8 @@ ompt_implicit_task_internal_begin(
 
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
   cct_node_t *prefix = region_data->call_path;
-
+  thread_data_t* td = hpcrun_get_thread_data();
+  td->current_parallel_data = parallel_data;
 //  if(!TD_GET(master)){
 //    prefix = hpcrun_cct_insert_path_return_leaf(
 //      td->core_profile_trace_data.epoch->csdata.tree_root,
@@ -289,9 +322,13 @@ ompt_implicit_task_internal_begin(
 
   task_data->ptr = prefix;
 
+
+
+//  printf("REGION DATA IMPLICIT_TASK_BEGIN: %p\n", region_data);
+
+
 //  td->region_id = parallel_data->value;
 //  td->outer_region_context = prefix;
-  thread_region_stack_push();
 
 }
 
@@ -305,7 +342,6 @@ ompt_implicit_task_internal_end(
 {
   //thread_data_t* td = hpcrun_get_thread_data();
 //  printf("Implicit task end...\n");
-  thread_region_stack_pop();
 
 }
 

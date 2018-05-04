@@ -198,43 +198,6 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
 
 
 
-
-
-
-
-
-struct cct_node_t {
-
-    // ---------------------------------------------------------
-    // a persistent node id is assigned for each node. this id
-    // is used both to reassemble a tree when reading it from
-    // a file as well as to identify call paths. a call path
-    // can simply be represented by the node id of the deepest
-    // node in the path.
-    // ---------------------------------------------------------
-    int32_t persistent_id;
-
-    // bundle abstract address components into a data type
-
-    cct_addr_t addr;
-
-    bool is_leaf;
-
-
-    // ---------------------------------------------------------
-    // tree structure
-    // ---------------------------------------------------------
-
-    // parent node and the beginning of the child list
-    struct cct_node_t* parent;
-    struct cct_node_t* children;
-
-    // left and right pointers for splay tree of siblings
-    struct cct_node_t* left;
-    struct cct_node_t* right;
-};
-
-
 static void
 ompt_elide_runtime_frame_internal(
   backtrace_info_t *bt, 
@@ -243,6 +206,9 @@ ompt_elide_runtime_frame_internal(
   int replay
 )
 {
+
+
+//  return;
   frame_t **bt_outer = &bt->last;
   frame_t **bt_inner = &bt->begin;
 
@@ -322,6 +288,8 @@ ompt_elide_runtime_frame_internal(
     goto clip_base_frames;
   }
 
+
+
   while ((frame0->reenter_runtime_frame == 0) && 
          (frame0->exit_runtime_frame == 0)) {
     // corner case: the top frame has been set up, 
@@ -356,7 +324,7 @@ ompt_elide_runtime_frame_internal(
     for (it = *bt_inner; it <= *bt_outer; it++) {
 //      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
       if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
-	    if (isSync) {
+	      if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
         }
@@ -372,6 +340,7 @@ ompt_elide_runtime_frame_internal(
     // frames at top of stack elided. continue with the rest
   }
 
+  // FIXME vi3: trouble with master thread when defering
   // general case: elide frames between frame1->enter and frame0->exit
   while (true) {
     frame_t *exit0 = NULL, *reenter1 = NULL;
@@ -437,18 +406,34 @@ ompt_elide_runtime_frame_internal(
       }
     }
 
+    // FIXME vi3: This makes trouble with master thread when defering
     if (exit0 && reenter1) {
+
+
+
       // FIXME: IBM and INTEL need to agree
       // laksono 2014.07.08: hack removing one more frame to avoid redundancy with the parent
       // It seems the last frame of the master is the same as the first frame of the workers thread
       // By eliminating the topmost frame we should avoid the appearance of the same frame twice 
       //  in the callpath
+
+      // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
+      if(TD_GET(master)){
+        return;
+      }
+//      if(omp_get_thread_num() == 0)
+//        return;
+
+      //------------------------------------
+      // The prefvous version DON'T DELETE
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner,
 	      (exit0 - *bt_inner)*sizeof(frame_t));
 
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
 
       exit0 = reenter1 = NULL;
+      // --------------------------------
+
     } else if (exit0 && !reenter1) {
       // corner case: reenter1 is in the team master's stack, not mine. eliminate all
       // frames below the exit frame.
@@ -649,8 +634,10 @@ ompt_backtrace_finalize(
   int master = TD_GET(master);
   if (!master) {
     if (need_defer_cntxt()) {
-      resolve_cntxt();
+//      resolve_cntxt();
     }
+    if(!ompt_eager_context)
+      resolve_cntxt();
   }
   uint64_t region_id = TD_GET(region_id);
 
@@ -667,6 +654,7 @@ cct_node_t *
 ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
                            cct_node_t *cct_cursor)
 {
+
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
 
   // FIXME: should memoize the resulting task context in a thread-local variable
@@ -677,10 +665,10 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
 #if 1
     root = region_root(omp_task_context);
 #else
-    if((is_partial_resolve((cct_node_t *)omp_task_context) > 0)) {
-      root = hpcrun_get_thread_epoch()->csdata.unresolved_root; 
+    if((is_partial_resolve((cct_node_tt *)omp_task_context) > 0)) {
+      root = hpcrun_get_thread_epoch()->csdata.unresolved_root;
     } else {
-      root = hpcrun_get_thread_epoch()->csdata.tree_root; 
+      root = hpcrun_get_thread_epoch()->csdata.tree_root;
     }
 #endif
     return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
@@ -689,23 +677,49 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   // if I am not the master thread, full context may not be immediately available.
   // if that is the case, then it will later become available in a deferred fashion.
   if (!TD_GET(master)) { // sub-master thread in nested regions
-    uint64_t region_id = TD_GET(region_id);
+
+//    uint64_t region_id = TD_GET(region_id);
+//    ompt_data_t* current_parallel_data = TD_GET(current_parallel_data);
+//    ompt_region_data_t* region_data = (ompt_region_data_t*)current_parallel_data->ptr;
     // FIXME: check whether bottom frame elided will be right for IBM runtime
     //        without help of get_idle_frame
-    if (region_id > 0 && bt->bottom_frame_elided) {
 
-      cct_node_t *prefix = lookup_region_id(region_id);
+    ompt_data_t* cur_par_data = NULL;
+    int team_size = 0;
+    hpcrun_ompt_get_parallel_info(0, &cur_par_data, &team_size);
+    ompt_region_data_t* region_data = (cur_par_data) ? (ompt_region_data_t*) cur_par_data->ptr : NULL;
+
+
+    if (cur_par_data && region_data && bt->bottom_frame_elided) {
+
+//      cct_node_t *prefix = lookup_region_id(region_id);
+
+      cct_node_t* prefix = region_data->call_path;
+
       if (prefix) {
-	// full context is available now. use it.
-	cct_cursor = prefix;
+	      // full context is available now. use it.
+	      cct_cursor = prefix;
       } else {
-	// full context is not available. if the there is a node for region_id in 
-	// the unresolved tree, use it as the cursor to anchor the sample for now. 
-	// it will be resolved later. otherwise, use the default cursor.
-	prefix = 
-	  hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, 
-			       &(ADDR2(UNRESOLVED, region_id)));
-	if (prefix) cct_cursor = prefix;
+        // full context is not available. if the there is a node for region_id in
+        // the unresolved tree, use it as the cursor to anchor the sample for now.
+        // it will be resolved later. otherwise, use the default cursor.
+        prefix =
+          hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+
+//          hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+        if (prefix) {
+          cct_cursor = prefix;
+        }else{
+          prefix = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+          cct_cursor = prefix;
+//          printf("\n\n\n\t\t%p\t%p\n\n", &threads_queue, prefix);
+        }
+
+
+        // check if this works fine
+//        cct_node_t* to_move = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+//        printf("ALOOOOOOOOOOOOOOOOOOOOOOOOOOO: %p\t%lx\n", to_move, region_data->region_id);
+
       }
     }
   }

@@ -63,6 +63,7 @@
 #include "epoch.h"
 #include "cct2metrics.h"
 #include "core_profile_trace_data.h"
+#include "ompt/ompt.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
@@ -265,6 +266,13 @@ typedef struct thread_data_t {
   // override that is called from dlopen (eg, malloc) must skip this
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
+
+
+
+  // Daj da i mi nesto zapisemo, traga Johnu ostavimo
+  ompt_data_t* current_parallel_data;
+
+
 
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
