@@ -281,6 +281,10 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
 
+  if(!isSync && !ompt_eager_context){
+      register_to_all_regions();
+  }
+
   return ret;
 }
 

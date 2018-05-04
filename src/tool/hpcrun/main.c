@@ -592,9 +592,14 @@ hpcrun_fini_internal()
 {
   hpcrun_disable_sampling();
 
+
+  // vi3: Master should resolve from here
+  if(!ompt_eager_context)
+    resolving_all_remaining_context();
+
   TMSG(FINI, "process");
 
-  hpcrun_unthreaded_data();
+//  hpcrun_unthreaded_data();
 
   if (hpcrun_is_initialized()) {
     hpcrun_is_initialized_private = false;
@@ -699,6 +704,9 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 void
 hpcrun_thread_fini(epoch_t *epoch)
 {
+  // FIXME: vi3 Just for now resolve at this place
+  if(!ompt_eager_context)
+    resolving_all_remaining_context();
   TMSG(FINI,"thread fini");
 
   // take no action if this thread is suppressed

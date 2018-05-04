@@ -54,7 +54,7 @@
 
 #include <ompt.h>
 
-#define MAX_NUMBER_OF_NESTED_REGIONS 128
+#define MAX_NESTING_LEVELS 128
 
 //******************************************************************************
 // interface operations 
@@ -64,16 +64,23 @@ void ompt_thread_type_set(ompt_thread_type_t ttype);
 
 ompt_thread_type_t ompt_thread_type_get();
 
-static __thread ompt_queue_data_t *thread_queue_data;
-static __thread int thread_region_stack[MAX_NUMBER_OF_NESTED_REGIONS];
-static __thread int thread_stack_top = 0;
+extern __thread ompt_thread_regions_list_t* registered_regions;
+extern __thread ompt_threads_queue_t threads_queue;
 
-void thread_region_stack_push();
+// freelists
+extern __thread ompt_notification_t* notification_freelist_head;
+extern __thread ompt_thread_regions_list_t* thread_region_freelist_head;
+extern __thread ompt_thread_region_freelist_t public_region_freelist;
+extern __thread ompt_region_data_t* private_region_freelist_head;
 
-void thread_region_stack_pop();
+// stack that contais all nested parallel region
+extern __thread uint64_t region_stack[];
+extern  __thread int top_index;
 
-void thread_region_stack_register_thread();
-
-int thread_region_stack_top();
+uint64_t top_region_stack();
+uint64_t pop_region_stack();
+void push_region_stack(uint64_t region_id);
+void clear_region_stack();
+int is_empty_region_stack();
 
 #endif

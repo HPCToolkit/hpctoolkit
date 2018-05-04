@@ -58,9 +58,7 @@
 // private variables 
 //******************************************************************************
 
-static __thread int ompt_thread_type = ompt_thread_unknown; 
-
-
+static __thread int ompt_thread_type = ompt_thread_unknown;
 
 //******************************************************************************
 // interface operations
@@ -79,24 +77,47 @@ ompt_thread_type_get()
   return ompt_thread_type; 
 }
 
-void
-thread_region_stack_push(){
-  thread_region_stack[thread_stack_top++] = 0;
-//  printf("Number of elements on stack after push: %d.\n", thread_stack_top);
+
+__thread ompt_thread_regions_list_t* registered_regions = NULL;
+__thread ompt_threads_queue_t threads_queue;
+
+// freelists
+__thread ompt_notification_t* notification_freelist_head = NULL;
+__thread ompt_thread_regions_list_t* thread_region_freelist_head = NULL;
+__thread ompt_thread_region_freelist_t public_region_freelist;
+__thread ompt_region_data_t* private_region_freelist_head = NULL;
+
+
+// stack for regions
+__thread uint64_t region_stack[MAX_NESTING_LEVELS];
+// index of the last element
+__thread int top_index = -1;
+
+uint64_t
+top_region_stack(){
+  // FIXME: is invalid value for region ID
+  return (top_index) > -1 ? region_stack[top_index] : 0;
+}
+
+uint64_t
+pop_region_stack(){
+  return (top_index) > -1 ? region_stack[top_index--] : 0;
 }
 
 void
-thread_region_stack_pop(){
-  thread_region_stack[--thread_stack_top] = 0;
-//  printf("Number of elements on stack after pop: %d.\n", thread_stack_top);
+push_region_stack(uint64_t region_id){
+  // FIXME: potential place of segfault, when stack is full
+  region_stack[++top_index] = region_id;
 }
 
 void
-thread_region_stack_register_thread(){
-  thread_region_stack[thread_stack_top] = 1;
+clear_region_stack(){
+  top_index = -1;
 }
 
 int
-thread_region_stack_top(){
-  return (thread_stack_top > 0) ? thread_region_stack[thread_stack_top - 1] : 0;
+is_empty_region_stack(){
+  return top_index < 0;
 }
+
+

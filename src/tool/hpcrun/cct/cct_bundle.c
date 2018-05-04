@@ -47,6 +47,7 @@
 #include <stdbool.h>
 
 #include "cct_bundle.h"
+#include "../unresolved.h"
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <cct/cct_addr.h>
 #include <messages/messages.h>
@@ -120,8 +121,10 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
 
   //
-  // 
+  // attach unresolved root
   //
+  // show UNRESOLVED TREE
+  //hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
 
   // write out newly constructed cct
 

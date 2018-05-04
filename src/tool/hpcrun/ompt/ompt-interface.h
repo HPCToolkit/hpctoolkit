@@ -49,4 +49,32 @@ extern ompt_idle_t ompt_idle_placeholder_fn;
 
 struct cct_node_t* main_top_root;
 
+
+
+// vi3: Part for Allocating
+// FIXME: vi3 are names ok?
+// freeing memory represents adding entity to freelist
+
+// allocating and free region data
+// here freeing memory represents adding to freelist
+ompt_region_data_t* hpcrun_ompt_region_alloc();
+void hpcrun_ompt_region_free(ompt_region_data_t *region_data);
+
+// allocation and free notification
+ompt_notification_t* hpcrun_ompt_notification_alloc();
+void hpcrun_ompt_notification_free(ompt_notification_t *notification);
+
+// allocating and free thread's regions
+ompt_thread_regions_list_t* hpcrun_ompt_thread_region_alloc();
+void hpcrun_ompt_thread_region_free(ompt_thread_regions_list_t *thread_region);
+
+
+// vi3: Helper function to get region_data
+ompt_region_data_t* hpcrun_ompt_get_region_data(int ancestor_level);
+ompt_region_data_t* hpcrun_ompt_get_current_region_data();
+ompt_region_data_t* hpcrun_ompt_get_parent_region_data();
+
+
+
+
 #endif // _OMPT_INTERFACE_H_
