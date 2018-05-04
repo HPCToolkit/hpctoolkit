@@ -343,7 +343,6 @@ MY_BASE_FILES =				\
 if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  			\
 	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/event_desc.c	\
 	sample-sources/perf/linux_perf.c	\
 	sample-sources/perf/perf-util.c	\
 	sample-sources/perf/perf_mmap.c	

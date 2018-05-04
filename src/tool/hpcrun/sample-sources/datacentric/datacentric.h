@@ -54,6 +54,7 @@
 
 #include <cct/cct.h>                       // cct_node_t
 #include "sample-sources/perf/perf-util.h" // event_info_t
+#include "sample-sources/perf/event_custom.h" // event_custom_t
 
 
 /******************************************************************************
@@ -67,7 +68,8 @@
 void datacentric_init();
 
 // to be implemented by specific hardware
-int datacentric_hw_register(event_info_t *event_desc, struct event_threshold_s *period);
+int datacentric_hw_register(sample_source_t *self, event_custom_t *event,
+                        struct event_threshold_s *period);
 
 #endif // sample_source_memleak_h
 

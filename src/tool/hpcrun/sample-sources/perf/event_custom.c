@@ -51,7 +51,6 @@
 #include "sample-sources/display.h"
 
 #include "event_custom.h"
-#include "event_desc.h"
 
 //*************************** type data structure **************************
 
@@ -139,7 +138,10 @@ event_custom_create_event(sample_source_t *self, char *name)
     return 0;
   }
 
-  return event->register_fn(self, event);
+  struct event_threshold_s default_threshold;
+  perf_util_get_default_threshold( &default_threshold );
+
+  return event->register_fn(self, event, &default_threshold);
 }
 
 int

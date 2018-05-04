@@ -48,13 +48,22 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include "sample-sources/perf/perf-util.h"
 
-#include "event_desc.h"
+
+// --------------------------------------------------------------
+// data type
+// --------------------------------------------------------------
 
 typedef struct event_custom_s event_custom_t;
 
 // callback functions
-typedef int  register_event_t(sample_source_t *self, event_custom_t *event);
-typedef void event_handler_t(struct event_info_s*, void *context, sample_val_t , perf_mmap_data_t* );
+typedef int  register_event_t(sample_source_t *self,
+                              event_custom_t *event,
+                              struct event_threshold_s *period);
+
+typedef void event_handler_t(struct event_info_s*,
+                             void *context,
+                             sample_val_t ,
+                             perf_mmap_data_t* );
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 

@@ -53,42 +53,66 @@
 
 #define IBS_OP_TYPE_FILE "/sys/bus/event_source/devices/ibs_op/type"
 
+#define PERF_IBS_CONFIG   (1ULL<<19)
+
 int
-datacentric_hw_register(event_info_t *event_info, struct event_threshold_s *period)
+datacentric_hw_register(sample_source_t *self, event_custom_t *event,
+                        struct event_threshold_s *period, event_info_t **event_info)
 {
   // get the type of ibs op
 
   FILE *ibs_file = fopen(IBS_OP_TYPE_FILE, "r");
-  u32 type;
+  u32 type = 0;
 
   if (!ibs_file) {
     EMSG("Cannot open file: %s", IBS_OP_TYPE_FILE);
     return 0;
   }
   fscanf(ibs_file, "%d", &type);
+  event_info_t *einfo = (event_info_t *) hpcrun_malloc(sizeof(event_info_t));
+  memset(einfo, 0, sizeof(event_info_t));
 
-  event_info->attr.config = (1ULL<<19);
-  event_info->attr.type   = type;
-  event_info->attr.sample_period  = period->threshold_num;
-  event_info->attr.freq           = period->threshold_type == FREQUENCY ? 1 : 0;
+  einfo->attr.config = PERF_IBS_CONFIG;
+  einfo->attr.type   = type;
+  einfo->attr.freq   = period->threshold_type == FREQUENCY ? 1 : 0;
 
-  event_info->attr.sample_type    = PERF_SAMPLE_RAW
-                                    | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
-                                    | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
-                                    | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
-  event_info->attr.disabled       = 1;
-  event_info->attr.exclude_kernel = 0;
-  event_info->attr.exclude_user   = 0;
-  event_info->attr.exclude_hv     = 0;
-  event_info->attr.exclude_guest  = 0;
-  event_info->attr.exclude_idle   = 0;
-  event_info->attr.exclude_host   = 0;
-  event_info->attr.pinned         = 0;
-  event_info->attr.precise_ip     = 1;
-  event_info->attr.mmap           = 1;
+  einfo->attr.sample_period  = period->threshold_num;
 
-  event_info->attr.sample_id_all = 1;
-  event_info->attr.read_format = 0;
+  u64 sample_type    = PERF_SAMPLE_RAW
+                        | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+                        | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
+                        | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
+
+  bool is_period = period->threshold_type == PERIOD;
+  perf_util_attr_init(&einfo->attr, is_period, period->threshold_num, sample_type);
+  perf_util_set_max_precise_ip(&einfo->attr);
+
+  // testing the feasibility;
+  int ret = perf_util_event_open( &einfo->attr,
+    THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
+
+  if (ret >= 0) {
+    close(ret);
+    return 0;
+  }
+
+  einfo->metric_custom = event;
+
+  // ------------------------------------------
+  // create metric data centric
+  // ------------------------------------------
+  int metric = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(
+        metric, "IBS-OP",
+        MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  // ------------------------------------------
+  // Register the event to the global list
+  // ------------------------------------------
+  METHOD_CALL(self, store_event_and_info,
+      einfo->attr.config, 1, hpcrun_new_metric(), einfo );;
+
+  *event_info = einfo;
 
   return 1;
 }

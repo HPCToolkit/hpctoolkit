@@ -61,7 +61,6 @@
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"
 #include "event_custom.h"
-#include "event_desc.h"
 
 /******************************************************************************
  * Macros
@@ -287,8 +286,6 @@ register_blocking(sample_source_t *self, event_custom_t *event)
 
   METHOD_CALL(self, store_event_and_info,
                           attr->config, 1, metric_cs, event_info);;
-
-  //event_desc_add(event_desc);
 
   return 1;
 }

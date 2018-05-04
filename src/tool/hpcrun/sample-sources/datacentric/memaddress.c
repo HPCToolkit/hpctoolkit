@@ -169,7 +169,8 @@ memcentric_register(sample_source_t *self, event_custom_t *event)
 
   event_info->attr.sample_id_all = 1;
 
-  //event_desc_add(event_info);
+  METHOD_CALL(self, store_event_and_info,
+                          attr->config, 1, page_address, event_info);;
   return 1;
 }
 
