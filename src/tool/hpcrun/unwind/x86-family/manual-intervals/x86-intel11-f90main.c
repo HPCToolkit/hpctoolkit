@@ -83,11 +83,4 @@ adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
 }
 
 
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_intel11_f90main_intervals);
-}
-
-
+REGISTER_INTERVAL_FIXUP(adjust_intel11_f90main_intervals)

@@ -41,9 +41,8 @@ extern void monitor_real_abort(void);
 // NOTE 2: Rather than use a constructor, use lazy initialization.
 //         If constructor needed, uncomment code below
 //
-// __attribute__ ((constructor)) 
 // void
-// pthread_plugin_init() 
+// HPCRUN_CONTRUCTOR(pthread_plugin_init)() 
 // {
 //   DL_LOOKUPV(pthread_cond_broadcast);
 //   DL_LOOKUPV(pthread_cond_signal);

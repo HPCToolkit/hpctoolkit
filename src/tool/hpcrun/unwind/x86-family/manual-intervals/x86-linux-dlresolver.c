@@ -105,11 +105,4 @@ adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *s
 }
 
 
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_dl_runtime_resolve_unwind_intervals);
-}
-
-
+REGISTER_INTERVAL_FIXUP(adjust_dl_runtime_resolve_unwind_intervals)
