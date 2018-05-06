@@ -7,6 +7,7 @@
 #define TMSG(...)
 #endif
 
+#include <hpcrun/constructors.h>
 
 
 /************************************************************
@@ -44,8 +45,7 @@ int __real__xlsmp_DynamicChunkCall(long a1, long a2, long a3, long a4,
  * private operations
  ***********************************************************/
 
-static void __attribute__ ((constructor))
-init_xlomp_plugin(void) 
+HPCRUN_CONSTRUCTOR(init_xlomp_plugin)(void) 
 {
   idle_metric_register_blame_source();
 }

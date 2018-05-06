@@ -82,6 +82,7 @@
  * local includes
  *****************************************************************************/
 #include "common.h"
+#include <hpcrun/constructors.h>
 #include "gpu_blame.h"
 #include "gpu_ctxt_actions.h"
 
@@ -626,9 +627,7 @@ static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCuDriverCalls();
 }
 
-__attribute__((constructor))
-static void
-CpuGpuBlameShiftInit(void)
+HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 {
   hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))
