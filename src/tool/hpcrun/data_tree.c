@@ -87,7 +87,7 @@ interval_splay(struct datainfo_s *root, void *key)
 }
 
 /* interface for data-centric analysis */
-static cct_node_t *
+static struct datainfo_s *
 splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **end)
 {
   if(!root || !key) {
@@ -101,7 +101,7 @@ splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **
   if((root->memblock <= key) && (root->rmemblock > key)) {
     *start = root->memblock;
     *end   = root->rmemblock;
-    return root->context;
+    return root;
   }
   return NULL;
 }
@@ -136,6 +136,8 @@ splay_insert(struct datainfo_s *node)
     }
   }
   datacentric_tree_root = node;
+  TMSG(DATACENTRIC, "[%x] add ctx %x addr %x (%d bytes)",
+      node->magic, node->context, node->memblock, node->bytes);
 }
 
 /*
@@ -171,7 +173,7 @@ splay_delete(void *memblock)
 
 
 /* interface for data-centric analysis */
-cct_node_t *
+struct datainfo_s *
 splay_lookup(void *key, void **start, void **end)
 {
   return splay_lookup_with_root(datacentric_tree_root, key, start, end);

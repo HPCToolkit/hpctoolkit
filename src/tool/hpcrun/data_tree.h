@@ -79,7 +79,7 @@ typedef struct datainfo_s {
 void splay_insert(struct datainfo_s *node);
 
 /* find a cct node for a given key and range */
-cct_node_t * splay_lookup(void *key, void **start, void **end);
+struct datainfo_s * splay_lookup(void *key, void **start, void **end);
 
 /* remove a node containing a memory block */
 struct datainfo_s * splay_delete(void *memblock);

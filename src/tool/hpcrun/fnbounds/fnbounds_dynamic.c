@@ -250,7 +250,7 @@ fnbounds_map_open_dsos()
 //    or other modules 
 //---------------------------------------------------------------------
 static void
-insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
+insert_var_table(void **var_table, unsigned long num)
 {
   if(!var_table) return;
   int i;
@@ -271,6 +271,29 @@ insert_var_table(dso_info_t *dso, void **var_table, unsigned long num)
   }
 }
 
+
+/**
+ * running hpcfnbounds to analyse static variable and its address
+ */
+static void
+fnbounds_run_var_analysis(const char *module_name)
+{
+  struct fnbounds_file_header fh;
+  char filename[PATH_MAX];
+  realpath(module_name, filename);
+
+  fh.is_relocatable   = 0;
+  fh.mmap_size        = 0;
+  fh.num_entries      = 0;
+  fh.reference_offset = 0;
+
+  void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
+
+  if (var_table != NULL)
+    insert_var_table(var_table, fh.num_entries);
+
+  TMSG(DATACENTRIC, "%s has %ld entries", module_name, fh.num_entries);
+}
 
 
 //
@@ -354,6 +377,17 @@ fnbounds_dso_exec(void)
       end = nm_table[fh.num_entries - 1];
     }
   }
+
+  char *events     = getenv(HPCRUN_EVENT_LIST);
+  bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+  if (datacentric) {
+    TMSG(DATACENTRIC, "fnbounds_dso_exec %s", filename);
+    // ----------------------------------------------------------
+    // add into var data tree
+    // ----------------------------------------------------------
+    fnbounds_run_var_analysis(filename);
+  }
+
   return hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
 }
 
@@ -379,15 +413,11 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
     char *events     = getenv(HPCRUN_EVENT_LIST);
     bool datacentric = strstr(events, "DATACENTRIC") != NULL;
     if (datacentric) {
-      TMSG(DATACENTRIC, "Datacentric static variable is active");
+      TMSG(DATACENTRIC, "fnbounds_ensure_mapped_dso %s", module_name);
       // ----------------------------------------------------------
       // add into var data tree
       // ----------------------------------------------------------
-      struct fnbounds_file_header fh;
-      char filename[PATH_MAX];
-      realpath(module_name, filename);
-      void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
-      insert_var_table(dso, var_table, fh.num_entries);
+      //fnbounds_run_var_analysis(module_name, dso);
     }
   }
 
@@ -527,6 +557,15 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     }
   }
 
+  char *events     = getenv(HPCRUN_EVENT_LIST);
+  bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+  if (datacentric) {
+    TMSG(DATACENTRIC, "fnbounds_compute %s", filename);
+    // ----------------------------------------------------------
+    // add into var data tree
+    // ----------------------------------------------------------
+    fnbounds_run_var_analysis(filename);
+  }
   return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 }
 
@@ -553,8 +592,14 @@ fnbounds_get_loadModule(void *ip)
     
     if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
+
       if (dso) {
-	lm = hpcrun_loadmap_map(dso);
+        lm = hpcrun_loadmap_map(dso);
+
+        // ----------------------------------------------------------
+        // add into var data tree
+        // ----------------------------------------------------------
+        //fnbounds_run_var_analysis(module_name, dso);
       }
     }
   }
