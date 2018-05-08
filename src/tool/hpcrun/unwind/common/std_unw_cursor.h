@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 //*************************** User Include Files ****************************
 
@@ -73,6 +75,11 @@
 
 #endif
 
+enum libunw_state {
+  LIBUNW_OK,
+  LIBUNW_FAIL,
+};
+
 typedef struct hpcrun_unw_cursor_t {
 
   // ------------------------------------------------------------
@@ -95,8 +102,10 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // unwind-provider-specific state
   // ------------------------------------------------------------
-  int32_t flags;
+  int32_t flags:30;
+  enum libunw_state libunw_status:2;
 
+  unw_cursor_t uc;
 } hpcrun_unw_cursor_t;
 
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -96,6 +96,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-metric.h>
@@ -106,10 +107,13 @@ using namespace xml;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
+#include <lib/support/ExprEval.hpp>
+#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
 #define DBG 0
+#define MAX_PREFIX_CHARS 64
 
 //***************************************************************************
 
@@ -128,6 +132,10 @@ namespace Prof {
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
+
+// all fake load modules will be merged into one single load module
+// whoever the first one arrive, will be the main fake load module
+std::map<uint, uint> m_pairFakeLoadModule;
 
 namespace CallPath {
 
@@ -517,14 +525,21 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
     Struct::ANode* strct = it.current();
-    
+
     uint id = strct->id();
     const char* nm = NULL;
 
     bool fake_procedure = false;
-    
+
     if (type == 1) { // LoadModule
-      nm = strct->name().c_str();
+      nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
+      SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
+      if (sf) {
+        sf->id(id);
+        m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+
+        nm = sf->unified_name();
+      }
     }
     else if (type == 2) { // File
       nm = getFileName(strct);	
@@ -532,20 +547,30 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
       // ---------------------------------------
-      if (m_mapFiles.find(nm) == m_mapFiles.end()) {
-	//  the filename is not in the list. Add it.
-	m_mapFiles[nm] = id;
+      Struct::LM *lm = strct->ancestorLM();
+      std::string lm_name;
+      if (lm) {
+        // use pretty_name for the key to unify different names of vmlinux 
+        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+        lm_name = lm->pretty_name();
+      }
+      std::string key = lm_name + ":" + nm;
+
+      if (m_mapFiles.find(key) == m_mapFiles.end()) {
+        //  the filename is not in the list. Add it.
+        m_mapFiles[key] = id;
 
       } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
-		  && nm[0] != '\0' )
-      { // WARNING: We do not allow redundancy unless for some specific files
-	// For "unknown-file" and empty file (alien case), we allow duplicates
-	// Otherwise we remove duplicate filename, and use the existing one.
-	uint id_orig = m_mapFiles[nm];
+          && nm[0] != '\0' )
+      {
+        // WARNING: We do not allow redundancy unless for some specific files
+        // For "unknown-file" and empty file (alien case), we allow duplicates
+        // Otherwise we remove duplicate filename, and use the existing one.
+        uint id_orig   = m_mapFiles[key];
 
-	// remember that this ID needs redirection to the existing ID
-	Prof::m_mapFileIDs[id] = id_orig;
-	continue;
+        // remember that this ID needs redirection to the existing ID
+        Prof::m_mapFileIDs[id] = id_orig;
+        continue;
       }
     }
     else if (type == 3) { // Proc
@@ -553,63 +578,89 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = normalize_name(proc_name, fake_procedure);
 
       if (remove_redundancy && 
-	  proc_name != Prof::Struct::Tree::UnknownProcNm)
+          proc_name != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
         // a procedure can have the same name if they are from different
         // file or different load module
         // -------------------------------------------------------
-        const char *filename = getFileName(strct);	
+        std::string completProcName;
+
+        Struct::File *file = strct->ancestorFile();
+        uint file_id       = (file != NULL ? file->id() : 0);
+        Struct::LM *lm     = strct->ancestorLM();
+        if (lm) {
+          uint lm_id = lm->id();
+          SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
+          if (sf) {
+            lm_id = sf->id();
+
+            // if we haven't set fake_file_id, we need to set it with
+            //   the file id of this struct.
+            //   otherwise, we just reuse the fake_file_id to make it consistent
+            //   across different lm
+
+            sf->fileId(file_id);
+            file_id = sf->fileId();
+          }
+
+          char buffer[MAX_PREFIX_CHARS];
+          snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
+          completProcName.append(buffer);
+        }
+
         // we need to allow the same function name from a different file
-        std::string completProcName(filename);
-        completProcName.append(":");
+        char buffer[MAX_PREFIX_CHARS];
+        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
+        completProcName.append(buffer);
+
         const char *lnm;
-  
+
         // a procedure name within the same file has to be unique.
         // However, for codes compiled with GCC, binutils (or parseAPI) 
         // it's better to compare internally with the mangled names
         Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
         if (proc)
         {
-  	  if (proc->linkName().empty()) {
-  	    // the proc has no mangled name
-  	    lnm = proc_name;
-  	  } else
-  	  { // get the mangled name
-           	  lnm = proc->linkName().c_str();
-  	  }
+          if (proc->linkName().empty()) {
+            // the proc has no mangled name
+            lnm = proc_name;
+          } else
+          { // get the mangled name
+            lnm = proc->linkName().c_str();
+          }
         } else
         {
-  	  lnm = strct->name().c_str();
+          lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
         if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
         {
-  	  // the proc is not in dictionary. Add it into the map.
-  	  m_mapProcs[completProcName] = id;
+          // the proc is not in dictionary. Add it into the map.
+          m_mapProcs[completProcName] = id;
         } else 
         {
-  	  // the same procedure name already exists, we need to reuse
-  	  // the previous ID instead of the original one.
-  	  uint id_orig = m_mapProcs[completProcName];
-  
-   	  // remember that this ID needs redirection to the existing ID
-  	  Prof::m_mapProcIDs[id] = id_orig;
-  	  continue;
+          // the same procedure name already exists, we need to reuse
+          // the previous ID instead of the original one.
+          uint id_orig = m_mapProcs[completProcName];
+
+          // remember that this ID needs redirection to the existing ID
+          Prof::m_mapProcIDs[id] = id_orig;
+          continue;
         }
       }
     } else {
       DIAG_Die(DIAG_UnexpectedInput);
     }
-    
+
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
-       << " n" << MakeAttrStr(nm);
-    
+           << " n" << MakeAttrStr(nm);
+
     if (fake_procedure) {
-       os << " f" << MakeAttrNum(1); 
+      os << " f" << MakeAttrNum(1);
     } 
-   
+
     os << "/>\n";
   }
 }
@@ -644,9 +695,6 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   for (uint i = metricBeg; i < metricEnd; i++) {
     const Metric::ADesc* m = m_mMgr->metric(i);
 
-    const Metric::SampledDesc* mSmpl =
-      dynamic_cast<const Metric::SampledDesc*>(m);
-
     bool isDrvd = false;
     Metric::IDBExpr* mDrvdExpr = NULL;
     if (typeid(*m) == typeid(Metric::DerivedDesc)) {
@@ -662,6 +710,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
        << " v=\"" << m->toValueTyStringXML() << "\""
+       << " em=\"" << m->isMultiplexed()    << "\""
+       << " es=\"" << m->num_samples()      << "\""
+       << " ep=\"" << long(m->periodMean())       << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
@@ -707,6 +758,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Info
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>"; // or "samples" m->isUnitsEvents()
+
+    const Metric::SampledDesc* mSmpl =
+      dynamic_cast<const Metric::SampledDesc*>(m);
     if (mSmpl) {
       os << "<NV n=\"period\" v" << MakeAttrNum(mSmpl->period()) << "/>";
     }
@@ -774,7 +828,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-    writeXML_help(os, "Procedure", m_structure, &filt2, 3, m_remove_redundancy);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3, true /*m_remove_redundancy*/);
     os << "  </ProcedureTable>\n";
   }
 
@@ -832,7 +886,6 @@ namespace CallPath {
 
 const char* Profile::FmtEpoch_NV_virtualMetrics = "is-virtual-metrics";
 
-
 Profile*
 Profile::make(uint rFlags)
 {
@@ -854,7 +907,16 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
-    DIAG_Throw("error opening file");
+    if (errno == ENOENT)
+      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
+	      fnm);
+    else if (errno == EACCES)
+      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
+	      fnm);
+    else
+      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
+	      fnm);
+    exit(-1);
   }
 
   char* fsBuf = new char[HPCIO_RWBufferSz];
@@ -886,7 +948,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'fmt-hdr'");
+    fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
+	    "is not a profile or it is corrupted\n", filename);
+    exit(-1);
   }
   if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
@@ -989,12 +1053,14 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // metric-tbl
   // ----------------------------------------
   metric_tbl_t metricTbl;
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, infs, hdr.version, malloc);
+  metric_aux_info_t *aux_info;
+
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, outfs);
+    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1161,6 +1227,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
     const metric_desc_t& mdesc = m_lst[i];
+    const metric_aux_info_t &current_aux_info = aux_info[i];
 
     // ----------------------------------------
     // 
@@ -1170,7 +1237,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     string profRelId = StrUtil::toStr(i);
 
     bool doMakeInclExcl = (rFlags & RFlg_MakeInclExcl);
-    
 
     // Certain metrics do not have both incl/excl values
     if (nm == HPCRUN_METRIC_RetCnt) {
@@ -1209,6 +1275,22 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     m->flags(mdesc.flags);
     
+    // ----------------------------------------
+    // 1b. Update the additional perf event attributes
+    // ----------------------------------------
+
+    Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
+        Prof::Metric::SamplingType_t::FREQUENCY : Prof::Metric::SamplingType_t::PERIOD;
+
+    m->sampling_type(sampling_type);
+    m->isMultiplexed(current_aux_info.is_multiplexed);
+    m->periodMean   (current_aux_info.threshold_mean);
+    m->num_samples  (current_aux_info.num_samples);
+
+    // ----------------------------------------
+    // 1c. add to the list of metric
+    // ----------------------------------------
+
     prof->metricMgr()->insert(m);
 
     // ----------------------------------------
@@ -1339,6 +1421,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
+  ExprEval eval;
+
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
@@ -1351,6 +1435,26 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
     }
+    // ------------------------------------------
+    // check if the metric contains a formula
+    //  if this is the case, we'll compute the metric based on the formula
+    //  given by hpcrun.
+    // FIXME: we don't check the validity of the formula (yet).
+    //        If hpcrun has incorrect formula, the result can be anything
+    // ------------------------------------------
+    metric_desc_t* m_lst = metricTbl.lst;
+    VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
+
+    for (uint i = 0; i < numMetricsSrc; i++) {
+      char *expr = (char*) m_lst[i].formula;
+      if (expr == NULL || strlen(expr)==0) continue;
+
+      double res = eval.Eval(expr, &var_map);
+      if (eval.GetErr() == EEE_NO_ERROR) {
+        // the formula syntax looks "correct". Update the the metric value
+      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+      }
+    }
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
@@ -1360,10 +1464,10 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
-	node_parent = it->second;
+	      node_parent = it->second;
       }
       else {
-	DIAG_Throw("Cannot find parent for CCT node " << nodeId);
+	      DIAG_Throw("Cannot find parent for CCT node " << nodeId);
       }
     }
 
@@ -1487,8 +1591,14 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     mdesc.period = 1;
     mdesc.formula = NULL;
     mdesc.format = NULL;
+    mdesc.is_frequency_metric = false;
 
-    hpcrun_fmt_metricDesc_fwrite(&mdesc, fs);
+    metric_aux_info_t aux_info;
+    aux_info.is_multiplexed = m->isMultiplexed();
+    aux_info.num_samples    = m->num_samples();
+    aux_info.threshold_mean = m->periodMean();
+
+    hpcrun_fmt_metricDesc_fwrite(&mdesc, &aux_info, fs);
   }
 
 

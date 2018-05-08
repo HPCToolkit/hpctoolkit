@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ namespace ParallelAnalysis {
 
 void
 broadcast(Prof::CallPath::Profile*& profile,
-	  int myRank, int maxRank, MPI_Comm comm)
+	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
 {
   if (myRank != RankTree::rootRank) {
     DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
@@ -128,6 +128,9 @@ broadcast(Prof::CallPath::Profile*& profile,
     }
 
     MPI_Barrier(comm);
+  }
+  if (myRank == rootRank) {
+    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
   }
 }
 
@@ -168,6 +171,9 @@ mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
     
     int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
     profile_x->merge(*profile_y, mergeTy);
+
+    // merging the perf event statistics
+    profile_x->metricMgr()->mergePerfEventStatistics(profile_y->metricMgr());
 
     if (DBG_CCT_MERGE) {
       string pfx = ("[" + StrUtil::toStr(rank_y)

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -105,8 +105,9 @@ hpcrun_sample_val_init(sample_val_t* x)
 }
 
 
-extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, uint64_t metricIncr, 
-				   int skipInner, int isSync);
+extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, 
+		                   hpcrun_metricVal_t metricIncr,
+				   int skipInner, int isSync, sampling_info_t *data);
 
 extern cct_node_t* hpcrun_gen_thread_ctxt(void *context);
 

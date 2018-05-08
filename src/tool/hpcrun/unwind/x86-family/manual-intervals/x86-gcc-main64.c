@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,12 +78,13 @@ adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
 
     // this is only correct for 64-bit code
     for(; ui; ui =  UWI_NEXT(ui)) {
-      if (UWI_RECIPE(ui)->ra_status == RA_SP_RELATIVE) continue;
-      if ((UWI_RECIPE(ui)->ra_status == RA_STD_FRAME) || 
-          (UWI_RECIPE(ui)->ra_status == RA_BP_FRAME)) {  
-         UWI_RECIPE(ui)->ra_status = RA_BP_FRAME;
-         UWI_RECIPE(ui)->bp_ra_pos = 8;
-         UWI_RECIPE(ui)->bp_bp_pos = 0;
+      x86recipe_t *xr = UWI_RECIPE(ui);
+      if (xr->ra_status == RA_SP_RELATIVE) continue;
+      if ((xr->ra_status == RA_STD_FRAME) || 
+          (xr->ra_status == RA_BP_FRAME)) {  
+         xr->ra_status = RA_BP_FRAME;
+         xr->reg.bp_ra_pos = 8;
+         xr->reg.bp_bp_pos = 0;
       }
     }
 

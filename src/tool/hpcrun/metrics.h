@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -132,14 +132,16 @@ metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 // get a new metric from the cached kind
 int hpcrun_new_metric(void);
 
-void hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
+metric_desc_t* 
+hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 				 MetricFlags_ValFmt_t valFmt, size_t period,
 				 metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
-void hpcrun_set_metric_info_and_period(int metric_id, const char* name,
+metric_desc_t* 
+hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
-void hpcrun_set_metric_info(int metric_id, const char* name);
+metric_desc_t* hpcrun_set_metric_info(int metric_id, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 
@@ -147,6 +149,8 @@ void hpcrun_set_metric_name(int metric_id, char* name);
 
 extern metric_set_t* hpcrun_metric_set_new(void);
 extern cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
+extern void hpcrun_metric_std_set(int metric_id, metric_set_t* set,
+				  hpcrun_metricVal_t value);
 extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 				  hpcrun_metricVal_t incr);
 //

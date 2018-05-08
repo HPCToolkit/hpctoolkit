@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,14 +56,12 @@
 void
 process_range_init(void)
 {
-  return;
 }
 
 
 void 
-process_range(long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
+process_range(const char *name, long offset, void *vstart, void *vend, DiscoverFnTy fn_discovery)
 {
-  return;
 }
 
 

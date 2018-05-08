@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -100,7 +100,7 @@ static cct_backtrace_finalize_entry_t ompt_finalizer;
 static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
-static int ompt_callstack_debug = 0;
+static int ompt_callstack_debug = 1;
 
 
 
@@ -491,7 +491,8 @@ ompt_region_context(uint64_t region_id,
   getcontext(&uc);
 
   // levels to skip will be broken if inlining occurs.
-  node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  hpcrun_metricVal_t zero_delta = {.i = 0};
+  node = hpcrun_sample_callpath(&uc, 0, zero_delta, 0, 1, NULL).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {

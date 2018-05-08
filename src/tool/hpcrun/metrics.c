@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -326,13 +326,13 @@ hpcrun_new_metric(void)
   return hpcrun_new_metric_of_kind(current_kind);
 }
 
-void
+metric_desc_t* 
 hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 			    MetricFlags_ValFmt_t valFmt, size_t period,
 			    metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
 {
   if (has_set_max_metrics) {
-    return;
+    return NULL;
   }
 
   metric_desc_t* mdesc = NULL;
@@ -373,14 +373,15 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
       break;
     }
   }
+  return mdesc;
 }
 
 
-void
+metric_desc_t* 
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
 {
-  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
+  return  hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
 			      hpcrun_metric_std_inc, prop);
 }
 
@@ -388,10 +389,11 @@ hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 //
 // utility routine to make an Async metric with period 1
 //
-void
+metric_desc_t*
 hpcrun_set_metric_info(int metric_id, const char* name)
 {
-  hpcrun_set_metric_info_and_period(metric_id, name, MetricFlags_ValFmt_Int, 1, metric_property_none);
+  return hpcrun_set_metric_info_and_period(metric_id, name,
+                                  MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
 
@@ -440,8 +442,8 @@ hpcrun_metric_set_loc(metric_set_t* s, int id)
 
 
 void
-hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
-		      hpcrun_metricVal_t incr)
+hpcrun_metric_std(int metric_id, metric_set_t* set,
+		  char operation, hpcrun_metricVal_t val)
 {
   metric_desc_t* minfo = hpcrun_id2metric(metric_id);
   if (!minfo) {
@@ -451,12 +453,38 @@ hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
   hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:
-      loc->i += incr.i; break;
+      if (operation == '+')
+        loc->i += val.i; 
+      else if (operation == '=')
+        loc->i = val.i;
+      break;
     case MetricFlags_ValFmt_Real:
-      loc->r += incr.r; break;
+      if (operation == '+')
+        loc->r += val.r;
+      else if (operation == '=')
+        loc->r = val.r;
+      break;
     default:
       assert(false);
   }
+}
+//
+// replace the old value with the new value
+//
+void
+hpcrun_metric_std_set(int metric_id, metric_set_t* set,
+		      hpcrun_metricVal_t value)
+{
+  hpcrun_metric_std(metric_id, set, '=', value);
+}
+
+// increasing the value of metric
+//
+void
+hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
+		      hpcrun_metricVal_t incr)
+{
+  hpcrun_metric_std(metric_id, set, '+', incr);
 }
 
 //

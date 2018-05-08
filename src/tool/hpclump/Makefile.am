@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYLDFLAGS = \
 	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
+	@LZMA_LDFLAGS_DYN@ \
 	@GNUBINUTILS_LDFLAGS@
 
 MYLDADD = \
@@ -91,6 +92,7 @@ MYLDADD = \
 	$(MY_LIB_XED) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	@LZMA_LDFLAGS_STAT@ \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -294,7 +294,11 @@ toStr(const int64_t x, int base)
   case 10:
     format = "%" PRId64;
     break;
-    
+
+  case 16:
+    format = "%#" PRIx64;
+    break;
+
   default:
     DIAG_Die(DIAG_Unimplemented);
   }

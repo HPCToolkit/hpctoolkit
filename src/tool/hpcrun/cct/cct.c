@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -101,11 +101,9 @@ struct cct_node_t {
   int32_t persistent_id;
   
  // bundle abstract address components into a data type
-
   cct_addr_t addr;
 
   bool is_leaf;
-
   
   // ---------------------------------------------------------
   // tree structure
@@ -519,12 +517,23 @@ hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
   return src;
 }
 
-// special mutator to support tracing
-
+// mark a node for retention as the leaf of a traced call path.
+// for marked nodes, hpcprof must preserve the association between 
+// the node number recorded in the trace and its call path so that
+// hpctraceviewer can recover the call path for a trace record.
 void
-hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x)
+hpcrun_cct_retain(cct_node_t* x)
 {
   x->persistent_id |= HPCRUN_FMT_RetainIdFlag;
+}
+
+
+// check if a node was marked for retention as the leaf of a traced
+// call path.
+int
+hpcrun_cct_retained(cct_node_t* x)
+{
+  return (x->persistent_id & HPCRUN_FMT_RetainIdFlag);
 }
 
 //

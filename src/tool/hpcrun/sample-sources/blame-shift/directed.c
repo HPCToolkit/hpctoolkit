@@ -89,7 +89,9 @@ directed_blame_accept(void *arg, uint64_t obj)
       ucontext_t uc;
       getcontext(&uc);
       hpcrun_safe_enter();
-      hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame, bi->levels_to_skip, 1);
+      hpcrun_metricVal_t blame_delta = {.i = blame};
+
+      hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame_delta, bi->levels_to_skip, 1, NULL);
       hpcrun_safe_exit();
     }
   }

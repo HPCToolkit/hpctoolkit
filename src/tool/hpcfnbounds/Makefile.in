@@ -46,6 +46,7 @@
 ############################################################
 
 
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -119,12 +120,15 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_USE_ZLIB_TRUE@am__append_2 = -L$(ZLIB_LIB) -lz
+@OPT_DYNINST_LIBDW_TRUE@am__append_2 = -L$(LIBELF_LIB) -ldw -lelf -ldl
+@OPT_DYNINST_LIBDW_FALSE@am__append_3 = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+@OPT_USE_ZLIB_TRUE@am__append_4 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_3 = x86-process-ranges.cpp amd-xop.c
-@HOST_CPU_X86_FAMILY_TRUE@am__append_4 = -I$(XED2_INC)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_5 = $(XED2_LIB_FLAGS)
-@HOST_CPU_X86_FAMILY_FALSE@am__append_6 = generic-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__append_5 = x86-process-ranges.cpp amd-xop.c
+@HOST_CPU_X86_FAMILY_TRUE@am__append_6 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_7 = $(XED2_LIB_FLAGS)
+@HOST_CPU_AARCH64_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__append_8 = arm-process-ranges.cpp
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__append_9 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -142,27 +146,42 @@ mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
 CONFIG_CLEAN_FILES = hpcfnbounds
 CONFIG_CLEAN_VPATH_FILES =
+LIBRARIES = $(noinst_LIBRARIES)
+ARFLAGS = cru
+AM_V_AR = $(am__v_AR_@AM_V@)
+am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
+am__v_AR_0 = @echo "  AR      " $@;
+am__v_AR_1 = 
+libeh_frames_a_AR = $(AR) $(ARFLAGS)
+libeh_frames_a_LIBADD =
+am_libeh_frames_a_OBJECTS = libeh_frames_a-eh-frames.$(OBJEXT)
+libeh_frames_a_OBJECTS = $(am_libeh_frames_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)" \
 	"$(DESTDIR)$(pkglibexecdir)"
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am__hpcfnbounds_bin_SOURCES_DIST = main.cpp code-ranges.cpp \
-	function-entries.cpp intervals.cpp server.cpp \
-	x86-process-ranges.cpp amd-xop.c generic-process-ranges.cpp
+	function-entries.cpp intervals.cpp sections.cpp server.cpp \
+	x86-process-ranges.cpp amd-xop.c arm-process-ranges.cpp \
+	generic-process-ranges.cpp
 am__objects_1 = hpcfnbounds_bin-main.$(OBJEXT) \
 	hpcfnbounds_bin-code-ranges.$(OBJEXT) \
 	hpcfnbounds_bin-function-entries.$(OBJEXT) \
 	hpcfnbounds_bin-intervals.$(OBJEXT) \
+	hpcfnbounds_bin-sections.$(OBJEXT) \
 	hpcfnbounds_bin-server.$(OBJEXT)
 @HOST_CPU_X86_FAMILY_TRUE@am__objects_2 = hpcfnbounds_bin-x86-process-ranges.$(OBJEXT) \
 @HOST_CPU_X86_FAMILY_TRUE@	hpcfnbounds_bin-amd-xop.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
+@HOST_CPU_AARCH64_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__objects_3 = hpcfnbounds_bin-arm-process-ranges.$(OBJEXT)
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__objects_4 = hpcfnbounds_bin-generic-process-ranges.$(OBJEXT)
 am_hpcfnbounds_bin_OBJECTS = $(am__objects_1) $(am__objects_2) \
-	$(am__objects_3)
+	$(am__objects_3) $(am__objects_4)
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = libeh_frames.a $(HPCLIB_SupportLean) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 hpcfnbounds_bin_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_4)
@@ -254,8 +273,9 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(hpcfnbounds_bin_SOURCES)
-DIST_SOURCES = $(am__hpcfnbounds_bin_SOURCES_DIST)
+SOURCES = $(libeh_frames_a_SOURCES) $(hpcfnbounds_bin_SOURCES)
+DIST_SOURCES = $(libeh_frames_a_SOURCES) \
+	$(am__hpcfnbounds_bin_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -313,6 +333,8 @@ BOOST_COPY = @BOOST_COPY@
 BOOST_INC = @BOOST_INC@
 BOOST_LIB = @BOOST_LIB@
 BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BZIP_COPY = @BZIP_COPY@
+BZIP_LIB = @BZIP_LIB@
 CC = @CC@
 CCAS = @CCAS@
 CCASDEPMODE = @CCASDEPMODE@
@@ -372,6 +394,7 @@ LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBDW_COPY = @LIBDW_COPY@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
@@ -395,6 +418,12 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
+LZMA_COPY = @LZMA_COPY@
+LZMA_INC = @LZMA_INC@
+LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LIB = @LZMA_LIB@
+LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
@@ -407,8 +436,6 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
-OA_IFLAGS = @OA_IFLAGS@
-OA_LDFLAGS = @OA_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
@@ -435,14 +462,18 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PERFMON_CFLAGS = @PERFMON_CFLAGS@
+PERFMON_COPY = @PERFMON_COPY@
+PERFMON_LDFLAGS_DYN = @PERFMON_LDFLAGS_DYN@
+PERFMON_LDFLAGS_STAT = @PERFMON_LDFLAGS_STAT@
+PERFMON_LIB = @PERFMON_LIB@
+PERF_EVENT_PARANOID = @PERF_EVENT_PARANOID@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_COPY_DYN = @SYMTABAPI_COPY_DYN@
-SYMTABAPI_COPY_PARSE = @SYMTABAPI_COPY_PARSE@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
@@ -461,6 +492,7 @@ XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
 ZLIB_COPY = @ZLIB_COPY@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
 ZLIB_LIB = @ZLIB_LIB@
 abs_builddir = @abs_builddir@
@@ -496,7 +528,6 @@ host_os = @host_os@
 host_vendor = @host_vendor@
 hpc_ext_libs_dir = @hpc_ext_libs_dir@
 hpclink_extra_wrap_names = @hpclink_extra_wrap_names@
-hpcrun_use_bgq_backend = @hpcrun_use_bgq_backend@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -512,7 +543,6 @@ my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
 papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
-ppc64_bgq_avail = @ppc64_bgq_avail@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -561,21 +591,27 @@ MYSOURCES = \
 	code-ranges.cpp \
 	function-entries.cpp \
 	intervals.cpp \
+	sections.cpp \
 	server.cpp
 
 MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 	-I$(SYMTABAPI_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
-MYLDADD = $(HPCLIB_SupportLean) -L$(SYMTABAPI_LIB) \
-	$(SYMTABAPI_LIB_LIST) -L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf $(am__append_1) $(am__append_2)
+MYLDADD = libeh_frames.a $(HPCLIB_SupportLean) -L$(SYMTABAPI_LIB) \
+	$(SYMTABAPI_LIB_LIST) $(am__append_1) $(am__append_2) \
+	$(am__append_3) $(am__append_4)
 MYCLEAN = @HOST_LIBTREPOSITORY@
+noinst_LIBRARIES = libeh_frames.a
 pkglibexec_SCRIPTS = hpcfnbounds
-hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_3) $(am__append_6)
-hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_4)
+libeh_frames_a_SOURCES = eh-frames.cpp
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBDWARF_INC)
+libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
+hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_5) $(am__append_8) \
+	$(am__append_9)
+hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_6)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_5)
+hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_7)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -621,6 +657,14 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 $(am__aclocal_m4_deps):
 hpcfnbounds: $(top_builddir)/config.status $(srcdir)/hpcfnbounds.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+
+clean-noinstLIBRARIES:
+	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
+
+libeh_frames.a: $(libeh_frames_a_OBJECTS) $(libeh_frames_a_DEPENDENCIES) $(EXTRA_libeh_frames_a_DEPENDENCIES) 
+	$(AM_V_at)-rm -f libeh_frames.a
+	$(AM_V_AR)$(libeh_frames_a_AR) libeh_frames.a $(libeh_frames_a_OBJECTS) $(libeh_frames_a_LIBADD)
+	$(AM_V_at)$(RANLIB) libeh_frames.a
 install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	@list='$(pkglibexec_PROGRAMS)'; test -n "$(pkglibexecdir)" || list=; \
@@ -717,13 +761,16 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-amd-xop.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-code-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-function-entries.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-sections.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-server.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds_bin-x86-process-ranges.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libeh_frames_a-eh-frames.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -781,6 +828,20 @@ hpcfnbounds_bin-amd-xop.obj: amd-xop.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
+libeh_frames_a-eh-frames.o: eh-frames.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libeh_frames_a_CPPFLAGS) $(CPPFLAGS) $(libeh_frames_a_CXXFLAGS) $(CXXFLAGS) -MT libeh_frames_a-eh-frames.o -MD -MP -MF $(DEPDIR)/libeh_frames_a-eh-frames.Tpo -c -o libeh_frames_a-eh-frames.o `test -f 'eh-frames.cpp' || echo '$(srcdir)/'`eh-frames.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libeh_frames_a-eh-frames.Tpo $(DEPDIR)/libeh_frames_a-eh-frames.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='eh-frames.cpp' object='libeh_frames_a-eh-frames.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libeh_frames_a_CPPFLAGS) $(CPPFLAGS) $(libeh_frames_a_CXXFLAGS) $(CXXFLAGS) -c -o libeh_frames_a-eh-frames.o `test -f 'eh-frames.cpp' || echo '$(srcdir)/'`eh-frames.cpp
+
+libeh_frames_a-eh-frames.obj: eh-frames.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libeh_frames_a_CPPFLAGS) $(CPPFLAGS) $(libeh_frames_a_CXXFLAGS) $(CXXFLAGS) -MT libeh_frames_a-eh-frames.obj -MD -MP -MF $(DEPDIR)/libeh_frames_a-eh-frames.Tpo -c -o libeh_frames_a-eh-frames.obj `if test -f 'eh-frames.cpp'; then $(CYGPATH_W) 'eh-frames.cpp'; else $(CYGPATH_W) '$(srcdir)/eh-frames.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libeh_frames_a-eh-frames.Tpo $(DEPDIR)/libeh_frames_a-eh-frames.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='eh-frames.cpp' object='libeh_frames_a-eh-frames.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libeh_frames_a_CPPFLAGS) $(CPPFLAGS) $(libeh_frames_a_CXXFLAGS) $(CXXFLAGS) -c -o libeh_frames_a-eh-frames.obj `if test -f 'eh-frames.cpp'; then $(CYGPATH_W) 'eh-frames.cpp'; else $(CYGPATH_W) '$(srcdir)/eh-frames.cpp'; fi`
+
 hpcfnbounds_bin-main.o: main.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-main.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-main.Tpo -c -o hpcfnbounds_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-main.Tpo $(DEPDIR)/hpcfnbounds_bin-main.Po
@@ -837,6 +898,20 @@ hpcfnbounds_bin-intervals.obj: intervals.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
 
+hpcfnbounds_bin-sections.o: sections.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-sections.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-sections.Tpo -c -o hpcfnbounds_bin-sections.o `test -f 'sections.cpp' || echo '$(srcdir)/'`sections.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-sections.Tpo $(DEPDIR)/hpcfnbounds_bin-sections.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sections.cpp' object='hpcfnbounds_bin-sections.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-sections.o `test -f 'sections.cpp' || echo '$(srcdir)/'`sections.cpp
+
+hpcfnbounds_bin-sections.obj: sections.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-sections.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-sections.Tpo -c -o hpcfnbounds_bin-sections.obj `if test -f 'sections.cpp'; then $(CYGPATH_W) 'sections.cpp'; else $(CYGPATH_W) '$(srcdir)/sections.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-sections.Tpo $(DEPDIR)/hpcfnbounds_bin-sections.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sections.cpp' object='hpcfnbounds_bin-sections.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-sections.obj `if test -f 'sections.cpp'; then $(CYGPATH_W) 'sections.cpp'; else $(CYGPATH_W) '$(srcdir)/sections.cpp'; fi`
+
 hpcfnbounds_bin-server.o: server.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-server.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-server.Tpo -c -o hpcfnbounds_bin-server.o `test -f 'server.cpp' || echo '$(srcdir)/'`server.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-server.Tpo $(DEPDIR)/hpcfnbounds_bin-server.Po
@@ -864,6 +939,20 @@ hpcfnbounds_bin-x86-process-ranges.obj: x86-process-ranges.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='x86-process-ranges.cpp' object='hpcfnbounds_bin-x86-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+
+hpcfnbounds_bin-arm-process-ranges.o: arm-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-arm-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Tpo -c -o hpcfnbounds_bin-arm-process-ranges.o `test -f 'arm-process-ranges.cpp' || echo '$(srcdir)/'`arm-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arm-process-ranges.cpp' object='hpcfnbounds_bin-arm-process-ranges.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-arm-process-ranges.o `test -f 'arm-process-ranges.cpp' || echo '$(srcdir)/'`arm-process-ranges.cpp
+
+hpcfnbounds_bin-arm-process-ranges.obj: arm-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-arm-process-ranges.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Tpo -c -o hpcfnbounds_bin-arm-process-ranges.obj `if test -f 'arm-process-ranges.cpp'; then $(CYGPATH_W) 'arm-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/arm-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Tpo $(DEPDIR)/hpcfnbounds_bin-arm-process-ranges.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='arm-process-ranges.cpp' object='hpcfnbounds_bin-arm-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcfnbounds_bin-arm-process-ranges.obj `if test -f 'arm-process-ranges.cpp'; then $(CYGPATH_W) 'arm-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/arm-process-ranges.cpp'; fi`
 
 hpcfnbounds_bin-generic-process-ranges.o: generic-process-ranges.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds_bin_CPPFLAGS) $(CPPFLAGS) $(hpcfnbounds_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcfnbounds_bin-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/hpcfnbounds_bin-generic-process-ranges.Tpo -c -o hpcfnbounds_bin-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
@@ -969,7 +1058,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS) $(SCRIPTS)
+all-am: Makefile $(LIBRARIES) $(PROGRAMS) $(SCRIPTS)
 installdirs:
 	for dir in "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -1007,8 +1096,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-pkglibexecPROGRAMS \
-	mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -1079,19 +1168,19 @@ uninstall-am: uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-pkglibexecPROGRAMS cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglibexecPROGRAMS install-pkglibexecSCRIPTS \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am \
+	clean-libtool clean-noinstLIBRARIES clean-pkglibexecPROGRAMS \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-pkglibexecPROGRAMS \
+	install-pkglibexecSCRIPTS install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
 
 .PRECIOUS: Makefile

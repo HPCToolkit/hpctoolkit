@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -163,7 +163,9 @@ MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
   // insert samples before and after the slow functions to make the
   // traces look better.
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, metric_id_read, 0, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_read, 
+        (hpcrun_metricVal_t) {.i=0}, 
+        0, 1, NULL);
 
   hpcrun_safe_exit();
   ret = real_read(fd, buf, count);
@@ -173,7 +175,9 @@ MONITOR_EXT_WRAP_NAME(read)(int fd, void *buf, size_t count)
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "read: fd: %d, buf: %p, count: %ld, actual: %ld",
        fd, buf, count, ret);
-  hpcrun_sample_callpath(&uc, metric_id_read, (ret > 0 ? ret : 0), 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_read, 
+        (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
+        0, 1, NULL);
   hpcrun_safe_exit();
 
   errno = save_errno;
@@ -196,7 +200,9 @@ MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
   // insert samples before and after the slow functions to make the
   // traces look better.
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, metric_id_write, 0, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_write, 
+            (hpcrun_metricVal_t) {.i=0}, 
+            0, 1, NULL);
 
   hpcrun_safe_exit();
   ret = real_write(fd, buf, count);
@@ -206,7 +212,9 @@ MONITOR_EXT_WRAP_NAME(write)(int fd, const void *buf, size_t count)
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "write: fd: %d, buf: %p, count: %ld, actual: %ld",
        fd, buf, count, ret);
-  hpcrun_sample_callpath(&uc, metric_id_write, (ret > 0 ? ret : 0), 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_write, 
+        (hpcrun_metricVal_t) {.i=(ret > 0 ? ret : 0)}, 
+        0, 1, NULL);
   hpcrun_safe_exit();
 
   errno = save_errno;
@@ -229,7 +237,9 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
   // traces look better.
 
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, metric_id_read, 0, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_read, 
+            (hpcrun_metricVal_t) {.i=0}, 
+            0, 1, NULL);
 
   hpcrun_safe_exit();
   ret = real_fread(ptr, size, count, stream);
@@ -238,7 +248,9 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld",
        size, count, count*size, ret*size);
-  hpcrun_sample_callpath(&uc, metric_id_read, ret*size, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_read, 
+            (hpcrun_metricVal_t) {.i=ret*size}, 
+            0, 1, NULL);
   hpcrun_safe_exit();
 
   return ret;
@@ -260,7 +272,9 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
   // insert samples before and after the slow functions to make the
   // traces look better.
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, metric_id_write, 0, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_write, 
+            (hpcrun_metricVal_t) {.i=0}, 
+            0, 1, NULL);
 
   hpcrun_safe_exit();
   ret = real_fwrite(ptr, size, count, stream);
@@ -269,7 +283,9 @@ MONITOR_EXT_WRAP_NAME(fwrite)(const void *ptr, size_t size, size_t count,
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld",
        size, count, count*size, ret*size);
-  hpcrun_sample_callpath(&uc, metric_id_write, ret*size, 0, 1);
+  hpcrun_sample_callpath(&uc, metric_id_write, 
+            (hpcrun_metricVal_t) {.i=ret*size}, 
+            0, 1, NULL);
   hpcrun_safe_exit();
 
   return ret;

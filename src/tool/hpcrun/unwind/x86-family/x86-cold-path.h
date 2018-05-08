@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,6 @@
 #include "x86-interval-arg.h"
 
 extern bool hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg);
-extern void hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm);
+extern void hpcrun_cold_code_fixup(unwind_interval *first, unwind_interval *current, unwind_interval *warm);
 
 #endif // X86_COLD_PATH_H

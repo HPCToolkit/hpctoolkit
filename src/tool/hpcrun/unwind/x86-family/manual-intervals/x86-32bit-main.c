@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -69,11 +69,12 @@ adjust_32bit_main_intervals(char *ins, int len, btuwi_status_t *stat)
     // this won't fix all of the intervals, but it will fix the ones 
     // that we care about.
     while(ui) {
-      if (UWI_RECIPE(ui)->ra_status == RA_STD_FRAME){
-    	UWI_RECIPE(ui)->bp_ra_pos = 4;
-    	UWI_RECIPE(ui)->bp_bp_pos = 0;
-    	UWI_RECIPE(ui)->sp_ra_pos = 4;
-    	UWI_RECIPE(ui)->sp_bp_pos = 0;
+      x86recipe_t *xr = UWI_RECIPE(ui);
+      if (xr->ra_status == RA_STD_FRAME){
+    	xr->reg.bp_ra_pos = 4;
+    	xr->reg.bp_bp_pos = 0;
+    	xr->reg.sp_ra_pos = 4;
+    	xr->reg.sp_bp_pos = 0;
       }
       ui = UWI_NEXT(ui);
     }

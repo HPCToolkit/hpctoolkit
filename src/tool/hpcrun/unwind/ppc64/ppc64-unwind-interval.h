@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -126,13 +126,11 @@ new_ui(
 	sp_ty_t sp_ty,
 	ra_ty_t ra_ty,
 	int sp_arg,
-	int ra_arg,
-	mem_alloc m_alloc);
+	int ra_arg);
 
 #if 0
 ppc64recipe_t *
-ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg,
-		mem_alloc m_alloc);
+ppc64recipe_new(sp_ty_t sp_ty, ra_ty_t ra_ty, int sp_arg, int ra_arg);
 #endif
 
 /*

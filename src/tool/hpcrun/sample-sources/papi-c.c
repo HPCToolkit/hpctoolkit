@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -243,6 +243,23 @@ extern __thread bool hpcrun_thread_suppress_sample;
  * method functions
  *****************************************************************************/
 
+// strip the prefix "papi::" from an event name, if exists.
+// this allows forcing a papi event over a perf event.
+// allow case-insensitive and any number of ':'
+static const char *
+strip_papi_prefix(const char *str)
+{
+  if (strncasecmp(str, "papi:", 5) == 0) {
+    str = &str[5];
+
+    while (str[0] == ':') {
+      str = &str[1];
+    }
+  }
+
+  return str;
+}
+
 static void
 METHOD_FN(init)
 {
@@ -458,6 +475,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+  ev_str = strip_papi_prefix(ev_str);
+  
   TMSG(PAPI, "supports event");
   if (papi_unavail) { return false; }
 
@@ -488,6 +507,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     char name[1024];
     int evcode;
     long thresh;
+
+    event = (char *) strip_papi_prefix(event);
 
     TMSG(PAPI,"checking event spec = %s",event);
     // FIXME: restore checking will require deciding if the event is synchronous or not
@@ -777,6 +798,7 @@ METHOD_FN(display_events)
 
 #define ss_name papi
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  80
 
 #include "ss_obj.h"
 
@@ -925,8 +947,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       metricIncrement = 1;
     }
 
-    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metricIncrement,
-			   0/*skipInner*/, 0/*isSync*/);
+    sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
+			(hpcrun_metricVal_t) {.i=metricIncrement},
+			0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -939,8 +962,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (ci->some_derived) {
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
-	hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			       values[i] - ci->prev_values[i], 0, 0);
+	      hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
+			(hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
+			0, 0, NULL);
       }
     }
 

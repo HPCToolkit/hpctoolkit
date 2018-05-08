@@ -78,7 +78,8 @@ ompt_task_begin_internal(
   ompt_task_id_t task_id
 )
 {
-  uint64_t zero_metric_incr = 0LL;
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+
 
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead ++;
@@ -90,7 +91,7 @@ ompt_task_begin_internal(
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node =
-    hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
+    hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 

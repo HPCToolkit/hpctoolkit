@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,11 @@ typedef void  hpcfmt_free_fn(void* mem);
 //***************************************************************************
 // Generic reader/writer primitives
 //***************************************************************************
+
+int hpcfmt_fread(void *data, size_t size, FILE *infs);
+
+int hpcfmt_fwrite(void *data, size_t size, FILE *outfs);
+
 
 static inline int
 hpcfmt_int2_fread(uint16_t* val, FILE* infs)
@@ -329,6 +334,21 @@ hpcfmt_nvpairList_free(HPCFMT_List(hpcfmt_nvpair_t)* nvps,
 
 
 //***************************************************************************
+
+
+// --------------------------------------------------------------
+// additional metric information
+// this data is optional in metric description.
+// at the moment, only perf event sample source needs this info
+// --------------------------------------------------------------
+typedef struct metric_aux_info_s {
+
+	bool   is_multiplexed;  // flag if the event is multiplexed
+	double threshold_mean;  // average threshold (if multiplexed)
+
+	uint64_t num_samples;   // number of samples
+
+} metric_aux_info_t;
 
 #if defined(__cplusplus)
 } /* extern "C" */
