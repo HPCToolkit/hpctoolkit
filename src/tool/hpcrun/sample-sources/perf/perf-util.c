@@ -443,7 +443,7 @@ perf_util_get_default_threshold(struct event_threshold_s *threshold)
   threshold->threshold_type = default_threshold.threshold_type;
 }
 
-
+#if KERNEL_SAMPLING_ENABLED
 //----------------------------------------------------------
 // extend a user-mode callchain with kernel frames (if any)
 //----------------------------------------------------------
@@ -483,6 +483,7 @@ perf_util_add_kernel_callchain(
   }
   return parent;
 }
+#endif
 
 
 /**

@@ -92,14 +92,15 @@ memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   // memory information exists
   void *start, *end;
-  cct_node_t *node = splay_lookup((void*) mmap_data->addr, &start, &end);
+  struct datainfo_s *info = splay_lookup((void*) mmap_data->addr, &start, &end);
 
-  if (node) {
+  if (info && info->context) {
     cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
     cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
 
     // copy the call path of the malloc
-    cursor = hpcrun_cct_insert_path_return_leaf(node, cursor);
+    cct_node_t *node   = info->context;
+    cursor             = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
     metric_set_t* mset = hpcrun_reify_metric_set(cursor);
 
@@ -117,7 +118,7 @@ memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
 
 static int
-memcentric_register(sample_source_t *self, event_custom_t *event)
+memcentric_register(sample_source_t *self, event_custom_t *event, struct event_threshold_s *period)
 {
   event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
   if (event_info == NULL)
@@ -135,7 +136,7 @@ memcentric_register(sample_source_t *self, event_custom_t *event)
   // ------------------------------------------
   metric_page_fault = hpcrun_new_metric();
 
-  metric_desc_t *metric_desc = hpcrun_set_metric_info_and_period(
+  hpcrun_set_metric_info_and_period(
       metric_page_fault, "PAGE-FAULTS",
       MetricFlags_ValFmt_Int, 1, metric_property_none);
 
@@ -170,7 +171,7 @@ memcentric_register(sample_source_t *self, event_custom_t *event)
   event_info->attr.sample_id_all = 1;
 
   METHOD_CALL(self, store_event_and_info,
-                          attr->config, 1, page_address, event_info);;
+              attr->config, 1, page_address, event_info);;
   return 1;
 }
 

@@ -127,6 +127,8 @@
 // macros
 //******************************************************************************
 
+#define KERNEL_SAMPLING_ENABLED ( LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0) )
+
 #define LINUX_PERF_DEBUG 0
 
 // default number of samples per second per thread
@@ -506,7 +508,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 
   info.sample_clock = 0;
   info.sample_custom_cct.update_before_fn = NULL;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+#if KERNEL_SAMPLING_ENABLED
   info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t)perf_util_add_kernel_callchain;
 #else
   info.sample_custom_cct.update_after_fn  = NULL;

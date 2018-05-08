@@ -41,8 +41,10 @@
 #include <sys/syscall.h> 
 
 #include <unistd.h>
+
 #include <linux/types.h>
 #include <linux/perf_event.h>
+#include <linux/version.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
@@ -51,6 +53,9 @@
 /******************************************************************************
  * macros
  *****************************************************************************/
+
+#define KERNEL_SAMPLING_ENABLED (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+
 
 #define THREAD_SELF     0
 #define CPU_ANY        -1
@@ -202,9 +207,10 @@ perf_util_is_ksym_available();
 int
 perf_util_get_paranoid_level();
 
-
+#if KERNEL_SAMPLING_ENABLED
 cct_node_t *
 perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
+#endif
 
 void
 perf_util_get_default_threshold(struct event_threshold_s *threshold);

@@ -136,8 +136,10 @@ splay_insert(struct datainfo_s *node)
     }
   }
   datacentric_tree_root = node;
+#if 0
   TMSG(DATACENTRIC, "[%x] add ctx %x addr %x (%d bytes)",
       node->magic, node->context, node->memblock, node->bytes);
+#endif
 }
 
 /*

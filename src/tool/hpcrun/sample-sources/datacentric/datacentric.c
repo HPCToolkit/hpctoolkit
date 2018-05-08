@@ -206,7 +206,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
        (sv.sample_node == NULL))
     return;
  
-  cct_node_t *node = NULL;
+  cct_node_t *node = sv.sample_node;
   void *start, *end;
 
   if (mmap_data->addr) {
@@ -219,10 +219,16 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     }
     if (info->context == (void*)DATA_STATIC_CONTEXT) {
       // looking for the static variables
-      cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
-      node = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
+/*      cct_node_t *root    = hpcrun_cct_get_root(sv.sample_node);
+      cct_node_t *node_st = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
+      node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, node_st);*/
+
     } else {
-      node = info->context;
+      // looking for the dynamic variables
+/*      cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
+      cct_node_t *node_heap = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap_allocation));
+      cct_node_t *node_ctx  = hpcrun_insert_special_node(node_heap, info->context);
+      node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, node_ctx);*/
     }
   }
 

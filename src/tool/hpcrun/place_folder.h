@@ -49,6 +49,8 @@
 
 #define FUNCTION_FOLDER_NAME(name) monitor_data ## _ ## name
 
+#define FUNCTION_FOLDER_CALL(name) FUNCTION_FOLDER_NAME(name) ## _()
+
 #define FUNCTION_FOLDER(name) 	void \
 			 	static monitor_data ## _ ## name(void) \
 				{}
@@ -86,9 +88,9 @@ FUNCTION_DATA_FOLDER(5, 5)
 #ifdef TEST_PF_DEBUG
 int main()
 {
-  FUNCTION_FOLDER(head_data_allocation)
+  FUNCTION_FOLDER_NAME(head_data_allocation)();
 
-  FUNCTION_DATA_FOLDER(1, 5)
+  FUNCTION_DATA_FOLDER_NAME(1, 5) ();
 }
 #endif // TEST_PF_DEBUG
 
