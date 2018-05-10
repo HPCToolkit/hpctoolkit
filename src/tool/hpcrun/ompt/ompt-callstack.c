@@ -100,7 +100,7 @@ static cct_backtrace_finalize_entry_t ompt_finalizer;
 static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
-static int ompt_callstack_debug = 1;
+static int ompt_callstack_debug = 0;
 
 
 
@@ -191,7 +191,7 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
 }
 
 
-static void
+void
 ompt_elide_runtime_frame(
   backtrace_info_t *bt, 
   uint64_t region_id, 
@@ -634,4 +634,22 @@ ompt_callstack_init(void)
 
   // register closure
   hpcrun_initializers_defer(&ompt_callstack_init_closure);
+}
+
+
+
+//******************************************************************************
+// debugging interface 
+//******************************************************************************
+
+void 
+hpcrun_elide_debug_on()
+{
+  ompt_callstack_debug = 1;
+}
+
+void 
+hpcrun_elide_debug_off()
+{
+  ompt_callstack_debug = 0;
 }
