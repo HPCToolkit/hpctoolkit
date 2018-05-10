@@ -280,11 +280,13 @@ hpcrun_sample_callpath(void* context, int metricId,
     // leaves us with many trace-ids referring to the same source
     // construct. trust me: merging here is easier :-).
     leaf_ip = td->btbuf_beg->the_function;
+  } else {
+    TMSG(TRACE1, "unmatched leaf_ip");
   }
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive()) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;
