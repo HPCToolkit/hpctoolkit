@@ -107,7 +107,11 @@ init_placeholder(ompt_placeholder_t *p, void *pc)
   // fnbounds_enclosing_addr
   hpcrun_safe_enter();
   {
-    void *cpc = canonicalize_placeholder(pc);
+    // add 1 to pc for placeholder so that if it becomes an interior
+    // CCT node because of a kernel sample below it, when hpcprof
+    // subtracts 1 to try to move from a callsite to a return address,
+    // we don't want to move it out of the placeholder function
+    void *cpc = canonicalize_placeholder(pc+1);
     p->pc = cpc;
     p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
   }
