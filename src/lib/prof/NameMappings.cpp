@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <map>
+#include <string>
 #include <string.h>
 
 #include <lib/support/dictionary.h>
@@ -122,7 +123,15 @@ normalize_name_rename(const char *in, bool &fake_procedure)
 {
   // check if the name has to be changed or not
   const char *name_new = in;
-  NameMappings_t::iterator it = renamingMap.find(in);
+ 
+  // names to be replaced are simple and don't contain any embedded blanks. 
+  // however, when a structure file is used, a blank followed by the load module 
+  // may be appended. strip off starting at a blank before attempting to find a replacement.
+  std::string input_name(in); 
+  size_t blank_pos = input_name.find(' ');
+  if (blank_pos != std::string::npos) input_name.erase(blank_pos);
+  
+  NameMappings_t::iterator it = renamingMap.find(input_name.c_str());
     
   if (it != renamingMap.end()) {
     // it has to be renamed.
