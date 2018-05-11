@@ -894,7 +894,7 @@ void
 ompt_device_unload(uint64_t device_num,
                    uint64_t module_id)
 {
-  cubin_id_map_delete(module_id);
+  //cubin_id_map_delete(module_id);
 }
 
 

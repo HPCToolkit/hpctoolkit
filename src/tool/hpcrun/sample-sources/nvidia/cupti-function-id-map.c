@@ -15,6 +15,14 @@
 
 #include "cupti-function-id-map.h"
 
+#define CUPTI_FUNCTION_ID_DEBUG 0
+
+#if CUPTI_FUNCTION_ID_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
@@ -125,6 +133,7 @@ cupti_function_id_map_insert(uint64_t function_id, uint64_t function_index, uint
     } else {
       // function_id already present: fatal error since a function_id 
       //   should only be inserted once 
+      PRINT("function_id duplicated %d\n", function_id);
       assert(0);
     }
   }

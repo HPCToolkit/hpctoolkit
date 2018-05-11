@@ -15,6 +15,14 @@
 
 #include "cubin-id-map.h"
 
+#define CUPTI_CUBIN_ID_MAP_DEBUG 0
+
+#if CUPTI_CUBIN_ID_MAP_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
@@ -174,8 +182,10 @@ cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
+  PRINT("cubin_id %d\n", cubin_id);
   if (entry != NULL) {
     uint64_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
+    PRINT("get hpctoolkit_module_id %d\n", hpctoolkit_module_id);
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);

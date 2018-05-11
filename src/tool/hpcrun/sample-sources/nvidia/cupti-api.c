@@ -44,7 +44,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 1
+#define CUPTI_ACTIVITY_DEBUG 0
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -198,7 +198,7 @@ cupti_write_cubin
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (errno == EEXIST) {
     close(fd);
-    return false;
+    return true;
   }
   if (fd >= 0) {
     // Success
@@ -245,6 +245,7 @@ cupti_load_callback_cuda
     used += sprintf(&file_name[used], "%02x", md5[i]);
   }
   used += sprintf(&file_name[used], "%s", ".cubin");
+  PRINT("module_id %d md5 %s\n", module_id, file_name);
 
   // Write a file if does not exist
   bool file_flag;
@@ -264,6 +265,7 @@ cupti_load_callback_cuda
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
+    PRINT("module_id %d -> hpctoolkit_module_id %d\n", module_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -281,7 +283,7 @@ cupti_unload_callback_cuda
  size_t cubin_size
 )
 {
-  cubin_id_map_delete(module_id);
+  //cubin_id_map_delete(module_id);
 }
 
 
@@ -308,7 +310,7 @@ cupti_correlation_callback_cuda
   td->overhead--;
 
   // Compress callpath
-  hpcrun_cct_delete_self(node);
+  cct_node_t *child = node;
   node = hpcrun_cct_parent(node);
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
   load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
@@ -335,9 +337,10 @@ cupti_correlation_callback_cuda
     node_addr = hpcrun_cct_addr(node);
     module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
   }
+  cct_node_t *cct_child = hpcrun_cct_insert_addr(node, hpcrun_cct_addr(child));
 
   // generate notification entry
-  cupti_worker_notification_apply(*id, node);
+  cupti_worker_notification_apply(*id, cct_child);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -619,8 +622,10 @@ cupti_buffer_completion_callback
   size_t processed = 0;
   do {
     status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
-    cupti_activity_process(activity);
-    ++processed;
+    if (status) {
+      cupti_activity_process(activity);
+      ++processed;
+    }
   } while (status);
   hpcrun_stats_acc_trace_records_add(processed);
 
