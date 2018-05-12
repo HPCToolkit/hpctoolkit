@@ -193,6 +193,9 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 // constants
 //******************************************************************************
 
+static const struct timespec nowait = {0, 0};
+
+
 
 //******************************************************************************
 // local variables
@@ -446,10 +449,10 @@ static void
 perf_thread_fini(int nevents, event_thread_t *event_thread)
 {
   // suppress perf signal while we shut down perf monitoring
-  sigset_t sig_mask;
-  sigemptyset(&sig_mask);
-  sigaddset(&sig_mask, PERF_SIGNAL);
-  monitor_real_pthread_sigmask(SIG_BLOCK, &sig_mask, NULL);
+  sigset_t perf_sigset;
+  sigemptyset(&perf_sigset);
+  sigaddset(&perf_sigset, PERF_SIGNAL);
+  monitor_real_pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
   for(int i=0; i<nevents; i++) {
     if (event_thread[i].fd >= 0) {
@@ -461,6 +464,13 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
       perf_unmmap(event_thread[i].mmap);
       event_thread[i].mmap = 0;
     }
+  }
+
+  // consume any pending PERF signals for this thread
+  for (;;) {
+    siginfo_t siginfo;
+    // negative return value means no signals left pending
+    if (sigtimedwait(&perf_sigset,  &siginfo, &nowait) < 0) break;
   }
 }
 
@@ -668,8 +678,7 @@ METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
 
-  METHOD_CALL(self, stop); // make sure stop has been called
-  // FIXME: add component shutdown code here
+  METHOD_CALL(self, stop); // stop the sample source 
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
@@ -722,8 +731,7 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  METHOD_CALL(self, stop); // make sure stop has been called
-  // FIXME: add component shutdown code here
+  METHOD_CALL(self, stop); // stop the sample source 
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
@@ -731,6 +739,7 @@ METHOD_FN(shutdown)
   perf_thread_fini(nevents, event_thread);
 
   self->state = UNINIT;
+
   TMSG(LINUX_PERF, "shutdown OK");
 }
 
@@ -1001,7 +1010,9 @@ perf_event_handler(
   int nevents = self->evl.nevents;
 
   // if finalized already, refuse to handle any more samples
-  if (perf_was_finalized(nevents, event_thread)) return 0;
+  if (perf_was_finalized(nevents, event_thread)) {
+    return 0;
+  }
 
   perf_stop_all(nevents, event_thread);
 
@@ -1039,6 +1050,7 @@ perf_event_handler(
 
     restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
+
     return 0; // tell monitor the signal has not been handled.
   }
 #endif
