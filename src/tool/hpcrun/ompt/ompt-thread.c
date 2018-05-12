@@ -77,3 +77,10 @@ ompt_thread_type_get()
 {
   return ompt_thread_type; 
 }
+
+
+int
+ompt_thread_known()
+{
+  return ompt_thread_type != ompt_thread_unknown;
+}

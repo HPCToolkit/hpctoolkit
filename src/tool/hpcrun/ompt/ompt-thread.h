@@ -60,3 +60,5 @@
 void ompt_thread_type_set(ompt_thread_type_t ttype);
 
 ompt_thread_type_t ompt_thread_type_get();
+
+int ompt_thread_known();

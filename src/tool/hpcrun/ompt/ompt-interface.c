@@ -150,7 +150,7 @@ static __thread int ompt_idle_count;
 static uint64_t
 ompt_mutex_blame_target()
 {
-  if (ompt_initialized) {
+  if (ompt_thread_known()) {
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
@@ -171,7 +171,7 @@ ompt_mutex_blame_target()
 static int
 ompt_serial_only(void *arg)
 {
-  if (ompt_initialized) {
+  if (ompt_thread_known()) {
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
@@ -215,7 +215,7 @@ ompt_thread_participates(void)
 static _Bool
 ompt_thread_needs_blame(void)
 {
-  if (ompt_initialized) {
+  if (ompt_thread_known()) {
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
     switch(state) {
@@ -574,7 +574,7 @@ ompt_tool(void)
 int 
 hpcrun_ompt_state_is_overhead()
 {
-  if (ompt_initialized) {
+  if (ompt_thread_known()) {
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
@@ -615,7 +615,7 @@ hpcrun_ompt_elide_frames()
 ompt_parallel_id_t 
 hpcrun_ompt_get_parallel_id(int level)
 {
-  if (ompt_initialized) return ompt_get_parallel_id_fn(level);
+  if (ompt_thread_known()) return ompt_get_parallel_id_fn(level);
   return 0;
 }
 
@@ -623,7 +623,7 @@ hpcrun_ompt_get_parallel_id(int level)
 ompt_state_t 
 hpcrun_ompt_get_state(uint64_t *wait_id)
 {
-  if (ompt_initialized) return ompt_get_state_fn(wait_id);
+  if (ompt_thread_known()) return ompt_get_state_fn(wait_id);
   return ompt_state_undefined;
 }
 
@@ -631,7 +631,7 @@ hpcrun_ompt_get_state(uint64_t *wait_id)
 ompt_frame_t *
 hpcrun_ompt_get_task_frame(int level)
 {
-  if (ompt_initialized) return ompt_get_task_frame_fn(level);
+  if (ompt_thread_known()) return ompt_get_task_frame_fn(level);
   return NULL;
 }
 
@@ -640,7 +640,7 @@ ompt_task_id_t
 hpcrun_ompt_get_task_id(int level)
 {
 #ifndef OMPT_V2013_07
-  if (ompt_initialized) return ompt_get_task_id_fn(level);
+  if (ompt_thread_known()) return ompt_get_task_id_fn(level);
 #endif
   return ompt_task_id_none;
 }
@@ -650,7 +650,7 @@ void *
 hpcrun_ompt_get_idle_frame()
 {
 #ifndef OMPT_V2013_07
-  if (ompt_initialized) return ompt_get_idle_frame_fn();
+  if (ompt_thread_known()) return ompt_get_idle_frame_fn();
 #endif
   return NULL;
 }
@@ -666,7 +666,7 @@ ompt_parallel_id_t
 hpcrun_ompt_outermost_parallel_id()
 { 
   ompt_parallel_id_t outer_id = 0; 
-  if (ompt_initialized) { 
+  if (ompt_thread_known()) { 
     int i = 0;
     for (;;) {
       ompt_parallel_id_t next_id = ompt_get_parallel_id_fn(i++);
