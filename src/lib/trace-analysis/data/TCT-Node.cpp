@@ -132,6 +132,7 @@ namespace TraceAnalysis {
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig), traceCluster(orig.traceCluster) {
     numIteration = orig.numIteration;
+    numAcceptedIteration = orig.numAcceptedIteration;
     
     if (orig.pendingIteration != NULL) {
       pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
@@ -179,11 +180,14 @@ namespace TraceAnalysis {
   void TCTLoopNode::finalizePendingIteration() {
     if (pendingIteration == NULL) return;
     
-    numIteration++;
     pendingIteration->finalizeLoops();
+    pendingIteration->name = "ITER_#" + std::to_string(numIteration);
+    numIteration++;
     
-    if (acceptPendingIteration()) 
+    if (acceptPendingIteration()) {
+      numAcceptedIteration++;
       acceptedIterations.push_back(pendingIteration);
+    }
     else {
       TCTProfileNode* prof = TCTProfileNode::newProfileNode(pendingIteration);
       if (rejectedIterations != NULL) {
@@ -209,7 +213,7 @@ namespace TraceAnalysis {
   TCTANode* TCTLoopNode::finalizeLoops() {
     finalizePendingIteration();
     if (acceptLoop()) {
-      if (getNumIteration() > 1)
+      if (numIteration > 1)
         print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0, traceCluster.getSamplingPeriod()).c_str());
       return NULL;
     } 

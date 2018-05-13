@@ -160,6 +160,7 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Abstract Node
   class TCTANode {
+    friend class TCTLoopNode;
   public:
     enum NodeType {
       Root,
@@ -374,8 +375,8 @@ namespace TraceAnalysis {
   // Temporal Context Tree Iteration Trace Node
   class TCTIterationTraceNode : public TCTATraceNode {
   public:
-    TCTIterationTraceNode(int id, uint64_t iterNum, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, 0, "ITER_#" + std::to_string(iterNum), depth, 
+    TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph) :
+      TCTATraceNode(Iter, id, 0, "No-name Iteration", depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
     TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Iter, id, 0, name, depth, 
@@ -399,6 +400,7 @@ namespace TraceAnalysis {
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma),
       traceCluster(traceCluster) {
         numIteration = 0;
+        numAcceptedIteration = 0;
         pendingIteration = NULL;
         rejectedIterations = NULL;
       }
@@ -424,7 +426,9 @@ namespace TraceAnalysis {
     }
     
     int getNumAcceptedIteration() {
-      return acceptedIterations.size(); 
+      if (acceptedIterations.size() != (unsigned long)numAcceptedIteration)
+        print_msg(MSG_PRIO_MAX, "ERROR: numAcceptedIteration is wrong for loop node %s.\n", name.c_str());
+      return numAcceptedIteration;
     }
     
     TCTIterationTraceNode* getAcceptedIteration(uint idx) {
@@ -453,17 +457,18 @@ namespace TraceAnalysis {
     virtual TCTANode* finalizeLoops();
   
   private:
-    int numIteration;
+    const AbstractTraceCluster& traceCluster;
     
+    int numIteration;
+    int numAcceptedIteration;
     // stores the last iteration, which may hasn't been finished yet.
     TCTIterationTraceNode* pendingIteration;
-    
     // stores all accepted iterations
     vector<TCTIterationTraceNode*> acceptedIterations;
     // all rejected iterations are merged into a Profile node.
     TCTProfileNode* rejectedIterations;
     
-    const AbstractTraceCluster& traceCluster;
+    vector<TCTANode*> representatives;
   };
   
   class TCTProfileNode : public TCTANode {

@@ -123,8 +123,8 @@ namespace TraceAnalysis {
     }
 
     void pushActiveStack(TCTANode* node, Time startTimeExclusive, Time startTimeInclusive) {
-      detectIteration(node, startTimeExclusive, startTimeInclusive);
       if (detectConflict(node)) return;
+      detectIteration(node, startTimeExclusive, startTimeInclusive);
 
       if (node->type == TCTANode::Loop) {
         // for loops with valid cfgGraph
@@ -132,7 +132,7 @@ namespace TraceAnalysis {
           // if the loop is not "split", add to stack
           pushOneNode(node, startTimeExclusive, startTimeInclusive);
           // create a iteration
-          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, 0, activeStack.size(), activeStack.back()->cfgGraph),
+          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph),
                   startTimeExclusive, startTimeInclusive);
           return;
         } else {
@@ -162,18 +162,38 @@ namespace TraceAnalysis {
           popOneNode(startTimeExclusive, startTimeInclusive);
           
           // push the new iteration
-          int iterNum = ((TCTLoopNode*)activeStack.back())->getNumIteration();
-          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, iterNum, activeStack.size(), activeStack.back()->cfgGraph),
+          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph),
                 startTimeExclusive, startTimeInclusive);
         }
       }
     }
 
+    // This function handles noises from sampling and loop augmentation. 
+    // Conflict for a non-loop node = when the node has multiple occurrence of the same child.
+    // Conflict for a loop node = when loop augmentation is wrong and a nested loop is split.
     // Return true if conflict detected. False otherwise.
-    // Conflict = a non-loop trace node where two children have the same id.
     bool detectConflict(TCTANode* node) {
-      //if the parent is a non-loop trace node, detect conflict
-      if (activeStack.back()->type != TCTANode::Loop && activeStack.back()->type != TCTANode::Prof) {
+      if (activeStack.back()->type == TCTANode::Loop) 
+        print_msg(MSG_PRIO_HIGH, "ERROR: top of activeStack is a loop node when detectConflict() is called.\n");
+      // if the parent is an iteration node, detect conflict on nested loop
+      else if (activeStack.back()->type == TCTANode::Iter) {
+        if (node->type == TCTANode::Loop) {
+          TCTIterationTraceNode* parent = (TCTIterationTraceNode*)activeStack.back();
+          // when a nested loop is split
+          if (parent->getNumChild() > 0 && parent->getChild(parent->getNumChild()-1)->id == node->id) {
+            delete node;
+            // Push the loop and the pending iteration on to active stack.
+            TCTLoopNode* loop = (TCTLoopNode*) parent->removeChild(parent->getNumChild()-1);
+            pushOneNode(loop, loop->getTime().getStartTimeExclusive(), loop->getTime().getStartTimeInclusive());
+            TCTANode* iter = loop->popPendingIteration();
+            pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive());
+            
+            return true;
+          }
+        }
+      }
+      // if the parent is a non-loop trace node, detect conflict on all child nodes
+      else if (activeStack.back()->type != TCTANode::Prof) {
         TCTATraceNode* parent = (TCTATraceNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id == node->id) {
