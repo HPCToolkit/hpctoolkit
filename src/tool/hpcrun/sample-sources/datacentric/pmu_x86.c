@@ -81,7 +81,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period)
 {
   int size = sizeof(evnames)/sizeof(const char*);
-  u64 sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_CALLCHAIN
+  u64 sample_type = PERF_SAMPLE_CALLCHAIN
                     | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
                     | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
