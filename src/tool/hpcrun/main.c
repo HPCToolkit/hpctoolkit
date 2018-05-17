@@ -987,7 +987,10 @@ monitor_thread_pre_create(void)
     return NULL;
   }
 
-  void *thread_pre_create_address = monitor_get_thread_pre_create_address();
+  struct monitor_thread_info mti;
+  monitor_get_new_thread_info(&mti);
+  void *thread_pre_create_address = mti.mti_create_return_addr;
+
   const char *module_name = lm_addr_to_module(thread_pre_create_address);
   load_module_t *module = hpcrun_loadmap_findByName(module_name);
   if (module_ignore_map_lookup(module) != NULL) {
@@ -1083,7 +1086,8 @@ monitor_init_thread(int tid, void* data)
 
   hpcrun_safe_exit();
 
-  void *thread_begin_address = monitor_get_thread_begin_address();
+  void *thread_begin_address = monitor_get_addr_thread_start();
+
   const char *module_name = lm_addr_to_module(thread_begin_address);
   load_module_t *module = hpcrun_loadmap_findByName(module_name);
   if (module_ignore_map_lookup(module) != NULL) {
