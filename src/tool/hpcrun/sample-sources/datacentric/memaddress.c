@@ -92,7 +92,7 @@ memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   // memory information exists
   void *start, *end;
-  struct datainfo_s *info = splay_lookup((void*) mmap_data->addr, &start, &end);
+  struct datatree_info_s *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
   if (info && info->context) {
     cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);

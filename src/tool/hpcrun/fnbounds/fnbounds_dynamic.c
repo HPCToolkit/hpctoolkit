@@ -256,7 +256,7 @@ insert_var_table(void **var_table, unsigned long num)
   int i;
   for (i = 0; i < num; i+=2) {
     // create splay node
-    struct datainfo_s *data_info = hpcrun_malloc(sizeof(struct datainfo_s));
+    struct datatree_info_s *data_info = hpcrun_malloc(sizeof(struct datatree_info_s));
 
     data_info->memblock = var_table[i];
     data_info->bytes    = var_table[i+1] - var_table[i];
@@ -267,7 +267,7 @@ insert_var_table(void **var_table, unsigned long num)
 
     data_info->rmemblock = data_info->memblock + data_info->bytes;
 
-    splay_insert(data_info);
+    datatree_splay_insert(data_info);
   }
 }
 
@@ -379,7 +379,7 @@ fnbounds_dso_exec(void)
   }
 
   char *events     = getenv(HPCRUN_EVENT_LIST);
-  bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+  bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
   if (datacentric) {
     TMSG(DATACENTRIC, "fnbounds_dso_exec %s", filename);
     // ----------------------------------------------------------
@@ -411,7 +411,7 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
     }
 
     char *events     = getenv(HPCRUN_EVENT_LIST);
-    bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+    bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
     if (datacentric) {
       TMSG(DATACENTRIC, "fnbounds_ensure_mapped_dso %s", module_name);
       // ----------------------------------------------------------
@@ -558,7 +558,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   }
 
   char *events     = getenv(HPCRUN_EVENT_LIST);
-  bool datacentric = strstr(events, "DATACENTRIC") != NULL;
+  bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
   if (datacentric) {
     TMSG(DATACENTRIC, "fnbounds_compute %s", filename);
     // ----------------------------------------------------------

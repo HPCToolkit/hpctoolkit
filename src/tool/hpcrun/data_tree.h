@@ -63,25 +63,25 @@
  * type definitions
  *****************************************************************************/
 
-typedef struct datainfo_s {
+typedef struct datatree_info_s {
   long        magic;
   cct_node_t *context;
   size_t      bytes;
   void       *memblock;
   void       *rmemblock;	// additional information to record remote memory
 
-  struct datainfo_s *left;
-  struct datainfo_s *right;
-} datainfo_t;
+  struct datatree_info_s *left;
+  struct datatree_info_s *right;
+} datatree_info_t;
 
 
 /* * Insert a node */ 
-void splay_insert(struct datainfo_s *node);
+void datatree_splay_insert(struct datatree_info_s *node);
 
 /* find a cct node for a given key and range */
-struct datainfo_s * splay_lookup(void *key, void **start, void **end);
+struct datatree_info_s * datatree_splay_lookup(void *key, void **start, void **end);
 
 /* remove a node containing a memory block */
-struct datainfo_s * splay_delete(void *memblock);
+struct datatree_info_s * datatree_splay_delete(void *memblock);
 
 #endif //__DATACENTRIC_DATA_TREE_H__

@@ -64,7 +64,7 @@
  * private data
  *****************************************************************************/
 
-static struct datainfo_s __thread *datacentric_tree_root = NULL;
+static struct datatree_info_s __thread *datacentric_tree_root = NULL;
 
 
 /******************************************************************************
@@ -72,23 +72,23 @@ static struct datainfo_s __thread *datacentric_tree_root = NULL;
  *****************************************************************************/
 
 
-static struct datainfo_s *
-splay(struct datainfo_s *root, void *key)
+static struct datatree_info_s *
+splay(struct datatree_info_s *root, void *key)
 {
-  REGULAR_SPLAY_TREE(datainfo_s, root, key, memblock, left, right);
+  REGULAR_SPLAY_TREE(datatree_info_s, root, key, memblock, left, right);
   return root;
 }
 
-static struct datainfo_s *
-interval_splay(struct datainfo_s *root, void *key)
+static struct datatree_info_s *
+interval_splay(struct datatree_info_s *root, void *key)
 {
-  INTERVAL_SPLAY_TREE(datainfo_s, root, key, memblock, rmemblock, left, right);
+  INTERVAL_SPLAY_TREE(datatree_info_s, root, key, memblock, rmemblock, left, right);
   return root;
 }
 
 /* interface for data-centric analysis */
-static struct datainfo_s *
-splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **end)
+static struct datatree_info_s *
+splay_lookup_with_root(struct datatree_info_s *root, void *key, void **start, void **end)
 {
   if(!root || !key) {
     return NULL;
@@ -116,7 +116,7 @@ splay_lookup_with_root(struct datainfo_s *root, void *key, void **start, void **
  * Insert a node
  */ 
 void
-splay_insert(struct datainfo_s *node)
+datatree_splay_insert(struct datatree_info_s *node)
 {
   void *memblock = node->memblock;
 
@@ -145,10 +145,10 @@ splay_insert(struct datainfo_s *node)
 /*
  * remove a node containing a memory block
  */ 
-struct datainfo_s *
-splay_delete(void *memblock)
+struct datatree_info_s *
+datatree_splay_delete(void *memblock)
 {
-  struct datainfo_s *result = NULL;
+  struct datatree_info_s *result = NULL;
 
   if (datacentric_tree_root == NULL) {
     return NULL;
@@ -175,8 +175,8 @@ splay_delete(void *memblock)
 
 
 /* interface for data-centric analysis */
-struct datainfo_s *
-splay_lookup(void *key, void **start, void **end)
+struct datatree_info_s *
+datatree_splay_lookup(void *key, void **start, void **end)
 {
   return splay_lookup_with_root(datacentric_tree_root, key, start, end);
 }

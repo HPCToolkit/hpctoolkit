@@ -182,7 +182,7 @@ static char *loc_name[4] = {
   NULL, "header", "footer", "none"
 };
 
-static int datainfo_size = sizeof(struct datainfo_s);
+static int datainfo_size = sizeof(struct datatree_info_s);
 
 static int alloc_metric_id  = -1;
 static int free_metric_id   = -1;
@@ -345,7 +345,7 @@ datacentric_initialize(void)
 //
 static int
 datacentric_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
-		       void **appl_ptr, datainfo_t **info_ptr)
+		       void **appl_ptr, datatree_info_t **info_ptr)
 {
 #if DATACENTRIC_USE_HYBRID_LAYOUT
   if (datacentric_same_page(sys_ptr, sys_ptr + datainfo_size) && align == 0) {
@@ -368,13 +368,13 @@ datacentric_get_malloc_loc(void *sys_ptr, size_t bytes, size_t align,
 // and system and leakinfo pointers.
 //
 static int
-datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datainfo_t **info_ptr)
+datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_ptr)
 {
   static int num_errors = 0;
 
 #if DATACENTRIC_USE_HYBRID_LAYOUT
   // try header first
-  *info_ptr = (datainfo_t *) (appl_ptr - datainfo_size);
+  *info_ptr = (datatree_info_t *) (appl_ptr - datainfo_size);
   if (datacentric_same_page(*info_ptr, appl_ptr)
       && (*info_ptr)->magic == DATACENTRIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
@@ -385,7 +385,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datainfo_t **info_ptr)
 
   // always try footer
   *sys_ptr = appl_ptr;
-  *info_ptr = splay_delete(appl_ptr);
+  *info_ptr = datatree_splay_delete(appl_ptr);
   if (*info_ptr == NULL) {
     return DATACENTRIC_LOC_NONE;
   }
@@ -413,7 +413,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datainfo_t **info_ptr)
 //
 static void
 datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
-		     datainfo_t *info_ptr, size_t bytes, ucontext_t *uc,
+		     datatree_info_t *info_ptr, size_t bytes, ucontext_t *uc,
 		     int loc)
 {
   char *loc_str;
@@ -453,7 +453,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     loc_str = "inactive";
   }
   if (loc == DATACENTRIC_LOC_FOOT) {
-    splay_insert(info_ptr);
+    datatree_splay_insert(info_ptr);
   }
 
   TMSG(DATACENTRIC, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
@@ -474,7 +474,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 		      int clear, ucontext_t *uc, int *ret)
 {
   void *sys_ptr, *appl_ptr;
-  datainfo_t *info_ptr;
+  datatree_info_t *info_ptr;
   char *inactive_mesg = "inactive";
   int active, loc;
   size_t size;
@@ -538,7 +538,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 //
 static void
 datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
-		    datainfo_t *info_ptr, int loc)
+		    datatree_info_t *info_ptr, int loc)
 {
   char *loc_str;
 
@@ -722,7 +722,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 void
 MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 {
-  datainfo_t *info_ptr;
+  datatree_info_t *info_ptr;
   void *sys_ptr;
   int loc;
 
@@ -760,7 +760,7 @@ void *
 MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 {
   ucontext_t uc;
-  datainfo_t *info_ptr;
+  datatree_info_t *info_ptr;
   void *ptr2, *appl_ptr, *sys_ptr;
   char *inactive_mesg = "inactive";
   int loc, loc2, active;

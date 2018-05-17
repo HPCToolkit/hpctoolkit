@@ -81,6 +81,7 @@
 
 #include "datacentric.h"
 #include "data_tree.h"
+#include "env.h"
 
 #include "place_folder.h"
 
@@ -90,7 +91,6 @@
 /******************************************************************************
  * macros 
  *****************************************************************************/
-#define EVNAME_DATACENTRIC "DATACENTRIC"
 
 
 /******************************************************************************
@@ -287,7 +287,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   if (mmap_data->addr) {
     // memory information exists
-    datainfo_t *info = splay_lookup((void*) mmap_data->addr, &start, &end);
+    datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
     if (info == NULL) {
       // unknown
