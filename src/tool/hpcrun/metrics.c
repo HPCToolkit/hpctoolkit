@@ -177,6 +177,7 @@ hpcrun_get_num_kind_metrics()
     metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
 
     for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+      hpcrun_get_num_metrics(kind);
       for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
         metric_data[l->g_id].desc = &l->val;
         metric_data[l->g_id].id = l->id;
@@ -276,6 +277,7 @@ hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
 {
   if (kind->has_set_max)
     return -1;
+
   int metric_id = num_kind_metrics++;
   metric_desc_list_t* n = NULL;
 
