@@ -823,15 +823,14 @@ METHOD_FN(process_event_list, int lush_metrics)
       //                   since the period is determine dynamically
       threshold = 1;
     }
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
+  }
+  while (i--) {
     metric_desc_t *m = hpcrun_id2metric(event_desc[i].metric);
 
-    if (m == NULL) {
-      EMSG("Error: unable to create metric #%d: %s", index, name);
-    } else {
-      m->is_frequency_metric = (event_desc[i].attr.freq == 1);
-    }
+    m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     event_desc[i].metric_desc = m;
-    METHOD_CALL(self, store_event, event_attr->config, threshold);
+
   }
   hpcrun_close_kind(lnux_kind);
 
