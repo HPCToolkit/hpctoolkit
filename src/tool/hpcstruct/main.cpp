@@ -152,16 +152,6 @@ realmain(int argc, char* argv[])
   RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // open the specified load module
-  // ------------------------------------------------------------
-  InputFile loadModule;
-  bool loadModuleOpen = loadModule.openFile(args.in_filenm);
-  if (!loadModuleOpen) {
-    // error already printed by openFile
-    exit(1);
-  }
-
-  // ------------------------------------------------------------
   // Set the demangler before reading the executable 
   // ------------------------------------------------------------
   if (!args.demangle_library.empty()) {
@@ -173,7 +163,6 @@ realmain(int argc, char* argv[])
     hpctoolkit_demangler_init(demangle_library, demangle_function);
     ourDemangle = true;
   }
-
 
   // ------------------------------------------------------------
   // Build and print the program structure tree
@@ -213,7 +202,7 @@ realmain(int argc, char* argv[])
     procNameMgr = new CilkNameMgr;
   }
 
-  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
+  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
 			       ourDemangle, procNameMgr);
 
   IOUtil::CloseStream(outFile);

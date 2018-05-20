@@ -57,13 +57,11 @@
 
 #include <lib/support/ProcNameMgr.hpp>
 
-#include "InputFile.hpp"
-
 namespace BAnal {
 namespace Struct {
 
 void
-makeStructure(InputFile & inputFile,
+makeStructure(std::string filename,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
 	      std::string gaps_filenm,

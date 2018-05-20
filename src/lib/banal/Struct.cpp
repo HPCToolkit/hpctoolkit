@@ -64,6 +64,7 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <stdlib.h>
 #include <string.h>
 #include <include/uint.h>
 
@@ -93,6 +94,7 @@
 #include <include/hpctoolkit-config.h>
 
 #include "ElfHelper.hpp"
+#include "InputFile.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
@@ -375,14 +377,24 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 // over functions, loops and blocks, make an internal inline tree and
 // write an hpcstruct file to 'outFile'.
 //
+// Fixme: may want to rethink the split between tool/hpcstruct and
+// lib/banal.
+//
 void
-makeStructure(InputFile & inputFile,
+makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * gapsFile,
 	      string gaps_filenm,
 	      bool ourDemangle,
 	      ProcNameMgr * procNmMgr)
 {
+  InputFile inputFile;
+
+  if (! inputFile.openFile(filename)) {
+    // error already printed by openFile
+    exit(1);
+  }
+
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
