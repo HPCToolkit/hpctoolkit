@@ -161,7 +161,9 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
 
   node->addr.as_info = addr->as_info; // LUSH
   node->addr.ip_norm = addr->ip_norm;
-  node->addr.lip = addr->lip;         // LUSH
+  node->addr.lip     = addr->lip;     // LUSH
+
+  node->addr.var_addr = addr->var_addr;   // datacentric
 
   node->persistent_id = new_persistent_id();
 

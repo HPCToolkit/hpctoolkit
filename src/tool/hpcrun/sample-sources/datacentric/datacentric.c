@@ -79,6 +79,9 @@
 
 #include <messages/messages.h>
 
+#include "include/queue.h"  // linked-list
+
+#include "cct_addr.h"       // struct var_addr_s
 #include "datacentric.h"
 #include "data_tree.h"
 #include "env.h"
@@ -274,6 +277,11 @@ datacentric_record_store_mem( cct_node_t *node,
     }
 }
 
+
+
+/***
+ * manage signal handler for datacentric event
+ */
 static void
 datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     perf_mmap_data_t *mmap_data)
@@ -285,32 +293,37 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   cct_node_t *node = sv.sample_node;
   void *start, *end;
 
+  // ---------------------------------------------------------
+  // memory information exists:
+  // - check if we have this variable address in our database
+  // - if it's in our database, add it to the cct node
+  // ---------------------------------------------------------
   if (mmap_data->addr) {
-    // memory information exists
     datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
-    if (info == NULL) {
-      // unknown
+    if (info == NULL || start == NULL) {
+      // unknown or not in our database
       return;
     }
-    if (info->context == (void*)DATA_STATIC_CONTEXT) {
-      // looking for the static variables
-/*      cct_node_t *root    = hpcrun_cct_get_root(sv.sample_node);
-      cct_node_t *node_st = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(static));
-      node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, node_st);*/
+    // if necessary, add the start of the variable address to the cct node
 
-    } else {
-      // looking for the dynamic variables
-/*      cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
-      cct_node_t *node_heap = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(heap_allocation));
-      cct_node_t *node_ctx  = hpcrun_insert_special_node(node_heap, info->context);
-      node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, node_ctx);*/
+    cct_addr_t* addr            = hpcrun_cct_addr(sv.sample_node);
+    struct var_addr_s *var_addr = cct_addr_find_var(&addr->var_addr, start);
+
+    if (var_addr == NULL) {
+      var_addr = (struct var_addr_s*) hpcrun_malloc(sizeof(struct var_addr_s));
+      SLIST_INSERT_HEAD(&addr->var_addr, var_addr, entries);
     }
   }
 
   if (mmap_data->data_src == 0) {
     return;
   }
+
+  // ---------------------------------------------------------
+  // data source information exist:
+  // - add metrics about load and store of the memory
+  // ---------------------------------------------------------
 
   perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
 
@@ -320,10 +333,14 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   if (data_src.mem_op & P(OP, STORE)) {
     datacentric_record_store_mem( node, &data_src );
   }
+
   TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
 
 
+/****
+ * register datacentric event
+ */
 static int
 datacentric_register(sample_source_t *self,
                      event_custom_t  *event,
@@ -358,13 +375,13 @@ datacentric_register(sample_source_t *self,
   hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-l1miss");
 
   // ------------------------------------------
-  // Memory remote load metric
+  // Memory load miss metric
   // ------------------------------------------
   metric.memload_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
 
   // ------------------------------------------
-  // Memory remote load metric
+  // Memory llc load metric
   // ------------------------------------------
   metric.memllc_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");

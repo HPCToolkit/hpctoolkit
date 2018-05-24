@@ -309,6 +309,7 @@ MY_BASE_FILES =				\
 	cct/cct_bundle.c		\
 	cct/cct_ctxt.c			\
 	cct/cct.c               	\
+	cct/cct_addr.c               	\
 	\
 	cct2metrics.c                   \
 	\
