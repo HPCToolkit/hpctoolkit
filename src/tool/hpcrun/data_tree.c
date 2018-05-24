@@ -64,7 +64,9 @@
  * private data
  *****************************************************************************/
 
-static struct datatree_info_s __thread *datacentric_tree_root = NULL;
+static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
+
+static struct datatree_info_s  *datacentric_tree_root = NULL;
 
 
 /******************************************************************************
@@ -94,7 +96,12 @@ splay_lookup_with_root(struct datatree_info_s *root, void *key, void **start, vo
     return NULL;
   }
 
+  spinlock_lock(&datatree_lock);
+
   root = interval_splay(root, key);
+
+  spinlock_unlock(&datatree_lock);
+
   if(!root) {
     return NULL;
   }
@@ -122,7 +129,10 @@ datatree_splay_insert(struct datatree_info_s *node)
 
   node->left = node->right = NULL;
 
+  spinlock_lock(&datatree_lock);
+
   if (datacentric_tree_root != NULL) {
+
     datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
     if (memblock < datacentric_tree_root->memblock) {
@@ -136,6 +146,9 @@ datatree_splay_insert(struct datatree_info_s *node)
     }
   }
   datacentric_tree_root = node;
+
+  spinlock_unlock(&datatree_lock);
+
 #if 0
   TMSG(DATACENTRIC, "[%x] add ctx %x addr %x (%d bytes)",
       node->magic, node->context, node->memblock, node->bytes);
@@ -154,9 +167,12 @@ datatree_splay_delete(void *memblock)
     return NULL;
   }
 
+  spinlock_lock(&datatree_lock);
+
   datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
   if (memblock != datacentric_tree_root->memblock) {
+    spinlock_unlock(&datatree_lock);
     return NULL;
   }
 
@@ -164,12 +180,15 @@ datatree_splay_delete(void *memblock)
 
   if (datacentric_tree_root->left == NULL) {
     datacentric_tree_root = datacentric_tree_root->right;
+    spinlock_unlock(&datatree_lock);
     return result;
   }
 
   datacentric_tree_root->left = splay(datacentric_tree_root->left, memblock);
   datacentric_tree_root->left->right = datacentric_tree_root->right;
   datacentric_tree_root =  datacentric_tree_root->left;
+
+  spinlock_unlock(&datatree_lock);
   return result;
 }
 
