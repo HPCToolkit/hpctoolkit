@@ -111,6 +111,10 @@ libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
 
+if OPT_ENABLE_OPENMP
+libHPCbanal_la_CXXFLAGS += $(OPENMP_FLAG)
+endif
+
 libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
 libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_simple_la_LIBADD   = $(MYLIBADD)

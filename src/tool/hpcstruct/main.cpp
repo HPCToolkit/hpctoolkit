@@ -73,6 +73,13 @@ using std::endl;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
+
 //**************************** Support Functions ****************************
 
 #define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
@@ -146,10 +153,26 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  bool ourDemangle = false;
+  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
+
+  // ------------------------------------------------------------
+  // Parameters on how to run hpcstruct
+  // ------------------------------------------------------------
+
+#ifdef ENABLE_OPENMP
+  opts.jobs = args.jobs;
+
+  // if --jobs is not specified, then ask the runtime library.
+  if (opts.jobs < 1) {
+    opts.jobs = omp_get_max_threads();
+  }
+  omp_set_num_threads(opts.jobs);
+#else
+  opts.jobs = 1;
+#endif
 
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
@@ -161,7 +184,7 @@ realmain(int argc, char* argv[])
       demangle_function = args.demangle_function.c_str();
     }
     hpctoolkit_demangler_init(demangle_library, demangle_function);
-    ourDemangle = true;
+    opts.ourDemangle = true;
   }
 
   // ------------------------------------------------------------
@@ -203,7 +226,7 @@ realmain(int argc, char* argv[])
   }
 
   BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			       ourDemangle, procNameMgr);
+			       procNameMgr, opts);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

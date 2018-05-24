@@ -21,6 +21,9 @@
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
 
+/* Build with openmp support */
+#undef ENABLE_OPENMP
+
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
 

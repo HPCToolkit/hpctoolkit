@@ -100,6 +100,10 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 using namespace Dyninst;
 using namespace Inline;
 using namespace InstructionAPI;
@@ -130,6 +134,8 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
+#define DISABLE_BROKEN_CODE_OBJECT_DELETE  1
+
 
 //******************************************************************************
 // variables
@@ -142,6 +148,8 @@ static const string & unknown_link = "_unknown_proc_";
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
+
+static BAnal::Struct::Options opts;
 
 
 //----------------------------------------------------------------------
@@ -158,7 +166,7 @@ typedef map <VMA, Region *> RegionMap;
 typedef vector <Statement::Ptr> StatementVector;
 
 static FileMap *
-makeSkeleton(CodeObject *, ProcNameMgr *, const string &, bool);
+makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
@@ -385,11 +393,13 @@ makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * gapsFile,
 	      string gaps_filenm,
-	      bool ourDemangle,
-	      ProcNameMgr * procNmMgr)
+	      ProcNameMgr * procNmMgr,
+	      Struct::Options & structOpts)
+	      
 {
-  InputFile inputFile;
+  opts = structOpts;
 
+  InputFile inputFile;
   if (! inputFile.openFile(filename)) {
     // error already printed by openFile
     exit(1);
@@ -440,7 +450,7 @@ makeStructure(string filename,
     }
 
     string basename = FileUtil::basename(cfilename);
-    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename, ourDemangle);
+    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
@@ -479,9 +489,11 @@ makeStructure(string filename,
 
     Output::printLoadModuleEnd(outFile);
 
+#if ! DISABLE_BROKEN_CODE_OBJECT_DELETE
     delete code_obj;
     delete code_src;
     Inline::closeSymtab();
+#endif
   }
 
   Output::printStructFileEnd(outFile, gapsFile);
@@ -678,8 +690,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 // symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename,
-	     bool ourDemangle)
+makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename)
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
@@ -776,7 +787,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
 
-	  if (ourDemangle) {
+	  if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
 	  }
 	  else if (pretty_it != sym_func->pretty_names_end()) {

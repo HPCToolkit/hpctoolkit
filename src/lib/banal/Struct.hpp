@@ -60,13 +60,26 @@
 namespace BAnal {
 namespace Struct {
 
+// Parameters on how to run makeStructure().
+class Options {
+public:
+  int  jobs;
+  bool ourDemangle;
+
+  Options()
+  {
+    jobs = 1;
+    ourDemangle = false;
+  }
+};
+
 void
 makeStructure(std::string filename,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
 	      std::string gaps_filenm,
-	      bool ourDemangle,
-	      ProcNameMgr * procNameMgr = NULL);
+	      ProcNameMgr * procNameMgr,
+	      Struct::Options & opts);
 
 } // namespace Struct
 } // namespace BAnal

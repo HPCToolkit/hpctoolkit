@@ -670,6 +670,8 @@ MPIF77
 MPICC
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
+OPT_ENABLE_OPENMP_FALSE
+OPT_ENABLE_OPENMP_TRUE
 OPT_ENABLE_HPCSERVER_FALSE
 OPT_ENABLE_HPCSERVER_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -818,6 +820,7 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
+OPENMP_FLAG
 HPCRUN_LIBCXX_PATH
 cxx_c11_flag
 CXX11_FLAG
@@ -18990,6 +18993,10 @@ $as_echo "$as_me: WARNING: unable to find flag for openmp, using -fopenmp" >&2;}
   openmp_flag='-fopenmp'
 fi
 
+OPENMP_FLAG="$openmp_flag"
+
+
+
 #-------------------------------------------------
 
 # Find the openmp library and its directory.  We add the directory to
@@ -22188,6 +22195,21 @@ $as_echo "$as_me: WARNING: bad value for enable-openmp: $enable_openmp" >&2;}
     ;;
 esac
 
+if test "$enable_openmp" = yes ; then
+
+$as_echo "#define ENABLE_OPENMP 1" >>confdefs.h
+
+fi
+
+ if test "$enable_openmp" = yes; then
+  OPT_ENABLE_OPENMP_TRUE=
+  OPT_ENABLE_OPENMP_FALSE='#'
+else
+  OPT_ENABLE_OPENMP_TRUE='#'
+  OPT_ENABLE_OPENMP_FALSE=
+fi
+
+
 
 #-------------------------------------------------
 # enable-mpi:
@@ -23348,6 +23370,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCSERVER_TRUE}" && test -z "${OPT_ENABLE_HPCSERVER_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_HPCSERVER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_OPENMP_TRUE}" && test -z "${OPT_ENABLE_OPENMP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_OPENMP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
@@ -25957,6 +25983,8 @@ $as_echo "$as_me:   CXX:       '${CXX}'" >&6;}
 $as_echo "$as_me:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C++11:     '${cxx_c11_flag}'" >&5
 $as_echo "$as_me:   C++11:     '${cxx_c11_flag}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   OpenMP:    '${OPENMP_FLAG}'" >&5
+$as_echo "$as_me:   OpenMP:    '${OPENMP_FLAG}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:      '${CCAS}'" >&5
 $as_echo "$as_me:   CCAS:      '${CCAS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCASFLAGS: '${CCASFLAGS}'" >&5

@@ -116,6 +116,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -378,6 +379,7 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
@@ -529,11 +531,8 @@ HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = main.cpp Args.cpp
-MYCXXFLAGS = \
-	@HOST_CXXFLAGS@  \
-	$(HPC_IFLAGS)  \
-	@GNUBINUTILS_IFLAGS@
-
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ \
+	$(am__append_2)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \

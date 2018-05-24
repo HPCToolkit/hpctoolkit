@@ -978,6 +978,10 @@ if test "x$openmp_flag" = xno ; then
   openmp_flag='-fopenmp'
 fi
 
+OPENMP_FLAG="$openmp_flag"
+
+AC_SUBST([OPENMP_FLAG])
+
 #-------------------------------------------------
 
 # Find the openmp library and its directory.  We add the directory to
@@ -3560,6 +3564,12 @@ case "$enable_openmp" in
     ;;
 esac
 
+if test "$enable_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP], [1], [Build with openmp support])
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
+
 
 #-------------------------------------------------
 # enable-mpi:
@@ -4282,6 +4292,7 @@ AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([  C++11:     '${cxx_c11_flag}'])
+AC_MSG_NOTICE([  OpenMP:    '${OPENMP_FLAG}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])

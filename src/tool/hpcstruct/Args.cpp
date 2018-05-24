@@ -115,6 +115,7 @@ Options: General\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
+  -j <num>             Use <num> openmp threads (jobs).\n\
 \n\
 Options: Structure recovery\n\
   -I <path>, --include <path>\n\
@@ -184,6 +185,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
+  { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+
   // Demangler library
   {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -252,6 +255,7 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  jobs = -1;
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
@@ -343,7 +347,13 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("debug-proc")) {
       dbgProcGlob = parser.getOptArg("debug-proc");
     }
-    
+
+    // Number of openmp threads (jobs)
+    if (parser.isOpt("jobs")) {
+      const string & arg = parser.getOptArg("jobs");
+      jobs = (int) CmdLineParser::toLong(arg);
+    }
+
     // Check for LUSH options (TODO)
     if (parser.isOpt("agent-c++")) {
       lush_agent = "agent-c++";

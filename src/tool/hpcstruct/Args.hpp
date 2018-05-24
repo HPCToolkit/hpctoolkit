@@ -109,6 +109,8 @@ public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
+  int jobs;
+
   // Parsed Data: optional arguments
   std::string lush_agent;
   std::string searchPathStr;          // default: "."
