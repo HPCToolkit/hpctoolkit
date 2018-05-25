@@ -115,13 +115,13 @@ libunw_find_step(hpcrun_unw_cursor_t* cursor)
   pc = (void *) tmp;
   cursor->pc_unnorm = pc;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
+  compute_normalized_ips(cursor);
   if (!found)
     {
       TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
       cursor->libunw_status = LIBUNW_FAIL;
       return STEP_ERROR;
     }
-  compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   cursor->libunw_status = LIBUNW_OK;
   return STEP_OK;
@@ -230,7 +230,7 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
   stat.count = b.count;
-  stat.errcode = status;
+  stat.error = status;
   stat.first = bitree_uwi_rightsubtree(dummy);
 
   return stat; 
@@ -246,8 +246,9 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  if (STEP_OK != libunw_take_step(cursor))
-    return STEP_STOP;
+  step_state result = libunw_take_step(cursor);
+  if (result != STEP_OK) 
+    return result;
   if (STEP_OK != libunw_find_step(cursor))
     return STEP_ERROR;
   return (STEP_OK);

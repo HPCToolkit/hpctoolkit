@@ -65,6 +65,8 @@
 #include <sys/types.h> // getpid()
 #include <setjmp.h>
 #include <signal.h>
+
+#include <stdio.h> // snprintf
 #include <stdlib.h>
 #include <string.h>
 
@@ -74,6 +76,11 @@
 //*************************** User Include Files ****************************
 
 #include "OSUtil.h"
+#include <include/linux_info.h>
+
+//*************************** macros **************************
+
+#define KERNEL_NAME_FORMAT    "%s." HOSTID_FORMAT
 
 //*************************** Forward Declarations **************************
 
@@ -178,4 +185,23 @@ OSUtil_hostid()
   }
 
   return hostid;
+}
+
+int
+OSUtil_setCustomKernelName(char *buffer, size_t max_chars)
+{
+  int n = snprintf(buffer, max_chars, KERNEL_NAME_FORMAT,
+           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+
+  return n;
+}
+
+
+int
+OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars)
+{
+  int n = snprintf(buffer, max_chars, "<" KERNEL_NAME_FORMAT ">",
+           LINUX_KERNEL_NAME_REAL, OSUtil_hostid());
+
+  return n;
 }

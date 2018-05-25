@@ -52,6 +52,7 @@
 #  where <symbol> is a symbol name passed to the linker (may be used
 #  multiple times).
 #
+
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
@@ -78,7 +79,6 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
 extra_wrap_names=
 extra_hpc_files=
-
 # Compiler and flags for array of fnbounds addresses.
 CC='@CC@ @CFLAGS@'
 
@@ -91,7 +91,6 @@ undef_names=
 
 # Space-separated list of libs (without -l) not to repeat on command line.
 no_repeat_list='hugetlbfs'
-
 #------------------------------------------------------------
 
 cleanup()
@@ -121,6 +120,28 @@ unable_to_link()
     echo
     die "unable to link"
 }
+
+
+#------------------------------------------------------------
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  Refuse to link HPCToolkit 
+# into applications if darshan will be included.
+#------------------------------------------------------------
+check_darshan()
+{
+    darshan_msg="darshan is incompatible with HPCToolkit. Unload darshan from your environment before using hpclink."
+    if test "${PE_PKGCONFIG_LIBS/darshan//}" != "${PE_PKGCONFIG_LIBS}" ; then
+        if test "$1" == "die" ; then
+           die $darshan_msg
+        else
+           echo -e "\nwarning:" $darshan_msg
+        fi
+    fi
+}
+
 
 #------------------------------------------------------------
 # Usage Message
@@ -179,6 +200,7 @@ Options: Linking
                        This is to force the linker to pull in a reference
                        for that symbol.  May be used multiple times.
 EOF
+    check_darshan "mesg"
     exit 0
 }
 
@@ -291,6 +313,8 @@ do
 	    ;;
     esac
 done
+
+check_darshan "die"
 
 #
 # In a cross-compile link, we use fnbounds from the front-end tree and
@@ -424,7 +448,12 @@ done
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
-set -- $undef_args $wrap_args $libhpcrun "$@"
+
+# FIXME: add LZMA static library at the end of libhpcrun.o
+# Ideally the library is included in libhpcrun.o, but somwehow not all
+# routines are included
+liblzma="${ext_libs_dir}/liblzma.a"
+set -- $undef_args $wrap_args $libhpcrun "$liblzma"  "$@"
 set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"

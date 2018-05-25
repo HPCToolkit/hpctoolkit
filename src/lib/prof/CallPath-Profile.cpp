@@ -96,6 +96,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-metric.h>
@@ -112,6 +113,7 @@ using namespace xml;
 //*************************** Forward Declarations **************************
 
 #define DBG 0
+#define MAX_PREFIX_CHARS 64
 
 //***************************************************************************
 
@@ -130,6 +132,10 @@ namespace Prof {
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
+
+// all fake load modules will be merged into one single load module
+// whoever the first one arrive, will be the main fake load module
+std::map<uint, uint> m_pairFakeLoadModule;
 
 namespace CallPath {
 
@@ -519,14 +525,21 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
   for (Struct::ANodeIterator it(root, filter); it.Current(); ++it) {
     Struct::ANode* strct = it.current();
-    
+
     uint id = strct->id();
     const char* nm = NULL;
 
     bool fake_procedure = false;
-    
+
     if (type == 1) { // LoadModule
-      nm = strct->name().c_str();
+      nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
+      SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
+      if (sf) {
+        sf->id(id);
+        m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+
+        nm = sf->unified_name();
+      }
     }
     else if (type == 2) { // File
       nm = getFileName(strct);	
@@ -534,20 +547,30 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
       // ---------------------------------------
-      if (m_mapFiles.find(nm) == m_mapFiles.end()) {
-	//  the filename is not in the list. Add it.
-	m_mapFiles[nm] = id;
+      Struct::LM *lm = strct->ancestorLM();
+      std::string lm_name;
+      if (lm) {
+        // use pretty_name for the key to unify different names of vmlinux 
+        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+        lm_name = lm->pretty_name();
+      }
+      std::string key = lm_name + ":" + nm;
+
+      if (m_mapFiles.find(key) == m_mapFiles.end()) {
+        //  the filename is not in the list. Add it.
+        m_mapFiles[key] = id;
 
       } else if ( nm != Prof::Struct::Tree::UnknownFileNm 
-		  && nm[0] != '\0' )
-      { // WARNING: We do not allow redundancy unless for some specific files
-	// For "unknown-file" and empty file (alien case), we allow duplicates
-	// Otherwise we remove duplicate filename, and use the existing one.
-	uint id_orig = m_mapFiles[nm];
+          && nm[0] != '\0' )
+      {
+        // WARNING: We do not allow redundancy unless for some specific files
+        // For "unknown-file" and empty file (alien case), we allow duplicates
+        // Otherwise we remove duplicate filename, and use the existing one.
+        uint id_orig   = m_mapFiles[key];
 
-	// remember that this ID needs redirection to the existing ID
-	Prof::m_mapFileIDs[id] = id_orig;
-	continue;
+        // remember that this ID needs redirection to the existing ID
+        Prof::m_mapFileIDs[id] = id_orig;
+        continue;
       }
     }
     else if (type == 3) { // Proc
@@ -555,63 +578,89 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       nm = normalize_name(proc_name, fake_procedure);
 
       if (remove_redundancy && 
-	  proc_name != Prof::Struct::Tree::UnknownProcNm)
+          proc_name != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
         // a procedure can have the same name if they are from different
         // file or different load module
         // -------------------------------------------------------
-        const char *filename = getFileName(strct);	
+        std::string completProcName;
+
+        Struct::File *file = strct->ancestorFile();
+        uint file_id       = (file != NULL ? file->id() : 0);
+        Struct::LM *lm     = strct->ancestorLM();
+        if (lm) {
+          uint lm_id = lm->id();
+          SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
+          if (sf) {
+            lm_id = sf->id();
+
+            // if we haven't set fake_file_id, we need to set it with
+            //   the file id of this struct.
+            //   otherwise, we just reuse the fake_file_id to make it consistent
+            //   across different lm
+
+            sf->fileId(file_id);
+            file_id = sf->fileId();
+          }
+
+          char buffer[MAX_PREFIX_CHARS];
+          snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
+          completProcName.append(buffer);
+        }
+
         // we need to allow the same function name from a different file
-        std::string completProcName(filename);
-        completProcName.append(":");
+        char buffer[MAX_PREFIX_CHARS];
+        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
+        completProcName.append(buffer);
+
         const char *lnm;
-  
+
         // a procedure name within the same file has to be unique.
         // However, for codes compiled with GCC, binutils (or parseAPI) 
         // it's better to compare internally with the mangled names
         Struct::Proc *proc = dynamic_cast<Struct::Proc *>(strct);
         if (proc)
         {
-  	  if (proc->linkName().empty()) {
-  	    // the proc has no mangled name
-  	    lnm = proc_name;
-  	  } else
-  	  { // get the mangled name
-           	  lnm = proc->linkName().c_str();
-  	  }
+          if (proc->linkName().empty()) {
+            // the proc has no mangled name
+            lnm = proc_name;
+          } else
+          { // get the mangled name
+            lnm = proc->linkName().c_str();
+          }
         } else
         {
-  	  lnm = strct->name().c_str();
+          lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
         if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
         {
-  	  // the proc is not in dictionary. Add it into the map.
-  	  m_mapProcs[completProcName] = id;
+          // the proc is not in dictionary. Add it into the map.
+          m_mapProcs[completProcName] = id;
         } else 
         {
-  	  // the same procedure name already exists, we need to reuse
-  	  // the previous ID instead of the original one.
-  	  uint id_orig = m_mapProcs[completProcName];
-  
-   	  // remember that this ID needs redirection to the existing ID
-  	  Prof::m_mapProcIDs[id] = id_orig;
-  	  continue;
+          // the same procedure name already exists, we need to reuse
+          // the previous ID instead of the original one.
+          uint id_orig = m_mapProcs[completProcName];
+
+          // remember that this ID needs redirection to the existing ID
+          Prof::m_mapProcIDs[id] = id_orig;
+          continue;
         }
       }
     } else {
       DIAG_Die(DIAG_UnexpectedInput);
     }
-    
+
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
-       << " n" << MakeAttrStr(nm);
-    
+           << " n" << MakeAttrStr(nm);
+
     if (fake_procedure) {
-       os << " f" << MakeAttrNum(1); 
+      os << " f" << MakeAttrNum(1);
     } 
-   
+
     os << "/>\n";
   }
 }
@@ -779,7 +828,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   if ( !(oFlags & CCT::Tree::OFlg_Debug) ) {
     os << "  <ProcedureTable>\n";
     Struct::ANodeFilter filt2(writeXML_ProcFilter, "ProcTable", 0);
-    writeXML_help(os, "Procedure", m_structure, &filt2, 3, m_remove_redundancy);
+    writeXML_help(os, "Procedure", m_structure, &filt2, 3, true /*m_remove_redundancy*/);
     os << "  </ProcedureTable>\n";
   }
 
@@ -858,7 +907,16 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
-    DIAG_Throw("error opening file");
+    if (errno == ENOENT)
+      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
+	      fnm);
+    else if (errno == EACCES)
+      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
+	      fnm);
+    else
+      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
+	      fnm);
+    exit(-1);
   }
 
   char* fsBuf = new char[HPCIO_RWBufferSz];
@@ -890,7 +948,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'fmt-hdr'");
+    fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
+	    "is not a profile or it is corrupted\n", filename);
+    exit(-1);
   }
   if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");

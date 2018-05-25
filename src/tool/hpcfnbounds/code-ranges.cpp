@@ -62,13 +62,15 @@ using namespace std;
 
 class CodeRange {
 public:
-  CodeRange(void *_start, void *_end, long _offset, DiscoverFnTy discover);
+  CodeRange(const char *_name, void *_start, void *_end, long _offset, 
+            DiscoverFnTy discover);
   void Process();
   bool Contains(void *addr);
   DiscoverFnTy Discover() { return discover; }
   void *Relocate(void *addr); 
   long Offset() { return offset; }
 private:
+  const char *name;
   void *start;
   void *end;
   long offset;
@@ -131,12 +133,12 @@ consider_possible_fn_address(void *addr)
 
 
 void 
-new_code_range(void *start, void *end, long offset, DiscoverFnTy discover)
+new_code_range(const char *sname, void *start, void *end, long offset, DiscoverFnTy discover)
 {
   // FIXME: this leaks memory in the case that the map already
   // contains an entry with the same start address.
   code_ranges.insert(pair<void*,CodeRange*>
-		     (start, new CodeRange(start, end, offset, discover)));
+		     (start, new CodeRange(sname, start, end, offset, discover)));
 }
 
 
@@ -156,9 +158,10 @@ process_code_ranges()
  * private operations 
  *****************************************************************************/
 
-CodeRange::CodeRange(void *_start, void *_end, long _offset,
+CodeRange::CodeRange(const char *sname, void *_start, void *_end, long _offset,
 		     DiscoverFnTy _discover) 
-{ 
+{
+  name = sname;
   start = _start;
   end = _end; 
   offset = _offset;
@@ -180,5 +183,5 @@ CodeRange::Contains(void *addr)
 void 
 CodeRange::Process()
 {
-  process_range(-offset, Relocate(start), Relocate(end), discover);
+  process_range(name, -offset, Relocate(start), Relocate(end), discover);
 }

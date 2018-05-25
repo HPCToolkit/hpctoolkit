@@ -66,15 +66,19 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
+LZMA_INC=@LZMA_INC@
+
 #############################################################################
 # Local settings
 #############################################################################
 
 MYSOURCES = \
 	timer.h timer.c \
-	OSUtil.h OSUtil.c
+	OSUtil.h OSUtil.c \
+	\
+	compress_lzma.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)  -I$(LZMA_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -85,6 +89,7 @@ endif
 MYLIBADD = 
 
 MYCLEAN = 
+
 
 #############################################################################
 # Automake rules

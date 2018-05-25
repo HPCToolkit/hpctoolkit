@@ -79,13 +79,6 @@ using std::endl;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include "LM.hpp"
-#include "Seg.hpp"
-#include "Insn.hpp"
-#include "Proc.hpp"
-
-#include "Dbg-LM.hpp"
-
 #include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/EmptyISA.hpp>
 #include <lib/isa/IA64ISA.hpp>
@@ -100,8 +93,14 @@ using std::endl;
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
+#include <include/linux_info.h>
 
-
+#include "LM.hpp"
+#include "Seg.hpp"
+#include "Insn.hpp"
+#include "Proc.hpp"
+#include "SimpleSymbolsFactories.hpp"
+#include "Dbg-LM.hpp"
 
 //***************************************************************************
 // macros
@@ -336,8 +335,6 @@ public:
 static void
 dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasPrinted);
 
-static bool 
-isFakeLoadModule(const char *lm);
 
 //***************************************************************************
 
@@ -358,7 +355,8 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), ksyms(0)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils),
+    m_simpleSymbols(0)
 {
 }
 
@@ -408,7 +406,7 @@ BinUtil::LM::open(const char* filenm)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
-  if (isFakeLoadModule(filenm)) {
+  if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
     return;
   }
@@ -534,16 +532,20 @@ BinUtil::LM::open(const char* filenm)
 
 
 void
-BinUtil::LM::read(LM::ReadFlg readflg)
+BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg)
 {
   // Internal sanity check.
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
- if (isFakeLoadModule(m_name.c_str())) {
-    ksyms = new KernelSymbols;
-    ksyms->parseLinuxKernelSymbols();
+  SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(m_name.c_str());
+  if (sf){
+    m_simpleSymbols = sf->create();
+    if (! m_simpleSymbols->parse(directorySet, m_name.c_str())) {
+      // Warning: we cannot parse the load module. 
+      // this is not a problem, so we can safely ignore the case
+    }
     return;
   }
 
@@ -551,7 +553,6 @@ BinUtil::LM::read(LM::ReadFlg readflg)
   readSegs();
   computeNoReturns();
 }
-
 
 
 // relocate: Internally, all operations are performed on non-relocated
@@ -596,8 +597,8 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (ksyms) {
-    STATUS = ksyms->find(vma, func);  
+  if (m_simpleSymbols) {
+    STATUS = m_simpleSymbols->findEnclosingFunction(vma, func);
     return STATUS;
   }
 
@@ -1178,6 +1179,7 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 }
 
 
+
 static void
 dumpSymFlag(std::ostream& o, 
 	    asymbol* sym, int flag, const char* txt, bool& hasPrinted)
@@ -1189,14 +1191,6 @@ dumpSymFlag(std::ostream& o,
     o << txt;
     hasPrinted = true;			\
   }
-}
-
-static bool
-isFakeLoadModule(const char *lm)
-{
-  if (lm)
-    return (lm[0] == '<' && lm[strlen(lm)-1] == '>');
-  return false;
 }
 
 

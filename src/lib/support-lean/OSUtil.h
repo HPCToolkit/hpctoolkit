@@ -63,18 +63,32 @@
 #ifndef support_lean_OSUtil_h
 #define support_lean_OSUtil_h
 
-//************************* System Include Files ****************************
+//***************************************************************************
+// system include files
+//***************************************************************************
 
 #include <stddef.h>
 
-//*************************** User Include Files ****************************
+
+
+//***************************************************************************
+// user include files
+//***************************************************************************
 
 #include <include/uint.h>
 
-//*************************** Forward Declarations **************************
+
 
 //***************************************************************************
-// 
+// macros
+//***************************************************************************
+
+#define HOSTID_FORMAT "%08lx"
+
+
+
+//***************************************************************************
+// forward declarations
 //***************************************************************************
 
 #ifdef __cplusplus
@@ -89,6 +103,17 @@ OSUtil_jobid();
 
 long
 OSUtil_hostid();
+
+// set the buffer into the customized kernel name
+// @param buffer: (in/out) the buffer to store the new name
+// @param max_chars: the number of maximum characters the buffer can store
+// @return the number of characters copied.
+int
+OSUtil_setCustomKernelName(char *buffer, size_t max_chars);
+
+// similar to above, but with fake name symbol < and >
+int
+OSUtil_setCustomKernelNameWrap(char *buffer, size_t max_chars);
 
 #ifdef __cplusplus
 }

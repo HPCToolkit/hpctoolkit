@@ -64,6 +64,7 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <string.h>
 #include <include/uint.h>
 
 #include <map>
@@ -119,6 +120,7 @@ using namespace std;
 #define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   0
 #define DEBUG_SHOW_GAPS   0
+#define DEBUG_SKEL_SUMMARY  0
 
 #if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
 #define DEBUG_ANY_ON  1
@@ -358,11 +360,9 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     }
   }
 
-  // make sure file and line are either both known or both unknown.
-  // this case probably never happens, but we do want to rely on it.
-  if (! svec.empty()
-      && (svec[0]->getFile() == "" || svec[0]->getLine() == 0))
-  {
+  // a known file and unknown line is now legal, but we require that
+  // any line map must contain a file name
+  if (! svec.empty() && svec[0]->getFile() == "") {
     svec.clear();
   }
 }
@@ -500,6 +500,23 @@ makeCodeMap(RegionMap & codeMap)
 	       << "--0x" << (start + reg->getMemSize()) << dec
 	       << "  " << reg->getRegionName() << "\n");
   }
+
+#if DEBUG_MAKE_SKEL
+  // print the list of modules
+  vector <Module *> modVec;
+  the_symtab->getAllModules(modVec);
+
+  cout << "\n";
+  for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
+    Module * mod = *mit;
+
+    if (mod != NULL) {
+      cout << "module:  0x" << hex << mod->addr() << dec
+	   << "  (lang " << mod->language() << ")"
+	   << "  " << mod->fullName() << "\n";
+    }
+  }
+#endif
 }
 
 // Note: normally, code regions don't overlap, but if they do, then we
@@ -529,6 +546,74 @@ findCodeRegion(RegionMap & codeMap, VMA vma)
 }
 
 //----------------------------------------------------------------------
+
+// getProcLineMap -- helper for makeSkeleton() to find line map info
+// for the start of a Procedure.
+//
+// Some compilers, especially for CUDA binaries, and sometimes dyninst
+// or libdwarf, omit or fail to read line map info for the first few
+// bytes of a function.  Rather than returning 'unknown file', we try
+// scanning the first few hundred bytes in the proc.
+//
+static void
+getProcLineMap(StatementVector & svec, Offset vma, Offset end,
+	       SymtabAPI::Function * sym_func)
+{
+  svec.clear();
+
+  // try a full module lookup first
+  getStatement(svec, vma, sym_func);
+  if (! svec.empty()) {
+    return;
+  }
+
+  // confine further searches to the primary module
+  if (sym_func == NULL) {
+    return;
+  }
+  Module * mod = sym_func->getModule();
+
+  if (mod == NULL) {
+    return;
+  }
+
+  // retry every 'step' bytes, but double the step every 8 tries to
+  // make a logarithmic search
+  const int init_step = 2;
+  const int max_tries = 8;
+  int step = init_step;
+  int num_tries = 0;
+  end = std::min(end, vma + 800);
+
+  for (;;) {
+    // invariant: vma does not have line info, but next might
+    Offset next = vma + step;
+    if (next >= end) {
+      break;
+    }
+
+    mod->getSourceLines(svec, next);
+    num_tries++;
+
+    if (! svec.empty()) {
+      // rescan the range [vma, next) but start over with a small step
+      if (step <= init_step) {
+	break;
+      }
+      svec.clear();
+      step = init_step;
+      num_tries = 0;
+    }
+    else {
+      // advance vma and double the step after 8 tries
+      vma = next;
+      if (num_tries >= max_tries) {
+	step *= 2;
+	num_tries = 0;
+      }
+    }
+  }
+}
 
 // addProc -- helper for makeSkeleton() to locate and add one ProcInfo
 // object into the global file map.
@@ -564,7 +649,9 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
-  cout << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
+  cout << "link:    " << pinfo->linkName << "\n"
+       << "pretty:  " << pinfo->prettyName << "\n"
+       << (alt_file ? "alt-file:  " : "file:    ") << finfo->fileName << "\n"
        << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
@@ -584,6 +671,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
+  bool is_shared = ! (the_symtab->isExec());
 
   // map of code regions to find end of region
   RegionMap codeMap;
@@ -654,7 +742,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
       // line map for symtab func
       vector <Statement::Ptr> svec;
-      getStatement(svec, sym_start, sym_func);
+      getProcLineMap(svec, sym_start, sym_end, sym_func);
 
       if (! svec.empty()) {
 	filenm = svec[0]->getFile();
@@ -683,6 +771,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	    prettynm = *pretty_it;
 	  }
 	}
+	if (is_shared) {
+	  prettynm += " (" + basename + ")";
+	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
 					sym_func->getFirstSymbol()->getIndex());
@@ -695,7 +786,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 
 	// line map for parseapi func
 	vector <Statement::Ptr> pvec;
-	getStatement(pvec, vma, sym_func);
+	getProcLineMap(pvec, vma, sym_end, sym_func);
 
 	if (! pvec.empty()) {
 	  parse_filenm = pvec[0]->getFile();
@@ -706,6 +797,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	string parse_base = FileUtil::basename(parse_filenm.c_str());
 	stringstream buf;
 	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
+	if (is_shared) {
+	  buf << " (" << basename << ")";
+	}
 
 	linknm = func->name();
 	prettynm = buf.str();
@@ -746,6 +840,12 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
 
+      // symtab doesn't offer any guidance on demangling in this case
+      if (linknm != prettynm
+	  && prettynm.find_first_of("()<>") == string::npos) {
+	prettynm = linknm;
+      }
+
       region = findCodeRegion(codeMap, vma);
       reg_start = (region != NULL) ? region->getMemOffset() : 0;
       reg_end = (region != NULL) ? (reg_start + region->getMemSize()) : 0;
@@ -766,12 +866,28 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	end = vma + 20;
       }
 
+      // treat short parseapi functions with no symtab symbol as a plt
+      // stub.  not an ideal test, but I (krentel) can't find any
+      // counter examples.
+      if (end - vma <= 32) {
+	int len = linknm.length();
+	const char *str = linknm.c_str();
+
+	if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
+	  linknm += "@plt";
+	  prettynm += "@plt";
+	}
+      }
+      if (is_shared) {
+	prettynm += " (" + basename + ")";
+      }
+
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
       addProc(fileMap, pinfo, unknown_base, NULL, vma, end);
     }
   }
 
-#if DEBUG_MAKE_SKEL
+#if DEBUG_SKEL_SUMMARY
   // print the skeleton map
   cout << "\n------------------------------------------------------------\n";
 
@@ -799,6 +915,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       }
     }
   }
+  cout << "\n";
 #endif
 
   return fileMap;
@@ -894,7 +1011,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
 	cout << "inline:  l=" << pit->getLineNum()
 	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
 #endif
@@ -984,7 +1101,6 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       mergeInlineLoop(root, empty, *it);
     }
 
-
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
       root = deleteInlinePrefix(root, prefix, strTab);
@@ -1004,7 +1120,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
 	cout << "inline:  l=" << pit->getLineNum()
 	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getProcName()) << "'\n";
+	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
       }
     }
     cout << "\n";
@@ -1330,6 +1446,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
+  long empty_index = strTab.str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1451,7 +1568,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
     DEBUG_CFG("inline:  l=" << flp.line_num
 	       << "  f='" << strTab.index2str(flp.file_index)
-	       << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	       << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	       << "'\n");
   }
 found_level:
@@ -1464,7 +1581,7 @@ found_level:
       FLPIndex flp = nit->first;
       cout << "inline:  l=" << flp.line_num
 	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	   << "'\n";
     }
   }
@@ -1492,8 +1609,8 @@ found_level:
 
   long proc_file = strTab.str2index(finfo->fileName);
   long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
-  long file_ans = 0;
-  long base_ans = 0;
+  long file_ans = empty_index;
+  long base_ans = empty_index;
   long line_ans = 0;
 
   // first choice is the file for the enclosing func that matches some
@@ -1502,7 +1619,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == proc_base) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == proc_base) {
 	file_ans = proc_file;
 	base_ans = proc_base;
 	goto found_file;
@@ -1517,7 +1635,8 @@ found_level:
     for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
       HeaderInfo * info = &(cit->second);
 
-      if (info->depth == depth_root && info->base_index == flp.base_index) {
+      if (info->depth == depth_root && info->base_index != empty_index
+	  && info->base_index == flp.base_index) {
 	file_ans = flp.file_index;
 	base_ans = flp.base_index;
 	goto found_file;
@@ -1530,7 +1649,7 @@ found_level:
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     HeaderInfo * info = &(cit->second);
 
-    if (info->depth == depth_root) {
+    if (info->depth == depth_root && info->base_index != empty_index) {
       file_ans = info->file_index;
       base_ans = info->base_index;
       goto found_file;
@@ -1538,34 +1657,44 @@ found_level:
   }
 
   // enclosing func file, but without exit cond
-  if (depth_root == 0) {
+  if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
     goto found_file;
   }
 
   // inline subtree, but without exit cond
-  if (root->nodeMap.begin() != root->nodeMap.end()) {
-    FLPIndex flp = root->nodeMap.begin()->first;
-    file_ans = flp.file_index;
-    base_ans = flp.base_index;
-    goto found_file;
+  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
+    FLPIndex flp = nit->first;
+
+    if (flp.file_index != empty_index) {
+      file_ans = flp.file_index;
+      base_ans = flp.base_index;
+      goto found_file;
+    }
   }
 
   // subloop at root level
-  if (root->loopList.begin() != root->loopList.end()) {
-    LoopInfo * linfo = *(root->loopList.begin());
-    file_ans = linfo->file_index;
-    base_ans = linfo->base_index;
-    goto found_file;
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->file_index != empty_index) {
+      file_ans = linfo->file_index;
+      base_ans = linfo->base_index;
+      goto found_file;
+    }
   }
 
   // any stmt at root level
-  if (root->stmtMap.begin() != root->stmtMap.end()) {
-    StmtInfo * sinfo = root->stmtMap.begin()->second;
-    file_ans = sinfo->file_index;
-    base_ans = sinfo->base_index;
-    line_ans = sinfo->line_num;
+  for (auto sit = root->stmtMap.begin(); sit != root->stmtMap.end(); ++sit) {
+    StmtInfo * sinfo = sit->second;
+
+    if (sinfo->file_index != empty_index) {
+      file_ans = sinfo->file_index;
+      base_ans = sinfo->base_index;
+      line_ans = sinfo->line_num;
+      break;
+    }
   }
 found_file:
 
@@ -1608,6 +1737,10 @@ found_file:
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
   VMA entry_vma = (*(entryBlocks.begin()))->start();
+
+  for (auto bit = entryBlocks.begin(); bit != entryBlocks.end(); ++bit) {
+    entry_vma = std::min(entry_vma, (*bit)->start());
+  }
 
   LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
 				file_ans, base_ans, line_ans);
@@ -1744,7 +1877,7 @@ computeGaps(VMAIntervalSet & vset, VMAIntervalSet & gaps, VMA start, VMA end)
 static string
 debugPrettyName(const string & procnm)
 {
-  string str = BinUtil::demangleProcName(procnm);
+  string str = procnm;
   string ans = "";
   size_t str_len = str.size();
   size_t pos = 0;
@@ -1820,7 +1953,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
     cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
 	 << "  f='" << nit->getFileName()
-	 << "'  p='" << debugPrettyName(nit->getProcName()) << "'\n";
+	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
 }
 
@@ -1882,8 +2015,8 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     VMA vma = cit->first;
     HeaderInfo * info = &(cit->second);
-    SrcFile::ln line;
-    string filenm;
+    SrcFile::ln line = 0;
+    string filenm = "";
 
     InlineSeqn seqn;
     analyzeAddr(seqn, vma);
@@ -1927,7 +2060,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
 
       cout << "inline:  l=" << flp.line_num
 	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	   << "'\n";
       depth++;
     }
@@ -1962,7 +2095,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     }
     cout << "inline:  l=" << flp.line_num
 	 << "  f='"  << strTab.index2str(flp.file_index)
-	 << "'  p='" << debugPrettyName(strTab.index2str(flp.proc_index))
+	 << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
 	 << "'\n";
 
     debugInlineTree(nit->second, NULL, strTab, depth + 1, expand_loops);

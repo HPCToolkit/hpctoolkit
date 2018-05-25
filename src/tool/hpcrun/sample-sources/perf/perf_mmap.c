@@ -83,7 +83,7 @@
 
 #define MMAP_OFFSET_0            0
 
-#define PERF_DATA_PAGE_EXP        0      // use 2^PERF_DATA_PAGE_EXP pages
+#define PERF_DATA_PAGE_EXP        1      // use 2^PERF_DATA_PAGE_EXP pages
 #define PERF_DATA_PAGES           (1 << PERF_DATA_PAGE_EXP)
 
 #define PERF_MMAP_SIZE(pagesz)    ((pagesz) * (PERF_DATA_PAGES + 1))
@@ -114,13 +114,22 @@ static size_t tail_mask  = 0;
 } */
 
 
+static u64
+perf_mmap_read_head(pe_mmap_t *hdr)
+{
+	u64 head = hdr->data_head;
+	rmb(); // required by the man page to issue a barrier for SMP-capable platforms
+	return head;
+}
+
 /***
  * number of reminder data in the buffer
  */
 static int
 num_of_more_perf_data(pe_mmap_t *hdr)
 {
-  return (hdr->data_head - hdr->data_tail);
+  u64 head = perf_mmap_read_head(hdr);
+  return (head - hdr->data_tail);
 }
 
 /***
@@ -153,8 +162,7 @@ perf_read(
   char *data = BUFFER_FRONT(current_perf_mmap);
 
   // compute bytes available in the circular buffer
-  u64 data_head          = current_perf_mmap->data_head;
-  rmb(); // required by the man page to issue a barrier for SMP-capable platforms
+  u64 data_head = perf_mmap_read_head(current_perf_mmap);
 
   size_t bytes_available = data_head - current_perf_mmap->data_tail;
 
@@ -293,7 +301,7 @@ static void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
   struct perf_event_mmap_page *hdr = current_perf_mmap;
-  u64 data_head = hdr->data_head;
+  u64 data_head = perf_mmap_read_head(current_perf_mmap);
   rmb();
 
   if ((hdr->data_tail + sz) > data_head)
@@ -432,21 +440,6 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
   mmap_info->header_type = hdr.type;
   mmap_info->header_misc = hdr.misc;
 
-#if 0
-	  /* this tmsg may cause data races when profiling an omp application (test2)
-	   sometimes it runs just fine, sometimes it's deadlock with the following call stacks:
-
-#0  0x00007f6f86cf2f25 in spinlock_lock (l=0x7f6f86f2bf08 <pmsg_lock>) at /home/la5/git/hpctoolkit/BUILD/../src/lib/prof-lean/spinlock.h:115
-#1  0x00007f6f86cf34f7 in hpcrun_write_msg_to_log (echo_stderr=false, add_thread_id=true, tag=0x7f6f86d0efad "LINUX_PERF", fmt=0x7f6f86d0efe0 "buffer header t: %d, s: %d, head: %d, tail: %d",)    box=0x7ffe9514a5e0) at ../../../../src/tool/hpcrun/messages/messages-async.c:238
-#2  0x00007f6f86cf30d5 in hpcrun_pmsg (tag=0x7f6f86d0efad "LINUX_PERF", fmt=0x7f6f86d0efe0 "buffer header t: %d, s: %d, head: %d, tail: %d"))    at ../../../../src/tool/hpcrun/messages/messages-async.c:154
-#3  0x00007f6f86ce949e in read_perf_buffer (current=0x7f6f845d1050, mmap_info=0x7ffe9514a760) at ../../../../src/tool/hpcrun/sample-sources/perf/perf_mmap.c:298
-#4  0x00007f6f86ce8c94 in perf_event_handler (sig=29, siginfo=0x7ffe9514aab0, context=0x7ffe9514a980) at ../../../../src/tool/hpcrun/sample-sources/perf/linux_perf.c:1269
-#5  0x00007f6f86ab23dd in monitor_signal_handler (sig=29, info=0x7ffe9514aab0, context=0x7ffe9514a980) at ../../libmonitor/src/signal.c:213
-#6  <signal handler called>
-	  */
-	  TMSG(LINUX_PERF, "buffer header t: %d, s: %d, head: %d, tail: %d", hdr.type, hdr.size,
-    		current_perf_mmap->data_tail, current_perf_mmap->data_head);
-#endif
   if (hdr.type == PERF_RECORD_SAMPLE) {
       if (hdr.size <= 0) {
         return 0;
@@ -474,15 +467,25 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (type & PERF_SAMPLE_CPU) {
         perf_read( current_perf_mmap, &cpu, sizeof(cpu) ) ;
       }
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
+  } else if (hdr.type == PERF_RECORD_LOST_SAMPLES) {
+     u64 lost_samples;
+     perf_read_u64(current_perf_mmap, &lost_samples);
+     TMSG(LINUX_PERF, "[%d] lost samples %d",
+    		 current->fd, lost_samples);
+     skip_perf_data(current_perf_mmap, hdr.size-sizeof(lost_samples))
 #endif
+
   } else {
       // not a PERF_RECORD_SAMPLE nor PERF_RECORD_SWITCH
       // skip it
       if (hdr.size <= 0) {
         return 0;
       }
-      skip_perf_data(current_perf_mmap, hdr.size);
-      TMSG(LINUX_PERF, "skip header %d  %d : %d bytes", hdr.type, hdr.misc, hdr.size);
+      //skip_perf_data(current_perf_mmap, hdr.size);
+      TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
+    		  current->fd,
+    		  hdr.type, hdr.misc, hdr.size);
   }
 
   return (has_more_perf_data(current_perf_mmap));
