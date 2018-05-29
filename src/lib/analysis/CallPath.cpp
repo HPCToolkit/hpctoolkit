@@ -1052,8 +1052,9 @@ makeReturnCountMetric(Prof::CallPath::Profile& prof)
       Prof::CCT::ANode* n_parent = n->parent();
       for (uint i = 0; i < retCntId.size(); ++i) {
 	uint mId = retCntId[i];
-	n_parent->idx(mId) += n->c_idx(mId);
-	n->idx(mId) = 0.0;
+	MetricAccessor *ma = Prof::CCT::ANode::metric_accessor(n->id());
+	Prof::CCT::ANode::metric_accessor(n_parent->id())->idx(mId) += ma->c_idx(mId);
+	ma->idx(mId) = 0.0;
       }
     }
   }

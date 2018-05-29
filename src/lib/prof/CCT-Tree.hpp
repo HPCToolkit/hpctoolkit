@@ -286,7 +286,6 @@ class Stmt;
 // ---------------------------------------------------------
 class ANode
   : public NonUniformDegreeTreeNode,
-    public MetricAccessorInterval,
     public Unique
 {
 public:
@@ -317,13 +316,32 @@ public:
 private:
   static const std::string NodeNames[TyNUMBER];
 
+  static std::vector<MetricAccessor*> s_allMetrics;
+
+  void uniqueId_incr(void)
+  {
+    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+  }
+
 
 public:
+  static MetricAccessor *metric_accessor(uint id)
+  {
+    id /= 2;			// cf. HPCRUN_FMT_RetainIdFlag
+    if (id >= s_allMetrics.size())
+      s_allMetrics.resize(id+1);
+    if (s_allMetrics[id] == NULL)
+      s_allMetrics[id] = new MetricAccessorInterval;
+    return s_allMetrics[id];
+  }
+
+
+
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(parent),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   {
-    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+    uniqueId_incr();
   }
 
   ANode(ANodeTy type,
@@ -331,7 +349,7 @@ public:
     : NonUniformDegreeTreeNode(parent),
       m_type(type), m_id(s_nextUniqueId), m_strct(strct)
   {
-    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+    uniqueId_incr();
   }
 
   virtual ~ANode()
@@ -343,7 +361,7 @@ public:
       m_type(x.m_type), /*m_id: skip*/ m_strct(x.m_strct)
   {
     zeroLinks();
-    s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
+    uniqueId_incr();
   }
 
   // deep copy of internals (but without children)
@@ -352,7 +370,6 @@ public:
   {
     if (this != &x) {
       //NonUniformDegreeTreeNode::operator=(x);
-      MetricAccessorInterval::operator=(x);
       m_type = x.m_type;
       // m_id: skip
       m_strct = x.m_strct;

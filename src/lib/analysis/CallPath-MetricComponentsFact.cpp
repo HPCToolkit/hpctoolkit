@@ -164,9 +164,10 @@ MetricComponentsFact::make(Prof::CCT::ANode* node,
     for (uint i = 0; i < m_src.size(); ++i) {
       uint mId_src = m_src[i];
       uint mId_dst = m_dst[i];
+      MetricAccessor *ma = Prof::CCT::ANode::metric_accessor(stmt->id());
 
-      stmt->idx(mId_dst) += stmt->c_idx(mId_src);
-      stmt->idx(mId_src) = 0.0;
+      Prof::CCT::ANode::metric_accessor(stmt->id())->idx(mId_dst) += ma->c_idx(mId_src);
+      ma->idx(mId_src) = 0.0;
     }
   }
 
@@ -341,7 +342,7 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
   Metric::AExprIncr* metricBalancedExpr = dynamic_cast<Metric::DerivedIncrDesc*>(metricMgr->metric(metricBalancedId))->expr();
 
   // create a copy of the CCT Metric Data
-  MetricAccessorInterval cctRoot_mdata(*cctRoot);
+  MetricAccessorInterval cctRoot_mdata(*dynamic_cast<MetricAccessorInterval *>(CCT::ANode::metric_accessor(cctRoot->id())));
   MetricAccessorInterval mai(cctRoot_mdata);
   metricBalancedExpr->finalize(mai);
   
@@ -399,16 +400,16 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
       uint mId_imbalExcl = m_imbalExcl[i];
       uint mId_idleIncl  = m_idleIncl[i];
 
-      double mval = node->c_idx(mId_src);
+      double mval = Prof::CCT::ANode::metric_accessor(node->id())->c_idx(mId_src);
 
-      balancedNode->idx(mId_imbalIncl) += mval; // FIXME: combine fn
-      balancedNode->idx(mId_imbalExcl) += mval; // FIXME: combine fn
+      Prof::CCT::ANode::metric_accessor(balancedNode->id())->idx(mId_imbalIncl) += mval; // FIXME: combine fn
+      Prof::CCT::ANode::metric_accessor(balancedNode->id())->idx(mId_imbalExcl) += mval; // FIXME: combine fn
 
       if (balancedNode != balancedFrm && balancedNodeFrm == balancedFrm) {
-	balancedFrm->idx(mId_imbalExcl) += mval; // FIXME: combine fn
+	Prof::CCT::ANode::metric_accessor(balancedFrm->id())->idx(mId_imbalExcl) += mval; // FIXME: combine fn
       }
 
-      node->idx(mId_idleIncl) += mval; // FIXME: combine fn
+      Prof::CCT::ANode::metric_accessor(node->id())->idx(mId_idleIncl) += mval; // FIXME: combine fn
     }
     
     return; // do not recur down this subtree
@@ -417,7 +418,7 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
   // -------------------------------------------------------
   // Find balanced nodes (use finalized metric values)
   // -------------------------------------------------------
-  MetricAccessorInterval node_mdata(*node);
+  MetricAccessorInterval node_mdata(*dynamic_cast<MetricAccessorInterval *>(CCT::ANode::metric_accessor(node->id())));
   MetricAccessorInterval mai(node_mdata);
   balancedExpr->finalize(mai);
   

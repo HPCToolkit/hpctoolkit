@@ -139,20 +139,6 @@ public:
     return mId;
   }
 
-  virtual void idx_shift(int npos) {
-    MetricAccessorInterval old;
-    flush();
-    table.swap(old.table);
-    cacheItem += npos;
-    for (cacheIter = old.table.begin(); cacheIter != old.table.end(); cacheIter++) {
-      MI_Vec copy(*cacheIter);
-      copy.first.first = cacheIter->first.first + npos;
-      copy.first.second = cacheIter->first.second + npos;
-      table.insert(copy);
-    }
-    lookup(cacheItem);
-  }
-
 #include <iostream>
   void dump(void)
   {
