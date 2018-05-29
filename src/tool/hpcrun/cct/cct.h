@@ -278,4 +278,28 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
 cct_node_t *
 hpcrun_cct_get_root(cct_node_t *node);
 
+// --------------------------------------------------------------
+// variable address
+// --------------------------------------------------------------
+
+struct addr_head_s;
+
+struct addr_head_s*
+hpcrun_cct_var_get_head(cct_node_t *node);
+
+void
+hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target);
+
+struct var_addr_s*
+hpcrun_cct_var_find(cct_node_t *node, void *addr);
+
+int
+hpcrun_cct_var_get_num(cct_node_t *node);
+
+struct var_addr_s*
+hpcrun_cct_var_get_first(cct_node_t *node);
+
+struct var_addr_s*
+hpcrun_cct_var_get_next(struct var_addr_s *addr);
+
 #endif // cct_h

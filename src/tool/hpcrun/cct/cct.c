@@ -87,7 +87,23 @@
 #include "cct_addr.h"
 #include "cct2metrics.h"
 
+//***************************** macros **********
+
+#define NODE_ALLOCATION  (1<<31)
+#define NODE_REGULAR     (0<<31)
+
+
 //***************************** concrete data structure definition **********
+
+// datacentric list of associated variable addresses
+// a cct (or a statemwent) can have multiple variables where
+// each variable is associated to an address
+struct var_addr_s {
+  uint64_t    address;
+  cct_node_t *node;
+
+  SLIST_ENTRY(var_addr_s) entries;
+};
 
 struct cct_node_t {
 
@@ -116,6 +132,11 @@ struct cct_node_t {
   // left and right pointers for splay tree of siblings
   struct cct_node_t* left;
   struct cct_node_t* right;
+
+  // ---------------------------------------------------------
+  // datacentric association with memory address
+  // ---------------------------------------------------------
+  SLIST_HEAD(addr_head_s, var_addr_s) var_addr;
 };
 
 //
@@ -163,7 +184,7 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->addr.ip_norm = addr->ip_norm;
   node->addr.lip     = addr->lip;     // LUSH
 
-  node->addr.var_addr = addr->var_addr;   // datacentric
+  memset(&node->var_addr, 0, sizeof(struct addr_head_s));    // datacentric
 
   node->persistent_id = new_persistent_id();
 
@@ -796,4 +817,83 @@ hpcrun_cct_get_root(cct_node_t *node)
   }
   return current;
 }
+
+
+// ------------------------------------------------------------------------------
+// data-centric to manage list of variable addresses
+//  accessed by a node
+// ------------------------------------------------------------------------------
+
+void
+hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target)
+{
+  if (node_source == NULL) return;
+
+  struct addr_head_s *head    = &(node_source->var_addr);
+  struct var_addr_s *var_addr = hpcrun_cct_var_find(node_source, start);
+
+  if (var_addr == NULL) {
+    var_addr = (struct var_addr_s*) hpcrun_malloc(sizeof(struct var_addr_s));
+    var_addr->address = (uint64_t) start;
+    var_addr->node    = node_target;
+
+    SLIST_INSERT_HEAD(head, var_addr, entries);
+  }
+}
+
+/**
+ * find an address within the list of variable address head
+ * returns var_addr_s if found, NULL otherwise
+ * */
+struct var_addr_s*
+hpcrun_cct_var_find(cct_node_t *node, void *addr)
+{
+  if (node == NULL) return NULL;
+
+  struct var_addr_s *item  = NULL;
+  struct addr_head_s *head = &(node->var_addr);
+
+  SLIST_FOREACH(item, head, entries) {
+    if (item != NULL && item->address == (uint64_t)addr)
+      return item;
+  }
+
+  return NULL;
+}
+
+int
+hpcrun_cct_var_get_num(cct_node_t *node)
+{
+  if (node == NULL) return 0;
+
+  int num_var = 0;
+  struct var_addr_s *item  = NULL;
+  struct addr_head_s *head = &(node->var_addr);
+
+  SLIST_FOREACH(item, head, entries) {
+    num_var++;
+  }
+  return num_var;
+}
+
+
+struct var_addr_s*
+hpcrun_cct_var_get_first(cct_node_t *node)
+{
+  if (node != NULL) {
+    return SLIST_FIRST(&node->var_addr);
+  }
+  return NULL;
+}
+
+struct var_addr_s*
+hpcrun_cct_var_get_next(struct var_addr_s *addr)
+{
+  if (addr != NULL) {
+    return SLIST_NEXT(addr, entries);
+  }
+  return NULL;
+}
+
+
 

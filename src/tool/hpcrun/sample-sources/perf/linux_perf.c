@@ -127,7 +127,6 @@
 // macros
 //******************************************************************************
 
-#define KERNEL_SAMPLING_ENABLED ( LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0) )
 
 #define LINUX_PERF_DEBUG 0
 

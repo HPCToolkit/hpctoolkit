@@ -48,33 +48,6 @@
 
 #include "include/queue.h"
 
-#include "cct/cct_addr.h"
+#include "cct/cct.h"
 
-/**
- * find an address within the list of variable address head
- * returns var_addr_s if found, NULL otherwise
- * */
-struct var_addr_s*
-cct_addr_find_var(struct addr_head_s *head, void *addr)
-{
-  struct var_addr_s *item = NULL;
 
-  SLIST_FOREACH(item, head, entries) {
-    if (item != NULL && item->address == (uint64_t)addr)
-      return item;
-  }
-
-  return NULL;
-}
-
-int
-cct_addr_get_num_vars(struct addr_head_s *head)
-{
-  int num_var = 0;
-  struct var_addr_s *item = NULL;
-
-  SLIST_FOREACH(item, head, entries) {
-    num_var++;
-  }
-  return num_var;
-}

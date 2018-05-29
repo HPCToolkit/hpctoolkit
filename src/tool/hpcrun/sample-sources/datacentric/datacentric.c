@@ -305,15 +305,10 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       // unknown or not in our database
       return;
     }
+    info->accessed = true;
+
     // if necessary, add the start of the variable address to the cct node
-
-    cct_addr_t* addr            = hpcrun_cct_addr(sv.sample_node);
-    struct var_addr_s *var_addr = cct_addr_find_var(&addr->var_addr, start);
-
-    if (var_addr == NULL) {
-      var_addr = (struct var_addr_s*) hpcrun_malloc(sizeof(struct var_addr_s));
-      SLIST_INSERT_HEAD(&addr->var_addr, var_addr, entries);
-    }
+    hpcrun_cct_var_add(sv.sample_node, start, info->context);
   }
 
   if (mmap_data->data_src == 0) {

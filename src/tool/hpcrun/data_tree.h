@@ -70,6 +70,8 @@ typedef struct datatree_info_s {
   void       *memblock;
   void       *rmemblock;	// additional information to record remote memory
 
+  bool    accessed; // if the variables has been accessed
+
   struct datatree_info_s *left;
   struct datatree_info_s *right;
 } datatree_info_t;

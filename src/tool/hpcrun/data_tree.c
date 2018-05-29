@@ -53,11 +53,21 @@
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
 
+#include <include/queue.h> // slist
+
+#include <memory/hpcrun-malloc.h>
+
 #include "data_tree.h"
 
 /******************************************************************************
  * type definitions
  *****************************************************************************/
+
+struct datatree_trash_s {
+  struct datatree_info_s *info;
+
+  SLIST_ENTRY(datatree_trash_s) entries;
+};
 
 
 /******************************************************************************
@@ -68,6 +78,8 @@ static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
 
 static struct datatree_info_s  *datacentric_tree_root = NULL;
 
+static SLIST_HEAD(trash_head_s, datatree_trash_s) trash_head =
+    SLIST_HEAD_INITIALIZER(trash_head_s);
 
 /******************************************************************************
  * PRIVATE splay operations
@@ -177,6 +189,14 @@ datatree_splay_delete(void *memblock)
   }
 
   result = datacentric_tree_root;
+
+  if (result->accessed) {
+    // copy and store it to the trash
+    struct datatree_trash_s *tmp = (struct datatree_trash_s*) hpcrun_malloc(sizeof(struct datatree_trash_s));
+    memcpy(tmp, result, sizeof(struct datatree_info_s));
+
+    SLIST_INSERT_HEAD(&trash_head, tmp, entries);
+  }
 
   if (datacentric_tree_root->left == NULL) {
     datacentric_tree_root = datacentric_tree_root->right;

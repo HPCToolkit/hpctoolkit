@@ -55,15 +55,6 @@
 typedef struct cct_addr_t cct_addr_t;
 
 
-// datacentric list of associated variable addresses
-// a cct (or a statemwent) can have multiple variables where
-// each variable is associated to an address
-struct var_addr_s {
-  uint64_t          address;
-  SLIST_ENTRY(var_addr_s) entries;
-};
-
-
 struct cct_addr_t {
 
   lush_assoc_info_t as_info;
@@ -77,16 +68,7 @@ struct cct_addr_t {
   // logical instruction pointer
   lush_lip_t* lip;
 
-  // datacentric association with memory address
-  SLIST_HEAD(addr_head_s, var_addr_s) var_addr;
 };
-
-
-struct var_addr_s*
-cct_addr_find_var(struct addr_head_s *head, void *addr);
-
-int
-cct_addr_get_num_vars(struct addr_head_s *head);
 
 //
 // comparison operations, mainly for cct sibling splay operations
