@@ -76,11 +76,7 @@
 // client for testing hpcfnbounds in server mode.
 //
 // Todo:
-// 1. The memory leak is fixed in symtab 8.0.
 //
-// 2. Kill Zombies!  If the server exits, it will persist as a zombie.
-// That's mostly harmless, but we could clean them up with waitpid().
-// But we need to do it non-blocking.
 
 //***************************************************************************
 
@@ -91,10 +87,12 @@
 #if 0
 #define STAND_ALONE_CLIENT
 #define EMSG(...)
+#define EEMSG(...)
 #define TMSG(...)
 #define SAMPLE_SOURCES(...)  zero_fcn()
 #define dup2(...)  zero_fcn()
 #define hpcrun_set_disabled()
+#define monitor_real_exit  exit
 #define monitor_real_fork  fork
 #define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
@@ -106,6 +104,7 @@ int zero_fcn(void) { return 0; }
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -131,7 +130,7 @@ int zero_fcn(void) { return 0; }
 #endif
 
 // Limit on memory use at which we restart the server in Meg.
-#define SERVER_MEM_LIMIT  80
+#define SERVER_MEM_LIMIT  140
 #define MIN_NUM_QUERIES   12
 
 #define SUCCESS   0
@@ -150,7 +149,7 @@ static int fdout = -1;
 static int fdin = -1;
 
 static pid_t my_pid;
-static pid_t child_pid;
+static pid_t server_pid = 0;
 
 // rusage units are Kbytes.
 static long mem_limit = SERVER_MEM_LIMIT * 1024;
@@ -327,6 +326,14 @@ shutdown_server(void)
   fdin = -1;
   client_status = SYSERV_INACTIVE;
 
+  // collect the server's exit status to reduce zombies.  but we must
+  // do it non-blocking and only for the fnbounds server, not any
+  // application child.
+  if (server_pid > 0) {
+    waitpid(server_pid, NULL, WNOHANG);
+  }
+  server_pid = 0;
+
   TMSG(SYSTEM_SERVER, "syserv shutdown");
 }
 
@@ -411,12 +418,12 @@ launch_server(void)
   fdout = sendfd[1];
   fdin = recvfd[0];
   my_pid = getpid();
-  child_pid = pid;
+  server_pid = pid;
   client_status = SYSERV_ACTIVE;
   num_queries = 0;
   mem_warning = 0;
 
-  TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) child_pid);
+  TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) server_pid);
 
   // restart sample sources
   if (sampling_is_running) {
@@ -451,7 +458,30 @@ hpcrun_syserv_init(void)
     EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
   }
 
-  return launch_server();
+  launch_server();
+
+  // check that the server answers ACK
+  struct syserv_mesg mesg;
+  if (write_mesg(SYSERV_ACK, 0) == SUCCESS && read_mesg(&mesg) == SUCCESS) {
+    return 0;
+  }
+
+  // if not, then retry one time
+  shutdown_server();
+  launch_server();
+  if (write_mesg(SYSERV_ACK, 0) == SUCCESS && read_mesg(&mesg) == SUCCESS) {
+    return 0;
+  }
+
+  // if we can't run the fnbounds server, then the profile is useless,
+  // so exit.
+  shutdown_server();
+  EEMSG("hpcrun: unable to launch the hpcfnbounds server.\n"
+	"hpcrun: check that hpctoolkit is properly configured with dyninst\n"
+	"and its prereqs (boost, elfutils, libdwarf, bzip, libz, lzma).");
+  monitor_real_exit(1);
+
+  return -1;
 }
 
 
@@ -659,7 +689,7 @@ main(int argc, char *argv[])
     errx(1, "fnbounds server failed");
   }
   printf("server: %s\n", server);
-  printf("parent: %d, child: %d\n", my_pid, child_pid);
+  printf("parent: %d, child: %d\n", my_pid, server_pid);
   printf("connected\n");
 
   query_loop();
