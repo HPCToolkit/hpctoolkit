@@ -429,7 +429,6 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->bytes      = bytes;
   info_ptr->memblock   = appl_ptr;
   info_ptr->rmemblock  = info_ptr->memblock + info_ptr->bytes;
-  info_ptr->accessed   = false;
 
   info_ptr->left      = NULL;
   info_ptr->right     = NULL;

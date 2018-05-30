@@ -305,7 +305,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       // unknown or not in our database
       return;
     }
-    info->accessed = true;
 
     // if necessary, add the start of the variable address to the cct node
     hpcrun_cct_var_add(sv.sample_node, start, info->context);

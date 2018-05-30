@@ -99,7 +99,7 @@
 // a cct (or a statemwent) can have multiple variables where
 // each variable is associated to an address
 struct var_addr_s {
-  uint64_t    address;
+
   cct_node_t *node;
 
   SLIST_ENTRY(var_addr_s) entries;
@@ -824,6 +824,28 @@ hpcrun_cct_get_root(cct_node_t *node)
 //  accessed by a node
 // ------------------------------------------------------------------------------
 
+
+/**
+ * find an address within the list of variable address head
+ * returns var_addr_s if found, NULL otherwise
+ * */
+static struct var_addr_s*
+hpcrun_cct_var_find(cct_node_t *node_source, cct_node_t *node_alloc)
+{
+  if (node_source == NULL) return NULL;
+
+  struct var_addr_s *item  = NULL;
+  struct addr_head_s *head = &(node_source->var_addr);
+
+  SLIST_FOREACH(item, head, entries) {
+    if (item != NULL && item->node == node_alloc)
+      return item;
+  }
+
+  return NULL;
+}
+
+
 void
 hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target)
 {
@@ -834,32 +856,12 @@ hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target
 
   if (var_addr == NULL) {
     var_addr = (struct var_addr_s*) hpcrun_malloc(sizeof(struct var_addr_s));
-    var_addr->address = (uint64_t) start;
     var_addr->node    = node_target;
 
     SLIST_INSERT_HEAD(head, var_addr, entries);
   }
 }
 
-/**
- * find an address within the list of variable address head
- * returns var_addr_s if found, NULL otherwise
- * */
-struct var_addr_s*
-hpcrun_cct_var_find(cct_node_t *node, void *addr)
-{
-  if (node == NULL) return NULL;
-
-  struct var_addr_s *item  = NULL;
-  struct addr_head_s *head = &(node->var_addr);
-
-  SLIST_FOREACH(item, head, entries) {
-    if (item != NULL && item->address == (uint64_t)addr)
-      return item;
-  }
-
-  return NULL;
-}
 
 int
 hpcrun_cct_var_get_num(cct_node_t *node)
@@ -881,7 +883,7 @@ struct var_addr_s*
 hpcrun_cct_var_get_first(cct_node_t *node)
 {
   if (node != NULL) {
-    return SLIST_FIRST(&node->var_addr);
+    return SLIST_FIRST(&node->var_addr)->node;
   }
   return NULL;
 }
