@@ -89,21 +89,15 @@
 
 //***************************** macros **********
 
-#define NODE_ALLOCATION  (1<<31)
-#define NODE_REGULAR     (0<<31)
-
 
 //***************************** concrete data structure definition **********
 
-// datacentric list of associated variable addresses
-// a cct (or a statemwent) can have multiple variables where
-// each variable is associated to an address
-struct var_addr_s {
+typedef struct cct_data_s {
 
-  cct_node_t *node;
+  cct_node_t *allocation_node;  // dynamic allocation
+  uint64_t   start_address;     // static allocation
 
-  SLIST_ENTRY(var_addr_s) entries;
-};
+} cct_data_t;
 
 struct cct_node_t {
 
@@ -116,10 +110,7 @@ struct cct_node_t {
   // ---------------------------------------------------------
   int32_t persistent_id;
   
- // bundle abstract address components into a data type
-  cct_addr_t addr;
-
-  bool is_leaf;
+  uint8_t node_type;
   
   // ---------------------------------------------------------
   // tree structure
@@ -136,7 +127,11 @@ struct cct_node_t {
   // ---------------------------------------------------------
   // datacentric association with memory address
   // ---------------------------------------------------------
-  SLIST_HEAD(addr_head_s, var_addr_s) var_addr;
+  union {
+    cct_data_t var;
+    cct_addr_t addr; // bundle abstract address components into a data type
+  };
+
 };
 
 //
@@ -180,11 +175,14 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
 
   memset(node, 0, sz);
 
-  node->addr.as_info = addr->as_info; // LUSH
-  node->addr.ip_norm = addr->ip_norm;
-  node->addr.lip     = addr->lip;     // LUSH
-
-  memset(&node->var_addr, 0, sizeof(struct addr_head_s));    // datacentric
+  if (addr != NULL) {
+    node->addr.as_info = addr->as_info; // LUSH
+    node->addr.ip_norm = addr->ip_norm;
+    node->addr.lip     = addr->lip;     // LUSH
+  } else {
+    node->var.allocation_node = NULL;
+    node->var.start_address   = 0;
+  }
 
   node->persistent_id = new_persistent_id();
 
@@ -193,7 +191,9 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->left = NULL;
   node->right = NULL;
 
-  node->is_leaf = false;
+  // by default it's a regular node.
+  // for other type of nodes, we need to assign it manually
+  node->node_type = NODE_TYPE_REGULAR;
 
   return node;
 }
@@ -313,9 +313,43 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
+  tmp->node_type = (uint16_t) node->node_type;
+
+  // -------------------------
+  // datacentric
+  // -------------------------
+  tmp->id_node_alloc = 0;
+  tmp->start_address = 0;
+
+  if (node->node_type == NODE_TYPE_ALLOCATION) {
+
+    // for node allocation, we add the allocation information
+    // if the node is dynamic allocation, then we point to the node
+    //   where the malloc is located
+    //
+    // if the node is stataic allocation, then we mark with DATA_STATIC_CONTEXT
+    //   since there is no information of location of the node
+
+    tmp->start_address = node->var.start_address;
+
+    uint32_t id_alloc = 0;
+
+    if (!hpcrun_cct_var_static(node)) {
+      id_alloc = node->var.allocation_node->persistent_id;
+    }
+    tmp->id_node_alloc = id_alloc;
+  }
+
+  // -------------------------
+  // metrics
+  // -------------------------
   tmp->num_metrics = my_arg->num_metrics;
   hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
 			       my_arg->num_metrics);
+
+  // -------------------------
+  // write to IO
+  // -------------------------
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -379,7 +413,7 @@ hpcrun_cct_addr(cct_node_t* node)
 bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
-  return node ? (node->is_leaf) || (!(node->children)) : false;
+  return node ? (node->node_type == NODE_TYPE_LEAF) || (!(node->children)) : false;
 }
 
 //
@@ -458,7 +492,7 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
 void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
-  node->is_leaf = true;
+  node->node_type = NODE_TYPE_LEAF;
 }
 
 //
@@ -824,78 +858,40 @@ hpcrun_cct_get_root(cct_node_t *node)
 //  accessed by a node
 // ------------------------------------------------------------------------------
 
-
-/**
- * find an address within the list of variable address head
- * returns var_addr_s if found, NULL otherwise
- * */
-static struct var_addr_s*
-hpcrun_cct_var_find(cct_node_t *node_source, cct_node_t *node_alloc)
+bool
+hpcrun_cct_var_static(cct_node_t *node)
 {
-  if (node_source == NULL) return NULL;
-
-  struct var_addr_s *item  = NULL;
-  struct addr_head_s *head = &(node_source->var_addr);
-
-  SLIST_FOREACH(item, head, entries) {
-    if (item != NULL && item->node == node_alloc)
-      return item;
-  }
-
-  return NULL;
+  uint64_t node_ip = (uint64_t) node->var.allocation_node;
+  return node_ip == DATA_STATIC_CONTEXT;
 }
-
 
 void
 hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target)
 {
   if (node_source == NULL) return;
 
-  struct addr_head_s *head    = &(node_source->var_addr);
-  struct var_addr_s *var_addr = hpcrun_cct_var_find(node_source, start);
+  cct_node_t *node = cct_node_create(NULL, node_source);
 
-  if (var_addr == NULL) {
-    var_addr = (struct var_addr_s*) hpcrun_malloc(sizeof(struct var_addr_s));
-    var_addr->node    = node_target;
+  node->node_type           = NODE_TYPE_ALLOCATION;
+  node->var.start_address   = (uint64_t)start;
+  node->var.allocation_node = node_target;
 
-    SLIST_INSERT_HEAD(head, var_addr, entries);
+  if (!hpcrun_cct_var_static(node)) {
+    TMSG(DATACENTRIC, "add var into %d alloc from %d == %d", node_source->persistent_id,
+        node_target->persistent_id, node->var.allocation_node->persistent_id);
+  }
+
+  // if the parent has no children, we add the new node to the parent.
+  // otherwise we add a new sibling on its child.
+
+  cct_node_t *child = node_source->children;
+  if (child != NULL) {
+    for(cct_node_t *sibling = child; sibling;
+        child = sibling, sibling = sibling->left);
+
+    child->left = node;
+  } else {
+    node_source->children = node;
   }
 }
-
-
-int
-hpcrun_cct_var_get_num(cct_node_t *node)
-{
-  if (node == NULL) return 0;
-
-  int num_var = 0;
-  struct var_addr_s *item  = NULL;
-  struct addr_head_s *head = &(node->var_addr);
-
-  SLIST_FOREACH(item, head, entries) {
-    num_var++;
-  }
-  return num_var;
-}
-
-
-struct var_addr_s*
-hpcrun_cct_var_get_first(cct_node_t *node)
-{
-  if (node != NULL) {
-    return SLIST_FIRST(&node->var_addr)->node;
-  }
-  return NULL;
-}
-
-struct var_addr_s*
-hpcrun_cct_var_get_next(struct var_addr_s *addr)
-{
-  if (addr != NULL) {
-    return SLIST_NEXT(addr, entries);
-  }
-  return NULL;
-}
-
-
 

@@ -91,6 +91,8 @@
 
 #include "cct_addr.h"
 
+//*************************** Macros ****************************
+
 //
 // Readability Macros (to facilitate coding initialization operations)
 //
@@ -287,15 +289,7 @@ hpcrun_cct_get_root(cct_node_t *node);
 void
 hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target);
 
-int
-hpcrun_cct_var_get_num(cct_node_t *node);
-
-struct var_addr_s;
-
-struct var_addr_s*
-hpcrun_cct_var_get_first(cct_node_t *node);
-
-struct var_addr_s*
-hpcrun_cct_var_get_next(struct var_addr_s *addr);
+bool
+hpcrun_cct_var_static(cct_node_t *node);
 
 #endif // cct_h

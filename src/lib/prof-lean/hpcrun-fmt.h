@@ -508,6 +508,17 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
+//
+// hpcrun node types
+//
+#define NODE_TYPE_REGULAR      0
+#define NODE_TYPE_LEAF         1
+#define NODE_TYPE_ALLOCATION   2
+
+
+#define DATA_STATIC_CONTEXT 0x1
+
+
 #define HPCRUN_FMT_LMId_NULL (0)
 
 #define HPCRUN_FMT_LMIp_NULL  (0)
@@ -518,6 +529,8 @@ hpcrun_fmt_doRetainId(uint32_t id)
 
 
 typedef struct hpcrun_fmt_cct_node_t {
+
+  uint16_t node_type; // see hpcrun node type above
 
   // id and parent id.  0 is reserved as a NULL value
   uint32_t id;
@@ -539,6 +552,12 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;
+
+  // -------------------------
+  // data-centric fields
+  // -------------------------
+  uint32_t id_node_alloc;
+  uint64_t start_address;
 
 } hpcrun_fmt_cct_node_t;
 

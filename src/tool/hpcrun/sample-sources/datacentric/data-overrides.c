@@ -547,9 +547,9 @@ datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
     return;
   }
 
-  if (info_ptr->context != NULL 
-      && info_ptr->context != (void*)  DATA_STATIC_CONTEXT
+  if (info_ptr->context != NULL && !hpcrun_cct_var_static(info_ptr->context)
       && is_active()) {
+
     increment_free_metric(info_ptr->context, info_ptr->bytes);
     loc_str = loc_name[loc];
   } else {

@@ -609,6 +609,8 @@ int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs)
 {
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->node_type, fs));
+
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_parent, fs));
 
@@ -617,8 +619,14 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->as_info.bits, fs));
   }
 
-  HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->lm_id, fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm_ip, fs));
+  if (x->node_type == NODE_TYPE_ALLOCATION) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_node_alloc, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->start_address, fs));
+  } else {
+
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->lm_id, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm_ip, fs));
+  }
 
   lush_lip_init(&x->lip);
   if (flags.fields.isLogicalUnwind) {
@@ -637,6 +645,8 @@ int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs)
 {
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->node_type, fs));
+
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id_parent, fs));
 
@@ -644,8 +654,16 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
     hpcfmt_int4_fwrite(x->as_info.bits, fs);
   }
 
-  hpcfmt_int2_fwrite(x->lm_id, fs);
-  hpcfmt_int8_fwrite(x->lm_ip, fs);
+  if (x->node_type == NODE_TYPE_ALLOCATION) {
+    // special data centric node: allocation node
+    hpcfmt_int4_fwrite(x->id_node_alloc, fs);
+    hpcfmt_int8_fwrite(x->start_address, fs);
+
+  } else {
+
+    hpcfmt_int2_fwrite(x->lm_id, fs);
+    hpcfmt_int8_fwrite(x->lm_ip, fs);
+  }
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fwrite(&x->lip, fs);
@@ -676,7 +694,11 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
+  if (x->node_type == NODE_TYPE_ALLOCATION) {
+    fprintf(fs, "(alloc: %u) (addr: 0x%"PRIx64") ", (uint)x->id_node_alloc, x->start_address);
+  } else {
+    fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
+  }
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");

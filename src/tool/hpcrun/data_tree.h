@@ -56,7 +56,6 @@
 
 #define DATA_STATIC_MAGIC 0xFEA12B0B
 
-#define DATA_STATIC_CONTEXT 0x1
 
 
 /******************************************************************************
