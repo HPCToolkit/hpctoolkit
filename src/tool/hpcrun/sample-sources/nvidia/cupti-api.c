@@ -19,13 +19,13 @@
 #include "nvidia.h"
 #include "cubin-id-map.h"
 #include "cubin-md5-map.h"
-#include "cupti-activity-api.h"
-//#include "cupti-activity-strings.h"
+#include "cupti-api.h"
 #include "cupti-correlation-id-map.h"
-#include "cupti-activity-queue.h"
 #include "cupti-function-id-map.h"
 #include "cupti-host-op-map.h"
 #include "cupti-callstack-ignore-map.h"
+#include "cupti-record.h"
+
 
 
 //******************************************************************************
@@ -198,7 +198,7 @@ cupti_write_cubin
   fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
   if (errno == EEXIST) {
     close(fd);
-    return false;
+    return true;
   }
   if (fd >= 0) {
     // Success
@@ -245,6 +245,7 @@ cupti_load_callback_cuda
     used += sprintf(&file_name[used], "%02x", md5[i]);
   }
   used += sprintf(&file_name[used], "%s", ".cubin");
+  PRINT("module_id %d md5 %s\n", module_id, file_name);
 
   // Write a file if does not exist
   bool file_flag;
@@ -255,7 +256,16 @@ cupti_load_callback_cuda
   if (file_flag) {
     char device_file[PATH_MAX]; 
     sprintf(device_file, "%s", file_name);
-    uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
+    uint64_t hpctoolkit_module_id;
+    load_module_t *module = NULL;
+    hpcrun_loadmap_lock();
+    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
+    } else {
+      hpctoolkit_module_id = module->id;
+    }
+    hpcrun_loadmap_unlock();
+    PRINT("module_id %d -> hpctoolkit_module_id %d\n", module_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -273,7 +283,7 @@ cupti_unload_callback_cuda
  size_t cubin_size
 )
 {
-  cubin_id_map_refcnt_update(module_id, 0);
+  //cubin_id_map_delete(module_id);
 }
 
 
@@ -327,8 +337,10 @@ cupti_correlation_callback_cuda
     node_addr = hpcrun_cct_addr(node);
     module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
   }
+  cct_node_t *cct_child = hpcrun_cct_insert_addr(node, hpcrun_cct_addr(child));
 
-  cupti_host_op_map_insert(*id, 0, NULL, node);
+  // generate notification entry
+  cupti_worker_notification_apply(*id, cct_child);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -343,7 +355,8 @@ cupti_subscriber_callback
  const CUpti_CallbackData *cb_info
 )
 {
-  cupti_stop_flag = true;
+  cupti_stop_flag_set();
+  cupti_record_init();
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -359,91 +372,103 @@ cupti_subscriber_callback
       DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
-    if ((cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH) ||                
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer_ptds) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunch) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid) ||
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync) || 
-      (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel)) {
-
-      if (cb_info->callbackSite == CUPTI_API_ENTER) {
-        uint64_t correlation_id;
-        cupti_correlation_callback(&correlation_id);
-        HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
-        PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-      }
-      if (cb_info->callbackSite == CUPTI_API_EXIT) {
-        uint64_t correlation_id;
-        HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-        PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-      }
+    switch (cb_id) {
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel:
+        {
+          // Process previous activities
+          if (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunch ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel) {
+            cupti_worker_activity_apply(cupti_activity_handle);
+          }
+          if (cb_info->callbackSite == CUPTI_API_ENTER) {
+            uint64_t correlation_id;
+            cupti_correlation_callback(&correlation_id);
+            HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
+              (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+            PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+          }
+          if (cb_info->callbackSite == CUPTI_API_EXIT) {
+            uint64_t correlation_id;
+            HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
+              (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+            PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+          }
+          break;
+        }
+      default:
+        break;
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
     switch (cb_id) {
@@ -502,20 +527,27 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:  
       #endif
-      {
-        if (cb_info->callbackSite == CUPTI_API_ENTER) {
-          uint64_t correlation_id = 0;
-          cupti_correlation_callback(&correlation_id);
-          PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-          HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+        {
+          // Process previous activities
+          if (cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000) {
+            cupti_worker_activity_apply(cupti_activity_handle);
+          }
+          if (cb_info->callbackSite == CUPTI_API_ENTER) {
+            uint64_t correlation_id = 0;
+            cupti_correlation_callback(&correlation_id);
+            PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+            HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+          }
+          if (cb_info->callbackSite == CUPTI_API_EXIT) {
+            uint64_t correlation_id = 0;
+            HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+            PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+          }
+          break;
         }
-        if (cb_info->callbackSite == CUPTI_API_EXIT) {
-          uint64_t correlation_id = 0;
-          HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-          PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-        }
-        break;
-      }
       default:
         break;
     }
@@ -559,6 +591,18 @@ cupti_buffer_alloc
 }
 
 
+bool
+cupti_buffer_cursor_advance
+(
+  uint8_t *buffer,
+  size_t size,
+  CUpti_Activity **current
+)
+{
+  return (cuptiActivityGetNextRecord(buffer, size, current) == CUPTI_SUCCESS);
+}
+
+
 void 
 cupti_buffer_completion_callback
 (
@@ -569,33 +613,28 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  // handle notifications
+  cupti_cupti_notification_apply(cupti_notification_handle);
+
   // signal advance to return pointer to first record
-  CUptiResult status;
-  CUpti_Activity *record = NULL;
+  CUpti_Activity *activity = NULL;
+  bool status = false;
+  size_t processed = 0;
+  do {
+    status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
+    if (status) {
+      cupti_activity_process(activity);
+      ++processed;
+    }
+  } while (status);
+  hpcrun_stats_acc_trace_records_add(processed);
 
-  if (validSize > 0) {
-    size_t processed = 0;
-    do {
-      status = cuptiActivityGetNextRecord(buffer, validSize, &record);
-      if (status == CUPTI_SUCCESS) {
-        cupti_activity_process(record);
-        processed++; 
-      }   
-      else if (status == CUPTI_ERROR_MAX_LIMIT_REACHED)
-        break;
-      else {
-        exit(-1);
-      }   
-    } while (true);
-    hpcrun_stats_acc_trace_records_add(processed);
-
-    // report any records dropped from the queue
-    size_t dropped = 0;
-    cupti_num_dropped_records_get(ctx, streamId, &dropped);
-    if (dropped != 0) {
-      hpcrun_stats_acc_trace_records_dropped_add(dropped);
-    }   
-  }
+  size_t dropped;
+  cupti_num_dropped_records_get(ctx, streamId, &dropped);
+  if (dropped != 0) { 
+    hpcrun_stats_acc_trace_records_dropped_add(dropped);
+  }    
+  free(buffer);
 }
 
 //-------------------------------------------------------------
@@ -807,14 +846,17 @@ cupti_sample_process
       uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
       ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, sample->pcOffset);
       cct_addr_t frm = { .ip_norm = ip };
-      // TODO(keren): directly link to target node
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-      cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-      if (host_op_node != NULL) {
+      if (host_op_entry != NULL) {
+        if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
+          cupti_correlation_id_map_delete(sample->correlationId);
+        }
+        cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
-          cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_PC_SAMPLING, (void *)sample, cct_child);
+          cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+          PRINT("cupti_sample_process %d\n", sample->stallReason);
+          cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
         }
       }
     }
@@ -860,7 +902,13 @@ cupti_sampling_record_info_process
    sri->correlationId,
    (unsigned long long)sri->totalSamples,
    (unsigned long long)sri->droppedSamples);
-
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sri->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    if (!cupti_host_op_map_total_samples_update(external_id, sri->totalSamples - sri->droppedSamples)) {
+      cupti_correlation_id_map_delete(sri->correlationId);
+    }
+  }
   hpcrun_stats_acc_samples_add(sri->totalSamples);
   hpcrun_stats_acc_samples_dropped_add(sri->droppedSamples);
 }
@@ -874,14 +922,10 @@ cupti_correlation_process
 {
   uint64_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
-  if (cupti_host_op_map_lookup(external_id) != NULL) {
-    if (cupti_correlation_id_map_lookup(correlation_id) != NULL) {
-      cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
-    } else {
-      cupti_correlation_id_map_insert(correlation_id, external_id);
-    }
+  if (cupti_correlation_id_map_lookup(correlation_id) != NULL) {
+    cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
   } else {
-    PRINT("External CorrelationId %lu cannot be found\n", external_id);
+    cupti_correlation_id_map_insert(correlation_id, external_id);
   }
   PRINT("External CorrelationId %lu\n", external_id);
   PRINT("CorrelationId %lu\n", correlation_id);
@@ -898,11 +942,13 @@ cupti_memcpy_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-    if (node != NULL) {
-      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY, (void *)activity, node);
+    if (host_op_entry != NULL) {
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
+      cupti_host_op_map_delete(external_id);
     }
+    cupti_correlation_id_map_delete(activity->correlationId);
   } else {
     PRINT("Memcpy copy CorrelationId %u cannot be found\n", activity->correlationId);
   }
@@ -922,11 +968,13 @@ cupti_memcpy2_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-    if (node != NULL) {
-      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_MEMCPY2, (void *)activity, node);
+    if (host_op_entry != NULL) {
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
+      cupti_host_op_map_delete(external_id);
     }
+    cupti_correlation_id_map_delete(activity->correlationId);
   }
   PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
@@ -982,11 +1030,15 @@ cupti_kernel_process
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
-    cupti_activity_queue_t *queue = cupti_host_op_map_entry_activity_queue_get(host_op_entry);
-    cct_node_t *node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-    if (node != NULL) {
-      cupti_activity_queue_push(queue, CUPTI_ACTIVITY_KIND_KERNEL, (void *)activity, node);
+    if (host_op_entry != NULL) {
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
+      //not delete it because it shares external_id with activity samples
+      //cupti_host_op_map_delete(external_id);
     }
+    //not delete it because it shares external_id with activity samples
+    //cupti_correlation_id_map_delete(activity->correlationId);
   }
   PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
 }
@@ -1084,14 +1136,25 @@ void
 cupti_device_flush(void *args)
 {
   if (cupti_stop_flag) {
-    cupti_stop_flag = false;
+    cupti_stop_flag_unset();
     cupti_activity_flush();
     // TODO(keren): replace cupti with sth. called device queue
-    cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
-    cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
-    cupti_activity_queue_splice(worker_queue, cupti_queue);
-    cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
+    cupti_worker_activity_apply(cupti_activity_handle);
   }
+}
+
+
+void
+cupti_stop_flag_set()
+{
+  cupti_stop_flag = true;
+}
+
+
+void
+cupti_stop_flag_unset()
+{
+  cupti_stop_flag = false;
 }
 
 
@@ -1099,10 +1162,7 @@ void
 cupti_device_shutdown(void *args)
 {
   cupti_activity_flush();
-  cupti_activity_queue_t *worker_queue = cupti_activity_queue_worker_get();
-  cupti_activity_queue_t *cupti_queue = cupti_activity_queue_cupti_get();
-  cupti_activity_queue_splice(worker_queue, cupti_queue);
-  cupti_activity_queue_apply(worker_queue, cupti_activity_attribute);
+  cupti_worker_activity_apply(cupti_activity_handle);
   cupti_callbacks_unsubscribe();
 }
 
@@ -1149,4 +1209,27 @@ cupti_modules_ignore(load_module_t *module)
     return true;
   }
   return false;
+}
+
+//******************************************************************************
+// stack functions
+//******************************************************************************
+
+void
+cupti_notification_handle(cupti_node_t *node)
+{
+  if (node->type == CUPTI_ENTRY_TYPE_NOTIFICATION) {
+    cupti_entry_notification_t *notification_entry = (cupti_entry_notification_t *)node->entry;
+    cupti_host_op_map_insert(notification_entry->host_op_id, notification_entry->cct_node, notification_entry->record);
+  }
+}
+
+
+void
+cupti_activity_handle(cupti_node_t *node)
+{
+  if (node->type == CUPTI_ENTRY_TYPE_ACTIVITY) {
+    cupti_entry_activity_t *activity_entry = (cupti_entry_activity_t *)node->entry;
+    cupti_activity_attribute(&(activity_entry->activity), activity_entry->cct_node);
+  }
 }

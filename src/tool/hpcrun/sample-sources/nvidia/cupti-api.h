@@ -1,8 +1,9 @@
-#ifndef _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
-#define _HPCTOOLKIT_CUPTI_ACTIVITY_API_H_
+#ifndef _HPCTOOLKIT_CUPTI_API_H_
+#define _HPCTOOLKIT_CUPTI_API_H_
 
 #include <hpcrun/loadmap.h>
 #include <cupti.h>
+#include "cupti-node.h"
 
 //******************************************************************************
 // constants
@@ -135,6 +136,15 @@ cupti_num_dropped_records_get
 );
 
 
+extern bool
+cupti_buffer_cursor_advance
+(
+  uint8_t *buffer,
+  size_t size,
+  CUpti_Activity **current
+);
+
+
 extern void 
 cupti_buffer_completion_callback
 (
@@ -182,6 +192,18 @@ cupti_device_shutdown
  void *args
 );
 
+
+void
+cupti_stop_flag_set
+(
+);
+
+
+void
+cupti_stop_flag_unset
+(
+);
+
 //******************************************************************************
 // ignores
 //******************************************************************************
@@ -198,6 +220,22 @@ extern bool
 cupti_modules_ignore
 (
  load_module_t *module
+);
+
+//******************************************************************************
+// notification stack
+//******************************************************************************
+
+void
+cupti_notification_handle
+(
+ cupti_node_t *node
+);
+
+void
+cupti_activity_handle
+(
+ cupti_node_t *node
 );
 
 #endif

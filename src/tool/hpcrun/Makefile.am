@@ -345,10 +345,8 @@ MY_BASE_FILES =				\
 	ompt/ompt-interface.c           \
 	ompt/ompt-region.c              \
 	ompt/ompt-state-placeholders.c  \
-	ompt/ompt-region-map.c          \
 	ompt/ompt-device-map.c          \
 	ompt/ompt-parallel-region-map.c \
-	ompt/ompt-target-map.c          \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	ompt/ompt-task-map.c            \
@@ -437,13 +435,14 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cubin-id-map.c               \
 								 sample-sources/nvidia/cubin-md5-map.c              \
 								 sample-sources/nvidia/cubin-symbols.c              \
-								 sample-sources/nvidia/cupti-ompt-api.c             \
-								 sample-sources/nvidia/cupti-activity-api.c         \
-								 sample-sources/nvidia/cupti-activity-queue.c       \
+								 sample-sources/nvidia/cupti-api.c                  \
 								 sample-sources/nvidia/cupti-correlation-id-map.c   \
 								 sample-sources/nvidia/cupti-function-id-map.c      \
 								 sample-sources/nvidia/cupti-callstack-ignore-map.c \
-								 sample-sources/nvidia/cupti-host-op-map.c 
+								 sample-sources/nvidia/cupti-host-op-map.c          \
+								 sample-sources/nvidia/cupti-stack.c        \
+								 sample-sources/nvidia/cupti-node.c         \
+								 sample-sources/nvidia/cupti-record.c 
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

@@ -4,8 +4,6 @@
 
 #include <assert.h>
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
@@ -16,53 +14,51 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "cupti-host-op-map.h"
-#include "cupti-activity-queue.h"
+#include "cupti-record.h"
 
+#define CUPTI_HOST_OP_MAP_DEBUG 0
+
+#if CUPTI_HOST_OP_MAP_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
-
 struct cupti_host_op_map_entry_s {
   uint64_t host_op_id;
-  uint64_t refcnt;
-  uint64_t host_op_seq_id;
-  cupti_activity_queue_t *cupti_activity_queue;
-  cct_node_t *target_node;
+  int samples;
+  int total_samples;
+  cupti_record_t *record;
   cct_node_t *host_op_node;
   struct cupti_host_op_map_entry_s *left;
   struct cupti_host_op_map_entry_s *right;
 }; 
-
 
 /******************************************************************************
  * global data 
  *****************************************************************************/
 
 static cupti_host_op_map_entry_t *cupti_host_op_map_root = NULL;
-static spinlock_t cupti_host_op_map_lock = SPINLOCK_UNLOCKED;
-
 
 /******************************************************************************
  * private operations
  *****************************************************************************/
 
 static cupti_host_op_map_entry_t *
-cupti_host_op_map_entry_new(uint64_t host_op_id,
-                            uint64_t host_op_seq_id,
-                            cct_node_t *target_node,
-                            cct_node_t *host_op_node)
+cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node, cupti_record_t *record)
 {
   cupti_host_op_map_entry_t *e;
   e = (cupti_host_op_map_entry_t *)hpcrun_malloc(sizeof(cupti_host_op_map_entry_t));
   e->host_op_id = host_op_id;
-  e->refcnt = 0;
-  e->host_op_seq_id = host_op_seq_id;
-  e->target_node = target_node;
+  e->samples = 0;
+  e->total_samples = 0;
   e->host_op_node = host_op_node;
+  e->record = record;
   e->left = NULL;
   e->right = NULL;
-  e->cupti_activity_queue = cupti_activity_queue_cupti_get();
 
   return e;
 }
@@ -92,8 +88,6 @@ cupti_host_op_map_delete_root()
   }
 }
 
-
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -103,12 +97,10 @@ cupti_host_op_map_lookup(uint64_t id)
 {
   cupti_host_op_map_entry_t *result = NULL;
 
-  spinlock_lock(&cupti_host_op_map_lock);
   cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, id);
   if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == id) {
     result = cupti_host_op_map_root;
   }
-  spinlock_unlock(&cupti_host_op_map_lock);
 
   TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (record %p)", id, result);
   return result;
@@ -116,18 +108,13 @@ cupti_host_op_map_lookup(uint64_t id)
 
 
 void
-cupti_host_op_map_insert(uint64_t host_op_id,
-                         uint64_t host_op_seq_id,
-                         cct_node_t *target_node,
-                         cct_node_t *host_op_node)
+cupti_host_op_map_insert(uint64_t host_op_id, cct_node_t *host_op_node, cupti_record_t *record)
 {
-  cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(host_op_id, host_op_seq_id, target_node, host_op_node);
+  cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(host_op_id, host_op_node, record);
 
-  TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_seq_id);
+  TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_node);
 
   entry->left = entry->right = NULL;
-
-  spinlock_lock(&cupti_host_op_map_lock);
 
   if (cupti_host_op_map_root != NULL) {
     cupti_host_op_map_root = 
@@ -147,63 +134,68 @@ cupti_host_op_map_insert(uint64_t host_op_id,
       assert(0);
     }
   }
+  
   cupti_host_op_map_root = entry;
-
-  spinlock_unlock(&cupti_host_op_map_lock);
 }
 
 
-// return true if record found; false otherwise
 bool
-cupti_host_op_map_refcnt_update(uint64_t host_op_id, int val)
+cupti_host_op_map_samples_increase(uint64_t host_op_id, int val)
 {
-  bool result = false; 
+  bool result = true; 
 
-  TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (update %d)", 
+  TMSG(DEFER_CTXT, "host op map samples update: id=0x%lx (update %d)", 
        host_op_id, val);
-
-  spinlock_lock(&cupti_host_op_map_lock);
 
   cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, host_op_id);
 
-  if (cupti_host_op_map_root && 
-      cupti_host_op_map_root->host_op_id == host_op_id) {
-    uint64_t old = cupti_host_op_map_root->refcnt;
-    cupti_host_op_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (%ld --> %ld)", 
-	  host_op_id, old, cupti_host_op_map_root->refcnt);
-    if (cupti_host_op_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "host op map refcnt_update: id=0x%lx (deleting)",
-           host_op_id);
+  if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == host_op_id) {
+    cupti_host_op_map_root->samples += val;
+    PRINT("total %d curr %d\n", cupti_host_op_map_root->total_samples, cupti_host_op_map_root->samples);
+    if (cupti_host_op_map_root->samples == cupti_host_op_map_root->total_samples) {
+      PRINT("sample root deleted\n");
       cupti_host_op_map_delete_root();
+      result = false;
     }
-    result = true;
   }
-
-  spinlock_unlock(&cupti_host_op_map_lock);
 
   return result;
 }
 
 
-cct_node_t *
-cupti_host_op_map_entry_target_node_get(cupti_host_op_map_entry_t *entry)
+bool
+cupti_host_op_map_total_samples_update(uint64_t host_op_id, int val)
 {
-  return entry->target_node;
+  bool result = true; 
+
+  TMSG(DEFER_CTXT, "host op map total samples update: id=0x%lx (update %d)", 
+       host_op_id, val);
+
+  cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, host_op_id);
+
+  PRINT("cupti_host_op_map_total_samples_update\n");
+  if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == host_op_id) {
+    cupti_host_op_map_root->total_samples = val;
+    PRINT("total %d curr %d\n", cupti_host_op_map_root->total_samples, cupti_host_op_map_root->samples);
+    if (cupti_host_op_map_root->samples == cupti_host_op_map_root->total_samples) {
+      PRINT("sample root deleted\n");
+      cupti_host_op_map_delete_root();
+      result = false;
+    }
+  }
+
+  return result;
 }
 
 
-uint64_t
-cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry)
+void
+cupti_host_op_map_delete(uint64_t host_op_id)
 {
-  return entry->host_op_seq_id;
-}
+  cupti_host_op_map_root = cupti_host_op_map_splay(cupti_host_op_map_root, host_op_id);
 
-
-cupti_activity_queue_t *
-cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry)
-{
-  return entry->cupti_activity_queue;
+  if (cupti_host_op_map_root && cupti_host_op_map_root->host_op_id == host_op_id) {
+    cupti_host_op_map_delete_root();
+  }
 }
 
 
@@ -211,6 +203,13 @@ cct_node_t *
 cupti_host_op_map_entry_host_op_node_get(cupti_host_op_map_entry_t *entry)
 {
   return entry->host_op_node;
+}
+
+
+cupti_record_t *
+cupti_host_op_map_entry_record_get(cupti_host_op_map_entry_t *entry)
+{
+  return entry->record;
 }
 
 
@@ -235,5 +234,3 @@ cupti_host_op_map_count()
 {
   return cupti_host_op_map_count_helper(cupti_host_op_map_root);
 }
-
-

@@ -7,16 +7,13 @@
 
 #include <stdint.h>
 
-
-
 /******************************************************************************
  * local includes
  *****************************************************************************/
 
 #include <hpcrun/cct/cct.h>
 
-#include "cupti-activity-queue.h"
-
+#include "cupti-record.h"
 
 /******************************************************************************
  * type definitions 
@@ -24,30 +21,60 @@
 
 typedef struct cupti_host_op_map_entry_s cupti_host_op_map_entry_t;
 
-
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
-cupti_host_op_map_entry_t *cupti_host_op_map_lookup(uint64_t id);
+cupti_host_op_map_entry_t *
+cupti_host_op_map_lookup
+(
+ uint64_t id
+);
 
-void cupti_host_op_map_insert(uint64_t host_op_id,
-                              uint64_t host_op_seq_id,
-                              cct_node_t *target_node,
-                              cct_node_t *host_op_node);
 
-bool cupti_host_op_map_refcnt_update(uint64_t host_op_id, int val);
+void
+cupti_host_op_map_insert
+(
+ uint64_t host_op_id,
+ cct_node_t *host_op_node,
+ cupti_record_t *record
+);
 
-uint64_t cupti_host_op_map_entry_refcnt_get(cupti_host_op_map_entry_t *entry);
+// samples == total_samples remove the node and return false
+bool
+cupti_host_op_map_samples_increase
+(
+ uint64_t host_op_id,
+ int samples
+);
 
-cct_node_t *cupti_host_op_map_entry_target_node_get(cupti_host_op_map_entry_t *entry);
+// samples == total_samples remove the node and return false
+bool
+cupti_host_op_map_total_samples_update
+(
+ uint64_t host_op_id,
+ int total_samples
+);
 
-cct_node_t *cupti_host_op_map_entry_host_op_node_get(cupti_host_op_map_entry_t *entry);
 
-uint64_t cupti_host_op_map_entry_seq_id_get(cupti_host_op_map_entry_t *entry);
+void
+cupti_host_op_map_delete
+(
+ uint64_t host_op_id
+);
 
-cupti_activity_queue_t *cupti_host_op_map_entry_activity_queue_get(cupti_host_op_map_entry_t *entry);
+
+cct_node_t *
+cupti_host_op_map_entry_host_op_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cupti_record_t *
+cupti_host_op_map_entry_record_get
+(
+ cupti_host_op_map_entry_t *entry
+);
 
 #endif
-
