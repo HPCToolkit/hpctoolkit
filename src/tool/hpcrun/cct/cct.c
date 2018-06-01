@@ -413,7 +413,7 @@ hpcrun_cct_addr(cct_node_t* node)
 bool
 hpcrun_cct_is_leaf(cct_node_t* node)
 {
-  return node ? (node->node_type == NODE_TYPE_LEAF) || (!(node->children)) : false;
+  return node ? (!(node->children)) : false;
 }
 
 //
