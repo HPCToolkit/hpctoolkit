@@ -523,10 +523,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
-  char name[10];
+  char name[128];
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
 
-  if (hpcrun_ev_is(event, CUDA_NVIDIA)) {
+  if (hpcrun_ev_is(name, CUDA_NVIDIA)) {
     // Register device finailzers
     device_finalizer_flush.fn = cupti_device_flush;
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
