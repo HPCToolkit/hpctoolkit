@@ -1495,14 +1495,22 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-	if (node->lmId_real() == LoadMap::LMId_NULL) {
-	  DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-	}
+        if (node->lmId_real() == LoadMap::LMId_NULL) {
+          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+        }
       }
 
       node->link(node_parent);
       if (node_sib) {
-	node_sib->link(node_parent);
+        node_sib->link(node_parent);
+      }
+
+      if (nodeFmt.node_type == NODE_TYPE_ALLOCATION) {
+        // special allocation node
+        // aggregate parent's metrics to this node
+        for (uint i=0; i<numMetricsSrc; i++) {
+          node->metric(i) += node_parent->metric(i);
+        }
       }
     }
     else {
@@ -1833,40 +1841,48 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     cpId = nodeId;
   }
 
-  // ----------------------------------------
-  // normalized ip (lmId and lmIP)
-  // ----------------------------------------
   LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
-  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
-  ushort opIdx = 0;
-
-  if (! (lmId <= loadmap.size() /*1-based*/) ) {
-    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-	      << " has invalid load module: " << lmId);
-    lmId = LoadMap::LMId_NULL;
-  }
-  loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
-
-  DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
-
-  // ----------------------------------------
-  // normalized lip
-  // ----------------------------------------
+  VMA lmIP        = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  ushort opIdx    = 0;
   lush_lip_t* lip = NULL;
-  if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
-    lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
-  }
 
-  if (lip) {
-    LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
+  if (nodeFmt.node_type == NODE_TYPE_ALLOCATION) {
+    // ----------------------------------------
+    // datacentric allocation node
+    // ----------------------------------------
 
-    if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
+  } else {
+    // ----------------------------------------
+    // normalized ip (lmId and lmIP)
+    // ----------------------------------------
+
+    if (! (lmId <= loadmap.size() /*1-based*/) ) {
       DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-		<< " has invalid (logical) load module: " << lip_lmId);
-      lip_lmId = LoadMap::LMId_NULL;
+          << " has invalid load module: " << lmId);
+      lmId = LoadMap::LMId_NULL;
     }
-    loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+    loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+
+    DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
+
+    // ----------------------------------------
+    // normalized lip
+    // ----------------------------------------
+    if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
+      lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
+    }
+
+    if (lip) {
+      LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
+
+      if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
+        DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
+      << " has invalid (logical) load module: " << lip_lmId);
+        lip_lmId = LoadMap::LMId_NULL;
+      }
+      loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
+    }
   }
 
   // ----------------------------------------
@@ -1894,12 +1910,12 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     double mval = 0;
     switch (mdesc->flags().fields.valFmt) {
-      case MetricFlags_ValFmt_Int:
-	mval = (double)m.i; break;
-      case MetricFlags_ValFmt_Real:
-	mval = m.r; break;
-      default:
-	DIAG_Die(DIAG_UnexpectedInput);
+    case MetricFlags_ValFmt_Int:
+      mval = (double)m.i; break;
+    case MetricFlags_ValFmt_Real:
+      mval = m.r; break;
+    default:
+      DIAG_Die(DIAG_UnexpectedInput);
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
@@ -1910,8 +1926,8 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
-	  adesc->type() == Prof::Metric::ADesc::TyExcl) {
-	i_src++;
+          adesc->type() == Prof::Metric::ADesc::TyExcl) {
+        i_src++;
       }
       // Prof::Metric::ADesc::TyIncl: reuse i_src
     }
@@ -1943,6 +1959,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (!isLeaf) {
     if (hasMetrics) {
+      if ((nodeFmt.node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS) {
+        //DIAG_Msg(0, "node mem access");
+      }
       n_leaf = n;
 
       const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;

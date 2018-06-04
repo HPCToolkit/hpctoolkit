@@ -291,7 +291,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     return;
  
   cct_node_t *node = sv.sample_node;
-  void *start, *end;
+  void *start = NULL, *end = NULL;
 
   // ---------------------------------------------------------
   // memory information exists:
@@ -307,7 +307,9 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     }
 
     // if necessary, add the start of the variable address to the cct node
-    hpcrun_cct_var_add(sv.sample_node, start, info->context);
+    hpcrun_cct_var_add(node, start, info->context);
+
+    hpcrun_cct_set_node_memaccess(node);
   }
 
   if (mmap_data->data_src == 0) {

@@ -684,8 +684,8 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 {
   // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
   // (negative) is apparent
-  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
-	  pre, (int)x->id, (int)x->id_parent);
+  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d) ",
+	  pre, (int)x->id, (int)x->id_parent, x->node_type);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];

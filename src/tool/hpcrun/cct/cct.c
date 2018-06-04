@@ -110,7 +110,7 @@ struct cct_node_t {
   // ---------------------------------------------------------
   int32_t persistent_id;
   
-  uint8_t node_type;
+  uint16_t node_type;
   
   // ---------------------------------------------------------
   // tree structure
@@ -313,7 +313,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
-  tmp->node_type = (uint16_t) node->node_type;
+  tmp->node_type = node->node_type;
 
   // -------------------------
   // datacentric
@@ -492,7 +492,25 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
 void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
-  node->node_type = NODE_TYPE_LEAF;
+  node->node_type |= NODE_TYPE_LEAF;
+}
+
+//
+// mark the node as the node that has access to the memory
+// this node type is used by data-centric profiling
+void
+hpcrun_cct_set_node_memaccess(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_MEMACCESS;
+}
+
+//
+// check if the node is a memaccess node
+// which  means the node has access to the memory hierarchy
+bool
+hpcrun_cct_is_node_memaccess(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
 //

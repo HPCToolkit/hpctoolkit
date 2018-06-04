@@ -292,4 +292,10 @@ hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target
 bool
 hpcrun_cct_var_static(cct_node_t *node);
 
+void
+hpcrun_cct_set_node_memaccess(cct_node_t *node);
+
+bool
+hpcrun_cct_is_node_memaccess(cct_node_t *node);
+
 #endif // cct_h

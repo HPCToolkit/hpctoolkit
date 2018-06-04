@@ -234,7 +234,9 @@ kernel_block_handler( event_info_t *current_event, void *context, sample_val_t s
  * - context switch metric to store the number of context switches
  ****************************************************************/
 static int
-register_blocking(sample_source_t *self, event_custom_t *event)
+register_blocking(sample_source_t *self,
+                  event_custom_t *event,
+                  struct event_threshold_s *period)
 {
   event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
   if (event_info == NULL)
