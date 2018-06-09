@@ -110,6 +110,7 @@ public:
   const std::string& getCmd() const;
 
   int jobs;
+  int jobs_parse;
 
   // Parsed Data: optional arguments
   std::string lush_agent;

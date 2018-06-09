@@ -164,14 +164,20 @@ realmain(int argc, char* argv[])
 
 #ifdef ENABLE_OPENMP
   opts.jobs = args.jobs;
+  opts.jobs_parse = args.jobs_parse;
 
-  // if --jobs is not specified, then ask the runtime library.
+  // default is to run serial (for correctness), unless --jobs is
+  // specified.
   if (opts.jobs < 1) {
-    opts.jobs = omp_get_max_threads();
+    opts.jobs = 1;
+  }
+  if (opts.jobs_parse < 1) {
+    opts.jobs_parse = opts.jobs;
   }
   omp_set_num_threads(opts.jobs);
 #else
   opts.jobs = 1;
+  opts.jobs_parse = 1;
 #endif
 
   // ------------------------------------------------------------

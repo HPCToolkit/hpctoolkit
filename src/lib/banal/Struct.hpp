@@ -64,11 +64,13 @@ namespace Struct {
 class Options {
 public:
   int  jobs;
+  int  jobs_parse;
   bool ourDemangle;
 
   Options()
   {
     jobs = 1;
+    jobs_parse = 1;
     ourDemangle = false;
   }
 };

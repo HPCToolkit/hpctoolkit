@@ -68,6 +68,7 @@
 #include <string.h>
 #include <include/uint.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -379,6 +380,15 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
+// Order GroupInfo objects by the size of their ranges, largest to
+// smallest.
+//
+static bool
+groupInfoGreaterThan(GroupInfo * g1, GroupInfo * g2)
+{
+  return (g1->end - g1->start) > (g2->end - g2->start);
+}
+
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
 // Read the binutils load module and the parseapi code object, iterate
@@ -395,7 +405,6 @@ makeStructure(string filename,
 	      string gaps_filenm,
 	      ProcNameMgr * procNmMgr,
 	      Struct::Options & structOpts)
-	      
 {
   opts = structOpts;
 
@@ -413,10 +422,6 @@ makeStructure(string filename,
     return;
   }
 
-  // insert empty string "" first
-  HPC::StringTable strTab;
-  strTab.str2index("");
-
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
@@ -424,6 +429,10 @@ makeStructure(string filename,
 
 #if DEBUG_ANY_ON
     debugElfHeader(elfFile);
+#endif
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs_parse);
 #endif
 
     Symtab * symtab = Inline::openSymtab(elfFile);
@@ -454,15 +463,42 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-    // process the files in the skeleton map
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs);
+#endif
+
+    //
+    // process the files serially to keep all of their procs within
+    // one <F> tag (or else generalize the output format).
+    //
     for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
       FileInfo * finfo = fit->second;
 
       Output::printFileBegin(outFile, finfo);
 
-      // process the groups within one file
+      // make vector of groups for openmp parallel for, and order by
+      // size, largest to smallest.
+      vector <GroupInfo *> groupVec;
       for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
 	GroupInfo * ginfo = git->second;
+	groupVec.push_back(ginfo);
+      }
+      // if sequential, then don't sort (helps keep deterministic)
+      if (opts.jobs > 1) {
+	std::sort(groupVec.begin(), groupVec.end(), groupInfoGreaterThan);
+      }
+
+      //
+      // process the groups within one file in parallel
+      //
+#pragma omp parallel for schedule(dynamic, 1)    \
+      default(none)  shared(groupVec)            \
+      firstprivate(cuda_file, finfo, symtab, outFile, gapsFile, gaps_filenm)
+
+      for (uint i = 0; i < groupVec.size(); i++) {
+	GroupInfo * ginfo = groupVec[i];
+	HPC::StringTable strTab;
+	strTab.str2index("");
 
 	// make the inline tree for all funcs in one group
 	if (cuda_file) {
@@ -472,6 +508,13 @@ makeStructure(string filename,
 	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
 	}
 
+	//
+	// print all functions within a single group
+	//
+	// fixme: write the output to a string stream, then dump the
+	// stream for better parallelism.
+	//
+#pragma omp critical (printGroup)
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
 
@@ -479,11 +522,12 @@ makeStructure(string filename,
 	    Output::printProc(outFile, gapsFile, gaps_filenm,
 			      finfo, ginfo, pinfo, strTab);
 	  }
-
 	  delete pinfo->root;
 	  pinfo->root = NULL;
-	}
-      }
+	}  // end critical
+
+      }  // end parallel for
+
       Output::printFileEnd(outFile, finfo);
     }
 

@@ -115,7 +115,9 @@ Options: General\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
-  -j <num>             Use <num> openmp threads (jobs).\n\
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
+  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
+                       default is same value for --jobs.\n\
 \n\
 Options: Structure recovery\n\
   -I <path>, --include <path>\n\
@@ -186,6 +188,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
 
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-parse",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Demangler library
   {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
@@ -256,6 +259,7 @@ void
 Args::Ctor()
 {
   jobs = -1;
+  jobs_parse = -1;
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
@@ -348,10 +352,14 @@ Args::parse(int argc, const char* const argv[])
       dbgProcGlob = parser.getOptArg("debug-proc");
     }
 
-    // Number of openmp threads (jobs)
+    // Number of openmp threads (jobs, jobs-parse)
     if (parser.isOpt("jobs")) {
       const string & arg = parser.getOptArg("jobs");
       jobs = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("jobs-parse")) {
+      const string & arg = parser.getOptArg("jobs-parse");
+      jobs_parse = (int) CmdLineParser::toLong(arg);
     }
 
     // Check for LUSH options (TODO)
