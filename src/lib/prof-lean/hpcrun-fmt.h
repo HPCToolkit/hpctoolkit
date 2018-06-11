@@ -750,6 +750,25 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
+//***************************************************************************
+// node type interface
+//***************************************************************************
+
+// return true of the node type is an allocation node
+// used by data-centric code
+static inline bool
+hpcrun_fmt_is_allocation_type(uint16_t node_type)
+{
+  return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
+}
+
+// return true of the node type is an allocation node
+// used by data-centric code
+static inline bool
+hpcrun_fmt_is_memaccess_type(uint16_t node_type)
+{
+  return ((node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS);
+}
 
 //***************************************************************************
 

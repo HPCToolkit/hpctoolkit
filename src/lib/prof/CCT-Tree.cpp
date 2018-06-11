@@ -1356,6 +1356,12 @@ Stmt::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
 
+  // additional data-centric information
+  if (m_node_alloc != NULL) {
+    self += " d=\""   + StrUtil::toStr(m_node_alloc->id(), 10) +
+            "\" a=\"" + StrUtil::toStr(m_start_address, 16) + "\" ";
+  }
+
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " n=\"" + nameDyn() + "\"";
   }
@@ -1374,6 +1380,7 @@ Stmt::toStringMe(uint oFlags) const
 
   return self;
 }
+
 
 
 std::ostream&

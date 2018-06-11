@@ -321,7 +321,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id_node_alloc = 0;
   tmp->start_address = 0;
 
-  if (node->node_type == NODE_TYPE_ALLOCATION) {
+  if (hpcrun_fmt_is_allocation_type(node->node_type)) {
 
     // for node allocation, we add the allocation information
     // if the node is dynamic allocation, then we point to the node

@@ -70,6 +70,7 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <vector>
 #include <map>
 #include <algorithm>
 
@@ -1379,8 +1380,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 {
-  typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
-
   DIAG_Assert(infs, "Bad file descriptor!");
   
   CCTIdToCCTNodeMap cctNodeMap;
@@ -1422,6 +1421,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     : NULL;
 
   ExprEval eval;
+  std::vector<CCT::Stmt*> listMemAccessNodes;
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1481,45 +1481,79 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 #endif
 
-    // ----------------------------------------------------------
-    // Create node and link to parent
-    // ----------------------------------------------------------
+    if (hpcrun_fmt_is_allocation_type(nodeFmt.node_type) && node_parent) {
+      // special node for datacentric: this node points to the source of
+      //  variable allocation
+      // there is no need to add a new node since the information is embedded
+      // to the parent
+      if (typeid(*node_parent) == typeid(CCT::Stmt)) {
+        CCT::Stmt *parent_stmt = (CCT::Stmt*) node_parent;
 
-    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-      cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
-    CCT::ADynNode* node = n2.first;
-    CCT::ADynNode* node_sib = n2.second;
+        parent_stmt->id_node_alloc(nodeFmt.id_node_alloc);
+        parent_stmt->start_address(nodeFmt.start_address);
 
-    DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
-
-    if (node_parent) {
-      // If 'node' is not the secondary root, perform sanity check
-      if (!node->isSecondarySynthRoot()) {
-        if (node->lmId_real() == LoadMap::LMId_NULL) {
-          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-        }
-      }
-
-      node->link(node_parent);
-      if (node_sib) {
-        node_sib->link(node_parent);
-      }
-
-      if (nodeFmt.node_type == NODE_TYPE_ALLOCATION) {
-        // special allocation node
-        // aggregate parent's metrics to this node
-        for (uint i=0; i<numMetricsSrc; i++) {
-          node->metric(i) += node_parent->metric(i);
-        }
+        listMemAccessNodes.push_back(parent_stmt);
+        DIAG_DevMsgIf(0, "add mem access " << nodeFmt.id_node_alloc <<
+                         " @ " << nodeFmt.start_address);
       }
     }
     else {
-      DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
-      DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-      cct->root(node);
-    }
+      // ----------------------------------------------------------
+      // Create node and link to parent
+      // ----------------------------------------------------------
 
-    cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+      std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
+          cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
+      CCT::ADynNode* node = n2.first;
+      CCT::ADynNode* node_sib = n2.second;
+
+      DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
+
+      if (node_parent) {
+        // If 'node' is not the secondary root, perform sanity check
+        if (!node->isSecondarySynthRoot()) {
+          if (node->lmId_real() == LoadMap::LMId_NULL) {
+            DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+          }
+        }
+
+        node->link(node_parent);
+        if (node_sib) {
+          node_sib->link(node_parent);
+        }
+      }
+      else {
+        DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
+        DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
+        cct->root(node);
+      }
+
+      cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+    }
+  }
+
+  // specific to data-centric to relink with the node
+  // where the variable is allocated
+
+  for(CCT::Stmt *stmt : listMemAccessNodes) {
+    // most allocated node is leaf
+    // start with leaf mark (negative)
+    int id_alloc = - stmt->id_node_alloc();
+
+    CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(id_alloc);
+
+    if (it != cctNodeMap.end()) {
+      stmt->node_alloc(it->second);
+      DIAG_DevMsgIf(0, "id_alloc " << id_alloc <<" -> " << it->second);
+
+    } else {
+      // try with non-leaf nodes
+      it = cctNodeMap.find(-id_alloc);
+      if (it != cctNodeMap.end()) {
+        stmt->node_alloc(it->second);
+        DIAG_DevMsgIf(0, "id_alloc " << -id_alloc <<" -> " << it->second);
+      }
+    }
   }
 
   if (outfs) {
@@ -1847,42 +1881,35 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   ushort opIdx    = 0;
   lush_lip_t* lip = NULL;
 
-  if (nodeFmt.node_type == NODE_TYPE_ALLOCATION) {
-    // ----------------------------------------
-    // datacentric allocation node
-    // ----------------------------------------
+  // ----------------------------------------
+  // normalized ip (lmId and lmIP)
+  // ----------------------------------------
 
-  } else {
-    // ----------------------------------------
-    // normalized ip (lmId and lmIP)
-    // ----------------------------------------
+  if (! (lmId <= loadmap.size() /*1-based*/) ) {
+    DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
+        << " has invalid load module: " << lmId);
+    lmId = LoadMap::LMId_NULL;
+  }
+  loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
 
-    if (! (lmId <= loadmap.size() /*1-based*/) ) {
+  DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
+
+  // ----------------------------------------
+  // normalized lip
+  // ----------------------------------------
+  if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
+    lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
+  }
+
+  if (lip) {
+    LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
+
+    if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
       DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-          << " has invalid load module: " << lmId);
-      lmId = LoadMap::LMId_NULL;
+    << " has invalid (logical) load module: " << lip_lmId);
+      lip_lmId = LoadMap::LMId_NULL;
     }
-    loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
-
-    DIAG_MsgIf(0, "cct_makeNode(: "<< hex << lmIP << dec << ", " << lmId << ")");
-
-    // ----------------------------------------
-    // normalized lip
-    // ----------------------------------------
-    if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
-      lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
-    }
-
-    if (lip) {
-      LoadMap::LMId_t lip_lmId = lush_lip_getLMId(lip);
-
-      if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
-        DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-      << " has invalid (logical) load module: " << lip_lmId);
-        lip_lmId = LoadMap::LMId_NULL;
-      }
-      loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
-    }
+    loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
   }
 
   // ----------------------------------------
@@ -1954,25 +1981,27 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (hasMetrics || isLeaf) {
     n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
-		      metricData);
+          metricData);
   }
 
   if (!isLeaf) {
     if (hasMetrics) {
-      if ((nodeFmt.node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS) {
+      if (hpcrun_fmt_is_memaccess_type(nodeFmt.node_type)) {
         //DIAG_Msg(0, "node mem access");
+      } else {
+
+        n_leaf = n;
+
+        const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
+
+        uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
+        Metric::IData metricData0(mSz);
+
+        lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
+
+        n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
+        lipCopy, metricData0);
       }
-      n_leaf = n;
-
-      const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
-
-      uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
-      Metric::IData metricData0(mSz);
-      
-      lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
-
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
-			lipCopy, metricData0);
     }
     else {
       n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,

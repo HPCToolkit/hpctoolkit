@@ -1306,7 +1306,8 @@ class Stmt
  public:
   // Constructor/Destructor
   Stmt(ANode* parent, uint cpId)
-    : ADynNode(TyStmt, parent, NULL, cpId)
+    : ADynNode(TyStmt, parent, NULL, cpId),
+      m_id_node_alloc(0), m_node_alloc(NULL), m_start_address(0)
   { }
 
   Stmt(ANode* parent,
@@ -1315,7 +1316,7 @@ class Stmt
        const Metric::IData& metrics)
     : ADynNode(TyStmt, parent, NULL,
 	       cpId, as_info, lmId, ip, opIdx, lip,
-	       metrics)
+	       metrics), m_id_node_alloc(0), m_node_alloc(NULL), m_start_address(0)
   { }
   
   virtual ~Stmt()
@@ -1330,9 +1331,50 @@ class Stmt
     return *this;
   }
 
+  void
+  id_node_alloc(uint id)
+  {
+    m_id_node_alloc = id;
+  }
+
+  uint
+  id_node_alloc()
+  {
+    return m_id_node_alloc;
+  }
+
+  void
+  start_address(uint64_t address)
+  {
+    m_start_address = address;
+  }
+
+  uint64_t
+  start_address()
+  {
+    return m_start_address;
+  }
+
+  void
+  node_alloc(ANode *node)
+  {
+    m_node_alloc = node;
+  }
+
+  ANode *
+  node_alloc()
+  {
+    return m_node_alloc;
+  }
+
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+ private:
+  uint     m_id_node_alloc; // id of allocated node (temporary storage)
+  ANode   *m_node_alloc;   // pointer to the allocated variable node. Only for dynamic variables
+  uint64_t m_start_address; // start of the variable address. Useful for static variables
 };
 
 

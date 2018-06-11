@@ -619,7 +619,7 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->as_info.bits, fs));
   }
 
-  if (x->node_type == NODE_TYPE_ALLOCATION) {
+  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_node_alloc, fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->start_address, fs));
   } else {
@@ -654,7 +654,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
     hpcfmt_int4_fwrite(x->as_info.bits, fs);
   }
 
-  if (x->node_type == NODE_TYPE_ALLOCATION) {
+  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
     // special data centric node: allocation node
     hpcfmt_int4_fwrite(x->id_node_alloc, fs);
     hpcfmt_int8_fwrite(x->start_address, fs);
@@ -694,7 +694,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  if (x->node_type == NODE_TYPE_ALLOCATION) {
+  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
     fprintf(fs, "(alloc: %u) (addr: 0x%"PRIx64") ", (uint)x->id_node_alloc, x->start_address);
   } else {
     fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
