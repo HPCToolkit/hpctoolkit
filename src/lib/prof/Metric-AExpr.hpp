@@ -307,25 +307,16 @@ protected:
   static std::pair<double, double>
   evalVariance(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
-    double* x = new double[sz];
-    
     double x_mean = 0.0; // mean
-    for (uint i = 0; i < sz; ++i) {
-      double t = opands[i]->eval(mdata);
-      x[i] = t;
-      x_mean += t;
-    }
-    x_mean = x_mean / sz;
-    
     double x_var = 0.0; // variance
     for (uint i = 0; i < sz; ++i) {
-      double t = (x[i] - x_mean);
-      t = t * t;
-      x_var += t;
+      double t = opands[i]->eval(mdata);
+      double delta = t - x_mean;
+      x_mean += delta / (i + 1);
+      x_var += delta * (t - x_mean);
     }
     x_var = x_var / sz;
-    delete[] x;
-    
+
     return std::make_pair(x_var, x_mean);
   }
 
