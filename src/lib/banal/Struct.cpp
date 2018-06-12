@@ -68,7 +68,6 @@
 #include <string.h>
 #include <include/uint.h>
 
-#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -159,15 +158,20 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class WorkItem;
 class LineMapCache;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
 typedef map <VMA, Region *> RegionMap;
 typedef vector <Statement::Ptr> StatementVector;
+typedef vector <WorkItem *> WorkList;
 
 static FileMap *
 makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
+
+static void
+doWorkItem(Symtab *, WorkItem *, int, ostream *, ostream *, string);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
@@ -283,6 +287,29 @@ public:
 
 //----------------------------------------------------------------------
 
+// One item in the work list for openmp parallel region.
+class WorkItem {
+public:
+  FileInfo * finfo;
+  GroupInfo * ginfo;
+  HPC::StringTable * strTab;
+  bool first_proc;
+  bool last_proc;
+  bool is_finished;
+
+  WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last)
+  {
+    finfo = fi;
+    ginfo = gi;
+    strTab = NULL;
+    first_proc = first;
+    last_proc = last;
+    is_finished = false;
+  }
+};
+
+//----------------------------------------------------------------------
+
 // A simple cache of getStatement() that stores one line range.  This
 // saves extra calls to getSourceLines() if we don't need them.
 //
@@ -380,15 +407,6 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
-// Order GroupInfo objects by the size of their ranges, largest to
-// smallest.
-//
-static bool
-groupInfoGreaterThan(GroupInfo * g1, GroupInfo * g2)
-{
-  return (g1->end - g1->start) > (g2->end - g2->start);
-}
-
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
 // Read the binutils load module and the parseapi code object, iterate
@@ -458,80 +476,47 @@ makeStructure(string filename,
       code_obj->parse();
     }
 
-    string basename = FileUtil::basename(cfilename);
-    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
-
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
-
 #ifdef ENABLE_OPENMP
     omp_set_num_threads(opts.jobs);
 #endif
 
+    string basename = FileUtil::basename(cfilename);
+    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
+
     //
-    // process the files serially to keep all of their procs within
-    // one <F> tag (or else generalize the output format).
+    // work list of functions.  for better concurrency, it's easier to
+    // have a single, flat list.
     //
+    WorkList workList;
+
     for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
       FileInfo * finfo = fit->second;
+      auto group_begin = finfo->groupMap.begin();
+      auto group_end = finfo->groupMap.end();
 
-      Output::printFileBegin(outFile, finfo);
-
-      // make vector of groups for openmp parallel for, and order by
-      // size, largest to smallest.
-      vector <GroupInfo *> groupVec;
-      for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
+      for (auto git = group_begin; git != group_end; ++git) {
 	GroupInfo * ginfo = git->second;
-	groupVec.push_back(ginfo);
+	auto next_git = git;  ++next_git;
+
+	WorkItem * witem =
+	  new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end));
+
+	workList.push_back(witem);
       }
-      // if sequential, then don't sort (helps keep deterministic)
-      if (opts.jobs > 1) {
-	std::sort(groupVec.begin(), groupVec.end(), groupInfoGreaterThan);
-      }
+    }
 
-      //
-      // process the groups within one file in parallel
-      //
-#pragma omp parallel for schedule(dynamic, 1)    \
-      default(none)  shared(groupVec)            \
-      firstprivate(cuda_file, finfo, symtab, outFile, gapsFile, gaps_filenm)
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-      for (uint i = 0; i < groupVec.size(); i++) {
-	GroupInfo * ginfo = groupVec[i];
-	HPC::StringTable strTab;
-	strTab.str2index("");
-
-	// make the inline tree for all funcs in one group
-	if (cuda_file) {
-	  doCudaList(symtab, finfo, ginfo, strTab);
-	}
-	else {
-	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-	}
-
-	//
-	// print all functions within a single group
-	//
-	// fixme: write the output to a string stream, then dump the
-	// stream for better parallelism.
-	//
-#pragma omp critical (printGroup)
-	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-	  ProcInfo * pinfo = pit->second;
-
-	  if (! pinfo->gap_only) {
-	    Output::printProc(outFile, gapsFile, gaps_filenm,
-			      finfo, ginfo, pinfo, strTab);
-	  }
-	  delete pinfo->root;
-	  pinfo->root = NULL;
-	}  // end critical
-
-      }  // end parallel for
-
-      Output::printFileEnd(outFile, finfo);
+    for (uint i = 0; i < workList.size(); i++) {
+      doWorkItem(symtab, workList[i], cuda_file, outFile, gapsFile, gaps_filenm);
     }
 
     Output::printLoadModuleEnd(outFile);
+
+    // delete the workList objects
+    for (uint i = 0; i < workList.size(); i++) {
+      delete workList[i];
+    }
 
 #if ! DISABLE_BROKEN_CODE_OBJECT_DELETE
     delete code_obj;
@@ -541,6 +526,50 @@ makeStructure(string filename,
   }
 
   Output::printStructFileEnd(outFile, gapsFile);
+}
+
+//----------------------------------------------------------------------
+
+//
+// One proc group on the parallel work list.
+//
+static void
+doWorkItem(Symtab * symtab, WorkItem * witem, int cuda_file,
+	   ostream * outFile, ostream * gapsFile, string gaps_filenm)
+{
+  FileInfo * finfo = witem->finfo;
+  GroupInfo * ginfo = witem->ginfo;
+  HPC::StringTable strTab;
+  strTab.str2index("");
+
+  // make the inline tree for all funcs in one group
+  if (cuda_file) {
+    doCudaList(symtab, finfo, ginfo, strTab);
+  }
+  else {
+    doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+  }
+
+  if (witem->first_proc) {
+    Output::printFileBegin(outFile, finfo);
+  }
+
+  //
+  // print all functions within a single group
+  //
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+
+    if (! pinfo->gap_only) {
+      Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, strTab);
+    }
+    delete pinfo->root;
+    pinfo->root = NULL;
+  }
+
+  if (witem->last_proc) {
+    Output::printFileEnd(outFile, finfo);
+  }
 }
 
 //----------------------------------------------------------------------
