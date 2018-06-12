@@ -99,6 +99,8 @@ using SrcFile::ln_NULL;
 
 
 //***************************************************************************
+#define XML_ATTR_DATA_NODE_ALLOC    "d"
+#define XML_ATTR_DATA_START_MEM     "m"
 
 //***************************************************************************
 // Tree
@@ -1358,8 +1360,10 @@ Stmt::toStringMe(uint oFlags) const
 
   // additional data-centric information
   if (m_node_alloc != NULL) {
-    self += " d=\""   + StrUtil::toStr(m_node_alloc->id(), 10) +
-            "\" a=\"" + StrUtil::toStr(m_start_address, 16) + "\" ";
+    self += " " XML_ATTR_DATA_NODE_ALLOC + xml::MakeAttrNum(m_node_alloc->id());
+  }
+  if (m_start_address > 0) {
+    self += " " XML_ATTR_DATA_START_MEM  + xml::MakeAttrNum(m_start_address, 16);
   }
 
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
