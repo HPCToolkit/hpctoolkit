@@ -72,6 +72,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <ostream>
 #include <sstream>
 
@@ -151,6 +152,8 @@ static Symtab * the_symtab = NULL;
 
 static BAnal::Struct::Options opts;
 
+static mutex output_mtx;
+
 
 //----------------------------------------------------------------------
 
@@ -171,7 +174,10 @@ static FileMap *
 makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
 
 static void
-doWorkItem(Symtab *, WorkItem *, int, ostream *, ostream *, string);
+doWorkItem(Symtab *, WorkItem *, bool, bool);
+
+static void
+printWorkList(WorkList &, uint &, ostream *, ostream *, string);
 
 static void
 doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
@@ -192,8 +198,7 @@ static void
 doCudaList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static void
-doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
-	       HPC::StringTable & strTab);
+doCudaFunction(GroupInfo *, ParseAPI::Function *, TreeNode *, HPC::StringTable &);
 
 static void
 addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
@@ -295,7 +300,7 @@ public:
   HPC::StringTable * strTab;
   bool first_proc;
   bool last_proc;
-  bool is_finished;
+  bool is_done;
 
   WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last)
   {
@@ -304,7 +309,7 @@ public:
     strTab = NULL;
     first_proc = first;
     last_proc = last;
-    is_finished = false;
+    is_done = false;
   }
 };
 
@@ -458,7 +463,7 @@ makeStructure(string filename,
       continue;
     }
     the_symtab = symtab;
-    int cuda_file = SYMTAB_ARCH_CUDA(symtab);
+    bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
     // pre-compute line map info
     vector <Module *> modVec;
@@ -507,9 +512,31 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-    for (uint i = 0; i < workList.size(); i++) {
-      doWorkItem(symtab, workList[i], cuda_file, outFile, gapsFile, gaps_filenm);
-    }
+    //
+    // process the work list in parallel, but do the printing in work
+    // list order, not the order in which the items finish.
+    //
+    uint num_done = 0;
+
+#pragma omp parallel  default(none)   \
+    shared(workList, num_done, output_mtx)   \
+    firstprivate(symtab, outFile, gapsFile, gaps_filenm, cuda_file)
+    {
+#pragma omp for  schedule(dynamic, 1)
+      for (uint i = 0; i < workList.size(); i++) {
+	doWorkItem(symtab, workList[i], cuda_file, gapsFile != NULL);
+
+	// the printing must be single threaded
+	if (output_mtx.try_lock()) {
+	  printWorkList(workList, num_done, outFile, gapsFile, gaps_filenm);
+	  output_mtx.unlock();
+	}
+      }
+    }  // end omp parallel
+
+    // with try_lock(), there are interleavings where not all items
+    // have been printed.
+    printWorkList(workList, num_done, outFile, gapsFile, gaps_filenm);
 
     Output::printLoadModuleEnd(outFile);
 
@@ -531,44 +558,71 @@ makeStructure(string filename,
 //----------------------------------------------------------------------
 
 //
-// One proc group on the parallel work list.
+// Make the inline tree for funcs in one proc group.  This much can
+// run concurrently.
 //
 static void
-doWorkItem(Symtab * symtab, WorkItem * witem, int cuda_file,
-	   ostream * outFile, ostream * gapsFile, string gaps_filenm)
+doWorkItem(Symtab * symtab, WorkItem * witem, bool cuda_file, bool fullGaps)
 {
   FileInfo * finfo = witem->finfo;
   GroupInfo * ginfo = witem->ginfo;
-  HPC::StringTable strTab;
-  strTab.str2index("");
+  HPC::StringTable * strTab = new HPC::StringTable;
 
-  // make the inline tree for all funcs in one group
+  witem->strTab = strTab;
+  strTab->str2index("");
+
   if (cuda_file) {
-    doCudaList(symtab, finfo, ginfo, strTab);
+    doCudaList(symtab, finfo, ginfo, *strTab);
   }
   else {
-    doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+    doFunctionList(symtab, finfo, ginfo, *strTab, fullGaps);
   }
 
-  if (witem->first_proc) {
-    Output::printFileBegin(outFile, finfo);
-  }
+  witem->is_done = true;
+}
 
-  //
-  // print all functions within a single group
-  //
-  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-    ProcInfo * pinfo = pit->second;
+//----------------------------------------------------------------------
 
-    if (! pinfo->gap_only) {
-      Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, strTab);
+//
+// Scan the work list from num_done to end for items that are ready to
+// be printed.  The output order is always work list order, regardless
+// of order finished.
+//
+// Note: the output functions have state (index number), so this must
+// be called locked or else single threaded.
+//
+static void
+printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
+	      ostream * gapsFile, string gaps_filenm)
+{
+  while (num_done < workList.size() && workList[num_done]->is_done) {
+    WorkItem * witem = workList[num_done];
+    FileInfo * finfo = witem->finfo;
+    GroupInfo * ginfo = witem->ginfo;
+    HPC::StringTable * strTab = witem->strTab;
+
+    if (witem->first_proc) {
+      Output::printFileBegin(outFile, finfo);
     }
-    delete pinfo->root;
-    pinfo->root = NULL;
-  }
 
-  if (witem->last_proc) {
-    Output::printFileEnd(outFile, finfo);
+    for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+      ProcInfo * pinfo = pit->second;
+
+      if (! pinfo->gap_only) {
+	Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
+      }
+      delete pinfo->root;
+      pinfo->root = NULL;
+    }
+
+    if (witem->last_proc) {
+      Output::printFileEnd(outFile, finfo);
+    }
+
+    delete strTab;
+    witem->strTab = NULL;
+
+    num_done++;
   }
 }
 
