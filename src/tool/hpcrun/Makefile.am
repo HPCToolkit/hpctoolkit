@@ -366,9 +366,14 @@ else
 if HOST_CPU_X86_64
 MY_BASE_FILES +=  			\
 	sample-sources/datacentric/pmu_x86.c
+else 
+if HOST_CPU_PPC
+MY_BASE_FILES +=  			\
+	sample-sources/datacentric/pmu_power.c
 else
 MY_BASE_FILES +=  			\
 	sample-sources/datacentric/datadummy.c
+endif	# HOST_CPU_PPC
 endif	# HOST_CPU_X86_64
 
 endif  # OPT_IBS_OP

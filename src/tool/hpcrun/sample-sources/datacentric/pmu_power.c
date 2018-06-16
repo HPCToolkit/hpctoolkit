@@ -55,11 +55,10 @@
 
 // list of precise events
 
-#define EVNAME_SANDYBRIDGE_LATENCY  "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"
-#define EVNAME_SANDYBRIDGE_STORE    "snb::MEM_TRANS_RETIRED:PRECISE_STORE"
+#define EVNAME_POWER_RMRM	"PM_MRK_DATA_FROM_RMEM"
+#define EVNAME_POWER_DL4	"PM_MRK_DATA_FROM_DL4"
+#define EVNAME_POWER_LMEM	"PM_MRK_DATA_FROM_LMEM"
 
-#define EVNAME_KNL_OFFCORE_RESP_0   "knl::OFFCORE_RESPONSE_0"
-#define EVNAME_KNL_CACHE_L2_HIT     "knl::MEM_UOPS_RETIRED:LD_L2_HIT"
 
 /**
  * attention: the order of the array is very important.
@@ -68,11 +67,9 @@
  * compatibility with the old ones.
  */
 static const char *evnames[] = {
-    EVNAME_KNL_OFFCORE_RESP_0,
-    EVNAME_KNL_CACHE_L2_HIT,
-
-    EVNAME_SANDYBRIDGE_LATENCY,
-    EVNAME_SANDYBRIDGE_STORE
+	EVNAME_POWER_RMRM,
+	EVNAME_POWER_DL4,
+	EVNAME_POWER_LMEM
 };
 
 
@@ -127,10 +124,10 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
       memcpy(&einfo->attr, &event_attr, sizeof(struct perf_event_attr));
 
       METHOD_CALL(self, store_event_and_info,
-                  event_attr.config,     /* event id     */
-                  1,              /* threshold    */
-                  metric,         /* metric id    */
-                  einfo           /* info pointer */ );
+                  event_attr.config,	/* event id     */
+                  1,              	/* threshold    */
+                  metric,         	/* metric id    */
+                  einfo           	/* info pointer */ );
 
     }
   }
