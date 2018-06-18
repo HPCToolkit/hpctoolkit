@@ -46,6 +46,7 @@
 
 #include <stdio.h>
 
+#include "event_info.h"
 #include <hpcrun/messages/messages.h>
 #include "sample-sources/perf/perf-util.h"
 
@@ -55,9 +56,9 @@
 
 #define PERF_IBS_CONFIG   (1ULL<<19)
 
-int
+int 
 datacentric_hw_register(sample_source_t *self, event_custom_t *event,
-                        struct event_threshold_s *period, event_info_t **event_info)
+                        struct event_threshold_s *period)
 {
   // get the type of ibs op
 
@@ -110,9 +111,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
   // Register the event to the global list
   // ------------------------------------------
   METHOD_CALL(self, store_event_and_info,
-      einfo->attr.config, 1, hpcrun_new_metric(), einfo );;
-
-  *event_info = einfo;
+      einfo->attr.config, 1, metric, einfo );
 
   return 1;
 }
