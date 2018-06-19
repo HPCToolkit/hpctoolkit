@@ -55,6 +55,8 @@
 #ifndef _threadmgr_h_
 #define _threadmgr_h_
 
+#include "thread_data.h"
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -64,5 +66,14 @@ void hpcrun_threadmgr_thread_new();
 void hpcrun_threadmgr_thread_delete();
 
 int hpcrun_threadmgr_thread_count();
+
+thread_data_t *
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources );
+
+void
+hpcrun_threadMgr_data_put( thread_data_t *data );
+
+void
+hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data);
 
 #endif

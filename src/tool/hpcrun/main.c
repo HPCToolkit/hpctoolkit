@@ -617,8 +617,13 @@ hpcrun_fini_internal()
     // This typically means flushing files that were not done by their creators.
 
     hpcrun_process_aux_cleanup_action();
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+
+    // write profile data and close trace file
+    hpcrun_threadMgr_data_fini(&(TD_GET(core_profile_trace_data)));
+    //
+    //hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+    //hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -661,7 +666,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
-  thread_data_t* td = hpcrun_allocate_thread_data(id);
+
+  //originally: hpcrun_allocate_thread_data(id);
+  thread_data_t* td = hpcrun_threadMgr_data_get(id, thr_ctxt, hpcrun_get_num_sample_sources());
+
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
   hpcrun_set_thread_data(td);
@@ -669,8 +677,9 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   
   if (ENABLED(THREAD_CTXT))
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
-  //
-  hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
+
+  // this has been replaced in hpcrun_threadMgr_data_get()
+  //hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
@@ -718,8 +727,16 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    // save the data in the queue. We may reuse again later
+
+    thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_threadMgr_data_put(td);
+
+    /* writing will be performed later in hpcrun_fini_internal()
+     *
+     * hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
+       hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    */
   }
 }
 

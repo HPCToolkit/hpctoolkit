@@ -62,15 +62,34 @@
 // local include files 
 //******************************************************************************
 #include "threadmgr.h"
-#include <lib/prof-lean/stdatomic.h>
+#include "thread_data.h"
+#include "write_data.h"
+#include "trace.h"
 
+#include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/spinlock.h>
+
+
+#include <include/queue.h>
+
+//******************************************************************************
+// data structure
+//******************************************************************************
+
+typedef struct thread_list_s {
+  thread_data_t *thread_data;
+  SLIST_ENTRY(thread_list_s) entries;
+} thread_list_t;
 
 //******************************************************************************
 // private data
 //******************************************************************************
 static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
 
+static SLIST_HEAD(thread_list_head, thread_list_s) list_thread_head =
+    SLIST_HEAD_INITIALIZER(thread_list_head);
 
+static spinlock_t threaddata_lock = SPINLOCK_UNLOCKED;
 
 //******************************************************************************
 // private operations
@@ -107,3 +126,78 @@ hpcrun_threadmgr_thread_count()
 {
 	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
 }
+
+
+thread_data_t *
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
+{
+  thread_data_t *data = NULL;
+
+  spinlock_lock(&threaddata_lock);
+  if (SLIST_EMPTY(&list_thread_head)) {
+
+    spinlock_unlock(&threaddata_lock);
+
+    data = hpcrun_allocate_thread_data(id);
+
+    // requires to set the data before calling thread_data_init
+    // since the function will query the thread local data :-(
+
+    hpcrun_set_thread_data(data);
+    hpcrun_thread_data_init(id, thr_ctxt, 0, num_sources);
+
+  } else {
+    struct thread_list_s *item = SLIST_FIRST(&list_thread_head);
+    spinlock_unlock(&threaddata_lock);
+
+    data = item->thread_data;
+  }
+
+  return data;
+}
+
+
+void
+hpcrun_threadMgr_data_put( thread_data_t *data )
+{
+  spinlock_lock(&threaddata_lock);
+
+  thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));
+  list_item->thread_data   = data;
+  SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
+
+
+  spinlock_unlock(&threaddata_lock);
+}
+
+
+void
+hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data)
+{
+  thread_list_t *item = NULL;
+  bool is_processed   = false;
+
+  while( !SLIST_EMPTY(&list_thread_head) ) {
+    item = SLIST_FIRST(&list_thread_head);
+    if (item != NULL) {
+      core_profile_trace_data_t *data = &item->thread_data->core_profile_trace_data;
+
+      hpcrun_write_profile_data( data );
+      hpcrun_trace_close( data );
+
+      if (data == current_data) {
+        is_processed = true;
+      }
+      SLIST_REMOVE_HEAD(&list_thread_head, entries);
+    }
+  }
+  // main thread (thread 0) may not be in the list
+  // for sequential or pure MPI programs, they don't have list of thread data in this queue.
+  // hence, we need to process specifically here
+  if (!is_processed) {
+    hpcrun_write_profile_data( current_data );
+    hpcrun_trace_close( current_data );
+  }
+}
+
+
