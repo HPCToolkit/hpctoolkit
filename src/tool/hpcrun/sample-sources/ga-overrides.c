@@ -282,7 +282,7 @@ extern global_array_t *GA;
     									\
     /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */	\
     metric_set_t* metricVec =						\
-      metricVec = hpcrun_get_metric_set(smplVal.sample_node);		\
+      metricVec = hpcrun_get_metric_set(NULL, smplVal.sample_node);		\
     do1;								\
     do2;								\
     do3;								\

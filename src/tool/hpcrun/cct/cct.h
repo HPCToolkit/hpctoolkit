@@ -243,7 +243,11 @@ extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
-int hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags);
+// laks: hack to access cc2metrics_t
+typedef struct cct2metrics_t cct2metrics_t;
+
+int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
+                      cct_node_t* cct, FILE* fs, epoch_flags_t flags);
 //
 // Utilities
 //

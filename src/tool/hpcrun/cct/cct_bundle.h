@@ -51,6 +51,9 @@
 #include "cct.h"
 #include "cct_ctxt.h"
 
+#include <hpcrun/cct2metrics.h> // need to be placed after cct.h
+
+
 //
 // Data type not opaque : FIXME ??
 //
@@ -85,7 +88,8 @@ extern void hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt);
 //
 // IO for cct bundle
 //
-extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* x);
+extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* x,
+                                    cct2metrics_t* cct2metrics_map);
 
 //
 // utility functions

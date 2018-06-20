@@ -74,6 +74,6 @@ void
 hpcrun_threadMgr_data_put( thread_data_t *data );
 
 void
-hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data);
+hpcrun_threadMgr_data_fini(thread_data_t *td);
 
 #endif

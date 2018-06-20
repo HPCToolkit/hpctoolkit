@@ -619,7 +619,7 @@ hpcrun_fini_internal()
     hpcrun_process_aux_cleanup_action();
 
     // write profile data and close trace file
-    hpcrun_threadMgr_data_fini(&(TD_GET(core_profile_trace_data)));
+    hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
     //
     //hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
     //hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
@@ -679,7 +679,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
 
   // this has been replaced in hpcrun_threadMgr_data_get()
-  //hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
+  // hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 

@@ -148,6 +148,8 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 
   } else {
     struct thread_list_s *item = SLIST_FIRST(&list_thread_head);
+    SLIST_REMOVE_HEAD(&list_thread_head, entries);
+
     spinlock_unlock(&threaddata_lock);
 
     data = item->thread_data;
@@ -172,7 +174,7 @@ hpcrun_threadMgr_data_put( thread_data_t *data )
 
 
 void
-hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data)
+hpcrun_threadMgr_data_fini(thread_data_t *td)
 {
   thread_list_t *item = NULL;
   bool is_processed   = false;
@@ -180,12 +182,12 @@ hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data)
   while( !SLIST_EMPTY(&list_thread_head) ) {
     item = SLIST_FIRST(&list_thread_head);
     if (item != NULL) {
-      core_profile_trace_data_t *data = &item->thread_data->core_profile_trace_data;
 
+      core_profile_trace_data_t *data = &item->thread_data->core_profile_trace_data;
       hpcrun_write_profile_data( data );
       hpcrun_trace_close( data );
 
-      if (data == current_data) {
+      if (item->thread_data == td) {
         is_processed = true;
       }
       SLIST_REMOVE_HEAD(&list_thread_head, entries);
@@ -195,6 +197,8 @@ hpcrun_threadMgr_data_fini(core_profile_trace_data_t *current_data)
   // for sequential or pure MPI programs, they don't have list of thread data in this queue.
   // hence, we need to process specifically here
   if (!is_processed) {
+    core_profile_trace_data_t *current_data = &td->core_profile_trace_data;
+
     hpcrun_write_profile_data( current_data );
     hpcrun_trace_close( current_data );
   }

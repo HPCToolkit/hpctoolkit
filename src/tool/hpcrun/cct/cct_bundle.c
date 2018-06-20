@@ -104,7 +104,8 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
 // Write to file for cct bundle: 
 //
 int 
-hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
+hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
+                         cct2metrics_t* cct2metrics_map)
 {
   if (!fs) { return HPCRUN_ERR; }
 
@@ -123,7 +124,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
 
   // write out newly constructed cct
 
-  return hpcrun_cct_fwrite(bndl->top, fs, flags);
+  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
 }
 
 //
