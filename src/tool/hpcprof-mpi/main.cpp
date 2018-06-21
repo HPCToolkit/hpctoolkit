@@ -582,10 +582,8 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
     Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
-      expr->srcId(j++);
-      if (expr->hasAccum2()) {
-	expr->src2Id(j++); // cf. Metric::Mgr::makeSummaryMetricIncr()
-      }
+      for (uint k = 0; k < expr->numAccum(); ++k)
+	expr->srcId(k, j++);
     }
   }
 
