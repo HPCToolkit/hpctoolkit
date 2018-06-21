@@ -1074,7 +1074,6 @@ monitor_init_thread(int tid, void* data)
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
-  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   hpcrun_safe_exit();
 

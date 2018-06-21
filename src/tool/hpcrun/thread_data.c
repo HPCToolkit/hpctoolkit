@@ -64,6 +64,7 @@
 #include "handling_sample.h"
 
 #include "thread_data.h"
+#include "trace.h"
 
 #include <lush/lush-pthread.h>
 #include <messages/messages.h>
@@ -356,6 +357,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+
+  // ----------------------------------------
+  // opening trace file
+  // ----------------------------------------
+  hpcrun_trace_open(&(td->core_profile_trace_data));
+
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));
 #endif
