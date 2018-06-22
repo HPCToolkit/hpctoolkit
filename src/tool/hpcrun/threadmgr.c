@@ -134,6 +134,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
   thread_data_t *data = NULL;
 
   spinlock_lock(&threaddata_lock);
+
   if (SLIST_EMPTY(&list_thread_head)) {
 
     spinlock_unlock(&threaddata_lock);
@@ -146,6 +147,8 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
     hpcrun_set_thread_data(data);
     hpcrun_thread_data_init(id, thr_ctxt, 0, num_sources);
 
+    TMSG(PROCESS, "%d: new thread data", id);
+
   } else {
     struct thread_list_s *item = SLIST_FIRST(&list_thread_head);
     SLIST_REMOVE_HEAD(&list_thread_head, entries);
@@ -153,6 +156,9 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
     spinlock_unlock(&threaddata_lock);
 
     data = item->thread_data;
+    hpcrun_set_thread_data(data);
+
+    TMSG(PROCESS, "%d: reuse thread data from %d", id, data->core_profile_trace_data.id);
   }
 
   return data;
@@ -168,8 +174,9 @@ hpcrun_threadMgr_data_put( thread_data_t *data )
   list_item->thread_data   = data;
   SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
-
   spinlock_unlock(&threaddata_lock);
+
+  TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }
 
 
@@ -187,6 +194,8 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
       hpcrun_write_profile_data( data );
       hpcrun_trace_close( data );
 
+      TMSG(PROCESS, "%d: write thread data", data->id);
+
       if (item->thread_data == td) {
         is_processed = true;
       }
@@ -201,6 +210,7 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
 
     hpcrun_write_profile_data( current_data );
     hpcrun_trace_close( current_data );
+    TMSG(PROCESS, "%d: write thread data, finally", td->core_profile_trace_data.id);
   }
 }
 
