@@ -65,12 +65,16 @@ class Options {
 public:
   int  jobs;
   int  jobs_parse;
+  int  jobs_symtab;
+  bool show_time;
   bool ourDemangle;
 
   Options()
   {
     jobs = 1;
     jobs_parse = 1;
+    jobs_symtab = 1;
+    show_time = false;
     ourDemangle = false;
   }
 };

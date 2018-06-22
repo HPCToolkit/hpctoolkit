@@ -111,6 +111,8 @@ public:
 
   int jobs;
   int jobs_parse;
+  int jobs_symtab;
+  bool show_time;
 
   // Parsed Data: optional arguments
   std::string lush_agent;

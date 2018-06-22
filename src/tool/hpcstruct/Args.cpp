@@ -118,6 +118,8 @@ Options: General\n\
   -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
   --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
                        default is same value for --jobs.\n\
+  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
+  --time               Display stats on time and space usage.\n\
 \n\
 Options: Structure recovery\n\
   -I <path>, --include <path>\n\
@@ -188,7 +190,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
 
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
-  {  0 ,  "jobs-parse",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Demangler library
   {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
@@ -260,6 +264,8 @@ Args::Ctor()
 {
   jobs = -1;
   jobs_parse = -1;
+  jobs_symtab = -1;
+  show_time = false;
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
@@ -360,6 +366,13 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("jobs-parse")) {
       const string & arg = parser.getOptArg("jobs-parse");
       jobs_parse = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("jobs-symtab")) {
+      const string & arg = parser.getOptArg("jobs-symtab");
+      jobs_symtab = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("time")) {
+      show_time = true;
     }
 
     // Check for LUSH options (TODO)

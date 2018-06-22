@@ -64,6 +64,8 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <include/uint.h>
@@ -412,6 +414,27 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
+//
+// Display time and space usage per phase in makeStructure.
+//
+static void
+printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
+	  struct timeval *tv_now, struct rusage *ru_now)
+{
+  gettimeofday(tv_now, NULL);
+  getrusage(RUSAGE_SELF, ru_now);
+
+  float delta = (float)(tv_now->tv_sec - tv_prev->tv_sec)
+    + ((float)(tv_now->tv_usec - tv_prev->tv_usec))/1000000.0;
+
+  printf("%s  %8.1f sec  %8ld meg  %8ld meg", label, delta,
+	 (ru_now->ru_maxrss - ru_prev->ru_maxrss)/1024,
+	 ru_now->ru_maxrss/1024);
+
+  cout << endl;
+}
+
+//
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
 // Read the binutils load module and the parseapi code object, iterate
@@ -429,7 +452,14 @@ makeStructure(string filename,
 	      ProcNameMgr * procNmMgr,
 	      Struct::Options & structOpts)
 {
+  struct timeval tv_init, tv_symtab, tv_parse, tv_fini;
+  struct rusage  ru_init, ru_symtab, ru_parse, ru_fini;
+
   opts = structOpts;
+
+#ifdef ENABLE_OPENMP
+  omp_set_num_threads(opts.jobs_symtab);
+#endif
 
   InputFile inputFile;
   if (! inputFile.openFile(filename)) {
@@ -450,12 +480,20 @@ makeStructure(string filename,
   for (uint i = 0; i < elfFileVector->size(); i++) {
     ElfFile *elfFile = (*elfFileVector)[i];
 
+    if (opts.show_time) {
+      cout << "file:  " << elfFile->getFileName() << "\n"
+	   << "symtab threads: " << opts.jobs_symtab
+	   << "  parse: " << opts.jobs_parse
+	   << "  struct: " << opts.jobs << "\n\n";
+      printTime("init:  ", &tv_init, &ru_init, &tv_init, &ru_init);
+    }
+
 #if DEBUG_ANY_ON
     debugElfHeader(elfFile);
 #endif
 
 #ifdef ENABLE_OPENMP
-    omp_set_num_threads(opts.jobs_parse);
+    omp_set_num_threads(opts.jobs_symtab);
 #endif
 
     Symtab * symtab = Inline::openSymtab(elfFile);
@@ -473,12 +511,24 @@ makeStructure(string filename,
       (*mit)->parseLineInformation();
     }
 
+    if (opts.show_time) {
+      printTime("symtab:", &tv_init, &ru_init, &tv_symtab, &ru_symtab);
+    }
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs_parse);
+#endif
+
     SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
     CodeObject * code_obj = new CodeObject(code_src);
 
     // don't run parseapi on cuda binary
     if (! cuda_file) {
       code_obj->parse();
+    }
+
+    if (opts.show_time) {
+      printTime("parse: ", &tv_symtab, &ru_symtab, &tv_parse, &ru_parse);
     }
 
 #ifdef ENABLE_OPENMP
@@ -539,6 +589,12 @@ makeStructure(string filename,
     printWorkList(workList, num_done, outFile, gapsFile, gaps_filenm);
 
     Output::printLoadModuleEnd(outFile);
+
+    if (opts.show_time) {
+      printTime("struct:", &tv_parse, &ru_parse, &tv_fini, &ru_fini);
+      printTime("total: ", &tv_init, &ru_init, &tv_fini, &ru_fini);
+      cout << "\nnum funcs: " << workList.size() << "\n" << endl;
+    }
 
     // delete the workList objects
     for (uint i = 0; i < workList.size(); i++) {

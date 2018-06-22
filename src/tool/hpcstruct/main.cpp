@@ -165,6 +165,7 @@ realmain(int argc, char* argv[])
 #ifdef ENABLE_OPENMP
   opts.jobs = args.jobs;
   opts.jobs_parse = args.jobs_parse;
+  opts.jobs_symtab = args.jobs_symtab;
 
   // default is to run serial (for correctness), unless --jobs is
   // specified.
@@ -174,11 +175,20 @@ realmain(int argc, char* argv[])
   if (opts.jobs_parse < 1) {
     opts.jobs_parse = opts.jobs;
   }
-  omp_set_num_threads(opts.jobs);
+
+  // libdw is not yet thread-safe, so run symtab serial unless
+  // specifically requested.
+  if (opts.jobs_symtab < 1) {
+    opts.jobs_symtab = 1;
+  }
+  omp_set_num_threads(1);
 #else
   opts.jobs = 1;
   opts.jobs_parse = 1;
+  opts.jobs_symtab = 1;
 #endif
+
+  opts.show_time = args.show_time;
 
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
