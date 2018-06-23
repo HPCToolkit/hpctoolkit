@@ -137,7 +137,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
-#define DISABLE_BROKEN_CODE_OBJECT_DELETE  1
+#define DISABLE_BROKEN_CODE_OBJECT_DELETE  0
 
 
 //******************************************************************************
@@ -153,9 +153,6 @@ static const string & unknown_link = "_unknown_proc_";
 static Symtab * the_symtab = NULL;
 
 static BAnal::Struct::Options opts;
-
-static mutex output_mtx;
-
 
 //----------------------------------------------------------------------
 
@@ -507,9 +504,14 @@ makeStructure(string filename,
     vector <Module *> modVec;
     the_symtab->getAllModules(modVec);
 
-    for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
-      (*mit)->parseLineInformation();
-    }
+#pragma omp parallel  shared(modVec)
+    {
+#pragma omp for  schedule(dynamic, 1)
+      for (uint i = 0; i < modVec.size(); i++) {
+	Module * mod = modVec[i];
+	mod->parseLineInformation();
+      }
+    }  // end parallel
 
     if (opts.show_time) {
       printTime("symtab:", &tv_init, &ru_init, &tv_symtab, &ru_symtab);
@@ -567,6 +569,7 @@ makeStructure(string filename,
     // list order, not the order in which the items finish.
     //
     uint num_done = 0;
+    mutex output_mtx;
 
 #pragma omp parallel  default(none)   \
     shared(workList, num_done, output_mtx)   \
@@ -582,7 +585,7 @@ makeStructure(string filename,
 	  output_mtx.unlock();
 	}
       }
-    }  // end omp parallel
+    }  // end parallel
 
     // with try_lock(), there are interleavings where not all items
     // have been printed.
@@ -596,16 +599,19 @@ makeStructure(string filename,
       cout << "\nnum funcs: " << workList.size() << "\n" << endl;
     }
 
-    // delete the workList objects
-    for (uint i = 0; i < workList.size(); i++) {
-      delete workList[i];
-    }
+    // if this is the last (or only) elf file, then don't bother with
+    // piecemeal cleanup.
+    if (i + 1 < elfFileVector->size()) {
+      for (uint i = 0; i < workList.size(); i++) {
+	delete workList[i];
+      }
 
 #if ! DISABLE_BROKEN_CODE_OBJECT_DELETE
-    delete code_obj;
-    delete code_src;
-    Inline::closeSymtab();
+      delete code_obj;
+      delete code_src;
+      Inline::closeSymtab();
 #endif
+    }
   }
 
   Output::printStructFileEnd(outFile, gapsFile);
