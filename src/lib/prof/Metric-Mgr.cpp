@@ -338,7 +338,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
-    string m2NmBase = mNmBase + ":accum" + std::to_string(k+1);
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedDesc* m2 =
       new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
@@ -433,7 +433,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
-    string m2NmBase = mNmBase + ":accum" + std::to_string(k+1);
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedIncrDesc* m2 =
       new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
