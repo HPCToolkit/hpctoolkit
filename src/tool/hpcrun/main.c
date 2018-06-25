@@ -686,9 +686,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
+  // laks: move hpcrun_epoch_init to hpcrun_thread_data_init
   // set up initial 'epoch'
-  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init(thr_ctxt);
+  //TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+  //hpcrun_epoch_init(thr_ctxt);
 
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
