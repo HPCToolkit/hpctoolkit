@@ -62,8 +62,6 @@
 //************************ External Include Files *************************
 
 #include <monitor.h>
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
 
 
 //*************************** User Include Files ****************************
@@ -229,7 +227,6 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 void 
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
-  libunw_unw_init_cursor(cursor, context);
   ucontext_t* ctxt = (ucontext_t*)context;
 
   save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
@@ -272,6 +269,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
+  unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);
 
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
@@ -282,19 +280,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
   unwind_interval* nxt_intvl = NULL;
   
-  bitree_uwi_t* intvl = NULL;
-  bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &cursor->unwr_info);
-  if (found) {
-    intvl = cursor->unwr_info.btuwi;
-    if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
-      if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR)
-	unw_get_reg(&cursor->uc, UNW_PPC64_LR, &nxt_ra);
-      else
-	unw_get_reg(&cursor->uc, UWI_RECIPE(intvl)->ra_arg, &nxt_ra);
-      cursor->ra = (void*)nxt_ra;
-    }
-    compute_normalized_ips(cursor);
-  }
   if (!intvl) {
     TMSG(UNW, "error: missing interval for pc=%p", pc);
     return STEP_ERROR;
@@ -369,7 +354,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }

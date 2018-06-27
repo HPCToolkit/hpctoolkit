@@ -335,10 +335,10 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->isMultiplexed(mSrc->isMultiplexed());
 
   insert(m);
-  expr->accumId(m->id());
+  expr->accumId(0, m->id());
 
-  if (expr->hasAccum2()) {
-    string m2NmBase = mNmBase + ":accum2";
+  for (uint k = 1; k < expr->numAccum(); ++k) {
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedDesc* m2 =
       new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
@@ -348,7 +348,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m2->zeroDBInfo(); // clear
     insert(m2);
 
-    expr->accum2Id(m2->id());
+    expr->accumId(k, m2->id());
   }
 
   if (expr->hasNumSrcVar()) {
@@ -362,7 +362,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     m3->zeroDBInfo(); // clear
     insert(m3);
-    m3Expr->accumId(m3->id());
+    m3Expr->accumId(0, m3->id());
 
     expr->numSrcVarId(m3->id());
   }
@@ -430,10 +430,10 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   m->isMultiplexed(mSrc->isMultiplexed());
 
   insert(m);
-  expr->accumId(m->id());
+  expr->accumId(0, m->id());
 
-  if (expr->hasAccum2()) {
-    string m2NmBase = mNmBase + ":accum2";
+  for (uint k = 1; k < expr->numAccum(); ++k) {
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedIncrDesc* m2 =
       new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
@@ -442,7 +442,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     m2->zeroDBInfo(); // clear
     insert(m2);
 
-    expr->accum2Id(m2->id());
+    expr->accumId(k, m2->id());
   }
 
   if (expr->hasNumSrcVar()) {
@@ -455,7 +455,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     m3->nameBase(m3NmBase);
     m3->zeroDBInfo(); // clear
     insert(m3);
-    m3Expr->accumId(m3->id());
+    m3Expr->accumId(0, m3->id());
 
     expr->numSrcVarId(m3->id());
   }

@@ -135,33 +135,33 @@ public:
   std::string
   combineString1Min() const
   {
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     std::string z = "min(" + a + ", " + a + ")";
     return z;
   }
 
   std::string
   finalizeStringMin() const
-  { return accumStr(); }
+  { return accumStr(0); }
 
 
   std::string
   combineString1Max() const
   {
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     std::string z = "max(" + a + ", " + a + ")";
     return z;
   }
 
   std::string
   finalizeStringMax() const
-  { return accumStr(); }
+  { return accumStr(0); }
 
 
   std::string
   combineString1StdDev() const
   {
-    std::string a1 = accumStr();
+    std::string a1 = accumStr(0);
     std::string z1 = "sum(" + a1 + ", " + a1 + ")"; // running sum
     return z1;
   }
@@ -169,7 +169,7 @@ public:
   std::string
   combineString2StdDev() const
   {
-    std::string a2 = accum2Str();
+    std::string a2 = accumStr(1);
     std::string z2 = "sum(" + a2 + ", " + a2 + ")"; // running sum of squares
     return z2;
   }
@@ -178,20 +178,20 @@ public:
   std::string
   combineString1Sum() const
   {
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
 
   std::string
   finalizeStringSum() const
-  { return accumStr(); }
+  { return accumStr(0); }
 
 
   std::string
   combineString1Mean() const
   {
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     std::string z = "sum(" + a + ", " + a + ")";
     return z;
   }
@@ -204,7 +204,7 @@ public:
     // since the num of callers view and flat view will be 
     // accumulated
     std::string n = numSrcStr();
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     std::string z = a + " / " + n;
     return z;
   }
@@ -214,8 +214,8 @@ public:
   finalizeStringStdDev(std::string* meanRet = NULL) const
   {
     std::string n = numSrcStr();
-    std::string a1 = accumStr();  // running sum
-    std::string a2 = accum2Str(); // running sum of squares
+    std::string a1 = accumStr(0);  // running sum
+    std::string a2 = accumStr(1); // running sum of squares
 
     std::string mean = a1 + " / " + n;
     std::string z1 = "pow(" + mean + ", 2)"; // (mean)^2
@@ -252,7 +252,7 @@ public:
   std::string
   combineString1NumSource() const
   {
-    std::string a = accumStr();
+    std::string a = accumStr(0);
     // laks: avoid accumulation of NumSrc for callers view and flat view
     // std::string z = "sum(" + a + ", " + a + ")"; // a + numSrcFix()
     return a; // originally: z;
@@ -260,7 +260,7 @@ public:
 
   std::string
   finalizeStringNumSource() const
-  { return accumStr(); }
+  { return accumStr(0); }
 
 
   // --------------------------------------------------------
@@ -268,26 +268,19 @@ public:
   // --------------------------------------------------------
 
   virtual uint
-  accumId() const = 0;
+  accumId(int) const = 0;
 
   std::string
-  accumStr() const
-  { return "$"+ StrUtil::toStr(accumId()); }
+  accumStr(int i) const
+  { return "$"+ StrUtil::toStr(accumId(i)); }
 
 
   // --------------------------------------------------------
   // Primitives for building formulas
   // --------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const = 0;
-
   virtual uint
-  accum2Id() const = 0;
-
-  std::string
-  accum2Str() const
-  { return "$"+ StrUtil::toStr(accum2Id()); }
+  numAccum() const = 0;
 
 
   // --------------------------------------------------------
@@ -333,6 +326,8 @@ public:
   void
   ddump() const;
   
+protected:
+  enum {maxAccums = 2};
 private:
 };
 
