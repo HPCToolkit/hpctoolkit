@@ -66,7 +66,11 @@ GPU_IDLE(void)
 {
 }
 
+void
+OUTSIDE_THREAD(void)
+{
 
+}
 
 //
 // Interface procedures
@@ -99,6 +103,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
+  bundle->special_unthread_node = hpcrun_cct_new_special(OUTSIDE_THREAD);
 }
 //
 // Write to file for cct bundle: 
@@ -146,10 +151,21 @@ hpcrun_empty_cct(cct_bundle_t* cct)
 
 cct_node_t*
 hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
-{
   // attach special node to root if not already attached
+{
   if (! hpcrun_cct_parent(cct->special_idle_node))
     hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
 
   return cct->special_idle_node;
+}
+
+
+cct_node_t*
+hpcrun_cct_bundle_get_unthread_node(cct_bundle_t* cct)
+  // attach special node to root if not already attached
+{
+  if (! hpcrun_cct_parent(cct->special_unthread_node))
+    hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_unthread_node);
+
+  return cct->special_unthread_node;
 }

@@ -728,16 +728,25 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    // save the data in the queue. We may reuse again later
+    // save the data in the queue. We may reuse again later.
+    // writing the profile will be performed later in hpcrun_fini_internal
+    // unless there's a shutdown or cancellation, we need to write the
+    //  the profile here
 
     thread_data_t* td = hpcrun_get_thread_data();
     hpcrun_threadMgr_data_put(td);
 
-    /* writing will be performed later in hpcrun_fini_internal()
-     *
-     * hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-       hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
-    */
+    // get the dummy node that marks the end of the thread
+
+    cct_node_t *node  = hpcrun_cct_bundle_get_unthread_node(&epoch->csdata);
+    hpcrun_cct_retain(node);
+
+    // mark the end of the thread in the trace
+
+    int32_t trace_id    = hpcrun_cct_persistent_id(node);
+    hpcrun_trace_append(&td->core_profile_trace_data, trace_id, 0);
+
+    TMSG(PROCESS, "End of thread trace_id: %d", trace_id);
   }
 }
 
