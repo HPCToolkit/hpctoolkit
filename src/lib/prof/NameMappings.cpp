@@ -33,6 +33,7 @@ const char *OMP_OVERHEAD     = "<omp overhead>";
 const char *OMP_BARRIER_WAIT = "<omp barrier wait>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
+const char *NO_THREAD_ROOT   = "<no thread>";
 
 //******************************************************************************
 // types
@@ -85,7 +86,9 @@ static NameMapping renamingTable[] = {
   { "ompt_task_wait",          OMP_TASK_WAIT	    },
 
   { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	    },
-  { "ompt_mutex_wait",         OMP_MUTEX_WAIT       }
+  { "ompt_mutex_wait",         OMP_MUTEX_WAIT       },
+
+  { "NO_THREAD",               NO_THREAD_ROOT       }
 };
 
 static const char *fakeProcedures[] = {

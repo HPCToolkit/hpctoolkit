@@ -738,7 +738,7 @@ hpcrun_thread_fini(epoch_t *epoch)
 
     // get the dummy node that marks the end of the thread
 
-    cct_node_t *node  = hpcrun_cct_bundle_get_unthread_node(&epoch->csdata);
+    cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
     hpcrun_cct_retain(node);
 
     // mark the end of the thread in the trace

@@ -75,7 +75,7 @@ typedef struct cct_bundle_t {
 
   cct_node_t* special_idle_node;  // node to signify "idle" resource (used by trace facility).
 
-  cct_node_t* special_unthread_node; // trace node when outside the thread
+  cct_node_t* special_no_thread_node; // trace node when outside the thread
 
   cct_ctxt_t* ctxt;               // creation context for bundle
 
@@ -98,6 +98,6 @@ extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t*
 //
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
 extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
-extern cct_node_t* hpcrun_cct_bundle_get_unthread_node(cct_bundle_t* cct);
+extern cct_node_t* hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct);
 
 #endif // CCT_BUNDLE_H
