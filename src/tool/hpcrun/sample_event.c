@@ -301,9 +301,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     hpcrun_cct_retain(func_proxy);
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
 
-    // laks: move trace_id assignment after we mark the retaining node
-    //       this is to make sure the trace_id is already marked as retained.
-
     int32_t trace_id = hpcrun_cct_persistent_id(func_proxy);
     TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p, id = %d",
         func_proxy, trace_id);
