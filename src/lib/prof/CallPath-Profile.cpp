@@ -730,8 +730,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       if (mDrvdExpr) {
 	combineFrm = mDrvdExpr->combineString1();
 
-	if (mDrvdExpr->hasAccum2()) {
-	  uint mId = mDrvdExpr->accum2Id();
+	for (uint k = 1; k < mDrvdExpr->numAccum(); ++k) {
+	  uint mId = mDrvdExpr->accumId(k);
 	  string frm = mDrvdExpr->combineString2();
 	  metricIdToFormula.insert(std::make_pair(mId, frm));
 	}

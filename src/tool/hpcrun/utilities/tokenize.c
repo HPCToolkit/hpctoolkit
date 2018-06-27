@@ -60,6 +60,10 @@
 #define EVENT_DELIMITER '@'
 #define PREFIX_FREQUENCY 'f'
 
+#define THRESH_DEFAULT 0
+#define THRESH_VALUE   1
+#define THRESH_FREQ    2
+
 
 static char *tmp;
 static char *tk;
@@ -97,28 +101,53 @@ next_tok(void)
  */
 // Returns:
 //   2 if event has explicit frequency
-//   1 if event has explicit period threshold,
+//   1 if event has explicit threshold,
 //   0 if using default.
 int
-hpcrun_extract_threshold(const char *in, long *th, long def)
+hpcrun_extract_threshold
+(
+ const char *input_string, 
+ long *threshold, 
+ long default_value
+)
 {
-  if (in == NULL) {
-    *th = def;
-    return 0;
+  int type = THRESH_VALUE;
+
+  if (input_string == NULL) {
+    *threshold = default_value;
+    type = THRESH_DEFAULT;
+  } else {
+    if (*input_string == PREFIX_FREQUENCY) { 
+      input_string++; // skip the PREFIX_FREQUENCY character
+      type = THRESH_FREQ;
+    } else {
+      type = THRESH_VALUE;
+    }
+    
+    char *endptr;
+    long value = strtol(input_string, &endptr, 10);
+    if (value == 0) {
+      //  If there were no digits at all, strtol() stores the original
+      //  value of nptr in *endptr. if there were no digits at all, use
+      //  the default threshold; otherwise, the value 0 was supplied and
+      //  intended.
+      if (endptr == input_string) {
+	value = default_value;
+	if (type == THRESH_FREQ) {
+	  // FIXME: Laksono: we have some choices 
+	  //
+	  //   Should the type be changed to THRESH_VALUE here?
+	  //
+	  //   Should we just signal an error and quit? Perhaps we are here
+	  //   because of a typo.
+	}
+      }
+    }
+    
+    *threshold = value;
   }
-
-  int is_period = in[0] == 'f';
-  int pos       = 0;
-  if (is_period) {
-    pos = 1;
-  }
-  long num = strtol(in + pos, (char **)NULL, 10);
-  *th = (num == 0 ? def : num);
-
-  if (is_period)
-    return 2;
-
-  return 1;
+    
+  return type;
 }
 
 // event option syntax is event_name @ [f] threshold
