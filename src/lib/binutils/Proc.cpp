@@ -162,21 +162,25 @@ BinUtil::Proc::dump(std::ostream& os, int flags, const char* pre) const
   os << p << "  LnMap(e): {" << e_file << "}["
      << BinUtil::canonicalizeProcName(e_proc) << "]:" << e_endLn2 << "\n";
   
-  os << p << "  ID, Type: " << id() << ", `";
+  os << p << "  ID, Type: " << id() << ", ";
+  
+  bool instructionDump = true;
   switch (type()) {
-    case Local:   os << "Local'\n";  break;
-    case Weak:    os << "Weak'\n";   break;
-    case Global:  os << "Global'\n"; break;
-    case Quasi:   os << "Quasi'\n";  break;
-    default:      os << "-unknown-'\n";
-      DIAG_Die("Unknown Procedure type: " << type());
+    case Local:   os << "Local\n";  break;
+    case Weak:    os << "Weak\n";   break;
+    case Global:  os << "Global\n"; break;
+    case Quasi:   os << "Quasi\n";  break;
+    default:      os << "Other\n";
+      instructionDump = false;
+      break;
   }
+
   os << showbase
      << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << "]\n";
   os << p << "  Size(b): " << size() << "\n";
   
-  if ((flags & LM::DUMP_Flg_Insn_ty)
-      || (flags & LM::DUMP_Flg_Insn_decode)) {
+  if (instructionDump && ((flags & LM::DUMP_Flg_Insn_ty) || 
+                          (flags & LM::DUMP_Flg_Insn_decode))) {
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.isValid(); ++it) {
       Insn* insn = it.current();
