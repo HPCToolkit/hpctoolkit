@@ -178,6 +178,27 @@ Options: Profiling (Defaults shown in curly brackets {})
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
+   
+  -f <frac>, -fp <frac>, --process-fraction <frac>
+                       Measure only a fraction <frac> of the execution's
+                       processes.  For each process, enable measurement
+                       (of all threads) with probability <frac>; <frac> is a
+                       real number (0.10) or a fraction (1/10) between 0 and 1.
+  
+  -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
+                       This option is to reduce the number of generated
+                       profile and trace files as each thread generates its own
+                       profile and trace data. The options are:
+                       0 : do not merge non-overlapped threads
+                       1 : merge non-overlapped threads (default) 
+
+  -o <outpath>, --output <outpath>
+                       Directory for output data.
+                       {hpctoolkit-<command>-measurements[-<jobid>]}
+
+                       Bug: Without a <jobid> or an output option, multiple
+                       profiles of the same <command> will be placed in the
+                       same output directory.
 
   -p,  --precise-ip <level>
                        Specify the precise ip level (used only with perf events):
@@ -187,20 +208,6 @@ Options: Profiling (Defaults shown in curly brackets {})
                        3: sample ip must have 0 skid
                        NOTE: Some architectures support a precise IP with 0 skid.
                              Incorrect level will unable hpcrun to sample the events.
-   
-  -f <frac>, -fp <frac>, --process-fraction <frac>
-                       Measure only a fraction <frac> of the execution's
-                       processes.  For each process, enable measurement
-                       (of all threads) with probability <frac>; <frac> is a
-                       real number (0.10) or a fraction (1/10) between 0 and 1.
-
-  -o <outpath>, --output <outpath>
-                       Directory for output data.
-                       {hpctoolkit-<command>-measurements[-<jobid>]}
-
-                       Bug: Without a <jobid> or an output option, multiple
-                       profiles of the same <command> will be placed in the
-                       same output directory.
 
   -r, --retain-recursion
                        Normally, hpcrun will collapse (simple) recursive call chains
@@ -336,6 +343,14 @@ do
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
+  # --------------------------------------------------
+
+  -m | --merge-threads )
+      arg_ok "$1" || die "missing argument for $arg"
+      export HPCRUN_MERGE_THREADS="$1"
+      shift
+      ;;
+      
 	# --------------------------------------------------
 
 	-lm | --low-memsize )

@@ -57,6 +57,14 @@
 
 #include "thread_data.h"
 
+
+//******************************************************************************
+// constants
+//******************************************************************************
+
+#define OPTION_NO_COMPACT_THREAD  0
+#define OPTION_COMPACT_THREAD     1
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -75,5 +83,8 @@ hpcrun_threadMgr_data_put( thread_data_t *data );
 
 void
 hpcrun_threadMgr_data_fini(thread_data_t *td);
+
+int
+hpcrun_threadMgr_compact_thread();
 
 #endif

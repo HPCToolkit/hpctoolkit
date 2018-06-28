@@ -54,8 +54,9 @@
 //******************************************************************************
 // system include files 
 //******************************************************************************
-#include <stdint.h>
 
+#include <stdint.h>
+#include <stdlib.h>
 
 
 //******************************************************************************
@@ -69,8 +70,13 @@
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 
-
 #include <include/queue.h>
+
+//******************************************************************************
+// macro
+//******************************************************************************
+
+#define HPCRUN_OPTION_MERGE_THREAD "HPCRUN_MERGE_THREADS"
 
 //******************************************************************************
 // data structure
@@ -102,6 +108,32 @@ adjust_thread_count(int32_t val)
 }
 
 
+static bool
+is_compact_thread()
+{
+  return hpcrun_threadMgr_compact_thread() == OPTION_COMPACT_THREAD;
+}
+
+static thread_data_t*
+allocate_thread_data(int id, cct_ctxt_t *thr_ctxt, size_t num_sources)
+{
+  thread_data_t *data = hpcrun_allocate_thread_data(id);
+
+  // requires to set the data before calling thread_data_init
+  // since the function will query the thread local data :-(
+
+  hpcrun_set_thread_data(data);
+  hpcrun_thread_data_init(id, thr_ctxt, 0, num_sources);
+
+  return data;
+}
+
+static void
+finalize_thread_data(core_profile_trace_data_t *current_data)
+{
+  hpcrun_write_profile_data( current_data );
+  hpcrun_trace_close( current_data );
+}
 
 //******************************************************************************
 // interface operations
@@ -127,10 +159,49 @@ hpcrun_threadmgr_thread_count()
 	return atomic_load_explicit(&threadmgr_active_threads, memory_order_relaxed);
 }
 
+/**
+ * Return the type of HPCRUN_OPTION_MERGE_THREAD option
+ * Possible value:
+ *  OPTION_COMPACT_THREAD : (default) compact thread is required
+ *  OPTION_NO_COMPACT_THREAD : do not compact the threads
+ **/
+int
+hpcrun_threadMgr_compact_thread()
+{
+  static int compact_thread = -1;
 
+  if (compact_thread >= 0) {
+    return compact_thread;
+  }
+
+  char *env_option = getenv(HPCRUN_OPTION_MERGE_THREAD);
+  if (env_option) {
+    compact_thread = atoi(env_option);
+    EMSG("hpcrun compact thread: %d", compact_thread);
+  } else {
+    compact_thread = OPTION_COMPACT_THREAD;
+  }
+  return compact_thread;
+}
+
+
+/***
+ * get pointer of thread local data
+ * two possibilities:
+ * - if we don't want compact thread, we just allocate and return
+ * - if we want a compact thread, we check if there is already unused thread data
+ *   - if there is an unused thread data, we'll reuse it again
+ *   - if there is no more thread data available, we need to allocate a new one
+ *****/
 thread_data_t *
 hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 {
+  // if we don't want coalesce threads, just allocate it and return
+
+  if (!is_compact_thread()) {
+    return allocate_thread_data(id, thr_ctxt, num_sources);
+  }
+
   thread_data_t *data = NULL;
 
   spinlock_lock(&threaddata_lock);
@@ -139,13 +210,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 
     spinlock_unlock(&threaddata_lock);
 
-    data = hpcrun_allocate_thread_data(id);
-
-    // requires to set the data before calling thread_data_init
-    // since the function will query the thread local data :-(
-
-    hpcrun_set_thread_data(data);
-    hpcrun_thread_data_init(id, thr_ctxt, 0, num_sources);
+    data = allocate_thread_data(id, thr_ctxt, num_sources);
 
     TMSG(PROCESS, "%d: new thread data", id);
 
@@ -168,6 +233,12 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 void
 hpcrun_threadMgr_data_put( thread_data_t *data )
 {
+  // if we don't want coalesce the threads, write the profile data and return
+  if (!is_compact_thread()) {
+    finalize_thread_data(&data->core_profile_trace_data);
+    return;
+  }
+
   spinlock_lock(&threaddata_lock);
 
   thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));
@@ -191,8 +262,7 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
     if (item != NULL) {
 
       core_profile_trace_data_t *data = &item->thread_data->core_profile_trace_data;
-      hpcrun_write_profile_data( data );
-      hpcrun_trace_close( data );
+      finalize_thread_data(data);
 
       TMSG(PROCESS, "%d: write thread data", data->id);
 
@@ -206,10 +276,9 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   // for sequential or pure MPI programs, they don't have list of thread data in this queue.
   // hence, we need to process specifically here
   if (!is_processed) {
-    core_profile_trace_data_t *current_data = &td->core_profile_trace_data;
 
-    hpcrun_write_profile_data( current_data );
-    hpcrun_trace_close( current_data );
+    finalize_thread_data(&td->core_profile_trace_data);
+
     TMSG(PROCESS, "%d: write thread data, finally", td->core_profile_trace_data.id);
   }
 }
