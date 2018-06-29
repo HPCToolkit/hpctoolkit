@@ -70,6 +70,7 @@
 #include <string.h>
 #include <include/uint.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -138,6 +139,7 @@ using namespace std;
 #endif
 
 #define DISABLE_BROKEN_CODE_OBJECT_DELETE  0
+#define WORK_LIST_PCT  0.05
 
 
 //******************************************************************************
@@ -174,6 +176,9 @@ makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
 
 static void
 doWorkItem(Symtab *, WorkItem *, bool, bool);
+
+static void
+makeWorkList(FileMap *, WorkList &, WorkList &);
 
 static void
 printWorkList(WorkList &, uint &, ostream *, ostream *, string);
@@ -297,18 +302,22 @@ public:
   FileInfo * finfo;
   GroupInfo * ginfo;
   HPC::StringTable * strTab;
+  double cost;
   bool first_proc;
   bool last_proc;
   bool is_done;
+  bool promote;
 
-  WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last)
+  WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last, double cst)
   {
     finfo = fi;
     ginfo = gi;
     strTab = NULL;
+    cost = cst;
     first_proc = first;
     last_proc = last;
     is_done = false;
+    promote = false;
   }
 };
 
@@ -541,47 +550,33 @@ makeStructure(string filename,
     FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
 
     //
-    // work list of functions.  for better concurrency, it's easier to
-    // have a single, flat list.
+    // make two work lists:
+    //  wlPrint -- the output order in the struct file as determined
+    //    by files and procs from makeSkeleton(),
+    //  wlLaunch -- the order we launch doWorkItem(), mostly print
+    //    order but with a few, very large funcs moved to the front of
+    //    the list.
     //
-    WorkList workList;
-
-    for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
-      FileInfo * finfo = fit->second;
-      auto group_begin = finfo->groupMap.begin();
-      auto group_end = finfo->groupMap.end();
-
-      for (auto git = group_begin; git != group_end; ++git) {
-	GroupInfo * ginfo = git->second;
-	auto next_git = git;  ++next_git;
-
-	WorkItem * witem =
-	  new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end));
-
-	workList.push_back(witem);
-      }
-    }
-
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
-
-    //
-    // process the work list in parallel, but do the printing in work
-    // list order, not the order in which the items finish.
-    //
+    WorkList wlPrint;
+    WorkList wlLaunch;
     uint num_done = 0;
     mutex output_mtx;
 
-#pragma omp parallel  default(none)   \
-    shared(workList, num_done, output_mtx)   \
+    makeWorkList(fileMap, wlPrint, wlLaunch);
+
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+
+#pragma omp parallel  default(none)					\
+    shared(wlPrint, wlLaunch, num_done, output_mtx)			\
     firstprivate(symtab, outFile, gapsFile, gaps_filenm, cuda_file)
     {
 #pragma omp for  schedule(dynamic, 1)
-      for (uint i = 0; i < workList.size(); i++) {
-	doWorkItem(symtab, workList[i], cuda_file, gapsFile != NULL);
+      for (uint i = 0; i < wlLaunch.size(); i++) {
+	doWorkItem(symtab, wlLaunch[i], cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
 	if (output_mtx.try_lock()) {
-	  printWorkList(workList, num_done, outFile, gapsFile, gaps_filenm);
+	  printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
 	  output_mtx.unlock();
 	}
       }
@@ -589,21 +584,21 @@ makeStructure(string filename,
 
     // with try_lock(), there are interleavings where not all items
     // have been printed.
-    printWorkList(workList, num_done, outFile, gapsFile, gaps_filenm);
+    printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
 
     Output::printLoadModuleEnd(outFile);
 
     if (opts.show_time) {
       printTime("struct:", &tv_parse, &ru_parse, &tv_fini, &ru_fini);
       printTime("total: ", &tv_init, &ru_init, &tv_fini, &ru_fini);
-      cout << "\nnum funcs: " << workList.size() << "\n" << endl;
+      cout << "\nnum funcs: " << wlPrint.size() << "\n" << endl;
     }
 
     // if this is the last (or only) elf file, then don't bother with
     // piecemeal cleanup.
     if (i + 1 < elfFileVector->size()) {
-      for (uint i = 0; i < workList.size(); i++) {
-	delete workList[i];
+      for (uint i = 0; i < wlPrint.size(); i++) {
+	delete wlPrint[i];
       }
 
 #if ! DISABLE_BROKEN_CODE_OBJECT_DELETE
@@ -641,6 +636,90 @@ doWorkItem(Symtab * symtab, WorkItem * witem, bool cuda_file, bool fullGaps)
   }
 
   witem->is_done = true;
+}
+
+//----------------------------------------------------------------------
+
+// Order Work Items by the expected 'cost' of their proc group,
+// largest to smallest.
+//
+static bool
+WorkItemGreaterThan(WorkItem * w1, WorkItem * w2)
+{
+  return w1->cost > w2->cost;
+}
+
+//
+// Make work lists for the print order and parallel launch order from
+// the skeleton file map.  The launch order is mostly the print order
+// with a few, very large funcs moved to the front.
+//
+// There are two extremes to avoid: (1) we don't want the printing to
+// be blocked by one early func that was started late, and (2) we
+// don't want one large func to run at the end when all the other
+// threads are idle.
+//
+static void
+makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
+{
+  double total_cost = 0.0;
+
+  wlPrint.clear();
+  wlLaunch.clear();
+
+  // the print order is determined by the hierarchy of files and
+  // groups in the skeleton.
+  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+    FileInfo * finfo = fit->second;
+    auto group_begin = finfo->groupMap.begin();
+    auto group_end = finfo->groupMap.end();
+
+    for (auto git = group_begin; git != group_end; ++git) {
+      GroupInfo * ginfo = git->second;
+      auto next_git = git;  ++next_git;
+
+      // the estimated time is non-linear in the size of the region
+      double cost = ginfo->end - ginfo->start;
+      cost *= cost;
+      total_cost += cost;
+
+      WorkItem * witem =
+	new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end), cost);
+
+      wlPrint.push_back(witem);
+    }
+  }
+
+  // if single-threaded, then order doesn't matter
+  if (opts.jobs == 1) {
+    wlLaunch = wlPrint;
+    return;
+  }
+
+  //
+  // if the expected cost of one function is more than 5% of the ideal
+  // parallel run time, then promote it to start early.
+  //
+  double threshold = WORK_LIST_PCT * total_cost / ((double) opts.jobs);
+
+  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
+    WorkItem * witem = *wit;
+
+    if (witem->cost > threshold) {
+      wlLaunch.push_back(witem);
+      witem->promote = true;
+    }
+  }
+  std::sort(wlLaunch.begin(), wlLaunch.end(), WorkItemGreaterThan);
+
+  // add the small items in print order
+  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
+    WorkItem * witem = *wit;
+
+    if (! witem->promote) {
+      wlLaunch.push_back(witem);
+    }
+  }
 }
 
 //----------------------------------------------------------------------
