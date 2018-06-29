@@ -45,54 +45,26 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TCTTime.hpp
+ * File:   TCT-Metrics.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 4, 2018, 11:01 PM
- * 
- * Time structs in Temporal Context Tree. 
+ * Created on June 29, 2018, 10:11 AM
  */
 
-#ifndef TCT_TIME_HPP
-#define TCT_TIME_HPP
-
-#include <string>
-using std::string;
-
-#include "../TraceAnalysisCommon.hpp"
+#include "TCT-Metrics.hpp"
+#include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  // Temporal Context Tree Time
-  class TCTTime {
-  public:
-    TCTTime();
-    TCTTime(const TCTTime& orig);
-    virtual ~TCTTime();
-    
-    void clear();
-    
-    Time getDuration() const;
-    Time getMinDuration() const;
-    Time getMaxDuration() const;
-    
-    void setDuration(Time min, Time max);
-    
-    void setStartTime(Time exclusive, Time inclusive);
-    void setEndTime(Time inclusive, Time exclusive);
-    Time getStartTimeExclusive() const;
-    Time getStartTimeInclusive() const;
-    Time getEndTimeInclusive() const;
-    Time getEndTimeExclusive() const;
-    
-    void addTime(const TCTTime& other);
-    void setAsAverageTime(const TCTTime& time1, long weight1, const TCTTime& time2, long weight2);
-    
-    string toString() const;
-    
-  private:
-    void* ptr;
-  };
+  void TCTPerfLossMetric::initDurationMetric(Time duration, int weight) {
+    maxDuration = duration;
+    minDuration = duration;
+    totalDuration = (double)duration * (double)weight;
+  }
+  
+  void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {
+    maxDuration = std::max(rep1.maxDuration, rep2.maxDuration);
+    minDuration = std::min(rep1.minDuration, rep2.minDuration);
+    totalDuration = rep1.totalDuration + rep2.totalDuration;
+  }
 }
-
-#endif /* TCT_TIME_HPP */
-
+  

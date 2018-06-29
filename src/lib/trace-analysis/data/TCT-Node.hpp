@@ -72,6 +72,7 @@ using std::set;
 #include "../TraceCluster.hpp"
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
+#include "TCT-Metrics.hpp"
 
 namespace TraceAnalysis {
   // Forward declarations
@@ -109,55 +110,6 @@ namespace TraceAnalysis {
     }
   };
   
-  class TCTDiffScore {
-    friend class TCTANode;
-  public:
-    double getInclusive() const {
-      return inclusive;
-    }
-    
-    double getExclusive() const {
-      return exclusive;
-    }
-    
-    void setScores(double inclusive, double exclusive) {
-      this->inclusive = inclusive;
-      this->exclusive = exclusive;
-    }
-    
-    void clear() {
-      inclusive = 0;
-      exclusive = 0;
-    }
-    
-  private:
-    double inclusive;
-    double exclusive;
-    
-    TCTDiffScore() : inclusive(0), exclusive(0) {}
-    TCTDiffScore(const TCTDiffScore& other): inclusive(other.inclusive), exclusive(other.exclusive) {}
-    virtual ~TCTDiffScore() {}
-  };
-  
-  // Records performance loss metrics
-  class TCTPerfLossMetric {
-    friend class TCTANode;
-  public:
-    void initDurationMetric();
-    void setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2);
-    
-  private:
-    TCTPerfLossMetric(TCTANode* node) : node(node) {}
-    virtual ~TCTPerfLossMetric() {}
-    
-    TCTANode* const node; // the TCTANode
-    
-    // Metrics that records durations of all instances represented by this TCTANode
-    Time minDuration;
-    Time maxDuration;
-    double totalDuration;
-  };
-  
   // Temporal Context Tree Abstract Node
   class TCTANode {
     friend class TCTLoopNode;
@@ -171,16 +123,25 @@ namespace TraceAnalysis {
     };
     
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), 
-        depth(depth), weight(1), time(), diffScore(), plm(this) {}
+        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), time() {
+      diffScore = new TCTDiffScore();
+      plm = new TCTPerfLossMetric();
+    }
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), 
-        time(orig.time), diffScore(orig.diffScore), plm(this) {}
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time) {
+      diffScore = new TCTDiffScore(*orig.diffScore);
+      plm = new TCTPerfLossMetric(*orig.plm);
+    }
     TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight),
-        time(orig.time), diffScore(orig.diffScore), plm(this) {}
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time) {
+      diffScore = new TCTDiffScore(*orig.diffScore);
+      plm = new TCTPerfLossMetric(*orig.plm);
+    }
     
-    virtual ~TCTANode() {}
+    virtual ~TCTANode() {
+      delete diffScore;
+      delete plm;
+    }
     
     virtual TCTTime& getTime() {
       return time;
@@ -210,28 +171,28 @@ namespace TraceAnalysis {
       return time.getMaxDuration();
     }
     
-    virtual int getWeight() const {
+    virtual long getWeight() const {
       return weight;
     }
     
-    virtual void setWeight(int weight) {
+    virtual void setWeight(long weight) {
       this->weight = weight;
     }
     
     virtual TCTDiffScore& getDiffScore() {
-      return diffScore;
+      return *diffScore;
     }
     
     virtual const TCTDiffScore& getDiffScore() const {
-      return diffScore;
+      return *diffScore;
     }
     
     virtual TCTPerfLossMetric& getPerfLossMetric() {
-      return plm;
+      return *plm;
     }
     
     virtual const TCTPerfLossMetric& getPerfLossMetric() const {
-      return plm;
+      return *plm;
     }
     
     // returns a pointer to a duplicate of this object. 
@@ -263,10 +224,10 @@ namespace TraceAnalysis {
   protected:
     string name;
     int depth;
-    int weight;
+    long weight;
     TCTTime time;
-    TCTDiffScore diffScore;
-    TCTPerfLossMetric plm;
+    TCTDiffScore* diffScore;
+    TCTPerfLossMetric* plm;
   };
   
   // Temporal Context Tree Abstract Trace Node
@@ -392,6 +353,28 @@ namespace TraceAnalysis {
     }
   };
   
+  class TCTIterationSet {
+    friend class TCTLoopNode;
+  private:
+    TCTIterationSet(int iterNum) {
+      startIterNum.push_back(iterNum);
+      endIterNum.push_back(iterNum);
+    }
+    
+    TCTIterationSet(const TCTIterationSet& other) {
+      startIterNum = other.startIterNum;
+      endIterNum = other.endIterNum;
+    }
+    
+    ~TCTIterationSet() {}
+    
+    vector<int> startIterNum; // the starting iteration number (inclusive)
+    vector<int> endIterNum; // the ending iteration number (inclusive)
+  };
+  
+  //class TCTIterationGroup {  
+  //};
+  
   class TCTLoopNode : public TCTANode {
     friend class TCTProfileNode;
   public:
@@ -494,7 +477,8 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const {
       TCTProfileNode* ret = new TCTProfileNode(*this, false);
       ret->time.clear();
-      ret->diffScore.clear();
+      ret->diffScore->clear();
+      ret->plm->clear();
       return ret;
     }
     

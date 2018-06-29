@@ -79,7 +79,7 @@ namespace TraceAnalysis {
     return 0;
   }
   
-  TCTANode* AbstractTraceCluster::mergeNode(const TCTANode* node1, int weight1, const TCTANode* node2, int weight2, 
+  TCTANode* AbstractTraceCluster::mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     if (!(node1->id == node2->id))
       print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes with different id: %s vs %s.\n", 
@@ -115,7 +115,7 @@ namespace TraceAnalysis {
     }
   }
   
-  TCTProfileNode* AbstractTraceCluster::mergeProfileNode(const TCTProfileNode* prof1, int weight1, const TCTProfileNode* prof2, int weight2, 
+  TCTProfileNode* AbstractTraceCluster::mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTProfileNode* mergedProf = (TCTProfileNode*)prof1->voidDuplicate();
     if (!isScoreOnly) {
@@ -240,7 +240,7 @@ namespace TraceAnalysis {
     return mergedProf;
   }
   
-  TCTANode* AbstractTraceCluster::mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
+  TCTANode* AbstractTraceCluster::mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTATraceNode* mergedTrace = (TCTATraceNode*)trace1->voidDuplicate();
     if (!isScoreOnly) {
@@ -447,7 +447,7 @@ namespace TraceAnalysis {
     return mergedTrace;
   }
   
-  TCTANode* LocalTraceCluster::mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+  TCTANode* LocalTraceCluster::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(loop1);
     TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(loop2);

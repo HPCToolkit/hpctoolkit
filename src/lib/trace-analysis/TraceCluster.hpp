@@ -74,13 +74,13 @@ namespace TraceAnalysis {
     /* Return the merged node of the input node1 and node2.
      * Callee responsible for deallocating the merged node.
      */
-    TCTANode* mergeNode(const TCTANode* node1, int weight1, const TCTANode* node2, int weight2, 
+    TCTANode* mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    TCTProfileNode* mergeProfileNode(const TCTProfileNode* prof1, int weight1, const TCTProfileNode* prof2, int weight2, 
+    TCTProfileNode* mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    TCTANode* mergeTraceNode(const TCTATraceNode* trace1, int weight1, const TCTATraceNode* trace2, int weight2, 
+    TCTANode* mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly) = 0;
   protected:
     const Time& samplingPeriod;
@@ -92,7 +92,7 @@ namespace TraceAnalysis {
   public:
     LocalTraceCluster(const Time& samplingPeriod) : AbstractTraceCluster(samplingPeriod) {}
     
-    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, int weight1, const TCTLoopNode* loop2, int weight2, 
+    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
   };
 }

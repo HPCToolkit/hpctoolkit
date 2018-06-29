@@ -90,7 +90,7 @@ namespace TraceAnalysis {
   }
   #undef MSG_LEVEL
 
-  const Time computeWeightedAverage(Time time1, int w1, Time time2, int w2) {
+  const Time computeWeightedAverage(Time time1, long w1, Time time2, long w2) {
     double total = (double)time1 * (double)w1 + (double)time2 * (double)w2;
     double average = round(total / (double)(w1 + w2));
     return (Time) average;

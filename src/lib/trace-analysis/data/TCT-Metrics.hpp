@@ -45,54 +45,71 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TCTTime.hpp
+ * File:   TCT-Metrics.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 4, 2018, 11:01 PM
- * 
- * Time structs in Temporal Context Tree. 
+ * Created on June 29, 2018, 10:02 AM
  */
 
-#ifndef TCT_TIME_HPP
-#define TCT_TIME_HPP
-
-#include <string>
-using std::string;
+#ifndef TCT_METRICS_HPP
+#define TCT_METRICS_HPP
 
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  // Temporal Context Tree Time
-  class TCTTime {
+  class TCTDiffScore {
   public:
-    TCTTime();
-    TCTTime(const TCTTime& orig);
-    virtual ~TCTTime();
+    TCTDiffScore() : inclusive(0), exclusive(0) {}
+    TCTDiffScore(const TCTDiffScore& other): inclusive(other.inclusive), exclusive(other.exclusive) {}
+    virtual ~TCTDiffScore() {}
     
-    void clear();
+    double getInclusive() const {
+      return inclusive;
+    }
     
-    Time getDuration() const;
-    Time getMinDuration() const;
-    Time getMaxDuration() const;
+    double getExclusive() const {
+      return exclusive;
+    }
     
-    void setDuration(Time min, Time max);
+    void setScores(double inclusive, double exclusive) {
+      this->inclusive = inclusive;
+      this->exclusive = exclusive;
+    }
     
-    void setStartTime(Time exclusive, Time inclusive);
-    void setEndTime(Time inclusive, Time exclusive);
-    Time getStartTimeExclusive() const;
-    Time getStartTimeInclusive() const;
-    Time getEndTimeInclusive() const;
-    Time getEndTimeExclusive() const;
-    
-    void addTime(const TCTTime& other);
-    void setAsAverageTime(const TCTTime& time1, long weight1, const TCTTime& time2, long weight2);
-    
-    string toString() const;
+    void clear() {
+      inclusive = 0;
+      exclusive = 0;
+    }
     
   private:
-    void* ptr;
+    double inclusive;
+    double exclusive;
+  };
+  
+  // Records performance loss metrics
+  class TCTPerfLossMetric {
+  public:
+    TCTPerfLossMetric(): minDuration(0), maxDuration(0), totalDuration(0) {}
+    TCTPerfLossMetric(const TCTPerfLossMetric& other): minDuration(other.minDuration), 
+        maxDuration(other.maxDuration), totalDuration(other.totalDuration){}
+    virtual ~TCTPerfLossMetric() {}
+    
+    void initDurationMetric(Time duration, int weight);
+    void setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2);
+    
+    void clear() {
+      minDuration = 0;
+      maxDuration = 0;
+      totalDuration = 0;
+    }
+    
+  private:
+    // Metrics that records durations of all instances represented by this TCTANode
+    Time minDuration;
+    Time maxDuration;
+    double totalDuration;
   };
 }
 
-#endif /* TCT_TIME_HPP */
+#endif /* TCT_METRICS_HPP */
 

@@ -84,7 +84,7 @@ namespace TraceAnalysis {
   // Parameters and functions for difference quantification.
   const Time MIN_SAMPLE_PERIOD = 1000;
   const uint MAX_SAMPLE_NOISE = 10;
-  const Time computeWeightedAverage(Time time1, int w1, Time time2, int w2);
+  const Time computeWeightedAverage(Time time1, long w1, Time time2, long w2);
   
   // Parameters for clustering.
   const int MAX_NUM_CLUSTER = 10;

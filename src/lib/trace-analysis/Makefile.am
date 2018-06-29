@@ -74,6 +74,7 @@ MYSOURCES = \
 	data/TCT-CFG.hpp \
 	data/TCT-Time.hpp data/TCT-Time.cpp \
 	data/TCT-Node.hpp data/TCT-Node.cpp \
+	data/TCT-Metrics.hpp data/TCT-Metrics.cpp \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
 	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \

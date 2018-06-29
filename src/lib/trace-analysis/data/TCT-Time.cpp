@@ -267,7 +267,7 @@ namespace TraceAnalysis {
     profTime->maxDurationInclusive += otherATime->getMaxDuration();
   }
 
-  void TCTTime::setAsAverageTime(const TCTTime& time1, int weight1, const TCTTime& time2, int weight2) {
+  void TCTTime::setAsAverageTime(const TCTTime& time1, long weight1, const TCTTime& time2, long weight2) {
     TCTATime* aTime = (TCTATime*)ptr;
     TCTATime* aTime1 = (TCTATime*)time1.ptr;
     TCTATime* aTime2 = (TCTATime*)time2.ptr;

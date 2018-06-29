@@ -99,7 +99,7 @@ namespace TraceAnalysis {
     void popOneNode(Time endTimeInclusive, Time endTimeExclusive) {
       TCTANode* node = activeStack.back();
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
-      node->getPerfLossMetric().initDurationMetric();
+      node->getPerfLossMetric().initDurationMetric(node->getDuration(), node->getWeight());
       activeStack.pop_back();
 
       if (activeStack.size() > 0) {

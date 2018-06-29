@@ -69,9 +69,9 @@ namespace TraceAnalysis {
     ret += " " + time.toString();
     if (samplingInterval != 0)
       ret += ", " + std::to_string(getDuration()/samplingInterval) + " samples";
-    if (diffScore.getInclusive() > 0)
-      ret += ", DiffScore = " + std::to_string((long)diffScore.getInclusive())
-              + "/" + std::to_string((long)diffScore.getExclusive());
+    if (diffScore->getInclusive() > 0)
+      ret += ", DiffScore = " + std::to_string((long)diffScore->getInclusive())
+              + "/" + std::to_string((long)diffScore->getExclusive());
     ret += "\n";
     
     return ret;
@@ -116,18 +116,6 @@ namespace TraceAnalysis {
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       ret += it->second->toString(maxDepth, minDuration, samplingInterval);
     return ret;
-  }
-  
-  void TCTPerfLossMetric::initDurationMetric() {
-    maxDuration = node->getDuration();
-    minDuration = node->getDuration();
-    totalDuration = (double)node->getDuration() * (double)node->getWeight();
-  }
-  
-  void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {
-    maxDuration = std::max(rep1.maxDuration, rep2.maxDuration);
-    minDuration = std::min(rep1.minDuration, rep2.minDuration);
-    totalDuration = rep1.totalDuration + rep2.totalDuration;
   }
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig), traceCluster(orig.traceCluster) {
