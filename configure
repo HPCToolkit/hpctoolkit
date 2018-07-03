@@ -4079,11 +4079,41 @@ fi
 libdir='${exec_prefix}/lib'
 
 #-------------------------------------------------
-# SVN version
+# Git version
 #-------------------------------------------------
 
-# Git does not provide linear rev numbers, so we can't append this to
-# the package version (sigh).
+# If this is a git repo, then try to identify the branch name and the
+# date and hash of the last commit.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for git version" >&5
+$as_echo_n "checking for git version... " >&6; }
+
+git_version='unknown (not a git repo)'
+
+mesg=`cd "$top_srcdir" && git log -n 1 --date=short 2>/dev/null`
+if echo "$mesg" | grep -i commit >/dev/null ; then
+  git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
+  git_hash=`expr "$git_hash" : '\(........\)'`
+  git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
+
+  mesg=`cd "$top_srcdir" && git status 2>/dev/null | head -1`
+  if echo "$mesg" | grep -i branch >/dev/null ; then
+    git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
+
+  elif echo "$mesg" | grep -i detach >/dev/null ; then
+    # detached commits don't have a branch name
+    git_branch=detached
+
+  else
+    git_branch=unknown
+  fi
+
+  git_version="$git_branch at $git_date ($git_hash)"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $git_version" >&5
+$as_echo "$git_version" >&6; }
+
 
 
 cat >>confdefs.h <<_ACEOF
@@ -19195,6 +19225,11 @@ $as_echo "$as_me: using externals tree: $with_externals" >&6;}
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
+  { $as_echo "$as_me:${as_lineno-$LINENO}: externals version: $ext_version" >&5
+$as_echo "$as_me: externals version: $ext_version" >&6;}
+  if test "x$ext_version" = x0 ; then
+    ext_version=
+  fi
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using --with-externals" >&5
 $as_echo "$as_me: WARNING: not using --with-externals" >&2;}
@@ -25488,6 +25523,12 @@ $as_echo "$as_me: HPCToolkit summary" >&6;}
 $as_echo "$as_me: -------------------" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   HPCToolkit version: ${PACKAGE_VERSION}" >&5
 $as_echo "$as_me:   HPCToolkit version: ${PACKAGE_VERSION}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   git version: $git_version" >&5
+$as_echo "$as_me:   git version: $git_version" >&6;}
+if test "x$ext_version" != x ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   externals:   $ext_version" >&5
+$as_echo "$as_me:   externals:   $ext_version" >&6;}
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   prefix: $prefix" >&5
