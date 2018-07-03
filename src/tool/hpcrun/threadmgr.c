@@ -196,6 +196,8 @@ hpcrun_threadMgr_compact_thread()
 thread_data_t *
 hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 {
+  static unsigned int logical_id = 0;
+
   // if we don't want coalesce threads, just allocate it and return
 
   if (!is_compact_thread()) {
@@ -207,12 +209,12 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
   spinlock_lock(&threaddata_lock);
 
   if (SLIST_EMPTY(&list_thread_head)) {
-
+    unsigned int myid = ++logical_id;
     spinlock_unlock(&threaddata_lock);
 
-    data = allocate_thread_data(id, thr_ctxt, num_sources);
+    data = allocate_thread_data(myid, thr_ctxt, num_sources);
 
-    TMSG(PROCESS, "%d: new thread data", id);
+    TMSG(PROCESS, "%d: new thread data", myid);
 
   } else {
     struct thread_list_s *item = SLIST_FIRST(&list_thread_head);

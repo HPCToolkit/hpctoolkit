@@ -585,6 +585,13 @@ static void hpcrun_process_aux_cleanup_action()
   hpcrun_aux_cleanup_list_head = NULL;
 }
 
+/***
+ * This routine is called at the end of the program to:
+ *   call sample-sources to stop and shutdown 
+ *   clean hpcrun action
+ *   clean thread manager (write profile data and closing resources)
+ *   terminate hpcfnbounds
+ ***/ 
 void
 hpcrun_fini_internal()
 {
@@ -700,7 +707,12 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   return (void*) epoch;
 }
 
-
+/**
+ * Routine to handle the end of the thread:
+ *   call sample sources to stop and finish the thread action
+ *   notify thread manager of the end of the thread (so that it can
+ *      either clean-up the data, or reuse the data for another thread)
+ **/ 
 void
 hpcrun_thread_fini(epoch_t *epoch)
 {
