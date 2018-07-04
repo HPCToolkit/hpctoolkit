@@ -69,7 +69,6 @@ using std::map;
 using std::set;
 
 #include "../TraceAnalysisCommon.hpp"
-#include "../TraceCluster.hpp"
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 #include "TCT-Metrics.hpp"
@@ -353,35 +352,19 @@ namespace TraceAnalysis {
     }
   };
   
-  class TCTIterationSet {
-    friend class TCTLoopNode;
-  private:
-    TCTIterationSet(int iterNum) {
-      startIterNum.push_back(iterNum);
-      endIterNum.push_back(iterNum);
-    }
-    
-    TCTIterationSet(const TCTIterationSet& other) {
-      startIterNum = other.startIterNum;
-      endIterNum = other.endIterNum;
-    }
-    
-    ~TCTIterationSet() {}
-    
-    vector<int> startIterNum; // the starting iteration number (inclusive)
-    vector<int> endIterNum; // the ending iteration number (inclusive)
-  };
-  
-  //class TCTIterationGroup {  
-  //};
-  
   class TCTLoopNode : public TCTANode {
     friend class TCTProfileNode;
   public:
-    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph, const AbstractTraceCluster& traceCluster):
+    static void setTraceCluster(AbstractTraceCluster* ptr) {
+      ptrTraceCluster = ptr;
+    }
+  private:
+    static AbstractTraceCluster* ptrTraceCluster;
+    
+  public:
+    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph):
       TCTANode(Loop, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma),
-      traceCluster(traceCluster) {
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
         numIteration = 0;
         numAcceptedIteration = 0;
         pendingIteration = NULL;
@@ -394,7 +377,7 @@ namespace TraceAnalysis {
       return new TCTLoopNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      return new TCTLoopNode(id.id, name, depth, cfgGraph, traceCluster);
+      return new TCTLoopNode(id.id, name, depth, cfgGraph);
     }
     
     virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
@@ -429,10 +412,6 @@ namespace TraceAnalysis {
       return ret;
     }
     
-    // Return true if we are confident that children of the pending iteration
-    // belong to one iteration in the execution.
-    bool acceptPendingIteration();
-    
     void finalizePendingIteration();
     
     bool acceptLoop();
@@ -440,8 +419,6 @@ namespace TraceAnalysis {
     virtual TCTANode* finalizeLoops();
   
   private:
-    const AbstractTraceCluster& traceCluster;
-    
     int numIteration;
     int numAcceptedIteration;
     // stores the last iteration, which may hasn't been finished yet.
@@ -452,6 +429,10 @@ namespace TraceAnalysis {
     TCTProfileNode* rejectedIterations;
     
     vector<TCTANode*> representatives;
+    
+    // Return true if we are confident that children of the pending iteration
+    // belong to one iteration in the execution.
+    bool acceptPendingIteration();
   };
   
   class TCTProfileNode : public TCTANode {

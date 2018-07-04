@@ -57,17 +57,11 @@
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  // Forward declarations
-  class TCTANode;
-  class TCTATraceNode;
-  class TCTLoopNode;
-  class TCTProfileNode;
-  
   class AbstractTraceCluster {
   public:
     AbstractTraceCluster(const Time& samplingPeriod) : samplingPeriod(samplingPeriod){}
     
-    const Time& getSamplingPeriod() const {
+    Time getSamplingPeriod() const {
       return samplingPeriod;
     }
     

@@ -54,6 +54,7 @@
  */
 
 #include "TCT-Node.hpp"
+#include "../TraceCluster.hpp"
 
 namespace TraceAnalysis {
   string TCTANode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
@@ -118,7 +119,9 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig), traceCluster(orig.traceCluster) {
+  AbstractTraceCluster* TCTLoopNode::ptrTraceCluster = NULL;
+  
+  TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
     numIteration = orig.numIteration;
     numAcceptedIteration = orig.numAcceptedIteration;
     
@@ -147,7 +150,7 @@ namespace TraceAnalysis {
     int countLoop = 0;
 
     for (int k = 0; k < pendingIteration->getNumChild(); k++)
-      if (pendingIteration->getChild(k)->getDuration() / traceCluster.getSamplingPeriod() 
+      if (pendingIteration->getChild(k)->getDuration() / ptrTraceCluster->getSamplingPeriod() 
               >= ITER_CHILD_DUR_ACC) {
         if (pendingIteration->getChild(k)->type == TCTANode::Func) countFunc++;
         else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
@@ -202,7 +205,7 @@ namespace TraceAnalysis {
     finalizePendingIteration();
     if (acceptLoop()) {
       if (numIteration > 1)
-        print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0, traceCluster.getSamplingPeriod()).c_str());
+        print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0, ptrTraceCluster->getSamplingPeriod()).c_str());
       return NULL;
     } 
     else {

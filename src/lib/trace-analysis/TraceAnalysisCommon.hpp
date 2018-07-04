@@ -82,14 +82,17 @@ namespace TraceAnalysis {
   const double LOOP_REJ_THRESHOLD = 0.3; 
 
   // Parameters and functions for difference quantification.
-  const Time MIN_SAMPLE_PERIOD = 1000;
-  const uint MAX_SAMPLE_NOISE = 10;
+  const uint MAX_SAMPLE_NOISE = 10; // 10 samples
   const Time computeWeightedAverage(Time time1, long w1, Time time2, long w2);
   
   // Parameters for clustering.
   const int MAX_NUM_CLUSTER = 10;
   const double MIN_DIFF_RATIO = 0.01;
   const double REL_DIFF_RATIO = 0.25;
+  
+  const int RSD_DETECTION_WINDOW = 16;
+  const int RSD_DETECTION_LENGTH = 5;
+  const int PRSD_DETECTION_LENGTH = 3;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

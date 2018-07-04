@@ -65,6 +65,8 @@ using std::vector;
 #include "TraceFileReader.hpp"
 #include "TraceCluster.hpp"
 
+#include "data/TCT-Cluster.hpp"
+
 namespace TraceAnalysis {
 
   class LocalTraceAnalyzerImpl {
@@ -86,6 +88,7 @@ namespace TraceAnalysis {
           cluster(samplingPeriod) {
       numSamples = 0;
       samplingPeriod = 0;
+      TCTLoopNode::setTraceCluster(&cluster);
     }
 
     ~LocalTraceAnalyzerImpl() {}
@@ -340,7 +343,7 @@ namespace TraceAnalysis {
           } 
           else if (frame.type == CallPathFrame::Loop) {
             TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
-                    binaryAnalyzer.findLoop(frame.vma), cluster);
+                    binaryAnalyzer.findLoop(frame.vma));
             pushActiveStack(node, 0, current->timestamp);
           }
           else {
@@ -379,7 +382,7 @@ namespace TraceAnalysis {
             CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
             if (frame.type == CallPathFrame::Loop) {
               TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
-                      binaryAnalyzer.findLoop(frame.vma), cluster);
+                      binaryAnalyzer.findLoop(frame.vma));
               pushActiveStack(node, prev->timestamp, current->timestamp);
             } else {
               // frame.type == CallPathFrame::Func
