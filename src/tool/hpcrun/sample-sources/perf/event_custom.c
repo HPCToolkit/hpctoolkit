@@ -66,6 +66,9 @@ typedef struct events_list_s {
 static SLIST_HEAD(event_list_head, events_list_s) list_events_head =
 	SLIST_HEAD_INITIALIZER(event_list_head);
 
+
+//*************************** Interfaces **************************
+
 event_custom_t*
 event_custom_find(const char *name)
 {
@@ -87,7 +90,7 @@ event_custom_display(FILE *std)
   }
   events_list_t *item = NULL;
 
-  display_header(stdout, "Customized perf-event based");
+  display_header(stdout, "Customized perf-event based events");
   fprintf(std, "Name\t\tDescription\n");
   display_line_single(stdout);
 
