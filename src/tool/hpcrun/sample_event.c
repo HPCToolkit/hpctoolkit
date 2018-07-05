@@ -75,6 +75,8 @@
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
+#include "ompt/ompt-defer.h"
+#include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
 
@@ -177,7 +179,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 		       uint64_t metricIncr,
 		       int skipInner, int isSync)
 {
-  
+
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
 
@@ -282,7 +284,10 @@ hpcrun_sample_callpath(void* context, int metricId,
   monitor_unblock_shootdown();
 
   if(!isSync && !ompt_eager_context){
+//    if(!TD_GET(master)){
+//      register_thread_to_all_regions();
       register_to_all_regions();
+//    }
   }
 
   return ret;

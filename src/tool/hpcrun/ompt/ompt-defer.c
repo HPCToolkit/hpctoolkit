@@ -28,6 +28,13 @@
 #include "ompt-interface.h"
 #include "ompt-region-map.h"
 
+
+
+
+#include "../../../lib/prof-lean/stdatomic.h"
+#include "../thread_data.h"
+#include "../cct/cct_bundle.h"
+
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -35,6 +42,23 @@
 #include <hpcrun/unresolved.h>
 
 
+
+
+
+
+
+#include "ompt.h"
+
+
+
+#include "../memory/hpcrun-malloc.h"
+#include "../cct/cct.h"
+#include "../thread_data.h"
+#include "../cct/cct_bundle.h"
+#include "../unresolved.h"
+#include "../../../lib/prof-lean/hpcrun-fmt.h"
+#include "../utilities/ip-normalized.h"
+#include "../messages/debug-flag.h"
 
 
 /******************************************************************************
@@ -332,70 +356,12 @@ hpcrun_region_lookup(uint64_t id)
   return result;
 }
 
-
-// vi3: Parts for resolving
-
-void
-set_next_pending(ompt_notification_t* notification){
-  // invalid value
-  notification->next = ompt_notification_invalid;
-}
-
-ompt_notification_t*
-get_next(ompt_notification_t* notification){
-  ompt_notification_t* curr_next = notification->next;
-  while (curr_next == ompt_notification_invalid) curr_next = notification->next;
-  return curr_next;
-}
-
-void
-enqueue_region(ompt_region_data_t* region_data, ompt_notification_t* new){
-  // Add new thread's notification to region's queue of notifications.
-  set_next_pending(new);
-  ompt_notification_t* old_head = (ompt_notification_t*)atomic_exchange(&region_data->head, new);
-  new->next = old_head;
-}
-
-ompt_notification_t* dequeue_region(ompt_region_data_t* region_data){
-  // Remove last added notification (thread) from region's queue of notifications.
-  ompt_notification_t* first = atomic_load(&region_data->head);
-  if(first){
-    ompt_notification_t* succ = get_next(first);
-    atomic_exchange(&region_data->head, succ);
-    first->next = ompt_notification_null;
-  }
-  return first;
-}
-
-void
-enqueue_thread(ompt_threads_queue_t* threads_queue, ompt_notification_t* new){
-  // Add notification to thread's queue.
-  set_next_pending(new);
-  ompt_notification_t* old_head = (ompt_notification_t*) atomic_exchange(&threads_queue->head, new);
-  new->next = old_head;
-}
-
-ompt_notification_t*
-dequeue_thread(ompt_threads_queue_t* threads_queue){
-  ompt_notification_t* first = atomic_load(&threads_queue->head);
-  if(first){
-    ompt_notification_t* succ = get_next(first);
-    atomic_exchange(&threads_queue->head, succ);
-    first->next = ompt_notification_null;
-  }
-  return first;
-}
+// added by vi3
 
 void add_to_list(ompt_region_data_t* region_data){
-
-//  printf("HERE IS REGION DATA ADDED: %p\n", region_data);
-  // old way of allocating
-  // ompt_thread_regions_list_t* new_region = (ompt_thread_regions_list_t*)hpcrun_malloc(sizeof(ompt_thread_regions_list_t));
-
-
-  ompt_thread_regions_list_t* new_region = hpcrun_ompt_thread_region_alloc();
+  ompt_trl_el_t* new_region = hpcrun_ompt_trl_el_alloc();
   new_region->region_data = region_data;
-  new_region->next = registered_regions;
+  OMPT_BASE_T_GET_NEXT(new_region) = OMPT_BASE_T_STAR(registered_regions);
   if(registered_regions)
     registered_regions->prev = new_region;
   registered_regions = new_region;
@@ -403,24 +369,24 @@ void add_to_list(ompt_region_data_t* region_data){
 }
 
 void remove_from_list(ompt_region_data_t* region_data){
-  ompt_thread_regions_list_t* current = registered_regions;
-  while(current != NULL){
+  ompt_trl_el_t* current = registered_regions;
+  while(current){
     if(current->region_data == region_data){
       if(current->prev){
-        current->prev->next = current->next;
+        OMPT_BASE_T_GET_NEXT(current->prev) = OMPT_BASE_T_GET_NEXT(current);
       } else{
-        registered_regions = current->next;
+        registered_regions = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
       }
 
-      if(current->next){
-        current->next->prev = current->prev;
+      if(OMPT_BASE_T_GET_NEXT(current)){
+        ((ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current))->prev = current->prev;
       }
 
       break;
     }
-    current = current->next;
+    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
   }
-  hpcrun_ompt_thread_region_free(current);
+  hpcrun_ompt_trl_el_free(current);
 }
 
 void
@@ -431,8 +397,9 @@ register_to_region(ompt_region_data_t* region_data){
   ompt_notification_t* notification = hpcrun_ompt_notification_alloc();
   notification->region_data = region_data;
   notification->threads_queue = &threads_queue;
-  notification->next = NULL;
-  enqueue_region(region_data, notification);
+  OMPT_BASE_T_GET_NEXT(notification) = NULL;
+  // register thread to region's wait free queue
+  wfq_enqueue(OMPT_BASE_T_STAR(notification), &region_data->queue);
   // store region data to thread's queue
   add_to_list(region_data);
 }
@@ -478,7 +445,7 @@ register_to_all_existing_regions(ompt_region_data_t* current_region, ompt_region
 
 void
 register_to_all_regions(){
-  // FIXME: maybe we should add thread local variable to store current region data
+  // FIXME vi3: maybe we should add thread local variable to store current region data
   ompt_region_data_t* current_region = hpcrun_ompt_get_current_region_data();
   // no parallel region
   if(!current_region)
@@ -529,20 +496,23 @@ register_to_all_regions(){
 
 
 void try_resolve_context(){
-//  return;
-  while(atomic_load(&threads_queue.head)){
-    ompt_notification_t* old_head = dequeue_thread(&threads_queue);
+  // We should use wfq_dequeue_private, because removing and adding are happenig
+  // at the same time. Different than resolving_all_remaining_context.
+
+  ompt_notification_t *old_head = NULL;
+  while ((old_head = (ompt_notification_t*) wfq_dequeue_private(&threads_queue,
+                                                                OMPT_BASE_T_STAR_STAR(private_threads_queue))) ){
 
     ompt_region_data_t* region_data = old_head->region_data;
-//    printf("\n\n\nResolving one region from idle!\n\n");
+    // printf("\n\n\nResolving one region from idle!\n\n");
     resolve_one_region_context(region_data);
 
     hpcrun_ompt_notification_free(old_head);
 
-    if(atomic_load(&region_data->head)){
-      // send the information to new thread
-      ompt_notification_t* to_notify = dequeue_region(region_data);
-      enqueue_thread(to_notify->threads_queue, to_notify);
+    // any thread should be notify
+    ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+    if(to_notify){
+      wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
     }else{
       // notify creator of region that region_data can be put in region's freelist
       hpcrun_ompt_region_free(region_data);
@@ -569,22 +539,21 @@ void resolve_one_region_context(ompt_region_data_t* region_data){
   }
 
   hpcrun_cct_merge(prefix, to_move, merge_metrics, NULL);
-  // FIXME: this function requires freelist manipulation
-  // FIXME: is it safe just to delete, maybe it would cause some metrics lost
+
   hpcrun_cct_delete_self(to_move);
 }
 
 
 void resolving_all_remaining_context(){
 
-  ompt_thread_regions_list_t* current = registered_regions;
-  ompt_thread_regions_list_t* previous;
+  ompt_trl_el_t* current = registered_regions;
+  ompt_trl_el_t* previous;
 
   while(current){
     // FIXME: be sure that current->region_data is not NULL
     resolve_one_region_context(current->region_data);
     previous = current;
-    current = current->next;
+    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
     // FIXME: call for now this function
     remove_from_list(previous->region_data);
   }
@@ -593,20 +562,8 @@ void resolving_all_remaining_context(){
 
 }
 
-// DONE: Check the same for cct_node_t
 
-// prefix -> 140, 142, 190
-// to_move -> 140, 142
-
-
-// DONE:
-// short region test - done
-// long region test - done
-// tasking - done
-// nested taskin - done
-// regions with no sample took in it - done
-// regions created in for loop - done
-// TODO: deallocation when there is no one register to region
+// DONE: deallocation when there is no one register to region
 
 
 
@@ -620,11 +577,6 @@ void resolving_all_remaining_context(){
  * */
 
 
-//struct s{
-//  next;
-//  insert | pop
-//  void *
-//};
 
 
 /*
@@ -650,15 +602,7 @@ void resolving_all_remaining_context(){
 
 
 
-// region_data
-// 10 -> 5 -> 1
-// 11 -> 10   5 -> 1
-
-// public free_list atomic_exchange NULL
-// private free_list
-
-
-
+// FIXME: \(ompt_\w+_t\s*\*\)
 
 
 

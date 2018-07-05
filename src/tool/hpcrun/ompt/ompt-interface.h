@@ -3,6 +3,12 @@
 
 #include <ompt.h>
 
+
+#include "../cct/cct.h"
+
+
+
+
 //------------------------------------------------------------------------------
 // hpcrun wrappers for ompt interfaces
 //------------------------------------------------------------------------------
@@ -43,12 +49,16 @@ extern int hpcrun_omp_state_is_overhead();
 
 extern ompt_idle_t ompt_idle_placeholder_fn;
 
-
-
-
-
 struct cct_node_t* main_top_root;
 
+
+#define OMPT_BASE_T_STAR(ptr) (ompt_base_t*)ptr
+#define OMPT_BASE_T_STAR_STAR(ptr) (ompt_base_t**)&ptr
+#define OMPT_BASE_T_GET_NEXT(ptr) ptr->next.next
+
+#define OMPT_REGION_DATA_T_START(ptr) (ompt_region_data_t*)ptr
+#define OMPT_NOTIFICATION_T_START(ptr) (ompt_notification_t*)ptr
+#define OMPT_TRL_EL_T_START(ptr) (ompt_trl_el_t*)ptr
 
 
 // vi3: Part for Allocating
@@ -65,8 +75,8 @@ ompt_notification_t* hpcrun_ompt_notification_alloc();
 void hpcrun_ompt_notification_free(ompt_notification_t *notification);
 
 // allocating and free thread's regions
-ompt_thread_regions_list_t* hpcrun_ompt_thread_region_alloc();
-void hpcrun_ompt_thread_region_free(ompt_thread_regions_list_t *thread_region);
+ompt_trl_el_t* hpcrun_ompt_trl_el_alloc();
+void hpcrun_ompt_trl_el_free(ompt_trl_el_t *thread_region);
 
 
 // vi3: Helper function to get region_data
@@ -74,7 +84,16 @@ ompt_region_data_t* hpcrun_ompt_get_region_data(int ancestor_level);
 ompt_region_data_t* hpcrun_ompt_get_current_region_data();
 ompt_region_data_t* hpcrun_ompt_get_parent_region_data();
 
+// helper functions for freelist manipulation
+ompt_base_t* freelist_remove_first(ompt_base_t **head);
+void freelist_add_first(ompt_base_t *new, ompt_base_t **head);
 
-
+// wait free queue
+void wfq_set_next_pending(ompt_base_t *element);
+ompt_base_t* wfq_get_next(ompt_base_t *element);
+void wfq_init(ompt_wfq_t *queue);
+void wfq_enqueue(ompt_base_t *new, ompt_wfq_t *queue);
+ompt_base_t* wfq_dequeue_public(ompt_wfq_t *public_queue);
+ompt_base_t* wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue);
 
 #endif // _OMPT_INTERFACE_H_

@@ -67,6 +67,7 @@
 #include "write_data.h"
 #include "loadmap.h"
 #include "sample_prob.h"
+#include "cct/cct_bundle.h"
 
 #include <messages/messages.h>
 

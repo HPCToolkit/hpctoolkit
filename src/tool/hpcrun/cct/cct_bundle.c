@@ -123,8 +123,8 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   //
   // attach unresolved root
   //
-  // show UNRESOLVED TREE
-  //hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
+  // FIXME: show UNRESOLVED TREE
+//  hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
 
   // write out newly constructed cct
 

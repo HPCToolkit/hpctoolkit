@@ -67,6 +67,10 @@
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
+#include "lush/lush-backtrace.h"
+#include "unwind/common/backtrace.h"
+#include "thread_data.h"
+#include "utilities/ip-normalized.h"
 
 
 //
@@ -241,7 +245,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *l
 
 #if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 
-static cct_node_t*
+static cct_node_tt*
 help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
@@ -252,12 +256,12 @@ help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 //   2) Modifies the backtrace according to a passed in function
 //   3) enters the generated backtrace in the cct
 //
-cct_node_t*
+cct_node_tt*
 hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	      int metricId, uint64_t metricIncr,
 	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
 {
-  cct_node_t* n = NULL;
+  cct_node_tt* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
 #ifdef LATER
     TMSG(LUSH,"lush backtrace2cct invoked");

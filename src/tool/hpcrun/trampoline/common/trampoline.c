@@ -229,7 +229,7 @@ hpcrun_trampoline_handler(void)
 
   TMSG(TRAMP, "About to advance trampoline ...");
 #if OLD_TRAMP_ADV
-  cct_node_t* n = hpcrun_trampoline_advance();
+  cct_node_tt* n = hpcrun_trampoline_advance();
   TMSG(TRAMP, "... Trampoline advanced to %p", n);
   if (n)
     hpcrun_trampoline_insert(n);

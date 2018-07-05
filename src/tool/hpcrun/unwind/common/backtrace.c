@@ -70,6 +70,8 @@
 
 #include <trampoline/common/trampoline.h>
 #include <dbg_backtrace.h>
+#include "backtrace_info.h"
+#include "../../thread_data.h"
 
 //***************************************************************************
 // local constants & macros

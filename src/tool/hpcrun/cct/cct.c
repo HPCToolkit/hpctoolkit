@@ -86,6 +86,9 @@
 #include "cct.h"
 #include "cct_addr.h"
 #include "cct2metrics.h"
+#include "../memory/hpcrun-malloc.h"
+//#include "../ompt/ompt-interface.h"
+//#include "../memory/hpcrun-malloc.h"
 
 //***************************** concrete data structure definition **********
 
@@ -112,6 +115,7 @@ struct cct_node_t {
   // ---------------------------------------------------------
 
   // parent node and the beginning of the child list
+  // vi3: also used as a next pointer for freelist of trees
   struct cct_node_t* parent;
   struct cct_node_t* children;
 
@@ -119,8 +123,6 @@ struct cct_node_t {
   struct cct_node_t* left;
   struct cct_node_t* right;
 
-  // vi3: freelist manipulation
-  struct cct_node_t* next_freelist;
 };
 
 #if 0
@@ -476,7 +478,12 @@ void
 hpcrun_cct_delete_self(cct_node_t *cct)
 {
   hpcrun_cct_delete_addr(cct->parent, &cct->addr);
-  // FIXME: is it enough just to call adding to freelist here
+  // FIXME vi3: I think below should be added, because of freelist
+  // cause previous function remove node from parent tree,
+  // but do not remove parent, left and right
+  cct->left = NULL;
+  cct->right = NULL;
+  cct->parent = NULL;
   hpcrun_cct_node_free(cct);
 }
 
@@ -700,10 +707,40 @@ hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
 //       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
 //
 
+// vi3: Added by vi3
+static cct_node_t*
+walkset_l_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg, size_t level)
+{
+  // if node is NULL, the return NULL
+  if (! cct) return NULL;
+  // if left should be disconnected
+  if (! walkset_l_merge(cct->left, fn, arg, level))
+    cct->left = NULL;
+  // if right should be disconnected
+  if(! walkset_l_merge(cct->right, fn, arg, level))
+    cct->right = NULL;
+  // fn is going to decide if cct should be disconnected from parent or not
+  return fn(cct, arg, level);
+}
+
+void
+hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg)
+{
+  if(! cct->children) return;
+  // should children be disconnected
+  if(! walkset_l_merge(cct->children, fn, arg, 0))
+    cct->children = NULL;
+}
+
+
+
+
 //
 // Helpers & datatypes for cct_merge operation
 //
-static void merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+//static void merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+static cct_node_t* merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+
 static cct_node_t* cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr);
 static void cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src);
 
@@ -713,6 +750,7 @@ typedef struct {
   merge_op_arg_t arg;
 } mjarg_t;
 
+// always returns NULL which indicated that node should be disconnected from old tree
 static void
 attach_to_a(cct_node_t* node, cct_op_arg_t arg, size_t l)
 {
@@ -729,33 +767,55 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 		 merge_op_t merge, merge_op_arg_t arg)
 {
   if (hpcrun_cct_is_leaf (cct_a) && hpcrun_cct_is_leaf(cct_b)) {
+    // nothing to clean, because cct_b is leaf
     merge(cct_a, cct_b, arg);
   }
   if (! cct_a->children){
     cct_a->children = cct_b->children;
+    // whole cct->children splay tree is used as kids of cct_a,
+    // enough to disconnect children from cct_b (that's why hpcrun_cct_walkset is called)
     hpcrun_cct_walkset(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
-    // FIXME: cct_b should not have children anymore
-//    cct_b->children = NULL;
+    cct_b->children = NULL;
   }
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
-    hpcrun_cct_walkset(cct_b, merge_or_join, (cct_op_arg_t) &local);
+    hpcrun_cct_walkset_merge(cct_b, merge_or_join, (cct_op_arg_t) &local);
   }
 }
 
 //
 // merge helper functions (forward declared above)
 //
-static void
+// if function cct_disjoint_union_cached is called, that means n should be removed from cct_b tree,
+// which is indicated by NULL as a return value
+// if hpcrun_cct_merge is called, that means that node n should stay in the cct_b tree
+// which is indicated by n as a return value (not NULL value)
+static cct_node_t*
 merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l)
 {
   mjarg_t* the_arg = (mjarg_t*) a;
   cct_node_t* targ = the_arg->targ;
   cct_node_t* tmp = NULL;
-  if ((tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n))))
+  if ((tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n)))){
+    // when merge, n should stay in the same tree, because the whole tree is going to to freelist
+    // that is the reason why return value is not NULL
     hpcrun_cct_merge(tmp, n, the_arg->fn, the_arg->arg);
-  else
+    return n;
+  }
+  else{
+    // disjoint has to happen, which means that node n is going to change tree
+    // if it has left and right siblings, they are going to bee added to freelist
+    // and the return value is NULL (indicates that n is goint to be disconnected from previous cct_b tree)
+
+    // add left to freelist, if needed
+    hpcrun_cct_node_free(n->left);
+    // add right to freelist, if needed
+    hpcrun_cct_node_free(n->right);
+
     cct_disjoint_union_cached(targ, n);
+    return NULL;
+  }
+
 }
 
 //
@@ -782,7 +842,7 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
   }
     
   cct_addr_t* addr = hpcrun_cct_addr(src);
-  cct_node_t* found    = splay(target->children, addr);
+  cct_node_t* found    = splay(target->children, addr);  // FIXME: vi3: is it possible that splay returns something which address is not equal to addre
     //
     // !! SPECIAL CASE for cct splay !!
     // !! The splay tree (represented by the root) is the data structure for the set
@@ -813,36 +873,65 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
 
 
 
+// FIXME: only temporary function, until hpcrun_merge is repaired
+void
+cct_remove_my_subtree(cct_node_t* cct){
+  cct->children = NULL;
+//  printf("CHILDREN: %p\tLEFT: %p\tRIGHT: %p\n", cct->children, cct->left, cct->right);
+}
+
+
 // FIXME: is this proper place for handling memory leaks caused by cct_node_t
 // frelist manipulation
 
 __thread cct_node_t* cct_node_freelist_head = NULL;
 
+// vi3: functions used for manipulation of freelist of trees
+void
+add_node_to_freelist(cct_node_t* cct){
+  // parent is used as a next pointer
+  if(cct){
+    cct->parent = cct_node_freelist_head;
+    cct_node_freelist_head = cct;
+  }
+}
+
+// vi3: remove root of first tree in the freelist
+cct_node_t*
+remove_node_from_freelist(){
+  cct_node_t* first_root = cct_node_freelist_head;
+  if(!first_root){
+    return NULL;
+  }
+  // new head is free_root's next (parent pointer is used for now)
+  cct_node_freelist_head = first_root->parent;
+
+  cct_node_t* children = first_root->children;
+  cct_node_t* left = first_root->left;
+  cct_node_t* right = first_root->right;
+
+  add_node_to_freelist(children);
+  add_node_to_freelist(left);
+  add_node_to_freelist(right);
+
+  return first_root;
+
+  // FIXME: seg fault happened once and i cannot reproduce it anymore
+}
+
 
 // allocating and free cct_node_t
 cct_node_t*
 hpcrun_cct_node_alloc(){
-  // TODO: building tree and pull from the bottom
-  // make child of root and remove leaf
-
-  cct_node_t* first = cct_node_freelist_head;
-  // is there a hread
-  if(first){
-    // new head
-    cct_node_t* succ = first->next_freelist;
-    cct_node_freelist_head = succ;
-    return first;
-  }
-  // free list is empty
-  return (cct_node_t*)hpcrun_malloc(sizeof(cct_node_t));
+  cct_node_t* cct_new = remove_node_from_freelist();
+  return cct_new ? cct_new : (cct_node_t*)hpcrun_malloc(sizeof(cct_node_t));
 }
 
 
 void
 hpcrun_cct_node_free(cct_node_t *cct){
-  // add to freelist
-  cct->next_freelist = cct_node_freelist_head;
-  cct_node_freelist_head = cct;
+  add_node_to_freelist(cct);
 }
 
 
+// FIXME vi3: disccuss about hpcrun_merge
