@@ -173,6 +173,8 @@ namespace TraceAnalysis {
     void addMember(long id) {
       addMember(new TCTClusterMemberRSD(id));
     }
+
+    string toString() const;
     
     void test() {
       int n = 20;
@@ -180,10 +182,7 @@ namespace TraceAnalysis {
       for (int i = 0; i < n; i++) {
         printf("\nAdding member: %d\n", seq[i]);
         addMember(seq[i]);
-        printf("  status:\n");
-        for (int level = max_level; level >= 0; level--)
-          for (int idx = 0; idx < (int)members[level].size(); idx++)
-            printf("    %s\n", members[level][idx]->toString().c_str());
+        printf("  status: %s\n", toString().c_str());
       }
     }
     

@@ -100,7 +100,7 @@ namespace TraceAnalysis {
   
   void TCTClusterMemberRSD::concatenate(TCTClusterMemberRSD* latter) {
     if (!canConcatenate(latter)) 
-      print_msg(MSG_PRIO_MAX, "TCTClusterMemberRSD::concatenate() is called when TCTClusterMemberRSD::canConcatenate returns false.\n");
+      print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterMemberRSD::concatenate() is called when TCTClusterMemberRSD::canConcatenate() returns false.\n");
     
     // When two RSDs have same nested_level, sum up their lengths
     if (nested_level == latter->nested_level)
@@ -118,7 +118,7 @@ namespace TraceAnalysis {
     if (nested_level == 1) nested = std::to_string(first_id);
     else nested = first_rsd->toString();
     
-    return "(first_id=" + nested + ", stride=" + std::to_string(stride) + ", length=" + std::to_string(length) + ")";
+    return "(" + nested + "+" + std::to_string(stride) + "[x" + std::to_string(length) + "])";
   }
   
   void TCTClusterMembers::addMember(TCTClusterMemberRSD* rsd) {
@@ -183,7 +183,7 @@ namespace TraceAnalysis {
     
     while (length > 0) {
       if (idx == -1) {
-        print_msg(MSG_PRIO_MAX, "Error from TCTClusterMemberRSD::constructRSD() -- index not found.\n");
+        print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterMemberRSD::constructRSD() -- index not found.\n");
         break;
       }
       
@@ -210,5 +210,13 @@ namespace TraceAnalysis {
   void TCTClusterMembers::increaseMaxLevel() {
     max_level++;
     members.push_back(vector<TCTClusterMemberRSD*>());
+  }
+  
+  string TCTClusterMembers::toString() const {
+    string ret = "";
+    for (int level = max_level; level >= 0; level--)
+      for (int idx = 0; idx < (int)members[level].size(); idx++)
+        ret += members[level][idx]->toString() + ", ";
+    return ret;
   }
 }

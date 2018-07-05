@@ -59,6 +59,16 @@
 #include "TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
+  Time samplingPeriod = 1000;
+  
+  Time getSamplingPeriod() {
+    return samplingPeriod;
+  }
+  
+  Time& getSamplingPeriodReference() {
+    return samplingPeriod;
+  }
+  
   string vmaToHexString(VMA vma) {
     static const char* digits = "0123456789abcdef";
     

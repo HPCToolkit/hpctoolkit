@@ -63,6 +63,9 @@ namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
   typedef int64_t Time; // Virtual Memory Address
   
+  Time getSamplingPeriod();
+  Time& getSamplingPeriodReference();
+  
   // Parameters and functions for printing messages.
   const int MSG_PRIO_LOW = 0;
   const int MSG_PRIO_NORMAL = 1;
@@ -72,14 +75,14 @@ namespace TraceAnalysis {
   string vmaToHexString(VMA vma);
   string timeToString(Time time);
   
-  // Parameters for iteration identification.
+  // Parameters and functions for iteration identification.
   const int ITER_CHILD_DUR_ACC = 5; // 5 samples
   const int ITER_NUM_CHILD_ACC = 5;
   const int ITER_NUM_FUNC_ACC = 1;
   const int ITER_NUM_LOOP_ACC = 2;
   // If (duration of rejected iterations / duration of loop) is larger than
   // LOOP_REJ_THRESHOLD, the whole loop will be rejected.
-  const double LOOP_REJ_THRESHOLD = 0.3; 
+  const double LOOP_REJ_THRESHOLD = 0.3;
 
   // Parameters and functions for difference quantification.
   const uint MAX_SAMPLE_NOISE = 10; // 10 samples

@@ -45,26 +45,22 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceCluster.hpp
+ * File:   DifferenceQuantifier.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on April 23, 2018, 12:35 AM
  */
 
-#ifndef TRACECLUSTER_HPP
-#define TRACECLUSTER_HPP
+#ifndef DIFFERENCEQUANTIFIER_HPP
+#define DIFFERENCEQUANTIFIER_HPP
 
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  class AbstractTraceCluster {
+  class AbstractDifferenceQuantifier {
   public:
-    AbstractTraceCluster(const Time& samplingPeriod) : samplingPeriod(samplingPeriod){}
-    
-    Time getSamplingPeriod() const {
-      return samplingPeriod;
-    }
-    
+    AbstractDifferenceQuantifier() {}
+
     /* Return the merged node of the input node1 and node2.
      * Callee responsible for deallocating the merged node.
      */
@@ -77,19 +73,19 @@ namespace TraceAnalysis {
     virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly) = 0;
   protected:
-    const Time& samplingPeriod;
-    
     Time computeRangeDiff(Time min1, Time max1, Time min2, Time max2);
   };
   
-  class LocalTraceCluster : public AbstractTraceCluster {
+  class LocalDifferenceQuantifier : public AbstractDifferenceQuantifier {
   public:
-    LocalTraceCluster(const Time& samplingPeriod) : AbstractTraceCluster(samplingPeriod) {}
+    LocalDifferenceQuantifier() : AbstractDifferenceQuantifier() {}
     
     virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
   };
+  
+  extern LocalDifferenceQuantifier localDQ;
 }
 
-#endif /* TRACECLUSTER_HPP */
+#endif /* DIFFERENCEQUANTIFIER_HPP */
 

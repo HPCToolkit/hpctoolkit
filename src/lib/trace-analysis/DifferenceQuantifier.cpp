@@ -45,30 +45,31 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceCluster.cpp
+ * File:   DifferenceQuantifier.cpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
  * Created on April 23, 2018, 12:47 AM
  */
 
-#include "TraceCluster.hpp"
+#include "TraceAnalysisCommon.hpp"
+#include "DifferenceQuantifier.hpp"
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
   // Compute difference between two duration ranges (min1, max1) and (min2, max2).
   // Noise from sampling is considered.
   // Noise should be no more than MAX_SAMPLE_NOISE times sampling period.
-  Time AbstractTraceCluster::computeRangeDiff(Time min1, Time max1, Time min2, Time max2) {
+  Time AbstractDifferenceQuantifier::computeRangeDiff(Time min1, Time max1, Time min2, Time max2) {
     // Adjust duration ranges when noise is greater than MAX_SAMPLE_NOISE times sampling period.
-    if (max1 - min1 > samplingPeriod * MAX_SAMPLE_NOISE) {
+    if (max1 - min1 > getSamplingPeriod() * MAX_SAMPLE_NOISE) {
       Time mid1 = (max1 + min1) / 2;
-      min1 = mid1 - samplingPeriod * MAX_SAMPLE_NOISE / 2;
-      max1 = mid1 + samplingPeriod * MAX_SAMPLE_NOISE / 2;
+      min1 = mid1 - getSamplingPeriod() * MAX_SAMPLE_NOISE / 2;
+      max1 = mid1 + getSamplingPeriod() * MAX_SAMPLE_NOISE / 2;
     }
-    if (max2 - min2 > samplingPeriod * MAX_SAMPLE_NOISE) {
+    if (max2 - min2 > getSamplingPeriod() * MAX_SAMPLE_NOISE) {
       Time mid2 = (max2 + min2) / 2;
-      min2 = mid2 - samplingPeriod * MAX_SAMPLE_NOISE / 2;
-      max2 = mid2 + samplingPeriod * MAX_SAMPLE_NOISE / 2;
+      min2 = mid2 - getSamplingPeriod() * MAX_SAMPLE_NOISE / 2;
+      max2 = mid2 + getSamplingPeriod() * MAX_SAMPLE_NOISE / 2;
     }
     
     // If the two ranges don't intersect, return their minimum possible difference.
@@ -79,7 +80,7 @@ namespace TraceAnalysis {
     return 0;
   }
   
-  TCTANode* AbstractTraceCluster::mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
+  TCTANode* AbstractDifferenceQuantifier::mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     if (!(node1->id == node2->id))
       print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes with different id: %s vs %s.\n", 
@@ -87,10 +88,10 @@ namespace TraceAnalysis {
     
     if (node1->getWeight() != weight1)
       print_msg(MSG_PRIO_HIGH, "ERROR: weight doesn't match %d vs %d for \n %s", node1->getWeight(), weight1, 
-              node1->toString(node1->getDepth(), 0, 0).c_str());
+              node1->toString(node1->getDepth(), 0).c_str());
     if (node2->getWeight() != weight2)
       print_msg(MSG_PRIO_HIGH, "ERROR: weight doesn't match %d vs %d for \n %s", node2->getWeight(), weight2, 
-              node2->toString(node2->getDepth(), 0, 0).c_str());
+              node2->toString(node2->getDepth(), 0).c_str());
     if (node1->getDepth() != node2->getDepth())
       print_msg(MSG_PRIO_HIGH, "ERROR: merging node at difference depth %d vs %d.\n", node1->getDepth(), node2->getDepth());
     
@@ -115,7 +116,7 @@ namespace TraceAnalysis {
     }
   }
   
-  TCTProfileNode* AbstractTraceCluster::mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
+  TCTProfileNode* AbstractDifferenceQuantifier::mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTProfileNode* mergedProf = (TCTProfileNode*)prof1->voidDuplicate();
     if (!isScoreOnly) {
@@ -157,7 +158,7 @@ namespace TraceAnalysis {
       else { // Children that only profile 1 has.
         TCTProfileNode* child2 = (TCTProfileNode*) child1->voidDuplicate();
         child2->setWeight(weight2);
-        child2->getTime().setDuration(-samplingPeriod, samplingPeriod);
+        child2->getTime().setDuration(-getSamplingPeriod(), getSamplingPeriod());
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -175,7 +176,7 @@ namespace TraceAnalysis {
         const TCTProfileNode* child2 = it->second;
         TCTProfileNode* child1 = (TCTProfileNode*) child2->voidDuplicate();
         child1->setWeight(weight1);
-        child1->getTime().setDuration(-samplingPeriod, samplingPeriod);
+        child1->getTime().setDuration(-getSamplingPeriod(), getSamplingPeriod());
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -240,7 +241,7 @@ namespace TraceAnalysis {
     return mergedProf;
   }
   
-  TCTANode* AbstractTraceCluster::mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
+  TCTANode* AbstractDifferenceQuantifier::mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTATraceNode* mergedTrace = (TCTATraceNode*)trace1->voidDuplicate();
     if (!isScoreOnly) {
@@ -447,7 +448,7 @@ namespace TraceAnalysis {
     return mergedTrace;
   }
   
-  TCTANode* LocalTraceCluster::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
+  TCTANode* LocalDifferenceQuantifier::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(loop1);
     TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(loop2);
@@ -456,4 +457,6 @@ namespace TraceAnalysis {
     delete prof2;
     return merged;
   }
+  
+  LocalDifferenceQuantifier localDQ;
 }

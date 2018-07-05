@@ -72,6 +72,7 @@ using std::set;
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 #include "TCT-Metrics.hpp"
+#include "TCT-Cluster.hpp"
 
 namespace TraceAnalysis {
   // Forward declarations
@@ -80,11 +81,10 @@ namespace TraceAnalysis {
   class TCTFunctionTraceNode;
   class TCTIterationTraceNode;
   class TCTLoopNode;
+  class TCTLoopClusterNode;
   class TCTProfileNode;
   class TCTRootNode;
-  
-  class AbstractTraceCluster;
-  
+
   class TCTID {
   public:
     const int id; // Calling Context Tree ID for call sites and loops.
@@ -207,7 +207,7 @@ namespace TraceAnalysis {
     virtual TCTANode* finalizeLoops() = 0;
     
     // Print contents of an object to a string for debugging purpose.
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
+    virtual string toString(int maxDepth, Time minDuration) const;
     
     // Add child to this node. Deallocation responsibility is transfered to this node.
     // Child could be deallocated inside the call.
@@ -294,7 +294,7 @@ namespace TraceAnalysis {
       return NULL;
     }
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
+    virtual string toString(int maxDepth, Time minDuration) const;
     
   protected:
     vector<TCTANode*> children;
@@ -355,13 +355,6 @@ namespace TraceAnalysis {
   class TCTLoopNode : public TCTANode {
     friend class TCTProfileNode;
   public:
-    static void setTraceCluster(AbstractTraceCluster* ptr) {
-      ptrTraceCluster = ptr;
-    }
-  private:
-    static AbstractTraceCluster* ptrTraceCluster;
-    
-  public:
     TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph):
       TCTANode(Loop, id, 0, name, depth, 
               cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
@@ -380,11 +373,22 @@ namespace TraceAnalysis {
       return new TCTLoopNode(id.id, name, depth, cfgGraph);
     }
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
+    virtual string toString(int maxDepth, Time minDuration) const;
     
     virtual void addChild(TCTANode* child) {
-      print_msg(MSG_PRIO_MAX, "ERROR: addChild() for loop node %s should never been called and is not implemented.\n", name.c_str());
-      delete child;
+      if (child->type != TCTANode::Iter) {
+        print_msg(MSG_PRIO_MAX, "ERROR: argument (name = %s) of TCTLoopNode::addChild() should be an iteration.\n", child->name.c_str());
+        delete child;
+        return;
+      }
+      finalizePendingIteration();
+      pendingIteration = (TCTIterationTraceNode*) child;
+    }
+    
+    TCTIterationTraceNode* popLastChild() {
+      TCTIterationTraceNode* ret = pendingIteration;
+      pendingIteration = NULL;
+      return ret;
     }
     
     int getNumIteration() {
@@ -401,19 +405,6 @@ namespace TraceAnalysis {
       return acceptedIterations[idx];
     }
     
-    void pushPendingIteration(TCTIterationTraceNode* pendingIteration) {
-      finalizePendingIteration();
-      this->pendingIteration = pendingIteration;
-    }
-    
-    TCTIterationTraceNode* popPendingIteration() {
-      TCTIterationTraceNode* ret = pendingIteration;
-      pendingIteration = NULL;
-      return ret;
-    }
-    
-    void finalizePendingIteration();
-    
     bool acceptLoop();
     
     virtual TCTANode* finalizeLoops();
@@ -427,16 +418,64 @@ namespace TraceAnalysis {
     vector<TCTIterationTraceNode*> acceptedIterations;
     // all rejected iterations are merged into a Profile node.
     TCTProfileNode* rejectedIterations;
-    
-    vector<TCTANode*> representatives;
-    
+
     // Return true if we are confident that children of the pending iteration
     // belong to one iteration in the execution.
     bool acceptPendingIteration();
+    void finalizePendingIteration();
+  };
+  
+  class TCTLoopClusterNode : public TCTANode {
+    friend class TCTProfileNode;
+  public:
+    typedef struct {
+      TCTANode* representative;
+      TCTClusterMembers* members;
+    } TCTCluster;
+    
+    TCTLoopClusterNode(const TCTLoopNode& loop) : TCTANode(loop), numClusters(0) {}
+    TCTLoopClusterNode(const TCTLoopClusterNode& other, bool isVoid) : TCTANode(other) {
+      if (isVoid) {
+        numClusters = 0;
+      }
+      else {
+        numClusters = other.numClusters;
+        for (int i = 0; i < numClusters; i++) {
+          clusters[i].representative = other.clusters[i].representative->duplicate();
+          clusters[i].members = other.clusters[i].members->duplicate();
+        }
+        for (int i = 0; i < numClusters; i++)
+          for (int j = i+1; j < numClusters; j++)
+            diffRatio[i][j] = other.diffRatio[i][j];
+      }
+    }
+    virtual ~TCTLoopClusterNode() {
+      for (int i = 0; i < numClusters; i++) {
+        delete clusters[i].representative;
+        delete clusters[i].members;
+      }
+    }
+    
+    virtual TCTANode* duplicate() const {
+      return new TCTLoopClusterNode(*this, false);
+    }
+    virtual TCTANode* voidDuplicate() const {
+      return new TCTLoopClusterNode(*this, true);
+    }
+    
+    virtual string toString(int maxDepth, Time minDuration) const;
+    
+    virtual void addChild(TCTANode* child);
+    
+    virtual TCTANode* finalizeLoops() {return NULL;}
+    
+  private:
+    int numClusters;
+    TCTCluster clusters[MAX_NUM_CLUSTER];
+    double diffRatio[MAX_NUM_CLUSTER][MAX_NUM_CLUSTER];
   };
   
   class TCTProfileNode : public TCTANode {
-    friend class TCTLoopNode;
   public:
     static TCTProfileNode* newProfileNode(const TCTANode* node) {
       if (node->type == TCTANode::Prof)
@@ -479,7 +518,7 @@ namespace TraceAnalysis {
       return NULL;
     }
     
-    virtual string toString(int maxDepth, Time minDuration, Time samplingInterval) const;
+    virtual string toString(int maxDepth, Time minDuration) const;
     
     virtual void setDepth(int depth) {
       this->depth = depth;

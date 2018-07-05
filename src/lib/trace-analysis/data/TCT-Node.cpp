@@ -54,10 +54,10 @@
  */
 
 #include "TCT-Node.hpp"
-#include "../TraceCluster.hpp"
+#include "../DifferenceQuantifier.hpp"
 
 namespace TraceAnalysis {
-  string TCTANode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
+  string TCTANode::toString(int maxDepth, Time minDuration) const {
     string ret;
     /*
     ret += "CFG-0x";
@@ -68,8 +68,8 @@ namespace TraceAnalysis {
     for (int i = 0; i < depth; i++) ret += "  ";
     ret += name + id.toString();
     ret += " " + time.toString();
-    if (samplingInterval != 0)
-      ret += ", " + std::to_string(getDuration()/samplingInterval) + " samples";
+    ret += ", " + std::to_string(getDuration()/getSamplingPeriod()) + " samples";
+    
     if (diffScore->getInclusive() > 0)
       ret += ", DiffScore = " + std::to_string((long)diffScore->getInclusive())
               + "/" + std::to_string((long)diffScore->getExclusive());
@@ -78,20 +78,20 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  string TCTATraceNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
-    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
+  string TCTATraceNode::toString(int maxDepth, Time minDuration) const {
+    string ret = TCTANode::toString(maxDepth, minDuration);
     
     if (depth >= maxDepth) return ret;
     if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = children.begin(); it != children.end(); it++)
-      ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
+      ret += (*it)->toString(maxDepth, minDuration);
     return ret;
   }
   
-  string TCTLoopNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
-    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
+  string TCTLoopNode::toString(int maxDepth, Time minDuration) const {
+    string ret = TCTANode::toString(maxDepth, minDuration);
     ret.pop_back();
     ret += ", # iterations = " + std::to_string(numIteration) + "\n";
     
@@ -99,27 +99,38 @@ namespace TraceAnalysis {
     if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     
     for (auto it = acceptedIterations.begin(); it != acceptedIterations.end(); it++)
-      ret += (*it)->toString(maxDepth, minDuration, samplingInterval);
+      ret += (*it)->toString(maxDepth, minDuration);
     
     if (rejectedIterations != NULL)
-      ret += rejectedIterations->toString(maxDepth, minDuration, samplingInterval);
+      ret += rejectedIterations->toString(maxDepth, minDuration);
     
     return ret;
   }
   
-  string TCTProfileNode::toString(int maxDepth, Time minDuration, Time samplingInterval) const {
-    string ret = TCTANode::toString(maxDepth, minDuration, samplingInterval);
+  string TCTLoopClusterNode::toString(int maxDepth, Time minDuration) const {
+    string ret = TCTANode::toString(maxDepth, minDuration);
+    ret.pop_back();
+    ret += ", # clusters = " + std::to_string(numClusters) + "\n";
+    
+    for (int i = 0; i < numClusters; i++) {
+      ret += "Clusters #" + std::to_string(i) + " members: " + clusters[i].members->toString() + "\n";
+      ret += clusters[i].representative->toString(maxDepth, minDuration);
+    }
+    
+    return ret;
+  }
+  
+  string TCTProfileNode::toString(int maxDepth, Time minDuration) const {
+    string ret = TCTANode::toString(maxDepth, minDuration);
     
     if (depth >= maxDepth) return ret;
     if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
-      ret += it->second->toString(maxDepth, minDuration, samplingInterval);
+      ret += it->second->toString(maxDepth, minDuration);
     return ret;
   }
-  
-  AbstractTraceCluster* TCTLoopNode::ptrTraceCluster = NULL;
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
     numIteration = orig.numIteration;
@@ -150,7 +161,7 @@ namespace TraceAnalysis {
     int countLoop = 0;
 
     for (int k = 0; k < pendingIteration->getNumChild(); k++)
-      if (pendingIteration->getChild(k)->getDuration() / ptrTraceCluster->getSamplingPeriod() 
+      if (pendingIteration->getChild(k)->getDuration() / getSamplingPeriod() 
               >= ITER_CHILD_DUR_ACC) {
         if (pendingIteration->getChild(k)->type == TCTANode::Func) countFunc++;
         else countLoop++; // TCTANode::Loop and TCTANode::Prof are all loops.
@@ -205,13 +216,17 @@ namespace TraceAnalysis {
     finalizePendingIteration();
     if (acceptLoop()) {
       if (numIteration > 1)
-        print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0, ptrTraceCluster->getSamplingPeriod()).c_str());
+        print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0).c_str());
       return NULL;
     } 
     else {
       //print_msg(MSG_PRIO_LOW, "\nLoop rejected:\n%s", toString(getDepth()+2, 0, traceCluster.getSamplingPeriod()).c_str());
       return TCTProfileNode::newProfileNode(this);
     }
+  }
+  
+  void TCTLoopClusterNode::addChild(TCTANode* child) {
+    
   }
   
   TCTProfileNode::TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {

@@ -63,7 +63,7 @@ using std::vector;
 #include "LocalTraceAnalyzer.hpp"
 #include "data/TCT-Node.hpp"
 #include "TraceFileReader.hpp"
-#include "TraceCluster.hpp"
+#include "DifferenceQuantifier.hpp"
 
 #include "data/TCT-Cluster.hpp"
 
@@ -77,20 +77,13 @@ namespace TraceAnalysis {
     vector<TCTANode*> activeStack;
     TCTRootNode* root;
     
-    LocalTraceCluster cluster;
-    
     uint64_t numSamples;
-    Time samplingPeriod;
+    Time& samplingPeriod;
     
     LocalTraceAnalyzerImpl(BinaryAnalyzer& binaryAnalyzer, 
           CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
           binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime),
-          cluster(samplingPeriod) {
-      numSamples = 0;
-      samplingPeriod = 0;
-      TCTLoopNode::setTraceCluster(&cluster);
-    }
-
+          numSamples(0), samplingPeriod(getSamplingPeriodReference()) {}
     ~LocalTraceAnalyzerImpl() {}
     
       
@@ -105,16 +98,7 @@ namespace TraceAnalysis {
       node->getPerfLossMetric().initDurationMetric(node->getDuration(), node->getWeight());
       activeStack.pop_back();
 
-      if (activeStack.size() > 0) {
-        // When popping an iteration
-        if (node->type == TCTANode::Iter) {
-          // Its parent must be a loop
-          TCTLoopNode* loop = (TCTLoopNode*) activeStack.back();
-          loop->pushPendingIteration((TCTIterationTraceNode*)node);
-        }
-        else // In all other cases, add node as a child of its parent.
-          activeStack.back()->addChild(node);
-      }
+      if (activeStack.size() > 0) activeStack.back()->addChild(node);
     }
 
     void popActiveStack(Time endTimeInclusive, Time endTimeExclusive) {
@@ -188,7 +172,7 @@ namespace TraceAnalysis {
             // Push the loop and the pending iteration on to active stack.
             TCTLoopNode* loop = (TCTLoopNode*) parent->removeChild(parent->getNumChild()-1);
             pushOneNode(loop, loop->getTime().getStartTimeExclusive(), loop->getTime().getStartTimeInclusive());
-            TCTANode* iter = loop->popPendingIteration();
+            TCTANode* iter = loop->popLastChild();
             pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive());
             
             return true;
@@ -202,7 +186,7 @@ namespace TraceAnalysis {
           if (parent->getChild(i)->id == node->id) {
             bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
             if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
-            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
+            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
             // and remove it from the parent (as it will be re-added later when popped from stack).
             delete node;
@@ -212,7 +196,7 @@ namespace TraceAnalysis {
             // if node is a loop, push the latest iteration onto stack.
             if (node->type == TCTANode::Loop) {
               TCTLoopNode* loop = (TCTLoopNode*) node;
-              TCTANode* iter = loop->popPendingIteration();
+              TCTANode* iter = loop->popLastChild();
               pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive());
             }
 
@@ -220,7 +204,7 @@ namespace TraceAnalysis {
             while (parent->getNumChild() > i) {
               TCTANode* child = parent->removeChild(i);
               if (printError) print_msg(MSG_PRIO_NORMAL, "Deleting child %s:\n", child->id.toString().c_str());
-              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX).c_str());
               delete child;
             }
 
@@ -242,12 +226,12 @@ namespace TraceAnalysis {
         double ratio = (double)loop->getDuration() * 100.0 / (double) root->getDuration();
         if (loop->acceptLoop()) {
           if (ratio >= 1 && loop->getNumIteration() > 1) {
-            print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0, samplingPeriod).c_str());
+            print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0).c_str());
             print_msg(MSG_PRIO_LOW, "Diff among iterations:\n");
             TCTANode* highlight = NULL;
             for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
               for (int j = 0; j < loop->getNumAcceptedIteration(); j++) {
-                TCTANode* diffNode = cluster.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, false);
+                TCTANode* diffNode = localDQ.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, false);
                 double diffRatio = 100.0 * diffNode->getDiffScore().getInclusive() / 
                           (loop->getAcceptedIteration(i)->getDuration() + loop->getAcceptedIteration(j)->getDuration());
                 if (i == 0 && j == (loop->getNumAcceptedIteration() - 1) )
@@ -258,9 +242,9 @@ namespace TraceAnalysis {
               }
               print_msg(MSG_PRIO_LOW, "\n");
             }
-            print_msg(MSG_PRIO_LOW, "Compare:\n%s%s", loop->getAcceptedIteration(0)->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str()
-                    , loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1)->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str());
-            print_msg(MSG_PRIO_LOW, "Highlighted diff node:\n%s\n", highlight->toString(highlight->getDepth()+5, 0, samplingPeriod).c_str());
+            print_msg(MSG_PRIO_LOW, "Compare:\n%s%s", loop->getAcceptedIteration(0)->toString(highlight->getDepth()+5, 0).c_str()
+                    , loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1)->toString(highlight->getDepth()+5, 0).c_str());
+            print_msg(MSG_PRIO_LOW, "Highlighted diff node:\n%s\n", highlight->toString(highlight->getDepth()+5, 0).c_str());
             delete highlight;
             print_msg(MSG_PRIO_LOW, "\n");
           }
@@ -416,6 +400,9 @@ namespace TraceAnalysis {
       //print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod * ITER_CHILD_DUR_ACC, samplingPeriod).c_str());
 
       delete root;
+      
+      //TCTClusterMembers cm;
+      //cm.test();
     }
   };
 
