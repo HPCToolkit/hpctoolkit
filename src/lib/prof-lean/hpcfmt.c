@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -136,7 +136,33 @@ hpcfmt_str_free(const char* str, hpcfmt_free_fn dealloc)
 
 
 //***************************************************************************
-// 
+// generic read and write
+//***************************************************************************
+
+
+int
+hpcfmt_fread(void *data, size_t size, FILE *infs)
+{
+	size_t bytes = fread(data, sizeof(char), size, infs);
+	if (bytes == size) {
+			return HPCFMT_OK;
+	}
+	return HPCFMT_ERR;
+}
+
+
+int
+hpcfmt_fwrite(void *data, size_t size, FILE *outfs)
+{
+  size_t bytes = fwrite(data, sizeof(char), size, outfs);
+  if (bytes == size)
+  	return HPCFMT_OK;
+  return HPCFMT_ERR;
+}
+
+
+//***************************************************************************
+//
 //***************************************************************************
 
 int

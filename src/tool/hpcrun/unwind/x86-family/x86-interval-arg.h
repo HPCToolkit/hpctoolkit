@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,10 +68,15 @@ typedef struct interval_arg_t {
   bool bp_just_pushed;
   highwatermark_t highwatermark;
   bitree_uwi_t *canonical_interval;
+  unwind_interval *restored_canonical;
   bool bp_frames_found;
   void *rax_rbp_equivalent_at;
   void *return_addr; // A place to store void * return values.
   bool sp_realigned; // stack pointer was realigned by masking lower bits
 } interval_arg_t;
+
+static inline char *nextInsn(interval_arg_t *iarg, xed_decoded_inst_t *xptr) {
+  return iarg->ins + xed_decoded_inst_get_length(xptr);
+}
 
 #endif // X86_INTERVAL_ARG_H

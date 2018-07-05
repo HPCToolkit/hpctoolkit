@@ -83,13 +83,22 @@ directed_blame_accept(void *arg, uint64_t obj)
 
   if (hpctoolkit_sampling_is_active()) {
     uint64_t blame = blame_map_get_blame(bi->blame_table, obj);
+    // vi3: signature of function hpcrun_sample_callpath has been changed
+    hpcrun_metricVal_t blame_metricVal;
+    blame_metricVal.i = blame;
 
     if (blame > 0) {
       // attribute blame to the current context
       ucontext_t uc;
       getcontext(&uc);
       hpcrun_safe_enter();
-      hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame, bi->levels_to_skip, 1);
+      // FIXME: Check if this is right
+      // vi3: previous version which third parameter is not right
+      // hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame, bi->levels_to_skip, 1);
+      // vi3: new version
+      // FIXME: what should be the last parameter
+      hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame_metricVal, bi->levels_to_skip, 1, NULL);
+
       hpcrun_safe_exit();
     }
   }

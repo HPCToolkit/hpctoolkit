@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,26 +60,7 @@
 #include "x86-decoder.h"
 #include "fnbounds_interface.h"
 
-typedef struct {
-  void* begin;
-  void* end;
-} fnbounds_t;
-
-static fnbounds_t local;
-
-fnbounds_t*
-x86_fnbounds(void* addr)
-{
-  unwindr_info_t unwr_info;
-  if( !uw_recipe_map_lookup(addr, &unwr_info) )
-	  EMSG("x86_fnbounds: bounds of addr %p taken, but no bounds known", addr);
-  local.begin = (void*)unwr_info.start;
-  local.end   = (void*)unwr_info.end;
-  return &local;
-}
-
-
-void
+static void
 x86_print_intervals(btuwi_status_t intervals)
 {
   unwind_interval *u;
@@ -88,24 +69,30 @@ x86_print_intervals(btuwi_status_t intervals)
   }
 }
 
-void
-x86_dump_intervals(void* addr)
+static void
+x86_dump_intervals(void *addr, int noisy)
 {
   unwindr_info_t unwr_info;
-  if( !uw_recipe_map_lookup(addr, &unwr_info) )
-	  EMSG("x86_fnbounds: bounds of addr %p taken, but no bounds known", addr);
-  void * s = (void*)unwr_info.start;
-  void * e = (void*)unwr_info.end;
+  if (!uw_recipe_map_lookup(addr, NATIVE_UNWINDER, &unwr_info))
+	  EMSG("x86_dump_intervals: bounds of addr %p taken, but no bounds known", addr);
+  void * s = (void*)unwr_info.interval.start;
+  void * e = (void*)unwr_info.interval.end;
 
   btuwi_status_t intervals;
-  intervals = x86_build_intervals(s, e - s, 0, hpcrun_malloc);
+  intervals = x86_build_intervals(s, e - s, noisy);
   x86_print_intervals(intervals);
 }
 
 void
 hpcrun_dump_intervals(void* addr)
 {
-  x86_dump_intervals(addr);
+  x86_dump_intervals(addr, 0);
+}
+
+void
+hpcrun_dump_intervals_noisy(void* addr)
+{
+  x86_dump_intervals(addr, 1);
 }
 
 void
@@ -144,21 +131,4 @@ x86_dump_ins(void *ins)
   EMSG(errbuf);
   fprintf(stderr, errbuf);
   fflush(stderr);
-}
-
-void
-hpcrun_dump_intervals_noisy(void* addr)
-{
-  unwindr_info_t unwr_info;
-  if (!uw_recipe_map_lookup(addr, &unwr_info))
-	  EMSG("hpcrun_dump_intervals_noisy: bounds of addr %p taken, but no bounds known", addr);
-  void * s = (void*)unwr_info.start;
-  void * e = (void*)unwr_info.end;
-
-  btuwi_status_t intervals = x86_build_intervals(s, e - s, 1, hpcrun_malloc);
-
-  unwind_interval * u;
-  for(u = intervals.first; u; u = UWI_NEXT(u)) {
-    dump_ui_dbg(u);
-  }
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,9 +68,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
-
-#include <lib/banal/Struct.hpp>
-
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -117,13 +114,9 @@ public:
   int xmlPort;        // default: 0
   bool compression;   // default: true
 
-
 private:
   void
   Ctor();
-
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

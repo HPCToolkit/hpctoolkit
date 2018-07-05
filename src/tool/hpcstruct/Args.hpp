@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,9 +68,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
-
-#include <lib/banal/Struct.hpp>
-
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -119,15 +116,12 @@ public:
   std::string demangle_function;       // default: ""
   bool isIrreducibleIntervalLoop;     // default: true
   bool isForwardSubstitution;         // default: false
-  BAnal::Struct::NormTy doNormalizeTy; // default: NormTy_All
   std::string dbgProcGlob;
 
   std::string out_filenm;
-  std::string dot_filenm;
-  bool doDot;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
-  int  cfgRequest;
+  bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
@@ -135,9 +129,6 @@ public:
 private:
   void
   Ctor();
-
-  BAnal::Struct::NormTy
-  parseArg_norm(const std::string& value, const char* err_note);
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

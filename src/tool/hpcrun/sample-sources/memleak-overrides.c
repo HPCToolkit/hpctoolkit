@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -459,7 +459,9 @@ memleak_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right = NULL;
   if (hpcrun_memleak_active()) {
     sample_val_t smpl =
-      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), bytes, 0, 1);
+      hpcrun_sample_callpath(uc, hpcrun_memleak_alloc_id(), 
+        (hpcrun_metricVal_t) {.i=bytes}, 
+        0, 1, NULL);
     info_ptr->context = smpl.sample_node;
     loc_str = loc_name[loc];
   } else {

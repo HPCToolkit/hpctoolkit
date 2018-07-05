@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -176,10 +176,9 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   for (uint i = 0; i < metricGroups.size(); ++i) {
     const Metric::ADescVec& mVec = *(metricGroups[i]);
     if (mVec.size() >= threshold) {
-      const Metric::ADesc* m = mVec[0];
+      Metric::ADesc* m = mVec[0];
 
-      Metric::ADesc* mNew =
-	makeSummaryMetric("Sum",  m, mVec);
+      Metric::ADesc* mNew =	makeSummaryMetric("Sum",  m, mVec);
 
       if (needAllStats) {
         makeSummaryMetric("Mean",   m, mVec);
@@ -200,6 +199,37 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   return firstId;
 }
 
+void
+Mgr::mergePerfEventStatistics(Mgr *source)
+{
+
+
+  for (uint i=0; i<source->size(); i++) {
+
+    Prof::Metric::ADesc *m = metric(i);
+
+    uint64_t samples = m->num_samples() +
+        source->metric(i)->num_samples();
+    uint64_t period  = m->periodMean() +
+        source->metric(i)->periodMean();
+
+    m->num_samples(samples);
+    m->periodMean (period);
+  }
+}
+
+void
+Mgr::mergePerfEventStatistics_finalize(int num_profiles)
+{
+  for (uint i=0; i<m_metrics.size(); i++) {
+    Prof::Metric::ADesc *m = metric(i);
+
+    float period = m->periodMean();
+    float mean   = period / num_profiles;
+
+    m->periodMean(mean);
+  }
+}
 
 uint
 Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
@@ -297,11 +327,18 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
-  insert(m);
-  expr->accumId(m->id());
 
-  if (expr->hasAccum2()) {
-    string m2NmBase = mNmBase + ":accum2";
+  // copy some attributes from the source
+  m->periodMean   (mSrc->periodMean());
+  m->sampling_type(mSrc->sampling_type());
+  m->num_samples  (mSrc->num_samples());
+  m->isMultiplexed(mSrc->isMultiplexed());
+
+  insert(m);
+  expr->accumId(0, m->id());
+
+  for (uint k = 1; k < expr->numAccum(); ++k) {
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedDesc* m2 =
       new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
@@ -311,7 +348,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m2->zeroDBInfo(); // clear
     insert(m2);
 
-    expr->accum2Id(m2->id());
+    expr->accumId(k, m2->id());
   }
 
   if (expr->hasNumSrcVar()) {
@@ -325,7 +362,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     m3->zeroDBInfo(); // clear
     insert(m3);
-    m3Expr->accumId(m3->id());
+    m3Expr->accumId(0, m3->id());
 
     expr->numSrcVarId(m3->id());
   }
@@ -385,11 +422,18 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->zeroDBInfo(); // clear
-  insert(m);
-  expr->accumId(m->id());
 
-  if (expr->hasAccum2()) {
-    string m2NmBase = mNmBase + ":accum2";
+  // copy some attributes from the source
+  m->periodMean   (mSrc->periodMean());
+  m->sampling_type(mSrc->sampling_type());
+  m->num_samples  (mSrc->num_samples());
+  m->isMultiplexed(mSrc->isMultiplexed());
+
+  insert(m);
+  expr->accumId(0, m->id());
+
+  for (uint k = 1; k < expr->numAccum(); ++k) {
+    string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedIncrDesc* m2 =
       new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
@@ -398,7 +442,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     m2->zeroDBInfo(); // clear
     insert(m2);
 
-    expr->accum2Id(m2->id());
+    expr->accumId(k, m2->id());
   }
 
   if (expr->hasNumSrcVar()) {
@@ -411,7 +455,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     m3->nameBase(m3NmBase);
     m3->zeroDBInfo(); // clear
     insert(m3);
-    m3Expr->accumId(m3->id());
+    m3Expr->accumId(0, m3->id());
 
     expr->numSrcVarId(m3->id());
   }

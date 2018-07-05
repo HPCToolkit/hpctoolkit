@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -112,6 +112,7 @@ typedef struct sample_source_t {
   const char*    	  name;      	 // text name of sample source
   source_state_t 	  state;     	 // state of sample source: limited to UNINIT or INIT
   ss_class_t     	  cls;       	 // kind of sample source: see ss_class_t typedef at top of file
+  int                     sort_order;    // registered list order: low to high
   struct sample_source_t* next_reg;      // simple linked list of REGISTERED sample source objects
   struct sample_source_t* next_sel;      // simple linked list of SELECTED   sample source objects
   

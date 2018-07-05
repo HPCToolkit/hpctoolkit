@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -131,16 +131,20 @@ install-exec-local: myinstall-monitor
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_date_time*)
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_system*)
 	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_thread*)
+	$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
 	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
+	$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
 	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
 	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
+	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
 	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
-	$(call copy-libs,$(SYMTABAPI_COPY_DYN),$(SYMTABAPI_LIB),libdyn*)
-	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libparse*)
-	$(call copy-libs,$(SYMTABAPI_COPY_PARSE),$(SYMTABAPI_LIB),libinstruct*)
 	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.a)
+	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
+	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
 	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
@@ -184,8 +188,9 @@ install-exec-hook:
 	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
 	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
 	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
-	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.a)
+	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
 	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
+	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
 endif
 
 

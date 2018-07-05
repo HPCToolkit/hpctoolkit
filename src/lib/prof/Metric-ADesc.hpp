@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,14 @@ namespace Prof {
 
 namespace Metric {
 
+/*
+ * type of sampling: period, frequency
+ */
+typedef enum SamplingType_e {
+  PERIOD, FREQUENCY
+} SamplingType_t;
+
+
 //***************************************************************************//
 // ADesc
 //***************************************************************************//
@@ -97,7 +105,9 @@ public:
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_computedTy(ComputedTy_NULL),
-      m_dbId(id_NULL), m_dbNumMetrics(0)
+      m_dbId(id_NULL), m_dbNumMetrics(0),
+      m_num_samples(0), m_isMultiplexed(false),
+      m_period_mean(0), m_sampling_type(FREQUENCY)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -108,7 +118,9 @@ public:
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
-      m_dbId(id_NULL), m_dbNumMetrics(0)
+      m_dbId(id_NULL), m_dbNumMetrics(0),
+      m_num_samples(0), m_isMultiplexed(false),
+      m_period_mean(0), m_sampling_type(FREQUENCY)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -122,7 +134,9 @@ public:
       m_isVisible(isVisible), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
-      m_dbId(id_NULL), m_dbNumMetrics(0)
+      m_dbId(id_NULL), m_dbNumMetrics(0),
+      m_num_samples(0), m_isMultiplexed(false),
+      m_period_mean(0), m_sampling_type(FREQUENCY)
   {
     nameFromString(nameBase);
   }
@@ -137,7 +151,9 @@ public:
       m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
       m_computedTy(x.m_computedTy),
-      m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics)
+      m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
+      m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
+      m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type)
   { }
 
   ADesc&
@@ -158,6 +174,11 @@ public:
       m_computedTy    = x.m_computedTy;
       m_dbId          = x.m_dbId;
       m_dbNumMetrics  = x.m_dbNumMetrics;
+
+      m_num_samples   = x.m_num_samples;
+      m_isMultiplexed = x.m_isMultiplexed;
+      m_period_mean   = x.m_period_mean;
+      m_sampling_type = x.m_sampling_type;
     }
     return *this;
   }
@@ -189,6 +210,7 @@ public:
     TyIncl,
     TyExcl
   };
+
 
   static const std::string s_nameNULL;
   static const std::string s_nameIncl;
@@ -324,7 +346,6 @@ public:
   void
   nameSfx(const std::string& x)
   { m_nameSfx = x; }
-
 
   // -------------------------------------------------------
   // description:
@@ -486,6 +507,42 @@ public:
   static ADescTy
   fromHPCRunMetricValTy(MetricFlags_ValTy_t ty);
 
+  // -------------------------------------------------------
+  // perf-event additional info
+  // -------------------------------------------------------
+
+  void
+  isMultiplexed(bool isMultiplexedEvent)
+  { m_isMultiplexed = isMultiplexedEvent; }
+
+  bool
+  isMultiplexed() const
+  { return m_isMultiplexed; }
+
+  void
+  periodMean(float periodMeanEvent)
+  { m_period_mean = periodMeanEvent; }
+
+  float
+  periodMean() const
+  {return m_period_mean; }
+
+  void
+  sampling_type(SamplingType_t type)
+  { m_sampling_type = type; }
+
+  SamplingType_t
+  sampling_type() const
+  { return m_sampling_type; }
+
+  void
+  num_samples(const uint64_t samples)
+  { m_num_samples = samples; }
+
+  uint64_t
+  num_samples() const
+  { return m_num_samples; }
+
 protected:
 private:
   uint m_id;
@@ -505,6 +562,12 @@ private:
 
   uint m_dbId;
   uint m_dbNumMetrics;
+
+  // perf event additional attributes
+  uint64_t m_num_samples;
+  bool  m_isMultiplexed;
+  float m_period_mean;
+  enum SamplingType_e m_sampling_type;
 };
 
 
@@ -632,8 +695,10 @@ public:
   { m_profName = profName; }
 
 
+  // -------------------------------------------------------
   // profile-relative-id: metric id within associated profile file
   // ('select' attribute in HPCPROF config file)
+  // -------------------------------------------------------
   const std::string&
   profileRelId() const
   { return m_profileRelId; }
@@ -665,6 +730,7 @@ public:
 
   virtual std::ostream&
   dumpMe(std::ostream& os = std::cerr) const;
+
 
 protected:
 private:

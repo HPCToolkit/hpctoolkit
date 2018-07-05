@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,8 @@
 #include <map>
 #include <iostream>
 
+#include <string.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -76,6 +78,7 @@
 #include "Dbg-LM.hpp"
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
+#include "SimpleSymbols.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 #include <lib/isa/ISA.hpp>
@@ -83,6 +86,8 @@
 #include <lib/support/Exception.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
+
+#include <include/linux_info.h> // linux kernel macros
 
 //*************************** Forward Declarations **************************
 
@@ -157,17 +162,13 @@ public:
   // return an exception on error.  If a file has already been read do
   // nothing.
   virtual void
-  read(ReadFlg readflg/* = ReadFlg_Seg*/);
+  read(const std::set<std::string> &directorySet, ReadFlg readflg/* = ReadFlg_Seg*/);
 
-
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
 
   // name: Return name of load module
   const std::string&
   name() const
-  { return m_name; }
+  { return m_simpleSymbols ? m_simpleSymbols->name() : m_name; }
 
   // type:  Return type of load module
   Type
@@ -333,6 +334,7 @@ public:
   Insn*
   findInsn(VMA vma, ushort opIndex) const
   {
+    if (m_simpleSymbols) return NULL;
     VMA vma_ur = unrelocate(vma);
     VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     
@@ -360,6 +362,12 @@ public:
     VMA opvma = isa->convertVMAToOpVMA(vma_ur, opIndex);
     m_insnMap.insert(InsnMap::value_type(opvma, insn));
   }
+
+  bool
+  isPseudolLoadModule();
+
+  const char*
+  getPseudoLoadModuleName();
 
   bool
   functionNeverReturns(VMA addr);
@@ -574,6 +582,7 @@ private:
   RealPathMgr& m_realpathMgr;
 
   bool m_useBinutils;
+  SimpleSymbols *m_simpleSymbols;
 };
 
 } // namespace BinUtil

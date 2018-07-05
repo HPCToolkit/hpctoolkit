@@ -13,7 +13,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -583,7 +583,14 @@ ompt_region_context(uint64_t region_id,
   getcontext(&uc);
 
   // levels to skip will be broken if inlining occurs.
-  node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath
+  // vi3 old version
+  // node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  // vi3 new version
+  hpcrun_metricVal_t blame_metricVal;
+  blame_metricVal.i = 0;
+  node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 1, NULL).sample_node;
+
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {

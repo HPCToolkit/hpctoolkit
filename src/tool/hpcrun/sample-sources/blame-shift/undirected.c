@@ -107,7 +107,13 @@ trace_current_context(undirected_blame_info_t *bi)
   if (!hpcrun_safe_enter()) return;
   ucontext_t uc;
   getcontext(&uc);
-  hpcrun_sample_callpath(&uc, bi->idle_metric_id, 0, bi->levels_to_skip + 1, 1);
+  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath function
+  // vi3 old verion
+  // hpcrun_sample_callpath(&uc, bi->idle_metric_id, 0, bi->levels_to_skip + 1, 1);
+  // vi3 new version
+  hpcrun_metricVal_t blame_metricVal;
+  blame_metricVal.i = 0;
+  hpcrun_sample_callpath(&uc, bi->idle_metric_id, blame_metricVal, bi->levels_to_skip + 1, 1, NULL);
   hpcrun_safe_exit();
 }
 

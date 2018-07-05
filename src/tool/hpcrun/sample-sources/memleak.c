@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -83,9 +83,11 @@
 #include <messages/messages.h>
 #include <utilities/tokenize.h>
 
+static const unsigned int MAX_CHAR_FORMULA = 32;
+
 static int alloc_metric_id = -1;
 static int free_metric_id = -1;
-
+static int leak_metric_id = -1;
 
 
 /******************************************************************************
@@ -100,6 +102,7 @@ METHOD_FN(init)
   // reset static variables to their virgin state
   alloc_metric_id = -1;
   free_metric_id = -1;
+  leak_metric_id = -1;
 }
 
 
@@ -159,12 +162,20 @@ METHOD_FN(process_event_list,int lush_metrics)
 {
   alloc_metric_id = hpcrun_new_metric();
   free_metric_id = hpcrun_new_metric();
+  leak_metric_id = hpcrun_new_metric();
 
   TMSG(MEMLEAK, "Setting up metrics for memory leak detection");
 
   hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-
   hpcrun_set_metric_info(free_metric_id, "Bytes Freed");
+
+  metric_desc_t* memleak_metric = hpcrun_set_metric_info(leak_metric_id, "Bytes Leaked");
+
+  char *buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+
+  // leak = allocated - freed
+  sprintf(buffer, "$%d-$%d", alloc_metric_id, free_metric_id);
+  memleak_metric->formula = buffer;
 }
 
 

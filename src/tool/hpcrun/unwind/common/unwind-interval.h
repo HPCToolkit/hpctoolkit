@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,6 @@
 #ifndef unwind_interval_h
 #define unwind_interval_h
 
-#include <lib/prof-lean/mem_manager.h>
 #include "binarytree_uwi.h"
 
 //***************************************************************************
@@ -55,7 +54,7 @@
 //***************************************************************************
 
 btuwi_status_t
-build_intervals(char  *ins, unsigned int len, mem_alloc m_alloc);
+build_intervals(char  *ins, unsigned int len, unwinder_t uw);
 
 //***************************************************************************
 

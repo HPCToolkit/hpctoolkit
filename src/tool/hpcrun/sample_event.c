@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,11 +88,6 @@
 
 //*************************** Forward Declarations **************************
 
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId, uint64_t metricIncr,
-			    int skipInner, int isSync);
-
 
 //***************************************************************************
 
@@ -129,12 +124,10 @@ hpcrun_cleanup_partial_unwind(void)
 
 static cct_node_t*
 record_partial_unwind(
-  cct_bundle_t* cct,
-  frame_t* bt_beg,
-  frame_t* bt_last,
-  int metricId,
-  uint64_t metricIncr,
-  int skipInner)
+  cct_bundle_t* cct, frame_t* bt_beg,
+  frame_t* bt_last, int metricId,
+  hpcrun_metricVal_t metricIncr,
+  int skipInner, void *data)
 {
   if (ENABLED(NO_PARTIAL_UNW)){
     return NULL;
@@ -148,7 +141,6 @@ record_partial_unwind(
   bt.last =  bt_last;
   bt.fence = FENCE_BAD;
   bt.has_tramp = false;
-  bt.trolled = false;
   bt.n_trolls = 0;
   bt.bottom_frame_elided = false;
 
@@ -156,7 +148,7 @@ record_partial_unwind(
   hpcrun_stats_num_samples_partial_inc();
   return hpcrun_cct_record_backtrace_w_metric(cct, true, &bt,
 //					      false, bt_beg, bt_last,
-					      false, metricId, metricIncr);
+					      false, metricId, metricIncr, data);
 }
 
 
@@ -176,8 +168,8 @@ hpcrun_drop_sample(void)
 
 sample_val_t
 hpcrun_sample_callpath(void* context, int metricId,
-		       uint64_t metricIncr,
-		       int skipInner, int isSync)
+		       hpcrun_metricVal_t metricIncr,
+		       int skipInner, int isSync, sampling_info_t *data)
 {
 
   sample_val_t ret;
@@ -226,48 +218,93 @@ hpcrun_sample_callpath(void* context, int metricId,
   cct_node_t* node = NULL;
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
+  // --------------------------------------
+  // start of handling sample
+  // --------------------------------------
   hpcrun_set_handling_sample(td);
-
-  ip_normalized_t leaf_func; // trace the function of the innermost frame rather than the PC in the innermost frame
 
   td->btbuf_cur = NULL;
   td->deadlock_drop = false;
   int ljmp = sigsetjmp(it->jb, 1);
   if (ljmp == 0) {
     if (epoch != NULL) {
-      node = help_hpcrun_sample_callpath(epoch, context, &leaf_func, metricId, metricIncr,
-					 skipInner, isSync);  
+      void* pc = hpcrun_context_pc(context);
+
+      TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
+      TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
+
+      /* check to see if shared library loadmap (of current epoch) has changed out from under us */
+      epoch = hpcrun_check_for_new_loadmap(epoch);
+
+      void *data_aux = NULL;
+      if (data != NULL)
+        data_aux = data->sample_data;
+
+      node  = hpcrun_backtrace2cct(&(epoch->csdata), context, metricId,
+                                   metricIncr, skipInner, isSync, data_aux);
 
       if (ENABLED(DUMP_BACKTRACES)) {
-	hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
+        hpcrun_bt_dump(td->btbuf_cur, "UNWIND");
       }
     }
   }
   else {
     cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
     node = record_partial_unwind(cct, td->btbuf_beg, td->btbuf_cur - 1,
-				 metricId, metricIncr, skipInner);
-    leaf_func = td->btbuf_beg->the_function; 
+        metricId, metricIncr, skipInner, NULL);
     hpcrun_cleanup_partial_unwind();
   }
-
+  // --------------------------------------
+  // end of handling sample
+  // --------------------------------------
 
   ret.sample_node = node;
+
+  cct_addr_t *addr = hpcrun_cct_addr(node);
+  ip_normalized_t leaf_ip = addr->ip_norm;
+
+  if (ip_normalized_eq(&leaf_ip, &(td->btbuf_beg->ip_norm))) {
+    // the call chain sampled has as its leaf an instruction in a user
+    // procedure. we know this because leaf_ip matches the first entry
+    // in the backtrace buffer.  samples in kernel space yield a
+    // leaf_ip that is not logged in the backtrace buffer. for user
+    // space samples, the first entry in the backtrace buffer includes
+    // not only the normalized IP of the call chain leaf but also the
+    // IP of the first instruction in the enclosing function, which we
+    // use to uniquely represent the function itself. in this case, we
+    // adjust leaf_ip to point to the first IP of its enclosing
+    // function to simplify processing of procedure-level traces for
+    // call chains that are completely in user space.
+
+    // when call chain tracing is enabled, tracing arbitrary leaf IPs
+    // for user space call chains is messy because it can cause
+    // trace-ids to be marked on multiple call chain leaves
+    // (instructions) that belong to the same source-level
+    // statement. collapsing these when call path traces are present
+    // leaves us with many trace-ids referring to the same source
+    // construct. trust me: merging here is easier :-).
+    leaf_ip = td->btbuf_beg->the_function;
+  }
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
-    cct_addr_t frm = { .ip_norm = leaf_func };
-    cct_node_t* parent = hpcrun_cct_parent(node); 
-    TMSG(TRACE,"parent node = %p, &frm = %p", parent, &frm);
-    cct_node_t* func_proxy = hpcrun_cct_insert_addr(parent, &frm);
+    cct_addr_t frm;
+    memset(&frm, 0, sizeof(cct_addr_t));
+    frm.ip_norm = leaf_ip;
+
+    TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
+    cct_node_t* func_proxy =
+      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
     ret.trace_node = func_proxy;
 
-    // modify the persistent id
-    hpcrun_cct_persistent_id_trace_mutate(func_proxy);
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(func_proxy);
+    TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
     hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
   }
 
@@ -370,29 +407,5 @@ hpcrun_gen_thread_ctxt(void* context)
   monitor_unblock_shootdown();
 
   return node;
-}
-
-
-static cct_node_t*
-help_hpcrun_sample_callpath(epoch_t *epoch, void *context, ip_normalized_t *leaf_func,
-			    int metricId,
-			    uint64_t metricIncr,
-			    int skipInner, int isSync)
-{
-  void* pc = hpcrun_context_pc(context);
-
-  TMSG(SAMPLE_CALLPATH, "%s taking profile sample @ %p", __func__, pc);
-  TMSG(SAMPLE_METRIC_DATA, "--metric data for sample (as a uint64_t) = %"PRIu64"", metricIncr);
-
-  /* check to see if shared library loadmap (of current epoch) has changed out from under us */
-  epoch = hpcrun_check_for_new_loadmap(epoch);
-
-  cct_node_t* n =
-    hpcrun_backtrace2cct(&(epoch->csdata), context, leaf_func, metricId, metricIncr,
-			 skipInner, isSync);
-
-  // FIXME: n == -1 if sample is filtered
-
-  return n;
 }
 

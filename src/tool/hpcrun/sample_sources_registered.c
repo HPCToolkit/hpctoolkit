@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,15 +54,27 @@
 
 #include <messages/messages.h>
 
-static sample_source_t* registered_sample_sources         = NULL;
-static sample_source_t** registered_sample_sources_insert = &registered_sample_sources;
+static sample_source_t* registered_sample_sources = NULL;
 
+
+// insert by order of 'sort_order', low to high
 void
 hpcrun_ss_register(sample_source_t* src)
 {
-  *registered_sample_sources_insert  = src;
-  src->next_reg                      = NULL;
-  registered_sample_sources_insert   = &(src->next_reg);
+  if (registered_sample_sources == NULL
+      || src->sort_order < registered_sample_sources->sort_order) {
+    src->next_reg = registered_sample_sources;
+    registered_sample_sources = src;
+    return;
+  }
+
+  for (sample_source_t *p = registered_sample_sources;; p = p->next_reg) {
+    if (p->next_reg == NULL || src->sort_order < p->sort_order) {
+      src->next_reg = p->next_reg;
+      p->next_reg = src;
+      break;
+    }
+  }
 }
 
 
@@ -95,16 +107,9 @@ hpcrun_registered_sources_init(void)
 void
 hpcrun_display_avail_events(void)
 {
-  // Special hack to put WALLCLOCK first.
-  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
-    if (strcasecmp(ss->name, "itimer") == 0) {
-      METHOD_CALL(ss, display_events);
-    }
+  for (sample_source_t* ss = registered_sample_sources; ss; ss = ss->next_reg) {
+    METHOD_CALL(ss, display_events);
   }
-  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
-    if (strcasecmp(ss->name, "itimer") != 0) {
-      METHOD_CALL(ss, display_events);
-    }
-  }
+
   exit(0);
 }

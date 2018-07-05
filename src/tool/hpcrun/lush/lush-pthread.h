@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -164,7 +164,8 @@ lushPthr_attribToCallPath(uint64_t idlenessIncr)
   ucontext_t context;
   getcontext(&context); // FIXME: check for errors
   smpl = hpcrun_sample_callpath(&context, lush_agents->metric_time,
-				0/*metricIncr*/, 1/*skipInner*/, 1/*isSync*/);
+                                (hpcrun_metricVal_t) {.i=0}, 
+				1/*skipInner*/, 1/*isSync*/, NULL);
   hpcrun_safe_exit();
 
   return smpl.sample_node;

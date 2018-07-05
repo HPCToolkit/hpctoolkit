@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@ uw_recipe_map_init(void);
  * else return false
  */
 bool
-uw_recipe_map_lookup(void *addr, unwindr_info_t *unwr_info);
+uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
 
 
 void
