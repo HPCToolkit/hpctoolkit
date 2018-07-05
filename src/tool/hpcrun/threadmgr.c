@@ -58,6 +58,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <pthread.h>
+#include <sys/sysinfo.h>
 
 //******************************************************************************
 // local include files 
@@ -71,6 +73,8 @@
 #include <lib/prof-lean/spinlock.h>
 
 #include <include/queue.h>
+
+#include <monitor.h>
 
 //******************************************************************************
 // macro
@@ -92,6 +96,8 @@ typedef struct thread_list_s {
 //******************************************************************************
 static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
 
+static atomic_int_least32_t threadmgr_num_threads = ATOMIC_VAR_INIT(1); // number of logical threads
+
 static SLIST_HEAD(thread_list_head, thread_list_s) list_thread_head =
     SLIST_HEAD_INITIALIZER(thread_list_head);
 
@@ -107,6 +113,18 @@ adjust_thread_count(int32_t val)
 	atomic_fetch_add_explicit(&threadmgr_active_threads, val, memory_order_relaxed);
 }
 
+static int32_t
+adjust_num_logical_threads(int32_t val)
+{
+  return atomic_fetch_add_explicit(&threadmgr_num_threads, val, memory_order_relaxed);
+}
+
+
+static int32_t
+get_num_logical_threads()
+{
+  return atomic_load_explicit(&threadmgr_num_threads, memory_order_relaxed);
+}
 
 static bool
 is_compact_thread()
@@ -133,6 +151,41 @@ finalize_thread_data(core_profile_trace_data_t *current_data)
 {
   hpcrun_write_profile_data( current_data );
   hpcrun_trace_close( current_data );
+}
+
+
+static thread_list_t *
+grab_thread_data()
+{
+  spinlock_lock(&threaddata_lock);
+
+  thread_list_t *item = NULL;
+
+  if (!SLIST_EMPTY(&list_thread_head)) {
+    item = SLIST_FIRST(&list_thread_head);
+    SLIST_REMOVE_HEAD(&list_thread_head, entries);
+  }
+
+  spinlock_unlock(&threaddata_lock);
+
+  return item;
+}
+
+
+static void*
+thread_finalize_data(void *arg)
+{
+  thread_list_t *data = (thread_list_t *) arg;
+
+  while (data != NULL) {
+    core_profile_trace_data_t *cptd = &data->thread_data->core_profile_trace_data;
+    finalize_thread_data(cptd);
+
+    TMSG(PROCESS, "%d: write thread data", cptd->id);
+
+    data = grab_thread_data();
+  }
+  return NULL;
 }
 
 //******************************************************************************
@@ -196,33 +249,23 @@ hpcrun_threadMgr_compact_thread()
 thread_data_t *
 hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 {
-  static unsigned int logical_id = 0;
-
   // if we don't want coalesce threads, just allocate it and return
 
   if (!is_compact_thread()) {
     return allocate_thread_data(id, thr_ctxt, num_sources);
   }
 
-  thread_data_t *data = NULL;
+  thread_list_t *item = grab_thread_data();
+  thread_data_t *data = item ? item->thread_data : NULL;
 
-  spinlock_lock(&threaddata_lock);
+  if (data == NULL) {
 
-  if (SLIST_EMPTY(&list_thread_head)) {
-    unsigned int myid = ++logical_id;
-    spinlock_unlock(&threaddata_lock);
-
-    data = allocate_thread_data(myid, thr_ctxt, num_sources);
+    int32_t myid = adjust_num_logical_threads(1);
+    data         = allocate_thread_data(myid, thr_ctxt, num_sources);
 
     TMSG(PROCESS, "%d: new thread data", myid);
-
   } else {
-    struct thread_list_s *item = SLIST_FIRST(&list_thread_head);
-    SLIST_REMOVE_HEAD(&list_thread_head, entries);
 
-    spinlock_unlock(&threaddata_lock);
-
-    data = item->thread_data;
     hpcrun_set_thread_data(data);
 
     TMSG(PROCESS, "%d: reuse thread data from %d", id, data->core_profile_trace_data.id);
@@ -256,28 +299,72 @@ hpcrun_threadMgr_data_put( thread_data_t *data )
 void
 hpcrun_threadMgr_data_fini(thread_data_t *td)
 {
-  thread_list_t *item = NULL;
-  bool is_processed   = false;
+  int num_cores   = get_nprocs();
+  int num_log_thr = get_num_logical_threads();
+  int max_iter    = num_cores < num_log_thr ? num_cores : num_log_thr;
+  int num_threads = 0;
 
-  while( !SLIST_EMPTY(&list_thread_head) ) {
-    item = SLIST_FIRST(&list_thread_head);
-    if (item != NULL) {
+  // -----------------------------------------------------------------
+  // make sure we disable monitoring threads
+  // -----------------------------------------------------------------
 
-      core_profile_trace_data_t *data = &item->thread_data->core_profile_trace_data;
-      finalize_thread_data(data);
+  monitor_disable_new_threads();
 
-      TMSG(PROCESS, "%d: write thread data", data->id);
+  // -----------------------------------------------------------------
+  // Create threads to distribute the finalization work
+  // The number of created threads is the minimum of:
+  //  - the number of thread data in the queue
+  //  - the number of cores
+  //  - the number of logical threads
+  // -----------------------------------------------------------------
 
-      if (item->thread_data == td) {
-        is_processed = true;
-      }
-      SLIST_REMOVE_HEAD(&list_thread_head, entries);
+  pthread_t threads[max_iter];
+  pthread_attr_t attr;
+
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+  for (int i=0; !SLIST_EMPTY(&list_thread_head) && i < max_iter; i++)
+  {
+    thread_list_t * item = grab_thread_data();
+
+    int rc = pthread_create( &threads[i], &attr, thread_finalize_data,
+                             (void*) item);
+    if (rc) {
+      EMSG("Error cannot create thread %d with return code: %d",
+          (item ? item->thread_data->core_profile_trace_data.id : -1), rc);
+      break;
+    }
+    num_threads++;
+  }
+
+  // -----------------------------------------------------------------
+  // wait until all worker threads finish the work
+  // -----------------------------------------------------------------
+
+  pthread_attr_destroy(&attr);
+  void *status;
+
+  for(int i=0; i<num_threads; i++) {
+    int rc = pthread_join(threads[i], &status);
+    if (rc) {
+      EMSG("Error: return code from pthread_join: %d for thread #%d", rc, i);
     }
   }
+
+  // -----------------------------------------------------------------
+  // enable monitor new threads
+  // -----------------------------------------------------------------
+
+  monitor_enable_new_threads();
+
+  // -----------------------------------------------------------------
   // main thread (thread 0) may not be in the list
   // for sequential or pure MPI programs, they don't have list of thread data in this queue.
   // hence, we need to process specifically here
-  if (!is_processed) {
+  // -----------------------------------------------------------------
+
+  if (td && td->core_profile_trace_data.id == 0) {
 
     finalize_thread_data(&td->core_profile_trace_data);
 
