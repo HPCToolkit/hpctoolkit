@@ -737,23 +737,27 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    // case 1: for compact and non-compact threads:
-    //  call hpcrun_threadMgr_data_put() to finalize the thread
-    //  if it's a compact thread, we write the profile data
-    //  otherwise we enqueue the data to the list
+    // case 1: non-compact threads:
+    //  if it's in non-compact thread, we write the profile data,
+    //  close the trace file, and exit
 
     thread_data_t* td = hpcrun_get_thread_data();
-    hpcrun_threadMgr_data_put(td);
 
     if (hpcrun_threadMgr_compact_thread() == OPTION_NO_COMPACT_THREAD) {
+
+      hpcrun_write_profile_data( &td->core_profile_trace_data );
+      hpcrun_trace_close( &td->core_profile_trace_data );
+
       return;
     }
 
     // case 2: for compact threads only:
-    // save the data in the queue. We may reuse again later.
-    // writing the profile will be performed later in hpcrun_fini_internal
-    // unless there's a shutdown or cancellation, we need to write the
+    //  save the data in the queue. We may reuse again later.
+    //  writing the profile will be performed later in hpcrun_fini_internal
+    //  unless there's a shutdown or cancellation, we need to write the
     //  the profile here
+
+    hpcrun_threadMgr_data_put(td);
 
     // get the dummy node that marks the end of the thread
     cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);

@@ -278,11 +278,10 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
 void
 hpcrun_threadMgr_data_put( thread_data_t *data )
 {
-  // if we don't want coalesce the threads, write the profile data and return
-  if (!is_compact_thread()) {
-    finalize_thread_data(&data->core_profile_trace_data);
-    return;
-  }
+  // case compact threads mode
+  //         enqueue the thread data in the list to be reused by
+  //         other thread (if any). The thread data will be written
+  //         to the file at the end of the process
 
   spinlock_lock(&threaddata_lock);
 
