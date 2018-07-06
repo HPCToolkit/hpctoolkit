@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -107,35 +107,23 @@ public:
   // Create/Destroy
   // --------------------------------------------------------
   IData(size_t size = 0)
-    : m_metrics(NULL)
   {
-    if (size != 0) {
-      ensureMetricsSize(size);
-    }
+    ensureMetricsSize(size);
   }
 
   virtual ~IData()
   {
-    delete m_metrics;
   }
   
   IData(const IData& x)
-    : m_metrics(NULL)
+    : m_metrics(x.m_metrics)
   {
-    if (x.m_metrics) {
-      m_metrics = new MetricVec(*(x.m_metrics));
-    }
   }
   
   IData&
   operator=(const IData& x)
   {
-    if (this != &x) {
-      clearMetrics();
-      if (x.m_metrics) {
-	m_metrics = new MetricVec(*(x.m_metrics));
-      }
-    }
+    m_metrics = x.m_metrics;
     return *this;
   }
 
@@ -164,20 +152,20 @@ public:
 
   bool
   hasMetric(size_t mId) const
-  { return ((*m_metrics)[mId] != 0.0); }
+  { return (m_metrics[mId] != 0.0); }
 
   bool
   hasMetricSlow(size_t mId) const
-  { return (m_metrics && mId < m_metrics->size() && hasMetric(mId)); }
+  { return (mId < m_metrics.size() && hasMetric(mId)); }
 
 
   double
   metric(size_t mId) const
-  { return (*m_metrics)[mId]; }
+  { return m_metrics[mId]; }
 
   double&
   metric(size_t mId)
-  { return (*m_metrics)[mId]; }
+  { return m_metrics[mId]; }
 
 
   double
@@ -211,41 +199,26 @@ public:
   void
   clearMetrics()
   {
-    delete m_metrics;
-    m_metrics = NULL;
+    m_metrics.clear();;
   }
-
-
-  // --------------------------------------------------------
-  // 
-  // --------------------------------------------------------
 
   // ensureMetricsSize: ensures a vector of the requested size exists
   void
   ensureMetricsSize(size_t size) const
   {
-    if (!m_metrics) {
-      m_metrics = new MetricVec(size, 0.0 /*value*/);
-    }
-    else if (size > m_metrics->size()) {
-      m_metrics->resize(size, 0.0 /*value*/); // inserts at end
-    }
+    if (size > m_metrics.size())
+      m_metrics.resize(size, 0.0 /*value*/); // inserts at end
   }
 
   void
   insertMetricsBefore(size_t numMetrics) 
   {
-    if (numMetrics > 0 && !m_metrics) {
-      m_metrics = new MetricVec();
-    }
-    for (uint i = 0; i < numMetrics; ++i) {
-      m_metrics->insert(m_metrics->begin(), 0.0);
-    }
+    m_metrics.insert(m_metrics.begin(), numMetrics, 0.0);
   }
   
   uint
   numMetrics() const
-  { return (m_metrics) ? m_metrics->size() : 0; }
+  { return m_metrics.size(); }
 
 
   // --------------------------------------------------------
@@ -273,7 +246,7 @@ public:
 
   
 private:
-  mutable MetricVec* m_metrics; // 'mutable' for ensureMetricsSize()
+  mutable MetricVec m_metrics;
 };
 
 //***************************************************************************

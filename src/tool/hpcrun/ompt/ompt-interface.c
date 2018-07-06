@@ -76,6 +76,12 @@
 #include "sample-sources/blame-shift/blame-map.h"
 
 #include "sample-sources/idle.h"
+#include "ompt.h"
+#include "../../../lib/prof-lean/stdatomic.h"
+#include "../memory/hpcrun-malloc.h"
+#include "../sample-sources/blame-shift/undirected.h"
+#include "ompt-defer.h"
+#include "../thread_data.h"
 
 /******************************************************************************
  * macros
@@ -334,10 +340,10 @@ ompt_thread_begin(ompt_thread_type_t thread_type,
   ompt_thread_type_set(thread_type);
   undirected_blame_thread_start(&omp_idle_blame_info);
 
-  atomic_init(&threads_queue.head, ompt_notification_null);
-  atomic_init(&public_region_freelist.head, ompt_region_data_null);
+  wfq_init(&threads_queue);
+  wfq_init(&public_region_freelist);
+
   registered_regions = NULL;
-  thread_data_t *td = hpcrun_get_thread_data();
 //  printf("Tree root begin: %p\n", td->core_profile_trace_data.epoch->csdata.tree_root);
 }
 
@@ -822,88 +828,148 @@ ompt_idle_blame_shift_request()
   ompt_register_idle_metrics();
 }
 
+// added by vi3:
+
+// FIXME: be sure that everything is connected properl ymaybe we need
+// sometimes to call wfq_get_next just to wait eventually lately connections
+
+
+// vi3: freelist helper functions
+// rename freelist_remove_first
+ompt_base_t*
+freelist_remove_first(ompt_base_t **head){
+  if(*head){
+    ompt_base_t* first = *head;
+    *head = OMPT_BASE_T_GET_NEXT(first);
+    return first;
+  }
+  return ompt_base_nil;
+}
+
+// rename: freelist_add_first
+void freelist_add_first(ompt_base_t *new, ompt_base_t **head){
+  if (!new)
+    return;
+  OMPT_BASE_T_GET_NEXT(new) = *head;
+  *head = new;
+}
+
+
+// vi3: wait free queue functions
+// prefix wfq
+void
+wfq_set_next_pending(ompt_base_t *element){
+  // set invalid value
+  atomic_exchange(&element->next.anext, ompt_base_invalid);
+}
+
+// prefix wfq
+ompt_base_t*
+wfq_get_next(ompt_base_t *element){
+  // wait until next pointer is set properly
+//  ompt_base_t* curr_next = atomic_load(&element->next.anext);
+  ompt_base_t* curr_next;
+  // FIXME vi3: is it okay to write something like this
+  while ((curr_next=atomic_load(&element->next.anext)) == ompt_base_invalid);  // FIXME: this should be loaded atomically
+  return curr_next;
+}
+
+
+void
+wfq_init(ompt_wfq_t *queue){
+  atomic_init(&queue->head, ompt_base_nil);
+}
+
+// add element to wait free queue
+void
+wfq_enqueue(ompt_base_t *new, ompt_wfq_t *queue){
+  wfq_set_next_pending(new);
+  // FIXME vi3: should OMPT_BASE_T_STAR
+  ompt_base_t *old_head = (ompt_base_t*)atomic_exchange(&queue->head, new);
+  atomic_exchange(&new->next.anext, old_head);
+}
+
+// remove one element from the end and is used in case
+// when all adding are finished before removing
+// dequeue_public
+ompt_base_t*
+wfq_dequeue_public(ompt_wfq_t *public_queue){
+  ompt_base_t* first = atomic_load(&public_queue->head);
+  if(first){
+    ompt_base_t* succ = wfq_get_next(first);
+    atomic_exchange(&public_queue->head, succ);
+    atomic_exchange(&first->next.anext, ompt_base_nil);
+  }
+  return first;
+}
+
+// returns first element from private list
+// if it is empty, takes all element from public queue
+// and store them to private list
+ompt_base_t*
+wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue){
+  // private list is empty
+  if(!(*private_queue)){
+    // take all from public list, but there is also possibility that this list is empty too
+    ompt_base_t* old_head = atomic_exchange(&public_queue->head, ompt_base_nil);
+    *private_queue = old_head;
+  }
+  return freelist_remove_first(private_queue);
+}
 
 // vi3: Part for allocation
 
 // allocating and free regions
 ompt_region_data_t*
 hpcrun_ompt_region_alloc(){
-  // nothing on the private freelist
-  if(!private_region_freelist_head){
-    // is there something in public freelist
-    if(atomic_load(&public_region_freelist.head)){
-      // clean public freelist
-      ompt_region_data_t* old_public_head =
-              (ompt_region_data_t*)atomic_exchange(&public_region_freelist.head, ompt_region_data_null);
-      private_region_freelist_head = old_public_head;
-    }else{
-      // both freelists are empty, so we need to allocate memory for region_data
-      return (ompt_region_data_t*)hpcrun_malloc(sizeof(ompt_region_data_t));
-    }
-  }
-
-  ompt_region_data_t* old_private_head = private_region_freelist_head;
-  private_region_freelist_head = old_private_head->next_freelist;
-  return old_private_head;
+  // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
+  ompt_region_data_t* first =
+          (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
+                                                    OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
+  // FIXME vi3: leave allocation with explicit casting
+  return first ? first : (ompt_region_data_t*)hpcrun_malloc(sizeof(ompt_region_data_t));
 }
 
 
 void
 hpcrun_ompt_region_free(ompt_region_data_t *region_data){
-  // add to freelist
-  region_data->next_freelist = ompt_region_data_invalid;
-  ompt_region_data_t* old_head =
-          (ompt_region_data_t*)atomic_exchange(&(region_data->thread_freelist->head), region_data);
-  region_data->next_freelist = old_head;
+  wfq_enqueue(OMPT_BASE_T_STAR(region_data), region_data->thread_freelist);
 }
 
 
 // allocating and free notifications
 ompt_notification_t*
 hpcrun_ompt_notification_alloc(){
-  ompt_notification_t* first = notification_freelist_head;
-  // is there a hread
-  if(first){
-    // new head
-    ompt_notification_t* succ = first->next_freelist;
-    notification_freelist_head = succ;
-    return first;
-  }
-  // free list is empty
-  return (ompt_notification_t*)hpcrun_malloc(sizeof(ompt_notification_t));
+  ompt_notification_t* first = (ompt_notification_t*) freelist_remove_first(
+          OMPT_BASE_T_STAR_STAR(notification_freelist_head));
+  return first ? first : (ompt_notification_t*)hpcrun_malloc(sizeof(ompt_notification_t));
 }
 
 
 void
 hpcrun_ompt_notification_free(ompt_notification_t *notification){
-  // add to freelist
-  notification->next_freelist = notification_freelist_head;
-  notification_freelist_head = notification;
+  freelist_add_first(OMPT_BASE_T_STAR(notification), OMPT_BASE_T_STAR_STAR(notification_freelist_head));
 }
 
 
 // allocate and free thread's region
-
-ompt_thread_regions_list_t*
-hpcrun_ompt_thread_region_alloc(){
-  ompt_thread_regions_list_t* first = thread_region_freelist_head;
-  // is there a hread
-  if(first){
-    // new head
-    ompt_thread_regions_list_t* succ = first->next_freelist;
-    thread_region_freelist_head = succ;
-    return first;
-  }
-  // free list is empty
-  return (ompt_thread_regions_list_t*)hpcrun_malloc(sizeof(ompt_thread_regions_list_t));
+ompt_trl_el_t*
+hpcrun_ompt_trl_el_alloc(){
+  ompt_trl_el_t* first = (ompt_trl_el_t*) freelist_remove_first(OMPT_BASE_T_STAR_STAR(thread_region_freelist_head));
+  return first ? first : (ompt_trl_el_t*)hpcrun_malloc(sizeof(ompt_trl_el_t));
 }
 
 void
-hpcrun_ompt_thread_region_free(ompt_thread_regions_list_t *thread_region){
-  // add to freelist
-  thread_region->next_freelist = thread_region_freelist_head;
-  thread_region_freelist_head = thread_region;
+hpcrun_ompt_trl_el_free(ompt_trl_el_t *thread_region){
+  freelist_add_first(OMPT_BASE_T_STAR(thread_region), OMPT_BASE_T_STAR_STAR(thread_region_freelist_head));
 }
+
+
+//FIXME: regex \(ompt_base_t\s+\*\)
+
+
+
+
 
 
 // vi3: Helper function to get region_data
@@ -927,3 +993,12 @@ ompt_region_data_t*
 hpcrun_ompt_get_parent_region_data(){
   return hpcrun_ompt_get_region_data(1);
 }
+
+
+// FIXME vi3: couple of notes and warning from stdatomic
+//warning: value computed is not used [-Wunused-value]
+
+
+// FIXME vi3: Should use above, or make freelist_add_first_region/notification/trl_el
+//freelist_add_first(OMPT_BASE_T_STAR(region_data), OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
+// FIXME vi3: Same for enqueue and dequeue

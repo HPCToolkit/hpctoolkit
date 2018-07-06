@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -294,25 +294,6 @@ Args::ddump() const
   dump(std::cerr);
 }
 
-
-//***************************************************************************
-
-BAnal::Struct::NormTy
-Args::parseArg_norm(const string& value, const char* err_note)
-{
-  if (value == "all") {
-    return BAnal::Struct::NormTy_All;
-  }
-  else if (value == "safe") {
-    return BAnal::Struct::NormTy_Safe;
-  }
-  else if (value == "none") {
-    return BAnal::Struct::NormTy_None;
-  }
-  else {
-    ARG_ERROR(err_note << ": Unexpected value received: " << value);
-  }
-}
 
 //***************************************************************************
 

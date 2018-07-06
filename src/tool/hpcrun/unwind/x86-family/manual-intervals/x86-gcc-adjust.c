@@ -61,6 +61,7 @@ static char gcc_adjust_stack_signature[] = {
 static int 
 gcc_adjust_stack_intervals(char *ins, int len, btuwi_status_t *stat)
 {
+    // FIXME: vi3 x86recipe_t has been changed, so I have to modify this function
   int siglen = sizeof(gcc_adjust_stack_signature);
 
   if (len > siglen && strncmp((char *)gcc_adjust_stack_signature, ins, siglen) == 0) {
@@ -74,13 +75,13 @@ gcc_adjust_stack_intervals(char *ins, int len, btuwi_status_t *stat)
       x86recipe_t *xr = UWI_RECIPE(ui);
       if (xr->ra_status == RA_STD_FRAME){
         xr->ra_status = RA_BP_FRAME;
-	xr->bp_ra_pos = 8;
-	xr->bp_bp_pos = 0;
+	xr->reg.bp_ra_pos = 8;
+	xr->reg.bp_bp_pos = 0;
       }
       if (xr->ra_status == RA_BP_FRAME){
-        if (xr->bp_status == BP_SAVED) xr->bp_ra_pos = 8;
-        else if (xr->bp_status == BP_UNCHANGED) xr->bp_ra_pos = 0;
-	xr->bp_bp_pos = 0;
+        if (xr->reg.bp_status == BP_SAVED) xr->reg.bp_ra_pos = 8;
+        else if (xr->reg.bp_status == BP_UNCHANGED) xr->reg.bp_ra_pos = 0;
+	xr->reg.bp_bp_pos = 0;
       }
 
       ui = UWI_NEXT(ui);

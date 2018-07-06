@@ -3,6 +3,15 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* dyninst uses Instruction::Ptr */
+#undef DYNINST_INSTRUCTION_PTR
+
+/* dyninst supports cuda */
+#undef DYNINST_USE_CUDA
+
+/* dyninst built with libdw */
+#undef DYNINST_USE_LIBDW
+
 /* Binutils has support for ia64 */
 #undef ENABLE_BINUTILS_IA64
 
@@ -117,7 +126,7 @@
 /* HOST platform: MIPS64LE_LINUX */
 #undef HOST_PLATFORM_MIPS64LE_LINUX
 
-/* IBM BlueGene/P support */
+/* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
 /* HPCToolkit version */
@@ -158,9 +167,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Use new symtabAPI getName iterator */
-#undef SYMTAB_NEW_NAME_ITERATOR
 
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW

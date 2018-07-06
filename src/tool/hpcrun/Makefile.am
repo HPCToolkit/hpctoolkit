@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -171,6 +171,12 @@ CUPTI_BASE = @OPT_CUPTI@
 MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 
+ZLIB_LIB = @ZLIB_LIB@
+ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
+ZLIB_INC = @ZLIB_INC@
+
+LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
+
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
@@ -184,11 +190,11 @@ UNW_UNIV_FILES = \
         unwind/common/unw-throw.c
 
 UNW_COMMON_FILES = \
-        $(UNW_UNIV_FILES)               \
-	unwind/common/binarytree_uwi.c		    \
-	unwind/common/ildmod_stat.c \
-	unwind/common/interval_t.c	    \
-	unwind/common/stack_troll.c	\
+        $(UNW_UNIV_FILES)				\
+	unwind/common/binarytree_uwi.c			\
+	unwind/common/interval_t.c			\
+	unwind/common/libunw_intervals.c		\
+	unwind/common/stack_troll.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
@@ -221,7 +227,8 @@ UNW_X86_INCLUDE_DIRS = \
 UNW_PPC64_FILES = \
         $(UNW_COMMON_FILES) \
 	unwind/ppc64/ppc64-unwind.c \
-	unwind/ppc64/ppc64-unwind-interval.c
+	unwind/ppc64/ppc64-unwind-interval.c \
+	unwind/common/default_validation_summary.c
 
 UNW_PPC64_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/ppc64
@@ -236,7 +243,7 @@ UNW_PPC64_LD_FLAGS =
 # configuration
 
 UNW_LIBUNW_FILES = \
-       $(UNW_UNIV_FILES) \
+       $(UNW_COMMON_FILES) \
        unwind/generic-libunwind/libunw-unwind.c \
        unwind/common/default_validation_summary.c
 
@@ -260,9 +267,8 @@ MY_BASE_FILES =				\
 	\
 	main.h main.c			\
 	disabled.c			\
-        closure-registry.c              \
-        cct_insert_backtrace.c          \
-        cct_backtrace_finalize.c        \
+	cct_insert_backtrace.c          \
+	cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -277,13 +283,10 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c \
-	sample-sources/blame-shift/blame-map.c   \
-	sample-sources/blame-shift/directed.c    \
-	sample-sources/blame-shift/undirected.c    \
-	sample-sources/omp-mutex.c      \
-	sample-sources/omp-idle.c       \
-        sample-sources/common.c         \
+	sample-sources/blame-shift/blame-shift.c          \
+	sample-sources/blame-shift/blame-map.c            \
+	sample-sources/common.c         \
+	sample-sources/display.c		\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
@@ -291,9 +294,8 @@ MY_BASE_FILES =				\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-        sample-sources/retcnt.c         \
-        sample-sources/sample-filters.c \
-        sample-sources/sync.c           \
+	sample-sources/retcnt.c         \
+	sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	segv_handler.c			\
 	start-stop.c			\
@@ -306,13 +308,13 @@ MY_BASE_FILES =				\
 	write_data.c		        \
 	\
 	cct/cct_bundle.c		\
-        cct/cct_ctxt.c			\
+	cct/cct_ctxt.c			\
 	cct/cct.c               	\
 	\
-        cct2metrics.c                   \
-        \
-        trampoline/common/trampoline.c  \
-        \
+	cct2metrics.c                   \
+	\
+	trampoline/common/trampoline.c  \
+	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -324,7 +326,7 @@ MY_BASE_FILES =				\
 	fnbounds/fnbounds_common.c	\
 	\
 	memory/mem.c			\
-        memory/mmap.c                   \
+	memory/mmap.c                   \
 	\
 	messages/debug-flag.c	        \
 	messages/messages-sync.c	\
@@ -344,14 +346,34 @@ MY_BASE_FILES =				\
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c	\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
+
+if OPT_ENABLE_PERF_EVENT
+MY_BASE_FILES +=  \
+	sample-sources/perf/event_custom.c  \
+	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf-util.c     \
+	sample-sources/perf/perf_mmap.c
+
+if OPT_PERFMON
+MY_BASE_FILES += sample-sources/perf/perfmon-util.c
+else
+MY_BASE_FILES += sample-sources/perf/perfmon-util-dummy.c
+endif
+
+if OPT_ENABLE_KERNEL_4_3
+MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
+else
+MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
+endif
+endif
 
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\
 ## 	sample-sources/mpi.c
 ## endif
-
 
 MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
@@ -372,7 +394,6 @@ MY_MIPS_FILES = \
 	unwind/common/default_validation_summary.c
 
 MY_PPC_FILES = \
-	unwind/common/default_validation_summary.c \
         trampoline/ppc64/ppc64-tramp.s \
         \
         utilities/arch/ppc64/ppc64-context-pc.c
@@ -431,13 +452,11 @@ MY_INCLUDE_DIRS =			\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 
-
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
 
 MY_PPC_INCLUDE_DIRS = 		\
-        -I$(srcdir)/utilities/arch/ppc64 \
-	-I$(srcdir)/unwind/ppc64
+        -I$(srcdir)/utilities/arch/ppc64
 
 MY_X86_INCLUDE_DIRS =		\
         -I$(srcdir)/utilities/arch/x86-family
@@ -553,6 +572,7 @@ libhpcrun_io_wrap_a_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+
 libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -650,8 +670,8 @@ endif
 # cflags
 #-----------------------------------------------------------
 
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
+libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -681,7 +701,8 @@ endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
-        $(LIBUNWIND_LDFLAGS_DYN)
+        $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
+        $(PERFMON_LDFLAGS_DYN)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -695,8 +716,13 @@ libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT)
+libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
+			$(PERFMON_LDFLAGS_STAT) 
+		 
 
+if OPT_USE_ZLIB
+#  libhpcrun_o_LDFLAGS   += $(ZLIB_HPCLINK_LIB)
+endif
 
 #-----------------------------------------------------------
 # whirled peas
@@ -760,7 +786,7 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
-  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS)
+  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)

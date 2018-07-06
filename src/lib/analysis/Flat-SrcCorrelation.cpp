@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -738,7 +738,8 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
   }
 
   if (!useStruct) {
-    lm->read(BinUtil::LM::ReadFlg_Seg);
+    std::set<std::string> dir;  // empty set of measurement directories
+    lm->read(dir, BinUtil::LM::ReadFlg_Seg);
   }
 
   Prof::Struct::LM* lmStrct =

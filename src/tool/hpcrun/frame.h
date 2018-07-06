@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@
 #include <unwind/common/unw-datatypes.h>
 #include <utilities/ip-normalized.h>
 #include <lib/prof-lean/lush/lush-support.h>
+#include "../../lib/prof-lean/lush/lush-support.h"
+#include "utilities/ip-normalized.h"
 
 // --------------------------------------------------------------------------
 // frame_t: similar to cct_node_t, but specialized for the backtrace buffer

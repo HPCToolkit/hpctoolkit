@@ -49,8 +49,10 @@
 // local includes  
 //******************************************************************************
 
-#include <ompt.h>
+//#include <ompt.h>
+#include <zconf.h>
 #include "ompt-thread.h"
+#include "ompt.h"
 //#include <stdio.h>
 //#include <stdlib.h>
 
@@ -78,13 +80,16 @@ ompt_thread_type_get()
 }
 
 
-__thread ompt_thread_regions_list_t* registered_regions = NULL;
-__thread ompt_threads_queue_t threads_queue;
+__thread ompt_trl_el_t* registered_regions = NULL;
+//__thread ompt_threads_queue_t threads_queue;
+__thread ompt_wfq_t threads_queue;
+__thread ompt_region_data_t* private_threads_queue = NULL;
+
 
 // freelists
 __thread ompt_notification_t* notification_freelist_head = NULL;
-__thread ompt_thread_regions_list_t* thread_region_freelist_head = NULL;
-__thread ompt_thread_region_freelist_t public_region_freelist;
+__thread ompt_trl_el_t* thread_region_freelist_head = NULL;
+__thread ompt_wfq_t public_region_freelist;
 __thread ompt_region_data_t* private_region_freelist_head = NULL;
 
 

@@ -1,6 +1,6 @@
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Experiment DTD						  -->
-<!-- Version 2.0							  -->
+<!-- Version 2.1							  -->
 <!-- ******************************************************************** -->
 <!ELEMENT HPCToolkitExperiment (Header, (SecCallPathProfile|SecFlatProfile)*)>
 <!ATTLIST HPCToolkitExperiment
@@ -41,6 +41,9 @@
     <!ATTLIST Metric
 	      i            CDATA #REQUIRED
 	      n            CDATA #REQUIRED
+	      es	   CDATA #IMPLIED
+	      em	   CDATA #IMPLIED
+	      ep	   CDATA #IMPLIED
 	      v            (raw|final|derived-incr|derived) "raw"
 	      t            (inclusive|exclusive|nil) "nil"
 	      partner      CDATA #IMPLIED

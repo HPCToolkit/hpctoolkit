@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -335,6 +335,19 @@ BinUtil::TextSeg::ctor_initProcs()
 	}
       }
     }
+    // Xu: treat the OBJ symbol as the dummy proc symbol
+    else if(Proc::isDummyProcBFDSym(sym)) {
+      VMA begVMA = bfd_asymbol_value(sym);
+      VMA endVMA = begVMA + 1; 
+
+      Proc::Type procType = Proc::Data;
+      string symNm = bfd_asymbol_name(sym);
+      string procNm = symNm;
+      Proc* proc = m_lm->findProc(begVMA);
+      proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, 1);
+      m_procs.push_back(proc);
+      m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);
+    }
   }
 
   // ------------------------------------------------------------
@@ -412,6 +425,9 @@ BinUtil::TextSeg::ctor_disassembleProcs()
   
   for (ProcVec::iterator it = m_procs.begin(); it != m_procs.end(); ++it) {
     Proc* p = *it;
+    if (p->isDummyProc()) 
+      continue;
+
     VMA procBeg = p->begVMA();
     VMA procEnd = p->endVMA();
     ushort insnSz = 0;

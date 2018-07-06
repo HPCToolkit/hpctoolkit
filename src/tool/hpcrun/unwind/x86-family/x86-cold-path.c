@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -97,21 +97,24 @@ static bool confirm_cold_path_call(void *loc, interval_arg_t *iarg);
 //**************************************************************************
 
 void
-hpcrun_cold_code_fixup(unwind_interval *current, unwind_interval *warm)
+hpcrun_cold_code_fixup(unwind_interval *first, unwind_interval *current, unwind_interval *warm)
 {
   TMSG(COLD_CODE,"  --fixing up current intervals with the warm interval");
-  int ra_offset = UWI_RECIPE(warm)->sp_ra_pos;
-  int bp_offset = UWI_RECIPE(warm)->sp_bp_pos;
+  x86recipe_t *xr = UWI_RECIPE(warm);
+  int ra_offset = xr->reg.sp_ra_pos;
+  int bp_offset = xr->reg.sp_bp_pos;
   if (ra_offset == 0) {
 	TMSG(COLD_CODE,"  --warm code calling routine has offset 0,"
 		" so no action taken");
 	return;
   }
   TMSG(COLD_CODE,"  --updating sp_ra_pos with offset %d",ra_offset);
-  for(unwind_interval *intv = current; intv; intv = UWI_PREV(intv)) {
-	UWI_RECIPE(intv)->sp_ra_pos += ra_offset;
-	UWI_RECIPE(intv)->sp_bp_pos += bp_offset;
-  }
+  unwind_interval *intv = first;
+  do {
+        xr = UWI_RECIPE(intv);
+	xr->reg.sp_ra_pos += ra_offset;
+	xr->reg.sp_bp_pos += bp_offset;
+  } while (intv != current && (intv = UWI_NEXT(intv)));
 }
 
 // The cold code detector is called when unconditional jump is encountered
@@ -119,7 +122,7 @@ bool
 hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
   void *ins     = iarg->ins;
-  char *ins_end = ins + xed_decoded_inst_get_length(xptr);
+  char *ins_end = nextInsn(iarg, xptr);
   if (ins_end == iarg->end) {
     void *branch_target = x86_get_branch_target(ins,xptr);
 
@@ -133,13 +136,13 @@ hpcrun_is_cold_code(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 	   " %p (location in routine = %p)",iarg->beg,ins);
 
       unwindr_info_t unwr_info;
-      if( !uw_recipe_map_lookup(branch_target, &unwr_info) ) {
+      if( !uw_recipe_map_lookup(branch_target, NATIVE_UNWINDER, &unwr_info) ) {
         EMSG("Weird result! jmp @ %p branch_target %p has no function bounds",
               ins, branch_target);
         return false;
       }
 
-      void *beg = (void*)unwr_info.start;
+      void *beg = (void*)unwr_info.interval.start;
       if (branch_target == beg) {
     	TMSG(COLD_CODE,"  --jump is a regular tail call,"
 	     " NOT a cold code return");

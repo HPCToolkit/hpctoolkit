@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,35 @@ extern "C" {
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
+// Laks: macro for detecting registers
+//
+#if defined (HOST_CPU_x86_64)		  
+#define X86_ISREG(REG) \
+static inline bool \
+x86_isReg_ ## REG  (xed_reg_enum_t reg) \
+{ 					\
+  return (				\
+	  reg == XED_REG_R ## REG  ||   \
+	  reg == XED_REG_E ## REG  ||   \
+	  reg == XED_REG_ ## REG  );	\
+} 
+#else
+#define X86_ISREG(REG) \
+static inline bool \
+x86_isReg_ ## REG  (xed_reg_enum_t reg) \
+{ 					\
+  return (			        \
+	  reg == XED_REG_E ## REG  ||   \
+	  reg == XED_REG_ ## REG  );	\
+} 
+#endif
+
+#define X86_ISREG_R(REG) 	 	\
+static inline bool 		 	\
+x86_isReg_R ## REG (xed_reg_enum_t reg) \
+{				 	\
+  return (reg == XED_REG_R ## REG ); 	\
+}
 
 //***************************************************************************
 // 
@@ -79,52 +108,39 @@ extern "C" {
 extern "C" {
 #endif
 
-static inline bool
-x86_isReg_BP(xed_reg_enum_t reg)
-{
-  return (
-#if defined (HOST_CPU_x86_64)
-	  reg == XED_REG_RBP ||
-#endif
-	  reg == XED_REG_EBP ||
-	  reg == XED_REG_BP);
-}
+X86_ISREG(BP)
 
+X86_ISREG(SP)
 
-static inline bool
-x86_isReg_SP(xed_reg_enum_t reg)
-{
-  return (
-#if defined (HOST_CPU_x86_64)
-	  reg == XED_REG_RSP ||
-#endif
-	  reg == XED_REG_ESP ||
-	  reg == XED_REG_SP);
-}
+X86_ISREG(IP)
 
+X86_ISREG(AX)
 
-static inline bool
-x86_isReg_IP(xed_reg_enum_t reg)
-{
-  return (
-#if defined (HOST_CPU_x86_64)
-	  reg == XED_REG_RIP ||
-#endif
-	  reg == XED_REG_EIP ||
-	  reg == XED_REG_IP);
-}
+X86_ISREG(BX)
 
+X86_ISREG(CX)
 
-static inline bool
-x86_isReg_AX(xed_reg_enum_t reg)
-{
-  return (
-#if defined (HOST_CPU_x86_64)
-	  reg == XED_REG_RAX ||
-#endif
-	  reg == XED_REG_EAX ||
-	  reg == XED_REG_AX);
-}
+X86_ISREG(DX)
+
+X86_ISREG(SI)
+
+X86_ISREG(DI)
+
+X86_ISREG_R(8)
+
+X86_ISREG_R(9)
+
+X86_ISREG_R(10)
+
+X86_ISREG_R(11)
+
+X86_ISREG_R(12)
+
+X86_ISREG_R(13)
+
+X86_ISREG_R(14)
+
+X86_ISREG_R(15)
 
 
 //***************************************************************************

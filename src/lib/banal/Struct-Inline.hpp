@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,6 @@
 #include <list>
 #include <map>
 
-#include <lib/binutils/LM.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -78,6 +77,8 @@
 
 #include <Symtab.h>
 #include <Function.h>
+
+class ElfFile;
 
 using namespace Dyninst;
 using namespace SymtabAPI;
@@ -89,13 +90,13 @@ class InlineNode;
 class FLPIndex;
 class FLPCompare;
 class StmtInfo;
+class StmtMap;
 class LoopInfo;
 class TreeNode;
 
 typedef list <InlineNode> InlineSeqn;
 typedef list <FLPIndex> FLPSeqn;
 typedef list <LoopInfo *> LoopList;
-typedef map  <VMA, StmtInfo *> StmtMap;
 typedef map  <FLPIndex, TreeNode *, FLPCompare> NodeMap;
 
 
@@ -104,17 +105,22 @@ class InlineNode {
 private:
   std::string  m_filenm;
   std::string  m_procnm;
+  std::string  m_prettynm;
   SrcFile::ln  m_lineno;
 
 public:
-  InlineNode(std::string &file, std::string &proc, SrcFile::ln line) {
+  InlineNode(std::string &file, std::string &proc, std::string &pretty,
+	     SrcFile::ln line)
+  {
     m_filenm = file;
     m_procnm = proc;
+    m_prettynm = pretty;
     m_lineno = line;
   }
 
   std::string & getFileName() { return m_filenm; }
   std::string & getProcName() { return m_procnm; }
+  std::string & getPrettyName() { return m_prettynm; }
   SrcFile::ln getLineNum() { return m_lineno; }
 };
 
@@ -126,14 +132,16 @@ public:
   long  base_index;
   long  line_num;
   long  proc_index;
+  long  pretty_index;
 
   // constructor by index
-  FLPIndex(long file, long base, long line, long proc)
+  FLPIndex(long file, long base, long line, long proc, long pretty)
   {
     file_index = file;
     base_index = base;
     line_num = line;
     proc_index = proc;
+    pretty_index = pretty;
   }
 
   // constructor by InlineNode strings
@@ -145,6 +153,7 @@ public:
     base_index = strTab.str2index(FileUtil::basename(fname.c_str()));
     line_num = (long) node.getLineNum();
     proc_index = strTab.str2index(node.getProcName());
+    pretty_index = strTab.str2index(node.getPrettyName());
   }
 
   bool operator == (const FLPIndex rhs)
@@ -176,7 +185,10 @@ public:
 };
 
 
-// Info for one terminal statement (vma) in the inline tree.
+// Info for one terminal statement (vma) in the inline tree.  Now used
+// for multiple, consecutive instructions, all with the same file and
+// line info.
+//
 class StmtInfo {
 public:
   VMA   vma;
@@ -205,6 +217,47 @@ public:
     base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
     line_num = line;
   }
+
+  // returns: true if vma is contained within this range
+  bool member(VMA x)
+  {
+    return vma <= x && x < vma + len;
+  }
+};
+
+
+// Map of vma ranges and their file and line info.
+//
+// The intervals are disjoint, semi-open [...), the map key is by left
+// endpoint, the addresses within a single range share a common file
+// and line and may contain multiple instructions, and we compact
+// adjacent ranges with identical attributes into one interval.
+//
+class StmtMap : public std::map <VMA, StmtInfo *> {
+public:
+
+  // returns: pointer to StmtInfo that contains vma, else NULL
+  StmtInfo * findStmt(VMA vma)
+  {
+    auto it = this->upper_bound(vma);
+
+    if (it == this->begin()) {
+      return NULL;
+    }
+    --it;
+    StmtInfo * sinfo = it->second;
+
+    return (sinfo->member(vma)) ? sinfo : NULL;
+  }
+
+  // returns: true if vma is contained within some range in the map
+  bool member(VMA vma)
+  {
+    return findStmt(vma) != NULL;
+  }
+
+  // insert one statement range into the map
+  void insert(StmtInfo *);
 };
 
 
@@ -244,8 +297,20 @@ public:
   NodeMap  nodeMap;
   StmtMap  stmtMap;
   LoopList loopList;
+  long  file_index;
 
-  TreeNode()
+  TreeNode(long file = 0)
+  {
+    nodeMap.clear();
+    stmtMap.clear();
+    loopList.clear();
+    file_index = file;
+  }
+
+  // shallow delete: erase the maps, but don't delete their contents.
+  // we use this when the elements are copies from other trees.
+  void
+  clear()
   {
     nodeMap.clear();
     stmtMap.clear();
@@ -274,11 +339,12 @@ public:
 
 //***************************************************************************
 
-Symtab * openSymtab(std::string filename, BinUtil::LM *);
+Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
+
 bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 
-StmtInfo *
+void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line);
 

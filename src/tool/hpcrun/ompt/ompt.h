@@ -605,64 +605,79 @@ OMPT_API_FUNCTION(uint64_t, ompt_get_unique_id, (void));
 
 //typedef struct cct_node_t cct_node_t;
 
+struct ompt_base_s;
+
+
 struct ompt_queue_data_s;
 struct ompt_notification_s;
 struct ompt_threads_queue_s;
 struct ompt_thread_region_freelist_s;
 
-// TODO:
-// base structure with next pointer
-// downcasting from (region|notificaton) to base while enqueing
-// upcasting from base to (region|notificaton) while dequeing
+// FIXME:
+// create a union
+//union{
+// _Atomic(ompt_base_t*)anext
+// ompt_base_t* next
+//};
 
+typedef union ompt_next_u ompt_next_t;
+union ompt_next_u{
+  struct ompt_base_s *next;
+  _Atomic (struct ompt_base_s*)anext;
+};
+
+typedef struct ompt_base_s{
+   ompt_next_t next; // FIXME: this should be Atomic too
+}ompt_base_t;
+
+
+#define ompt_base_nil (ompt_base_t*)0
+#define ompt_base_invalid (ompt_base_t*)~0
+// ompt_wfq_s
+typedef struct ompt_wfq_s{
+  _Atomic(ompt_base_t*)head;
+}ompt_wfq_t;
 
 typedef struct ompt_region_data_s {
-  uint64_t region_id;
-  uint64_t refcnt;
-  cct_node_t *call_path;
-//  spinlock_t region_lock;
-  _Atomic (struct ompt_notification_s*) head;
-  // region freelist
-  struct ompt_region_data_s* next_freelist;
+  // region freelist, must be at the begin because od up/downcasting
+  // like inherited class in C++, inheretes from base_t
+  ompt_next_t next;
+  // region's wait free queue
+  ompt_wfq_t queue;
   // region's freelist which belongs to thread
-  struct ompt_thread_region_freelist_s* thread_freelist;
+  ompt_wfq_t *thread_freelist;
+  // region id
+  uint64_t region_id;
+  // call_path to the region
+  cct_node_t *call_path;
 } ompt_region_data_t;
 
 typedef struct ompt_notification_s{
-  ompt_region_data_t* region_data;
-  struct ompt_threads_queue_s* threads_queue;
-  struct ompt_notification_s* next;
-  // notification freelist
-  struct ompt_notification_s* next_freelist;
+  // it can also cover freelist to, we do not need another next_freelist
+  ompt_next_t next;
+  ompt_region_data_t *region_data;
+  // struct ompt_threads_queue_s *threads_queue;
+  ompt_wfq_t *threads_queue;
 } ompt_notification_t;
 
-#define ompt_notification_null (ompt_notification_t*)0
-#define ompt_notification_invalid (ompt_notification_t*)~0
-
-
-#define ompt_region_data_null (ompt_region_data_t*)0
-#define ompt_region_data_invalid (ompt_region_data_t*)~0
-
-
-typedef struct ompt_thread_regions_list_s{
+// trl = Thread's Regions List
+// el  = element
+typedef struct ompt_trl_el_s{
+  // inheret from base_t
+  ompt_next_t next;
+  // previous in double-linked list
+  struct ompt_trl_el_s* prev;
+  // stores region's information
   ompt_region_data_t* region_data;
-  struct ompt_thread_regions_list_s* next;
-  struct ompt_thread_regions_list_s* prev;
-  // thread's region freelist
-  struct ompt_thread_regions_list_s* next_freelist;
-} ompt_thread_regions_list_t;
-
-
-typedef struct ompt_threads_queue_s{
-  _Atomic(ompt_notification_t*)head;
-} ompt_threads_queue_t;
-
-
-typedef struct ompt_thread_region_freelist_s{
-  _Atomic(ompt_region_data_t*) head;
-} ompt_thread_region_freelist_t;
+} ompt_trl_el_t;
 
 extern int ompt_eager_context;
 
 #endif
 
+// FIXME vi3: ompt_data_t freelist manipulation
+
+
+// ./autogen and add file in Makefile.am
+// https://github.com/HPCToolkit/hpctoolkit-devtools/tree/master/autotools
+// hpctoolkit-devtools at github where autogen and other are implemented

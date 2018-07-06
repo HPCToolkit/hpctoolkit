@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -96,7 +96,7 @@ adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *s
 	// one of the signatures matched
 	unwind_interval *ui = stat->first;
 	while(ui) {
-	  UWI_RECIPE(ui)->sp_ra_pos += 16;
+	  UWI_RECIPE(ui)->reg.sp_ra_pos += 16;
 	  ui = UWI_NEXT(ui);
 	}
 	return 1;

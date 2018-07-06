@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,7 +66,7 @@
 
 unwind_interval *
 process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug,
-	interval_arg_t *iarg, mem_alloc m_alloc)
+			     interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
 
@@ -75,7 +75,7 @@ process_unconditional_branch(xed_decoded_inst_t *xptr, bool irdebug,
     (iarg->highwatermark).state = HW_INITIALIZED;
   }
 
-  reset_to_canonical_interval(xptr, &next, irdebug, iarg, m_alloc);
+  reset_to_canonical_interval(xptr, &next, irdebug, iarg);
 
   TMSG(TAIL_CALL,"checking for tail call via unconditional branch @ %p",iarg->ins);
   void *possible = x86_get_branch_target(iarg->ins, xptr);

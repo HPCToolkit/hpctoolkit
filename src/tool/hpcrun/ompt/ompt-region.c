@@ -22,6 +22,14 @@
 #include "ompt-region-map.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
+#include "ompt.h"
+
+
+
+#include "../../../lib/prof-lean/stdatomic.h"
+#include "../safe-sampling.h"
+#include "../thread_data.h"
+#include "../memory/hpcrun-malloc.h"
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
@@ -31,6 +39,7 @@
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/sample_event.h>
+#include <printf.h>
 
 
 /******************************************************************************
@@ -65,12 +74,10 @@ ompt_region_data_new(uint64_t region_id, cct_node_t *call_path)
   ompt_region_data_t* e = hpcrun_ompt_region_alloc();
 
   e->region_id = region_id;
-  e->refcnt = 0;
   e->call_path = call_path;
-//  spinlock_unlock(&e->region_lock);
-  atomic_init(&e->head, ompt_notification_null);
+  wfq_init(&e->queue);
   // parts for freelist
-  e->next_freelist = NULL;
+  OMPT_BASE_T_GET_NEXT(e) = NULL;
   e->thread_freelist = &public_region_freelist;
   return e;
 }
@@ -141,53 +148,30 @@ ompt_parallel_end_internal(
     ompt_invoker_t invoker
 )
 {
-//  printf("Passed to internal. \n");
+  // printf("Passed to internal. \n");
   hpcrun_safe_enter();
 
-
-
-
-//  ompt_region_map_entry_t *record = ompt_region_map_lookup(parallel_id);
-
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
-  // If we want to print all registered notifications
-//  ompt_notification_t* head = atomic_load(&region_data->head);
-//  int i = 0;
-//  for(; head && i<20; i++, head = head->next){
-//    printf("%d. %p\n", i, head);
-//  }
 
   if(!ompt_eager_context){
-    // check if there is any thread registered
-    if(atomic_load(&region_data->head)){
+    // check if there is any thread registered that should be notified that region call path is available
+    ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+    if(to_notify){
       region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
                                    ++levels_to_skip, invoker == ompt_invoker_program);
       // notify next thread
-      ompt_notification_t* to_notify = dequeue_region(region_data);
-      enqueue_thread(to_notify->threads_queue, to_notify);
-//      printf("Current head: %p\n", atomic_load(&region_data->head));
-
+      wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
+    }else{
+      // if none, you can reuse region
+      // this thread is region creator, so it could add to private region's list
+      // FIXME vi3: check if you are right
+      freelist_add_first(OMPT_BASE_T_STAR(region_data), OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
+      // or should use this
+      // wfq_enqueue((ompt_base_t*)region_data, &public_region_freelist);
     }
   }
 
-  ompt_region_data_t* record =(ompt_region_data_t*)parallel_data->ptr;
-
-//  if (record) {
-//    if (ompt_region_data_refcnt_get(record) > 0 ) {
-//      //printf("Refcnt = %d\n", ompt_region_map_entry_refcnt_get(record));
-//      // associate calling context with region if it is not already present
-//      if (record->call_path == NULL) {
-//        record->call_path = ompt_region_context(record->region_id, ompt_context_end,
-//                                 ++levels_to_skip, invoker == ompt_invoker_program);
-//      }
-//    } else {
-//      ompt_region_data_refcnt_update(record, 0L);
-//    }
-//  } else {
-//    assert(0);
-//  }
-//
-//
+  // FIXME: vi3: what is this?
   // FIXME: not using team_master but use another routine to
   // resolve team_master's tbd. Only with tasking, a team_master
   // need to resolve itself
@@ -202,7 +186,6 @@ ompt_parallel_end_internal(
   hpcrun_get_thread_data()->region_id = 0;
   hpcrun_safe_exit();
 
-  //printf("Parallel region id: %lx.\n", parallel_data->value);
 }
 
 
@@ -235,9 +218,6 @@ ompt_parallel_begin(
   const void *codeptr_ra
 )
 {
-  //printf("Parallel begin...\n");
-  //parallel_data->value = hpcrun_ompt_get_unique_id();
-  //printf("Parallel id = %d\n", parallel_data->value);
 
 #if 0
   hpcrun_safe_enter();

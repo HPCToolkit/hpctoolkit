@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -239,8 +239,6 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   char dbDirBuf[PATH_MAX];
   if (myRank == rootRank) {
-    args.makeDatabaseDir();
-
     memset(dbDirBuf, '\0', PATH_MAX); // avoid artificial valgrind warnings
     strncpy(dbDirBuf, args.db_dir.c_str(), PATH_MAX);
     dbDirBuf[PATH_MAX - 1] = '\0';
@@ -260,6 +258,12 @@ realmain(int argc, char* const* argv)
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
 			   myRank, numRanks, rootRank);
 
+  if (nArgs.paths->size() == 0) {
+    std::cerr << "ERROR: command line directories"
+      " contain no .hpcrun files; no database generated\n";
+    exit(-1);
+  }
+
   int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
   uint rFlags = (Prof::CallPath::Profile::RFlg_VirtualMetrics
 		 | Prof::CallPath::Profile::RFlg_NoMetricSfx
@@ -268,6 +272,13 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
+
+  // -------------------------------------------------------
+  // 0. Make empty Experiment database (ensure file system works)
+  // -------------------------------------------------------
+
+  if (myRank == rootRank)
+    args.makeDatabaseDir();
 
   // -------------------------------------------------------
   // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)
@@ -282,10 +293,19 @@ realmain(int argc, char* const* argv)
     profGbl = profLcl;
     profLcl = NULL;
   }
-  delete profLcl;
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
-  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
+
+  if (myRank != rootRank) {
+    // copy back the set of directory into the global profile
+    //
+    // during the broadcast we'll lose the information of directory set
+    // this directory set will be used later for kernel symbol looking to
+    // find vmlinux files
+    profGbl->copyDirectory(profLcl->directorySet());
+  }
+  delete profLcl;
 
   // -------------------------------------------------------
   // 1c. Add static structure to canonical CCT; form dense node ids
@@ -300,13 +320,6 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
-  if (0) {
-    writeProfile(*profGbl, "dbg-canonical-cct-a", myRank);
-    writeStructure(*structure, "dbg-structure-a", myRank);
-    string fnm = makeFileName("dbg-overlay-structure", "txt", myRank);
-    Analysis::CallPath::dbgOs = IOUtil::OpenOStream(fnm.c_str());
-  }
-
   // N.B.: Ensures that each rank adds static structure in the same
   // order so that new corresponding nodes have identical node ids.
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
@@ -314,12 +327,6 @@ realmain(int argc, char* const* argv)
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
-
-  if (0) {
-    writeProfile(*profGbl, "dbg-canonical-cct-b", myRank);
-    writeStructure(*structure, "dbg-structure-b", myRank);
-    IOUtil::CloseStream(Analysis::CallPath::dbgOs);
-  }
 
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
@@ -567,7 +574,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
   //    since the 'combine' function will be used during the metric
   //    reduction.  Metric inputs point to accumulators [mXDrvdBeg,
   //    mXDrvdEnd) rather input values.
-  for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
+  for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     Prof::Metric::DerivedIncrDesc* mm =
       dynamic_cast<Prof::Metric::DerivedIncrDesc*>(m);
@@ -575,10 +582,8 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
     Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
-      expr->srcId(j);
-      if (expr->hasAccum2()) {
-	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricIncr()
-      }
+      for (uint k = 0; k < expr->numAccum(); ++k)
+	expr->srcId(k, j++);
     }
   }
 
@@ -604,24 +609,6 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
   if (myRank == rootRank) {
     
-    // We now generate non-finalized metrics, so no need to do this
-    if (0) {
-      for (uint grpId = 1; grpId < groupIdToGroupMetricsMap.size(); ++grpId) {
-	const VMAIntervalSet* ivalset = groupIdToGroupMetricsMap[grpId];
-	
-	// degenerate case: group has no metrics => no derived metrics
-	if (!ivalset) { continue; }
-	
-	DIAG_Assert(ivalset->size() == 1, DIAG_UnexpectedInput);
-	
-	const VMAInterval& ival = *(ivalset->begin());
-	uint mBeg = (uint)ival.beg(), mEnd = (uint)ival.end();
-	
-	cctRoot->computeMetricsIncr(mMgrGbl, mBeg, mEnd,
-				    Prof::Metric::AExprIncr::FnFini);
-      }
-    }
-
     for (uint i = 0; i < mMgrGbl.size(); ++i) {
       Prof::Metric::ADesc* m = mMgrGbl.metric(i);
       m->computedType(Prof::Metric::ADesc::ComputedTy_NonFinal);

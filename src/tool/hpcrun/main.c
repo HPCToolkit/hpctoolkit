@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -116,6 +116,8 @@
 #include "thread_use.h"
 #include "trace.h"
 #include "write_data.h"
+#include "sample-sources/itimer.h"
+#include "ompt/ompt-defer.h"
 #include <utilities/token-iter.h>
 
 #include <memory/hpcrun-malloc.h>
@@ -138,6 +140,7 @@
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
+#include <omp.h>
 
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
@@ -593,7 +596,7 @@ hpcrun_fini_internal()
   hpcrun_disable_sampling();
 
 
-  // vi3: Master should resolve from here
+//  printf("Master resolves from here.\n");
   if(!ompt_eager_context)
     resolving_all_remaining_context();
 

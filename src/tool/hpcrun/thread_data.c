@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -242,6 +242,12 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   cptd->hpcrun_file  = NULL;
   cptd->trace_buffer = NULL;
 
+  // ----------------------------------------
+  // perf event support
+  // ----------------------------------------
+  cptd->perf_event_info   = NULL;
+//}
+// FIXME: vi3 not sure if this should stay or not
   cptd->scale_fn = NULL;
 }
 

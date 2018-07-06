@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,10 @@
 #include <unwind/common/fence_enum.h>
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
+#include "lush/lush-backtrace.h"
+#include "unwind/common/backtrace.h"
+#include "thread_data.h"
+#include "utilities/ip-normalized.h"
 
 
 //
@@ -79,6 +83,16 @@ extern bool hpcrun_inbounds_main(void* addr);
 // special recursive compression:
 //
 static bool retain_recursion = false;
+
+
+static hpcrun_kernel_callpath_t hpcrun_kernel_callpath;
+
+
+void
+hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp) 
+{
+	hpcrun_kernel_callpath = kcp;
+}
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -118,9 +132,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-			  ip_normalized_t *leaf_func,
-			  int metricId, uint64_t metricIncr,
-			  int skipInner, int isSync);
+	int metricId, hpcrun_metricVal_t metricIncr,
+	int skipInner, int isSync, void *data);
 
 //
 // 
@@ -170,9 +183,13 @@ cct_node_t*
 hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
 				     int metric_id,
 				     frame_t* path_beg, frame_t* path_end,
-				     cct_metric_data_t datum)
+				     cct_metric_data_t datum, void *data_aux)
 {
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
+
+  if (hpcrun_kernel_callpath) {
+    path = hpcrun_kernel_callpath(path, data_aux);
+  }
 
   metric_set_t* mset = hpcrun_reify_metric_set(path);
 
@@ -196,8 +213,10 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 		     backtrace_t* bt,
 		     cct_metric_data_t datum, void **trace_pc)
 {
-  return hpcrun_cct_insert_backtrace_w_metric(node, metricId, hpcrun_bt_last(bt), 
-					      hpcrun_bt_beg(bt), datum);
+  return hpcrun_cct_insert_backtrace_w_metric(node, metricId, 
+					      bt->beg + bt->len - 1,
+					      bt->beg, 
+					      datum, NULL);
 }
 
 
@@ -216,10 +235,9 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 //             
 
 cct_node_t*
-hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *leaf_func,
-		     int metricId,
-		     uint64_t metricIncr,
-		     int skipInner, int isSync)
+hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
+	             int metricId, hpcrun_metricVal_t metricIncr,
+		     int skipInner, int isSync, void *data)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
@@ -229,9 +247,9 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *l
   }
   else {
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
-    n = help_hpcrun_backtrace2cct(cct, context, leaf_func,
+    n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
-				  skipInner, isSync);
+				  skipInner, isSync, data);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -241,7 +259,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,  ip_normalized_t *l
 
 #if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
 
-static cct_node_t*
+static cct_node_tt*
 help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	       int metricId, uint64_t metricIncr,
 	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
@@ -252,12 +270,12 @@ help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 //   2) Modifies the backtrace according to a passed in function
 //   3) enters the generated backtrace in the cct
 //
-cct_node_t*
+cct_node_tt*
 hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
 	      int metricId, uint64_t metricIncr,
 	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
 {
-  cct_node_t* n = NULL;
+  cct_node_tt* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
 #ifdef LATER
     TMSG(LUSH,"lush backtrace2cct invoked");
@@ -313,13 +331,13 @@ hpcrun_cct_record_backtrace(
 
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
-                                     backtrace_info_t *bt, 
-                                     bool tramp_found,
-				     int metricId, uint64_t metricIncr)
+                                     backtrace_info_t *bt, bool tramp_found,
+	                             int metricId, hpcrun_metricVal_t metricIncr,
+				     void *data)
 {
   TMSG(FENCE, "Recording backtrace");
   TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", 
-       metricId, metricIncr);
+       metricId, metricIncr.i);
 
   thread_data_t* td = hpcrun_get_thread_data();
   cct_node_t* cct_cursor = cct->tree_root;
@@ -345,18 +363,17 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
   return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
-					      bt->last, bt->begin,
-					      (cct_metric_data_t){.i = metricIncr});
+					      bt->last, bt->begin, 
+					      (cct_metric_data_t) metricIncr, data);
 
 }
 
 
 static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
-                          ip_normalized_t *leaf_func,
-			  int metricId,
-			  uint64_t metricIncr,
-			  int skipInner, int isSync)
+			  int metricId, 
+			  hpcrun_metricVal_t metricIncr,
+			  int skipInner, int isSync, void *data)
 {
   bool tramp_found;
 
@@ -387,8 +404,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   cct_backtrace_finalize(&bt, isSync); 
 
-  *leaf_func = bt.begin->the_function;  // JMC
-
   if (bt.partial_unwind) {
     if (ENABLED(NO_PARTIAL_UNW)){
       return NULL;
@@ -402,9 +417,11 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
-					 metricId, metricIncr);
+					 metricId, metricIncr, data);
 
-  if (bt.trolled) hpcrun_stats_trolled_inc();
+  // *trace_pc = bt.trace_pc;  // JMC
+
+  if (bt.n_trolls != 0) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
   hpcrun_stats_trolled_frames_inc((long) bt.n_trolls);
 

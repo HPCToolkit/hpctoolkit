@@ -52,7 +52,8 @@
 #ifndef OMPT_THREAD_H
 #define OMPT_THREAD_H
 
-#include <ompt.h>
+//#include <ompt.h>
+#include "ompt.h"
 
 #define MAX_NESTING_LEVELS 128
 
@@ -64,16 +65,32 @@ void ompt_thread_type_set(ompt_thread_type_t ttype);
 
 ompt_thread_type_t ompt_thread_type_get();
 
-extern __thread ompt_thread_regions_list_t* registered_regions;
-extern __thread ompt_threads_queue_t threads_queue;
+// added by vi3:
+
+// list of regions that thread is registered into, and they
+// are not resolved yet
+extern __thread ompt_trl_el_t* registered_regions;
+
+// thread's notifications queueus
+// public thread's notification queue
+extern __thread ompt_wfq_t threads_queue;
+// private thread's notification queue
+extern __thread ompt_region_data_t* private_threads_queue;
 
 // freelists
+// thread's list of notification that can be reused
 extern __thread ompt_notification_t* notification_freelist_head;
-extern __thread ompt_thread_regions_list_t* thread_region_freelist_head;
-extern __thread ompt_thread_region_freelist_t public_region_freelist;
+// thread's list of region's where thread was registered and resolved them
+extern __thread ompt_trl_el_t* thread_region_freelist_head;
+
+// region's free lists
+// public freelist where all thread's can enqueue region_data to be reused
+extern __thread ompt_wfq_t public_region_freelist;
+// private freelist from which only thread owner can reused regions
 extern __thread ompt_region_data_t* private_region_freelist_head;
 
 // stack that contais all nested parallel region
+// FIXME vi3: 128 levels are supported
 extern __thread uint64_t region_stack[];
 extern  __thread int top_index;
 

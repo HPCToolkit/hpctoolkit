@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ extern bool hpcrun_is_initialized();
 
 extern bool hpcrun_is_safe_to_sync(const char* fn);
 extern void hpcrun_set_safe_to_sync(void);
-
+extern void hpcrun_set_real_siglongjmp(void);
 //
 // fetch the full path of the execname
 //

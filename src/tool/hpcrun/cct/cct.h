@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -178,8 +178,13 @@ extern cct_node_t* hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src);
 
 extern void hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path);
 
-// special mutator to support tracing
-extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);
+// mark a node for retention as the leaf of a traced call path.
+extern void hpcrun_cct_retain(cct_node_t* x);
+
+// check if a node was marked for retention as the leaf of a traced
+// call path.
+extern int hpcrun_cct_retained(cct_node_t* x);
+
 
 // Walking functions section:
 //
@@ -230,6 +235,7 @@ void hpcrun_cct_walk_node_1st(cct_node_t* cct,
   hpcrun_cct_walk_node_1st_w_level(cct, op, arg, 0);
 }
 
+
 //
 // Special routine to walk a path represented by a cct node.
 // The actual path represented by a node is list reversal of the nodes
@@ -270,9 +276,25 @@ typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
 extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 			     merge_op_t merge, merge_op_arg_t arg);
 
-// allocation and free cct_node_t
+
+
+
+// FIXME: This should not be here vi3: allocation and free cct_node_t
 extern __thread cct_node_t* cct_node_freelist_head;
+
 cct_node_t* hpcrun_cct_node_alloc();
-void hpcrun_cct_node_free(cct_node_t *notification);
+void hpcrun_cct_node_free(cct_node_t *cct);
+// remove Children from cct
+void cct_remove_my_subtree(cct_node_t* cct);
+
+
+
+
+// for hpcrun_cct_walkset_merge
+typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
+extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
+
+
+
 
 #endif // cct_h

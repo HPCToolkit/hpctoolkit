@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,6 +48,5 @@
 #define UNW_DATATYPES_SPECIFIC_H
 
 #include <unwind/common/std_unw_cursor.h>
-typedef void* unw_word_t;
 
 #endif // UNW_DATATYPES_SPECIFIC_H 

@@ -13,7 +13,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,12 @@
 #include "ompt-region.h"
 #include "ompt-thread.h"
 #include "ompt-task.h"
+#include "../cct/cct.h"
+#include "../thread_data.h"
+#include "../cct_backtrace_finalize.h"
+#include "../sample_event.h"
+#include "../trace.h"
+#include "../unresolved.h"
 
 #if defined(HOST_CPU_PPC) 
 #include "ppc64-gnu-omp.h"
@@ -178,6 +184,7 @@ set_frame(frame_t *f, ompt_placeholder_t *ph)
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
   f->the_function = ph->pc_norm;
+//  printf("------------------Just setting to idle\n");
 
 }
 
@@ -191,7 +198,7 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
   bt->begin = bt->last;
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
-
+//  printf("*****************Collapsing to idle\n");
 //  bt->trace_pc = (bt->begin)->cursor.pc_unnorm;
 //  bt->fence = FENCE_MAIN;
 }
@@ -542,26 +549,27 @@ region_root(cct_node_t *_node)
   return root;
 }
 
-static cct_node_t *
-lookup_region_id(uint64_t region_id)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  cct_node_t *result = NULL;
-
-  if (hpcrun_trace_isactive()) {
-    result = memoized_context_get(td, region_id);
-    if (result) return result;
-  
-    cct_node_t *t0_path = hpcrun_region_lookup(region_id);
-    if (t0_path) {
-      cct_node_t *rroot = region_root(t0_path);
-      result = hpcrun_cct_insert_path_return_leaf(rroot, t0_path);
-      memoized_context_set(td, region_id, result);
-    }
-  }
-
-  return result;
-}
+// vi3: not used in this file
+//static cct_node_t *
+//lookup_region_id(uint64_t region_id)
+//{
+//  thread_data_t* td = hpcrun_get_thread_data();
+//  cct_node_t *result = NULL;
+//
+//  if (hpcrun_trace_isactive()) {
+//    result = memoized_context_get(td, region_id);
+//    if (result) return result;
+//
+//    cct_node_t *t0_path = hpcrun_region_lookup(region_id);
+//    if (t0_path) {
+//      cct_node_t *rroot = region_root(t0_path);
+//      result = hpcrun_cct_insert_path_return_leaf(rroot, t0_path);
+//      memoized_context_set(td, region_id, result);
+//    }
+//  }
+//
+//  return result;
+//}
 
 
 cct_node_t *
@@ -575,7 +583,14 @@ ompt_region_context(uint64_t region_id,
   getcontext(&uc);
 
   // levels to skip will be broken if inlining occurs.
-  node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath
+  // vi3 old version
+  // node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  // vi3 new version
+  hpcrun_metricVal_t blame_metricVal;
+  blame_metricVal.i = 0;
+  node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 1, NULL).sample_node;
+
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {

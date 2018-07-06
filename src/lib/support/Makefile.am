@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -105,7 +105,11 @@ MYSOURCES = \
 	\
 	PointerStack.hpp PointerStack.cpp \
 	QuickSort.hpp QuickSort.cpp \
-	Unique.hpp Unique.cpp
+	Unique.hpp Unique.cpp \
+	\
+	BaseVarMap.hpp \
+	VarMap.hpp VarMap.cpp \
+	ExprEval.hpp ExprEval.cpp
 
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 

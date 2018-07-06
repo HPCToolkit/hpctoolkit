@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -57,6 +57,6 @@
 
 void 
 reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval **next,
-	bool irdebug, interval_arg_t *iarg, mem_alloc m_alloc);
+	bool irdebug, interval_arg_t *iarg);
 
 #endif //x86_canonical_h
