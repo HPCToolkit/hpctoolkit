@@ -71,6 +71,8 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
+#include "PathFindMgr.hpp"
+#include "PathReplacementMgr.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -87,6 +89,8 @@ class RealPathMgr {
 public:
   RealPathMgr();
   ~RealPathMgr();
+
+  RealPathMgr(PathFindMgr *, PathReplacementMgr *);
 
   static RealPathMgr&
   singleton();
@@ -137,6 +141,9 @@ public:
 
 private:
   typedef std::map<std::string, std::string> MyMap;
+
+  PathFindMgr * m_pathFindMgr;
+  PathReplacementMgr * m_pathReplaceMgr;
 
   std::string m_searchPaths;
   mutable MyMap m_cache;

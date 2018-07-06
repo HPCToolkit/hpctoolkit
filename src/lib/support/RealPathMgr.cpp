@@ -86,13 +86,27 @@ using std::string;
 
 static RealPathMgr s_singleton;
 
+
+// Constructor with static singleton objects for PathFindMgr and
+// PathReplacementMgr.
 RealPathMgr::RealPathMgr()
 {
+  m_pathFindMgr = NULL;
+  m_pathReplaceMgr = NULL;
 }
 
 
 RealPathMgr::~RealPathMgr()
 {
+}
+
+
+// Constructor with params for PathFindMgr and PathReplacementMgr to
+// use instead of singletons.
+RealPathMgr::RealPathMgr(PathFindMgr * findMgr, PathReplacementMgr * replaceMgr)
+{
+  m_pathFindMgr = findMgr;
+  m_pathReplaceMgr = replaceMgr;
 }
 
 
@@ -130,7 +144,13 @@ RealPathMgr::realpath(string& pathNm) const
     // -------------------------------------------------------
     string pathNm_orig = pathNm;
 
-    pathNm = PathReplacementMgr::singleton().replace(pathNm);
+    if (m_pathReplaceMgr != NULL) {
+      pathNm = m_pathReplaceMgr->replace(pathNm);
+    }
+    else {
+      pathNm = PathReplacementMgr::singleton().replace(pathNm);
+    }
+
     it = m_cache.find(pathNm);
 
     if (it != m_cache.end()) {
@@ -153,9 +173,16 @@ RealPathMgr::realpath(string& pathNm) const
 	pathNm_real = RealPath(pathNm.c_str());
       }
       else {
-	const char* pathNm_pf =
-	  PathFindMgr::singleton().pathfind(m_searchPaths.c_str(),
-					    pathNm.c_str(), "r");
+	const char* pathNm_pf;
+
+	if (m_pathFindMgr != NULL) {
+	  pathNm_pf =
+	    m_pathFindMgr->pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
+	}
+	else {
+	  pathNm_pf =
+	    PathFindMgr::singleton().pathfind(m_searchPaths.c_str(), pathNm.c_str(), "r");
+	}
 	if (pathNm_pf) {
 	  pathNm_real = pathNm_pf;
 	}
