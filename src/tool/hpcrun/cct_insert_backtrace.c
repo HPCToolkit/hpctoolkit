@@ -433,9 +433,12 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     hpcrun_trampoline_remove();
     if (!bt.partial_unwind) {
       td->tramp_frame = td->cached_bt;
+      td->prev_dLCA = td->dLCA;
+      td->dLCA = 0;
       TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");
       hpcrun_trampoline_insert(n);
-    }
+    } else
+      td->prev_dLCA = HPCRUN_FMT_DLCA_NULL;
   }
 
   return n;

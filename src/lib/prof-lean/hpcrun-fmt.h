@@ -659,14 +659,15 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 //***************************************************************************
 
 #define HPCRUN_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+#define HPCRUN_FMT_DLCA_NULL (INT_MAX) // for Java, no UINT32_MAX
 
 typedef struct hpctrace_fmt_datum_t {
   uint64_t time; // microseconds
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
   
-  /** dLCA = CCT leaf node's distance to Least Common Ancestor (LCA) with the previous sample.
+  /** dLCA = distance of previous sample's leaf call frame to the Least Common Ancestor (LCA) in the CCT. 
    *  dLCA is only valid when trampoline is used. 
-   *  dLCA = INT_MAX when trampoline failed at this sample.
+   *  dLCA = INT_MAX when LCA cannot be determined.
    * 
    *  In the future, dLCA can be compressed into the timestamp.
    *  Timestamp uses no more than 52 bits, allowing 12 bits 

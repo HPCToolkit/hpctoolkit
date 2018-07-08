@@ -159,6 +159,7 @@ static bool hpcrun_trampoline_update(void* addr)
   td->tramp_frame = frame;
   td->tramp_cct_node = node;
   td->cached_frame_count = count;
+  td->dLCA += dLCA;
   return true;
 }
 

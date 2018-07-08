@@ -874,6 +874,12 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->cpId), fs));
 
+  if (flags.fields.isLCARecorded) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->dLCA), fs));
+  } else {
+    x->dLCA = HPCRUN_FMT_DLCA_NULL;
+  }
+
   if (flags.fields.isDataCentric) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->metricId), fs));
   }
@@ -939,6 +945,9 @@ hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 {
   hpcfmt_int8_fwrite(x->time, outfs);
   hpcfmt_int4_fwrite(x->cpId, outfs);
+  if (flags.fields.isLCARecorded) {
+    hpcfmt_int4_fwrite(x->dLCA, outfs);
+  }
   if (flags.fields.isDataCentric) {
     hpcfmt_int4_fwrite(x->metricId, outfs);
   }
@@ -952,6 +961,9 @@ hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs)
 {
   fprintf(fs, "(%"PRIu64", %u", x->time, x->cpId);
+  if (flags.fields.isLCARecorded) {
+    fprintf(fs, ", %u",  x->dLCA);
+  }
   if (flags.fields.isDataCentric) {
     fprintf(fs, ", %u",  x->metricId);
   }

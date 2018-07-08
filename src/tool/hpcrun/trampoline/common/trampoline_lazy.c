@@ -153,6 +153,8 @@ hpcrun_trampoline_advance(void)
      && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function))
      )
     parent = node;
+  else
+    td->dLCA++;
   TMSG(TRAMP, " ... to node %p", parent);
   
   td->tramp_frame++;
