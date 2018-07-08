@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -89,7 +89,9 @@
 #include <include/uint.h>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/StringTable.hpp>
+
 #include "Linemap.hpp"
+#include "ElfHelper.hpp"
 
 #include "dwarf.h"
 #include "libdwarf.h"
@@ -224,23 +226,18 @@ LineMap::do_comp_unit(Dwarf_Debug dw_dbg, int num, int vers, long hdr_len, long 
 //----------------------------------------------------------------------
 
 void
-LineMap::do_dwarf(const char *filenm)
+LineMap::do_dwarf(ElfFile *elfFile)
 {
   Dwarf_Debug dw_dbg;
   Dwarf_Error dw_error;
   Dwarf_Unsigned cu_hdr_len;
   Dwarf_Half     cu_vers;
   Dwarf_Unsigned cu_hdr_off;
-  int fd, num, ret;
+  int num, ret;
 
-  fd = open(filenm, O_RDONLY);
-  if (fd < 0) {
-    err(1, "unable to open: %s", filenm);
-  }
-
-  ret = dwarf_init(fd, DW_DLC_READ, NULL, NULL, &dw_dbg, &dw_error);
+  ret = dwarf_elf_init(elfFile->getElf(), DW_DLC_READ, NULL, NULL, &dw_dbg, &dw_error);
   if (ret == DW_DLV_NO_ENTRY) {
-    errx(1, "no debug section in file: %s", filenm);
+    errx(1, "no debug section in file: %s", elfFile->getFileName().c_str());
   }
   else if (ret != DW_DLV_OK) {
     errx(1, "dwarf_init failed");
@@ -269,7 +266,6 @@ LineMap::do_dwarf(const char *filenm)
   if (ret != DW_DLV_OK) {
     // warnx("dwarf_finish failed");
   }
-  close(fd);
 }
 
 //----------------------------------------------------------------------
@@ -289,9 +285,9 @@ LineMap::LineMap()
 // Read one file and put into InternalLineMap.
 //
 void
-LineMap::readFile(const char *file)
+LineMap::readFile(ElfFile *elfFile)
 {
-  do_dwarf(file);
+  do_dwarf(elfFile);
 
 #if DEBUG_FULL_LINE_MAP
   cout << "\nfull line map:\n\n";

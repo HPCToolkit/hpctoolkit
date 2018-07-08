@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -543,7 +543,8 @@ BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg
   if (sf){
     m_simpleSymbols = sf->create();
     if (! m_simpleSymbols->parse(directorySet, m_name.c_str())) {
-      std::cerr << "Unable to read symbols from load module " <<m_name << std::endl;
+      // Warning: we cannot parse the load module. 
+      // this is not a problem, so we can safely ignore the case
     }
     return;
   }
@@ -1178,18 +1179,6 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 }
 
 
-
-bool
-BinUtil::LM::isPseudolLoadModule()
-{
-  return LM::isFakeLoadModule(m_name.c_str());
-}
-
-const char*
-BinUtil::LM::getPseudoLoadModuleName()
-{
-  return LINUX_KERNEL_NAME;
-}
 
 static void
 dumpSymFlag(std::ostream& o, 

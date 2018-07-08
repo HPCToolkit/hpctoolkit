@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -238,30 +238,16 @@ void
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
-  if (cursor->libunw_status == LIBUNW_OK) {
-    //TMSG(UNW, "unw_init prev: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-    //    cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
-    
-    // libunw_unw_init_cursor() only updates PC.
-    // Here, we need to update bp, sp, ra_loc.
-    void *pc, **bp, *sp;
-    pc = cursor->pc_unnorm;
-    unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    save_registers(cursor, pc, bp, sp, NULL);
-    TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
-    return;
-  }
 
   void *pc, **bp, *sp;
   unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
   unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
   save_registers(cursor, pc, bp, sp, NULL);
-  TMSG(UNW, "unw_init: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
-  
+
+  if (cursor->libunw_status == LIBUNW_OK)
+    return;
+
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
 
   if (!found) {
@@ -426,7 +412,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 
   if (cursor->libunw_status == LIBUNW_OK) {
     unw_res = libunw_take_step(cursor);
-    
     // libunw_take_step() only updates PC.
     // Here, we need to update bp, sp, ra_loc.
     void *pc, *bp, *sp;
@@ -494,6 +479,10 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  pc = cursor->pc_unnorm;
   unwind_interval* uw = cursor->unwr_info.btuwi;
   x86recipe_t *xr = UWI_RECIPE(uw);
+
+  if (xr == NULL) {
+    return STEP_ERROR;
+  }
   
   TMSG(UNW,"step_sp: cursor { bp=%p, sp=%p, pc=%p }", bp, sp, pc);
   if (MYDBG) { dump_ui(uw, 0); }

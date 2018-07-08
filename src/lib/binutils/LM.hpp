@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -164,19 +164,6 @@ public:
   virtual void
   read(const std::set<std::string> &directorySet, ReadFlg readflg/* = ReadFlg_Seg*/);
 
-
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
-  static bool
-  isFakeLoadModule(const char *lm) {
-    if (lm) {
-      if (lm[0] == '<' && lm[strlen(lm)-1] == '>') {
-        return (strncmp(lm+1, LINUX_KERNEL_NAME_REAL, 7) == 0);
-      }
-    }
-    return false;
-  }
 
   // name: Return name of load module
   const std::string&

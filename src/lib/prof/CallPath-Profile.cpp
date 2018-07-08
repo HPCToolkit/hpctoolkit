@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -537,6 +537,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       if (sf) {
         sf->id(id);
         m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+
+        nm = sf->unified_name();
       }
     }
     else if (type == 2) { // File
@@ -548,7 +550,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       Struct::LM *lm = strct->ancestorLM();
       std::string lm_name;
       if (lm) {
-        lm_name = lm->name();
+        // use pretty_name for the key to unify different names of vmlinux 
+        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+        lm_name = lm->pretty_name();
       }
       std::string key = lm_name + ":" + nm;
 
@@ -736,8 +740,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       if (mDrvdExpr) {
 	combineFrm = mDrvdExpr->combineString1();
 
-	if (mDrvdExpr->hasAccum2()) {
-	  uint mId = mDrvdExpr->accum2Id();
+	for (uint k = 1; k < mDrvdExpr->numAccum(); ++k) {
+	  uint mId = mDrvdExpr->accumId(k);
 	  string frm = mDrvdExpr->combineString2();
 	  metricIdToFormula.insert(std::make_pair(mId, frm));
 	}
@@ -913,7 +917,16 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   FILE* fs = hpcio_fopen_r(fnm);
   if (!fs) {
-    DIAG_Throw("error opening file");
+    if (errno == ENOENT)
+      fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
+	      fnm);
+    else if (errno == EACCES)
+      fprintf(stderr, "ERROR: failed to open file '%s': file access denied\n",
+	      fnm);
+    else
+      fprintf(stderr, "ERROR: failed to open file '%s': system failure\n",
+	      fnm);
+    exit(-1);
   }
 
   char* fsBuf = new char[HPCIO_RWBufferSz];
@@ -945,7 +958,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'fmt-hdr'");
+    fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
+	    "is not a profile or it is corrupted\n", filename);
+    exit(-1);
   }
   if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");

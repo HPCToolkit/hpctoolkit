@@ -79,7 +79,7 @@ getKernelFilename(const std::set<std::string> &directorySet, std::string virtual
   std::set<std::string>::iterator it;
   for(it = directorySet.begin(); it != directorySet.end(); ++it) {
     std::string dir  = *it;
-    path = dir + "/" + DIRECTORY_FILE_COLLECTION + "/" + fname;
+    path = dir + "/" + KERNEL_SYMBOLS_DIRECTORY + "/" + fname;
 
     struct stat buffer;
 
@@ -109,14 +109,16 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
   std::string real_path = getKernelFilename(directorySet, virtual_path);
 
   if (real_path.empty()) {
-    std::cerr << "Error: cannot find kernel file of load module " << pathname << " ds: "<< directorySet.size() << std::endl;
+    std::cerr << "Warning: cannot find kernel symbols file " << pathname << 
+       " ds: "<< directorySet.size() << std::endl;
     perror("LinuxKernelSymbols");
     return false;
   }
 
   FILE *fp_in = fopen(real_path.c_str(), "r");
   if (fp_in == NULL) {
-    std::cerr << "Error: cannot open file: " << real_path <<std::endl;
+    // there is nothing critical if we cannot open pseudo load module.
+    // we just cannot find the address. 
     return false;
   }
 
@@ -197,7 +199,7 @@ LinuxKernelSymbolsFactory::match(const char *pathname)
 
   bool prefix_correct = pathname[0] == '<';
   bool suffix_correct = pathname[strlen(pathname)-1] == '>';
-  bool name_correct   = 0<=strncmp(pathname+1, LINUX_KERNEL_NAME_REAL, LINUX_KERNEL_NAME_REAL_CHARS);
+  bool name_correct   = 0<=strncmp(pathname+1, LINUX_KERNEL_NAME_REAL, strlen(LINUX_KERNEL_NAME_REAL));
 
   return prefix_correct && suffix_correct && name_correct;
 }
@@ -244,6 +246,15 @@ LinuxKernelSymbolsFactory::fileId()
 {
   return m_fileId;
 }
+
+
+
+const char*
+LinuxKernelSymbolsFactory::unified_name()
+{
+  return LINUX_KERNEL_NAME;
+}
+
 
 //******************************************************************************
 // unit test

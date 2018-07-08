@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -139,6 +139,12 @@ realmain(int argc, char* const* argv)
   // 0. Special checks
   // ------------------------------------------------------------
 
+  if (nArgs.paths->size() == 0) {
+    std::cerr << "ERROR: command line directories"
+      " contain no .hpcrun files; no database generated\n";
+    exit(-1);
+  }
+
   if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
     args.prof_metrics = Analysis::Args::MetricFlg_Thread;
   }
@@ -148,12 +154,6 @@ realmain(int argc, char* const* argv)
       && !args.hpcprof_forceMetrics) {
     DIAG_Throw("You have requested thread-level metrics for " << nArgs.paths->size() << " profile files.  Because this may result in an unusable database, to continue you must use the --force-metric option.");
   }
-
-  // -------------------------------------------------------
-  // 0. Make empty Experiment database (ensure file system works)
-  // -------------------------------------------------------
-
-  args.makeDatabaseDir();
 
   // ------------------------------------------------------------
   // 1a. Create canonical CCT // Normalize trace files
@@ -174,6 +174,12 @@ realmain(int argc, char* const* argv)
 
   prof->disable_redundancy(args.remove_redundancy);
 
+
+  // -------------------------------------------------------
+  // 0. Make empty Experiment database (ensure file system works)
+  // -------------------------------------------------------
+
+  args.makeDatabaseDir();
 
   // ------------------------------------------------------------
   // 1b. Add static structure to canonical CCT

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
+# Fixme: new elfutils from spack wants bzip, xz and zlib.
+
 BOOST_LIB = @BOOST_LIB@
 BOOST_LIB_LIST = @BOOST_LIB_LIST@
 
@@ -72,7 +74,6 @@ MYCXXFLAGS = \
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@GNUBINUTILS_LDFLAGS@ \
-	$(LZMA_LDFLAGS_DYN) \
 	-ldl
 
 MYLDADD = \
@@ -87,20 +88,20 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(MY_LIB_CFG) \
-	$(LZMA_LDFLAGS_STAT) \
+	$(LZMA_LDFLAGS_DYN) \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	$(MY_ELF_DWARF) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-# is this variable used ???
-MY_LIB_CFG = \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
-	-L$(LIBDWARF_LIB) -ldwarf  \
-	-L$(LIBELF_LIB) -lelf \
-	$(LZMA_LDFLAGS_DYN)
-
 if USE_BOOST_LIBS
 MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+endif
+
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+else
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 if HOST_CPU_X86_FAMILY

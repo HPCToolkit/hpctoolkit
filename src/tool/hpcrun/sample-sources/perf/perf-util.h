@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,8 +60,11 @@
 #define PERF_REQUEST_0_SKID      2
 #define PERF_WAKEUP_EACH_SAMPLE  1
 
-#define EXCLUDE_CALLCHAIN 1
-#define INCLUDE_CALLCHAIN 0
+#define EXCLUDE    1
+#define INCLUDE    0
+
+#define EXCLUDE_CALLCHAIN EXCLUDE
+#define INCLUDE_CALLCHAIN INCLUDE
 
 
 #ifndef u32
@@ -136,8 +139,6 @@ typedef struct event_info_s {
   // predefined metric
   event_custom_t *metric_custom;	// pointer to the predefined metric
 
-  metric_aux_info_t info_data;
-
 } event_info_t;
 
 
@@ -173,9 +174,12 @@ perf_util_attr_init(
   u64  sampletype
 );
 
-int
-perf_util_get_kptr_restrict();
+bool
+perf_util_is_ksym_available();
 
 int
 perf_util_get_paranoid_level();
+
+int
+perf_util_get_max_sample_rate();
 #endif

@@ -10,7 +10,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -173,5 +173,17 @@ void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr,
 	char csklstr[], int max_cskl_str_len);
 
+void
+cskl_dump(cskiplist_t *cskl, cskl_node_tostr node_tostr);
+
+void
+cskl_print(cskiplist_t *cskl, cskl_node_tostr node_tostr);
+
+void
+cskl_check_dump
+(
+ cskiplist_t *cskl,         // cskiplist instance
+ cskl_node_tostr node_tostr // print node value
+);
 
 #endif /* __CSKIPLIST_H__ */

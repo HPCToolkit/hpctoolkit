@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,9 +109,7 @@
 
 #include <include/linux_info.h> 
 
-#ifdef ENABLE_PERFMON
 #include "perfmon-util.h"
-#endif
 
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
@@ -129,14 +127,14 @@
 
 #define LINUX_PERF_DEBUG 0
 
-// default the number of samples per second
-// linux perf tool has default of 4000. It looks very high but
-// visually the overhead is still small for them.
-// however, for some machines, the overhead is significant, and
-//  somehow it causes the kernel to adjust the period threshold to
-//  less than 100.
-// 300 samples per sec looks has relatively similar percentage
-// with perf tool
+// default number of samples per second per thread
+//
+// linux perf has a default of 4000. this seems high, but the overhead for perf
+// is still small.  however, for some processors (e.g., KNL), overhead 
+// at such a high sampling rate is significant and as a result, the kernel
+// will adjust the threshold to less than 100.
+//
+// 300 samples per sec with hpctoolkit has a similar overhead as perf
 #define DEFAULT_THRESHOLD  300
 
 #ifndef sigev_notify_thread_id
@@ -164,6 +162,8 @@
 
 #define DEFAULT_COMPRESSION 5
 
+#define PERF_FD_FINALIZED (-2)
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -171,16 +171,13 @@
 
 enum threshold_e { PERIOD, FREQUENCY };
 struct event_threshold_s {
-  long             threshold_num;
+  long             threshold_val;
   enum threshold_e threshold_type;
 };
 
 //******************************************************************************
 // forward declarations 
 //******************************************************************************
-
-static int
-restart_perf_event(int fd);
 
 static bool 
 perf_thread_init(event_info_t *event, event_thread_t *et);
@@ -196,21 +193,21 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 // constants
 //******************************************************************************
 
-#ifndef ENABLE_PERFMON
-static const char *event_name = "CPU_CYCLES";
-#endif
+static const struct timespec nowait = {0, 0};
+
+
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
-static sigset_t sig_mask;
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
 static event_info_t  *event_desc = NULL;
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
+
 
 
 /******************************************************************************
@@ -223,6 +220,19 @@ extern __thread bool hpcrun_thread_suppress_sample;
 // private operations 
 //******************************************************************************
 
+/* 
+ * determine whether the perf sample source has been finalized for this thread
+ */ 
+static int 
+perf_was_finalized
+(
+ int nevents, 
+ event_thread_t *event_thread
+)
+{
+  return nevents >= 1 && event_thread[0].fd == PERF_FD_FINALIZED;
+}
+
 
 /*
  * Enable all the counters
@@ -230,9 +240,18 @@ extern __thread bool hpcrun_thread_suppress_sample;
 static void
 perf_start_all(int nevents, event_thread_t *event_thread)
 {
-  int i;
+  int i, ret;
+
   for(i=0; i<nevents; i++) {
-    ioctl(event_thread[i].fd, PERF_EVENT_IOC_ENABLE, 0);
+    int fd = event_thread[i].fd;
+    if (fd<0) 
+      continue; 
+ 
+    ret = ioctl(fd, PERF_EVENT_IOC_ENABLE, 0);
+
+    if (ret == -1) {
+      EMSG("Can't enable event with fd: %d: %s", fd, strerror(errno));
+    }
   }
 }
 
@@ -242,12 +261,25 @@ perf_start_all(int nevents, event_thread_t *event_thread)
 static void
 perf_stop_all(int nevents, event_thread_t *event_thread)
 {
-  int i;
+  int i, ret;
+
   for(i=0; i<nevents; i++) {
-    ioctl(event_thread[i].fd, PERF_EVENT_IOC_DISABLE, 0);
+    int fd = event_thread[i].fd;
+    if (fd<0) 
+      continue; 
+ 
+    ret = ioctl(fd, PERF_EVENT_IOC_DISABLE, 0);
+    if (ret == -1) {
+      EMSG("Can't disable event with fd: %d: %s", fd, strerror(errno));
+    }
   }
 }
 
+static int
+perf_get_pmu_support(const char *name, struct perf_event_attr *event_attr)
+{
+  return pfmu_getEventAttribute(name, event_attr);
+}
 
 /****
  * copy /proc/kallsyms file into hpctoolkit output directory
@@ -267,10 +299,10 @@ copy_kallsyms()
 
   char  dest[PATH_MAX], kernel_name[PATH_MAX];
   char  dest_directory[PATH_MAX];
-  char *hpctoolkit_directory = get_output_directory();
+  const char *output_directory = hpcrun_files_output_directory();
 
-  snprintf(dest_directory, PATH_MAX, "%s/%s", hpctoolkit_directory,
-           DIRECTORY_FILE_COLLECTION);
+  snprintf(dest_directory, PATH_MAX, "%s/%s", output_directory,
+           KERNEL_SYMBOLS_DIRECTORY);
 
   OSUtil_setCustomKernelName(kernel_name, PATH_MAX);
 
@@ -313,7 +345,7 @@ perf_init()
   // copy /proc/kallsyms file into hpctoolkit output directory
   // only if the value of kptr_restric is zero
 
-  if (perf_util_get_kptr_restrict() == 0 && perf_util_get_paranoid_level()<2) {
+  if (perf_util_is_ksym_available()) {
     //copy the kernel symbol table
     int ret = copy_kallsyms();
     TMSG(LINUX_PERF, "copy_kallsyms result: %d", ret);
@@ -321,11 +353,19 @@ perf_init()
 
   perf_mmap_init();
 
-  // initialize mask to block PERF_SIGNAL 
+  // initialize sigset to contain PERF_SIGNAL 
+  sigset_t sig_mask;
   sigemptyset(&sig_mask);
   sigaddset(&sig_mask, PERF_SIGNAL);
 
-  monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, NULL);
+  // arrange to block monitor shootdown signal while in perf_event_handler
+  // FIXME: this assumes that monitor's shootdown signal is SIGRTMIN+8
+  struct sigaction perf_sigaction;
+  sigemptyset(&perf_sigaction.sa_mask);
+  sigaddset(&perf_sigaction.sa_mask, SIGRTMIN+8);
+  perf_sigaction.sa_flags = 0;
+
+  monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, &perf_sigaction);
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
@@ -346,14 +386,19 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   // it returns -1 if it fails.
   et->fd = perf_util_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
-  TMSG(LINUX_PERF, "dbg register event %d, fd: %d, skid: %d, c: %d, t: %d, period: %d, freq: %d",
-    event->id, et->fd, event->attr.precise_ip, event->attr.config,
-	event->attr.type, event->attr.sample_freq, event->attr.freq);
+  TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
+        et->fd, event->attr.precise_ip, event->attr.config,
+        event->attr.type, event->attr.sample_freq, event->attr.freq);
 
   // check if perf_event_open is successful
   if (et->fd < 0) {
-    EMSG("Linux perf event open %d (%d) failed: %s",
-          event->id, event->attr.config, strerror(errno));
+    EMSG("Linux perf event open failed"
+         " id: %d, fd: %d, skid: %d,"
+         " config: %d, type: %d, sample_freq: %d,"
+         " freq: %d, error: %s",
+         event->id, et->fd, event->attr.precise_ip, 
+         event->attr.config, event->attr.type, event->attr.sample_freq, 
+         event->attr.freq, strerror(errno));
     return false;
   }
 
@@ -386,7 +431,11 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
       event->id, et->fd, strerror(errno));
   }
 
-  ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
+  ret = ioctl(et->fd, PERF_EVENT_IOC_RESET, 0);
+  if (ret == -1) {
+    EMSG("Can't reset event %d, fd: %d: %s", 
+      event->id, et->fd, strerror(errno));
+  }
   return (ret >= 0);
 }
 
@@ -399,12 +448,29 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 static void
 perf_thread_fini(int nevents, event_thread_t *event_thread)
 {
-  for(int i=0; i<nevents; i++) {
-    if (event_thread[i].fd) 
-      close(event_thread[i].fd);
+  // suppress perf signal while we shut down perf monitoring
+  sigset_t perf_sigset;
+  sigemptyset(&perf_sigset);
+  sigaddset(&perf_sigset, PERF_SIGNAL);
+  monitor_real_pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
-    if (event_thread[i].mmap) 
+  for(int i=0; i<nevents; i++) {
+    if (event_thread[i].fd >= 0) {
+      close(event_thread[i].fd);
+      event_thread[i].fd = PERF_FD_FINALIZED;
+    }
+
+    if (event_thread[i].mmap) { 
       perf_unmmap(event_thread[i].mmap);
+      event_thread[i].mmap = 0;
+    }
+  }
+
+  // consume any pending PERF signals for this thread
+  for (;;) {
+    siginfo_t siginfo;
+    // negative return value means no signals left pending
+    if (sigtimedwait(&perf_sigset,  &siginfo, &nowait) < 0) break;
   }
 }
 
@@ -491,23 +557,31 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   return sv;
 }
 
-
 /***
- * get the default event count threshold by looking from the environment variable
- * (HPCRUN_PERF_COUNT) set by hpcrun when user specifies -c option
+ * (1) ensure that the default rate for frequency-based sampling is below the maximum.
+ * (2) if the environment variable HPCRUN_PERF_COUNT is set, use it to set the threshold
  */
-static struct event_threshold_s
-init_default_count()
+static void
+set_default_threshold()
 {
-  const char *str_val= getenv("HPCRUN_PERF_COUNT");
-  if (str_val == NULL) {
-    return default_threshold;
-  }
-  int res = hpcrun_extract_threshold(str_val, &default_threshold.threshold_num, DEFAULT_THRESHOLD);
-  if (res == 1)
-    default_threshold.threshold_type = PERIOD;
+  static int initialized = 0;
 
-  return default_threshold;
+  if (!initialized) {
+    int max_rate_m1 = perf_util_get_max_sample_rate() - 1;
+    if (default_threshold.threshold_val > max_rate_m1) {
+      default_threshold.threshold_val = max_rate_m1;
+    }
+    const char *val_str = getenv("HPCRUN_PERF_COUNT");
+    if (val_str != NULL) {
+      TMSG(LINUX_PERF, "HPCRUN_PERF_COUNT = %s", val_str);
+      int res = hpcrun_extract_threshold(val_str, &default_threshold.threshold_val, max_rate_m1);
+      if (res == 1) {
+        default_threshold.threshold_type = PERIOD;
+      }
+    }
+    initialized = 1;
+  }
+  TMSG(LINUX_PERF, "default threshold = %d", default_threshold.threshold_val);
 }
 
 /******************************************************************************
@@ -523,10 +597,7 @@ METHOD_FN(init)
 {
   TMSG(LINUX_PERF, "%d: init", self->sel_idx);
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
   pfmu_init();
-#endif
 
   perf_util_init();
 
@@ -587,19 +658,11 @@ METHOD_FN(start)
     return;
   }
 
-  int nevents = (self->evl).nevents;
+  int nevents        = (self->evl).nevents;
+  event_thread_t *et = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
 
-  event_thread_t *event_thread = (event_thread_t *)TD_GET(ss_info)[self->sel_idx].ptr;
-
-  for (int i=0; i<nevents; i++)
-  {
-    int ret = ioctl(event_thread[i].fd, PERF_EVENT_IOC_RESET, 0);
-    if (ret == -1) {
-      TMSG(LINUX_PERF, "error fd %d in IOC_RESET: %s", event_thread[i].fd, strerror(errno));
-    }
-
-    restart_perf_event( event_thread[i].fd );
-  }
+  //  enable all perf_events
+  perf_start_all(nevents, et);
 
   thread_data_t* td = hpcrun_get_thread_data();
   td->ss_state[self->sel_idx] = START;
@@ -614,6 +677,15 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
+
+  METHOD_CALL(self, stop); // stop the sample source 
+
+  event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
+  int nevents = (self->evl).nevents; 
+
+  perf_thread_fini(nevents, event_thread);
+
+  self->state = UNINIT;
 
   TMSG(LINUX_PERF, "%d: unregister thread OK", self->sel_idx);
 }
@@ -659,20 +731,15 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  METHOD_CALL(self, stop); // make sure stop has been called
-  // FIXME: add component shutdown code here
+  METHOD_CALL(self, stop); // stop the sample source 
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
 
   perf_thread_fini(nevents, event_thread);
 
-#ifdef ENABLE_PERFMON
-  // terminate perfmon
-  pfmu_fini();
-#endif
-
   self->state = UNINIT;
+
   TMSG(LINUX_PERF, "shutdown OK");
 }
 
@@ -693,18 +760,14 @@ METHOD_FN(supports_event, const char *ev_str)
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
   char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, DEFAULT_THRESHOLD) ;
+  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
 
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL)
     return true;
 
   // this is not a predefined event, we need to consult to perfmon (if enabled)
-#ifdef ENABLE_PERFMON
   return pfmu_isSupported(ev_tmp) >= 0;
-#else
-  return (strncmp(event_name, ev_str, strlen(event_name)) == 0);
-#endif
 }
 
 
@@ -724,12 +787,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   int num_events = 0;
 
   // TODO: stupid way to count the number of events
-  // manually, setup the number of events. In theory, this is to be done
-  //  automatically. But in practice, it didn't. Not sure why.
 
   for (event = start_tok(evlist); more_tok(); event = next_tok(), num_events++);
-
-  self->evl.nevents = num_events;
   
   // setup all requested events
   // if an event cannot be initialized, we still keep it in our list
@@ -745,7 +804,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   int i=0;
 
-  default_threshold = init_default_count();
+  set_default_threshold();
 
   // ----------------------------------------------------------------------
   // for each perf's event, create the metric descriptor which will be used later
@@ -758,7 +817,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
     int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
-        default_threshold.threshold_num);
+        default_threshold.threshold_val);
 
     // ------------------------------------------------------------
     // need a special case if we have our own customized  predefined  event
@@ -770,13 +829,14 @@ METHOD_FN(process_event_list, int lush_metrics)
       if (event_desc[i].metric_custom->register_fn != NULL) {
     	// special registration for customized event
         event_desc[i].metric_custom->register_fn( &event_desc[i] );
+        METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
       }
     }
 
     struct perf_event_attr *event_attr = &(event_desc[i].attr);
 
-    int isPMU = pfmu_getEventAttribute(name, event_attr);
+    int isPMU = perf_get_pmu_support(name, event_attr);
     if (isPMU < 0)
       // case for unknown event
       // it is impossible to be here, unless the code is buggy
@@ -796,7 +856,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
-    prop = (strstr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    prop = (strcasestr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
@@ -821,6 +881,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     }
     event_desc[i].metric_desc = m;
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
   }
 
   if (num_events > 0)
@@ -878,19 +939,7 @@ METHOD_FN(display_events)
 
   display_header(stdout, "Available Linux perf events");
 
-#ifdef ENABLE_PERFMON
-  // perfmon is smart enough to detect if pfmu has been initialized or not
-  pfmu_init();
   pfmu_showEventList();
-  pfmu_fini();
-#else
-  printf("Name\t\tDescription\n");
-  display_line_single(stdout);
-
-  printf("%s\tTotal cycles.\n",
-   "PERF_COUNT_HW_CPU_CYCLES");
-  printf("\n");
-#endif
   printf("\n");
 }
 
@@ -915,30 +964,7 @@ read_fd(int fd)
 }
 
 
-// ------------------------------------------------------------
-// Refresh a disabled perf event
-// returns -1 if error, non-negative is success (any returns from ioctl)
-// ------------------------------------------------------------
 
-static int
-restart_perf_event(int fd)
-{
-  if (fd < 0) {
-    TMSG(LINUX_PERF, "Unable to start event: fd is not valid");
-    return -1;
-  }
-
-  int ret = ioctl(fd, PERF_EVENT_IOC_RESET, 0);
-  if (ret == -1) {
-    TMSG(LINUX_PERF, "error fd %d in PERF_EVENT_IOC_RESET: %s", fd, strerror(errno));
-  }
-
-  ret = ioctl(fd, PERF_EVENT_IOC_REFRESH, 1);
-  if (ret == -1) {
-    TMSG(LINUX_PERF, "error fd %d in IOC_REFRESH: %s", fd, strerror(errno));
-  }
-  return ret;
-}
 /***************************************************************************
  * object
  ***************************************************************************/
@@ -983,6 +1009,11 @@ perf_event_handler(
 
   int nevents = self->evl.nevents;
 
+  // if finalized already, refuse to handle any more samples
+  if (perf_was_finalized(nevents, event_thread)) {
+    return 0;
+  }
+
   perf_stop_all(nevents, event_thread);
 
   // ----------------------------------------------------------------------------
@@ -1019,6 +1050,7 @@ perf_event_handler(
 
     restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
+
     return 0; // tell monitor the signal has not been handled.
   }
 #endif
@@ -1038,7 +1070,6 @@ perf_event_handler(
        siginfo->si_code, fd);
     hpcrun_safe_exit();
 
-    restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
 
     return 1; // tell monitor the signal has not been handled.
@@ -1055,7 +1086,6 @@ perf_event_handler(
 
     // reading info from mmapped buffer
     more_data = read_perf_buffer(current, &mmap_data);
-    //TMSG(LINUX_PERF, "record buffer: sid: %d, ip: %p, addr: %p, id: %d", mmap_data.sample_id, mmap_data.ip, mmap_data.addr, mmap_data.id);
 
     sample_val_t sv;
     memset(&sv, 0, sizeof(sample_val_t));
@@ -1066,8 +1096,6 @@ perf_event_handler(
     kernel_block_handler(current, sv, &mmap_data);
 
   } while (more_data);
-
-  restart_perf_event(fd);
 
   perf_start_all(nevents, event_thread);
 
