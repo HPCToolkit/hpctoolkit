@@ -665,7 +665,7 @@ typedef struct hpctrace_fmt_datum_t {
   uint64_t time; // microseconds
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
   
-  /** dLCA = distance of previous sample's leaf call frame to the Least Common Ancestor (LCA) in the CCT. 
+  /** dLCA = distance of previous sample's leaf call frame to the Least Common Ancestor (LCA) in the CCT.
    *  dLCA is only valid when trampoline is used. 
    *  dLCA = INT_MAX when LCA cannot be determined.
    * 

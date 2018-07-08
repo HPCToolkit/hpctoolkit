@@ -879,7 +879,7 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   } else {
     x->dLCA = HPCRUN_FMT_DLCA_NULL;
   }
-
+  
   if (flags.fields.isDataCentric) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->metricId), fs));
   }

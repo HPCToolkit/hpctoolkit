@@ -412,7 +412,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 
   if (cursor->libunw_status == LIBUNW_OK) {
     unw_res = libunw_take_step(cursor);
-    
     // libunw_take_step() only updates PC.
     // Here, we need to update bp, sp, ra_loc.
     void *pc, *bp, *sp;

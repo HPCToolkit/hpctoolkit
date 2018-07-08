@@ -363,9 +363,9 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       // maintain invariants
       td->cached_frame_count = n_cached_frames + old_frame_count;
       td->tramp_frame = td->cached_bt + n_cached_frames;
-
-      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
-	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
+      
+      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
+	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
       
       // When recursive frames are merged in CCT, special handling is needed.
       if (!hpcrun_get_retain_recursion_mode()) {
@@ -413,8 +413,8 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
       td->cached_bt_end = td->cached_bt + n_cached_frames;
       td->cached_frame_count = n_cached_frames;
-      // dLCA set to INT_MAX when .
-      td->dLCA = INT_MAX;
+      // dLCA set to HPCRUN_FMT_DLCA_NULL when tramp failed.
+      td->dLCA = HPCRUN_FMT_DLCA_NULL;
     }
     if (ENABLED(TRAMP)) {
       TMSG(TRAMP, "Dump cached backtrace from backtrace construction");
