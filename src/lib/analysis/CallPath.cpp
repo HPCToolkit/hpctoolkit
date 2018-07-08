@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,7 @@ using std::string;
 
 #include <typeinfo>
 
+#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -125,6 +126,13 @@ static void
 coalesceStmts(Prof::Struct::Tree& structure);
 
 
+static bool
+vdso_loadmodule(const char *pathname)
+{
+  return pathname && strstr(pathname,  "vdso");
+}
+
+
 namespace Analysis {
 
 namespace CallPath {
@@ -144,6 +152,9 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
+  // add the directory into the set of directories
+  prof->addDirectory(profileFiles[0]);
+
   for (uint i = 1; i < profileFiles.size(); ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
@@ -151,6 +162,9 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
 
     prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
+
+    // add the directory into the set of directories
+    prof->addDirectory(profileFiles[i]);
   }
   prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
@@ -343,23 +357,23 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   // iteration includes LoadMap::LMId_NULL
   // -------------------------------------------------------
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-       i <= loadmap->size(); ++i) {
+      i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
     if (lm->isUsed()) {
       try {
-	const string& lm_nm = lm->name();
-	
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
+        const string& lm_nm = lm->name();
+
+        Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
       }
       catch (const Diagnostics::Exception& x) {
-	errors += "  " + x.what() + "\n";
+        errors += "  " + x.what() + "\n";
       }
     }
   }
 
   if (!errors.empty()) {
-    DIAG_EMsg("Cannot fully process samples because of errors reading load modules:\n" << errors);
+    DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
 
@@ -383,33 +397,32 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = ((lmStrct->childCount() > 0)
-		    || (loadmap_lm->id() == Prof::LoadMap::LMId_NULL));
+  bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
-      DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-    }
-  }
-  else {
-    DIAG_Msg(1, "Line map : " << lm_nm);
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+    // no-op for this case
+  } else if (vdso_loadmodule(lm_nm.c_str()))  {
+    DIAG_WMsgIf(1, "Cannot fully process samples for virtual load module " << lm_nm);
+  } else {
 
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
-      lm->read(BinUtil::LM::ReadFlg_Proc);
+      lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
-      DIAG_Throw(/*"While reading '" << lm_nm << "': " <<*/ x.what());
+      lm = NULL;
+      DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm << ": " << x.what());
     }
-    catch (...) {
-      delete lm;
-      DIAG_EMsg("While reading '" << lm_nm << "'...");
-      throw;
-    }
+    if (lm) DIAG_Msg(1, "Line map : " << lm_nm);
   }
 
+  if (lm) {
+    lmStrct->pretty_name(lm->name().c_str());
+  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()

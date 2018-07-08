@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h> // ptrdiff_t
-#include <assert.h>
 
 
 //******************************************************************************
@@ -123,14 +122,15 @@ bitree_uwi_set_rightsubtree(
   binarytree_set_rightsubtree((binarytree_t*) tree, (binarytree_t*)subtree);
 }
 
+
 // return the interval_t part of the interval_t key of the tree root
 // pre-condition: tree != NULL
 interval_t*
 bitree_uwi_interval(bitree_uwi_t *tree)
 {
-  assert(tree != NULL);
+  if (tree == NULL) return NULL;
   uwi_t* uwi = bitree_uwi_rootval(tree);
-  assert(uwi != NULL);
+  if (uwi == NULL) return NULL;
   return &uwi->interval;
 }
 
@@ -139,9 +139,9 @@ bitree_uwi_interval(bitree_uwi_t *tree)
 uw_recipe_t*
 bitree_uwi_recipe(bitree_uwi_t *tree)
 {
-  assert(tree != NULL);
+  if (tree == NULL) return NULL;
   uwi_t* uwi = bitree_uwi_rootval(tree);
-  assert(uwi != NULL);
+  if (uwi == NULL) return NULL;
   return (uw_recipe_t *)uwi->recipe;
 }
 

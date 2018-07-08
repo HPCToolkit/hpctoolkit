@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -52,10 +52,18 @@ include $(top_srcdir)/src/Makeinclude.config
 
 BOOST_INC = @BOOST_INC@
 LIBDWARF_INC = @LIBDWARF_INC@
+LIBELF_INC = @LIBELF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
 
+if OPT_DYNINST_LIBDWARF
+DWARF_IFLAGS = -I$(LIBDWARF_INC)
+endif
+
 MYSOURCES = \
-	Linemap.cpp  \
+	ElfHelper.cpp \
+	Fatbin.cpp \
+	InputFile.cpp \
+	RelocateCubin.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -67,7 +75,8 @@ MYCXXFLAGS = \
 	$(HPC_IFLAGS)  \
 	@GNUBINUTILS_IFLAGS@  \
 	-I$(BOOST_INC)  \
-	-I$(LIBDWARF_INC)  \
+	$(DWARF_IFLAGS) \
+	-I$(LIBELF_INC)  \
 	-I$(SYMTABAPI_INC)
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -76,7 +85,16 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #----------------------------------------------------------------------
 
+pkglibexecdir = @my_pkglibexecdir@
+
+pkglibexec_PROGRAMS = dotgraph-bin
+
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
+
+dotgraph_bin_SOURCES  = DotGraph.cpp
+dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) $(DWARF_IFLAGS) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
+dotgraph_bin_CXXFLAGS = @HOST_CXXFLAGS@
+dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)

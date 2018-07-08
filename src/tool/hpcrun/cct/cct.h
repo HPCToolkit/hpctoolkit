@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -170,8 +170,13 @@ extern cct_node_t* hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src);
 
 extern void hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path);
 
-// special mutator to support tracing
-extern void hpcrun_cct_persistent_id_trace_mutate(cct_node_t* x);
+// mark a node for retention as the leaf of a traced call path.
+extern void hpcrun_cct_retain(cct_node_t* x);
+
+// check if a node was marked for retention as the leaf of a traced
+// call path.
+extern int hpcrun_cct_retained(cct_node_t* x);
+
 
 // Walking functions section:
 //

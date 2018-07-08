@@ -57,12 +57,11 @@ typedef struct uwi_s {
 
 typedef struct bitree_uwi_s bitree_uwi_t;
 
-// to replace the old interval_status_t:
 typedef struct btuwi_status_s {
   char *first_undecoded_ins;
   bitree_uwi_t *first;
   int count;
-  int errcode;
+  int error;  // 0 if no error; value = error code or count depending upon unwinder
 } btuwi_status_t;
 
 typedef enum unwinder_e {

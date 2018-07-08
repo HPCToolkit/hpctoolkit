@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -104,12 +104,6 @@ MYLDFLAGS  = -lz
 MYLDADD = \
         @HOST_LIBTREPOSITORY@ \
         $(HPCLIB_Support) 
-
-if OPT_USE_ZLIB
-MYLDADD    += -L$(ZLIB_LIB) -lz
-MYCFLAGS   += -I$(ZLIB_INC) 
-MYCXXFLAGS += -I$(ZLIB_INC)
-endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

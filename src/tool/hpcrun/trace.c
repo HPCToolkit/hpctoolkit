@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -155,12 +155,6 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 
     ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
-    if(cptd->trace_min_time_us == 0) {
-      struct timeval tv;
-      gettimeofday(&tv, NULL);
-      cptd->trace_min_time_us = ((uint64_t)tv.tv_usec
-                                 + (((uint64_t)tv.tv_sec) * 1000000));
-    }
   }
   TMSG(TRACE, "Trace open done");
 }
@@ -209,7 +203,6 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
   }
   TMSG(TRACE, "trace close done");
 }
-
 
 //*********************************************************************
 // private operations
