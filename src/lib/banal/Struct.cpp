@@ -97,6 +97,8 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
+#include "cuda/ReadCubinCFG.hpp"
+
 using namespace Dyninst;
 using namespace Inline;
 using namespace InstructionAPI;
@@ -418,12 +420,19 @@ makeStructure(InputFile & inputFile,
       (*mit)->parseLineInformation();
     }
 
-    SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
-    CodeObject * code_obj = new CodeObject(code_src);
+    CodeSource *code_src = NULL;
+    CodeObject *code_obj = NULL;
 
     // don't run parseapi on cuda binary
     if (! cuda_file) {
+      code_src = new SymtabCodeSource(symtab);
+      code_obj = new CodeObject(code_src);
       code_obj->parse();
+    } else {
+      if (readCubinCFG(elfFile, the_symtab, &code_src, &code_obj)) {
+        // if we can parse a cubin, we treat it like a regular binary
+        cuda_file = false; 
+      }
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -467,7 +476,10 @@ makeStructure(InputFile & inputFile,
     Output::printLoadModuleEnd(outFile);
 
     delete code_obj;
+#if 0
+    // FIXME: CodeSource::~CodeSource needs to be public
     delete code_src;
+#endif
     Inline::closeSymtab();
   }
 

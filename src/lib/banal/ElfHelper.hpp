@@ -64,6 +64,8 @@
 #include <vector>
 #include <string>
 
+#include <string.h>
+
 #include <libelf.h>
 #include <gelf.h>
 
@@ -79,14 +81,16 @@
 
 class ElfFile {
 public:
-  ElfFile() { memPtr = 0; elf = 0; memLen = 0; }
+  ElfFile() { origPtr = 0; memPtr = 0; elf = 0; memLen = 0; }
   bool open(char *_memPtr, size_t _memLen, std::string _fileName);
   ~ElfFile();
   Elf *getElf() { return elf; };
   char *getMemory() { return memPtr; };
+  char *getMemoryOriginal() { return origPtr; };
   size_t getLength() { return memLen; };
   std::string getFileName() { return fileName; };
 private:
+  char *origPtr;
   char *memPtr;
   size_t memLen;
   Elf *elf;

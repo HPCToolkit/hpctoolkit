@@ -1500,7 +1500,7 @@ for lib in $multilib_path ; do
 done
 
 if test "$BOOST_COPY" = yes ; then
-  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+  BOOST_LIB_LIST='-lboost_atomic  -lboost_chrono  -lboost_date_time  -lboost_filesystem -lboost_system  -lboost_thread -lboost_graph -lboost_regex'
 fi
 
 AC_MSG_RESULT([$BOOST_COPY])
