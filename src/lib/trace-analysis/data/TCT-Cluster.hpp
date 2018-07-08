@@ -100,8 +100,7 @@ namespace TraceAnalysis {
         nested_level(0), first_id(id), first_rsd(NULL), stride(0), length(1) {}
     TCTClusterMemberRSD(TCTClusterMemberRSD* rsd, int stride, int length) : 
         nested_level(rsd->nested_level+1), first_id(rsd->first_id), stride(stride), length(length) {
-      if (nested_level == 1) first_rsd = NULL;
-      else first_rsd = rsd->duplicate();
+      first_rsd = rsd->duplicate();
     }
     TCTClusterMemberRSD(const TCTClusterMemberRSD& other) :
         nested_level(other.nested_level), first_id(other.first_id), stride(other.stride), length(other.length) {
@@ -154,11 +153,15 @@ namespace TraceAnalysis {
   public:
     TCTClusterMembers() : max_level(0), members(max_level+1) {}
     
-    TCTClusterMembers(const TCTClusterMembers& other) : max_level(other.max_level) {
+    TCTClusterMembers(const TCTClusterMembers& other) : max_level(other.max_level), members(max_level+1) {
       for (int level = 0; level <= max_level; level++)
         for (int k = 0; k < (int)other.members[level].size(); k++)
-          members[level][k] = other.members[level][k]->duplicate();
+          members[level].push_back(other.members[level][k]->duplicate());
     }
+    
+    // Build a TCTClusterMembers by merging two input TCTClusterMembers.
+    // All members in the two input TCTClusterMembers will be removed.
+    TCTClusterMembers(TCTClusterMembers& other1, TCTClusterMembers& other2);
     
     virtual ~TCTClusterMembers() {
       for (int level = 0; level <= max_level; level++)

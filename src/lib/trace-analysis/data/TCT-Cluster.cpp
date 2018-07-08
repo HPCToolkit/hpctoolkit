@@ -113,12 +113,39 @@ namespace TraceAnalysis {
   
   string TCTClusterMemberRSD::toString() const {
     if (nested_level == 0) return std::to_string(first_id);
+    return "(" + first_rsd->toString() + "+" + std::to_string(stride) + "[x" + std::to_string(length) + "])";
+  }
+  
+  TCTClusterMembers::TCTClusterMembers(TCTClusterMembers& other1, TCTClusterMembers& other2) :
+    max_level(max(other1.max_level, other2.max_level)), members(max_level+1) {
+    //TODO: optimization -- if last_ID of an input is greater than the first_ID of another input
     
-    string nested;
-    if (nested_level == 1) nested = std::to_string(first_id);
-    else nested = first_rsd->toString();
+    // Move the max_level of two inputs for easier processing.
+    while (other1.max_level < max_level) other1.increaseMaxLevel();
+    while (other2.max_level < max_level) other2.increaseMaxLevel();
     
-    return "(" + nested + "+" + std::to_string(stride) + "[x" + std::to_string(length) + "])";
+    // Add members of two inputs to this TCTClusterMembers.
+    // Members of two input TCTClusterMembers are removed.
+    for (int level = max_level; level >= 0; level--) {
+      size_t idx1 = 0, idx2 = 0;
+      while (idx1 < other1.members[level].size() || idx2 < other2.members[level].size()) {
+        if (idx2 == other2.members[level].size() || 
+                (idx1 < other1.members[level].size() && other1.members[level][idx1]->getFirstID() < other2.members[level][idx2]->getFirstID())) {
+          addMember(other1.members[level][idx1]);
+          idx1++;
+        }
+        else {
+          addMember(other2.members[level][idx2]);
+          idx2++;
+        }
+      }
+      other1.members[level].clear();
+      other2.members[level].clear();
+    }
+    other1.members.clear();
+    other2.members.clear();
+    other1.max_level = 0;
+    other2.max_level = 0;
   }
   
   void TCTClusterMembers::addMember(TCTClusterMemberRSD* rsd) {

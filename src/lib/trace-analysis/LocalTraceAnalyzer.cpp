@@ -397,12 +397,9 @@ namespace TraceAnalysis {
       
       printLoops(root);
 
-      //print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod * ITER_CHILD_DUR_ACC, samplingPeriod).c_str());
+      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod).c_str());
 
       delete root;
-      
-      //TCTClusterMembers cm;
-      //cm.test();
     }
   };
 

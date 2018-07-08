@@ -111,7 +111,6 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Abstract Node
   class TCTANode {
-    friend class TCTLoopNode;
   public:
     enum NodeType {
       Root,
@@ -152,6 +151,10 @@ namespace TraceAnalysis {
     
     virtual string getName() const {
       return name;
+    }
+    
+    virtual void setName(string name) {
+      this->name = name;
     }
     
     virtual int getDepth() const {
@@ -334,14 +337,16 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Iteration Trace Node
   class TCTIterationTraceNode : public TCTATraceNode {
+    friend class TCTLoopNode;
+    friend class TCTLoopClusterNode;
   public:
     TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Iter, id, 0, "No-name Iteration", depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), iterNum(-1) {}
     TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Iter, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
-    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
+              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), iterNum(-1) {}
+    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig), iterNum(orig.iterNum) {}
     virtual ~TCTIterationTraceNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -350,19 +355,15 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const {
       return new TCTIterationTraceNode(id.id, name, depth, cfgGraph);
     }
+    
+  private:
+    int iterNum;
   };
   
   class TCTLoopNode : public TCTANode {
     friend class TCTProfileNode;
   public:
-    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph):
-      TCTANode(Loop, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
-        numIteration = 0;
-        numAcceptedIteration = 0;
-        pendingIteration = NULL;
-        rejectedIterations = NULL;
-      }
+    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph);
     TCTLoopNode(const TCTLoopNode& orig);
     virtual ~TCTLoopNode();
     
@@ -377,7 +378,7 @@ namespace TraceAnalysis {
     
     virtual void addChild(TCTANode* child) {
       if (child->type != TCTANode::Iter) {
-        print_msg(MSG_PRIO_MAX, "ERROR: argument (name = %s) of TCTLoopNode::addChild() should be an iteration.\n", child->name.c_str());
+        print_msg(MSG_PRIO_MAX, "ERROR: argument (name = %s) of TCTLoopNode::addChild() should be an iteration.\n", child->getName().c_str());
         delete child;
         return;
       }
@@ -419,6 +420,8 @@ namespace TraceAnalysis {
     // all rejected iterations are merged into a Profile node.
     TCTProfileNode* rejectedIterations;
 
+    TCTLoopClusterNode* clusterNode;
+    
     // Return true if we are confident that children of the pending iteration
     // belong to one iteration in the execution.
     bool acceptPendingIteration();
@@ -470,9 +473,11 @@ namespace TraceAnalysis {
     virtual TCTANode* finalizeLoops() {return NULL;}
     
   private:
+    bool mergeClusters();
+    
     int numClusters;
-    TCTCluster clusters[MAX_NUM_CLUSTER];
-    double diffRatio[MAX_NUM_CLUSTER][MAX_NUM_CLUSTER];
+    TCTCluster clusters[MAX_NUM_CLUSTER+1];
+    double diffRatio[MAX_NUM_CLUSTER+1][MAX_NUM_CLUSTER+1];
   };
   
   class TCTProfileNode : public TCTANode {

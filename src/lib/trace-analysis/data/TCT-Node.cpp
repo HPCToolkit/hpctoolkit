@@ -69,6 +69,7 @@ namespace TraceAnalysis {
     ret += name + id.toString();
     ret += " " + time.toString();
     ret += ", " + std::to_string(getDuration()/getSamplingPeriod()) + " samples";
+    if (weight > 1) ret += ", w = " + std::to_string(weight);
     
     if (diffScore->getInclusive() > 0)
       ret += ", DiffScore = " + std::to_string((long)diffScore->getInclusive())
@@ -91,6 +92,9 @@ namespace TraceAnalysis {
   }
   
   string TCTLoopNode::toString(int maxDepth, Time minDuration) const {
+    if (clusterNode != NULL) 
+      return clusterNode->toString(maxDepth, minDuration) + (rejectedIterations == NULL ? "" : "\n"+rejectedIterations->toString(maxDepth, minDuration));
+    
     string ret = TCTANode::toString(maxDepth, minDuration);
     ret.pop_back();
     ret += ", # iterations = " + std::to_string(numIteration) + "\n";
@@ -112,8 +116,11 @@ namespace TraceAnalysis {
     ret.pop_back();
     ret += ", # clusters = " + std::to_string(numClusters) + "\n";
     
+    string prefix = "";
+    for (int i = 0; i < depth; i++) prefix += "  ";
+    
     for (int i = 0; i < numClusters; i++) {
-      ret += "Clusters #" + std::to_string(i) + " members: " + clusters[i].members->toString() + "\n";
+      ret += prefix + "Clusters #" + std::to_string(i) + " members: " + clusters[i].members->toString() + "\n";
       ret += clusters[i].representative->toString(maxDepth, minDuration);
     }
     
@@ -132,18 +139,36 @@ namespace TraceAnalysis {
     return ret;
   }
   
+  TCTLoopNode::TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
+    TCTANode(Loop, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
+      numIteration = 0;
+      numAcceptedIteration = 0;
+      pendingIteration = NULL;
+      rejectedIterations = NULL;
+      clusterNode = new TCTLoopClusterNode(*this);
+    }
+  
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
     numIteration = orig.numIteration;
     numAcceptedIteration = orig.numAcceptedIteration;
     
-    if (orig.pendingIteration != NULL) {
+    if (orig.pendingIteration != NULL)
       pendingIteration = (TCTIterationTraceNode*)(orig.pendingIteration->duplicate());
-    }
+    else
+      pendingIteration = NULL;
+    
     if (orig.rejectedIterations != NULL)
       rejectedIterations = (TCTProfileNode*)(orig.rejectedIterations->duplicate());
+    else
+      rejectedIterations = NULL;
 
     for (auto it = orig.acceptedIterations.begin(); it != orig.acceptedIterations.end(); it++)
       acceptedIterations.push_back((TCTIterationTraceNode*)((*it)->duplicate()));
+    
+    if (clusterNode != NULL) 
+      clusterNode = (TCTLoopClusterNode*)(orig.clusterNode->duplicate());
+    else
+      clusterNode = NULL;
   }
   
   TCTLoopNode::~TCTLoopNode()  {
@@ -152,6 +177,8 @@ namespace TraceAnalysis {
 
     for (auto it = acceptedIterations.begin(); it != acceptedIterations.end(); it++)
       delete (*it);
+    
+    if (clusterNode != NULL) delete clusterNode;
   }
   
   bool TCTLoopNode::acceptPendingIteration() {
@@ -183,12 +210,14 @@ namespace TraceAnalysis {
     if (pendingIteration == NULL) return;
     
     pendingIteration->finalizeLoops();
+    pendingIteration->iterNum = numIteration;
     pendingIteration->name = "ITER_#" + std::to_string(numIteration);
     numIteration++;
     
     if (acceptPendingIteration()) {
       numAcceptedIteration++;
       acceptedIterations.push_back(pendingIteration);
+      clusterNode->addChild(pendingIteration->duplicate());
     }
     else {
       TCTProfileNode* prof = TCTProfileNode::newProfileNode(pendingIteration);
@@ -197,7 +226,7 @@ namespace TraceAnalysis {
         delete prof;
       } else {
         rejectedIterations = prof;
-        rejectedIterations->name = "Rejected Iterations";
+        rejectedIterations->setName("Rejected Iterations");
       }
       delete pendingIteration;
     }
@@ -214,6 +243,9 @@ namespace TraceAnalysis {
   
   TCTANode* TCTLoopNode::finalizeLoops() {
     finalizePendingIteration();
+    clusterNode->getTime().setStartTime(getTime().getStartTimeExclusive(), getTime().getStartTimeInclusive());
+    clusterNode->getTime().setEndTime(getTime().getEndTimeInclusive(), getTime().getEndTimeExclusive());
+    
     if (acceptLoop()) {
       if (numIteration > 1)
         print_msg(MSG_PRIO_NORMAL, "\nLoop accepted:\n%s", toString(getDepth()+2, 0).c_str());
@@ -226,7 +258,83 @@ namespace TraceAnalysis {
   }
   
   void TCTLoopClusterNode::addChild(TCTANode* child) {
+    clusters[numClusters].representative = child;
+    child->setName("CLUSTER_#" + std::to_string(numClusters) + " REP");
+    clusters[numClusters].members = new TCTClusterMembers();
+    clusters[numClusters].members->addMember(((TCTIterationTraceNode*)child)->iterNum);
     
+    for (int k = 0; k < numClusters; k++) {
+      TCTANode* tempNode = localDQ.mergeNode(child, child->getWeight(), 
+        clusters[k].representative, clusters[k].representative->getWeight(), false, true);
+      diffRatio[k][numClusters] = tempNode->getDiffScore().getInclusive() / child->getWeight() / clusters[k].representative->getWeight()
+              / (double)(child->getDuration() + clusters[k].representative->getDuration());
+      delete tempNode;
+    }
+    
+    numClusters++;
+    while (numClusters > 1 && mergeClusters());
+  }
+  
+  bool TCTLoopClusterNode::mergeClusters() {
+    int min_x = 0;
+    int min_y = 1;
+    double maxDR = diffRatio[min_x][min_y];
+    
+    for (int x = 0; x < numClusters; x++)
+      for (int y = x+1; y < numClusters; y++)
+        if (diffRatio[x][y] < diffRatio[min_x][min_y]) {
+          min_x = x;
+          min_y = y;
+        }
+        else if (diffRatio[x][y] > maxDR)
+          maxDR = diffRatio[x][y];
+    
+    if (diffRatio[min_x][min_y] <= MIN_DIFF_RATIO ||
+          diffRatio[min_x][min_y] <= maxDR * REL_DIFF_RATIO ||
+          numClusters > MAX_NUM_CLUSTER) {
+      TCTANode* tempNode = localDQ.mergeNode(clusters[min_x].representative, clusters[min_x].representative->getWeight(),
+              clusters[min_y].representative, clusters[min_y].representative->getWeight(), true, false);
+      delete clusters[min_x].representative;
+      delete clusters[min_y].representative;
+      clusters[min_x].representative = tempNode;
+      tempNode->setName("CLUSTER_#" + std::to_string(min_x) + " REP");
+      
+      TCTClusterMembers* tempMembers = new TCTClusterMembers(*clusters[min_x].members, *clusters[min_y].members);
+      delete clusters[min_x].members;
+      delete clusters[min_y].members;
+      clusters[min_x].members = tempMembers;
+      
+      // Remove the cluster at min_y. Update clusters[], diffRatio[][], and numClusters.
+      for (int y = min_y+1; y < numClusters; y++) {
+        clusters[y-1] = clusters[y];
+        for (int x = 0; x < min_y; x++)
+          diffRatio[x][y-1] = diffRatio[x][y];
+        for (int x = min_y + 1; x < y; x++)
+          diffRatio[x-1][y-1] = diffRatio[x][y];
+      }
+      numClusters--;
+      clusters[numClusters].members = NULL;
+      clusters[numClusters].representative = NULL;
+      
+      // Recompute diffRatio values for the merged cluster.
+      for (int k = 0; k < min_x; k++) {
+        TCTANode* tempNode = localDQ.mergeNode(clusters[min_x].representative, clusters[min_x].representative->getWeight(),
+              clusters[k].representative, clusters[k].representative->getWeight(), false, true);
+        diffRatio[k][min_x] = tempNode->getDiffScore().getInclusive() / clusters[min_x].representative->getWeight() / clusters[k].representative->getWeight()
+              / (double)(clusters[min_x].representative->getDuration() + clusters[k].representative->getDuration());
+      }
+      
+      for (int k = min_x+1; k < numClusters; k++) {
+        TCTANode* tempNode = localDQ.mergeNode(clusters[min_x].representative, clusters[min_x].representative->getWeight(),
+              clusters[k].representative, clusters[k].representative->getWeight(), false, true);
+        diffRatio[min_x][k] = tempNode->getDiffScore().getInclusive() / clusters[min_x].representative->getWeight() / clusters[k].representative->getWeight()
+              / (double)(clusters[min_x].representative->getDuration() + clusters[k].representative->getDuration());
+      }
+      
+      return true;
+    }
+    
+    return false;
   }
   
   TCTProfileNode::TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
