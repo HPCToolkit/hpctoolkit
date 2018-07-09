@@ -74,7 +74,7 @@
 
 #include <Elf_X.h> // ensure EM_CUDA defined
 
-// #include <include/hpctoolkit-config.h>
+#include <include/hpctoolkit-config.h>
 
 
 //******************************************************************************
