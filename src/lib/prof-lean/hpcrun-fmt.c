@@ -867,19 +867,13 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 {
   int ret = HPCFMT_OK;
   
-  ret = hpcfmt_int8_fread(&(x->time), fs);
+  ret = hpcfmt_int8_fread(&(x->comp.bits), fs);
   if (ret != HPCFMT_OK) {
     return ret; // can be HPCFMT_EOF
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->cpId), fs));
 
-  if (flags.fields.isLCARecorded) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->dLCA), fs));
-  } else {
-    x->dLCA = HPCRUN_FMT_DLCA_NULL;
-  }
-  
   if (flags.fields.isDataCentric) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->metricId), fs));
   }
@@ -903,9 +897,9 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
   k = 0;
 
-  uint64_t time = x->time;
+  uint64_t comp = x->comp.bits;
   for (shift = 56; shift >= 0; shift -= 8) {
-    buf[k] = (time >> shift) & 0xff;
+    buf[k] = (comp >> shift) & 0xff;
     k++;
   }
 
@@ -913,14 +907,6 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   for (shift = 24; shift >= 0; shift -= 8) {
     buf[k] = (cpId >> shift) & 0xff;
     k++;
-  }
-
-  if (flags.fields.isLCARecorded) {
-    uint32_t dLCA = x->dLCA;
-    for (shift = 24; shift >= 0; shift -= 8) {
-      buf[k] = (dLCA >> shift) & 0xff;
-      k++;
-    }
   }
 
   if (flags.fields.isDataCentric) {
@@ -943,11 +929,8 @@ int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* outfs)
 {
-  hpcfmt_int8_fwrite(x->time, outfs);
+  hpcfmt_int8_fwrite(x->comp.bits, outfs);
   hpcfmt_int4_fwrite(x->cpId, outfs);
-  if (flags.fields.isLCARecorded) {
-    hpcfmt_int4_fwrite(x->dLCA, outfs);
-  }
   if (flags.fields.isDataCentric) {
     hpcfmt_int4_fwrite(x->metricId, outfs);
   }
@@ -960,9 +943,9 @@ int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs)
 {
-  fprintf(fs, "(%"PRIu64", %u", x->time, x->cpId);
+  fprintf(fs, "(%"PRIu64", %u", x->comp.fields.time, x->cpId);
   if (flags.fields.isLCARecorded) {
-    fprintf(fs, ", %u",  x->dLCA);
+    fprintf(fs, ", %u",  x->comp.fields.dLCA);
   }
   if (flags.fields.isDataCentric) {
     fprintf(fs, ", %u",  x->metricId);

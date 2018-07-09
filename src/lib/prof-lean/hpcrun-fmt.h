@@ -658,22 +658,36 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 // [hpctrace] trace record/datum
 //***************************************************************************
 
+#define HPCRUN_FMT_TIME_BITS 54 // Use 54 bits to store timestamp, which is enough for next 500+ years.
+#define HPCRUN_FMT_TIME_MAX ((1 << HPCRUN_FMT_TIME_BITS) - 1) // 53 bits of 1s
+
+#define HPCRUN_FMT_DLCA_BITS 10 // Use 10 bits to store dLCA.
+#define HPCRUN_FMT_DLCA_NULL ((1 << HPCRUN_FMT_DLCA_BITS) - 1) // 10 bits of 1s
+
 #define HPCRUN_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
-#define HPCRUN_FMT_DLCA_NULL (INT_MAX) // for Java, no UINT32_MAX
+
+typedef struct hpctrace_fmt_time_dLCA_composite_t {
+  // Time in microseconds.
+  // Timestamp is stored in lower HPCRUN_FMT_TIME_BITS bits,
+  // supporting up to year 2540 AD.
+  uint64_t time : HPCRUN_FMT_TIME_BITS;
+  
+  /** dLCA = distance of previous sample's leaf call frame to 
+   *  the Least Common Ancestor (LCA) with this sample in the CCT.
+   *  dLCA is only valid when trampoline is used. 
+   *  dLCA is stored in higher HPCRUN_FMT_DLCA_BITS, supporting up to 1023.
+   */
+  uint32_t dLCA : HPCRUN_FMT_DLCA_BITS;
+} hpctrace_fmt_time_dLCA_composite_t;
+
+typedef union hpctrace_fmt_time_dLCA_union_t {
+  hpctrace_fmt_time_dLCA_composite_t fields;
+  uint64_t                           bits; // for reading/writing
+} hpctrace_fmt_time_dLCA_union_t;
 
 typedef struct hpctrace_fmt_datum_t {
-  uint64_t time; // microseconds
+  hpctrace_fmt_time_dLCA_union_t comp; // composite field that stores both time and dLCA
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
-  
-  /** dLCA = distance of previous sample's leaf call frame to the Least Common Ancestor (LCA) in the CCT.
-   *  dLCA is only valid when trampoline is used. 
-   *  dLCA = INT_MAX when LCA cannot be determined.
-   * 
-   *  In the future, dLCA can be compressed into the timestamp.
-   *  Timestamp uses no more than 52 bits, allowing 12 bits 
-   *  to encode dLCA.
-   */
-  uint32_t dLCA; 
   uint32_t metricId;
 } hpctrace_fmt_datum_t;
 
