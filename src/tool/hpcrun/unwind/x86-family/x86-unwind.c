@@ -420,11 +420,9 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
     
-    /**Source code changes to libunwind is needed to get ip_loc 
-     * as of 02/20/2018. Add the following line
-     *    case UNW_X86_64_RIP: loc = c->dwarf.loc[RIP]; break;
-     * below line 46 of libunwind/src/x86_64/Gget_save_loc.c
-     * so that libunwind will return ip_loc.
+    /** libunwind version after Mar 6, 2018 
+     * (commission 7f04c2032f1a2328072f3a3733abf74a72188458)
+     * is needed to get location of IP.
      */
     unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
     save_registers(cursor, pc, bp, sp, 

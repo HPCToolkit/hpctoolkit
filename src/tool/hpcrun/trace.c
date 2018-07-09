@@ -227,11 +227,11 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     }
     
     hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
+    trace_datum.comp.fields.time = microtime;
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
-    trace_datum.dLCA = dLCA;
+    trace_datum.comp.fields.dLCA = dLCA;
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
