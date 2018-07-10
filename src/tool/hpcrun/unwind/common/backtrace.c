@@ -414,7 +414,7 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       td->cached_bt_end = td->cached_bt + n_cached_frames;
       td->cached_frame_count = n_cached_frames;
       // dLCA set to HPCRUN_FMT_DLCA_NULL when tramp failed.
-      td->dLCA = HPCRUN_FMT_DLCA_NULL;
+      td->dLCA = HPCTRACE_FMT_DLCA_NULL;
     }
     if (ENABLED(TRAMP)) {
       TMSG(TRAMP, "Dump cached backtrace from backtrace construction");

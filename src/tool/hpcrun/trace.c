@@ -148,16 +148,16 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
 
 #if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
-    flags.fields.isLCARecorded = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
     ENABLE(USE_TRAMP);
 #else
-    flags.fields.isLCARecorded = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
     
     ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
@@ -227,23 +227,23 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     }
     
     hpctrace_fmt_datum_t trace_datum;
-    trace_datum.comp.fields.time = microtime;
+    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
-    trace_datum.comp.fields.dLCA = dLCA;
+    HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
     
 #if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
-    flags.fields.isLCARecorded = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
 #else
-    flags.fields.isLCARecorded = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
     
     int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
