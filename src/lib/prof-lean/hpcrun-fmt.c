@@ -758,9 +758,7 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre)
 // [hpctrace] hdr
 //***************************************************************************
 
-const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL = {
-  .bits = 0
-};
+const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL = 0;
 
 
 int
@@ -792,7 +790,7 @@ hpctrace_fmt_hdr_fread(hpctrace_fmt_hdr_t* hdr, FILE* infs)
 
   hdr->flags = hpctrace_hdr_flags_NULL;
   if (hdr->version > 1.0) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(hdr->flags.bits), infs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(hdr->flags), infs));
   }
 
   return HPCFMT_OK;
@@ -809,7 +807,7 @@ hpctrace_fmt_hdr_outbuf(hpctrace_hdr_flags_t flags, hpcio_outbuf_t* outbuf)
   const int bufSZ = sizeof(flags);
   unsigned char buf[bufSZ];
 
-  uint64_t flag_bits = flags.bits;
+  uint64_t flag_bits = flags;
   int k = 0;
   for (int shift = 56; shift >= 0; shift -= 8) {
     buf[k] = (flag_bits >> shift) & 0xff;
@@ -836,7 +834,7 @@ hpctrace_fmt_hdr_fwrite(hpctrace_hdr_flags_t flags, FILE* fs)
   fwrite(HPCTRACE_FMT_Magic,   1, HPCTRACE_FMT_MagicLen, fs);
   fwrite(HPCTRACE_FMT_Version, 1, HPCTRACE_FMT_VersionLen, fs);
   fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
-  hpcfmt_int8_fwrite(flags.bits, fs);
+  hpcfmt_int8_fwrite(flags, fs);
 
   return HPCFMT_OK;
 }
@@ -850,7 +848,7 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs)
   fprintf(fs, "[hdr:\n");
   fprintf(fs, "  (version: %s)\n", hdr->versionStr);
   fprintf(fs, "  (endian: %c)\n", hdr->endian);
-  fprintf(fs, "  (flags: 0x%"PRIx64")\n", hdr->flags.bits);
+  fprintf(fs, "  (flags: 0x%"PRIx64")\n", hdr->flags);
   fprintf(fs, "]\n");
 
   return HPCFMT_OK;
@@ -867,18 +865,18 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 {
   int ret = HPCFMT_OK;
   
-  ret = hpcfmt_int8_fread(&(x->comp.bits), fs);
+  ret = hpcfmt_int8_fread(&(x->comp), fs);
   if (ret != HPCFMT_OK) {
     return ret; // can be HPCFMT_EOF
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->cpId), fs));
 
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->metricId), fs));
   }
   else {
-    x->metricId = HPCRUN_FMT_MetricId_NULL;
+    x->metricId = HPCTRACE_FMT_MetricId_NULL;
   }
 
   return HPCFMT_OK;
@@ -897,7 +895,7 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
   k = 0;
 
-  uint64_t comp = x->comp.bits;
+  uint64_t comp = x->comp;
   for (shift = 56; shift >= 0; shift -= 8) {
     buf[k] = (comp >> shift) & 0xff;
     k++;
@@ -909,7 +907,7 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
     k++;
   }
 
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     uint32_t metricId = x->metricId;
     for (shift = 24; shift >= 0; shift -= 8) {
       buf[k] = (metricId >> shift) & 0xff;
@@ -929,9 +927,9 @@ int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* outfs)
 {
-  hpcfmt_int8_fwrite(x->comp.bits, outfs);
+  hpcfmt_int8_fwrite(x->comp, outfs);
   hpcfmt_int4_fwrite(x->cpId, outfs);
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     hpcfmt_int4_fwrite(x->metricId, outfs);
   }
 
@@ -943,11 +941,11 @@ int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs)
 {
-  fprintf(fs, "(%"PRIu64", %u", x->comp.fields.time, x->cpId);
-  if (flags.fields.isLCARecorded) {
-    fprintf(fs, ", %u",  x->comp.fields.dLCA);
+  fprintf(fs, "(%"PRIu64", %u", HPCTRACE_FMT_GET_TIME(x->comp), x->cpId);
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS)) {
+    fprintf(fs, ", %u",  HPCTRACE_FMT_GET_DLCA(x->comp));
   }
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     fprintf(fs, ", %u",  x->metricId);
   }
   fputs(")\n", fs);

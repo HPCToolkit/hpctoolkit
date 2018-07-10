@@ -263,7 +263,7 @@ extern global_array_t *GA;
     getcontext(&uc);							\
 									\
     hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;			\
-    uint dataMetricId = HPCRUN_FMT_MetricId_NULL;			\
+    uint dataMetricId = HPCTRACE_FMT_MetricId_NULL;			\
 									\
     if (g_a != G_A_NULL) {						\
       int idx = ga_getDataIdx(g_a);					\
@@ -296,7 +296,7 @@ extern global_array_t *GA;
 #define doMetric(metricIdExpr, metricIncr, type)			\
 {									\
   int mId = (metricIdExpr); /* eval only once */			\
-  if (mId >= 0 && mId != HPCRUN_FMT_MetricId_NULL) {			\
+  if (mId >= 0 && mId != HPCTRACE_FMT_MetricId_NULL) {			\
     /*TMSG(GA, "doMetric: %d", nbytes); */				\
     hpcrun_metric_std_inc(mId, metricVec,				\
 	   (cct_metric_data_t){.type = metricIncr * hpcrun_ga_period}); \
