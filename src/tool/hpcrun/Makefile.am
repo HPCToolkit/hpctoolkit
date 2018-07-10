@@ -434,6 +434,7 @@ MY_INCLUDE_DIRS =			\
 	$(HPC_IFLAGS)			\
 	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
+	-I$(LIBGOTCHA_INC)		\
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBMONITOR_INC)
 

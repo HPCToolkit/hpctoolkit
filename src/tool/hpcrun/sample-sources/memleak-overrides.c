@@ -83,6 +83,12 @@
 #include <sys/mman.h>
 
 
+/******************************************************************************
+ * gotcha library
+ *****************************************************************************/
+
+#include <gotcha/gotcha.h>
+#include <gotcha/gotcha_types.h>
 
 /******************************************************************************
  * local include files
@@ -164,6 +170,13 @@ extern free_fcn           real_free;
 extern realloc_fcn        real_realloc;
 
 
+void hpctoolkit_free(void *ptr);
+int hpctoolkit_posix_memalign(void **memptr, size_t alignment, size_t bytes);
+void * hpctoolkit_memalign(size_t boundary, size_t bytes);
+void * hpctoolkit_realloc(void *ptr, size_t bytes);
+void * hpctoolkit_calloc(size_t nmemb, size_t bytes);
+void * hpctoolkit_malloc(size_t bytes);
+void * hpctoolkit_valloc(size_t bytes);
 
 /******************************************************************************
  * private data
@@ -190,6 +203,24 @@ static char *loc_name[4] = {
   NULL, "header", "footer", "none"
 };
 
+// gotcha variables
+static gotcha_wrappee_handle_t wrappee_free_handle;
+static gotcha_wrappee_handle_t wrappee_malloc_handle;
+static gotcha_wrappee_handle_t wrappee_valloc_handle;
+static gotcha_wrappee_handle_t wrappee_memalign_handle;
+static gotcha_wrappee_handle_t wrappee_realloc_handle;
+static gotcha_wrappee_handle_t wrappee_calloc_handle;
+static gotcha_wrappee_handle_t wrappee_posix_memalign_handle;
+
+struct gotcha_binding_t wrap_actions [] = {
+    { "free", 		hpctoolkit_free, 	   &wrappee_free_handle },
+    { "malloc", 	hpctoolkit_malloc, 	   &wrappee_malloc_handle },
+    { "valloc", 	hpctoolkit_valloc, 	   &wrappee_valloc_handle },
+    { "calloc", 	hpctoolkit_calloc, 	   &wrappee_calloc_handle },
+    { "realloc", 	hpctoolkit_realloc, 	   &wrappee_realloc_handle },
+    { "memalign", 	hpctoolkit_memalign, 	   &wrappee_memalign_handle },
+    { "posix_memalign", hpctoolkit_posix_memalign, &wrappee_posix_memalign_handle },
+};
 
 
 /******************************************************************************
@@ -607,7 +638,7 @@ memleak_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
 // Use mmap and hpcrun_malloc instead.
 
 int
-MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
+hpctoolkit_posix_memalign(void **memptr, size_t alignment,
                                       size_t bytes)
 {
   ucontext_t uc;
@@ -632,7 +663,7 @@ MONITOR_EXT_WRAP_NAME(posix_memalign)(void **memptr, size_t alignment,
 
 
 void *
-MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
+hpctoolkit_memalign(size_t boundary, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -655,7 +686,7 @@ MONITOR_EXT_WRAP_NAME(memalign)(size_t boundary, size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
+hpctoolkit_valloc(size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -678,7 +709,7 @@ MONITOR_EXT_WRAP_NAME(valloc)(size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
+hpctoolkit_malloc(size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -701,7 +732,7 @@ MONITOR_EXT_WRAP_NAME(malloc)(size_t bytes)
 
 
 void *
-MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
+hpctoolkit_calloc(size_t nmemb, size_t bytes)
 {
   ucontext_t uc;
   void *ptr;
@@ -734,7 +765,7 @@ MONITOR_EXT_WRAP_NAME(calloc)(size_t nmemb, size_t bytes)
 // sytem ptr or else free() will crash.
 //
 void
-MONITOR_EXT_WRAP_NAME(free)(void *ptr)
+hpctoolkit_free(void *ptr)
 {
   leakinfo_t *info_ptr;
   void *sys_ptr;
@@ -768,7 +799,7 @@ finish:
 
 
 void *
-MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
+hpctoolkit_realloc(void *ptr, size_t bytes)
 {
   ucontext_t uc;
   leakinfo_t *info_ptr;
@@ -856,3 +887,12 @@ finish:
   }
   return appl_ptr;
 }
+
+
+void
+hpctoolkit_memleak_init()
+{
+  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit_memleak");
+  
+}
+

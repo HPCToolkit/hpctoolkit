@@ -77,6 +77,7 @@
 #include "common.h"
 #include <main.h>
 #include <hpcrun/sample_sources_registered.h>
+#include <hpcrun/sample-sources/memleak-overrides.h>
 #include "simple_oo.h"
 #include <hpcrun/thread_data.h>
 
@@ -122,6 +123,8 @@ static void
 METHOD_FN(start)
 {
   TMSG(MEMLEAK,"starting MEMLEAK");
+
+  hpctoolkit_memleak_init();
 
   TD_GET(ss_state)[self->sel_idx] = START;
 }

@@ -779,6 +779,9 @@ LIBELF_INC
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+LIBGOTCHA_COPY
+LIBGOTCHA_INC
+LIBGOTCHA_LIB
 BZIP_LIB
 BZIP_COPY
 USE_BOOST_LIBS_FALSE
@@ -996,6 +999,7 @@ with_externals
 with_binutils
 with_boost
 with_bzip
+with_gotcha
 with_libdwarf
 with_libelf
 with_libmonitor
@@ -1748,6 +1752,7 @@ Optional Packages:
   --with-binutils=PATH    path to binutils install directory
   --with-boost=PATH       path to boost install directory
   --with-bzip=PATH        path to bzip install directory
+  --with-gotcha=PATH      path to gotcha install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
   --with-libmonitor=PATH  path to libmonitor install directory
@@ -19778,6 +19783,51 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BZIP" >&5
 $as_echo "$BZIP" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-gotcha=PATH
+#-------------------------------------------------
+
+LIBGOTCHA=no
+#if test "$use_externals" = yes ; then
+#    LIBGOTCHA="$ext_gotcha_prefix"
+#fi
+
+
+# Check whether --with-gotcha was given.
+if test "${with_gotcha+set}" = set; then :
+  withval=$with_gotcha; LIBGOTCHA="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gotcha" >&5
+$as_echo_n "checking for gotcha... " >&6; }
+
+case "${LIBGOTCHA}" in
+  /* )
+    if test -f "${LIBGOTCHA}/include/gotcha/gotcha.h" ; then :
+    else
+        as_fn_error $? "invalid gotcha directory: $LIBGOTCHA" "$LINENO" 5
+    fi
+    LIBGOTCHA_COPY=yes
+    ;;
+  no )
+    LIBGOTCHA_COPY=no
+    ;;
+  * )
+    as_fn_error $? "gotcha directory must be absolute path: $LIBGOTCHA" "$LINENO" 5
+    ;;
+esac
+
+LIBGOTCHA_LIB="${LIBGOTCHA}/lib64"
+LIBGOTCHA_INC="${LIBGOTCHA}/include"
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBGOTCHA" >&5
+$as_echo "$LIBGOTCHA" >&6; }
 
 
 

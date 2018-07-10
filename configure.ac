@@ -101,7 +101,7 @@ AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.69)
-AM_INIT_AUTOMAKE(1.15.1)
+AM_INIT_AUTOMAKE(1.15)
 LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
@@ -1591,6 +1591,48 @@ AC_MSG_RESULT([$BZIP])
 AC_SUBST([BZIP_COPY])
 AC_SUBST([BZIP_LIB])
 
+
+#-------------------------------------------------
+# Option: --with-gotcha=PATH
+#-------------------------------------------------
+
+LIBGOTCHA=no
+#if test "$use_externals" = yes ; then
+#    LIBGOTCHA="$ext_gotcha_prefix"
+#fi
+
+AC_ARG_WITH([gotcha],
+  [AS_HELP_STRING([--with-gotcha=PATH],
+  	    [path to gotcha install directory])],
+  [LIBGOTCHA="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gotcha])
+
+case "${LIBGOTCHA}" in
+  /* )
+    if test -f "${LIBGOTCHA}/include/gotcha/gotcha.h" ; then :
+    else
+        AC_MSG_ERROR([invalid gotcha directory: $LIBGOTCHA])
+    fi
+    LIBGOTCHA_COPY=yes
+    ;;
+  no )
+    LIBGOTCHA_COPY=no
+    ;;
+  * )
+    AC_MSG_ERROR([gotcha directory must be absolute path: $LIBGOTCHA])
+    ;;
+esac
+
+LIBGOTCHA_LIB="${LIBGOTCHA}/lib64"
+LIBGOTCHA_INC="${LIBGOTCHA}/include"
+
+AC_MSG_RESULT([$LIBGOTCHA])
+
+AC_SUBST([LIBGOTCHA_LIB])
+AC_SUBST([LIBGOTCHA_INC])
+AC_SUBST([LIBGOTCHA_COPY])
 
 #-------------------------------------------------
 # Option: --with-libdwarf=PATH

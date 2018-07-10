@@ -68,6 +68,7 @@ libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
+gotcha_libdir='@LIBGOTCHA_LIB@'
 
 #------------------------------------------------------------
 # Find path to this script
@@ -283,7 +284,7 @@ do
 	    case "$1" in
 	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
-		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so ${gotcha_libdir}/libgotcha.so" ;;
 		DATACENTRIC*  ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_datacentric.so" ;;
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
