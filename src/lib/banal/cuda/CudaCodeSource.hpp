@@ -3,15 +3,16 @@
 
 #include <dyn_regs.h>
 #include <CodeSource.h>
+#include <Symtab.h>
 
 #include "DotCFG.hpp"
 
 namespace Dyninst {
 namespace ParseAPI {
-
-class PARSER_EXPORT CudaCodeSource : public CodeSource {
+  class PARSER_EXPORT CudaCodeSource : public /*Symtab */ CodeSource {
  public:
-    CudaCodeSource(std::vector<CudaParse::Function *> &functions);
+  CudaCodeSource(std::vector<CudaParse::Function *> &functions, 
+		 Dyninst::SymtabAPI::Symtab *s);
     ~CudaCodeSource() {};
 
  public:

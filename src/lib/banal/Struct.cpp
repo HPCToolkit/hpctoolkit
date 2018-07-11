@@ -118,10 +118,10 @@ using namespace std;
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
 
-#define DEBUG_CFG_SOURCE  0
-#define DEBUG_MAKE_SKEL   0
+#define DEBUG_CFG_SOURCE  1
+#define DEBUG_MAKE_SKEL   1
 #define DEBUG_SHOW_GAPS   0
-#define DEBUG_SKEL_SUMMARY  0
+#define DEBUG_SKEL_SUMMARY  1
 
 #if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
 #define DEBUG_ANY_ON  1
@@ -429,10 +429,15 @@ makeStructure(InputFile & inputFile,
       code_obj = new CodeObject(code_src);
       code_obj->parse();
     } else {
+#if 1
       if (readCubinCFG(elfFile, the_symtab, &code_src, &code_obj)) {
         // if we can parse a cubin, we treat it like a regular binary
-        cuda_file = false; 
+        // cuda_file = false; 
       }
+#else
+      code_src = new SymtabCodeSource(symtab);
+      code_obj = new CodeObject(code_src);
+#endif
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -694,6 +699,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
     funcMap[func->addr()] = func;
+    DEBUG_SKEL("\nskel:    func*=" << std::hex << (void *) func << ", func->addr() =" << (void *) func->addr() << "\n");
   }
 
   for (auto fmit = funcMap.begin(); fmit != funcMap.end(); ++fmit) {

@@ -161,7 +161,7 @@ readCubinCFG
 
   if (cfg_fact != NULL) {
 
-    *code_src = new CudaCodeSource(*functions); 
+    *code_src = new CudaCodeSource(*functions, the_symtab); 
 
     *code_obj = new CodeObject(*code_src, cfg_fact);
     (*code_obj)->parse();
