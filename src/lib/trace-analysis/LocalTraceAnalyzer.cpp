@@ -263,7 +263,7 @@ namespace TraceAnalysis {
     int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
       int depth = prev->getDepth();
       int dLCA = current->getDLCA(); // distance to LCA
-      if (dLCA != HPCRUN_FMT_DLCA_NULL) {
+      if (dLCA != HPCTRACE_FMT_DLCA_NULL) {
         while (depth > 0 && dLCA > 0) {
           if (prev->getFrameAtDepth(depth).type == CallPathFrame::Func)
             dLCA--;

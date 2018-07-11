@@ -149,17 +149,17 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_LOW, "ERROR: Invalid cpid %u.\n", trace.cpId);
       ret = hpctrace_fmt_datum_fread(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file);
       if (ret != HPCFMT_OK) return NULL;
-      trace.comp.fields.dLCA = HPCRUN_FMT_DLCA_NULL;
+      HPCTRACE_FMT_SET_DLCA(trace.comp, HPCTRACE_FMT_DLCA_NULL);
     }
     
-    CallPathSample* cp = new CallPathSample(trace.comp.fields.time - minTime, trace.comp.fields.dLCA,
+    CallPathSample* cp = new CallPathSample(HPCTRACE_FMT_GET_TIME(trace.comp) - minTime, HPCTRACE_FMT_GET_DLCA(trace.comp),
             cctVisitor.getLeafFrame(trace.cpId));
     
     if (cp->getFrameAtDepth(0).name == "<partial call paths>") {
       delete cp;
       cp = readNextSample(); 
       if (cp != NULL)
-        cp->dLCA = HPCRUN_FMT_DLCA_NULL;
+        cp->dLCA = HPCTRACE_FMT_DLCA_NULL;
     }
     
     return cp;
