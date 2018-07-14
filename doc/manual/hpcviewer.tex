@@ -586,13 +586,13 @@ If there are more than one selected threads, the metrics are the average of the 
 % ===========================================================================
 \section{Filtering Tree nodes}
 \label{sec:filter}
-Occasionally, It is useful to omit uninterested nodes in the CCT and to focus on important parts. 
+Occasionally, It is useful to omit uninterested nodes of the tree to enable to focus on important parts. 
 For instance, you may want to hide all nodes associated with OpenMP runtime and just show all nodes and metrics from the application. 
 For this purpose, \hpcviewer{} provides \emph{filtering} to elide nodes that match a filter pattern.
-\hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern~\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type.
-There are three types of filter: ``\emph{self only}'' to omit the matched nodes, 
+\hpcviewer{} allows  users to define multiple filters, and each filter is associated with a glob pattern\footnote{A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +} and a type.
+There are three types of filter: ``\emph{self only}'' to omit matched nodes, 
 ``\emph{descendants only}'' to exclude only the subtree of the matched nodes, and ``\emph{self and descendants}'' to
-remove the matched nodes and its descendants.
+remove matched nodes and its descendants.
 
 \begin{figure}
   \centering
@@ -642,16 +642,20 @@ Nodes \texttt{C} and its descendants are elided, and their exclusive cost is aug
 \paragraph{Self only}: This filter is useful to hide intermediary runtime functions such as pthread or OpenMP runtime functions. 
 All nodes that match filter patterns will be removed, and their children will be augmented to the parent of the elided nodes.
 The exclusive cost of the elided nodes will be also augmented into the exclusive cost of the parent of the elided nodes.
-Figure~\ref{fig:filter-self} shows the result of filtering node \texttt{C} of the CCT from Figure~\ref{fig:filter-cct}. Node \texttt{C} is elided and its exclusive cost is augmented into the exclusive cost of its parent (node \texttt{A}). The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are now the children of node \texttt{A}.
+Figure~\ref{fig:filter-self} shows the result of filtering node \texttt{C} of the CCT from Figure~\ref{fig:filter-cct}. 
+After filtering, node \texttt{C} is elided and its exclusive cost is augmented into the exclusive cost of its parent (node \texttt{A}). 
+The children of node \texttt{C} (nodes \texttt{D} and \texttt{E}) are now the children of node \texttt{A}.
+
 \paragraph{Descendants only}: This filter elides only the subtree of the matched node, while the matched node itself is not removed. 
 A common usage of this filter is to exclude any call chains after MPI functions.
-As shown in Figure~\ref{fig:filter-children}, filtering node \texttt{C} causes nodes \texttt{D} and \texttt{E} to be elided and their exclusive cost is augmented to node \texttt{C}. 
+As shown in Figure~\ref{fig:filter-children}, filtering node \texttt{C} incurs nodes \texttt{D} and \texttt{E} to be elided and their exclusive cost is augmented to node \texttt{C}. 
+
 \paragraph{Self and descendants}: This filter elides both the matched node and its subtree. 
 This type is useful to exclude any unnecessary details such as glibc or malloc functions.
 Figure~\ref{fig:filter-selfchildren} shows that filtering node \texttt{C} will elide the node and its children (nodes \texttt{D} and \texttt{E}). 
 The total of the exclusive cost of the elided nodes is augmented to the exclusive cost of node \texttt{A}.
 
-The filter feature can be accessed by clicking the menu "Filter" and then submenu "Show filter property", which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
+The filter feature can be accessed by clicking the menu ``Filter'' and then submenu ``Show filter property'', which will then show a  Filter property window (Figure~\ref{fig:filter-window}).
 The window consists of a table of filters, and a group of action buttons: \emph{add} to create a new filter; \emph{edit} to modify a selected filter; and \emph{delete} to remove a set of selected filters..
 The table comprises of two columns: the left column is to display a filter's switch whether the filter is enabled or disabled, and a glob-like filter pattern; and the second column is to show the type of pattern (self only, children only or self and children).
 If a checkbox is checked, it signifies the filter is enabled; otherwise the filter is disabled.
