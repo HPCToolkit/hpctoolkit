@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,34 +67,47 @@ process_return(xed_decoded_inst_t *xptr, bool irdebug, interval_arg_t *iarg)
 {
   unwind_interval *next = iarg->current;
 
-  if (iarg->current->ra_status == RA_SP_RELATIVE) {
-    int offset = iarg->current->sp_ra_pos;
+  if (UWI_RECIPE(iarg->current)->ra_status == RA_SP_RELATIVE) {
+    int offset = UWI_RECIPE(iarg->current)->reg.sp_ra_pos;
     if (offset != 0) {
-      unwind_interval *u = iarg->current;
-      for (;;) {
-	// fix offset
-	u->sp_ra_pos -= offset;
-	u->sp_bp_pos -= offset;
-
-	if (u->restored_canonical == 1) {
-	  break;
-	}
-	u = (unwind_interval *) u->common.prev;
-	if (! u) {
-	  break;
-	}
-      }
+      unwind_interval *u = iarg->restored_canonical;
+      do {
+        // fix offset
+	x86recipe_t *xr = UWI_RECIPE(u);
+        xr->reg.sp_ra_pos -= offset;
+        xr->reg.sp_bp_pos -= offset;
+      } while (u != iarg->current && (u = UWI_NEXT(u)));
+    }
+    if (UWI_RECIPE(iarg->current)->reg.bp_status == BP_HOSED) {
+      // invariant: when we reach a return, if the BP was overwritten, it
+      // should have been restored. this must be incorrect. let's reset
+      // the bp status for all intervals leading up to this one since
+      // the last canonical restore. 
+      unwind_interval *start = iarg->restored_canonical;
+      unwind_interval *u = start;
+      do {
+	x86recipe_t *xr = UWI_RECIPE(u);
+        if (xr->reg.bp_status != BP_HOSED) {
+	  start = NULL;
+        } else if (start == NULL)
+	  start = u;
+      }	while (u != iarg->current && (u = UWI_NEXT(u)));
+      u = start;
+      do {
+	x86recipe_t *xr = UWI_RECIPE(u);
+        xr->reg.bp_status = BP_UNCHANGED;
+      }	while (u != iarg->current && (u = UWI_NEXT(u)));
     }
   }
-  if (iarg->current->bp_status == BP_SAVED) {
+  if (UWI_RECIPE(iarg->current)->reg.bp_status == BP_SAVED) {
      suspicious_interval(iarg->ins);
   }
-  if (iarg->ins + xed_decoded_inst_get_length(xptr) < iarg->end) {
+  if ((void*)nextInsn(iarg, xptr) < iarg->end) {
     //-------------------------------------------------------------------------
     // the return is not the last instruction in the interval; 
     // set up an interval for code after the return 
     //-------------------------------------------------------------------------
-    if (plt_is_next(iarg->ins + xed_decoded_inst_get_length(xptr))) {
+    if (plt_is_next(nextInsn(iarg, xptr))) {
       //-------------------------------------------------------------------------
       // the code following the return is a program linkage table. each entry in 
       // the program linkage table should be invoked with the return address at 
@@ -151,10 +164,10 @@ plt_is_next(char *ins)
       const xed_inst_t* xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t* op0 = xed_inst_operand(xi, 0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	    x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
-	int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
-	push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
-	val_pushed = push_succ_addr + offset;
+        x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
+        int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
+        push_succ_addr = ins + xed_decoded_inst_get_length(xptr);
+        val_pushed = push_succ_addr + offset;
       }
     }
   }
@@ -180,9 +193,9 @@ plt_is_next(char *ins)
       const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
       const xed_operand_t *op0 =  xed_inst_operand(xi,0);
       if ((xed_operand_name(op0) == XED_OPERAND_MEM0) && 
-	  x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
-	long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
-	jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
+         x86_isReg_IP(xed_decoded_inst_get_base_reg(xptr, 0))) {
+         long long offset = xed_decoded_inst_get_memory_displacement(xptr,0);
+         jmp_target = push_succ_addr + xed_decoded_inst_get_length(xptr) + offset;
       }
     }
   }

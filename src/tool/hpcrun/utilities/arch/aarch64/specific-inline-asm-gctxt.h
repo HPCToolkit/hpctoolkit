@@ -1,0 +1,4 @@
+#ifndef SPECIFIC_INLINE_ASM_GCTXT
+#define SPECIFIC_INLINE_ASM_GCTXT
+
+#endif

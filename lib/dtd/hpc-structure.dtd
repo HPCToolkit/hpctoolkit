@@ -1,6 +1,6 @@
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Structure DTD                                             -->
-<!-- Version 4.6                                                          -->
+<!-- Version 4.7                                                          -->
 <!-- ******************************************************************** -->
 
 <!ELEMENT HPCToolkitStructure (LM)*>
@@ -30,6 +30,7 @@
 	n  CDATA #REQUIRED
 	ln CDATA #IMPLIED
 	l  CDATA #IMPLIED
+	s  CDATA #IMPLIED
 	v  CDATA #IMPLIED>
   <!-- Alien: (f)ilename -->
   <!ELEMENT A (A|L|S|C)*>

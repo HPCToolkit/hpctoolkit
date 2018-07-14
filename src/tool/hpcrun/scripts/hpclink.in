@@ -5,7 +5,7 @@
 # Part of HPCToolkit (hpctoolkit.org)
 #------------------------------------
 #
-# Copyright (c) 2002-2015, Rice University.
+# Copyright (c) 2002-2018, Rice University.
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,7 @@
 #  where <symbol> is a symbol name passed to the linker (may be used
 #  multiple times).
 #
+
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
@@ -67,10 +68,6 @@ ext_libs_dir='@hpc_ext_libs_dir@'
 hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
-xed2_dir='@XED2_RUN_DIR@'
-xed2_link_opts='@XED2_HPCLINK_OPTS@'
-libunwind_dir='@LIBUNWIND_RUN_DIR@'
-libunwind_hpclink_libs='@LIBUNWIND_HPCLINK_LIBS@'
 
 # Absolute path or empty.
 papi_dir='@OPT_PAPI_LIBPATH@'
@@ -82,7 +79,6 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
 extra_wrap_names=
 extra_hpc_files=
-
 # Compiler and flags for array of fnbounds addresses.
 CC='@CC@ @CFLAGS@'
 
@@ -95,7 +91,6 @@ undef_names=
 
 # Space-separated list of libs (without -l) not to repeat on command line.
 no_repeat_list='hugetlbfs'
-
 #------------------------------------------------------------
 
 cleanup()
@@ -125,6 +120,28 @@ unable_to_link()
     echo
     die "unable to link"
 }
+
+
+#------------------------------------------------------------
+# The darshan I/O characterization library
+# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
+# applications by default on several DOE supercomputers. Darshan
+# intercepts file operations performed within signal handlers while
+# profiling, which can cause deadlock.  Refuse to link HPCToolkit 
+# into applications if darshan will be included.
+#------------------------------------------------------------
+check_darshan()
+{
+    darshan_msg="darshan is incompatible with HPCToolkit. Unload darshan from your environment before using hpclink."
+    if test "${PE_PKGCONFIG_LIBS/darshan//}" != "${PE_PKGCONFIG_LIBS}" ; then
+        if test "$1" == "die" ; then
+           die $darshan_msg
+        else
+           echo -e "\nwarning:" $darshan_msg
+        fi
+    fi
+}
+
 
 #------------------------------------------------------------
 # Usage Message
@@ -183,6 +200,7 @@ Options: Linking
                        This is to force the linker to pull in a reference
                        for that symbol.  May be used multiple times.
 EOF
+    check_darshan "mesg"
     exit 0
 }
 
@@ -205,14 +223,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * )  libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$xed2_dir" in
-    /* ) ;;
-    * )  xed2_dir="${HPCTOOLKIT}/${xed2_dir}" ;;
-esac
-case "$libunwind_dir" in
-    /* ) ;;
-    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 
 LD_LIBRARY_PATH="${ext_libs_dir}:${LD_LIBRARY_PATH}"
@@ -303,6 +313,8 @@ do
 	    ;;
     esac
 done
+
+check_darshan "die"
 
 #
 # In a cross-compile link, we use fnbounds from the front-end tree and
@@ -436,7 +448,12 @@ done
 
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
-set -- $undef_args $wrap_args $libhpcrun "$@"
+
+# FIXME: add LZMA static library at the end of libhpcrun.o
+# Ideally the library is included in libhpcrun.o, but somwehow not all
+# routines are included
+liblzma="${ext_libs_dir}/liblzma.a"
+set -- $undef_args $wrap_args $libhpcrun "$liblzma"  "$@"
 set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
@@ -449,14 +466,6 @@ set -- "$@" "$libmonitor" $extra_plugin_files
 
 if test -d "$papi_dir" ; then
     set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
-fi
-
-if test -d "$xed2_dir" ; then
-    set -- "$@" "-L${xed2_dir}" $xed2_link_opts
-fi
-
-if test -d "$libunwind_dir" ; then
-    set -- "$@" "-L$libunwind_dir" $libunwind_hpclink_libs
 fi
 
 set -- "$@" $upc_libs

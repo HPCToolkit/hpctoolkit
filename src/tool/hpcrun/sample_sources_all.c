@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,8 @@
 //*******************************************************************
 // Local Includes
 //*******************************************************************
+
+#include <monitor.h>
 
 #include "sample_sources_all.h"
 #include "sample_sources_registered.h"

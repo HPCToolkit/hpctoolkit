@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,11 +49,46 @@
 
 #include <stdbool.h>
 
-#include "splay-interval.h"
+#include <unwind/common/binarytree_uwi.h>
+
+/******************************************************************************
+ * macros
+ ******************************************************************************/
+
+#define lstartaddr ((unsigned long) startaddr)
+#define lendaddr ((unsigned long) endaddr)
+
+/*
+ * macros to convert the old unwind interval data structure
+ *
+
+struct unwind_interval_t {
+  struct splay_interval_s common;
+  ra_loc ra_status;
+  int sp_ra_pos;
+  int sp_bp_pos;
+  bp_loc bp_status;
+  int bp_ra_pos;
+  int bp_bp_pos;
+  struct unwind_interval_t *prev_canonical;
+  int restored_canonical;
+  bool has_tail_calls;
+};
+typedef struct unwind_interval_t unwind_interval;
+
+ * to the new one, which is bitree_uwi_t, a binary tree of uwi_t.
+ *
+ */
+
+#define UWI_RECIPE(btuwi) ((x86recipe_t*)bitree_uwi_recipe(btuwi))
+
 
 /*************************************************************************************
  * type declarations 
  ************************************************************************************/
+
+typedef bitree_uwi_t unwind_interval;
+
 typedef enum {
   RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON
 } ra_loc;
@@ -62,11 +97,7 @@ typedef enum {
   BP_UNCHANGED, BP_SAVED, BP_HOSED
 } bp_loc;
 
-struct unwind_interval_t {
-  struct splay_interval_s common; // common splay tree fields
-
-  ra_loc ra_status; /* how to find the return address */
-
+typedef struct x86registers_s {
   int sp_ra_pos; /* return address offset from sp */
   int sp_bp_pos; /* BP offset from sp */
 
@@ -74,22 +105,16 @@ struct unwind_interval_t {
 
   int bp_ra_pos; /* return address offset from bp */
   int bp_bp_pos; /* (caller's) BP offset from bp */
+} x86registers_t;
 
-  struct unwind_interval_t *prev_canonical;
-  int restored_canonical;
+typedef struct x86recipe_s {
+  ra_loc ra_status; /* how to find the return address */
+  x86registers_t reg;
+
+  bitree_uwi_t* prev_canonical;
 
   bool has_tail_calls;
-};
-
-#define lstartaddr ((unsigned long) startaddr)
-#define lendaddr ((unsigned long) endaddr)
-
-typedef struct unwind_interval_t unwind_interval;
-
-/*************************************************************************************
- * global variables 
- ************************************************************************************/
-extern const unwind_interval poison_ui;
+} x86recipe_t;
 
 
 /*************************************************************************************
@@ -100,19 +125,12 @@ extern const unwind_interval poison_ui;
 extern "C" {
 #endif
 
+#include <unwind/common/unwind-interval.h>
 
   void set_ui_canonical(unwind_interval *u, unwind_interval *value);
 
-  void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
-
-
-  interval_status build_intervals(char  *ins, unsigned int len);
-
   unwind_interval *
-  new_ui(char *startaddr, 
-	 ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-	 bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-	 unwind_interval *prev);
+  new_ui(char *startaddr, ra_loc ra_status, const x86registers_t *reg);
 
   unwind_interval *fluke_ui(char *pc,unsigned int sp_ra_pos);
 
@@ -124,6 +142,18 @@ extern "C" {
   void dump_ui_troll(unwind_interval *u);
 
   void suspicious_interval(void *pc);
+
+  /*
+   * Concrete implementation of the abstract val_tostr function of the
+   * generic_val class.
+   * pre-condition: recipe is of type x86recipe_t*
+   */
+  void
+  x86recipe_tostr(void* recipe, char str[]);
+
+  void
+  x86recipe_print(void* recipe);
+
 
 #ifdef __cplusplus
 };

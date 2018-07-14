@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,6 +93,8 @@ using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/Trace.hpp>
 
+#include <lib/support/dictionary.h>
+
 //*************************** Forward Declarations ***************************
 
 
@@ -107,6 +109,8 @@ namespace Prof {
 extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 extern std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
 
+extern std::map<uint, uint> m_pairFakeLoadModule;
+
 // local function to convert from the original procedure ID into a 
 // a "compact" id to reduce redundancy if the procedure of the same
 // file has exactly the same name.
@@ -119,6 +123,20 @@ getProcIdFromMap(uint proc_id)
     // the file ID should redirected to another file ID which has 
     // exactly the same filename
     id = Prof::m_mapProcIDs[proc_id];
+  }
+  return id;
+}
+
+// local method to convert from the original load module into
+// a compact ID to reduce redundancy.
+static uint
+getLoadModuleFromMap(uint lm_id)
+{
+  uint id = lm_id;
+  std::map<uint, uint>::iterator it = Prof::m_pairFakeLoadModule.find(lm_id);
+
+  if (it != Prof::m_pairFakeLoadModule.end()) {
+    id = it->second;
   }
   return id;
 }
@@ -514,7 +532,34 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   //
   bool isFrame = (typeid(*n) == typeid(ProcFrm));
   bool isProc  = (typeid(*n) == typeid(Proc));
-  bool isLogicalProc   = isFrame || isProc;
+
+  bool isInlineMacro = false;
+  bool isInlineCall  = false;
+
+  NonUniformDegreeTreeNode *parent = n->Parent();
+  if (isProc && parent != NULL) {
+    // if this node and the parent are proc, it is possible this node is an
+    //  inline procedure callsite
+    std::string myprocname = n->structure()->name();
+
+    if (typeid(*parent) == typeid(Proc)) {
+      // check if this node is an inline procedure call.
+      //  a node is an inline proc call iff its parent is an empty proc and
+      //  the node itself is a non-empty proc
+
+      // condition 1: the myprocname of the parent must be empty
+      Struct::ACodeNode *strct = ((ANode*)parent)->structure();
+      bool isEmptyNameParent   = strct->name().empty();
+
+      // condition 2: the myprocname of the inline is not empty
+      bool isFullyNamed = !myprocname.empty();
+
+      isInlineCall  = isEmptyNameParent && isFullyNamed;
+    }
+    isInlineMacro = !isInlineCall && myprocname.compare(GUARD_NAME) == 0;
+  }
+
+  bool isLogicalProc   = isFrame || isInlineCall || isInlineMacro;
   AProcNode * frameNxt = (isLogicalProc) ? static_cast<AProcNode*>(n) : frame;
 
   // -------------------------------------------------------
@@ -528,20 +573,20 @@ ANode::aggregateMetricsExcl(AProcNode* frame, const VMAIntervalSet& ivalset)
   // -------------------------------------------------------
   // Post-order visit
   // -------------------------------------------------------
-  if (typeid(*n) == typeid(CCT::Stmt)) {
+  if (typeid(*n) == typeid(CCT::Stmt) || isInlineMacro) {
     ANode* n_parent = n->parent();
 
     for (VMAIntervalSet::const_iterator it = ivalset.begin();
-	 it != ivalset.end(); ++it) {
+        it != ivalset.end(); ++it) {
       const VMAInterval& ival = *it;
       uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
       for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-	if (frame && frame != n_parent) {
-	  frame->demandMetric(mId, mEndId/*size*/) += mVal;
-	}
+        double mVal = n->demandMetric(mId, mEndId/*size*/);
+        n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+        if (frame && frame != n_parent) {
+          frame->demandMetric(mId, mEndId/*size*/) += mVal;
+        }
       }
     }
   }
@@ -800,12 +845,19 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
 
     ADynNode* x_child_dyn = x->findDynChild(*y_child_dyn);
 
+#define MERGE_ACTION 0
+#define MERGE_ERROR 0
+
     if (!x_child_dyn) {
       // case 1: insert nodes
-      DIAG_Assert( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
-		   "CCT::ANode::mergeDeep: adding not permitted");
-      if ( !(mrgCtxt.flags() & MrgFlg_CCTMergeOnly) ) {
-	DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
+      if (mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly) {
+	DIAG_MsgIf(MERGE_ERROR /*(oFlag & Tree::OFlg_Debug)*/,
+		   "CCT::ANode::mergeDeep: Adding not permitted:\n     "
+		   << y_child->toStringMe(Tree::OFlg_Debug));
+        DIAG_WMsgIf( !(mrgCtxt.flags() & MrgFlg_AssertCCTMergeOnly),
+		     "CCT::ANode::mergeDeep: adding not permitted");
+      } else if (!(mrgCtxt.flags() & MrgFlg_CCTMergeOnly)) {
+	DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
 		   "CCT::ANode::mergeDeep: Adding:\n     "
 		   << y_child->toStringMe(Tree::OFlg_Debug));
 	y_child->unlink();
@@ -817,7 +869,7 @@ ANode::mergeDeep(ANode* y, uint x_newMetricBegIdx, MergeContext& mrgCtxt,
     }
     else {
       // case 2: merge nodes
-      DIAG_MsgIf(0 /*(oFlag & Tree::OFlg_Debug)*/,
+      DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
 		 "CCT::ANode::mergeDeep: Merging x <= y:\n"
 		 << "  x: " << x_child_dyn->toStringMe(Tree::OFlg_Debug)
 		 << "\n  y: " << y_child_dyn->toStringMe(Tree::OFlg_Debug));
@@ -967,6 +1019,9 @@ ANode::mergeDeep_fixInsert(int newMetrics, MergeContext& mrgCtxt)
 
   for (ANodeIterator it(this); it.Current(); ++it) {
     ANode* n = it.current();
+    DIAG_MsgIf(MERGE_ACTION /*(oFlag & Tree::OFlg_Debug)*/,
+	   "CCT:ANode::mergeDeep_fixInsert: Adding:\n     "
+	   << n->toStringMe(Tree::OFlg_Debug));
 
     // -----------------------------------------------------
     // 1. Ensure no cpId in subtree 'this' conflicts with an existing
@@ -1180,7 +1235,8 @@ ProcFrm::toStringMe(uint oFlags) const
   string self = ANode::toStringMe(oFlags);
   
   if (m_strct) {
-    string lm_nm = xml::MakeAttrNum(lmId());
+    uint lm_id = getLoadModuleFromMap(lmId());
+    string lm_nm = xml::MakeAttrNum(lm_id);
 
     uint file_id = getFileIdFromMap(fileId());
     string fnm = xml::MakeAttrNum(file_id);

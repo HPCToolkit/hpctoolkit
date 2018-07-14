@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,6 +61,10 @@
 #undef ss_str
 #undef reg_fn_name
 
+#ifndef ss_sort_order
+#define ss_sort_order  50
+#endif
+
 #include "ss-obj-name.h"
 
 #define obj_name() SS_OBJ_NAME(ss_name)
@@ -99,6 +103,7 @@ sample_source_t obj_name() = {
   .name = ss_str,
   .cls  = ss_cls,
   .state = UNINIT,
+  .sort_order = ss_sort_order,
 };
 
 

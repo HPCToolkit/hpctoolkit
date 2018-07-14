@@ -71,6 +71,9 @@ done
 
 # FIXME: integrate server and verbose.
 
+# Tell fnbounds where to find libdwarf.so for dlopen.
+export HPCTOOLKIT_EXT_LIBS_DIR="$ext_libs_dir"
+
 if test "$server" = yes ; then
     export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
     exec "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"

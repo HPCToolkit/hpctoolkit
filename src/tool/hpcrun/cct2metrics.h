@@ -53,9 +53,11 @@ extern void cct2metrics_assoc(cct_node_t* node, metric_set_t* metrics);
 
 //extern cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_set_t* metrics);
 
+typedef enum {SET, INCR} update_metric_t;
+
 static inline void
-cct_metric_data_increment(int metric_id,
-			  cct_node_t* x,
+cct_metric_data_update(int metric_id,
+			  cct_node_t* x, update_metric_t type,
 			  cct_metric_data_t incr)
 {
   if (! hpcrun_has_metric_set(x)) {
@@ -63,7 +65,27 @@ cct_metric_data_increment(int metric_id,
   }
   metric_set_t* set = hpcrun_get_metric_set(x);
   
-  hpcrun_metric_std_inc(metric_id, set, incr);
+  if (type == SET)
+    hpcrun_metric_std_set(metric_id, set, incr);
+  else if (type == INCR)
+    hpcrun_metric_std_inc(metric_id, set, incr);
+}
+
+
+static inline void
+cct_metric_data_set(int metric_id,
+			  cct_node_t* x,
+			  cct_metric_data_t val)
+{
+  cct_metric_data_update(metric_id, x, SET, val);
+}
+
+static inline void
+cct_metric_data_increment(int metric_id,
+			  cct_node_t* x,
+			  cct_metric_data_t incr)
+{
+  cct_metric_data_update(metric_id, x, INCR, incr);
 }
 
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,7 @@ using std::string;
 
 #include <typeinfo>
 
+#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -84,6 +85,8 @@ using std::string;
 #include "Util.hpp"
 
 #include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
 
 #include <lib/profxml/XercesUtil.hpp>
 #include <lib/profxml/PGMReader.hpp>
@@ -102,9 +105,17 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 
+
+//********************************** Macros **********************************
+
+#define DEBUG_COALESCING 0
+
+
+
 //*************************** Forward Declarations ***************************
 
 std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
+
 
 
 //****************************************************************************
@@ -113,6 +124,13 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
+
+
+static bool
+vdso_loadmodule(const char *pathname)
+{
+  return pathname && strstr(pathname,  "vdso");
+}
 
 
 namespace Analysis {
@@ -134,12 +152,21 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
   uint groupId = (groupMap) ? (*groupMap)[0] : 0;
   Prof::CallPath::Profile* prof = read(profileFiles[0], groupId, rFlags);
 
+  // add the directory into the set of directories
+  prof->addDirectory(profileFiles[0]);
+
   for (uint i = 1; i < profileFiles.size(); ++i) {
     groupId = (groupMap) ? (*groupMap)[i] : 0;
     Prof::CallPath::Profile* p = read(profileFiles[i], groupId, rFlags);
     prof->merge(*p, mergeTy, mrgFlags);
+
+    prof->metricMgr()->mergePerfEventStatistics(p->metricMgr());
     delete p;
+
+    // add the directory into the set of directories
+    prof->addDirectory(profileFiles[i]);
   }
+  prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
   
   return prof;
 }
@@ -330,23 +357,23 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   // iteration includes LoadMap::LMId_NULL
   // -------------------------------------------------------
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-       i <= loadmap->size(); ++i) {
+      i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
     if (lm->isUsed()) {
       try {
-	const string& lm_nm = lm->name();
-	
-	Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-	Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
+        const string& lm_nm = lm->name();
+
+        Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
+        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct);
       }
       catch (const Diagnostics::Exception& x) {
-	errors += "  " + x.what() + "\n";
+        errors += "  " + x.what() + "\n";
       }
     }
   }
 
   if (!errors.empty()) {
-    DIAG_EMsg("Cannot fully process samples because of errors reading load modules:\n" << errors);
+    DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
 
@@ -370,33 +397,32 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   const string& lm_nm = loadmap_lm->name();
   BinUtil::LM* lm = NULL;
 
-  bool useStruct = ((lmStrct->childCount() > 0)
-		    || (loadmap_lm->id() == Prof::LoadMap::LMId_NULL));
+  bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    if (loadmap_lm->id() != Prof::LoadMap::LMId_NULL) {
-      DIAG_Msg(1, "STRUCTURE: " << lm_nm);
-    }
-  }
-  else {
-    DIAG_Msg(1, "Line map : " << lm_nm);
+    DIAG_Msg(1, "STRUCTURE: " << lm_nm);
+  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+    // no-op for this case
+  } else if (vdso_loadmodule(lm_nm.c_str()))  {
+    DIAG_WMsgIf(1, "Cannot fully process samples for virtual load module " << lm_nm);
+  } else {
 
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
-      lm->read(BinUtil::LM::ReadFlg_Proc);
+      lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
-      DIAG_Throw(/*"While reading '" << lm_nm << "': " <<*/ x.what());
+      lm = NULL;
+      DIAG_WMsgIf(1, "Cannot fully process samples for load module " << lm_nm << ": " << x.what());
     }
-    catch (...) {
-      delete lm;
-      DIAG_EMsg("While reading '" << lm_nm << "'...");
-      throw;
-    }
+    if (lm) DIAG_Msg(1, "Line map : " << lm_nm);
   }
 
+  if (lm) {
+    lmStrct->pretty_name(lm->name().c_str());
+  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()
@@ -439,7 +465,14 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
       VMA lm_ip = n_dyn->lmIP();
       const Prof::Struct::ACodeNode* strct = lmStrct->findByVMA(lm_ip);
-      DIAG_Assert(strct, "Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: " << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+
+      // Laks: I don't think an empty strct is critical. We can just send a warning
+      //  and then continue. (like the serial version of hpcprof)
+      if (!strct) {
+        DIAG_EMsg("Analysis::CallPath::noteStaticStructureOnLeaves: failed to find structure for: "
+            << n_dyn->toStringMe(Prof::CCT::Tree::OFlg_DebugAll));
+        continue;
+      }
 
       n->structure(strct);
     }
@@ -448,63 +481,6 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 
 
 //****************************************************************************
-
-static void 
-clipDuplicateContext(Prof::CCT::ANode* haystack, Prof::CCT::ANode* n) 
-{
-   Prof::CCT::ANode* n_parent  = n->parent(); 
-   if (n_parent == NULL) return;
-
-   Prof::CCT::ANode* n_grand_parent  = n_parent->parent(); 
-   if (n_grand_parent == NULL) return;
-
-   if (typeid(*n_grand_parent) != typeid(Prof::CCT::Proc)) return;  
-
-   Prof::CCT::Proc *proc  = dynamic_cast<Prof::CCT::Proc*>(n_grand_parent);
-   if (proc == NULL || !proc->isAlien()) return;
-
-   // grand parent node is an alien procedure
-   // capture its name. if this name appears in the scope_frame chain we are adding,
-   // the interval between the uses 
-   // will use this name to identify duplicate context.
-
-   const std::string& alienProcName = proc->procName();
-   
-   Prof::CCT::ANode* node = haystack; 
-   Prof::CCT::ANode* prev = 0; 
-   while (node) {
-     Prof::CCT::ANode* parent = node->parent(); 
-     if (node == n_grand_parent) {
-       // we encountered the grand parent node without finding a duplicate. 
-       // no duplicate exists on this chain. 
-       return;
-     }
-
-     // check if node is an alien procedure. it might be a loop. if it is a duplicate,
-     // it will be an alien procedure. 
-     // redundant if 
-     if (typeid(*node) == typeid( Prof::CCT::Proc)) { 
-       Prof::CCT::Proc *nproc  = dynamic_cast<Prof::CCT::Proc*>(node);
-       if (nproc != NULL && proc->isAlien()) {
-	 if (nproc->procName().compare(alienProcName) == 0) {
-       	   // found the base of a duplicate chain 
-           if (prev) {
-             // can only eliminate a duplicate if prev is non-empty. if a match is 
-             // found, prev should be non-empty.
-             // eliminate duplicate context between prev and n_grand_parent.
-             prev->unlink();
-             prev->link(n_grand_parent);
-             // FIXME: the context between prev and needle could be garbage collected.
-           }
-           return;
-         }
-       }
-     }
-     prev = node;
-     node = parent;
-   }
-   // duplicate not found. node needs should have full context
-}
 
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
@@ -580,13 +556,6 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 
       Prof::CCT::ANode* scope_frame =
 	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
-
-      // FIXME: currently, this breaks prof-mpi with these messages:
-      // Prof::CCT::ANodeSortedIterator::cmpByDynInfo: cannot compare
-      // CCT::ANode::mergeDeep: adding not permitted
-#if 0
-      clipDuplicateContext(scope_frame, n);
-#endif
 
       // 3. Link 'n' to its parent
       n->unlink();
@@ -743,6 +712,12 @@ coalesceStmts(Prof::CCT::ANode* node)
       if (it_stmt != stmtMap->end()) {
 	// found -- we have a duplicate
 	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
+
+        DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
+		   << "\tx: " 
+		   << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
+		   << "\n\ty: " 
+		   << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
 
 	// N.B.: Because (a) trace records contain a function's
 	// representative IP and (b) two traces that contain samples
@@ -1155,7 +1130,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   uint metricBegId = 0;
   uint metricEndId = prof.metricMgr()->size();
 
-  if (true /* CCT::Tree::OFlg_VisibleMetricsOnly*/) {
+ {
     Metric::ADesc* mBeg = prof.metricMgr()->findFirstVisible();
     Metric::ADesc* mEnd = prof.metricMgr()->findLastVisible();
     metricBegId = (mBeg) ? mBeg->id()     : Metric::Mgr::npos;
@@ -1167,7 +1142,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.0\">\n";
+  os << "<HPCToolkitExperiment version=\"2.1\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

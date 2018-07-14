@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ static char icc_variant_signature[] = {
 
 
 static int 
-adjust_icc_variant_intervals(char *ins, int len, interval_status* stat)
+adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
 {
   int siglen = sizeof(icc_variant_signature);
 
@@ -80,16 +80,18 @@ adjust_icc_variant_intervals(char *ins, int len, interval_status* stat)
     // For this interval and subsequent interval, apply the corrected offsets
     //
 
-    for(; ui->ra_status != RA_STD_FRAME; ui = (unwind_interval *)(ui->common).next);
+    for(;  UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
 
-    int ra_correction = ui->sp_ra_pos - 4; // N.B. The '4' is only correct for 32 bit
-    int bp_correction = ui->sp_bp_pos;
+    x86recipe_t *xr = UWI_RECIPE(ui);
+    int ra_correction =  xr->reg.sp_ra_pos - 4; // N.B. The '4' is only correct for 32 bit
+    int bp_correction =  xr->reg.sp_bp_pos;
 
-    for(; ui; ui = (unwind_interval *)(ui->common).next) {
-      ui->bp_ra_pos -= ra_correction;
-      ui->bp_bp_pos -= bp_correction;
-      ui->sp_ra_pos -= ra_correction;
-      ui->sp_bp_pos -= bp_correction;
+    for(; ui; ui = UWI_NEXT(ui)) {
+      xr = UWI_RECIPE(ui);
+      xr->reg.bp_ra_pos -= ra_correction;
+      xr->reg.bp_bp_pos -= bp_correction;
+      xr->reg.sp_ra_pos -= ra_correction;
+      xr->reg.sp_bp_pos -= bp_correction;
     }
     return 1;
   }

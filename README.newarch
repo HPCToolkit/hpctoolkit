@@ -1,0 +1,29 @@
+Notes on running HPCToolkit on KNL, power8/le and ARM.
+
+Beginning with the 2016.12 release, HPCToolkit has preliminary support
+for three new platforms: Knight's Landing (KNL), power8/le and ARM.
+Old platforms: x86-64, powerpc, Blue Gene/Q and Cray XT/XK should
+build and run as usual without any noticeable difference.
+
+The two main issues for the new platforms are: ParseAPI and
+InstructionAPI support from Dyninst for Control-Flow Graphs for
+hpcstruct, and the unwinder.
+
+KNL -- The key issue for KNL is for ParseAPI and InstructionAPI to
+understand the new AVX instructions.  If ParseAPI does not understand
+some instructions, then it will produce a poor control flow graph and
+will miss large sections of some functions, resulting in poor results
+in the viewer.  This is mostly an issue with the Intel compiler.
+
+Power8/little-endian -- As of 2016.12, Dyninst does not support switch
+tables for power8/le, resulting in poor control-flow graphs in some
+cases.
+
+ARM -- As of 2016.12, hpcrun does not have a native unwinder for ARM
+and instead uses libunwind.  Applications that perform a high number
+of calls to short functions from shared libraries may see a high
+number (5-10%) of partial unwinds.  Libunwind does not do well on
+interrupts taken inside the PLT, so for every call to a function
+inside a shared library, there is a small window of vulnerability
+where the unwind will fail.
+

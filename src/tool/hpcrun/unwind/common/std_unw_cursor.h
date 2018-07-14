@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,10 +50,11 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
 
 //*************************** User Include Files ****************************
 
-#include "unwind-cfg.h"
 #include <unwind/common/fence_enum.h>
 #include <utilities/ip-normalized.h>
 
@@ -69,13 +70,15 @@
 
 #else
 
-#  include "splay-interval.h"
-#  include <hpcrun/utilities/ip-normalized.h>
-#  define UNW_CURSOR_INTERVAL_t splay_interval_t*
+#include "unwindr_info.h"
+#define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
 
-//***************************************************************************
+enum libunw_state {
+  LIBUNW_OK,
+  LIBUNW_FAIL,
+};
 
 typedef struct hpcrun_unw_cursor_t {
 
@@ -90,9 +93,7 @@ typedef struct hpcrun_unw_cursor_t {
   void *ra_loc;  // for trampolines
 
   fence_enum_t fence; // Details on which fence stopped an unwind
-
-  UNW_CURSOR_INTERVAL_t intvl;
-
+  unwindr_info_t unwr_info; // unwind recipe info
   ip_normalized_t the_function; // (normalized) ip for function
 
   //NOTE: will fail if HPC_UWN_LITE defined
@@ -101,8 +102,10 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // unwind-provider-specific state
   // ------------------------------------------------------------
-  int32_t flags;
+  int32_t flags:30;
+  enum libunw_state libunw_status:2;
 
+  unw_cursor_t uc;
 } hpcrun_unw_cursor_t;
 
 

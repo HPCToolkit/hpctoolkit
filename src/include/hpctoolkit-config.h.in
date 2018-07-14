@@ -3,6 +3,18 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
+/* dyninst uses Instruction::Ptr */
+#undef DYNINST_INSTRUCTION_PTR
+
+/* dyninst supports cuda */
+#undef DYNINST_USE_CUDA
+
+/* dyninst built with libdw */
+#undef DYNINST_USE_LIBDW
+
+/* Binutils has support for ia64 */
+#undef ENABLE_BINUTILS_IA64
+
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
 
@@ -18,7 +30,7 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* HPCToolkit binutils */
+/* HPCToolkit patched binutils */
 #undef HAVE_HPC_GNUBINUTILS
 
 /* Define to 1 if you have the <inttypes.h> header file. */
@@ -78,6 +90,9 @@
 /* Host is big endian. */
 #undef HOST_BIG_ENDIAN
 
+/* HOST CPU: ARM 64 (aarch64 */
+#undef HOST_CPU_ARM64
+
 /* HOST CPU: ia64 (itanium) */
 #undef HOST_CPU_IA64
 
@@ -111,7 +126,7 @@
 /* HOST platform: MIPS64LE_LINUX */
 #undef HOST_PLATFORM_MIPS64LE_LINUX
 
-/* IBM BlueGene/P support */
+/* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
 /* HPCToolkit version */
@@ -120,12 +135,8 @@
 /* HPCToolkit version string */
 #undef HPCTOOLKIT_VERSION_STRING
 
-/* Define to the sub-directory in which libtool stores uninstalled libraries.
-   */
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
-
-/* Define to 1 if your C compiler doesn't accept -c and -o together. */
-#undef NO_MINUS_C_MINUS_O
 
 /* Standard C headers */
 #undef NO_STD_CHEADERS
@@ -156,9 +167,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Use new symtabAPI getName iterator */
-#undef SYMTAB_NEW_NAME_ITERATOR
 
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW

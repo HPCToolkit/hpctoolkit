@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,10 +78,14 @@ process_enter(xed_decoded_inst_t *xptr, const xed_inst_t *xi, interval_arg_t *ia
     }
   }
   TMSG(INTV,"new interval from ENTER");
-  next = new_ui(iarg->ins + xed_decoded_inst_get_length(xptr),
-		RA_STD_FRAME,
-		iarg->current->sp_ra_pos + offset, 8, BP_SAVED,
-		iarg->current->sp_bp_pos + offset - 8, 0, iarg->current);
+  x86registers_t reg = UWI_RECIPE(iarg->current)->reg;
+  reg.sp_ra_pos += offset;
+  reg.bp_ra_pos = 8;
+  reg.bp_status = BP_SAVED;
+  reg.sp_bp_pos += offset - 8;
+  reg.bp_bp_pos = 0;
+  
+  next = new_ui(nextInsn(iarg, xptr), RA_STD_FRAME, &reg);
   hw_tmp->uwi = next;
   hw_tmp->state = 
     HW_NEW_STATE(hw_tmp->state, HW_BP_SAVED | 

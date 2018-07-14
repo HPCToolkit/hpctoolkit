@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,20 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
+// This file is the main program for hpcstruct.  This side just
+// handles the argument list.  The real work is in makeStructure() in
+// lib/banal/Struct.cpp.
 
-//************************* System Include Files ****************************
+//****************************** Include Files ******************************
 
 #include <iostream>
 using std::cerr;
@@ -70,35 +61,21 @@ using std::endl;
 #include <streambuf>
 #include <new>
 
-
-//*************************** User Include Files ****************************
-
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-
-#include <lib/prof/Struct-Tree.hpp>
+#include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
 
-#include <lib/binutils/Demangler.hpp>
-#include <lib/binutils/LM.hpp>
-
 #include <lib/support/diagnostics.h>
+#include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
+//**************************** Support Functions ****************************
 
 #define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
-
-
-
-//*************************** Forward Declarations ***************************
 
 static int
 realmain(int argc, char* argv[]);
@@ -118,7 +95,7 @@ hpctoolkit_demangler_error(char *error_string, const char *demangler_library_fil
 
 
 static void
-hpctoolkit_demangler_init(const char *demangler_library_filename)
+hpctoolkit_demangler_init(const char *demangler_library_filename, const char *demangler_function)
 {
   if (demangler_library_filename) {
     static void *demangler_library_handle =
@@ -128,8 +105,7 @@ hpctoolkit_demangler_init(const char *demangler_library_filename)
       dlerror(); // clear error condition before calling dlsym
 
       demangler_t demangle_fn = (demangler_t) 
-        dlsym(demangler_library_handle, CXX_DEMANGLER_FN_NAME);
-
+        dlsym(demangler_library_handle, demangler_function);
       if (demangle_fn) {
         hpctoolkit_demangler_set(demangle_fn);
         return; 
@@ -139,6 +115,7 @@ hpctoolkit_demangler_init(const char *demangler_library_filename)
   } 
 }
 
+//****************************** Main Program *******************************
 
 int
 main(int argc, char* argv[])
@@ -169,32 +146,32 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  RealPathMgr::singleton().searchPaths(args.searchPathStr);
+  bool ourDemangle = false;
 
+  RealPathMgr::singleton().searchPaths(args.searchPathStr);
+  RealPathMgr::singleton().realpath(args.in_filenm);
+
+  // ------------------------------------------------------------
+  // open the specified load module
+  // ------------------------------------------------------------
+  InputFile loadModule;
+  bool loadModuleOpen = loadModule.openFile(args.in_filenm);
+  if (!loadModuleOpen) {
+    // error already printed by openFile
+    exit(1);
+  }
 
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
   // ------------------------------------------------------------
-  const char* demangle_library = args.demangle_library.c_str();
-  if (demangle_library) hpctoolkit_demangler_init(demangle_library);
-
-  
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  BinUtil::LM* lm = NULL;
-  try {
-    lm = new BinUtil::LM(args.useBinutils);
-    lm->open(args.in_filenm.c_str());
-    lm->read(BinUtil::LM::ReadFlg_ALL);
-  }
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading '" << args.in_filenm << "'");
-    throw;
-  }
-
-  if (lm->bfdSymTabSz() == 0) {
-    DIAG_WMsg(0, "Program structure is likely useless because no symbol table could be found.");
+  if (!args.demangle_library.empty()) {
+    const char* demangle_library = args.demangle_library.c_str();
+    const char* demangle_function = CXX_DEMANGLER_FN_NAME;
+    if (!args.demangle_function.empty()) {
+      demangle_function = args.demangle_function.c_str();
+    }
+    hpctoolkit_demangler_init(demangle_library, demangle_function);
+    ourDemangle = true;
   }
 
 
@@ -203,34 +180,29 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
-  std::ostream* os = IOUtil::OpenOStream(osnm);
+  std::ostream* outFile = IOUtil::OpenOStream(osnm);
   char* outBuf = new char[HPCIO_RWBufferSz];
 
-  std::streambuf* os_buf = os->rdbuf();
+  std::streambuf* os_buf = outFile->rdbuf();
   os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
-  std::ostream* dotFile = NULL;
-  char* dotBuf = NULL;
-  std::streambuf* dot_rdbuf = NULL;
+  std::string gapsName = "";
+  std::ostream* gapsFile = NULL;
+  char* gapsBuf = NULL;
+  std::streambuf* gaps_rdbuf = NULL;
 
-  if (args.doDot) {
-    std::string dotName = args.dot_filenm;
-    if (dotName == "-") {
-      if (args.out_filenm == "-") {
-	DIAG_EMsg("Cannot use '-' (stdout) for both hpcstruct file and dot file.");
-	exit(1);
-      }
-      dotFile = &std::cout;
+  if (args.show_gaps) {
+    // fixme: may want to add --gaps-name option
+    if (args.out_filenm == "-") {
+      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
+      exit(1);
     }
-    else {
-      if (dotName.empty()) {
-	dotName = FileUtil::basename(args.in_filenm) + ".dot";
-      }
-      dotFile = IOUtil::OpenOStream(dotName.c_str());
-    }
-    dotBuf = new char[HPCIO_RWBufferSz];
-    dot_rdbuf = dotFile->rdbuf();
-    dot_rdbuf->pubsetbuf(dotBuf, HPCIO_RWBufferSz);
+
+    gapsName = RealPath(osnm) + std::string(".gaps");
+    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
+    gapsBuf = new char[HPCIO_RWBufferSz];
+    gaps_rdbuf = gapsFile->rdbuf();
+    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
   ProcNameMgr* procNameMgr = NULL;
@@ -240,35 +212,17 @@ realmain(int argc, char* argv[])
   else if (args.lush_agent == "agent-cilk") {
     procNameMgr = new CilkNameMgr;
   }
-  
-  Prof::Struct::Root* rootStrct = new Prof::Struct::Root("");
-  Prof::Struct::Tree* strctTree = new Prof::Struct::Tree("", rootStrct);
 
-  using namespace BAnal::Struct;
-  Prof::Struct::LM* lmStrct = makeStructure(lm, dotFile,
-					    args.cfgRequest,
-					    args.doNormalizeTy,
-					    args.isIrreducibleIntervalLoop,
-					    args.isForwardSubstitution,
-					    procNameMgr,
-					    args.dbgProcGlob);
-  lmStrct->link(rootStrct);
-  
-  Prof::Struct::writeXML(*os, *strctTree, args.prettyPrintOutput);
-  IOUtil::CloseStream(os);
+  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
+			       ourDemangle, procNameMgr);
 
-  if (dotFile != NULL) {
-    IOUtil::CloseStream(dotFile);
-  }
-  
-  // Cleanup
-
-  delete strctTree;
-  delete lm;
+  IOUtil::CloseStream(outFile);
   delete[] outBuf;
-  
+
+  if (gapsFile != NULL) {
+    IOUtil::CloseStream(gapsFile);
+    delete[] gapsBuf;
+  }
+
   return (0);
 }
-
-//****************************************************************************
-

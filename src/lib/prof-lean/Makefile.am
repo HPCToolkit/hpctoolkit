@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2015, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -82,12 +82,23 @@ MYSOURCES = \
 	\
 	atomic.h \
 	atomic-op.h atomic-op.i \
-	QueuingRWLock.h QueuingRWLock.c \
+	mcs-lock.h mcs-lock.c \
+	pfq-rwlock.h pfq-rwlock.c \
 	spinlock.h spinlock.c \
+        urand.h urand.c \
+	usec_time.h usec_time.c \
 	\
 	BalancedTree.h BalancedTree.c \
 	\
-	lush/lush-support.h lush/lush-support.c
+	placeholders.c \
+	\
+	lush/lush-support.h lush/lush-support.c \
+	\
+	binarytree.h binarytree.c \
+	cskiplist.h cskiplist.c \
+	generic_pair.h generic_pair.c \
+	generic_val.h  mem_manager.h \
+	randomizer.h randomizer.c 
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
@@ -100,6 +111,22 @@ endif
 MYLIBADD = 
 
 MYCLEAN = 
+
+#############################################################################
+# zlib
+#############################################################################
+
+if OPT_USE_ZLIB
+#MYSOURCES += \
+#	compress.h compress.c
+
+#MYLIBADD   += -L$(ZLIB_LIB) -lz
+#MYCFLAGS   += -I$(ZLIB_INC) 
+
+else
+#MYSOURCES += \
+#	compress.h compress_dummy.c
+endif
 
 #############################################################################
 # Automake rules

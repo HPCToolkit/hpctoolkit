@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2015, Rice University
+## Copyright ((c)) 2002-2018, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,44 +44,32 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-
-#############################################################################
-# Common settings
-#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
+#----------------------------------------------------------------------
+
+# Fixme: new elfutils from spack wants bzip, xz and zlib.
+
+BOOST_LIB = @BOOST_LIB@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_LIB   = @LIBELF_LIB@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+ZLIB_LIB = @ZLIB_LIB@
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LDFLAGS_DYN  = @LZMA_LDFLAGS_DYN@
 
-MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+MYSOURCES = main.cpp Args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@GNUBINUTILS_IFLAGS@
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
@@ -92,6 +80,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \
@@ -99,28 +88,20 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(MY_LIB_CFG) \
-	$(MY_LIB_Symtab) \
+	$(LZMA_LDFLAGS_DYN) \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	$(MY_ELF_DWARF) \
 	@GNUBINUTILS_LDLIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
-MY_LIB_CFG =
-
-if OPT_ENABLE_BANAL_WITH_PARSEAPI
-MY_LIB_CFG += -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
+if USE_BOOST_LIBS
+MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
 endif
 
-if OPT_ENABLE_BANAL_WITH_OA
-MY_LIB_CFG += @OA_LDFLAGS@
-MYCXXFLAGS += @OA_IFLAGS@
-endif
-
-if OPT_ENABLE_BANAL_WITH_SYMTAB
-MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 else
-MY_LIB_Symtab =
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 if HOST_CPU_X86_FAMILY
@@ -131,9 +112,7 @@ endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-#############################################################################
-# Automake rules
-#############################################################################
+#----------------------------------------------------------------------
 
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
@@ -142,23 +121,13 @@ bin_SCRIPTS = hpcstruct
 pkglibexec_PROGRAMS = hpcstruct-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
-hpcstruct_bin_CFLAGS   = $(MYCFLAGS)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
-if ! OPT_HPCSTRUCT_LAUNCH_SCRIPT
-install-exec-hook:
-	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
-	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-endif
-
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 include $(top_srcdir)/src/Makeinclude.rules
 

@@ -1,0 +1,24 @@
+This directory contains the implementation of perf-events for HPCToolkit (hpcrun).
+The files in this directory (ordered based on its importance):
+
+linux_perf.c: the main code, contains interface with sample-sourcesa and 
+ 			  the driver of all linux' perf event functionality
+ 			  
+perfmon-util.*: interface for libpfm4 library to gather information on native
+				hardware (and software) counters.			  
+ 
+kernel_blocking.*: specialized event to compute the blocking time spent in
+ 					the kernel. Currently only available if the kernel is a
+ 					Linux 4.3 version or later.
+ 					
+perf_mmap.*: utility to parse mmap buffer and copy it in a data structure.
+
+perf-util.*: swiss army utility (bad name, needs to be renamed).
+
+perf_barrier.*: library containing the definition and implementation of all
+				barrier for most of the platforms.
+				
+event_custom.*: our predefined events. Useful for top-down predefined summary
+				events, or when perfmon is not available.
+				
+  

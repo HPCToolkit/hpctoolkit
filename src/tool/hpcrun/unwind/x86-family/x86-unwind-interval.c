@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,11 +52,8 @@
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/hpcrun_stats.h>
 #include "x86-unwind-interval.h"
-#include "ui_tree.h"
 
 #include <messages/messages.h>
-
-#include <lib/prof-lean/atomic-op.h>
 
 #define STR(s) case s: return #s
 
@@ -70,31 +67,6 @@ static const char *ra_status_string(ra_loc l);
 static const char *bp_status_string(bp_loc l);
 
 
-
-/*************************************************************************************
- * global variables
- ************************************************************************************/
-
-const unwind_interval poison_ui = {
-  .common    = {
-    .next  = NULL,
-    .prev  = NULL
-  },
-
-  .ra_status = POISON,
-  .sp_ra_pos = 0,
-  .sp_bp_pos = 0,
-
-  .bp_status = BP_HOSED,
-  .bp_ra_pos = 0,
-  .bp_bp_pos = 0,
-
-  .prev_canonical     = NULL,
-  .restored_canonical = 0
-};
-
-
-
 /*************************************************************************************
  * interface operations 
  ************************************************************************************/
@@ -106,90 +78,79 @@ suspicious_interval(void *pc)
   hpcrun_stats_num_unwind_intervals_suspicious_inc();
 }
 
-unwind_interval *
-new_ui(char *start, 
-       ra_loc ra_status, unsigned int sp_ra_pos, int bp_ra_pos, 
-       bp_loc bp_status,          int sp_bp_pos, int bp_bp_pos,
-       unwind_interval *prev)
+unwind_interval*
+new_ui(char *start, ra_loc ra_status, const x86registers_t *reg)
 {
-  unwind_interval *u = (unwind_interval *) hpcrun_ui_malloc(sizeof(unwind_interval)); 
+  bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(x86recipe_t));
 
+  // DXN: what is this?
 # include "mem_error_gen.h" // **** SPECIAL PURPOSE CODE TO INDUCE MEM FAILURE (conditionally included) ***
 
   hpcrun_stats_num_unwind_intervals_total_inc();
 
-  u->common.start = start;
-  u->common.end = 0;
+  uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  u->ra_status = ra_status;
-  u->sp_ra_pos = sp_ra_pos;
-  u->sp_bp_pos = sp_bp_pos;
+  uwi->interval.start = (uintptr_t)start;
 
-  u->bp_status = bp_status;
-  u->bp_bp_pos = bp_bp_pos;
-  u->bp_ra_pos = bp_ra_pos;
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
+  x86recipe->ra_status = ra_status;
+  x86recipe->reg = *reg;
 
-  u->common.prev = (splay_interval_t *) prev;
-  u->common.next = NULL;
-  u->prev_canonical = NULL;
-  u->restored_canonical = 0;
-  
-  u->has_tail_calls = false;
+  x86recipe->prev_canonical = NULL;
+  x86recipe->has_tail_calls = false;
 
-  return u; 
+  return u;
 }
 
 
 void
 set_ui_canonical(unwind_interval *u, unwind_interval *value)
 {
-  u->prev_canonical = value;
+  UWI_RECIPE(u)->prev_canonical = value;
 } 
-
-void
-set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
-{
-  u->restored_canonical = 1;
-  u->prev_canonical = value;
-} 
-
 
 unwind_interval *
-fluke_ui(char *loc,unsigned int pos)
+fluke_ui(char *loc, unsigned int pos)
 {
-  unwind_interval *u = (unwind_interval *) hpcrun_ui_malloc(sizeof(unwind_interval)); 
+  bitree_uwi_t *u = bitree_uwi_malloc(NATIVE_UNWINDER, sizeof(x86recipe_t));
+  uwi_t *uwi =  bitree_uwi_rootval(u);
 
-  u->common.start = loc;
-  u->common.end = loc;
+  uwi->interval.start = (uintptr_t)loc;
+  uwi->interval.end = (uintptr_t)loc;
 
-  u->ra_status = RA_SP_RELATIVE;
-  u->sp_ra_pos = pos;
+  x86recipe_t* x86recipe = (x86recipe_t*) uwi->recipe;
+  x86recipe->ra_status = RA_SP_RELATIVE;
+  x86recipe->reg.sp_ra_pos = pos;
+  x86recipe->reg.bp_ra_pos = 0;
+  x86recipe->reg.bp_status = 0;
+  x86recipe->reg.sp_bp_pos = 0;
+  x86recipe->reg.bp_bp_pos = 0;
+  x86recipe->prev_canonical = NULL;
+  x86recipe->has_tail_calls = false;
 
-  u->common.next = NULL;
-  u->common.prev = NULL;
-
-  return u; 
+  return u;
 }
 
 void 
 link_ui(unwind_interval *current, unwind_interval *next)
 {
-  current->common.end = next->common.start;
-  current->common.next= (splay_interval_t *)next;
+  UWI_END_ADDR(current) = UWI_START_ADDR(next);
+  bitree_uwi_set_rightsubtree(current, next);
 }
 
 static void
-_dump_ui_str(unwind_interval *u, char *buf, size_t len)
+dump_ui_str(unwind_interval *u, char *buf, size_t len)
 {
-  snprintf(buf, len, "UNW: start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
-           "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n"
-           "has_tail_calls = %d",
-           (void *) u->common.start, (void *) u->common.end, ra_status_string(u->ra_status),
-           u->sp_ra_pos, u->sp_bp_pos, 
-           bp_status_string(u->bp_status),
-           u->bp_ra_pos, u->bp_bp_pos,
-           u->common.next, u->common.prev, u->prev_canonical, u->restored_canonical,
-           u->has_tail_calls);
+  x86recipe_t *xr = UWI_RECIPE(u);
+  x86registers_t reg = xr->reg;
+  snprintf(buf, len, "UWI: [%8p, %8p) "
+           "ra_status=%14s sp_ra_pos=%4d sp_bp_pos=%4d "
+           "bp_status=%12s bp_ra_pos=%4d bp_bp_pos=%4d "
+           "next=%14p prev_canon=%14p tail_call=%d\n",
+           (void *) UWI_START_ADDR(u), (void *) UWI_END_ADDR(u),
+           ra_status_string(xr->ra_status), reg.sp_ra_pos, reg.sp_bp_pos,
+           bp_status_string(reg.bp_status), reg.bp_ra_pos, reg.bp_bp_pos,
+           UWI_NEXT(u), xr->prev_canonical, UWI_RECIPE(u)->has_tail_calls);
 }
 
 
@@ -198,7 +159,7 @@ dump_ui_log(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   EMSG(buf);
 }
@@ -211,7 +172,7 @@ dump_ui(unwind_interval *u, int dump_to_stderr)
   }
 
   char buf[1000];
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   TMSG(UNW, buf);
   if (dump_to_stderr) { 
@@ -225,7 +186,7 @@ dump_ui_stderr(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   EEMSG(buf);
 }
@@ -235,9 +196,9 @@ dump_ui_dbg(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
-  fprintf(stderr,"%s\n", buf);
+  fprintf(stderr,"%s", buf);
   fflush(stderr);
 }
 
@@ -246,10 +207,45 @@ dump_ui_troll(unwind_interval *u)
 {
   char buf[1000];
 
-  _dump_ui_str(u, buf, sizeof(buf));
+  dump_ui_str(u, buf, sizeof(buf));
 
   TMSG(TROLL,buf);
 }
+
+void
+x86recipe_tostr(void* recipe, char str[])
+{
+  // TODO
+  x86recipe_t* x86recipe = (x86recipe_t*)recipe;
+  snprintf(str, MAX_RECIPE_STR, "%s%d%s%s",
+	  "x86recipe ", x86recipe->reg.sp_ra_pos,
+	  ": tail_call = ", x86recipe->has_tail_calls? "true": "false");
+}
+
+void
+x86recipe_print(void* recipe)
+{
+  char str[MAX_RECIPE_STR];
+  x86recipe_tostr(recipe, str);
+  printf("%s", str);
+}
+
+/*
+ * concrete implementation of the abstract function for printing an abstract
+ * unwind recipe specified in uw_recipe.h
+ */
+void
+uw_recipe_tostr(void* recipe, char str[])
+{
+  x86recipe_tostr((x86recipe_t*)recipe, str);
+}
+
+void
+uw_recipe_print(void* recipe)
+{
+  x86recipe_print((x86recipe_t*)recipe);
+}
+
 
 /*************************************************************************************
  * private operations 

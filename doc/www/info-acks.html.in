@@ -32,21 +32,71 @@
 <p>Research and development of HPCToolkit is currently supported by:
 </p>
 <ul>
-
-<li>DOE <a href="http://cscads.rice.edu/">Center for Scalable Application Development Software</a>, cooperative agreement number DE-FC02-07ER25800;
+<li>Department of Energy, <a href="http://exascaleproject.org">Exascale Computing Project</a>
+<li>National Science Foundation, 
+Software Infrastructure for Sustained Innovation (SI2-SSI), 
+<a href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1450273">
+Cooperative Agreement 
+NSF ACI-1450273</a>
+<br>
+(Partner award: Barton Miller, University of Wisconsin-Madison, NSF Cooperative Agreement NSF ACI-1449918)
 </li>
 
-<li>DOE <a href="http://www.peri-scidac.org/">Performance Engineering Research Institute</a>, cooperative agreement number DE-FC02-06ER25762;
+<li><a href=https://www.anl.gov>Argonne National Laboratory</a>, Subcontract 4F-30241</li>
+
+<li><a href=https://www.llnl.gov>Lawrence Livermore National Laboratory</a>, CORAL Project, Subcontract B614178 as part of DOE Prime Contract DE-AC52-07NA27344
+</li>
+<li><a href=http://www.intel.com/content/www/us/en/homepage.html>Intel Corporation</a></li>
+<li><a href=https://www.hpe.com/us/en/home.html>
+Hewlett-Packard Enterprise</a>
 </li>
 
-<li>DARPA <a href="http://pace.rice.edu/">Platform Aware Compilation Environment</a>, AFRL Contract FA8650-09-C-7915;
+
+</ul>
+<p>Research and development of HPCToolkit was previously supported by:
+</p>
+<ul>
+<li>Department of Energy, Performance Insights for Programmers and Exascale Runtimes (PIPER) Project, Cooperative Agreement DE-SC0010473
 </li>
 
-<li><a href="http://www.amd.com">Advanced Micro Devices</a>; and
+<li>Department of Energy, Dynamic Exascale Global Address Space (DEGAS) Project, Cooperative Agreement DE-SC0008883
 </li>
 
-<li><a href="http://westerngeco.com/">WesternGeco</a>.
+<li><a href=http://www.shell.com>Shell International Exploration & Production</a>, Inc., Award PT46021
 </li>
+
+
+<li>Department of Energy, <a href=http://cscads.rice.edu/">Center for Scalable Application Development Software</a>, Cooperative Agreement DE-FC02-07ER25800
+</li>
+
+<li>Department of Energy, <a href="http://www.peri-scidac.org/">Performance Engineering Research Institute</a>, Cooperative Agreement DE-FC02-06ER25762
+</li>
+
+<li>Defense Advanced Research Projects Agency, <a href="http://pace.rice.edu/">Platform Aware Compilation Environment</a>, AFRL Contract FA8650-09-C-7915
+</li>
+
+<li><a href="http://lacsi.rice.edu">Los Alamos Computer Science Institute</a> (LACSI), Contract 03891-001-99 49</li>
+
+<li>
+Department of Energy Accelerated Strategic Computing Initiative, LLNL 
+Subcontract B347884
+</li>
+
+<li>
+<a href="http://ncsa.uiuc.edu/">National Computational Science Alliance's PACI Program</a>, Subaward 768
+</li>
+
+<li>
+Department of Defense CEWES ERDC MSRC Programming Environment and Training program
+</li>
+
+
+<li><a href="http://www.amd.com">Advanced Micro Devices</a>
+</li>
+
+<li><a href="http://westerngeco.com/">WesternGeco</a>
+</li>
+</ul>
 <p>The HPCToolkit project benefitted from an NSF MRI award (NSF CNS 08-21727) 
 that supported the acquisition of a system used by this project.</p>
 
@@ -54,13 +104,12 @@ that supported the acquisition of a system used by this project.</p>
 
 
 
-</ul>
 
 
 
-<!-- <p>Development of HPCToolkit was supported in part though the <a href="http://lacsi.lanl.gov/">Los Alamos Computer Science Institute</a> (LACSI) Contract No. 03891-001-99 49, the Department of Energy Accelerated Strategic Computing Initiative (LLNL Subcontract B347884), the <a href="http://ncsa.uiuc.edu/">National Computational Science Alliance's PACI Program</a> (Subaward 768), and the Department of Defense CEWES ERDC MSRC Programming Environment and Training program. -->
 
-<p>[<span class="lastupdated">Page last updated: 2012/06/27</span>]
+
+<p>[<span class="lastupdated">Page last updated: 2017/02/08</span>]
 </p>
 
 

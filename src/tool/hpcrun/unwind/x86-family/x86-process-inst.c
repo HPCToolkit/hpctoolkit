@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2015, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,8 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
+
 #include "x86-addsub.h"
 #include "x86-and.h"
 #include "x86-call.h"
@@ -59,9 +61,11 @@
 #include "x86-return.h"
 #include "x86-cold-path.h"
 #include "x86-interval-arg.h"
-#include "ui_tree.h"
 
-unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
+#define UWRECIPE_DEBUG 1
+
+unwind_interval*
+process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 {
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
@@ -72,18 +76,24 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, interval_arg_t *iarg)
 
   case XED_ICLASS_JMP: 
   case XED_ICLASS_JMP_FAR:
-    next = process_unconditional_branch(xptr, irdebug, iarg);
-    if (hpcrun_is_cold_code(xptr, iarg)) {
-      TMSG(COLD_CODE,"  --cold code routine detected!");
-      TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
-      unwind_interval *ui = (unwind_interval *) 
-	hpcrun_addr_to_interval_locked(iarg->return_addr);
-      TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
-      if (ENABLED(COLD_CODE)) {
-        dump_ui_stderr(ui);
-      }
-      // Fixup current intervals w.r.t. the warm code interval
-      hpcrun_cold_code_fixup(iarg->current, ui);
+	next = process_unconditional_branch(xptr, irdebug, iarg);
+	if (hpcrun_is_cold_code(xptr, iarg)) {
+	  TMSG(COLD_CODE,"  --cold code routine detected!");
+	  TMSG(COLD_CODE,"fetching interval from location %p",iarg->return_addr);
+
+	  unwindr_info_t unwr_info;
+	  bool found = uw_recipe_map_lookup(iarg->return_addr, NATIVE_UNWINDER, &unwr_info);
+#if UWRECIPE_DEBUG
+	  assert(found);
+#endif
+	  bitree_uwi_t *ui = unwr_info.btuwi;
+
+	  TMSG(COLD_CODE,"got unwind interval from hpcrun_addr_to_interval");
+	  if (ENABLED(COLD_CODE)) {
+		dump_ui_stderr(ui);
+	  }
+	  // Fixup current intervals w.r.t. the warm code interval
+	  hpcrun_cold_code_fixup(iarg->first, iarg->current, ui);
     }
 
     break;

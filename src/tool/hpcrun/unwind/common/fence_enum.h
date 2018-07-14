@@ -1,20 +1,23 @@
 #ifndef FENCE_ENUM
 #define FENCE_ENUM
 
+#define FENCE_ENUMS \
+  _MM(NONE) \
+  _MM(MAIN) \
+  _MM(THREAD) \
+  _MM(TRAMP) \
+  _MM(BAD)
+
 typedef enum {
-  FENCE_NONE,
-  FENCE_MAIN,
-  FENCE_THREAD,
-  FENCE_TRAMP,
-  FENCE_BAD,
+#define _MM(a) FENCE_ ## a,
+FENCE_ENUMS
+#undef _MM
 } fence_enum_t;
 
 static char* fence_enum_names[] = {
-  "FENCE_NONE",
-  "FENCE_MAIN",
-  "FENCE_THREAD",
-  "FENCE_TRAMP",
-  "FENCE_BAD",
+#define _MM(a) [FENCE_ ## a] = "FENCE_" #a,
+FENCE_ENUMS
+#undef _MM
 };
 
 static inline char*
