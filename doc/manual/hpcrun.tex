@@ -236,6 +236,21 @@ hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
 
 \begin{itemize}
 \item
+Linux \perfevents{} requires to use one file descriptor for each event. 
+Furthermore, since \hpcrun{} generates one hpcrun file for each thread, and an additional hpctrace file if traces is enabled.
+Hence for $e$ number of events and $t$ number of threads, the required number of file descriptors is: 
+\begin{quote}
+  $t \times e + t + t$ (if trace is enabled) 
+\end{quote}
+For instance, if one profiles a multi-threaded program ran with 500 threads using 4 events, then the required number of file descriptors: 
+\begin{quote}
+  500 threads $\times$ 4 events + 500 hpcrun file + 500 hpctrace file \\
+  = 3000 file descriptor
+\end{quote}
+If the number of file descriptors exceeds the number of maximum opened files, then the program will crash. 
+To remedy this issue, one needs to increase the number of maximum opened files.
+
+\item
 \sloppy
 When a system is configured with suitable permissions, HPCToolkit will sample call stacks
 within the Linux kernel in addition to application-level call stacks. This feature can be useful to diagnose where and why a thread blocks.
