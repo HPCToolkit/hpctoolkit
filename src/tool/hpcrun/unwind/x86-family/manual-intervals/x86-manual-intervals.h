@@ -44,29 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef x96_unwind_interval_fixup_h
-#define x96_unwind_interval_fixup_h
+#ifndef __x86_manual_intervals_h_
+#define __x86_manual_intervals_h_
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "x86-unwind-interval.h"
-
-
-
-//******************************************************************************
+//------------------------------------------------------------------------------
 // macros
-//******************************************************************************
+//------------------------------------------------------------------------------
 
-typedef int (*x86_ui_fixup_fn_t)(char *ins, int len, btuwi_status_t *stat);
+#define FORALL_X86_INTERVAL_FIXUP_ROUTINES(MACRO) \
+        MACRO(x86_adjust_icc_variant_intervals) \
+        MACRO(x86_adjust_32bit_main_intervals) \
+        MACRO(x86_adjust_gcc_main64_intervals) \
+        MACRO(x86_adjust_intel_align32_intervals) \
+        MACRO(x86_adjust_intel_align64_intervals) \
+        MACRO(x86_adjust_intelmic_intervals) \
+        MACRO(x86_adjust_intel11_f90main_intervals) \
+        MACRO(x86_adjust_dl_runtime_resolve_unwind_intervals) \
+        MACRO(x86_adjust_pgi_mp_pexit_intervals)
 
-
-
-//******************************************************************************
-// forward declarations
-//******************************************************************************
-
-int x86_fix_unwind_intervals(char *ins, int len, btuwi_status_t *stat);
 
 #endif

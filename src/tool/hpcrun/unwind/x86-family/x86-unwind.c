@@ -98,7 +98,6 @@
 #include "x86-build-intervals.h"
 #include "x86-unwind-interval.h"
 #include "x86-validate-retn-addr.h"
-#include "manual-intervals/x86-intervals-fixup.h"
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
@@ -182,7 +181,6 @@ hpcrun_unw_init(void)
 {
   x86_family_decoder_init();
   uw_recipe_map_init();
-  x86_intervals_fixup_register();
 }
 
 typedef unw_frame_regnum_t unw_reg_code_t;
