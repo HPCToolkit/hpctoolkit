@@ -56,8 +56,9 @@ static char intel_align64_signature[] = {
  0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
 };
 
-static int 
-adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel_align64_signature);
 
@@ -91,6 +92,3 @@ adjust_intel_align64_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_intel_align64_intervals)

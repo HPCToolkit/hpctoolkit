@@ -57,8 +57,8 @@ static char intel_align32_signature[] = {
 };
 
 
-static int 
-adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel_align32_signature);
 
@@ -94,7 +94,3 @@ adjust_intel_align32_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-
-REGISTER_INTERVAL_FIXUP(adjust_intel_align32_intervals)

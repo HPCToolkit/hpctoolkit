@@ -57,8 +57,8 @@ static char main32_signature[] = {
 };
 
 
-static int 
-adjust_32bit_main_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_32bit_main_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(main32_signature);
 
@@ -82,6 +82,3 @@ adjust_32bit_main_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_32bit_main_intervals)

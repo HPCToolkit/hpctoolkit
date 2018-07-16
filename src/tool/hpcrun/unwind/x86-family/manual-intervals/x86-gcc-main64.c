@@ -56,8 +56,9 @@ static char gcc_main64_signature[] = {
  0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
 };
 
-static int 
-adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(gcc_main64_signature);
 
@@ -92,6 +93,3 @@ adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_gcc_main64_intervals)

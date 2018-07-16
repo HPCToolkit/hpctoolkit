@@ -87,8 +87,8 @@ static int matches(char *ins, int len, const char *sig)
 }
 
 
-static int 
-adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
 {
 
   if (matches(ins, len, dl_runtime_resolve_signature_1) ||
@@ -103,6 +103,3 @@ adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *s
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_dl_runtime_resolve_unwind_intervals)

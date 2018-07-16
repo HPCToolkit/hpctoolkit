@@ -72,8 +72,8 @@ static char intelmic_comp13_kmp_alloc_thread_signature[] = {
 };
 
 
-static int 
-adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   // NOTE: the two signatures above are the same length. The next three lines of code below depend upon that.
   int siglen = sizeof(intelmic_comp13_for_main_signature); 
@@ -95,6 +95,3 @@ adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_intelmic_intervals)

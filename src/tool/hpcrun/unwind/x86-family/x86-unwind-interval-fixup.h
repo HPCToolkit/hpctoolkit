@@ -51,21 +51,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/constructors.h>
-
 #include "x86-unwind-interval.h"
-
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
-#define REGISTER_INTERVAL_FIXUP(fixup_fn) \
-  HPCRUN_CONSTRUCTOR(fixup_fn)(void) \
-  { \
-    add_x86_unwind_interval_fixup_function(fixup_fn); \
-  }
 
 
 

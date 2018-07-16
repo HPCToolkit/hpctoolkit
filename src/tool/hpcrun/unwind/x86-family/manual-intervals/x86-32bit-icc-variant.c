@@ -62,8 +62,8 @@ static char icc_variant_signature[] = {
 };
 
 
-static int 
-adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
+int 
+x86_adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
 {
   int siglen = sizeof(icc_variant_signature);
 
@@ -97,5 +97,3 @@ adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
   }
   return 0;
 }
-
-REGISTER_INTERVAL_FIXUP(adjust_icc_variant_intervals)

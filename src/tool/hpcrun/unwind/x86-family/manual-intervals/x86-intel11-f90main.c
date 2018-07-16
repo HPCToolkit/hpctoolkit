@@ -59,8 +59,9 @@ static char intel11_f90main_signature[] = {
   0x48,                         // rex64
 };
 
-static int 
-adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(intel11_f90main_signature);
 
@@ -81,6 +82,3 @@ adjust_intel11_f90main_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-REGISTER_INTERVAL_FIXUP(adjust_intel11_f90main_intervals)
