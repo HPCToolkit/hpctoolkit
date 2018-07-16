@@ -574,7 +574,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
   //    since the 'combine' function will be used during the metric
   //    reduction.  Metric inputs point to accumulators [mXDrvdBeg,
   //    mXDrvdEnd) rather input values.
-  for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i, ++j) {
+  for (uint i = mDrvdBeg, j = mXDrvdBeg; i < mDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     Prof::Metric::DerivedIncrDesc* mm =
       dynamic_cast<Prof::Metric::DerivedIncrDesc*>(m);
@@ -582,10 +582,8 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
     Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
-      expr->srcId(j);
-      if (expr->hasAccum2()) {
-	expr->src2Id(j + 1); // cf. Metric::Mgr::makeSummaryMetricIncr()
-      }
+      for (uint k = 0; k < expr->numAccum(); ++k)
+	expr->srcId(k, j++);
     }
   }
 

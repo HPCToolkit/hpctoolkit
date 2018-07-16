@@ -173,5 +173,17 @@ void
 cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr,
 	char csklstr[], int max_cskl_str_len);
 
+void
+cskl_dump(cskiplist_t *cskl, cskl_node_tostr node_tostr);
+
+void
+cskl_print(cskiplist_t *cskl, cskl_node_tostr node_tostr);
+
+void
+cskl_check_dump
+(
+ cskiplist_t *cskl,         // cskiplist instance
+ cskl_node_tostr node_tostr // print node value
+);
 
 #endif /* __CSKIPLIST_H__ */

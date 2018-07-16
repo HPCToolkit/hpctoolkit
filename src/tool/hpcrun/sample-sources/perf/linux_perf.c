@@ -162,6 +162,8 @@
 
 #define DEFAULT_COMPRESSION 5
 
+#define PERF_FD_FINALIZED (-2)
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -191,18 +193,21 @@ perf_event_handler( int sig, siginfo_t* siginfo, void* context);
 // constants
 //******************************************************************************
 
+static const struct timespec nowait = {0, 0};
+
+
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
-static sigset_t sig_mask;
 
 // a list of main description of events, shared between threads
 // once initialize, this list doesn't change (but event description can change)
 static event_info_t  *event_desc = NULL;
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
+
 
 
 /******************************************************************************
@@ -214,6 +219,19 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 // private operations 
 //******************************************************************************
+
+/* 
+ * determine whether the perf sample source has been finalized for this thread
+ */ 
+static int 
+perf_was_finalized
+(
+ int nevents, 
+ event_thread_t *event_thread
+)
+{
+  return nevents >= 1 && event_thread[0].fd == PERF_FD_FINALIZED;
+}
 
 
 /*
@@ -335,11 +353,19 @@ perf_init()
 
   perf_mmap_init();
 
-  // initialize mask to block PERF_SIGNAL 
+  // initialize sigset to contain PERF_SIGNAL 
+  sigset_t sig_mask;
   sigemptyset(&sig_mask);
   sigaddset(&sig_mask, PERF_SIGNAL);
 
-  monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, NULL);
+  // arrange to block monitor shootdown signal while in perf_event_handler
+  // FIXME: this assumes that monitor's shootdown signal is SIGRTMIN+8
+  struct sigaction perf_sigaction;
+  sigemptyset(&perf_sigaction.sa_mask);
+  sigaddset(&perf_sigaction.sa_mask, SIGRTMIN+8);
+  perf_sigaction.sa_flags = 0;
+
+  monitor_sigaction(PERF_SIGNAL, &perf_event_handler, 0, &perf_sigaction);
   monitor_real_pthread_sigmask(SIG_UNBLOCK, &sig_mask, NULL);
 }
 
@@ -422,12 +448,29 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
 static void
 perf_thread_fini(int nevents, event_thread_t *event_thread)
 {
-  for(int i=0; i<nevents; i++) {
-    if (event_thread[i].fd) 
-      close(event_thread[i].fd);
+  // suppress perf signal while we shut down perf monitoring
+  sigset_t perf_sigset;
+  sigemptyset(&perf_sigset);
+  sigaddset(&perf_sigset, PERF_SIGNAL);
+  monitor_real_pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
-    if (event_thread[i].mmap) 
+  for(int i=0; i<nevents; i++) {
+    if (event_thread[i].fd >= 0) {
+      close(event_thread[i].fd);
+      event_thread[i].fd = PERF_FD_FINALIZED;
+    }
+
+    if (event_thread[i].mmap) { 
       perf_unmmap(event_thread[i].mmap);
+      event_thread[i].mmap = 0;
+    }
+  }
+
+  // consume any pending PERF signals for this thread
+  for (;;) {
+    siginfo_t siginfo;
+    // negative return value means no signals left pending
+    if (sigtimedwait(&perf_sigset,  &siginfo, &nowait) < 0) break;
   }
 }
 
@@ -635,8 +678,7 @@ METHOD_FN(thread_fini_action)
 {
   TMSG(LINUX_PERF, "%d: unregister thread", self->sel_idx);
 
-  METHOD_CALL(self, stop); // make sure stop has been called
-  // FIXME: add component shutdown code here
+  METHOD_CALL(self, stop); // stop the sample source 
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
@@ -689,8 +731,7 @@ METHOD_FN(shutdown)
 {
   TMSG(LINUX_PERF, "shutdown");
 
-  METHOD_CALL(self, stop); // make sure stop has been called
-  // FIXME: add component shutdown code here
+  METHOD_CALL(self, stop); // stop the sample source 
 
   event_thread_t *event_thread = TD_GET(ss_info)[self->sel_idx].ptr;
   int nevents = (self->evl).nevents; 
@@ -698,6 +739,7 @@ METHOD_FN(shutdown)
   perf_thread_fini(nevents, event_thread);
 
   self->state = UNINIT;
+
   TMSG(LINUX_PERF, "shutdown OK");
 }
 
@@ -967,6 +1009,11 @@ perf_event_handler(
 
   int nevents = self->evl.nevents;
 
+  // if finalized already, refuse to handle any more samples
+  if (perf_was_finalized(nevents, event_thread)) {
+    return 0;
+  }
+
   perf_stop_all(nevents, event_thread);
 
   // ----------------------------------------------------------------------------
@@ -1003,6 +1050,7 @@ perf_event_handler(
 
     restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
+
     return 0; // tell monitor the signal has not been handled.
   }
 #endif

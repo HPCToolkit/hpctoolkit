@@ -121,9 +121,11 @@ public:
 
 public:
   AExpr()
-    : m_accumId(Metric::IData::npos), m_accum2Id(Metric::IData::npos),
-      m_numSrcVarId(Metric::IData::npos)
-  { }
+    : m_numSrcVarId(Metric::IData::npos)
+  {
+    for (uint i = 0; i < maxAccums; ++i)
+      m_accumId[i] = Metric::IData::npos;
+  }
 
   virtual ~AExpr()
   { }
@@ -141,7 +143,7 @@ public:
   evalNF(Metric::IData& mdata) const
   {
     double z = eval(mdata);
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -173,33 +175,21 @@ public:
   // ------------------------------------------------------------
 
   virtual uint
-  accumId() const
-  { return m_accumId; }
+  accumId(int i) const
+  { return m_accumId[i]; }
 
   void
-  accumId(uint x)
-  { m_accumId = x; }
+  accumId(int i, uint x)
+  { m_accumId[i] = x; }
 
 
   // ------------------------------------------------------------
   // Metric::IDBExpr: primitives
   // ------------------------------------------------------------
 
-  bool
-  isSetAccum2() const
-  { return (m_accum2Id != Metric::IData::npos); }
-
-  virtual bool
-  hasAccum2() const
-  { return false; }
-
   virtual uint
-  accum2Id() const
-  { return m_accum2Id; }
-
-  void
-  accum2Id(uint x)
-  { m_accum2Id = x; }
+  numAccum() const
+  { return 1; }
 
 
   // ------------------------------------------------------------
@@ -234,12 +224,8 @@ public:
   { return mdata.demandMetric(mId); }
 
   double&
-  accumVar(Metric::IData& mdata) const
-  { return var(mdata, m_accumId); }
-
-  double&
-  accum2Var(Metric::IData& mdata) const
-  { return var(mdata, m_accum2Id); }
+  accumVar(int i, Metric::IData& mdata) const
+  { return var(mdata, m_accumId[i]); }
 
 
   // ------------------------------------------------------------
@@ -307,25 +293,16 @@ protected:
   static std::pair<double, double>
   evalVariance(const Metric::IData& mdata, AExpr** opands, uint sz)
   {
-    double* x = new double[sz];
-    
     double x_mean = 0.0; // mean
-    for (uint i = 0; i < sz; ++i) {
-      double t = opands[i]->eval(mdata);
-      x[i] = t;
-      x_mean += t;
-    }
-    x_mean = x_mean / sz;
-    
     double x_var = 0.0; // variance
     for (uint i = 0; i < sz; ++i) {
-      double t = (x[i] - x_mean);
-      t = t * t;
-      x_var += t;
+      double t = opands[i]->eval(mdata);
+      double delta = t - x_mean;
+      x_mean += delta / (i + 1);
+      x_var += delta * (t - x_mean);
     }
     x_var = x_var / sz;
-    delete[] x;
-    
+
     return std::make_pair(x_var, x_mean);
   }
 
@@ -336,8 +313,8 @@ protected:
     std::pair<double, double> z = evalSumSquares(mdata, opands, sz);
     double z1 = z.first;  // sum
     double z2 = z.second; // sum of squares
-    accumVar(mdata) = z1;
-    accum2Var(mdata) = z2;
+    accumVar(0, mdata) = z1;
+    accumVar(1, mdata) = z2;
     return z1;
   }
 
@@ -347,8 +324,7 @@ protected:
 	      const char* sep = ", ");
   
 protected:
-  uint m_accumId;     // used only for Metric::IDBExpr routines
-  uint m_accum2Id;    // used only for Metric::IDBExpr routines
+  uint m_accumId[maxAccums];    // used only for Metric::IDBExpr routines
   uint m_numSrcVarId; // used only for Metric::IDBExpr routines
 };
 
@@ -853,7 +829,7 @@ public:
   evalNF(Metric::IData& mdata) const
   {
     double z = evalSum(mdata, m_opands, m_sz);
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -919,9 +895,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual uint
+  numAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const
@@ -985,9 +961,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual uint
+  numAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const
@@ -1051,9 +1027,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual int
+  hasAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const

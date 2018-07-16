@@ -225,20 +225,21 @@ cskiplist_node_is_removable(csklnode_t *candidate, int layer)
 }
 
 /**
+ * from Herlihy, 2006.
  * pre-conditions:
- * preds[] is an array of csklnode_t* of length cskl->max_height.
+ * preds[] and succs[] are arrays of csklnode_t* of length cskl->max_height.
  *
  * post-conditions:
  *   if val is in cskl, return the first layer where val is found,
  *     otherwise return NO_LAYER.
  *
- *   preds[i]->val < val <= preds[i]->nexts[i] for i = low..cskl->max_height-1, where
+ *   preds[i]->val < val <= succs[i] for i = low..cskl->max_height-1, where
  *     low = (ft == cskiplist_find_full)? 0: found_layer, in other words,
  *   preds[i] is the node that precedes the found node at level i
+ *   succs[i] is the node that follows the found node at level i.
  *
  *   if val is found,
- *     val == preds[i]->nexts[i], where
- *     i == cskiplist_find_helper(compare, val, preds, ft)
+ *     val == succs[cskiplist_find_helper(compare, val, preds, succs, ft)]
  */
 static int
 cskiplist_find_helper
@@ -247,6 +248,7 @@ cskiplist_find_helper
 	csklnode_t *pred,	// full node < val
 	void* val,            // the value we are seeking
 	csklnode_t *preds[],    // return value: nodes < val
+	csklnode_t *succs[],    // return value: nodes >= val
 	cskiplist_find_type ft) // is info needed at all layers?
 {
   int found_layer = NO_LAYER;
@@ -262,8 +264,10 @@ cskiplist_find_helper
 	// loop exit condition: val <= curr->val
 	// loop invariant: pred->val < val
 
-	// remember the last 'layer' node < val:
+	// remember the 'layer' node < val:
 	preds[layer] = pred; // preds[layer]->val < val, by the loop invariant
+	// remember the 'layer' node >= val:
+	succs[layer] = current; // val <= succs[layer]->val, by the loop exit condition
 
 	if (found_layer == NO_LAYER &&    // if we haven't already found a match
 		compare(current->val, val) == 0) { // and the current val is a match
@@ -286,11 +290,12 @@ cskiplist_find(val_cmp compare, cskiplist_t *cskl, void* value)
 
   int     max_height  = cskl->max_height;
   csklnode_t *preds[max_height];
+  csklnode_t *succs[max_height];
   int layer = cskiplist_find_helper(compare, max_height, cskl->left_sentinel, value, preds,
-	  cskiplist_find_early_exit);
+	  succs, cskiplist_find_early_exit);
   csklnode_t *node = NULL;
   if (layer != NO_LAYER) {
-	node = preds[layer]->nexts[layer];
+	node = succs[layer];
 	if (!node->fully_linked || node->marked)
 	  node = NULL;
   }
@@ -337,6 +342,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   int max_height = cskl->max_height;
 
   csklnode_t* lpreds[max_height];
+  csklnode_t* other[max_height];
   csklnode_t* hsuccs[max_height];
   csklnode_t** succs;
 
@@ -348,7 +354,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
   // Look for a node matching low
   //----------------------------------------------------------------------------
   int hlayer = cskiplist_find_helper(cmpfn, max_height, cskl->left_sentinel, lo, lpreds,
-				     cskiplist_find_full);
+				     other, cskiplist_find_full);
   csklnode_t *first = lpreds[0]->nexts[0];
   if (lo == hi)
     succs = lpreds;
@@ -358,7 +364,7 @@ cskl_del_bulk_unsynch(val_cmp cmpfn, cskiplist_t *cskl, void *lo, void *hi, mem_
     //----------------------------------------------------------------------------
     succs = &hsuccs[0];
     hlayer = cskiplist_find_helper(cmpfn, max_height, lpreds[max_height-1],
-				   hi, succs, cskiplist_find_full);
+				   hi, succs, other, cskiplist_find_full);
 
     //
     //----------------------------------------------------------------------------
@@ -479,6 +485,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 {
   int max_height = cskl->max_height;
   csklnode_t *preds[max_height];
+  csklnode_t *succs[max_height];
   csklnode_t *node;
 
   // allocate my node
@@ -489,11 +496,11 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	pfq_rwlock_read_lock(&cskl->lock);
 
 	int found_layer= cskiplist_find_helper(cskl->compare,
-		max_height, cskl->left_sentinel, value, preds,
+		max_height, cskl->left_sentinel, value, preds, succs,
 		cskiplist_find_full);
 
 	if (found_layer != NO_LAYER) {
-	  node = preds[found_layer]->nexts[found_layer];
+	  node = succs[found_layer];
 	  if (!node->marked) {
 	  	csklnode_free_to_lfl(new_node);
 		while (!node->fully_linked);
@@ -525,7 +532,7 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	csklnode_t *prevPred = NULL;
 	for (layer = 0; layer < my_height; layer++) {
 	  csklnode_t *pred = preds[layer];
-	  csklnode_t *succ = pred->nexts[layer];
+	  csklnode_t *succ = succs[layer];
 	  if (pred != prevPred) {
 		mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		highestLocked = layer;
@@ -533,12 +540,14 @@ cskl_insert(cskiplist_t *cskl, void *value,
 	  }
 	  if (pred->marked || succ->marked || pred->nexts[layer] != succ)
 	    break;
+	  // my value better be less than the node I am inserting before
+	  assert(cskl->compare(value, pred->nexts[layer]->val) == -1); 
 	}
 	if (layer == my_height) {
 	  // link new node in at levels [0 .. my_height-1]
 	  node = new_node;
 	  for (int layer = 0; layer < my_height; layer++) {
-	    node->nexts[layer] = preds[layer]->nexts[layer];
+	    node->nexts[layer] = succs[layer];
 	    preds[layer]->nexts[layer] = node;
 	  }
 
@@ -564,14 +573,14 @@ cskl_delete(cskiplist_t *cskl, void *value)
   csklnode_t     *node   = NULL;
 
   for (;;) {
-	csklnode_t     *preds[max_height];
+	csklnode_t     *preds[max_height], *succs[max_height];
 	int         height = -1;
 
 	//--------------------------------------------------------------------------
 	// Look for a node matching v
 	//--------------------------------------------------------------------------
 	int layer = cskiplist_find_helper(cskl->compare, max_height, cskl->left_sentinel, value,
-		preds, cskiplist_find_full);
+		preds, succs, cskiplist_find_full);
 
 	//--------------------------------------------------------------------------
 	// A matching node is available to remove. We may have marked it earlier as
@@ -579,14 +588,14 @@ cskl_delete(cskiplist_t *cskl, void *value)
 	//--------------------------------------------------------------------------
 	if (node_is_marked ||
 		(layer != NO_LAYER &&
-			cskiplist_node_is_removable(preds[layer]->nexts[layer], layer))) {
+			cskiplist_node_is_removable(succs[layer], layer))) {
 
 	  //------------------------------------------------------------------------
 	  // if I haven't already marked this node for deletion, do so.
 	  //------------------------------------------------------------------------
 	  mcs_node_t  mcs_nodes[layer + 1];
 	  if (!node_is_marked) {
-		node = preds[layer]->nexts[layer];
+		node = succs[layer];
 		height = node->height;
 		mcs_lock(&node->lock, &mcs_nodes[layer]);
 		if (node->marked) {
@@ -616,7 +625,7 @@ cskl_delete(cskiplist_t *cskl, void *value)
 	  bool valid = true;
 	  for (int layer = 0; valid && (layer < height); layer++) {
 		pred = preds[layer];
-		succ = pred->nexts[layer];
+		succ = succs[layer];
 		if (pred != prevPred) {
 		  mcs_lock(&pred->lock, &mcs_nodes[layer]);
 		  highestLocked = layer;
@@ -665,6 +674,7 @@ cskl_inrange_del_bulk_unsynch(cskiplist_t *cskl, void *lo, void *hi, mem_free m_
   return cskl_del_bulk_unsynch(cskl->inrange, cskl, lo, hi, m_free);
 }
 
+
 void cskl_levels_tostr (int height, int max_height, char str[],
 	int max_cskl_str_len)
 {
@@ -700,17 +710,22 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
 
   int max_height = cskl->max_height;
   csklnode_t *node = cskl->left_sentinel;
-  node_tostr(node->val, node->height, max_height, csklstr, max_cskl_str_len); // abstract function
+  csklnode_t *right = cskl->right_sentinel;
 
-  char temp_buff[max_cskl_str_len/2];
-  int str_len = strlen(csklstr);
-  for (node = node->nexts[0]; node; node = node->nexts[0]) {
-	cskl_links_tostr(max_height, temp_buff, max_cskl_str_len);
-	strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
-	node_tostr(node->val, node->height, max_height, temp_buff, max_cskl_str_len);  // abstract function
-	str_len = strlen(csklstr);
-	strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
-	str_len = strlen(csklstr);
+  int temp_len = max_cskl_str_len/2;
+  char temp_buff[temp_len];
+  int str_len = 0;
+
+  for (; ; node = node->nexts[0]) {
+    cskl_links_tostr(max_height, temp_buff, temp_len - 1);
+    strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
+    str_len = strlen(csklstr);
+    cskl_levels_tostr(node->height, max_height, csklstr + str_len, max_cskl_str_len - str_len - 1);
+    str_len = strlen(csklstr);
+    node_tostr(node->val, node->height, max_height, temp_buff, temp_len - 1);  // abstract function
+    strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
+    str_len = strlen(csklstr);
+    if (node == right) break;
   }
   strncat(csklstr, "\n", max_cskl_str_len - str_len - 1);
 
@@ -718,3 +733,144 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   pfq_rwlock_read_unlock(&cskl->lock);
 
 }
+
+static void
+cskl_links_dump(csklnode_t *node, int max_height)
+{
+  int i;
+  int height = node->height;
+
+  printf("0x%016lx: ", (unsigned long) node);
+
+  // links [0..height)
+  for (i = 0; i < height; i++) {
+    printf("0x%016lx ", (unsigned long) node->nexts[i]);
+  } 
+
+  // links not present [height..max_height)
+  for (i = height; i < max_height; i++) {
+    printf("------------------ ");
+  }
+}
+
+
+#define NODE_STR_LEN 4096
+
+void
+cskl_dump(cskiplist_t *cskl, cskl_node_tostr node_tostr)
+{
+  pfq_rwlock_read_lock(&cskl->lock);
+
+  int max_height = cskl->max_height;
+  csklnode_t *node = cskl->left_sentinel;
+  csklnode_t *right = cskl->right_sentinel;
+
+  char nodestr[NODE_STR_LEN];
+
+  for (; ; node = node->nexts[0]) {
+    cskl_links_dump(node, max_height);
+    node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
+    printf("%s", nodestr);
+    if (node == right) break;
+  }
+  printf("\n");
+
+  pfq_rwlock_read_unlock(&cskl->lock);
+}
+
+
+static void
+cskl_links_print(csklnode_t *node, int max_height)
+{
+  int i;
+  int height = node->height;
+
+  printf("0x%016lx: ", (unsigned long) node);
+
+  printf(" +");
+  // links [1..height)
+  for (i = 1; i < height; i++) {
+    printf("-+");
+  } 
+
+  // links not present [height..max_height)
+  for (i = height; i < max_height; i++) {
+    printf(" |");
+  }
+}
+
+
+void
+cskl_print(cskiplist_t *cskl, cskl_node_tostr node_tostr)
+{
+  pfq_rwlock_read_lock(&cskl->lock);
+
+  int max_height = cskl->max_height;
+  csklnode_t *node;
+
+  for (node = cskl->left_sentinel; node; node = node->nexts[0]) {
+    cskl_links_print(node, max_height);
+
+    char nodestr[NODE_STR_LEN];
+    node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
+    printf("%s", nodestr);
+  }
+  printf("\n");
+
+  pfq_rwlock_read_unlock(&cskl->lock);
+}
+
+
+int
+cskl_check_node_dump
+(
+ val_cmp compare,            // compare node values 
+ int max_height,             // number of list levels
+ cskl_node_tostr node_tostr, // print node value
+ csklnode_t *node
+)
+{
+  int i;
+  int correct = 1;
+  int succIsGreater[node->height];
+  for (i = 0; i < node->height; i++) {
+    csklnode_t *succ = node->nexts[i];
+    succIsGreater[i] = (compare(node->val, succ->val) == -1); 
+    correct &= succIsGreater[i];
+  }
+  if (!correct) {
+    for (i = 0; i < node->height; i++) {
+      printf("%c", succIsGreater[i] ? '+' : 'X');
+    }
+    for (i = node->height; i < max_height; i++) {
+      printf("-");
+    }
+    printf(" ");
+    
+    char nodestr[NODE_STR_LEN];
+    cskl_links_dump(node, max_height);
+    node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
+    printf("%s", nodestr);
+  }
+  return correct;
+}
+
+
+void
+cskl_check_dump
+(
+ cskiplist_t *cs,           // cskiplist instance
+ cskl_node_tostr node_tostr // print node value
+ )
+{
+  int max_height = cs->max_height;
+  csklnode_t *node = cs->left_sentinel;
+
+  bool correct = true;
+  printf("***** BEGIN CHECK: skip list %p\n", cs);
+  for (node = cs->left_sentinel; node != cs->right_sentinel; node = node->nexts[0]) {
+    correct &= cskl_check_node_dump(cs->compare, max_height, node_tostr, node);
+  }
+  printf("***** END CHECK: skip list %p is %s\n", cs, correct ? "correct" : "incorrect");
+}
+

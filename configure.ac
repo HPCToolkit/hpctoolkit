@@ -101,7 +101,7 @@ AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.69)
-AM_INIT_AUTOMAKE(1.15)
+AM_INIT_AUTOMAKE(1.15.1)
 LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
@@ -140,11 +140,39 @@ fi
 libdir='${exec_prefix}/lib'
 
 #-------------------------------------------------
-# SVN version
+# Git version
 #-------------------------------------------------
 
-# Git does not provide linear rev numbers, so we can't append this to
-# the package version (sigh).
+# If this is a git repo, then try to identify the branch name and the
+# date and hash of the last commit.
+
+AC_MSG_CHECKING([for git version])
+
+git_version='unknown (not a git repo)'
+
+mesg=`cd "$top_srcdir" && git log -n 1 --date=short 2>/dev/null`
+if echo "$mesg" | grep -i commit >/dev/null ; then
+  git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
+  git_hash=`expr "$git_hash" : '\(........\)'`
+  git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
+
+  mesg=`cd "$top_srcdir" && git status 2>/dev/null | head -1`
+  if echo "$mesg" | grep -i branch >/dev/null ; then
+    git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
+
+  elif echo "$mesg" | grep -i detach >/dev/null ; then
+    # detached commits don't have a branch name
+    git_branch=detached
+
+  else
+    git_branch=unknown
+  fi
+
+  git_version="$git_branch at $git_date ($git_hash)"
+fi
+
+AC_MSG_RESULT([$git_version])
+
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
 	  ["${PACKAGE_VERSION}"],
@@ -1170,6 +1198,10 @@ if test "${with_externals}" != "no"; then
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
+  AC_MSG_NOTICE([externals version: $ext_version])
+  if test "x$ext_version" = x0 ; then
+    ext_version=
+  fi
 else
   AC_MSG_WARN([not using --with-externals])
   use_externals=no
@@ -3897,6 +3929,10 @@ AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
+AC_MSG_NOTICE([  git version: $git_version])
+if test "x$ext_version" != x ; then
+  AC_MSG_NOTICE([  externals:   $ext_version])
+fi
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
