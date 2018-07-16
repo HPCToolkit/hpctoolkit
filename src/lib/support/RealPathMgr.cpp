@@ -96,17 +96,24 @@ RealPathMgr::RealPathMgr()
 }
 
 
-RealPathMgr::~RealPathMgr()
-{
-}
-
-
 // Constructor with params for PathFindMgr and PathReplacementMgr to
 // use instead of singletons.
 RealPathMgr::RealPathMgr(PathFindMgr * findMgr, PathReplacementMgr * replaceMgr)
 {
   m_pathFindMgr = findMgr;
   m_pathReplaceMgr = replaceMgr;
+}
+
+
+// Delete path manager dependencies if non-null.
+RealPathMgr::~RealPathMgr()
+{
+  if (m_pathFindMgr != NULL) {
+    delete m_pathFindMgr;
+  }
+  if (m_pathReplaceMgr != NULL) {
+    delete m_pathReplaceMgr;
+  }
 }
 
 
