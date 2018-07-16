@@ -162,6 +162,7 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class WorkEnv;
 class WorkItem;
 class LineMapCache;
 
@@ -172,50 +173,50 @@ typedef vector <Statement::Ptr> StatementVector;
 typedef vector <WorkItem *> WorkList;
 
 static FileMap *
-makeSkeleton(CodeObject *, ProcNameMgr *, const string &);
+makeSkeleton(CodeObject *, const string &);
 
 static void
-doWorkItem(Symtab *, WorkItem *, bool, bool);
+doWorkItem(WorkItem *, string &, bool, bool);
 
 static void
 makeWorkList(FileMap *, WorkList &, WorkList &);
 
 static void
-printWorkList(WorkList &, uint &, ostream *, ostream *, string);
+printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
 
 static void
-doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
+doFunctionList(WorkEnv &, FileInfo *, GroupInfo *, bool);
 
 static LoopList *
-doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
-	   BlockSet &, LoopTreeNode *, HPC::StringTable &);
+doLoopTree(WorkEnv &, FileInfo *, GroupInfo *, ParseAPI::Function *,
+	   BlockSet &, LoopTreeNode *);
 
 static TreeNode *
-doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *,
-	   const string &, HPC::StringTable &);
+doLoopLate(WorkEnv &, GroupInfo *, ParseAPI::Function *,
+	   BlockSet &, Loop *, const string &);
 
 static void
-doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
-	TreeNode *, HPC::StringTable &);
+doBlock(WorkEnv &, GroupInfo *, ParseAPI::Function *,
+	BlockSet &, Block *, TreeNode *);
 
 static void
-doCudaList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
+doCudaList(WorkEnv &, FileInfo *, GroupInfo *);
 
 static void
-doCudaFunction(GroupInfo *, ParseAPI::Function *, TreeNode *, HPC::StringTable &);
+doCudaFunction(WorkEnv &, GroupInfo *, ParseAPI::Function *, TreeNode *);
 
 static void
-addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
+addGaps(WorkEnv & env, FileInfo *, GroupInfo *);
 
 static void
 getStatement(StatementVector &, Offset, SymtabAPI::Function *);
 
 static LoopInfo *
-findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
-	       TreeNode *, Loop *, const string &, HPC::StringTable &);
+findLoopHeader(WorkEnv & env, FileInfo *, GroupInfo *, ParseAPI::Function *,
+	       TreeNode *, Loop *, const string &);
 
 static TreeNode *
-deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
+deleteInlinePrefix(WorkEnv &, TreeNode *, Inline::InlineSeqn);
 
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
@@ -296,12 +297,27 @@ public:
 
 //----------------------------------------------------------------------
 
+// The environment for interpreting paths, strings, etc.  We allocate
+// one environ per thread to avoid lock contention.
+//
+class WorkEnv {
+public:
+  HPC::StringTable * strTab;
+  RealPathMgr * realPath;
+
+  WorkEnv()
+  {
+    strTab = NULL;
+    realPath = NULL;
+  }
+};
+
 // One item in the work list for openmp parallel region.
 class WorkItem {
 public:
   FileInfo * finfo;
   GroupInfo * ginfo;
-  HPC::StringTable * strTab;
+  WorkEnv env;
   double cost;
   bool first_proc;
   bool last_proc;
@@ -312,7 +328,6 @@ public:
   {
     finfo = fi;
     ginfo = gi;
-    strTab = NULL;
     cost = cst;
     first_proc = first;
     last_proc = last;
@@ -329,15 +344,17 @@ public:
 class LineMapCache {
 private:
   SymtabAPI::Function * sym_func;
+  RealPathMgr * realPath;
   string  cache_filenm;
   uint    cache_line;
   VMA  start;
   VMA  end;
 
 public:
-  LineMapCache(SymtabAPI::Function * sf)
+  LineMapCache(SymtabAPI::Function * sf, RealPathMgr * rp)
   {
     sym_func = sf;
+    realPath = rp;
     cache_filenm = "";
     cache_line = 0;
     start = 1;
@@ -361,7 +378,7 @@ public:
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
-      RealPathMgr::singleton().realpath(filenm);
+      realPath->realpath(filenm);
 
       cache_filenm = filenm;
       cache_line = line;
@@ -455,7 +472,7 @@ makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * gapsFile,
 	      string gaps_filenm,
-	      ProcNameMgr * procNmMgr,
+	      string search_path,
 	      Struct::Options & structOpts)
 {
   struct timeval tv_init, tv_symtab, tv_parse, tv_fini;
@@ -547,7 +564,7 @@ makeStructure(string filename,
 #endif
 
     string basename = FileUtil::basename(cfilename);
-    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename);
+    FileMap * fileMap = makeSkeleton(code_obj, basename);
 
     //
     // make two work lists:
@@ -566,13 +583,13 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-#pragma omp parallel  default(none)					\
-    shared(wlPrint, wlLaunch, num_done, output_mtx)			\
-    firstprivate(symtab, outFile, gapsFile, gaps_filenm, cuda_file)
+#pragma omp parallel  default(none)				\
+    shared(wlPrint, wlLaunch, num_done, output_mtx)		\
+    firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
-	doWorkItem(symtab, wlLaunch[i], cuda_file, gapsFile != NULL);
+	doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
 	if (output_mtx.try_lock()) {
@@ -619,20 +636,30 @@ makeStructure(string filename,
 // run concurrently.
 //
 static void
-doWorkItem(Symtab * symtab, WorkItem * witem, bool cuda_file, bool fullGaps)
+doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
+	   bool fullGaps)
 {
   FileInfo * finfo = witem->finfo;
   GroupInfo * ginfo = witem->ginfo;
-  HPC::StringTable * strTab = new HPC::StringTable;
 
-  witem->strTab = strTab;
+  // each work item gets its own string table and path manager to
+  // avoid lock contention.
+  HPC::StringTable * strTab = new HPC::StringTable;
   strTab->str2index("");
 
+  PathFindMgr * pathFind = new PathFindMgr;
+  PathReplacementMgr * pathReplace = new PathReplacementMgr;
+  RealPathMgr * realPath = new RealPathMgr(pathFind, pathReplace);
+  realPath->searchPaths(search_path);
+
+  witem->env.strTab = strTab;
+  witem->env.realPath = realPath;
+
   if (cuda_file) {
-    doCudaList(symtab, finfo, ginfo, *strTab);
+    doCudaList(witem->env, finfo, ginfo);
   }
   else {
-    doFunctionList(symtab, finfo, ginfo, *strTab, fullGaps);
+    doFunctionList(witem->env, finfo, ginfo, fullGaps);
   }
 
   witem->is_done = true;
@@ -734,13 +761,13 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 //
 static void
 printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
-	      ostream * gapsFile, string gaps_filenm)
+	      ostream * gapsFile, string & gaps_filenm)
 {
   while (num_done < workList.size() && workList[num_done]->is_done) {
     WorkItem * witem = workList[num_done];
     FileInfo * finfo = witem->finfo;
     GroupInfo * ginfo = witem->ginfo;
-    HPC::StringTable * strTab = witem->strTab;
+    HPC::StringTable * strTab = witem->env.strTab;
 
     if (witem->first_proc) {
       Output::printFileBegin(outFile, finfo);
@@ -760,8 +787,12 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
       Output::printFileEnd(outFile, finfo);
     }
 
+    // delete the work environment
     delete strTab;
-    witem->strTab = NULL;
+    witem->env.strTab = NULL;
+
+    delete witem->env.realPath;
+    witem->env.realPath = NULL;
 
     num_done++;
   }
@@ -958,7 +989,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 // symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename)
+makeSkeleton(CodeObject * code_obj, const string & basename)
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
@@ -1247,8 +1278,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 // function.  This often happens with openmp parallel pragmas.
 //
 static void
-doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	       HPC::StringTable & strTab, bool fullGaps)
+doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
@@ -1290,7 +1320,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     auto call_it = callMap.find(entry_addr);
 
     if (call_it != callMap.end()) {
-      Inline::analyzeAddr(prefix, call_it->second);
+      Inline::analyzeAddr(prefix, call_it->second, env.realPath);
     }
 
 #if DEBUG_CFG_SOURCE
@@ -1373,7 +1403,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // traverse the loop (Tarjan) tree
     LoopList *llist =
-	doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
+      doLoopTree(env, finfo, ginfo, func, visited, func->getLoopTree());
 
     DEBUG_CFG("\nnon-loop blocks:\n");
 
@@ -1381,7 +1411,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(ginfo, func, visited, block, root, strTab);
+	doBlock(env, ginfo, func, visited, block, root);
       }
     }
 
@@ -1394,7 +1424,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
-      root = deleteInlinePrefix(root, prefix, strTab);
+      root = deleteInlinePrefix(env, root, prefix);
     }
 
     // add inline tree to proc info
@@ -1428,7 +1458,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     computeGaps(covered, ginfo->gapSet, ginfo->start, ginfo->end);
 
     if (! fullGaps) {
-      addGaps(finfo, ginfo, strTab);
+      addGaps(env, finfo, ginfo);
     }
   }
 
@@ -1464,9 +1494,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 // then the list contains one element for each subtree.
 //
 static LoopList *
-doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
-	   BlockSet & visited, LoopTreeNode * ltnode,
-	   HPC::StringTable & strTab)
+doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
+	   ParseAPI::Function * func, BlockSet & visited, LoopTreeNode * ltnode)
 {
   LoopList * myList = new LoopList;
 
@@ -1480,7 +1509,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   for (uint i = 0; i < clist.size(); i++) {
     LoopList *subList =
-	doLoopTree(finfo, ginfo, func, visited, clist[i], strTab);
+      doLoopTree(env, finfo, ginfo, func, visited, clist[i]);
 
     for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
       myList->push_back(*sit);
@@ -1500,7 +1529,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   FLPSeqn empty;
 
   TreeNode * myLoop =
-      doLoopLate(ginfo, func, visited, loop, loopName, strTab);
+    doLoopLate(env, ginfo, func, visited, loop, loopName);
 
   for (auto it = myList->begin(); it != myList->end(); ++it) {
     mergeInlineLoop(myLoop, empty, *it);
@@ -1508,7 +1537,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   // reparent the tree and put into LoopInfo format
   LoopInfo * myInfo =
-      findLoopHeader(finfo, ginfo, func, myLoop, loop, loopName, strTab);
+    findLoopHeader(env, finfo, ginfo, func, myLoop, loop, loopName);
 
   myList->clear();
   myList->push_back(myInfo);
@@ -1526,9 +1555,8 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 // Returns: the raw inline tree for this loop.
 //
 static TreeNode *
-doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
-	   BlockSet & visited, Loop * loop, const string & loopName,
-	   HPC::StringTable & strTab)
+doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
+	   BlockSet & visited, Loop * loop, const string & loopName)
 {
   TreeNode * root = new TreeNode;
 
@@ -1540,7 +1568,7 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 
   for (uint i = 0; i < blist.size(); i++) {
     if (! visited[blist[i]]) {
-      doBlock(ginfo, func, visited, blist[i], root, strTab);
+      doBlock(env, ginfo, func, visited, blist[i], root);
     }
   }
 
@@ -1552,9 +1580,8 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 // Process one basic block.
 //
 static void
-doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
-	BlockSet & visited, Block * block, TreeNode * root,
-	HPC::StringTable & strTab)
+doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
+	BlockSet & visited, Block * block, TreeNode * root)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1563,7 +1590,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
   DEBUG_CFG("\nblock:\n");
 
-  LineMapCache lmcache (ginfo->sym_func);
+  LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   // iterate through the instructions in this block
 #ifdef DYNINST_INSTRUCTION_PTR
@@ -1590,7 +1617,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     debugStmt(vma, len, filenm, line);
 #endif
 
-    addStmtToTree(root, strTab, vma, len, filenm, line);
+    addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line);
   }
 }
 
@@ -1599,8 +1626,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 // CUDA functions
 //
 static void
-doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	   HPC::StringTable & strTab)
+doCudaList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 {
   // not sure if cuda generates multiple functions, but we'll handle
   // this case until proven otherwise.
@@ -1617,7 +1643,7 @@ doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     TreeNode * root = new TreeNode;
 
-    doCudaFunction(ginfo, func, root, strTab);
+    doCudaFunction(env, ginfo, func, root);
 
     pinfo->root = root;
 
@@ -1636,10 +1662,10 @@ doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 // block per function and no loops.
 //
 static void
-doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
-	       HPC::StringTable & strTab)
+doCudaFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
+	       TreeNode * root)
 {
-  LineMapCache lmcache (ginfo->sym_func);
+  LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   DEBUG_CFG("\ncuda blocks:\n");
 
@@ -1654,7 +1680,7 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
     debugStmt(vma, len, filenm, line);
 #endif
 
-    addStmtToTree(root, strTab, vma, len, filenm, line);
+    addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line);
   }
 }
 
@@ -1667,7 +1693,7 @@ doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
 // line of func.  The full version is handled in Struct-Output.cpp.
 //
 static void
-addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
+addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 {
   if (ginfo->procMap.begin() == ginfo->procMap.end()) {
     return;
@@ -1696,14 +1722,15 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 	SrcFile::ln line = svec[0]->getLine();
 	VMA end = std::min(((VMA) svec[0]->endAddr()), end_gap);
 
-	addStmtToTree(root, strTab, vma, end - vma, filenm, line);
+	addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma, filenm, line);
 	vma = end;
       }
       else {
 	// fixme: could be better at finding end of range
 	VMA end = std::min(vma + 4, end_gap);
 
-	addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num);
+	addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma,
+		      finfo->fileName, pinfo->line_num);
 	vma = end;
       }
     }
@@ -1726,9 +1753,9 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 // Returns: detached LoopInfo object.
 //
 static LoopInfo *
-findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
-	       TreeNode * root, Loop * loop, const string & loopName,
-	       HPC::StringTable & strTab)
+findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
+	       ParseAPI::Function * func, TreeNode * root, Loop * loop,
+	       const string & loopName)
 {
   //------------------------------------------------------------
   // Step 1 -- build the list of loop exit conditions
@@ -1737,7 +1764,7 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
-  long empty_index = strTab.str2index("");
+  long empty_index = env.strTab->str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1774,17 +1801,17 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
       if (! svec.empty()) {
         filenm = svec[0]->getFile();
         line = svec[0]->getLine();
-        RealPathMgr::singleton().realpath(filenm);
+	env.realPath->realpath(filenm);
       }
 
       InlineSeqn seqn;
-      analyzeAddr(seqn, src_vma);
+      analyzeAddr(seqn, src_vma, env.realPath);
 
       clist[src_vma] = HeaderInfo(block);
       clist[src_vma].is_excl = loop->hasBlockExclusive(block);
       clist[src_vma].depth = seqn.size();
-      clist[src_vma].file_index = strTab.str2index(filenm);
-      clist[src_vma].base_index = strTab.str2index(FileUtil::basename(filenm));
+      clist[src_vma].file_index = env.strTab->str2index(filenm);
+      clist[src_vma].base_index = env.strTab->str2index(FileUtil::basename(filenm));
       clist[src_vma].line_num = line;
     }
   }
@@ -1898,8 +1925,8 @@ found_level:
   // exit cond and matches some other anchor: either the enclosing
   // func (if top-level), or else an inline subtree.
 
-  long proc_file = strTab.str2index(finfo->fileName);
-  long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
+  long proc_file = env.strTab->str2index(finfo->fileName);
+  long proc_base = env.strTab->str2index(FileUtil::basename(finfo->fileName));
   long file_ans = empty_index;
   long base_ans = empty_index;
   long line_ans = 0;
@@ -2055,7 +2082,7 @@ found_file:
 // Returns: the subtree at the end of prefix.
 //
 static TreeNode *
-deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable & strTab)
+deleteInlinePrefix(WorkEnv & env, TreeNode * root, Inline::InlineSeqn prefix)
 {
   StmtMap  stmts;
   LoopList loops;
@@ -2063,7 +2090,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
   // walk the prefix and collect any stmts or loops
   for (auto pit = prefix.begin(); pit != prefix.end(); ++pit)
   {
-    FLPIndex flp(strTab, *pit);
+    FLPIndex flp(*(env.strTab), *pit);
     auto nit = root->nodeMap.find(flp);
 
     if (nit != root->nodeMap.end()) {

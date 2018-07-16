@@ -55,8 +55,6 @@
 #include <ostream>
 #include <string>
 
-#include <lib/support/ProcNameMgr.hpp>
-
 namespace BAnal {
 namespace Struct {
 
@@ -84,7 +82,7 @@ makeStructure(std::string filename,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
 	      std::string gaps_filenm,
-	      ProcNameMgr * procNameMgr,
+	      std::string search_path,
 	      Struct::Options & opts);
 
 } // namespace Struct

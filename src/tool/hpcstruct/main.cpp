@@ -233,6 +233,7 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
+#if 0
   ProcNameMgr* procNameMgr = NULL;
   if (args.lush_agent == "agent-c++") {
     procNameMgr = new CppNameMgr;
@@ -240,9 +241,10 @@ realmain(int argc, char* argv[])
   else if (args.lush_agent == "agent-cilk") {
     procNameMgr = new CilkNameMgr;
   }
+#endif
 
   BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			       procNameMgr, opts);
+			       args.searchPathStr, opts);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;
