@@ -971,7 +971,7 @@ read_fd(int fd)
 
 #define ss_name linux_perf
 #define ss_cls SS_HARDWARE
-#define ss_sort_order  70
+#define ss_sort_order  60
 
 #include "sample-sources/ss_obj.h"
 
