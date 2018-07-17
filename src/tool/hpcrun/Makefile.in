@@ -510,6 +510,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
+	unwind/x86-family/manual-intervals/x86-intervals-fixup.c \
 	utilities/last_func.c
 @OPT_ENABLE_PERF_EVENT_TRUE@am__objects_7 = sample-sources/perf/libhpcrun_la-event_custom.lo \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-linux_perf.lo \
@@ -638,7 +639,8 @@ am__objects_38 = $(am__objects_35) \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-main.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
-	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo \
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo
 @UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_39 = $(am__objects_38)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_39 = $(am__objects_37)
 @UNW_LIBUNW_TRUE@am__objects_39 = $(am__objects_36)
@@ -790,6 +792,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
+	unwind/x86-family/manual-intervals/x86-intervals-fixup.c \
 	utilities/last_func.c
 @OPT_ENABLE_PERF_EVENT_TRUE@am__objects_40 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
@@ -917,7 +920,8 @@ am__objects_66 = $(am__objects_63) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
-	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT) \
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.$(OBJEXT)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_67 = $(am__objects_66)
 @UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_67 = $(am__objects_65)
 @UNW_LIBUNW_TRUE@am__objects_67 = $(am__objects_64)
@@ -1433,7 +1437,8 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
-	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
+	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
+	unwind/x86-family/manual-intervals/x86-intervals-fixup.c
 
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
@@ -2399,6 +2404,9 @@ unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo:  \
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo:  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-last_func.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 
@@ -2737,6 +2745,9 @@ unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT): 
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT):  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-last_func.$(OBJEXT): utilities/$(am__dirstamp) \
@@ -3103,6 +3114,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-composer2013-mic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel11-f90main.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intervals-fixup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-linux-dlresolver.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po@am__quote@
@@ -3112,6 +3124,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-composer2013-mic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel11-f90main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-linux-dlresolver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
@@ -4206,6 +4219,13 @@ unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo: unwind/x86-
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo `test -f 'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
+
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo: unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intervals-fixup.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo `test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intervals-fixup.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intervals-fixup.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intervals-fixup.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-intervals-fixup.lo `test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intervals-fixup.c
 
 utilities/libhpcrun_la-last_func.lo: utilities/last_func.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-last_func.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-last_func.Tpo -c -o utilities/libhpcrun_la-last_func.lo `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
@@ -5830,6 +5850,20 @@ unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.obj: unwind/x86-
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.obj `if test -f 'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c'; fi`
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.o: unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.o `test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intervals-fixup.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.o `test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.obj: unwind/x86-family/manual-intervals/x86-intervals-fixup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intervals-fixup.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-intervals-fixup.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-intervals-fixup.obj `if test -f 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-intervals-fixup.c'; fi`
 
 utilities/libhpcrun_o-last_func.o: utilities/last_func.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-last_func.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-last_func.Tpo -c -o utilities/libhpcrun_o-last_func.o `test -f 'utilities/last_func.c' || echo '$(srcdir)/'`utilities/last_func.c
