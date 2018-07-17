@@ -45,81 +45,35 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#undef _TPx
-#undef _T3
-#undef _make_id
-#undef _st
-#undef _st1
+//******************************************************************************
+// File: ss-list.h
+//
+// Purpose: 
+//   This file contains a list of sample sources wrapped by a call to an
+//   unspecified macro. The intended use of this file is to define the
+//   macro, include the file elsewhere one or more times to register the
+//   sample sources. This is not defined as a FORALL macro that applies
+//   a macro to each of the sample source names so that this file can
+//   contain ifdefs if a sample source is unused on a platform.
+//
+//******************************************************************************
 
-#define _TPx(a,b,c) a ## b ## c
-#define _T3(a, b, c) _TPx(a, b, c)
-#define _make_id(tpl) _T3 tpl
+SAMPLE_SOURCE_DECL_MACRO(ga)
+SAMPLE_SOURCE_DECL_MACRO(io)  
+SAMPLE_SOURCE_DECL_MACRO(itimer)  
 
-#define _st(n) # n
-#define _st1(n) _st(n)
-
-#undef obj_name
-#undef ss_str
-#undef reg_fn_name
-
-#ifndef ss_sort_order
-#define ss_sort_order  50
+#ifdef HPCRUN_SS_LINUX_PERF
+SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
 #endif
 
-#include "ss-obj-name.h"
+SAMPLE_SOURCE_DECL_MACRO(memleak)  
 
-#define obj_name() SS_OBJ_NAME(ss_name)
-#define ss_str  _st1(ss_name) 
-#define reg_fn_name _make_id((,ss_name,_obj_reg))
+SAMPLE_SOURCE_DECL_MACRO(none)  
 
-sample_source_t obj_name() = {
-  // common methods
+#ifdef HPCRUN_SS_PAPI
+SAMPLE_SOURCE_DECL_MACRO(papi)  
+#endif
 
-  .add_event     = hpcrun_ss_add_event,
-  .store_event   = hpcrun_ss_store_event,
-  .store_metric_id = hpcrun_ss_store_metric_id,
-  .get_event_str = hpcrun_ss_get_event_str,
-  .started       = hpcrun_ss_started,
+SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 
-  // specific methods
-
-  .init = init,
-  .thread_init = thread_init,
-  .thread_init_action = thread_init_action,
-  .start = start,
-  .thread_fini_action = thread_fini_action,
-  .stop  = stop,
-  .shutdown = shutdown,
-  .supports_event = supports_event,
-  .process_event_list = process_event_list,
-  .gen_event_set = gen_event_set,
-  .display_events = display_events,
-
-  // data
-  .evl = {
-    .evl_spec = {[0] = '\0'},
-    .nevents = 0
-  },
-  .sel_idx   = -1,
-  .name = ss_str,
-  .cls  = ss_cls,
-  .state = UNINIT,
-  .sort_order = ss_sort_order,
-};
-
-
-/******************************************************************************
- * constructor 
- *****************************************************************************/
-
-void
-SS_OBJ_CONSTRUCTOR(ss_name)(void)
-{
-  hpcrun_ss_register(&obj_name());
-}
-
-#undef ss_str
-#undef reg_fn_name
-
-#undef _st
-#undef _st1
+SAMPLE_SOURCE_DECL_MACRO(retcnt)
