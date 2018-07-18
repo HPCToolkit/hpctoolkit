@@ -243,7 +243,10 @@ extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
-// laks: hack to access cc2metrics_t
+// cct2metrics_t is defined in cct2metrics.h but we cannot include this header
+//  beceause cct2metrics.h includes this file (cct.h)
+//
+// TODO: need to declare cct2metrics_t here to avoid to cyclic inclusion
 typedef struct cct2metrics_t cct2metrics_t;
 
 int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,

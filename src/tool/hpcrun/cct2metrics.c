@@ -115,7 +115,7 @@ metric_set_t*
 hpcrun_reify_metric_set(cct_node_id_t cct_id)
 {
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
-  metric_set_t* rv = hpcrun_get_metric_set(NULL, cct_id);
+  metric_set_t* rv = hpcrun_get_metric_set(cct_id);
   TMSG(CCT2METRICS, " -- Metric set found = %p", rv);
 
   if (rv) return rv;
@@ -128,9 +128,11 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id)
 
 //
 // get metric set for a node (NULL return value means no metrics associated).
+// this function requires map between cct and metrics. If the map is null
+//  it uses the default local map.
 //
 metric_set_t*
-hpcrun_get_metric_set(cct2metrics_t **map, cct_node_id_t cct_id)
+hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id)
 {
   cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
 
@@ -155,12 +157,21 @@ hpcrun_get_metric_set(cct2metrics_t **map, cct_node_id_t cct_id)
 }
 
 //
+// get metric set for a node (NULL return value means no metrics associated).
+//
+metric_set_t*
+hpcrun_get_metric_set(cct_node_id_t cct_id)
+{
+  return hpcrun_get_metric_set_specific(NULL, cct_id);
+}
+
+//
 // check to see if node already has metrics
 //
 bool
 hpcrun_has_metric_set(cct_node_id_t cct_id)
 {
-  return (hpcrun_get_metric_set(NULL, cct_id) != NULL);
+  return (hpcrun_get_metric_set(cct_id) != NULL);
 }
 
 //
