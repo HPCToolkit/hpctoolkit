@@ -100,6 +100,13 @@ const char*
 OSUtil_jobid()
 {
   char* jid = NULL;
+ 
+  // LSF
+  jid = getenv("LSB_JOBID");
+  if (jid) {
+    return jid;
+  }
+
 
   // Cobalt
   jid = getenv("COBALT_JOBID");
