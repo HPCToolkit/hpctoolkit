@@ -245,6 +245,7 @@ METHOD_FN(display_events)
 
 #define ss_name ga
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  110
 
 #include "ss_obj.h"
 
