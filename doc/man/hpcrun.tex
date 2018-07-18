@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2014/03/05}
+\setDate{2018/06/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -74,22 +74,38 @@ To configure \Prog{hpcrun}'s sampling sources, specify events and periods using 
 For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the and record information about the monitored \Arg{command}.
 
 When \Arg{command} terminates, a profile measurement databse will be written to the directory:\\
-\SP\SP\SP hpctoolkit-\Arg{command}-measurements[-\Arg{jobid}]\\
-where \Arg{jobid} is a PBS or Sun Grid Engine job identifier.
+\\
+\SP\SP\SP \Prog{hpctoolkit-}\Arg{command}\Prog{-measurements}[\Prog{-}\Arg{pid}]\\
+\\
+where \Arg{pid} is an operating system process id, if available.
 
-\Prog{hpcrun} enables a user to abort a process and write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).
+\Prog{hpcrun} enables you to abort a process and write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).
 This can be extremely useful on long-running or misbehaving applications.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
+%% SKW 7/6/18:
+%% 
+%% The following arguments are implemented in hpcstruct's "Args.cpp" but are deprecated
+%% and so not documented here, per JohnMC
+%% 
+%%     agent-c++
+%%     agent-cilk
+%%     loop-intvl
+%%     loop-fwd-subst
+%%     -N / -normalize
+
+Default values for optional arguments are shown in \{\}.
+
+\subsection{Command}
+
 \begin{Description}
 \item[\Arg{command}] The command to profile.
+
 \item[\Arg{command-arguments}] Arguments to the command to profile.
 \end{Description}
-
-Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: Informational}
 
@@ -108,42 +124,116 @@ Print help.
 
 \begin{Description}
 
+\item[\Opt{-ds}, \Opt{--delay-sampling}]
+Don't start sampling until the application chooses to turn it on.
+Use this option to measure only a subset of the application's execution by bracketing interesting regions
+with calls to \Prog{hpctoolkit_sampling_start()} and \Prog{hpctoolkit_sampling_stop()}.
+Sampling may be turned on and off any number of times during an execution;
+and measurements from all sampled regions are aggregated for attribution and display.
+
 \item[\OptArg{-e}{event\Lbr@period\Rbr}, \OptArg{--event}{event\Lbr@period\Rbr}]
-An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI, native processor event, or WALLCLOCK (microseconds).  May pass multiple times as implementations permits.  \{\verb+WALLCLOCK@5000+\}
+Profile the  event with corresponding sample period.
+\Arg{event} may be a PAPI event, a Perf event, a native processor event,
+or the special event \Prog{WALLCLOCK}.
+This option may be given multiple times to profile several events at once;
+there may be system-dependent limits on how many events can be profiled simultaneously
+and on which events may be combined for profiling.
+If no events are given, the default is to profile \Prog{WALLCLOCK@5000}.
+
 \begin{itemize}
-  \item It is recommended to always specify the sampling period for each profiling event.
-  \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. Its period is in microseconds.
-  \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. 
+  \item You should always specify a sampling period for each profiling event.
+  \item The special event \Prog{WALLCLOCK} may be used to profile the actual elapsed time in microseconds
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
+
+\item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
+Measure only a fraction \Arg{frac} of the execution's processes.
+For each process, enable measurement of each thread with probability \Arg{frac}, a real number or a fraction (1/10) between 0 and 1.
+To minimize perturbations, when measurement for a process is disabled
+all threads in a process still receive sampling interrupts but they are ignored.
+
+\item[\OptArg{-lm}{size}, \OptArg{--low-memsize}{size}]
+Allocate an additional segment to store measurement data
+whenever free space in the current segment is less than the specified \Arg{size}.
+If not given, the default for \Arg{size} is~80K.
+
+\item[\OptArg{-m}{size}, \OptArg{--memsize}{size}]
+Uuse the specified \Arg{size} as segment size when allocating memory for measurement data.
+The specified value is rounded up to a multiple of the `system page size.
+If not given, the default for \Arg{size} is~4M.
+
+\item[\OptArg{-mp}{prob}, \OptArg{--memleak-prob}{prob}]
+Monitor a subset of memory allocations performed by the application to detect leaks.
+An allocation is a call to one of \Prog{malloc}, \Prog{calloc}, \Prog{realloc}, etc\.
+and its matching call to \Prog{free}.
+At each allocation HPCToolkit generates a pseudo-random number in the range [0.0, 1.0)
+and monitors the allocation if the number is less than the value \Arg{prob} specified here,
+The value may be written as a a floating point number or as a fraction.
+If not given, the default for \Arg{prob} is~0.1.
+
+\item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
+Directory to receive output data.
+If not given, the default directory ia \Prog{hpctoolkit-<command>-measurements[-<pid>]}.
+\begin{itemize}
+ Bug: If no \Arg{pid} is available and no output option is given,
+ profiles from multiple runs of the same <command>  will be placed into the same output directory.
+\end{itemize}
+
+ \item[\Opt{-r}, \Opt{--retain-recursion}]
+Do not collapse simple recursive call chains to a single node.
+Normally \Prog{hpcrun} does collapse such chains to present a more useful attribution of costs.
+If this option is given, all elements of a recursive call chain are recorded.
+Note: When you use the \Prog{RETCNT} sample source then this option is enabled automatically
+in order to gather accurate counts.
 
 \item[\Opt{-t}, \Opt{--trace}]
 Generate a call path trace (in addition to a call path profile).
 
-\item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
-Measure only a fraction \Arg{frac} of the execution's processes.
-For each process, enable measurement (of all threads) with probability \Arg{frac}; \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
-(To minimize perturbations, when a process is disabled, all threads in a process still receive sampling interrupts, but they are ignored.)
+\end{Description}
 
-\item[\Opt{-r}, \Opt{--retain-recursion}]
-Normally, hpcrun will collapse (simple) recursive call chains
-to a single node. This option disables that behavior: all
-elements of a recursive call chain are recorded
-NOTE: If the user employs the RETCNT sample source, then this
-      option is enabled: RETCNT implies *all* elements of
-      call chains, including recursive elements, are recorded.
+\subsection{Options: HPCToolkit Development}
 
+\begin{Description}
 
+These options are intended for use by the HPCToolkit team,
+but could be helpful to others interested in HPCToolkit's implementation.
+.
+ 
+\item[\Opt{-d}, \Opt{--debug}]
+After initialization, spin wait until you attach a debugger
+to one or more of the application's processes.
+After attaching you can set breakpoints or watchpoints in your application's code
+or in HPCToolkit’s \Prog{hpcrun} code before beginning application execution.
+To continue after attaching, use the debugger to set program variable \Prog{DEBUGGER WAIT} to zero
+and then resume execution.
+Note: Your  can only set \Prog{HPCRUN WAIT} if your HPCToolkit was built with debugging symbols.
+To build HPCToolkit with debugging symbols,
+include the option \Prog{–enable-develop} when configuring HPCToolkit.
 
-\item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
-Directory for output data.
-\{\verb+hpctoolkit-<command>-measurements[-<jobid>]+\}
+\item[\OptArg{-dd}{flag}, \OptArg{--dynamic-debug}{flag}]
+Enable the flag \Prog{flag},
+causing \Prog{hpcrun} to log debug messages guarded with that flag
+during execution.
+A list of dynamic debug flags can be found in HPCToolkit’s source code
+in the file \Prog{src/tool/hpcrun/messages/messages.flag-defns}.
+Note that not all flags are meaningful on all architectures.
+The special value \Prog{ALL} enables all debug flags.
+\\
+Caution: turning on debug flags produces many log messages,
+often dramatically slowing the application and potentially distorting the measured profile.
 
-\begin{itemize}
- Bug: Without a \Arg{jobid} or an output option, multiple profiles of the same <command> will be placed in the same output directory.
-\end{itemize}
+\item[\Opt{-q}, \Opt{--quiet}]
+Turn on a default set of dynamic debugging vari\-ables to log information
+about HPCToolkit’s stack unwinding based on on-the-fly binary analysis.
+See the HPCToolkit User Manual for more details. \\
+Bug: this option is unfortunately named.
+
+\item[\Opt{-md}, \Opt{--monitor-debug}]
+Enable debug tracing of \Prog{libmonitor}, the \Prog{hpcrun} subsystem which implements process/thread control.
+See the HPCToolkit User Manual for more details. 
 
 \end{Description}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -153,6 +243,7 @@ There are two situations, however, where \Prog{hpcrun}, to function correctly,
 \emph{must} refer to environment variables. These environment variables, and
 corresponding situations are:
 \begin{Description}
+
   \item[\verb+HPCTOOLKIT+] To function correctly, \Prog{hpcrun} must know
        the location of the \Prog{HPCToolkit} top-level installation directory.
        The \Prog{hpcrun} script uses elements of the installation \File{lib} and
@@ -162,6 +253,10 @@ corresponding situations are:
        \Prog{hpcrun} script to a different location from the installed base. If your
        system uses this copying mechanism, you must set the \verb+HPCTOOLKIT+
        environment variable to the top-level installation directory.
+       
+  \item[\verb+hpcrun+] If you refer to the \Prog{hpcrun} script via a file system link
+       you must also set \verb+HPCTOOLKIT+, for the same reason.
+       
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,14 +267,11 @@ Assume we wish to profile the application \texttt{zoo}.
 The following examples lists some useful events for different processor architectures.
 In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun} options.
 
-\begin{enumerate}
-\item \verb+hpcrun -e WALLCLOCK@5000 zoo+
-
-\item Opteron, (Rev B-F)
-  \begin{enumerate}
-    \item \verb+hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
-    \item \verb+hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+
-  \end{enumerate}
+\begin{itemize}
+\item \Prog{hpcrun -e WALLCLOCK@5000 zoo}
+\item \Prog{hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
+\item \Prog{hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
+\end{itemize}
 
 \end{enumerate}
 
