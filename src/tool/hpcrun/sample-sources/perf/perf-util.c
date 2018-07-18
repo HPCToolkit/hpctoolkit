@@ -346,9 +346,10 @@ get_precise_ip(struct perf_event_attr *attr)
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
-    set_max_precise_ip(attr);
   }
-  return 0;
+  set_max_precise_ip(attr);
+
+  return attr->precise_ip;
 }
 
 
