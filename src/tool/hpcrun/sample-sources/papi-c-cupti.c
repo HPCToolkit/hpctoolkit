@@ -377,9 +377,9 @@ static sync_info_list_t cuda_component = {
   .next = NULL,
 };
 
-__attribute__((constructor))
+
 void
-papi_c_cupti_register(void)
+SS_OBJ_CONSTRUCTOR(papi_c_cupti)(void)
 {
   // fetch actual cuda/cupti functions
   dlgpu();

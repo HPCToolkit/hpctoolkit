@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/tool/hpcrun/unwind/x86-family/manual-intervals/x86-intel11-f90main.c $
-// $Id: x86-intel11-f90main.c 4422 2014-02-10 21:24:59Z mwkrentel $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,52 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <string.h>
-#include "x86-unwind-interval-fixup.h"
-#include "x86-unwind-interval.h"
 
-static char gcc_main64_signature[] = { 
- 0x4c, 0x8d, 0x54, 0x24, 0x08,  // lea    0x8(%rsp),%r10
- 0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
- 0x41, 0xff, 0x72, 0xf8,        // pushq  -0x8(%r10)
- 0x55,                          // push   %rbp
- 0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
-};
+//******************************************************************************
+// File: ss-list.h
+//
+// Purpose: 
+//   This file contains a list of sample sources wrapped by a call to an
+//   unspecified macro. The intended use of this file is to define the
+//   macro, include the file elsewhere one or more times to register the
+//   sample sources. This is not defined as a FORALL macro that applies
+//   a macro to each of the sample source names so that this file can
+//   contain ifdefs if a sample source is unused on a platform.
+//
+//******************************************************************************
 
+SAMPLE_SOURCE_DECL_MACRO(ga)
+SAMPLE_SOURCE_DECL_MACRO(io)  
+SAMPLE_SOURCE_DECL_MACRO(itimer)  
 
-int 
-x86_adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
-{
-  int siglen = sizeof(gcc_main64_signature);
+#ifdef HPCRUN_SS_LINUX_PERF
+SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
+#endif
 
-  if (len > siglen && strncmp((char *)gcc_main64_signature, ins, siglen) == 0) {
-    // signature matched 
-    unwind_interval *ui = (unwind_interval *) stat->first;
+SAMPLE_SOURCE_DECL_MACRO(memleak)  
 
-    // this won't fix all of the intervals, but it will fix the ones 
-    // that we care about.
-    //
-    // The method is as follows:
-    // Ignore (do not correct) intervals before 1st std frame
-    // For 1st STD_FRAME, compute the corrections for this interval and subsequent intervals
-    // For this interval and subsequent interval, apply the corrected offsets
-    //
+SAMPLE_SOURCE_DECL_MACRO(none)  
 
-    for(; UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
+#ifdef HPCRUN_SS_PAPI
+SAMPLE_SOURCE_DECL_MACRO(papi)  
+#endif
 
-    // this is only correct for 64-bit code
-    for(; ui; ui =  UWI_NEXT(ui)) {
-      x86recipe_t *xr = UWI_RECIPE(ui);
-      if (xr->ra_status == RA_SP_RELATIVE) continue;
-      if ((xr->ra_status == RA_STD_FRAME) || 
-          (xr->ra_status == RA_BP_FRAME)) {  
-         xr->ra_status = RA_BP_FRAME;
-         xr->reg.bp_ra_pos = 8;
-         xr->reg.bp_bp_pos = 0;
-      }
-    }
+SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 
-    return 1;
-  } 
-  return 0;
-}
+SAMPLE_SOURCE_DECL_MACRO(retcnt)
+
+#ifdef HPCRUN_SS_PAPI_C_CUPTI
+SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
+#endif
