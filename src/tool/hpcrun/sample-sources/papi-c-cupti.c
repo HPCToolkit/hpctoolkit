@@ -25,7 +25,6 @@
 #include <lib/prof-lean/spinlock.h>
 
 #include <hpcrun/thread_data.h>
-#include <hpcrun/constructors.h>
 #include <messages/messages.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/safe-sampling.h>
@@ -378,7 +377,9 @@ static sync_info_list_t cuda_component = {
   .next = NULL,
 };
 
-HPCRUN_CONSTRUCTOR(papi_c_cupti_register)(void)
+
+void
+SS_OBJ_CONSTRUCTOR(papi_c_cupti)(void)
 {
   // fetch actual cuda/cupti functions
   dlgpu();
