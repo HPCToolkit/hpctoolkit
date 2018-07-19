@@ -266,6 +266,26 @@ namespace TraceAnalysis {
     profTime->minDurationInclusive += otherATime->getMinDuration();
     profTime->maxDurationInclusive += otherATime->getMaxDuration();
   }
+  
+  void TCTTime::shiftTime(Time offset) {
+    TCTATime* aTime = (TCTATime*)ptr;
+    if (aTime->type == TRACE) {
+      TCTTraceTime* traceTime = (TCTTraceTime*)aTime;
+      traceTime->startTimeExclusive += offset;
+      traceTime->startTimeInclusive += offset;
+      traceTime->endTimeInclusive   += offset;
+      traceTime->endTimeExclusive   += offset;
+    }
+  }
+  
+  void TCTTime::toProfileTime() {
+    TCTATime* aTime = (TCTATime*)ptr;
+    if (aTime->type == TRACE) {
+      TCTProfileTime* profTime = new TCTProfileTime(*aTime);
+      delete aTime;
+      ptr = profTime;
+    } 
+  }
 
   void TCTTime::setAsAverageTime(const TCTTime& time1, long weight1, const TCTTime& time2, long weight2) {
     TCTATime* aTime = (TCTATime*)ptr;
@@ -285,10 +305,10 @@ namespace TraceAnalysis {
               traceTime1->startTimeExclusive, weight1, traceTime2->startTimeExclusive, weight2);
       traceTime->startTimeInclusive = computeWeightedAverage(
               traceTime1->startTimeInclusive, weight1, traceTime2->startTimeInclusive, weight2);
-      traceTime->endTimeInclusive= computeWeightedAverage(
-              traceTime1->endTimeInclusive, weight1, traceTime2->endTimeInclusive, weight2);
-      traceTime->endTimeExclusive= computeWeightedAverage(
-              traceTime1->endTimeExclusive, weight1, traceTime2->endTimeExclusive, weight2);
+      traceTime->endTimeInclusive   = computeWeightedAverage(
+              traceTime1->endTimeInclusive,   weight1, traceTime2->endTimeInclusive,   weight2);
+      traceTime->endTimeExclusive   = computeWeightedAverage(
+              traceTime1->endTimeExclusive,   weight1, traceTime2->endTimeExclusive,   weight2);
     }
     else {
       if (aTime->type != PROFILE) {

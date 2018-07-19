@@ -214,7 +214,8 @@ namespace TraceAnalysis {
       }
       return false;
     }
-    
+
+#ifdef KEEP_ACCEPTED_ITERATION      
     void printLoops(TCTANode* node) {
       if (node->type == TCTANode::Prof) return;
       else if (node->type == TCTANode::Loop) {
@@ -224,24 +225,22 @@ namespace TraceAnalysis {
           printLoops(loop->getAcceptedIteration(i));
         
         double ratio = (double)loop->getDuration() * 100.0 / (double) root->getDuration();
-        if (loop->acceptLoop()) {
+        if (loop->accept()) {
           if (ratio >= 1 && loop->getNumIteration() > 1) {
-            print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+2, 0).c_str());
+            print_msg(MSG_PRIO_NORMAL, "\nLoop accepted: duration = %lf%%\n%s", ratio, loop->toString(loop->getDepth()+5, 0).c_str());
             print_msg(MSG_PRIO_LOW, "Diff among iterations:\n");
             TCTANode* highlight = NULL;
             for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
               for (int j = 0; j < loop->getNumAcceptedIteration(); j++) {
-                TCTANode* diffNode = localDQ.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, false);
+                TCTANode* diffNode = localDQ.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, true);
                 double diffRatio = 100.0 * diffNode->getDiffScore().getInclusive() / 
                           (loop->getAcceptedIteration(i)->getDuration() + loop->getAcceptedIteration(j)->getDuration());
-                if (i == 0 && j == (loop->getNumAcceptedIteration() - 1) )
-                  highlight = diffNode;
-                else 
-                  delete diffNode;
+                delete diffNode;
                 print_msg(MSG_PRIO_LOW, "%.2lf%%\t", diffRatio);
               }
               print_msg(MSG_PRIO_LOW, "\n");
             }
+            highlight = localDQ.mergeNode(loop->getAcceptedIteration(0), 1, loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1), 1, false, false);
             print_msg(MSG_PRIO_LOW, "Compare:\n%s%s", loop->getAcceptedIteration(0)->toString(highlight->getDepth()+5, 0).c_str()
                     , loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1)->toString(highlight->getDepth()+5, 0).c_str());
             print_msg(MSG_PRIO_LOW, "Highlighted diff node:\n%s\n", highlight->toString(highlight->getDepth()+5, 0).c_str());
@@ -257,7 +256,7 @@ namespace TraceAnalysis {
           printLoops(trace->getChild(i));
       }
     }
-    
+#endif    
     
     // Compute LCA Depth of the previous and current sample.
     int computeLCADepth(CallPathSample* prev, CallPathSample* current) {
@@ -393,9 +392,9 @@ namespace TraceAnalysis {
 
       print_msg(MSG_PRIO_LOW, "\nNum Samples = %lu, Sampling interval = %ld\n\n", numSamples, samplingPeriod);
 
-      root->finalizeLoops();
+      root->finalizeEnclosingLoops();
       
-      printLoops(root);
+      //printLoops(root);
 
       print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod).c_str());
 

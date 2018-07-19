@@ -51,6 +51,10 @@
  * Created on April 23, 2018, 12:47 AM
  */
 
+#include <algorithm>
+using std::max;
+using std::min;
+
 #include "TraceAnalysisCommon.hpp"
 #include "DifferenceQuantifier.hpp"
 #include "data/TCT-Node.hpp"
@@ -86,12 +90,6 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes with different id: %s vs %s.\n", 
               node1->id.toString().c_str(), node2->id.toString().c_str());
     
-    if (node1->getWeight() != weight1)
-      print_msg(MSG_PRIO_HIGH, "ERROR: weight doesn't match %d vs %d for \n %s", node1->getWeight(), weight1, 
-              node1->toString(node1->getDepth(), 0).c_str());
-    if (node2->getWeight() != weight2)
-      print_msg(MSG_PRIO_HIGH, "ERROR: weight doesn't match %d vs %d for \n %s", node2->getWeight(), weight2, 
-              node2->toString(node2->getDepth(), 0).c_str());
     if (node1->getDepth() != node2->getDepth())
       print_msg(MSG_PRIO_HIGH, "ERROR: merging node at difference depth %d vs %d.\n", node1->getDepth(), node2->getDepth());
     
@@ -145,10 +143,10 @@ namespace TraceAnalysis {
     const map<TCTID, TCTProfileNode*>& map2 = prof2->getChildMap();
     
     for (auto it = map1.begin(); it != map1.end(); it++) {
-      const TCTProfileNode* child1 = it->second;
+      TCTProfileNode* child1 = it->second;
       // Children that both profile nodes have
       if (map2.find(child1->id) != map2.end()) {
-        const TCTProfileNode* child2 = map2.find(child1->id)->second;
+        TCTProfileNode* child2 = map2.find(child1->id)->second;
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
         
@@ -173,7 +171,7 @@ namespace TraceAnalysis {
     for (auto it = map2.begin(); it != map2.end(); it++)
       // Children that only profile 2 has.
       if (map1.find(it->first) == map1.end()) {
-        const TCTProfileNode* child2 = it->second;
+        TCTProfileNode* child2 = it->second;
         TCTProfileNode* child1 = (TCTProfileNode*) child2->voidDuplicate();
         child1->setWeight(weight1);
         child1->getTime().setDuration(-getSamplingPeriod(), getSamplingPeriod());
@@ -327,7 +325,7 @@ namespace TraceAnalysis {
           
           // Create dummy child2 node
           TCTANode* child2 = child1->voidDuplicate();
-          child2->setWeight(trace2->getWeight());
+          child2->setWeight(weight2);
           // Set start/end time for the dummy child2 node.
           Time startExclusiveMin, startInclusiveMin; // child2 should never start earlier than the last child of trace2.
           trace2->getLastChildEndTime(k2, startExclusiveMin, startInclusiveMin);
@@ -360,7 +358,7 @@ namespace TraceAnalysis {
           
           // Create dummy child1 node
           TCTANode* child1 = child2->voidDuplicate();
-          child1->setWeight(trace1->getWeight());
+          child1->setWeight(weight1);
           // Set start/end time for the dummy child1 node.
           Time startExclusiveMin, startInclusiveMin; // child1 should never start earlier than the last child of trace1.
           trace1->getLastChildEndTime(k1, startExclusiveMin, startInclusiveMin);
@@ -450,13 +448,195 @@ namespace TraceAnalysis {
   
   TCTANode* LocalDifferenceQuantifier::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
-    TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(loop1);
-    TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(loop2);
-    TCTProfileNode* merged = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
-    delete prof1;
-    delete prof2;
-    return merged;
+    // If either loop is not accepted 
+    if ((!loop1->accept()) || (!loop2->accept()))
+      return mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, isScoreOnly);
+    
+    TCTLoopNode* mergedLoop = NULL;
+    TCTProfileNode* mergedProf = NULL;
+    if (!isScoreOnly) {
+      mergedLoop = new TCTLoopNode(*loop1, weight1, *loop2, weight2, ifAccumulate);
+      mergedProf = mergedLoop->getProfileNode();
+    } 
+    else {
+      mergedProf = mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, true);
+    }
+    double minInclusiveDiff = mergedProf->getDiffScore().getInclusive();
+    double minExclusiveDiff = mergedProf->getDiffScore().getExclusive();
+    mergedProf->clearDiffScore();
+    
+    const TCTLoopClusterNode* cluster1 = loop1->getClusterNode();
+    const TCTLoopClusterNode* cluster2 = loop2->getClusterNode();
+    
+    int numCluster1 = cluster1->getNumClusters();
+    int numCluster2 = cluster2->getNumClusters();
+    
+    const TCTANode* rep1[MAX_NUM_CLUSTER];
+    const TCTANode* rep2[MAX_NUM_CLUSTER];
+    long numMembers1[MAX_NUM_CLUSTER];
+    long numMembers2[MAX_NUM_CLUSTER];
+    
+    for (int i = 0; i < numCluster1; i++) {
+      rep1[i] = cluster1->getClusterRepAt(i);
+      numMembers1[i] = rep1[i]->getWeight() * loop2->getWeight();
+    }
+    for (int i = 0; i < numCluster2; i++) {
+      rep2[i] = cluster2->getClusterRepAt(i);
+      numMembers2[i] = rep2[i]->getWeight() * loop1->getWeight();
+    }
+    
+    TCTANode* diffNodes[MAX_NUM_CLUSTER][MAX_NUM_CLUSTER];
+    double diffRatio[MAX_NUM_CLUSTER][MAX_NUM_CLUSTER];
+    
+    for (int i = 0; i < numCluster1; i++)
+      for (int j = 0; j < numCluster2; j++) {
+        diffNodes[i][j] = mergeNode(rep1[i], 1, rep2[j], 1, false, isScoreOnly);
+        diffRatio[i][j] = diffNodes[i][j]->getDiffScore().getInclusive() / (double)(rep1[i]->getDuration() + rep2[i]->getDuration());
+      }
+    
+    while (numCluster1 > 0 && numCluster2 > 0) {
+      int idx1 = 0, idx2 = 0;
+      for (int i = 0; i < numCluster1; i++)
+        for (int j = 0; j < numCluster2; j++)
+          if (diffRatio[i][j] < diffRatio[idx1][idx2]) {
+            idx1 = i; idx2 = j;
+          }
+      
+      long numMatched = min(numMembers1[idx1], numMembers2[idx2]);
+      addDiffScore(mergedProf, diffNodes[idx1][idx2], 
+              (double)numMatched * (double)weight1 * (double) weight2 / (double)loop1->getWeight() / (double)loop2->getWeight());
+      
+      numMembers1[idx1] -= numMatched;
+      numMembers2[idx2] -= numMatched;
+      
+      if (numMembers1[idx1] == 0) {
+        numCluster1--;
+        rep1[idx1] = rep1[numCluster1];
+        numMembers1[idx1] = numMembers1[numCluster1];
+        for (int j = 0; j < numCluster2; j++) {
+          delete diffNodes[idx1][j];
+          diffNodes[idx1][j] = diffNodes[numCluster1][j];
+          diffRatio[idx1][j] = diffRatio[numCluster1][j];
+        }
+      }
+      
+      if (numMembers2[idx2] == 0) {
+        numCluster2--;
+        rep2[idx2] = rep2[numCluster2];
+        numMembers2[idx2] = numMembers2[numCluster2];
+        for (int i = 0; i < numCluster1; i++) {
+          delete diffNodes[i][idx2];
+          diffNodes[i][idx2] = diffNodes[i][numCluster2];
+          diffRatio[i][idx2] = diffRatio[i][numCluster2];
+        }
+      }
+    }
+    
+    while (numCluster1 > 0) {
+      numCluster1--;
+      TCTANode* dummyNode = rep1[numCluster1]->voidDuplicate();
+      TCTANode* diffNode = mergeNode(rep1[numCluster1], 1, dummyNode, 1, false, isScoreOnly);
+      addDiffScore(mergedProf, diffNode, 
+              (double)numMembers1[numCluster1] * (double)weight1 * (double) weight2 / (double)loop1->getWeight() / (double)loop2->getWeight());
+      delete dummyNode;
+      delete diffNode;
+    }
+    
+    while (numCluster2 > 0) {
+      numCluster2--;
+      TCTANode* dummyNode = rep2[numCluster2]->voidDuplicate();
+      TCTANode* diffNode = mergeNode(rep2[numCluster2], 1, dummyNode, 1, false, isScoreOnly);
+      addDiffScore(mergedProf, diffNode, 
+              (double)numMembers2[numCluster2] * (double)weight1 * (double) weight2 / (double)loop1->getWeight() / (double)loop2->getWeight());
+      delete dummyNode;
+      delete diffNode;
+    }
+    
+    const TCTProfileNode* rej1 = loop1->getRejectedIterations();
+    const TCTProfileNode* rej2 = loop2->getRejectedIterations();
+    if (rej1 != NULL || rej2 != NULL) {
+      if (rej1 == NULL) rej1 = (TCTProfileNode*)rej2->voidDuplicate();
+      if (rej2 == NULL) rej2 = (TCTProfileNode*)rej1->voidDuplicate();
+      TCTProfileNode* rejDiff = localDQ.mergeProfileNode(rej1, weight1, rej2, weight2, false, isScoreOnly);
+      addDiffScore(mergedProf, rejDiff, 1);
+      delete rejDiff;
+      if (loop1->getRejectedIterations() == NULL) delete rej1;
+      if (loop2->getRejectedIterations() == NULL) delete rej2;
+    }
+    
+    if (ifAccumulate) {
+      addDiffScore(mergedProf, loop1->getProfileNode(), 1);
+      addDiffScore(mergedProf, loop2->getProfileNode(), 1);
+    }
+    
+    double inclusiveDiff = max(mergedProf->getDiffScore().getInclusive(), minInclusiveDiff);
+    double exclusiveDiff = max(mergedProf->getDiffScore().getExclusive(), minExclusiveDiff);
+    mergedProf->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
+
+    if (mergedLoop != NULL) {
+      mergedLoop->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
+      return mergedLoop;
+    }
+    else 
+      return mergedProf;
   }
+  
+  void LocalDifferenceQuantifier::addDiffScore(TCTANode* dst, const TCTANode* src, double ratio) {
+    if (src->getDiffScore().getInclusive() == 0) return;
+    
+    if (dst->type == TCTANode::Prof) {
+      if (src->type == TCTANode::Prof) 
+        addDiffScore((TCTProfileNode*)dst, (TCTProfileNode*)src, ratio);
+      else {
+        TCTProfileNode* temp = TCTProfileNode::newProfileNode(src);
+        addDiffScore((TCTProfileNode*)dst, temp, ratio);
+        delete temp;
+      }
+    } 
+    else if (dst->type == TCTANode::Loop) 
+      addDiffScore((TCTLoopNode*)dst, (TCTLoopNode*)src, ratio);
+    else
+      addDiffScore((TCTATraceNode*)dst, (TCTATraceNode*)src, ratio);
+  }
+  
+  void LocalDifferenceQuantifier::addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio) {
+    double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;
+    double exclusive = dst->getDiffScore().getExclusive() + src->getDiffScore().getExclusive() * ratio;
+    dst->getDiffScore().setScores(inclusive, exclusive);
+    
+    int k1 = 0, k2 = 0;
+    while (k1 < dst->getNumChild() && k2 < src->getNumChild())
+      if (dst->getChild(k1)->id == src->getChild(k2)->id) {
+        addDiffScore(dst->getChild(k1), src->getChild(k2), ratio);
+        k1++; k2++;
+      }
+      else
+        k1++;
+    
+    if (k2 != src->getNumChild())
+      print_msg(MSG_PRIO_NORMAL, "ERROR: failed to add diff scores of all children for trace node %s.\n", src->id.toString().c_str());
+  }
+  
+  void LocalDifferenceQuantifier::addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio) {
+    double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;
+    double exclusive = dst->getDiffScore().getExclusive() + src->getDiffScore().getExclusive() * ratio;
+    dst->getDiffScore().setScores(inclusive, exclusive);
+    
+    for (auto it = src->getChildMap().begin(); it != src->getChildMap().end(); it++)
+      if (dst->getChildMap().find(it->first) != dst->getChildMap().end())
+        addDiffScore(dst->getChildMap().at(it->first), it->second, ratio);
+      else
+        print_msg(MSG_PRIO_NORMAL, "ERROR: failed to add diff scores of children %s for profile node %s.\n", 
+                it->first.toString().c_str(), src->id.toString().c_str());
+  }
+  
+  void LocalDifferenceQuantifier::addDiffScore(TCTLoopNode* dst, const TCTLoopNode* src, double ratio) {
+    double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;
+    double exclusive = dst->getDiffScore().getExclusive() + src->getDiffScore().getExclusive() * ratio;
+    dst->getDiffScore().setScores(inclusive, exclusive);
+    
+    addDiffScore(dst->getProfileNode(), src->getProfileNode(), ratio);
+  } 
   
   LocalDifferenceQuantifier localDQ;
 }

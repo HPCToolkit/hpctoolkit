@@ -66,32 +66,26 @@ using std::string;
 #include "../TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  class TCTNestedLoopSizes {
+  class TCTIterationCounter {
   public:
-    TCTNestedLoopSizes() {}
-    TCTNestedLoopSizes(const TCTNestedLoopSizes& other) : loopSizes(other.loopSizes) {}
-    virtual ~TCTNestedLoopSizes() {}
+    TCTIterationCounter() {}
+    ~TCTIterationCounter() {}
     
-    void addOuterMostLoopSize(int size) {
-      loopSizes.push_back(size);
-    }
-    
-    int getNumNestedLoops() {
-      return loopSizes.size();
-    }
-    
-    // Return the loop size at the given level.
-    // Level for inner most loop is 0.
-    // Level for outer most loop is getNumNestedLoops()-1.
-    int getLoopSizeAt(int level) {
-      return loopSizes[level];
+    long getNewIterationNumber(int loop_id) {
+      if (counter.find(loop_id) == counter.end()) {
+        counter[loop_id] = 1;
+        return 0;
+      }
+      else
+        return counter[loop_id]++;
     }
     
   private:
-    // Records the size of nested loops. Size for inner most loop is stored at sizes[0].
-    // Size of outer most loop is stored at sizes[lastElement].
-    vector<int> loopSizes;
+    // map from loop id to total iteration counts.
+    unordered_map<int, long> counter;
   };
+  
+  extern TCTIterationCounter iterCounter;
   
   // (Power) Regular Section Descriptor to record members of clusters.
   class TCTClusterMemberRSD {
@@ -119,6 +113,12 @@ namespace TraceAnalysis {
     
     long getFirstID() const {
       return first_id;
+    }
+    
+    void setFirstID(long new_id) {
+      first_id = new_id;
+      if (first_rsd != NULL)
+        first_rsd->setFirstID(new_id);
     }
     
     // If the latter RSD is isomorphic to this RSD, return true;
@@ -178,16 +178,6 @@ namespace TraceAnalysis {
     }
 
     string toString() const;
-    
-    void test() {
-      int n = 20;
-      int seq[n] = {0,1,2,3,4,5,8,10,11,12,13,14,15,18,20,21,22,23,24,25};
-      for (int i = 0; i < n; i++) {
-        printf("\nAdding member: %d\n", seq[i]);
-        addMember(seq[i]);
-        printf("  status: %s\n", toString().c_str());
-      }
-    }
     
   private:
     int max_level;

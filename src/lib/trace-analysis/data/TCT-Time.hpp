@@ -85,6 +85,8 @@ namespace TraceAnalysis {
     Time getEndTimeExclusive() const;
     
     void addTime(const TCTTime& other);
+    void shiftTime(long offset);
+    void toProfileTime();
     void setAsAverageTime(const TCTTime& time1, long weight1, const TCTTime& time2, long weight2);
     
     string toString() const;

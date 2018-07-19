@@ -82,6 +82,11 @@ namespace TraceAnalysis {
     
     virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
+  private:
+    void addDiffScore(TCTANode* dst, const TCTANode* src, double ratio);
+    void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
+    void addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio);
+    void addDiffScore(TCTLoopNode* dst, const TCTLoopNode* src, double ratio);
   };
   
   extern LocalDifferenceQuantifier localDQ;

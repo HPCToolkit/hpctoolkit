@@ -58,6 +58,8 @@ using std::max;
 using std::min;
 
 namespace TraceAnalysis {
+  TCTIterationCounter iterCounter;
+  
   bool TCTClusterMemberRSD::isIsomorphic(const TCTClusterMemberRSD* latter) const {
     // Not isomorphic if nested_level doesn't match.
     if (nested_level != latter->nested_level) return false;
@@ -159,6 +161,16 @@ namespace TraceAnalysis {
           return;
         }
     }
+    // Check if rsd can be concatenated to an RSD at the same level.
+    if (rsd->nested_level >= 1) {
+      vector<TCTClusterMemberRSD*>& RSDs = members[rsd->nested_level];
+      for (int idx = (int)RSDs.size() - 1; idx >= 0 && idx > (int)RSDs.size() - RSD_DETECTION_WINDOW; idx--)
+        if (RSDs[idx]->canConcatenate(rsd)) {
+          RSDs[idx]->concatenate(rsd);
+          updateMember(rsd->nested_level, idx);
+          return;
+        }
+    }
     
     // Insert the new member and detect potential RSDs.
     members[rsd->nested_level].push_back(rsd);
@@ -177,7 +189,10 @@ namespace TraceAnalysis {
         int first_idx = prev_idx;
         int length = 2;
         int stride = members[last_idx]->getFirstID() - members[first_idx]->getFirstID();
-        
+        if (stride <= 0) {
+          print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterMemberRSD::detectRSD() -- stride %d <= 0.\n", stride);
+          continue;
+        }
         // Check previous members to see if they are in the same sequence.
         long temp_id = members[first_idx]->getFirstID() - stride;
         int temp_idx = findID(temp_id, nested_level, max(0, first_idx - RSD_DETECTION_WINDOW), first_idx - 1);
