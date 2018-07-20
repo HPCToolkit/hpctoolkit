@@ -143,9 +143,6 @@ if OPT_ENABLE_CUDA
   pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
 endif
   pkglib_LIBRARIES += libhpctoolkit.a
-if HOST_CPU_PPC
-  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
-endif
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -181,8 +178,12 @@ HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 
-if HOST_CPU_PPC
+# Disable the ibm-xlomp plugin in favor of the new openmp tools
+# interface.
+if FALSE
   PLUGIN_CONFIG_FILES += ibm-xlomp
+  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
+  libibm_xlomp_wrappers_a_SOURCES = plugins/ibm-xlomp-wrappers.c
 endif
 
 UNW_UNIV_FILES = \
@@ -503,9 +504,6 @@ libhpcrun_gpu_wrap_a_SOURCES = 	\
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
-
-libibm_xlomp_wrappers_a_SOURCES =              \
-        plugins/ibm-xlomp-wrappers.c
 
 libhpctoolkit_la_SOURCES = 		\
 	hpctoolkit.c
