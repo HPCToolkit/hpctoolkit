@@ -65,6 +65,8 @@ using std::string;
 
 #include "../TraceAnalysisCommon.hpp"
 
+#include <boost/serialization/access.hpp>
+
 namespace TraceAnalysis {
   class TCTIterationCounter {
   public:
@@ -89,6 +91,13 @@ namespace TraceAnalysis {
   
   // (Power) Regular Section Descriptor to record members of clusters.
   class TCTClusterMemberRSD {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    TCTClusterMemberRSD() : 
+        nested_level(-1), first_id(-1), first_rsd(NULL), stride(-1), length(-1) {}
+    
   public:
     TCTClusterMemberRSD(long id) : 
         nested_level(0), first_id(id), first_rsd(NULL), stride(0), length(1) {}
@@ -150,6 +159,11 @@ namespace TraceAnalysis {
   };
   
   class TCTClusterMembers {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
   public:
     TCTClusterMembers() : max_level(0), members(max_level+1) {}
     

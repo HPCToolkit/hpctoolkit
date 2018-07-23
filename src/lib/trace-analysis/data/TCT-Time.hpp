@@ -61,9 +61,19 @@ using std::string;
 
 #include "../TraceAnalysisCommon.hpp"
 
+#include <boost/serialization/split_member.hpp>
+
 namespace TraceAnalysis {
   // Temporal Context Tree Time
   class TCTTime {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const;
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
+    
   public:
     TCTTime();
     TCTTime(const TCTTime& orig);

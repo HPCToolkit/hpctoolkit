@@ -45,34 +45,30 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   LocalTraceAnalyzer.hpp
+ * File:   TCT-Serialization.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 6, 2018, 11:27 PM
- * 
- * Analyzes traces for a rank/thread and generates a summary temporal context tree.
+ * Created on July 21, 2018, 11:38 PM
  */
 
-#ifndef LOCALTRACEANALYZER_HPP
-#define LOCALTRACEANALYZER_HPP
+#ifndef TCT_SERIALIZATION_HPP
+#define TCT_SERIALIZATION_HPP
 
-#include <string>
-using std::string;
-
-#include "TraceAnalysisCommon.hpp"
-#include "CCTVisitor.hpp"
+/*#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+using boost::archive::text_iarchive;
+using boost::archive::text_oarchive;
+*/
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+using boost::archive::binary_iarchive;
+using boost::archive::binary_oarchive;
 
 namespace TraceAnalysis {
-  class LocalTraceAnalyzer {
-  public:
-    LocalTraceAnalyzer(CCTVisitor& cctVisitor, string traceFileName, Time minTime);
-    virtual ~LocalTraceAnalyzer();
-    
-    void analyze();
-  private:
-    void* ptr;
-  };
+  // Class registration for serializing pointers.
+  template<class Archive>
+  void register_class(Archive &ar);
 }
 
-#endif /* LOCALTRACEANALYZER_HPP */
+#endif /* TCT_SERIALIZATION_HPP */
 

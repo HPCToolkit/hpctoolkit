@@ -70,7 +70,6 @@ namespace TraceAnalysis {
   class BinaryAnalyzer {
   public:
     BinaryAnalyzer();
-    BinaryAnalyzer(const BinaryAnalyzer& orig);
     virtual ~BinaryAnalyzer();
 
     bool parse(const string& filename);
@@ -87,6 +86,7 @@ namespace TraceAnalysis {
     unordered_map<VMA, CFGLoop*> CFGLoopMap;
   };
 
+  extern BinaryAnalyzer binaryAnalyzer;
 }
 
 #endif /* BINARYANALYZER_HPP */

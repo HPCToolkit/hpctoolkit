@@ -56,8 +56,15 @@
 
 #include "../TraceAnalysisCommon.hpp"
 
+#include <boost/serialization/access.hpp>
+
 namespace TraceAnalysis {
   class TCTDiffScore {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
   public:
     TCTDiffScore() : inclusive(0), exclusive(0) {}
     TCTDiffScore(const TCTDiffScore& other): inclusive(other.inclusive), exclusive(other.exclusive) {}
@@ -88,6 +95,11 @@ namespace TraceAnalysis {
   
   // Records performance loss metrics
   class TCTPerfLossMetric {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    
   public:
     TCTPerfLossMetric(): minDuration(0), maxDuration(0), totalDuration(0) {}
     TCTPerfLossMetric(const TCTPerfLossMetric& other): minDuration(other.minDuration), 

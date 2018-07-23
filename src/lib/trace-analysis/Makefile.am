@@ -72,10 +72,11 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	data/TCT-CFG.hpp \
-	data/TCT-Time.hpp data/TCT-Time.cpp \
+	data/TCT-Time.hpp data/TCT-Time-Internal.hpp data/TCT-Time.cpp \
 	data/TCT-Node.hpp data/TCT-Node.cpp \
 	data/TCT-Cluster.hpp data/TCT-Cluster.cpp \
 	data/TCT-Metrics.hpp data/TCT-Metrics.cpp \
+	data/TCT-Serialization.hpp data/TCT-Serialization.cpp \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
 	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \

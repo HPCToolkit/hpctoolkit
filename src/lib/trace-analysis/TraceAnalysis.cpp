@@ -90,14 +90,13 @@ namespace TraceAnalysis {
       gettimeofday(&startTime, NULL);
       
       // Step 1: analyze binary files to get CFGs for later analysis
-      BinaryAnalyzer ba;
       const Prof::LoadMap* loadmap = prof->loadmap();
       for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
            i <= loadmap->size(); ++i) {
         Prof::LoadMap::LM* lm = loadmap->lm(i);
         if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
           print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
-          ba.parse(lm->name());
+          binaryAnalyzer.parse(lm->name());
         }
       }
 
@@ -135,8 +134,7 @@ namespace TraceAnalysis {
       int endIdx = traceFiles.size();
       for (int i = begIdx; i < endIdx; i++) {
         print_msg(MSG_PRIO_MAX, "\nAnalyzing file #%d = %s.\n", i, traceFiles[i].c_str());
-        LocalTraceAnalyzer analyzer(ba, cctVisitor, 
-                traceFiles[i], prof->traceMinTime());
+        LocalTraceAnalyzer analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
         analyzer.analyze();
       }
       

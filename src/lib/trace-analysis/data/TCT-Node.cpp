@@ -71,9 +71,9 @@ namespace TraceAnalysis {
     ret += ", " + std::to_string(getDuration()/getSamplingPeriod()) + " samples";
     if (weight > 1) ret += ", w = " + std::to_string(weight);
     
-    if (diffScore->getInclusive() > 0)
-      ret += ", DiffScore = " + std::to_string((long)diffScore->getInclusive())
-              + "/" + std::to_string((long)diffScore->getExclusive());
+    if (diffScore.getInclusive() > 0)
+      ret += ", DiffScore = " + std::to_string((long)diffScore.getInclusive())
+              + "/" + std::to_string((long)diffScore.getExclusive());
     ret += "\n";
     
     return ret;

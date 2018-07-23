@@ -316,16 +316,11 @@ namespace TraceAnalysis {
   BinaryAnalyzer::BinaryAnalyzer() {
   }
 
-  BinaryAnalyzer::BinaryAnalyzer(const BinaryAnalyzer& orig) {
-  }
-
   BinaryAnalyzer::~BinaryAnalyzer() {
     for (auto it = CFGFuncMap.begin(); it != CFGFuncMap.end(); ++it) {
-      //std::cout << it->second->toDetailedString();
       delete it->second;
     }
     for (auto it = CFGLoopMap.begin(); it != CFGLoopMap.end(); ++it) {
-      //std::cout << it->second->toDetailedString();
       delete it->second;
     }
   }
@@ -351,4 +346,6 @@ namespace TraceAnalysis {
     if (CFGLoopMap.find(vma) == CFGLoopMap.end()) return NULL;
     return CFGLoopMap[vma];
   }
+  
+  BinaryAnalyzer binaryAnalyzer;
 }

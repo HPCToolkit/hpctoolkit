@@ -58,20 +58,24 @@ using std::string;
 #include <vector>
 using std::vector;
 
-#include <lib/prof-lean/hpcrun-fmt.h>
+#include <fstream>
+
+#include "data/TCT-Serialization.hpp"
+#include "data/TCT-Node.hpp"
+#include "data/TCT-Cluster.hpp"
 
 #include "LocalTraceAnalyzer.hpp"
-#include "data/TCT-Node.hpp"
+#include "BinaryAnalyzer.hpp"
 #include "TraceFileReader.hpp"
 #include "DifferenceQuantifier.hpp"
 
-#include "data/TCT-Cluster.hpp"
+#include <lib/prof-lean/hpcrun-fmt.h>
+
 
 namespace TraceAnalysis {
 
   class LocalTraceAnalyzerImpl {
   public:
-    BinaryAnalyzer& binaryAnalyzer;
     TraceFileReader reader;
     
     vector<TCTANode*> activeStack;
@@ -80,9 +84,8 @@ namespace TraceAnalysis {
     uint64_t numSamples;
     Time& samplingPeriod;
     
-    LocalTraceAnalyzerImpl(BinaryAnalyzer& binaryAnalyzer, 
-          CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
-          binaryAnalyzer(binaryAnalyzer), reader(cctVisitor, traceFileName, minTime),
+    LocalTraceAnalyzerImpl(CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
+          reader(cctVisitor, traceFileName, minTime),
           numSamples(0), samplingPeriod(getSamplingPeriodReference()) {}
     ~LocalTraceAnalyzerImpl() {}
     
@@ -398,15 +401,30 @@ namespace TraceAnalysis {
 
       print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod).c_str());
 
+      {
+        std::ofstream ofs("serialization_output");
+        binary_oarchive oa(ofs);
+        register_class(oa);
+        oa << root;
+        print_msg(MSG_PRIO_LOW, "root is successfully serialized.\n");
+      }
+
       delete root;
+      
+      root = NULL;
+      {
+        std::ifstream ifs("serialization_output");
+        binary_iarchive ia(ifs);
+        register_class(ia);
+        ia >> root;
+        print_msg(MSG_PRIO_LOW, "root is successfully recovered.\n\n%s", root->toString(10, samplingPeriod).c_str());
+      }
     }
   };
 
   
-  LocalTraceAnalyzer::LocalTraceAnalyzer(BinaryAnalyzer& binaryAnalyzer, 
-          CCTVisitor& cctVisitor, string traceFileName, Time minTime) {
-    ptr = new LocalTraceAnalyzerImpl(binaryAnalyzer, cctVisitor,
-            traceFileName, minTime);
+  LocalTraceAnalyzer::LocalTraceAnalyzer(CCTVisitor& cctVisitor, string traceFileName, Time minTime) {
+    ptr = new LocalTraceAnalyzerImpl(cctVisitor,traceFileName, minTime);
   }
 
   LocalTraceAnalyzer::~LocalTraceAnalyzer() {

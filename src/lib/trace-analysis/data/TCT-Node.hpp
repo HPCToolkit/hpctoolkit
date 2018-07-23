@@ -65,14 +65,13 @@ using std::vector;
 #include <map>
 using std::map;
 
-#include <set>
-using std::set;
-
 #include "../TraceAnalysisCommon.hpp"
 #include "TCT-CFG.hpp"
 #include "TCT-Time.hpp"
 #include "TCT-Metrics.hpp"
 #include "TCT-Cluster.hpp"
+
+#include <boost/serialization/split_member.hpp>
 
 namespace TraceAnalysis {
   // Forward declarations
@@ -86,6 +85,14 @@ namespace TraceAnalysis {
   class TCTRootNode;
 
   class TCTID {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+  public:
+    // Constructor for serialization only.
+    TCTID() : id(0), procID(0) {}
+    
   public:
     const int id; // Calling Context Tree ID for call sites and loops.
     const int procID; // Proc ID for call sites.
@@ -120,25 +127,30 @@ namespace TraceAnalysis {
       Prof
     };
     
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void save(Archive & ar, const unsigned int version) const;
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version);
+    BOOST_SERIALIZATION_SPLIT_MEMBER();
+  protected:
+    // Constructor for serialization only.
+    TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), time(),
+        diffScore(), plm() {}
+    
+  public:
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), time() {
-      diffScore = new TCTDiffScore();
-      plm = new TCTPerfLossMetric();
-    }
+        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), time(),
+        diffScore(), plm() {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time) {
-      diffScore = new TCTDiffScore(*orig.diffScore);
-      plm = new TCTPerfLossMetric(*orig.plm);
-    }
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time),
+        diffScore(orig.diffScore), plm(orig.plm) {}
     TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time) {
-      diffScore = new TCTDiffScore(*orig.diffScore);
-      plm = new TCTPerfLossMetric(*orig.plm);
-    }
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time),
+        diffScore(orig.diffScore), plm(orig.plm) {}
     
     virtual ~TCTANode() {
-      delete diffScore;
-      delete plm;
     }
     
     virtual TCTTime& getTime() {
@@ -186,19 +198,19 @@ namespace TraceAnalysis {
     }
     
     virtual TCTDiffScore& getDiffScore() {
-      return *diffScore;
+      return diffScore;
     }
     
     virtual const TCTDiffScore& getDiffScore() const {
-      return *diffScore;
+      return diffScore;
     }
     
     virtual TCTPerfLossMetric& getPerfLossMetric() {
-      return *plm;
+      return plm;
     }
     
     virtual const TCTPerfLossMetric& getPerfLossMetric() const {
-      return *plm;
+      return plm;
     }
     
     // returns a pointer to a duplicate of this object. 
@@ -231,12 +243,20 @@ namespace TraceAnalysis {
     int depth;
     long weight;
     TCTTime time;
-    TCTDiffScore* diffScore;
-    TCTPerfLossMetric* plm;
+    TCTDiffScore diffScore;
+    TCTPerfLossMetric plm;
   };
   
   // Temporal Context Tree Abstract Trace Node
   class TCTATraceNode : public TCTANode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+  protected:
+    // Constructor for serialization only.
+    TCTATraceNode(NodeType type) : TCTANode(type) {}
+ 
   public:
     TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
       TCTANode(type, id, procID, name, depth, cfgGraph, ra) {}
@@ -309,6 +329,13 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTATraceNode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTFunctionTraceNode() : TCTATraceNode(Func) {}
+    
   public:
     TCTFunctionTraceNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
       TCTATraceNode(Func, id, procID, name, depth, cfgGraph, ra) {}
@@ -325,6 +352,13 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Root Node
   class TCTRootNode : public TCTATraceNode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTRootNode() : TCTATraceNode(Root) {}
+    
   public:
     TCTRootNode(int id, int procID, string name, int depth) : 
             TCTATraceNode(Root, id, procID, name, depth, NULL, 0) {}
@@ -341,6 +375,13 @@ namespace TraceAnalysis {
   
   // Temporal Context Tree Iteration Trace Node
   class TCTIterationTraceNode : public TCTATraceNode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTIterationTraceNode() : TCTATraceNode(Iter), iterNum(-1) {}
+    
   public:
     TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph) :
       TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), 
@@ -364,6 +405,14 @@ namespace TraceAnalysis {
   };
   
   class TCTLoopNode : public TCTANode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTLoopNode() : TCTANode(Loop), numIteration(-1), numAcceptedIteration(-1), 
+      pendingIteration(NULL), clusterNode(NULL), rejectedIterations(NULL), profileNode(NULL) {}
+    
   public:
     TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph);
     TCTLoopNode(const TCTLoopNode& orig);
@@ -469,6 +518,14 @@ namespace TraceAnalysis {
       TCTClusterMembers* members;
     } TCTCluster;
     
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTLoopClusterNode() : TCTANode(Loop), numClusters(-1) {}  
+    
+  public:
     TCTLoopClusterNode(const TCTLoopNode& loop) : TCTANode(loop), numClusters(0) {}
     TCTLoopClusterNode(const TCTLoopClusterNode& other, bool isVoid);
     TCTLoopClusterNode(const TCTLoopClusterNode& cluster1, const TCTLoopClusterNode& cluster2);
@@ -510,6 +567,13 @@ namespace TraceAnalysis {
   };
   
   class TCTProfileNode : public TCTANode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTProfileNode() : TCTANode(Prof) {}  
+    
   public:
     static TCTProfileNode* newProfileNode(const TCTANode* node) {
       if (node->type == TCTANode::Prof)
@@ -535,8 +599,8 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const {
       TCTProfileNode* ret = new TCTProfileNode(*this, false);
       ret->time.clear();
-      ret->diffScore->clear();
-      ret->plm->clear();
+      ret->diffScore.clear();
+      ret->plm.clear();
       return ret;
     }
     
@@ -553,7 +617,7 @@ namespace TraceAnalysis {
     virtual void merge(const TCTProfileNode* other);
     
     virtual void clearDiffScore() {
-      diffScore->setScores(0, 0);
+      diffScore.setScores(0, 0);
       for (auto it = childMap.begin(); it != childMap.end(); it++)
         it->second->clearDiffScore();
     }
