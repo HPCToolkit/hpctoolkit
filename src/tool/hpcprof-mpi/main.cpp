@@ -258,7 +258,7 @@ realmain(int argc, char* const* argv)
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
 			   myRank, numRanks, rootRank);
 
-  if (nArgs.paths->size() == 0) {
+  if (nArgs.paths->size() == 0 && myRank == 0) {
     std::cerr << "ERROR: command line directories"
       " contain no .hpcrun files; no database generated\n";
     exit(-1);
