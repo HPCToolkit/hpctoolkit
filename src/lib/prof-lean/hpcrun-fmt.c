@@ -185,9 +185,12 @@ hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
     return HPCFMT_ERR;
   }
 
+  // removed m_raToCallsiteOfst from epoch Hdr. don't change file format!
+  uint32_t dummy; 
+
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(ehdr->flags.bits), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(ehdr->measurementGranularity), fs));
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(ehdr->raToCallsiteOfst), fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&dummy, fs));
   HPCFMT_ThrowIfError(hpcfmt_nvpairList_fread(&(ehdr->nvps), fs, alloc));
 
   return HPCFMT_OK;
@@ -197,16 +200,19 @@ hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
 int
 hpcrun_fmt_epochHdr_fwrite(FILE* fs, epoch_flags_t flags,
 			   uint64_t measurementGranularity,
-			   uint32_t raToCallsiteOfst, ...)
+			   ...)
 {
   va_list args;
-  va_start(args, raToCallsiteOfst);
+  va_start(args, measurementGranularity);
 
   fwrite(HPCRUN_FMT_EpochTag, 1, HPCRUN_FMT_EpochTagLen, fs);
 
+  // removed m_raToCallsiteOfst from epoch Hdr. don't change file format!
+  uint32_t dummy = 0;
+
   hpcfmt_int8_fwrite(flags.bits, fs);
   hpcfmt_int8_fwrite(measurementGranularity, fs);
-  hpcfmt_int4_fwrite(raToCallsiteOfst, fs);
+  hpcfmt_int4_fwrite(dummy, fs);
 
   hpcfmt_nvpairs_vfwrite(fs, args);
 
@@ -224,7 +230,6 @@ hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs)
   fprintf(fs, "  (flags: 0x%"PRIx64")\n", ehdr->flags.bits);
   fprintf(fs, "  (measurement-granularity: %"PRIu64")\n",
 	  ehdr->measurementGranularity);
-  fprintf(fs, "  (RA-to-callsite-offset: %"PRIu32")\n", ehdr->raToCallsiteOfst);
   hpcfmt_nvpairList_fprint(&(ehdr->nvps), fs, "  ");
   fprintf(fs, "]\n");
 

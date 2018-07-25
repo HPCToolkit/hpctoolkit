@@ -367,7 +367,6 @@ private:
   double m_fmtVersion;
   epoch_flags_t m_flags;
   uint64_t m_measurementGranularity;
-  uint32_t m_raToCallsiteOfst;
 
   std::string m_profileFileName; // non-empty, if relevant
   std::set<std::string> m_directorySet; // list of directories

@@ -146,7 +146,6 @@ Profile::Profile(const std::string name)
   m_fmtVersion = 0.0;
   m_flags.bits = 0;
   m_measurementGranularity = 0;
-  m_raToCallsiteOfst = 0;
 
   m_traceMinTime = UINT64_MAX;
   m_traceMaxTime = 0;
@@ -206,13 +205,6 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
     y.m_measurementGranularity = x.m_measurementGranularity;
   }
 
-  if (x.m_raToCallsiteOfst == 0) {
-    x.m_raToCallsiteOfst = y.m_raToCallsiteOfst;
-  }
-  else if (y.m_raToCallsiteOfst == 0) {
-    y.m_raToCallsiteOfst = m_raToCallsiteOfst;
-  }
-
   DIAG_WMsgIf(x.m_fmtVersion != y.m_fmtVersion,
 	      "CallPath::Profile::merge(): ignoring incompatible versions: "
 	      << x.m_fmtVersion << " vs. " << y.m_fmtVersion);
@@ -221,8 +213,6 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
 	      << x.m_flags.bits << " vs. " << y.m_flags.bits);
   DIAG_WMsgIf(x.m_measurementGranularity != y.m_measurementGranularity,
 	      "CallPath::Profile::merge(): ignoring incompatible measurement-granularity: " << x.m_measurementGranularity << " vs. " << y.m_measurementGranularity);
-  DIAG_WMsgIf(x.m_raToCallsiteOfst != y.m_raToCallsiteOfst,
-	      "CallPath::Profile::merge(): ignoring incompatible RA-to-callsite-offset" << x.m_raToCallsiteOfst << " vs. " << y.m_raToCallsiteOfst);
 
   x.m_profileFileName = "";
 
@@ -1188,9 +1178,6 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   prof->m_fmtVersion = hdr.version;
   prof->m_flags = ehdr.flags;
   prof->m_measurementGranularity = ehdr.measurementGranularity;
-  prof->m_raToCallsiteOfst = ehdr.raToCallsiteOfst;
-
-  CCT::ANode::s_raToCallsiteOfst = prof->m_raToCallsiteOfst;
 
   prof->m_profileFileName = profFileName;
 
@@ -1562,7 +1549,6 @@ Profile::fmt_epoch_fwrite(const Profile& prof, FILE* fs, uint wFlags)
  
   hpcrun_fmt_epochHdr_fwrite(fs, prof.m_flags,
 			     prof.m_measurementGranularity,
-			     prof.m_raToCallsiteOfst,
 			     "TODO:epoch-name", "TODO:epoch-value",
 			     FmtEpoch_NV_virtualMetrics, virtualMetrics,
 			     NULL);
