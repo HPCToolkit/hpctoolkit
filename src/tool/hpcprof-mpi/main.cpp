@@ -159,11 +159,11 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
 static void
 writeStructure(const Prof::Struct::Tree& structure, const char* baseNm,
-	       int myRank);
+	       int myRank) __attribute__((unused));
 
 static void
 writeProfile(const Prof::CallPath::Profile& prof, const char* baseNm,
-	     int myRank);
+	     int myRank) __attribute__((unused));
 
 static std::string
 makeFileName(const char* baseNm, const char* ext, int myRank);
