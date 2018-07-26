@@ -322,6 +322,9 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 	      int rank_x, int rank_y, int myRank,
 	      MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
+	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
 // reduce: Uses a tree-based reduction to reduce the profile at every
@@ -369,9 +372,10 @@ reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 // ------------------------------------------------------------------------
 void
 broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
-    int rootRank,
-	  MPI_Comm comm = MPI_COMM_WORLD);
-
+	  int rootRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
+broadcast(StringSet *stringSet, int myRank, int maxRank, 
+	  int rootRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
 // pack/unpack a profile to/from a buffer

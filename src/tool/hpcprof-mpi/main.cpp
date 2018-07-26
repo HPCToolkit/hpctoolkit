@@ -289,6 +289,8 @@ realmain(int argc, char* const* argv)
   // are merged (and sorted by always merging left-child before right)
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
 
+  ParallelAnalysis::reduce(&profLcl->directorySet(), myRank, numRanks - 1);
+
   if (myRank == rootRank) {
     profGbl = profLcl;
     profLcl = NULL;
@@ -297,14 +299,8 @@ realmain(int argc, char* const* argv)
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
 
-  if (myRank != rootRank) {
-    // copy back the set of directory into the global profile
-    //
-    // during the broadcast we'll lose the information of directory set
-    // this directory set will be used later for kernel symbol looking to
-    // find vmlinux files
-    profGbl->copyDirectory(profLcl->directorySet());
-  }
+  ParallelAnalysis::broadcast(&profGbl->directorySet(), myRank, numRanks - 1, rootRank);
+
   delete profLcl;
 
   // -------------------------------------------------------
