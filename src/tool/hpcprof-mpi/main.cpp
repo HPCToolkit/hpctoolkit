@@ -316,10 +316,13 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
+
   // N.B.: Ensures that each rank adds static structure in the same
   // order so that new corresponding nodes have identical node ids.
+  bool printProgress =  (myRank == rootRank);
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
-						 args.doNormalizeTy);
+						 args.doNormalizeTy,
+                                                 printProgress);
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
