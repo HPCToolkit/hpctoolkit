@@ -98,8 +98,6 @@ StringSet::fmt_fread
   result = hpcfmt_int8_fread(&size, infs);
   if (result != HPCFMT_OK) return result;
 
-  std::cout << "reading StringSet with " << size << " entries" << std::endl;
-
   // ------------------------------------------------------------------
   // read strings in string set
   // ------------------------------------------------------------------
@@ -111,8 +109,6 @@ StringSet::fmt_fread
 
     std::string str = cstr;
     free(cstr);
-
-    std::cout << "  " << str << std::endl;
 
     stringSet->insert(str);
   }
