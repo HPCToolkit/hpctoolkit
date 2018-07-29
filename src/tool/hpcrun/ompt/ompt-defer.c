@@ -525,7 +525,6 @@ void try_resolve_context(){
 
 
 void resolve_one_region_context(ompt_region_data_t* region_data){
-	printf("Kao resolvujem jedan region \n");
   cct_node_t* call_path = region_data->call_path;
 
   cct_node_t* root = region_root(call_path);

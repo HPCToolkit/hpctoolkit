@@ -425,9 +425,9 @@ ompt_elide_runtime_frame_internal(
       //  in the callpath
 
       // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
-      //if(TD_GET(master)){
-      //  return;
-      //}
+      if(TD_GET(master)){
+        return;
+      }
 //      if(omp_get_thread_num() == 0)
 //        return;
 
