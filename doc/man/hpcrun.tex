@@ -292,6 +292,7 @@ The following examples lists some useful events for different processor architec
 In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun} options.
 
 \begin{itemize}
+\item \Prog{hpcrun -e CYCLES -e INSTRUCTIONS zoo}
 \item \Prog{hpcrun -e WALLCLOCK@5000 zoo}
 \item \Prog{hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
 \item \Prog{hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
@@ -304,9 +305,68 @@ In each case, the special option \texttt{--} is used to clearly demarcate the en
 
 \subsection{Sample sources}
 
-\Prog{hpcrun} uses the PAPI library to provide access to hardware performance counter events.
-If you have not configured HPCToolkit to use the PAPI library, you will be unable to measure hardware performance counter events.
+%\newcommand{\	exttt{perf\_events}}{{\tt perf\_events}}
 
+\Prog{hpcrun} uses Linux perf\_events (default on Linux platform) and optionally the PAPI library to provide access to hardware performance counter events.
+It is important to note that on most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
+The gap is commonly 50-70 instructions.
+This means that one should not assume that aggregation at the source line level is fully precise.
+(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
+However, aggregation at the procedure and loop level is reliable.
+
+
+\subsubsection{Linux perf\_events Interface}
+
+Linux \texttt{perf\_events} provides a powerful interface that supports 
+measurement of both application execution and kernel activity. 
+Using
+\texttt{perf\_events}, one can measure both hardware and software events. 
+Using a processor's hardware performance monitoring unit (PMU), the
+\texttt{perf\_events} interface can measure an execution using any hardware counter
+supported by the PMU. Examples of hardware events include cycles, instructions
+completed, cache misses, and stall cycles. Using instrumentation built in to the Linux kernel,
+the \texttt{perf\_events} interface can measure software events. Examples of software events include page
+faults, context switches, and CPU migrations. 
+
+Some capabilities of HPCToolkit's \texttt{perf\_events} Interface include:
+\begin{itemize}
+	\item \textbf{Frequency-based sampling.} 
+Rather than picking a sample period for a hardware counter,
+the Linux \texttt{perf\_events} interface enables one to specify the desired sampling frequency
+and have the kernel automatically select and adjust the period 
+to try to achieve the desired sampling frequency.
+To use frequency-based sampling, one can specify the sampling rate
+for an event as the desired number of samples per second
+by prefixing the
+		rate with the letter “\verb+f+”. The subsequent subsection on \textbf{Launching} shows some
+examples of how to monitor an execution using frequency-based sampling.
+
+\item \textbf{Multiplexing.} 
+Using multiplexing enables one to monitor more events
+in a single execution than the number of hardware counters a processor
+can support for each thread. The number of events that can be monitored in
+a single execution is only limited by the maximum number of concurrent
+events that the kernel will allow a user to multiplex using the
+\texttt{perf\_events} interface.
+
+When more events are specified than can be monitored simultaneously
+using a thread's hardware counters,
+  the kernel will employ multiplexing and divide
+the set of events to be monitored into groups, monitor only one group
+of events at a time, and cycle repeatedly through the groups
+as a program executes. 
+
+
+\item \textbf{Thread blocking.} When a program executes, 
+a thread may block waiting for the kernel to complete some operation on its behalf.
+Example operations include waiting for a \texttt{read} operation to complete or having the
+kernel service a page fault or zero-fill a page. On systems running Linux 4.3 or newer, one can use the \texttt{perf\_events} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
+the time a thread spends blocked, one can profile with \verb+BLOCKTIME+ event and
+another time-based event, such as \verb+CYCLES+. The \verb+BLOCKTIME+ event shouldn't have any frequency or period specified, whereas \verb+CYCLES+ should have a frequency or period specified.
+
+\end{itemize}
+
+\subsubsection{PAPI Interface (optional)}
 The PAPI library supports a large collection of hardware counter events.
 Some events have standard names across all platforms, e.g. \verb+PAPI_TOT_CYC+, the event that measures total cycles.
 In addition to events whose names begin with the \verb+PAPI_+ prefix, platforms also provide access to a set of native events with names that are specific to the platform's processor.
@@ -346,21 +406,14 @@ For example, if the goal is to determine whether L2 D-cache latency is a limitin
 
 \item \textbf{Architectural event conflicts.}
 With some performance monitoring units, certain events may not be concurrently used with other events.
+\end{itemize}
 
-\item \textbf{Architectural interrupt delay.}
-On most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
-The gap is commonly 50-70 instructions.
-This means that one should not assume that aggregation at the source line level is fully precise.
-(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
-However, aggregation at the procedure and loop level is reliable.
-
-\item \textbf{System itimer (WALLCLOCK).}
+\subsubsection{System itimer (WALLCLOCK).}
 On Linux systems, the kernel will not deliver itimer interrupts faster than the unit of a jiffy, which defaults to 4 milliseconds; see the itimer man page.
 One can configure the kernel to use a value as small as 1 millisecond, but it is unlikely the kernel will actually deliver itimer signals at that rate when a period of 1000 microseconds is requested.
 
 However, on Linux one can get quite close to the kernel Hz rate by setting the itimer interval to something less than the Hz rate.
 For example, if the Hz rate is 1000 microseconds, one can use 500 microseconds (or just 1) and obtain about 999 interrupts per second.
-\end{itemize}
 
 \subsection{Platform-specific notes}
 \subsubsection{Cray XE and XK}
