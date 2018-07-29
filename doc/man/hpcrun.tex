@@ -139,12 +139,36 @@ This option may be given multiple times to profile several events at once;
 there may be system-dependent limits on how many events can be profiled simultaneously
 and on which events may be combined for profiling.
 If no events are given, the default is to profile \Prog{WALLCLOCK@5000}.
+For perf event's counter, it is possible to specify
+the number of frequency as the sample threshold by
+prefixing with f before the number.
+For instance, to have 100 samples per second, the period
+is: @f100 .\\
+N.B.: WALLCLOCK and hardware events cannot be mixed.
 
 \begin{itemize}
-  \item You should always specify a sampling period for each profiling event.
   \item The special event \Prog{WALLCLOCK} may be used to profile the actual elapsed time in microseconds
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
+
+\item[\OptArg{-c}{number}, \OptArg{--count}{number}]
+                       Only available for perf event's counter. This option
+                       specifies the event period to sample. It uses the same
+                       format of period as the option -e mentioned above.
+
+
+\item[\OptArg{-p}{level}, \OptArg{--precise-ip}{level}]
+                       Specify the precise ip level (used only with perf events):
+\begin{itemize}
+ \item 0: sample ip can have arbitrary skid
+ \item 1: sample ip must have constant skid
+ \item 2: sample ip requested to have 0 skid
+ \item 3: sample ip must have 0 skid
+\end{itemize}
+                       NOTE: Some architectures support a precise IP with 0 skid.
+                             Incorrect level will unable hpcrun to sample the events.
+
+
 
 \item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
 Measure only a fraction \Arg{frac} of the execution's processes.
