@@ -215,7 +215,7 @@ ompt_elide_runtime_frame_internal(
 {
 
 
-//  return;
+  //return;
   frame_t **bt_outer = &bt->last;
   frame_t **bt_inner = &bt->begin;
 
@@ -311,7 +311,7 @@ ompt_elide_runtime_frame_internal(
 
   if (frame0->exit_runtime_frame &&
       (((uint64_t) frame0->exit_runtime_frame) <
-       // ((uint64_t) (*bt_inner)->cursor.bp))) {
+      //  ((uint64_t) (*bt_inner)->cursor.bp))) {
         ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
     // however, exit_runtime_frame points beyond the top of stack. the final call 
@@ -329,8 +329,8 @@ ompt_elide_runtime_frame_internal(
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-//      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
-      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
+//      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
 	      if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
@@ -384,8 +384,8 @@ ompt_elide_runtime_frame_internal(
     it = *bt_inner; 
     if(exit0_flag) {
       for (; it <= *bt_outer; it++) {
-//        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_runtime_frame)) {
-        if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
+        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_runtime_frame)) {
+//        if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
           exit0 = it - 1;
           break;
         }
@@ -406,7 +406,7 @@ ompt_elide_runtime_frame_internal(
     if(reenter1_flag) {
       for (; it <= *bt_outer; it++) {
         if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->reenter_runtime_frame)) {
-        //if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
+       // if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
           reenter1 = it - 1;
           break;
         }
@@ -425,9 +425,9 @@ ompt_elide_runtime_frame_internal(
       //  in the callpath
 
       // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
-      if(TD_GET(master)){
-        return;
-      }
+      //if(TD_GET(master)){
+      //  return;
+      //}
 //      if(omp_get_thread_num() == 0)
 //        return;
 
@@ -478,7 +478,7 @@ ompt_elide_runtime_frame_internal(
       /* clip below the idle frame */
       for (it = *bt_inner; it <= *bt_outer; it++) {
         if ((uint64_t)(it->cursor.sp) >= idle_frame) {
-//        if ((uint64_t)(it->cursor.bp) >= idle_frame) {
+       // if ((uint64_t)(it->cursor.bp) >= idle_frame) {
           *bt_outer = it - 2;
               bt->bottom_frame_elided = true;
               bt->partial_unwind = true;
