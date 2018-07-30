@@ -285,6 +285,42 @@ corresponding situations are:
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Launching}
+
+When sampling with native events, by default hpcrun will profile using perf events.
+To force HPCToolkit to use PAPI (assuming it's available) instead of perf events, one
+must prefix the event with ‘\texttt{papi::}’ as follows:
+
+\begin{verbatim}
+hpcrun -e papi::CYCLES
+\end{verbatim}
+
+For PAPI presets, there is no need to prefix the event with ‘papi::’. For instance it is
+sufficient to specify \texttt{PAPI\_TOT\_CYC} event without any prefix to profile using PAPI.
+
+To sample an execution 100 times per second (frequency-based sampling) counting
+CYCLES and 100 times a second counting INSTRUCTIONS:
+\begin{verbatim}
+hpcrun -e CYCLES@f100 -e INSTRUCTIONS@f100 ...
+\end{verbatim}
+
+To sample an execution every 1,000,000 cycles and every 1,000,000 instructions using
+period-based sampling:
+\begin{verbatim}
+hpcrun -e CYCLES@1000000 -e INSTRUCTIONS@1000000 ...
+\end{verbatim}
+By default, hpcrun will use frequency-based sampling with the rate 300 samples per
+second per event type. Hence the following command will cause HPCToolkit to sample
+CYCLES at 300 samples per second and INSTRUCTIONS at 300 samples per second:
+\begin{verbatim}
+hpcrun -e CYCLES -e INSTRUCTIONS ...
+\end{verbatim}
+One can a different default rate using the -c option. The command below will sample
+CYCLES at 200 samples per second and INSTRUCTIONS at 200 samples per second:
+\begin{verbatim}
+hpcrun -c f200 -e CYCLES -e INSTRUCTIONS ...
+\end{verbatim}
+
 \section{Examples}
 
 Assume we wish to profile the application \texttt{zoo}.
