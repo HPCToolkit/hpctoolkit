@@ -272,7 +272,6 @@ typedef struct thread_data_t {
   sigjmp_buf_t     mem_error;
   bool             deadlock_drop;
   int              handling_sample;
-  int              splay_lock;
   int              fnbounds_lock;
 
   // ----------------------------------------

@@ -107,12 +107,6 @@ hpcrun_cleanup_partial_unwind(void)
 
   hpcrun_up_pmsg_count();
 
-#if 0
-  if (TD_GET(splay_lock)) {
-    hpcrun_release_splay_lock(); // splay tree lock is no longer used.
-  }
-#endif
-
   if (TD_GET(fnbounds_lock)) {
     fnbounds_release_lock();
   }

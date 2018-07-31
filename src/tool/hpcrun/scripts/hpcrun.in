@@ -141,15 +141,14 @@ and record information about the monitored <command>.
 When <command> terminates, a profile measurement databse will be written to
 the directory:
   hpctoolkit-<command>-measurements[-<jobid>]
-where <jobid> is a PBS or Sun Grid Engine job identifier.
+where <jobid> is an operating system process id.
 
 hpcrun enables a user to abort a process and write the partial profiling
 data to disk by sending the Interrupt signal (SIGINT or Ctrl-C).  This can
 be extremely useful on long-running or misbehaving applications.
 
 Options: Informational
-  -l, -L --list-events List available events. (N.B.: some may not be
-                       profilable)
+  -l, -L --list-events List available events. (N.B.: some may not be profilable)
   -V, --version        Print version information.
   -h, --help           Print help.
 

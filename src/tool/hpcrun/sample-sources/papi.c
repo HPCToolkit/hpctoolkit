@@ -597,7 +597,7 @@ METHOD_FN(display_events)
 
 #define ss_name papi
 #define ss_cls SS_HARDWARE
-#define ss_sort_order  80
+#define ss_sort_order  70
 
 #include "ss_obj.h"
 

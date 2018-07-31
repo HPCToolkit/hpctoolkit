@@ -208,7 +208,7 @@ hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
 extern int
 hpcrun_fmt_epochHdr_fwrite(FILE* out, epoch_flags_t flags,
 			   uint64_t measurementGranularity,
-			   uint32_t raToCallsiteOfst, ...);
+			   ...);
 
 extern int
 hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* out);

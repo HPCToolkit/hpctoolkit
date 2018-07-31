@@ -135,12 +135,14 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // - A CCT::Stmt node is always a leaf.
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   string agent, bool doNormalizeTy);
+			   string agent, bool doNormalizeTy,
+                           bool printProgress);
 
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   Prof::LoadMap::LM* loadmap_lm,
-			   Prof::Struct::LM* lmStrct);
+			   Prof::Struct::LM* lmStrct,
+                           bool printProgress);
 
 
 // lm is optional and may be NULL

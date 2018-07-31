@@ -44,7 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "sample_sources_registered.h"
 
 #undef _TPx
 #undef _T3
@@ -113,10 +112,8 @@ sample_source_t obj_name() = {
  * constructor 
  *****************************************************************************/
 
-static void reg_fn_name(void) __attribute__ ((constructor));
-
-static void
-reg_fn_name(void)
+void
+SS_OBJ_CONSTRUCTOR(ss_name)(void)
 {
   hpcrun_ss_register(&obj_name());
 }

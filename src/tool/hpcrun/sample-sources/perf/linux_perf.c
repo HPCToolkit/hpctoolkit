@@ -555,7 +555,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         0/*skipInner*/, 0/*isSync*/, &info);
 
   blame_shift_apply(current->event->metric, sv->sample_node, 
-		    counter /*metricIncr*/);
+                    counter /*metricIncr*/);
 
   return sv;
 }
@@ -979,7 +979,7 @@ read_fd(int fd)
 
 #define ss_name linux_perf
 #define ss_cls SS_HARDWARE
-#define ss_sort_order  70
+#define ss_sort_order  60
 
 #include "sample-sources/ss_obj.h"
 
