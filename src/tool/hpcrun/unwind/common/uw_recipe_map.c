@@ -80,6 +80,7 @@
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
 #include <main.h>
+#include "thread_data.h"
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>
@@ -650,17 +651,33 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     void *fcn_start = (void*)ilm_btui->interval.start;
     void *fcn_end   = (void*)ilm_btui->interval.end;
 
+    // ----------------------------------------------------------
     // potentially crash in this statement. need to save the state 
-    current_btuwi = ilm_btui;
+    // ----------------------------------------------------------
 
-    btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
-    if (btuwi_stat.error != 0) {
-      TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
-	   fcn_start, fcn_end, btuwi_stat.error);
+    current_btuwi        = ilm_btui;
+    thread_data_t* td    = hpcrun_get_thread_data();
+    sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
+
+    td->current_jmp_buf  = &(td->bad_interval);
+
+    int ljmp = sigsetjmp(td->bad_interval.jb, 1);
+    if (ljmp == 0) {
+      btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
+      if (btuwi_stat.error != 0) {
+        TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
+       fcn_start, fcn_end, btuwi_stat.error);
+      }
+      ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
+      current_btuwi = NULL;
+      atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
+
+    } else {
+      EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
+      atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
+      return false;
     }
-    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
-    current_btuwi = NULL;
-    atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
+    td->current_jmp_buf = oldjmp;   // restore the ouer sigjmp
   }
   else {
     while (FORTHCOMING == oldstat)
