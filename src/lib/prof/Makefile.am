@@ -90,6 +90,8 @@ MYSOURCES = \
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
+	\
+	StringSet.hpp StringSet.cpp \
 	NameMappings.hpp NameMappings.cpp 
 
 

@@ -259,7 +259,6 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
 			       default_measurement_granularity,
-			       default_ra_to_callsite_distance,
 			       "TODO:epoch-name","TODO:epoch-value",
 			       NULL);
 

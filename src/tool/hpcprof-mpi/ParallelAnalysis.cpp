@@ -95,7 +95,20 @@ using std::string;
 namespace ParallelAnalysis {
 
 //***************************************************************************
-// 
+// forward declarations
+//***************************************************************************
+
+static void
+packStringSet(const StringSet& profile,
+		 uint8_t** buffer, size_t* bufferSz);
+
+static StringSet*
+unpackStringSet(uint8_t* buffer, size_t bufferSz);
+
+
+
+//***************************************************************************
+// interface functions
 //***************************************************************************
 
 void
@@ -231,6 +244,84 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 }
 
 
+void
+broadcast(StringSet* stringSet,
+	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
+{
+  int max_level = RankTree::level(maxRank);
+  for (int level = 0; level < max_level; ++level) {
+    int i_beg = RankTree::begNode(level);
+    int i_end = std::min(maxRank, RankTree::endNode(level));
+    
+    for (int i = i_beg; i <= i_end; ++i) {
+      // merge i into its left child (i_lchild)
+      int i_lchild = RankTree::leftChild(i);
+      if (i_lchild <= maxRank) {
+	mergeNonLocal(stringSet, i_lchild, i, myRank);
+      }
+
+      // merge i into its right child (i_rchild)
+      int i_rchild = RankTree::rightChild(i);
+      if (i_rchild <= maxRank) {
+	mergeNonLocal(stringSet, i_rchild, i, myRank);
+      }
+    }
+    MPI_Barrier(comm);
+  }
+}
+
+
+void
+mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
+	      int myRank, MPI_Comm comm)
+{
+  int tag = rank_y; // sender
+
+  uint8_t* stringSetBuf = NULL;
+
+  StringSet *stringSet_x = NULL;
+  StringSet *stringSet_y = NULL;
+
+  if (myRank == rank_x) {
+    stringSet_x  = stringSet;
+
+    int stringSetBufSz = 0;
+
+    // determine size of incoming packed directory set from rank_y
+    MPI_Status mpistat;
+    MPI_Probe(rank_y, tag, comm, &mpistat);
+    MPI_Get_count(&mpistat, MPI_BYTE, &stringSetBufSz);
+
+    stringSetBuf = new uint8_t[stringSetBufSz];
+
+    // rank_x receives stringSet from rank_y
+    MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, 
+	     rank_y, tag, comm, &mpistat);
+
+    stringSet_y = unpackStringSet(stringSetBuf, 
+					(size_t) stringSetBufSz);
+    delete[] stringSetBuf;
+
+    *stringSet_x += *stringSet_y;
+
+    delete stringSet_y;
+  }
+
+  if (myRank == rank_y) {
+    stringSet_y = stringSet;
+
+    size_t stringSetBufSz = 0;
+    packStringSet(*stringSet_y, &stringSetBuf, &stringSetBufSz);
+
+    // rank_y sends stringSet to rank_x
+    MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, 
+	     rank_x, tag, comm);
+
+    free(stringSetBuf);
+  }
+}
+
+
 //***************************************************************************
 
 void
@@ -260,6 +351,37 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
 
   fclose(fs);
   return prof;
+}
+
+
+
+//***************************************************************************
+
+static void
+packStringSet(const StringSet& stringSet,
+	      uint8_t** buffer, size_t* bufferSz)
+{
+  // open_memstream: malloc buffer and sets bufferSz
+  FILE* fs = open_memstream((char**)buffer, bufferSz);
+
+  StringSet::fmt_fwrite(stringSet, fs);
+
+  fclose(fs);
+}
+
+
+static StringSet*
+unpackStringSet(uint8_t* buffer, size_t bufferSz)
+{
+  FILE* fs = fmemopen(buffer, bufferSz, "r");
+
+  StringSet* stringSet = NULL;
+
+  StringSet::fmt_fread(stringSet, fs);
+
+  fclose(fs);
+
+  return stringSet;
 }
 
 

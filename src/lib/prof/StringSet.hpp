@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,42 +44,49 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-//******************************************************************************
-// File: ss-list.h
+//***************************************************************************
 //
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
+// File:
+//   $HeadURL$
 //
-//******************************************************************************
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
-#endif
+#ifndef String_Set_hpp
+#define String_Set_hpp
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
+//***************************************************************************
+// system include files
+//***************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+#include <set>
+#include <string>
 
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
 
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
+//***************************************************************************
+// type declarations
+//***************************************************************************
 
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
+class StringSet: public std::set<std::string> {
+public:
+  void operator+=(const StringSet &rhs) {
+    this->insert(rhs.begin(), rhs.end());
+  };
+
+
+  static int
+  fmt_fread(StringSet* &stringSet, FILE* infs); 
+
+  static int
+  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
+
+};
+
 #endif

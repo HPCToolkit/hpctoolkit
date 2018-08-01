@@ -341,8 +341,6 @@ uint ANode::s_nextUniqueId = 2;
 // ANode, etc: constructors/destructors
 //***************************************************************************
 
-uint ANode::s_raToCallsiteOfst = 1;
-
 string AProcNode::BOGUS;
 
 
