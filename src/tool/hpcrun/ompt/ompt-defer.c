@@ -537,9 +537,25 @@ void resolve_one_region_context(ompt_region_data_t* region_data){
     return;
   }
 
+
+  cct_addr_t* child_addr = hpcrun_cct_addr(hpcrun_cct_children(to_move));
+  cct_node_t* prefix_parent = hpcrun_cct_parent(prefix);
+
+  while (prefix_parent){
+    if(hpcrun_cct_find_addr(prefix_parent, child_addr)){
+      hpcrun_cct_merge(prefix_parent, to_move, merge_metrics, NULL);
+      goto return_label;
+    }
+    prefix_parent = hpcrun_cct_parent(prefix_parent);
+  }
+
   hpcrun_cct_merge(prefix, to_move, merge_metrics, NULL);
 
-  hpcrun_cct_delete_self(to_move);
+
+  return_label: {
+    hpcrun_cct_delete_self(to_move);
+  };
+
 }
 
 

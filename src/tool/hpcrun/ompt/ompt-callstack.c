@@ -329,8 +329,8 @@ ompt_elide_runtime_frame_internal(
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-//      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
-      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
+//      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
 	      if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
@@ -425,9 +425,9 @@ ompt_elide_runtime_frame_internal(
       //  in the callpath
 
       // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
-      if(TD_GET(master)){
-        return;
-      }
+//      if(TD_GET(master)){
+//        return;
+//      }
 //      if(omp_get_thread_num() == 0)
 //        return;
 

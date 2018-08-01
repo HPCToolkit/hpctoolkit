@@ -349,6 +349,12 @@ hpcrun_cct_parent(cct_node_t* x)
   return x? x->parent : NULL;
 }
 
+cct_node_t*
+hpcrun_cct_children(cct_node_t* x)
+{
+    return x? x->children : NULL;
+}
+
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
@@ -771,6 +777,8 @@ attach_to_a(cct_node_t* node, cct_op_arg_t arg, size_t l)
 // The merging operation main code
 //
 
+#include "../utilities/ip-normalized.h"
+
 void
 hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 		 merge_op_t merge, merge_op_arg_t arg)
@@ -780,6 +788,7 @@ hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
     merge(cct_a, cct_b, arg);
   }
   if (! cct_a->children){
+      // FIXME: vi3 bug because cct_b->children has the same addr as cct_a
     cct_a->children = cct_b->children;
     // whole cct->children splay tree is used as kids of cct_a,
     // enough to disconnect children from cct_b (that's why hpcrun_cct_walkset is called)
