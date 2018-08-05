@@ -329,6 +329,7 @@ ompt_elide_runtime_frame_internal(
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
+        // FIXME: different from ompt branch which used >
       if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
 //      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
 	      if (isSync) {
@@ -718,23 +719,30 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
         // full context is not available. if the there is a node for region_id in
         // the unresolved tree, use it as the cursor to anchor the sample for now.
         // it will be resolved later. otherwise, use the default cursor.
+
+        // FIXME: vi3 This is just a temporary solution. More performant solution could be made by
+        // removing hpcrun_ompt_get_region_data, because  hpcrun_ompt_get_thread_num calls ompt_get_task_info
+        // which provide parallel_data
+
+        // FIXME: vi3 those three Lines of code do next:
+        // 1. Go up through nested regions and skipped all where I am the master
+        // 2. Find the first region at the callstack in which I am worker
+        // 3. Eventually create pseudo node for this region. Make that pseudo node cursor
+        //    and stick all callpaths from sampling here
+        int ancestor_level = -1;
+        while(hpcrun_ompt_get_thread_num(++ancestor_level) == 0);
+        region_data = hpcrun_ompt_get_region_data(ancestor_level);
+
         prefix =
           hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
 
-//          hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+
         if (prefix) {
           cct_cursor = prefix;
         }else{
           prefix = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
           cct_cursor = prefix;
-//          printf("\n\n\n\t\t%p\t%p\n\n", &threads_queue, prefix);
         }
-
-
-        // check if this works fine
-//        cct_node_t* to_move = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
-//        printf("ALOOOOOOOOOOOOOOOOOOOOOOOOOOO: %p\t%lx\n", to_move, region_data->region_id);
-
       }
     }
   }

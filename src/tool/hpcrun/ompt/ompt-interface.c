@@ -994,6 +994,22 @@ hpcrun_ompt_get_parent_region_data(){
   return hpcrun_ompt_get_region_data(1);
 }
 
+int
+hpcrun_ompt_get_thread_num(int level)
+{
+    if (ompt_initialized) {
+        ompt_task_type_t type;
+        ompt_data_t *task_data = NULL;
+        ompt_data_t *parallel_data = NULL;
+        ompt_frame_t *task_frame = NULL;
+        int thread_num = 0;
+
+        ompt_get_task_info_fn(level, &type, &task_data, &task_frame, &parallel_data, &thread_num);
+        //printf("Task frame pointer = %p\n", task_frame);
+        return thread_num;
+    }
+    return -1;
+}
 
 // FIXME vi3: couple of notes and warning from stdatomic
 //warning: value computed is not used [-Wunused-value]

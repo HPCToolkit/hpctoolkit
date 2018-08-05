@@ -96,4 +96,8 @@ void wfq_enqueue(ompt_base_t *new, ompt_wfq_t *queue);
 ompt_base_t* wfq_dequeue_public(ompt_wfq_t *public_queue);
 ompt_base_t* wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue);
 
+// vi3 get thread num
+extern int hpcrun_ompt_get_thread_num(int level);
+
+
 #endif // _OMPT_INTERFACE_H_
