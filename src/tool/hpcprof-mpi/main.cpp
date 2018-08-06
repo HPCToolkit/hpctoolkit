@@ -237,6 +237,9 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // 0. Make empty Experiment database (ensure file system works)
   // -------------------------------------------------------
+  if (myRank == rootRank)
+    args.makeDatabaseDir();
+
   char dbDirBuf[PATH_MAX];
   if (myRank == rootRank) {
     memset(dbDirBuf, '\0', PATH_MAX); // avoid artificial valgrind warnings
@@ -272,13 +275,6 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
-
-  // -------------------------------------------------------
-  // 0. Make empty Experiment database (ensure file system works)
-  // -------------------------------------------------------
-
-  if (myRank == rootRank)
-    args.makeDatabaseDir();
 
   // -------------------------------------------------------
   // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)
