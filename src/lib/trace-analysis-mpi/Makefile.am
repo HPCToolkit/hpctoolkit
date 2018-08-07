@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2017, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,59 +70,33 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
-
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp \
-	ParallelAnalysis.hpp ParallelAnalysis.cpp
+	TraceAnalysis.hpp TraceAnalysis.cpp \
+	RemoteTraceAnalyzer.hpp RemoteTraceAnalyzer.cpp 
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+# GNU binutils flags are needed for HPCLIB_ISA.
+BOOST_INC = @BOOST_INC@
+LIBDWARF_INC = @LIBDWARF_INC@
+SYMTABAPI_INC = @SYMTABAPI_INC@
 
-MYLDFLAGS = \
-	@HPCPROFMPI_LT_LDFLAGS@ \
-	@HPC_LT_LDFLAGS@ \
-	@HOST_CXXFLAGS@ \
-	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@ \
-	@LZMA_PROF_MPI_LIBS@ 
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@GNUBINUTILS_IFLAGS@  \
+	-I$(BOOST_INC)  \
+	-I$(LIBDWARF_INC)  \
+	-I$(SYMTABAPI_INC)
 
 MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) \
-	$(MY_LIB_XED) \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	$(HPCLIB_TraceAnalysisMPI) \
-	$(HPCLIB_TraceAnalysis) \
-	$(MY_LIB_CFG) \
-	@LZMA_PROF_MPI_LIBS@ \
-	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCPROF_LDFLAGS@
+	$(HPCLIB_TraceAnalysis)
 
-MY_LIB_CFG = \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)  \
-	-L$(LIBDWARF_LIB) -ldwarf  \
-	-L$(LIBELF_LIB) -lelf
-
-if USE_BOOST_LIBS
-MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-endif
-
-if HOST_CPU_X86_FAMILY
-MY_LIB_XED = $(XED2_PROF_MPI_LIBS)
+if IS_HOST_AR
+  MYAR = @HOST_AR@
 else
-MY_LIB_XED =
+  MYAR = $(AR) cru
 endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -130,30 +104,22 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-pkglibdir = @my_pkglibdir@
-pkglibexecdir = @my_pkglibexecdir@
-
 CXX = $(MPICXX)
 
-bin_SCRIPTS = hpcprof-mpi
+noinst_LTLIBRARIES = libHPCtrace-analysis-mpi.la
 
-pkglibexec_PROGRAMS = hpcprof-mpi-bin
-
-hpcprof_mpi_bin_SOURCES  = $(MYSOURCES)
-hpcprof_mpi_bin_CFLAGS   = $(MYCFLAGS)
-hpcprof_mpi_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcprof_mpi_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcprof_mpi_bin_LDADD    = $(MYLDADD)
+libHPCtrace_analysis_mpi_la_SOURCES  = $(MYSOURCES)
+libHPCtrace_analysis_mpi_la_CFLAGS   = $(MYCFLAGS)
+libHPCtrace_analysis_mpi_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCtrace_analysis_mpi_la_AR       = $(MYAR)
+libHPCtrace_analysis_mpi_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
-
-install-exec-hook:
-	$(call HPC_moveIfStaticallyLinked,$(DESTDIR)$(pkglibexecdir)/hpcprof-mpi-bin$(EXEEXT),$(DESTDIR)$(bindir)/hpcprof-mpi$(EXEEXT))
-
 
 #############################################################################
 # Common rules
 #############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
+
 

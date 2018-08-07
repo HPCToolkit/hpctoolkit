@@ -79,6 +79,7 @@ SUBDIRS += \
 	xml \
 	support \
 	trace-analysis \
+	trace-analysis-mpi \
 	stubs-gcc_s
 endif
 

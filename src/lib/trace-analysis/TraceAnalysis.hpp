@@ -55,14 +55,12 @@
 #define TRACEANALYSIS_HPP
 
 #include <string>
-#include <vector>
 using std::string;
-using std::vector;
 
 #include <lib/analysis/CallPath.hpp>
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+  bool analysis(Prof::CallPath::Profile* prof, string dbDir);
 }
 
 #endif /* TRACEANALYSIS_HPP */

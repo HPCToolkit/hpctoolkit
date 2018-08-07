@@ -56,6 +56,9 @@
 
 #include <boost/serialization/access.hpp>
 
+#include <string>
+using std::string;
+
 namespace TraceAnalysis {
   enum TimeType {
     TRACE,
@@ -70,11 +73,13 @@ namespace TraceAnalysis {
     void serialize(Archive & ar, const unsigned int version);
     
   public:
-    TCTATime(TimeType type) : type(type) {}
-    TCTATime(const TCTATime& orig) : type(orig.type) {}
+    TCTATime(TimeType type) : type(type), numSamples(0) {}
+    TCTATime(const TCTATime& orig) : type(orig.type), numSamples(orig.numSamples) {}
     virtual ~TCTATime() {}
     
-    virtual void clear() = 0;
+    virtual void clear() {
+      numSamples = 0;
+    }
     
     virtual Time getDuration() const {
       return (getMinDuration() + getMaxDuration()) / 2;
@@ -84,9 +89,15 @@ namespace TraceAnalysis {
     
     virtual TCTATime* duplicate() = 0;
     
-    virtual string toString() const = 0;
+    virtual string toString() const {
+      if (numSamples == (long)numSamples)
+        return " Samples = " + std::to_string((long)numSamples);
+      else
+        return " Samples = " + std::to_string(numSamples);
+    }
     
     const TimeType type;
+    double numSamples;
   };
   
   // Temporal Context Tree Trace Time
@@ -109,6 +120,7 @@ namespace TraceAnalysis {
     virtual ~TCTTraceTime() {}
     
     virtual void clear() {
+      TCTATime::clear();
       startTimeExclusive = 0;
       startTimeInclusive = 0;
       endTimeInclusive = 0;
@@ -130,11 +142,8 @@ namespace TraceAnalysis {
     }
     
     virtual string toString() const {
-      return timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
+      return TCTATime::toString() + ", " + timeToString((startTimeExclusive + startTimeInclusive)/2) + " ~ "
               + timeToString((endTimeInclusive + endTimeExclusive)/2);
-      //return //timeToString(startTimeExclusive) + "/" + timeToString(startTimeInclusive) + " ~ "
-        //+ timeToString(endTimeInclusive) + "/" + timeToString(endTimeExclusive) + 
-        //", Duration = " + timeToString(getMinDuration()) + "/" + timeToString(getMaxDuration());
     }
     
     Time startTimeExclusive;
@@ -159,12 +168,14 @@ namespace TraceAnalysis {
       maxDurationInclusive = orig.maxDurationInclusive;
     }
     TCTProfileTime(const TCTATime& other) : TCTATime(PROFILE) {
+      numSamples = other.numSamples;
       minDurationInclusive = other.getMinDuration();
       maxDurationInclusive = other.getMaxDuration();
     }
     virtual ~TCTProfileTime() {}
     
     virtual void clear() {
+      TCTATime::clear();
       minDurationInclusive = 0;
       maxDurationInclusive = 0;
     }
@@ -182,8 +193,7 @@ namespace TraceAnalysis {
     }
     
     virtual string toString() const {
-      return " Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
-      //return " Duration = " + timeToString(minDurationInclusive) + "/" + timeToString(maxDurationInclusive);
+      return TCTATime::toString() + ", Duration = " + timeToString((minDurationInclusive + maxDurationInclusive)/2);
     }
 
     Time minDurationInclusive;

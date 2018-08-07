@@ -54,6 +54,7 @@
 #include <boost/serialization/string.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/serialization/unordered_map.hpp>
 
 #include "TCT-Serialization.hpp"
 
@@ -105,6 +106,7 @@
 #include "TCT-Metrics.hpp"
 #include "TCT-Node.hpp"
 #include "TCT-Cluster.hpp"
+#include "TCT-CFG.hpp"
 
 #include "../BinaryAnalyzer.hpp"
 
@@ -121,7 +123,7 @@ namespace TraceAnalysis {
     ar.template register_type<TCTIterationTraceNode>();
     ar.template register_type<TCTRootNode>();
     ar.template register_type<TCTLoopNode>();
-    ar.template register_type<TCTLoopClusterNode>();
+    ar.template register_type<TCTClusterNode>();
     ar.template register_type<TCTProfileNode>();
   }
   #ifdef BOOST_ARCHIVE_TEXT_OARCHIVE_HPP || BOOST_ARCHIVE_TEXT_IARCHIVE_HPP
@@ -152,6 +154,7 @@ namespace TraceAnalysis {
 
   template<class Archive>
   void TCTATime::serialize(Archive& ar, const unsigned int version) {
+    ar & numSamples;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTATime)
   
@@ -250,7 +253,6 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTIterationTraceNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTATraceNode>(*this);
-    ar & const_cast<long&>(iterNum);
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTIterationTraceNode)
   
@@ -263,14 +265,16 @@ namespace TraceAnalysis {
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTLoopNode)
   
   template<class Archive>
-  void TCTLoopClusterNode::serialize(Archive& ar, const unsigned int version) {
+  void TCTClusterNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & numClusters;
     for (int i = 0; i < numClusters; i++)
       ar & clusters[i].members & clusters[i].representative;
-    ar & diffRatio;
+    for (int i = 0; i < numClusters; i++)
+      for (int j = i+1; j < numClusters; j++)
+        ar & diffRatio[i][j];
   }
-  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTLoopClusterNode)
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTClusterNode)
           
   template<class Archive>
   void TCTProfileNode::serialize(Archive& ar, const unsigned int version) {
@@ -285,7 +289,7 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTClusterMemberRSD::serialize(Archive& ar, const unsigned int version) {
     ar & const_cast<int&>(nested_level);
-    ar & first_id & first_rsd;
+    ar & first_id & last_id & first_rsd;
     ar & stride & length;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTClusterMemberRSD)
@@ -296,4 +300,12 @@ namespace TraceAnalysis {
     ar & members;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTClusterMembers)
+  
+  /*
+  template<class Archive>
+  void TCTIterationCounter::serialize(Archive& ar, const unsigned int version) {
+    ar & counter;
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTIterationCounter)
+  */
 }

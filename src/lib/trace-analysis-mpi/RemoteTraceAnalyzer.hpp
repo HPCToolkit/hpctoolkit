@@ -45,32 +45,26 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   LocalTraceAnalyzer.hpp
+ * File:   RemoteTraceAnalyzer.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on March 6, 2018, 11:27 PM
- * 
- * Analyzes traces for a rank/thread and generates a summary temporal context tree.
+ * Created on August 5, 2018, 11:23 AM
  */
 
-#ifndef LOCALTRACEANALYZER_HPP
-#define LOCALTRACEANALYZER_HPP
+#ifndef REMOTETRACEANALYZER_HPP
+#define REMOTETRACEANALYZER_HPP
 
-#include <string>
-using std::string;
-
-#include <lib/analysis/CallPath.hpp>
-#include "data/TCT-Node.hpp"
+#include <lib/trace-analysis/data/TCT-Node.hpp>
 
 namespace TraceAnalysis {
-  class LocalTraceAnalyzer {
+  class RemoteTraceAnalyzer {
   public:
-    LocalTraceAnalyzer();
-    virtual ~LocalTraceAnalyzer();
+    RemoteTraceAnalyzer();
+    virtual ~RemoteTraceAnalyzer();
     
-    TCTClusterNode* analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+    TCTClusterNode* analyze(TCTClusterNode* rootCluster, int myRank, int numRanks);
   };
 }
 
-#endif /* LOCALTRACEANALYZER_HPP */
+#endif /* REMOTETRACEANALYZER_HPP */
 

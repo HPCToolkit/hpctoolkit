@@ -245,7 +245,7 @@ realmain(int argc, char* const* argv)
   // 4. Trace Analysis
   // ------------------------------------------------------------
   if (args.traceAnalysis) {
-    TraceAnalysis::analysis(prof, args.db_dir, 0, 1);
+    TraceAnalysis::analysis(prof, args.db_dir);
   }
 
   // -------------------------------------------------------

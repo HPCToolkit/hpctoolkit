@@ -89,7 +89,7 @@ using std::vector;
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
-#include <lib/trace-analysis/TraceAnalysis.hpp>
+#include <lib/trace-analysis-mpi/TraceAnalysis.hpp>
 
 #include <lib/banal/Struct.hpp>
 
@@ -400,6 +400,7 @@ realmain(int argc, char* const* argv)
   // 4. Trace Analysis
   // ------------------------------------------------------------
   if (args.traceAnalysis) {
+    MPI_Barrier(MPI_COMM_WORLD);
     TraceAnalysis::analysis(profGbl, args.db_dir, myRank, numRanks);
   }
   

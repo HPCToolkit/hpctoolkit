@@ -57,9 +57,10 @@
 using std::max;
 using std::min;
 
+#include <string.h>
+#include <limits.h>
+
 namespace TraceAnalysis {
-  TCTIterationCounter iterCounter;
-  
   bool TCTClusterMemberRSD::isIsomorphic(const TCTClusterMemberRSD* latter) const {
     // Not isomorphic if nested_level doesn't match.
     if (nested_level != latter->nested_level) return false;
@@ -110,44 +111,59 @@ namespace TraceAnalysis {
     else // When this RSD is one level higher than the latter RSD
       length += 1;
     
+    last_id = latter->last_id;
     delete latter;
   }
   
   string TCTClusterMemberRSD::toString() const {
     if (nested_level == 0) return std::to_string(first_id);
-    return "(" + first_rsd->toString() + "+" + std::to_string(stride) + "[x" + std::to_string(length) + "])";
+    return "(" + first_rsd->toString() + "+" + std::to_string(stride) + "[x" + std::to_string(length) + "]:" + std::to_string(last_id) + ")";
+  }
+
+  // Helper function
+  TCTClusterMemberRSD* getFirstInstance(int max_level, const vector<vector<TCTClusterMemberRSD*>>& members, size_t* idx) {
+    long min_ID = LONG_MAX;
+    TCTClusterMemberRSD* ret = NULL;
+    
+    for (int level = 0; level <= max_level; level++)
+      if (idx[level] < members[level].size()
+              && members[level][idx[level]]->getLastID() < min_ID) {
+        ret = members[level][idx[level]];
+        min_ID = ret->getLastID();
+      }
+    
+    return ret;
   }
   
   TCTClusterMembers::TCTClusterMembers(TCTClusterMembers& other1, TCTClusterMembers& other2) :
     max_level(max(other1.max_level, other2.max_level)), members(max_level+1) {
     //TODO: optimization -- if last_ID of an input is greater than the first_ID of another input
+    size_t* idx1 = new size_t[other1.max_level+1];
+    size_t* idx2 = new size_t[other2.max_level+1];
+    memset(idx1, 0, (other1.max_level+1) * sizeof(size_t));
+    memset(idx2, 0, (other2.max_level+1) * sizeof(size_t));
     
-    // Move the max_level of two inputs for easier processing.
-    while (other1.max_level < max_level) other1.increaseMaxLevel();
-    while (other2.max_level < max_level) other2.increaseMaxLevel();
+    TCTClusterMemberRSD* first1 = getFirstInstance(other1.max_level, other1.members, idx1);
+    TCTClusterMemberRSD* first2 = getFirstInstance(other2.max_level, other2.members, idx2);
     
-    // Add members of two inputs to this TCTClusterMembers.
-    // Members of two input TCTClusterMembers are removed.
-    for (int level = max_level; level >= 0; level--) {
-      size_t idx1 = 0, idx2 = 0;
-      while (idx1 < other1.members[level].size() || idx2 < other2.members[level].size()) {
-        if (idx2 == other2.members[level].size() || 
-                (idx1 < other1.members[level].size() && other1.members[level][idx1]->getFirstID() < other2.members[level][idx2]->getFirstID())) {
-          addMember(other1.members[level][idx1]);
-          idx1++;
-        }
-        else {
-          addMember(other2.members[level][idx2]);
-          idx2++;
-        }
+    while (first1 != NULL || first2 != NULL)
+      if ((first2 == NULL) ||
+              (first1 != NULL && first1->getLastID() < first2->getLastID())) {
+        addMember(first1);
+        idx1[first1->nested_level]++;
+        first1 = getFirstInstance(other1.max_level, other1.members, idx1);
       }
-      other1.members[level].clear();
-      other2.members[level].clear();
-    }
-    other1.members.clear();
-    other2.members.clear();
-    other1.max_level = 0;
-    other2.max_level = 0;
+      else {
+        addMember(first2);
+        idx2[first2->nested_level]++;
+        first2 = getFirstInstance(other2.max_level, other2.members, idx2);
+      }
+    
+    delete idx1;
+    delete idx2;
+    
+    other1.max_level = -1;
+    other2.max_level = -1;
   }
   
   void TCTClusterMembers::addMember(TCTClusterMemberRSD* rsd) {
@@ -178,6 +194,15 @@ namespace TraceAnalysis {
   }
   
   void TCTClusterMembers::updateMember(int nested_level, int idx) {
+    // make sure members are still ranked by last_id
+    TCTClusterMemberRSD* tmp = members[nested_level][idx];
+    while ((idx < (int)members[nested_level].size() - 1) 
+            && (tmp->getLastID() > members[nested_level][idx+1]->getLastID())) {
+      members[nested_level][idx] = members[nested_level][idx+1];
+      idx++;
+    }
+    members[nested_level][idx] = tmp;
+    
     detectRSD(nested_level, idx);
   }
   

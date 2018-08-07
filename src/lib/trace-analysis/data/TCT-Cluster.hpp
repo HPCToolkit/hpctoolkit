@@ -57,9 +57,6 @@
 #include <vector>
 using std::vector;
 
-#include <unordered_map>
-using std::unordered_map;
-
 #include <string>
 using std::string;
 
@@ -68,27 +65,6 @@ using std::string;
 #include <boost/serialization/access.hpp>
 
 namespace TraceAnalysis {
-  class TCTIterationCounter {
-  public:
-    TCTIterationCounter() {}
-    ~TCTIterationCounter() {}
-    
-    long getNewIterationNumber(int loop_id) {
-      if (counter.find(loop_id) == counter.end()) {
-        counter[loop_id] = 1;
-        return 0;
-      }
-      else
-        return counter[loop_id]++;
-    }
-    
-  private:
-    // map from loop id to total iteration counts.
-    unordered_map<int, long> counter;
-  };
-  
-  extern TCTIterationCounter iterCounter;
-  
   // (Power) Regular Section Descriptor to record members of clusters.
   class TCTClusterMemberRSD {
     friend class boost::serialization::access;
@@ -96,17 +72,16 @@ namespace TraceAnalysis {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     TCTClusterMemberRSD() : 
-        nested_level(-1), first_id(-1), first_rsd(NULL), stride(-1), length(-1) {}
+        nested_level(-1), first_id(-1), last_id(-1), first_rsd(NULL), stride(-1), length(-1) {}
     
   public:
     TCTClusterMemberRSD(long id) : 
-        nested_level(0), first_id(id), first_rsd(NULL), stride(0), length(1) {}
+        nested_level(0), first_id(id), last_id(id), first_rsd(NULL), stride(0), length(1) {}
     TCTClusterMemberRSD(TCTClusterMemberRSD* rsd, int stride, int length) : 
-        nested_level(rsd->nested_level+1), first_id(rsd->first_id), stride(stride), length(length) {
-      first_rsd = rsd->duplicate();
-    }
+        nested_level(rsd->nested_level+1), first_id(rsd->first_id), last_id(rsd->last_id + stride * (length-1)), 
+        first_rsd(rsd->duplicate()), stride(stride), length(length) {}
     TCTClusterMemberRSD(const TCTClusterMemberRSD& other) :
-        nested_level(other.nested_level), first_id(other.first_id), stride(other.stride), length(other.length) {
+        nested_level(other.nested_level), first_id(other.first_id), last_id(other.last_id), stride(other.stride), length(other.length) {
       if (other.first_rsd == NULL)
         first_rsd = NULL;
       else
@@ -124,10 +99,15 @@ namespace TraceAnalysis {
       return first_id;
     }
     
-    void setFirstID(long new_id) {
-      first_id = new_id;
+    long getLastID() const {
+      return last_id;
+    }
+    
+    void shiftID(long inc) {
+      first_id += inc;
+      last_id += inc;
       if (first_rsd != NULL)
-        first_rsd->setFirstID(new_id);
+        first_rsd->shiftID(inc);
     }
     
     // If the latter RSD is isomorphic to this RSD, return true;
@@ -152,6 +132,7 @@ namespace TraceAnalysis {
     
   private:
     long first_id; // ID of first member
+    long last_id; // ID of last member
     TCTClusterMemberRSD* first_rsd; // First nested RSD for PRSDs
 
     int stride;
@@ -179,7 +160,7 @@ namespace TraceAnalysis {
     
     virtual ~TCTClusterMembers() {
       for (int level = 0; level <= max_level; level++)
-        for (int k = 0; k < (int)members[level].size(); k++)
+        for (size_t k = 0; k < members[level].size(); k++)
           delete members[level][k];
     }
     
@@ -189,6 +170,12 @@ namespace TraceAnalysis {
     
     void addMember(long id) {
       addMember(new TCTClusterMemberRSD(id));
+    }
+    
+    void shiftID(long inc) {
+      for (int level = 0; level <= max_level; level++)
+        for (int k = 0; k < (int)members[level].size(); k++)
+          members[level][k]->shiftID(inc);
     }
 
     string toString() const;

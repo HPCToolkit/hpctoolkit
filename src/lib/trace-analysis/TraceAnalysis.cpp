@@ -51,98 +51,46 @@
  * Created on February 28, 2018, 10:59 PM
  */
 
-#include <sys/time.h>
-#include <dirent.h>
-#include <stdio.h>
-
-#include <lib/prof-lean/hpcrun-fmt.h>
-#include <lib/support/FileUtil.hpp>
-
 #include "TraceAnalysis.hpp"
-#include "BinaryAnalyzer.hpp"
-#include "CCTVisitor.hpp"
 #include "LocalTraceAnalyzer.hpp"
+#include "TraceAnalysisCommon.hpp"
+#include "DifferenceQuantifier.hpp"
 
-#include "data/TCT-CFG.hpp"
+#include <sys/time.h>
 
 namespace TraceAnalysis {
-  static int hpctraceFileFilter(const struct dirent* entry)
-  {
-    static const string ext = string(".") + HPCRUN_TraceFnmSfx;
-    static const uint extLen = ext.length();
-
-    uint nmLen = strlen(entry->d_name);
-    if (nmLen > extLen) {
-      int cmpbeg = (nmLen - extLen);
-      return (strncmp(&entry->d_name[cmpbeg], ext.c_str(), extLen) == 0);
+  bool analysis(Prof::CallPath::Profile* prof, string dbDir) {
+    {
+      struct timeval time;
+      gettimeofday(&time, NULL);
+      setStartTime(time.tv_sec * 1000000 + time.tv_usec);
+      print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
     }
-    return 0;
-  }
-  
-  struct timeval startTime;
-  struct timeval curTime;
-  
-  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
-    if (myRank == 0) {
-      print_msg(MSG_PRIO_MAX, "Trace analysis turned on.\n");
-      
-      print_msg(MSG_PRIO_MAX, "Trace analysis init started at 0.000s.\n\n");
-      gettimeofday(&startTime, NULL);
-      
-      // Step 1: analyze binary files to get CFGs for later analysis
-      const Prof::LoadMap* loadmap = prof->loadmap();
-      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-           i <= loadmap->size(); ++i) {
-        Prof::LoadMap::LM* lm = loadmap->lm(i);
-        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
-          binaryAnalyzer.parse(lm->name());
-        }
-      }
-
-      // Step 2: visit CCT to build an cpid to CCTNode map.
-      CCTVisitor cctVisitor(prof->cct());
-      
-      // Step 3: get a list of trace files.
-      vector<string> traceFiles;
-      string path = dbDir;
-      if (FileUtil::isDir(path.c_str())) {
-        // ensure 'path' ends in '/'
-        if (path[path.length() - 1] != '/') {
-          path += "/";
-        }
-
-        struct dirent** dirEntries = NULL;
-        int dirEntriesSz = scandir(path.c_str(), &dirEntries,
-                                   hpctraceFileFilter, alphasort);
-        if (dirEntriesSz > 0) {
-          for (int i = 0; i < dirEntriesSz; ++i) {
-            traceFiles.push_back(path + dirEntries[i]->d_name);
-            free(dirEntries[i]);
-          }
-          free(dirEntries);
-        }
-      }
-      
-      gettimeofday(&curTime, NULL);
-      long timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
-                  + curTime.tv_usec - startTime.tv_usec;
-      print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n", timeToString(timeDiff).c_str());
-      
-      // Step 4: analyze each trace file
-      int begIdx = 0;
-      int endIdx = traceFiles.size();
-      for (int i = begIdx; i < endIdx; i++) {
-        print_msg(MSG_PRIO_MAX, "\nAnalyzing file #%d = %s.\n", i, traceFiles[i].c_str());
-        LocalTraceAnalyzer analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
-        analyzer.analyze();
-      }
-      
-      gettimeofday(&curTime, NULL);
-      timeDiff = (curTime.tv_sec - startTime.tv_sec) * 1000000
-                  + curTime.tv_usec - startTime.tv_usec;
+    
+    LocalTraceAnalyzer analyzer;
+    TCTClusterNode* rootCluster = analyzer.analyze(prof, dbDir, 0, 1);
+    
+    {
+      struct timeval time;
+      gettimeofday(&time, NULL);
+      long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
       print_msg(MSG_PRIO_MAX, "\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
+      
+      print_msg(MSG_PRIO_NORMAL, "\nRoot Cluster: %s", rootCluster->toString(10, 4000, 0).c_str());
+      
+      /*
+      const TCTANode* node0 = rootCluster->getClusterRepAt(1);
+      const TCTANode* node1 = rootCluster->getClusterRepAt(2);
+
+      TCTANode* diffNode = localDQ.mergeNode(node0, node0->getWeight(), node1, node1->getWeight(), true, false);
+      diffNode->setName("Diff Root");
+      print_msg(MSG_PRIO_NORMAL, "\n\n\n\n%s", diffNode->toString(10, 4000, 0).c_str());
+
+      delete diffNode;
+      */
     }
+    
+    delete rootCluster;
     return true;
   }
 }

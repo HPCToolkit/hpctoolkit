@@ -63,8 +63,8 @@ namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
   typedef int64_t Time; // Virtual Memory Address
   
-  Time getSamplingPeriod();
-  Time& getSamplingPeriodReference();
+  Time getStartTime();
+  void setStartTime(Time time);
   
   // Parameters and functions for printing messages.
   const int MSG_PRIO_LOW = 0;
@@ -91,7 +91,7 @@ namespace TraceAnalysis {
   // Parameters for clustering.
   const int MAX_NUM_CLUSTER = 10;
   const double MIN_DIFF_RATIO = 0.01;
-  const double REL_DIFF_RATIO = 0.25;
+  const double REL_DIFF_RATIO = 0.4;
   
   const int RSD_DETECTION_WINDOW = 16;
   const int RSD_DETECTION_LENGTH = 5;

@@ -57,9 +57,9 @@
 #include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  class AbstractDifferenceQuantifier {
+  class DifferenceQuantifier {
   public:
-    AbstractDifferenceQuantifier() {}
+    DifferenceQuantifier() {}
 
     /* Return the merged node of the input node1 and node2.
      * Callee responsible for deallocating the merged node.
@@ -70,18 +70,9 @@ namespace TraceAnalysis {
             bool ifAccumulate, bool isScoreOnly);
     TCTANode* mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly) = 0;
-  protected:
-    Time computeRangeDiff(Time min1, Time max1, Time min2, Time max2);
-  };
-  
-  class LocalDifferenceQuantifier : public AbstractDifferenceQuantifier {
-  public:
-    LocalDifferenceQuantifier() : AbstractDifferenceQuantifier() {}
-    
-    virtual TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
+    TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
+    
   private:
     void addDiffScore(TCTANode* dst, const TCTANode* src, double ratio);
     void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
@@ -89,7 +80,7 @@ namespace TraceAnalysis {
     void addDiffScore(TCTLoopNode* dst, const TCTLoopNode* src, double ratio);
   };
   
-  extern LocalDifferenceQuantifier localDQ;
+  extern DifferenceQuantifier diffQ;
 }
 
 #endif /* DIFFERENCEQUANTIFIER_HPP */

@@ -71,6 +71,10 @@ namespace TraceAnalysis {
     ((TCTATime*)ptr)->clear();
   }
   
+  double TCTTime::getNumSamples() const {
+    return ((TCTATime*)ptr)->numSamples;
+  }
+  
   Time TCTTime::getDuration() const {
     return ((TCTATime*)ptr)->getDuration();
   }
@@ -83,11 +87,12 @@ namespace TraceAnalysis {
     return ((TCTATime*)ptr)->getMaxDuration();
   }
   
-  void TCTTime::setDuration(Time min, Time max) {
+  void TCTTime::setDuration(Time min, Time max, double numSamples) {
     if (((TCTATime*)ptr)->type == TRACE) {
       delete (TCTATime*)ptr;
       ptr = new TCTProfileTime();
     }
+    ((TCTProfileTime*)ptr)->numSamples = numSamples;
     ((TCTProfileTime*)ptr)->minDurationInclusive = min;
     ((TCTProfileTime*)ptr)->maxDurationInclusive = max;
   }
@@ -101,14 +106,16 @@ namespace TraceAnalysis {
     return ((TCTTraceTime*)aTime);
   }
   
-  void TCTTime::setStartTime(Time exclusive, Time inclusive) {
+  void TCTTime::setStartTime(Time exclusive, Time inclusive, double startSample) {
     TCTTraceTime* traceTime = toTraceTime(ptr, "setStartTime");
+    traceTime->numSamples = startSample;
     traceTime->startTimeExclusive = exclusive;
     traceTime->startTimeInclusive = inclusive;
   }
 
-  void TCTTime::setEndTime(Time inclusive, Time exclusive) {
+  void TCTTime::setEndTime(Time inclusive, Time exclusive, double endSample) {
     TCTTraceTime* traceTime = toTraceTime(ptr, "setEndTime");
+    traceTime->numSamples = endSample - traceTime->numSamples;
     traceTime->endTimeExclusive = exclusive;
     traceTime->endTimeInclusive = inclusive;
   }
@@ -145,6 +152,7 @@ namespace TraceAnalysis {
       profTime = (TCTProfileTime*) aTime;
     
     TCTATime* otherATime = (TCTATime*) other.ptr;
+    profTime->numSamples += otherATime->numSamples;
     profTime->minDurationInclusive += otherATime->getMinDuration();
     profTime->maxDurationInclusive += otherATime->getMaxDuration();
   }
@@ -204,6 +212,8 @@ namespace TraceAnalysis {
       profTime->minDurationInclusive = computeWeightedAverage(
               aTime1->getMinDuration(), weight1, aTime2->getMinDuration(), weight2);
     }
+    
+    aTime->numSamples = (aTime1->numSamples * weight1 + aTime2->numSamples * weight2) / (double)(weight1 + weight2);
   }
 
   string TCTTime::toString() const {

@@ -80,7 +80,7 @@ namespace TraceAnalysis {
   class TCTFunctionTraceNode;
   class TCTIterationTraceNode;
   class TCTLoopNode;
-  class TCTLoopClusterNode;
+  class TCTClusterNode;
   class TCTProfileNode;
   class TCTRootNode;
 
@@ -124,7 +124,8 @@ namespace TraceAnalysis {
       Func,
       Iter,
       Loop,
-      Prof
+      Prof,
+      Cluster
     };
     
     friend class boost::serialization::access;
@@ -177,6 +178,14 @@ namespace TraceAnalysis {
       return depth;
     }
     
+    virtual double getNumSamples() const {
+      return time.getNumSamples();
+    }
+    
+    virtual Time getSamplingPeriod() const {
+      return (Time)(time.getDuration() / time.getNumSamples());
+    }
+    
     virtual Time getDuration() const {
       return time.getDuration();
     }
@@ -224,8 +233,10 @@ namespace TraceAnalysis {
     // finalize loops in the subtree.
     virtual void finalizeEnclosingLoops() = 0;
     
+    virtual void adjustIterationNumbers(long inc) = 0;
+    
     // Print contents of an object to a string for debugging purpose.
-    virtual string toString(int maxDepth, Time minDuration) const;
+    virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
     // Add child to this node. Deallocation responsibility is transfered to this node.
     // Child could be deallocated inside the call.
@@ -321,7 +332,12 @@ namespace TraceAnalysis {
         getChild(i)->finalizeEnclosingLoops();
     }
     
-    virtual string toString(int maxDepth, Time minDuration) const;
+    virtual void adjustIterationNumbers(long inc) {
+      for (int i = 0; i < getNumChild(); i++)
+        getChild(i)->adjustIterationNumbers(inc);
+    }
+    
+    virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
     vector<TCTANode*> children;
@@ -380,28 +396,22 @@ namespace TraceAnalysis {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTIterationTraceNode() : TCTATraceNode(Iter), iterNum(-1) {}
+    TCTIterationTraceNode() : TCTATraceNode(Iter) {}
     
   public:
     TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), 
-              iterNum(iterCounter.getNewIterationNumber(id)) {
-        name = "ITER_#" + std::to_string(iterNum);
-      }
-    TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, long iterNum) :
-      TCTATraceNode(Iter, id, 0, name, depth, 
-              cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma), iterNum(iterNum) {}
-    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig), iterNum(orig.iterNum) {}
+      TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
+    TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
+      TCTATraceNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
+    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
     
     virtual TCTANode* duplicate() const {
       return new TCTIterationTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      return new TCTIterationTraceNode(id.id, name, depth, cfgGraph, iterNum);
+      return new TCTIterationTraceNode(id.id, name, depth, cfgGraph);
     }
-    
-    const long iterNum;
   };
   
   class TCTLoopNode : public TCTANode {
@@ -424,11 +434,11 @@ namespace TraceAnalysis {
     }
     virtual TCTANode* voidDuplicate() const {
       TCTLoopNode* ret = new TCTLoopNode(id.id, name, depth, cfgGraph);
-      ret->finalizeEnclosingLoops();
+      //ret->finalizeEnclosingLoops();
       return ret;
     }
     
-    virtual string toString(int maxDepth, Time minDuration) const;
+    virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
     virtual void addChild(TCTANode* child) {
       if (child->type != TCTANode::Iter) {
@@ -449,6 +459,10 @@ namespace TraceAnalysis {
     int getNumIteration() const {
       return numIteration + (pendingIteration != NULL);
     }
+    
+    int getNumAcceptedIteration() const {
+      return numAcceptedIteration;
+    }
 
 #ifdef KEEP_ACCEPTED_ITERATION    
     int getNumAcceptedIteration() const {
@@ -467,21 +481,25 @@ namespace TraceAnalysis {
     virtual void shiftTime(Time offset);
     
     virtual void finalizeEnclosingLoops();
+    
+    virtual void adjustIterationNumbers(long inc);
   
-    TCTProfileNode* getProfileNode() {
-      return profileNode;
-    }
+    TCTProfileNode* getProfileNode();
     
     const TCTProfileNode* getProfileNode() const {
-      return profileNode;
+      return const_cast<TCTLoopNode*>(this)->getProfileNode();
     }
     
-    const TCTLoopClusterNode* getClusterNode() const {
+    const TCTClusterNode* getClusterNode() const {
       return clusterNode;
     }
     
     const TCTProfileNode* getRejectedIterations() const {
       return rejectedIterations;
+    }
+    
+    bool hasPendingIteration() const {
+      return (pendingIteration != NULL);
     }
     
   private:
@@ -496,7 +514,7 @@ namespace TraceAnalysis {
 #endif
     
     // Stores clusters of accepted loop iterations
-    TCTLoopClusterNode* clusterNode;
+    TCTClusterNode* clusterNode;
     // Stores all rejected iterations (merged into a Profile node).
     TCTProfileNode* rejectedIterations;
     
@@ -510,7 +528,7 @@ namespace TraceAnalysis {
     void finalizePendingIteration();
   };
   
-  class TCTLoopClusterNode : public TCTANode {
+  class TCTClusterNode : public TCTANode {
     friend class TCTLoopNode;
   public:
     typedef struct {
@@ -523,13 +541,13 @@ namespace TraceAnalysis {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTLoopClusterNode() : TCTANode(Loop), numClusters(-1) {}  
+    TCTClusterNode() : TCTANode(Cluster), numClusters(-1) {}  
     
   public:
-    TCTLoopClusterNode(const TCTLoopNode& loop) : TCTANode(loop), numClusters(0) {}
-    TCTLoopClusterNode(const TCTLoopClusterNode& other, bool isVoid);
-    TCTLoopClusterNode(const TCTLoopClusterNode& cluster1, const TCTLoopClusterNode& cluster2);
-    virtual ~TCTLoopClusterNode() {
+    TCTClusterNode(const TCTANode& node) : TCTANode(node, Cluster), numClusters(0) {}
+    TCTClusterNode(const TCTClusterNode& other, bool isVoid);
+    TCTClusterNode(const TCTClusterNode& cluster1, const TCTClusterNode& cluster2);
+    virtual ~TCTClusterNode() {
       for (int i = 0; i < numClusters; i++) {
         delete clusters[i].representative;
         delete clusters[i].members;
@@ -537,14 +555,18 @@ namespace TraceAnalysis {
     }
     
     virtual TCTANode* duplicate() const {
-      return new TCTLoopClusterNode(*this, false);
+      return new TCTClusterNode(*this, false);
     }
     
     virtual TCTANode* voidDuplicate() const {
-      return new TCTLoopClusterNode(*this, true);
+      return new TCTClusterNode(*this, true);
     }
     
-    virtual void addChild(TCTANode* child);
+    virtual void addChild(TCTANode* child) {
+      print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterNode::addChild(TCTANode*) not implemented. Use TCTClusterNode::addChild(TCTANode*, long) instead.\n");
+    }
+    
+    virtual void addChild(TCTANode* child, long idx);
     
     int getNumClusters() const {
       return numClusters;
@@ -556,7 +578,9 @@ namespace TraceAnalysis {
     
     virtual void finalizeEnclosingLoops() {}
     
-    virtual string toString(int maxDepth, Time minDuration) const;
+    virtual void adjustIterationNumbers(long inc);
+    
+    virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   private:
     bool mergeClusters();
@@ -578,12 +602,8 @@ namespace TraceAnalysis {
     static TCTProfileNode* newProfileNode(const TCTANode* node) {
       if (node->type == TCTANode::Prof)
         return new TCTProfileNode(*((TCTProfileNode*)node), true);
-      if (node->type == TCTANode::Loop) {
-        if (((TCTLoopNode*)node)->getProfileNode() == NULL)
-          return new TCTProfileNode(*((TCTLoopNode*)node));
-        else 
-          return new TCTProfileNode(*((TCTLoopNode*)node)->getProfileNode(), true);
-      }
+      if (node->type == TCTANode::Loop)
+        return new TCTProfileNode(*((TCTLoopNode*)node));
       return new TCTProfileNode(*((TCTATraceNode*)node));
     }
     
@@ -624,7 +644,9 @@ namespace TraceAnalysis {
     
     virtual void finalizeEnclosingLoops() {}
     
-    virtual string toString(int maxDepth, Time minDuration) const;
+    virtual void adjustIterationNumbers(long inc) {}
+    
+    virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
     // Map id to child profile node.
@@ -640,7 +662,7 @@ namespace TraceAnalysis {
         it->second->setDepth(depth+1);
     }
         
-    void amplify(long amplifier);
+    void amplify(long amplifier, long divider);
   };
 }
 

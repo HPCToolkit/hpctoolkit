@@ -59,14 +59,14 @@
 #include "TraceAnalysisCommon.hpp"
 
 namespace TraceAnalysis {
-  Time samplingPeriod = 1000;
+  Time startTime = 0;
   
-  Time getSamplingPeriod() {
-    return samplingPeriod;
+  Time getStartTime() {
+    return startTime;
   }
   
-  Time& getSamplingPeriodReference() {
-    return samplingPeriod;
+  void setStartTime(Time time) {
+    startTime = time;
   }
   
   string vmaToHexString(VMA vma) {
@@ -87,7 +87,7 @@ namespace TraceAnalysis {
     return std::to_string(t) + "s";
   }
   
-  #define MSG_LEVEL MSG_PRIO_LOW
+  #define MSG_LEVEL MSG_PRIO_NORMAL
   void print_msg(int level, const char *fmt,...) {
     if (level >= MSG_LEVEL) {
       va_list args;

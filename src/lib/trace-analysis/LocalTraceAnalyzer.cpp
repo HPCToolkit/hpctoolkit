@@ -53,24 +53,28 @@
  * Analyzes traces for a rank/thread and generates a summary temporal context tree.
  */
 
-#include <string>
-using std::string;
+#include "LocalTraceAnalyzer.hpp"
+
+#include <sys/time.h>
+#include <dirent.h>
+#include <stdio.h>
+
 #include <vector>
 using std::vector;
 
-#include <fstream>
-
-#include "data/TCT-Serialization.hpp"
-#include "data/TCT-Node.hpp"
-#include "data/TCT-Cluster.hpp"
-
-#include "LocalTraceAnalyzer.hpp"
-#include "BinaryAnalyzer.hpp"
-#include "TraceFileReader.hpp"
-#include "DifferenceQuantifier.hpp"
-
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/support/FileUtil.hpp>
 
+#include "BinaryAnalyzer.hpp"
+#include "CCTVisitor.hpp"
+#include "TraceFileReader.hpp"
+
+#ifdef KEEP_ACCEPTED_ITERATION 
+#include "DifferenceQuantifier.hpp"
+#endif
+
+#include "data/TCT-CFG.hpp"
+#include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
 
@@ -82,22 +86,21 @@ namespace TraceAnalysis {
     TCTRootNode* root;
     
     uint64_t numSamples;
-    Time& samplingPeriod;
     
     LocalTraceAnalyzerImpl(CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
           reader(cctVisitor, traceFileName, minTime),
-          numSamples(0), samplingPeriod(getSamplingPeriodReference()) {}
+          numSamples(0) {}
     ~LocalTraceAnalyzerImpl() {}
     
       
     void pushOneNode(TCTANode* node, Time startTimeExclusive, Time startTimeInclusive) {
-      node->getTime().setStartTime(startTimeExclusive, startTimeInclusive);
+      node->getTime().setStartTime(startTimeExclusive, startTimeInclusive, numSamples);
       activeStack.push_back(node);
     }
 
     void popOneNode(Time endTimeInclusive, Time endTimeExclusive) {
       TCTANode* node = activeStack.back();
-      node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
+      node->getTime().setEndTime(endTimeInclusive, endTimeExclusive, numSamples);
       node->getPerfLossMetric().initDurationMetric(node->getDuration(), node->getWeight());
       activeStack.pop_back();
 
@@ -189,7 +192,7 @@ namespace TraceAnalysis {
           if (parent->getChild(i)->id == node->id) {
             bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
             if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
-            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX).c_str());
+            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             // if conflict is detected, replace node with the prior one, re-push it onto stack, 
             // and remove it from the parent (as it will be re-added later when popped from stack).
             delete node;
@@ -207,7 +210,7 @@ namespace TraceAnalysis {
             while (parent->getNumChild() > i) {
               TCTANode* child = parent->removeChild(i);
               if (printError) print_msg(MSG_PRIO_NORMAL, "Deleting child %s:\n", child->id.toString().c_str());
-              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX).c_str());
+              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
               delete child;
             }
 
@@ -235,7 +238,7 @@ namespace TraceAnalysis {
             TCTANode* highlight = NULL;
             for (int i = 0; i < loop->getNumAcceptedIteration(); i++) {
               for (int j = 0; j < loop->getNumAcceptedIteration(); j++) {
-                TCTANode* diffNode = localDQ.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, true);
+                TCTANode* diffNode = diffQ.mergeNode(loop->getAcceptedIteration(i), 1, loop->getAcceptedIteration(j), 1, false, true);
                 double diffRatio = 100.0 * diffNode->getDiffScore().getInclusive() / 
                           (loop->getAcceptedIteration(i)->getDuration() + loop->getAcceptedIteration(j)->getDuration());
                 delete diffNode;
@@ -243,7 +246,7 @@ namespace TraceAnalysis {
               }
               print_msg(MSG_PRIO_LOW, "\n");
             }
-            highlight = localDQ.mergeNode(loop->getAcceptedIteration(0), 1, loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1), 1, false, false);
+            highlight = diffQ.mergeNode(loop->getAcceptedIteration(0), 1, loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1), 1, false, false);
             print_msg(MSG_PRIO_LOW, "Compare:\n%s%s", loop->getAcceptedIteration(0)->toString(highlight->getDepth()+5, 0).c_str()
                     , loop->getAcceptedIteration(loop->getNumAcceptedIteration()-1)->toString(highlight->getDepth()+5, 0).c_str());
             print_msg(MSG_PRIO_LOW, "Highlighted diff node:\n%s\n", highlight->toString(highlight->getDepth()+5, 0).c_str());
@@ -314,10 +317,9 @@ namespace TraceAnalysis {
       return false;
     }
     
-    void analyze() {
+    TCTRootNode* analyze() {
       // Init and process first sample
       CallPathSample* current = reader.readNextSample();
-      Time startTime = current->timestamp;
       int currentDepth = 0;
       if (current != NULL) {
         numSamples++;
@@ -349,7 +351,6 @@ namespace TraceAnalysis {
       current = reader.readNextSample();
       while (current != NULL) {
         numSamples++;
-        samplingPeriod = (current->timestamp - startTime) / (numSamples - 1);
         int lcaDepth = computeLCADepth(prev, current);
         if (prevDepth > prev->getDepth()) prevDepth = prev->getDepth();
         
@@ -388,51 +389,100 @@ namespace TraceAnalysis {
       }
 
       // Pop every thing in active stack.
+      numSamples++;
       while (activeStack.size() > 0)
-        popActiveStack(prev->timestamp, prev->timestamp + 1);
-      
+        popActiveStack(prev->timestamp, prev->timestamp + 1);    
       delete prev;
 
-      print_msg(MSG_PRIO_LOW, "\nNum Samples = %lu, Sampling interval = %ld\n\n", numSamples, samplingPeriod);
-
       root->finalizeEnclosingLoops();
-      
       //printLoops(root);
 
-      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, samplingPeriod).c_str());
-
-      {
-        std::ofstream ofs("serialization_output");
-        binary_oarchive oa(ofs);
-        register_class(oa);
-        oa << root;
-        print_msg(MSG_PRIO_LOW, "root is successfully serialized.\n");
-      }
-
-      delete root;
-      
-      root = NULL;
-      {
-        std::ifstream ifs("serialization_output");
-        binary_iarchive ia(ifs);
-        register_class(ia);
-        ia >> root;
-        print_msg(MSG_PRIO_LOW, "root is successfully recovered.\n\n%s", root->toString(10, samplingPeriod).c_str());
-      }
+      return root;
     }
   };
 
   
-  LocalTraceAnalyzer::LocalTraceAnalyzer(CCTVisitor& cctVisitor, string traceFileName, Time minTime) {
-    ptr = new LocalTraceAnalyzerImpl(cctVisitor,traceFileName, minTime);
+  LocalTraceAnalyzer::LocalTraceAnalyzer() {
   }
 
   LocalTraceAnalyzer::~LocalTraceAnalyzer() {
-    delete (LocalTraceAnalyzerImpl*) ptr;
   }
   
-  void LocalTraceAnalyzer::analyze() {
-    ((LocalTraceAnalyzerImpl*)ptr)->analyze();
+  int hpctraceFileFilter(const struct dirent* entry)
+  {
+    static const string ext = string(".") + HPCRUN_TraceFnmSfx;
+    static const uint extLen = ext.length();
+
+    uint nmLen = strlen(entry->d_name);
+    if (nmLen > extLen) {
+      int cmpbeg = (nmLen - extLen);
+      return (strncmp(&entry->d_name[cmpbeg], ext.c_str(), extLen) == 0);
+    }
+    return 0;
+  }
+  
+  TCTClusterNode* LocalTraceAnalyzer::analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
+    // Step 1: analyze binary files to get CFGs for later analysis
+    const Prof::LoadMap* loadmap = prof->loadmap();
+    for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
+         i <= loadmap->size(); ++i) {
+      Prof::LoadMap::LM* lm = loadmap->lm(i);
+      if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
+        print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
+        binaryAnalyzer.parse(lm->name());
+      }
+    }
+
+    // Step 2: visit CCT to build an cpid to CCTNode map.
+    CCTVisitor cctVisitor(prof->cct());
+
+    // Step 3: get a list of trace files.
+    vector<string> traceFiles;
+    string path = dbDir;
+    if (FileUtil::isDir(path.c_str())) {
+      // ensure 'path' ends in '/'
+      if (path[path.length() - 1] != '/') {
+        path += "/";
+      }
+
+      struct dirent** dirEntries = NULL;
+      int dirEntriesSz = scandir(path.c_str(), &dirEntries,
+                                 hpctraceFileFilter, alphasort);
+      if (dirEntriesSz > 0) {
+        for (int i = 0; i < dirEntriesSz; ++i) {
+          traceFiles.push_back(path + dirEntries[i]->d_name);
+          free(dirEntries[i]);
+        }
+        free(dirEntries);
+      }
+    }
+
+    if (myRank == 0) {
+      struct timeval time;
+      gettimeofday(&time, NULL);
+      long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
+      print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n\n", timeToString(timeDiff).c_str());
+    }
+
+    // Step 4: analyze each trace file
+    TCTClusterNode* rootCluster = NULL;
+    int begIdx = traceFiles.size() * myRank / numRanks;
+    int endIdx = traceFiles.size() * (myRank + 1) / numRanks;
+    for (int i = begIdx; i < endIdx; i++) {
+      print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
+      LocalTraceAnalyzerImpl analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
+      TCTRootNode* root = analyzer.analyze();
+      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 4000, 0).c_str());
+      if (rootCluster == NULL) {
+        rootCluster = new TCTClusterNode(*root);
+        rootCluster->setName("All Roots");
+      }
+      rootCluster->addChild(root, i);
+    }
+    
+    print_msg(MSG_PRIO_LOW, "\n\n\nRoot Cluster:\n%s", rootCluster->toString(10, 4000, 0).c_str());
+    
+    return rootCluster;
   }
 }
 
