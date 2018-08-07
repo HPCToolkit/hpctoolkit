@@ -288,27 +288,15 @@ ompt_implicit_task_internal_begin(
 
   task_data->ptr = NULL;
 
-//  thread_data_t *td = hpcrun_get_thread_data();
-
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
   cct_node_t *prefix = region_data->call_path;
-  thread_data_t* td = hpcrun_get_thread_data();
-  td->current_parallel_data = parallel_data;
-//  if(!TD_GET(master)){
-//    prefix = hpcrun_cct_insert_path_return_leaf(
-//      td->core_profile_trace_data.epoch->csdata.tree_root,
-//      prefix);
-//  }
 
   task_data->ptr = prefix;
+  // Memoization process vi3:
+  if(thread_num != 0){
+    not_master_region = region_data;
+  }
 
-
-
-//  printf("REGION DATA IMPLICIT_TASK_BEGIN: %p\n", region_data);
-
-
-//  td->region_id = parallel_data->value;
-//  td->outer_region_context = prefix;
 
 }
 

@@ -100,4 +100,9 @@ void push_region_stack(uint64_t region_id);
 void clear_region_stack();
 int is_empty_region_stack();
 
+
+// Memoization process vi3:
+extern __thread ompt_region_data_t* not_master_region;
+
+
 #endif

@@ -700,15 +700,11 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     // FIXME: check whether bottom frame elided will be right for IBM runtime
     //        without help of get_idle_frame
 
-    ompt_data_t* cur_par_data = NULL;
-    int team_size = 0;
-    hpcrun_ompt_get_parallel_info(0, &cur_par_data, &team_size);
-    ompt_region_data_t* region_data = (cur_par_data) ? (ompt_region_data_t*) cur_par_data->ptr : NULL;
+    // Memoization process vi3:
+    ompt_region_data_t* region_data = not_master_region;
+    if (region_data && bt->bottom_frame_elided) {
 
-
-    if (cur_par_data && region_data && bt->bottom_frame_elided) {
-
-//      cct_node_t *prefix = lookup_region_id(region_id);
+    //      cct_node_t *prefix = lookup_region_id(region_id);
 
       cct_node_t* prefix = region_data->call_path;
 
@@ -719,19 +715,6 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
         // full context is not available. if the there is a node for region_id in
         // the unresolved tree, use it as the cursor to anchor the sample for now.
         // it will be resolved later. otherwise, use the default cursor.
-
-        // FIXME: vi3 This is just a temporary solution. More performant solution could be made by
-        // removing hpcrun_ompt_get_region_data, because  hpcrun_ompt_get_thread_num calls ompt_get_task_info
-        // which provide parallel_data
-
-        // FIXME: vi3 those three Lines of code do next:
-        // 1. Go up through nested regions and skipped all where I am the master
-        // 2. Find the first region at the callstack in which I am worker
-        // 3. Eventually create pseudo node for this region. Make that pseudo node cursor
-        //    and stick all callpaths from sampling here
-        int ancestor_level = -1;
-        while(hpcrun_ompt_get_thread_num(++ancestor_level) == 0);
-        region_data = hpcrun_ompt_get_region_data(ancestor_level);
 
         prefix =
           hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));

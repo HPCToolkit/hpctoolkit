@@ -300,11 +300,6 @@ typedef struct thread_data_t {
 
 
 
-  // Daj da i mi nesto zapisemo, traga Johnu ostavimo
-  ompt_data_t* current_parallel_data;
-
-
-
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif

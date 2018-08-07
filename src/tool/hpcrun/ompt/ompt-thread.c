@@ -80,6 +80,11 @@ ompt_thread_type_get()
 }
 
 
+// Memoization process vi3:
+__thread ompt_region_data_t* not_master_region = NULL;
+
+
+
 __thread ompt_trl_el_t* registered_regions = NULL;
 //__thread ompt_threads_queue_t threads_queue;
 __thread ompt_wfq_t threads_queue;
