@@ -394,7 +394,7 @@ static step_state
 hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
 			      void *pc, void **sp, void **bp)
 {
-  unw_context_t uc;
+  ucontext_t uc;
   memcpy(&uc, &cursor->uc, sizeof(uc));
   LV_MCONTEXT_PC(&uc.uc_mcontext) = (intptr_t)pc;
   LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)sp;
