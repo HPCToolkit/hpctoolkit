@@ -82,15 +82,16 @@ namespace TraceAnalysis {
     void clear();
     
     double getNumSamples() const;
+    void setNumSamples(double numSamples);
     
     Time getDuration() const;
     Time getMinDuration() const;
     Time getMaxDuration() const;
     
-    void setDuration(Time min, Time max, double numSamples);
+    void setDuration(Time min, Time max);
     
-    void setStartTime(Time exclusive, Time inclusive, double startSample);
-    void setEndTime(Time inclusive, Time exclusive, double endSample);
+    void setStartTime(Time exclusive, Time inclusive);
+    void setEndTime(Time inclusive, Time exclusive);
     Time getStartTimeExclusive() const;
     Time getStartTimeInclusive() const;
     Time getEndTimeInclusive() const;

@@ -75,6 +75,10 @@ namespace TraceAnalysis {
     return ((TCTATime*)ptr)->numSamples;
   }
   
+  void TCTTime::setNumSamples(double numSamples) {
+    ((TCTATime*)ptr)->numSamples = numSamples;
+  }
+  
   Time TCTTime::getDuration() const {
     return ((TCTATime*)ptr)->getDuration();
   }
@@ -87,12 +91,11 @@ namespace TraceAnalysis {
     return ((TCTATime*)ptr)->getMaxDuration();
   }
   
-  void TCTTime::setDuration(Time min, Time max, double numSamples) {
+  void TCTTime::setDuration(Time min, Time max) {
     if (((TCTATime*)ptr)->type == TRACE) {
       delete (TCTATime*)ptr;
       ptr = new TCTProfileTime();
     }
-    ((TCTProfileTime*)ptr)->numSamples = numSamples;
     ((TCTProfileTime*)ptr)->minDurationInclusive = min;
     ((TCTProfileTime*)ptr)->maxDurationInclusive = max;
   }
@@ -106,16 +109,14 @@ namespace TraceAnalysis {
     return ((TCTTraceTime*)aTime);
   }
   
-  void TCTTime::setStartTime(Time exclusive, Time inclusive, double startSample) {
+  void TCTTime::setStartTime(Time exclusive, Time inclusive) {
     TCTTraceTime* traceTime = toTraceTime(ptr, "setStartTime");
-    traceTime->numSamples = startSample;
     traceTime->startTimeExclusive = exclusive;
     traceTime->startTimeInclusive = inclusive;
   }
 
-  void TCTTime::setEndTime(Time inclusive, Time exclusive, double endSample) {
+  void TCTTime::setEndTime(Time inclusive, Time exclusive) {
     TCTTraceTime* traceTime = toTraceTime(ptr, "setEndTime");
-    traceTime->numSamples = endSample - traceTime->numSamples;
     traceTime->endTimeExclusive = exclusive;
     traceTime->endTimeInclusive = inclusive;
   }

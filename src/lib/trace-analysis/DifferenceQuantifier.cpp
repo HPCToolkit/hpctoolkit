@@ -157,7 +157,7 @@ namespace TraceAnalysis {
       else { // Children that only profile 1 has.
         TCTProfileNode* child2 = (TCTProfileNode*) child1->voidDuplicate();
         child2->setWeight(weight2);
-        child2->getTime().setDuration(child1->getMinDuration() - child1->getDuration(), child1->getMaxDuration() - child1->getDuration(), 0);
+        child2->getTime().setDuration(child1->getMinDuration() - child1->getDuration(), child1->getMaxDuration() - child1->getDuration());
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -175,7 +175,7 @@ namespace TraceAnalysis {
         TCTProfileNode* child2 = it->second;
         TCTProfileNode* child1 = (TCTProfileNode*) child2->voidDuplicate();
         child1->setWeight(weight1);
-        child1->getTime().setDuration(child2->getMinDuration() - child2->getDuration(), child2->getMaxDuration() - child2->getDuration(), 0);
+        child1->getTime().setDuration(child2->getMinDuration() - child2->getDuration(), child2->getMaxDuration() - child2->getDuration());
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -356,8 +356,8 @@ namespace TraceAnalysis {
           startExclusive = min(startExclusive, startExclusiveMax);
           startInclusive = min(startInclusive, startInclusiveMax);
           
-          child2->getTime().setStartTime(startExclusive, startInclusive, 0);
-          child2->getTime().setEndTime(startExclusive, startInclusive, 0);
+          child2->getTime().setStartTime(startExclusive, startInclusive);
+          child2->getTime().setEndTime(startExclusive, startInclusive);
           
           TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating
@@ -398,8 +398,8 @@ namespace TraceAnalysis {
           startInclusive = min(startInclusive, startInclusiveMax);
           
           // Set the midpoints as start/end time for the dummy node.
-          child1->getTime().setStartTime(startExclusive, startInclusive, 0);
-          child1->getTime().setEndTime(startExclusive, startInclusive, 0);
+          child1->getTime().setStartTime(startExclusive, startInclusive);
+          child1->getTime().setEndTime(startExclusive, startInclusive);
           
           TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating
@@ -498,8 +498,7 @@ namespace TraceAnalysis {
     else {
       mergedProf = mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, true);
     }
-    double minInclusiveDiff = mergedProf->getDiffScore().getInclusive();
-    double minExclusiveDiff = mergedProf->getDiffScore().getExclusive();
+    TCTProfileNode* minCopy = (TCTProfileNode*)mergedProf->duplicate();
     mergedProf->clearDiffScore();
     
     const TCTClusterNode* cluster1 = loop1->getClusterNode();
@@ -606,12 +605,14 @@ namespace TraceAnalysis {
       addDiffScore(mergedProf, loop2->getProfileNode(), 1);
     }
     
-    double inclusiveDiff = max(mergedProf->getDiffScore().getInclusive(), minInclusiveDiff);
-    double exclusiveDiff = max(mergedProf->getDiffScore().getExclusive(), minExclusiveDiff);
-    mergedProf->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
+    if (mergedProf->getDiffScore().getInclusive() < minCopy->getDiffScore().getInclusive()) {
+      mergedProf->clearDiffScore();
+      addDiffScore(mergedProf, minCopy, 1);
+    }
+    delete minCopy;
 
     if (mergedLoop != NULL) {
-      mergedLoop->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
+      mergedLoop->getDiffScore().setScores(mergedProf->getDiffScore().getInclusive(), mergedProf->getDiffScore().getExclusive());
       return mergedLoop;
     }
     else 

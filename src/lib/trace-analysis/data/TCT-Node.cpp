@@ -324,8 +324,9 @@ namespace TraceAnalysis {
     profileNode->clearDiffScore();
     
     if (clusterNode != NULL) {
-      clusterNode->getTime().setStartTime(getTime().getStartTimeExclusive(), getTime().getStartTimeInclusive(), 0);
-      clusterNode->getTime().setEndTime(getTime().getEndTimeInclusive(), getTime().getEndTimeExclusive(), getNumSamples());
+      clusterNode->getTime().setNumSamples(getNumSamples());
+      clusterNode->getTime().setStartTime(getTime().getStartTimeExclusive(), getTime().getStartTimeInclusive());
+      clusterNode->getTime().setEndTime(getTime().getEndTimeInclusive(), getTime().getEndTimeExclusive());
     }
     
     if (accept() && getNumIteration() > 1) {
@@ -576,11 +577,8 @@ namespace TraceAnalysis {
   }
   
   void TCTProfileNode::amplify(long amplifier, long divider) {  
-    Time minDurationDiff = getMinDuration() - getDuration();
-    Time maxDurationDiff = getMaxDuration() - getDuration();
-    Time newDuration = getDuration() * amplifier / divider;
-    double newSamples = getNumSamples() * amplifier / divider;
-    getTime().setDuration(newDuration + minDurationDiff, newDuration + maxDurationDiff, newSamples);
+    getTime().setNumSamples(getNumSamples() * amplifier / divider);
+    getTime().setDuration(getMinDuration() * amplifier / divider, getMaxDuration() * amplifier / divider);
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       it->second->amplify(amplifier, divider);
