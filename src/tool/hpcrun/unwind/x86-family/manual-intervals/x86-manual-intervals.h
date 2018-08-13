@@ -60,7 +60,8 @@
         MACRO(x86_adjust_intelmic_intervals) \
         MACRO(x86_adjust_intel11_f90main_intervals) \
         MACRO(x86_adjust_dl_runtime_resolve_unwind_intervals) \
-        MACRO(x86_adjust_pgi_mp_pexit_intervals)
+        MACRO(x86_adjust_pgi_mp_pexit_intervals) \
+        MACRO(x86_fail_intervals)
 
 
 #endif
