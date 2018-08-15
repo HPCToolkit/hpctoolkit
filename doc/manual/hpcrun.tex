@@ -103,6 +103,25 @@ Monitoring Statically Linked Applications}.
 
 % ===========================================================================
 
+\section{Harware counter event names}
+
+HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel. 
+An event name is case insensitive and is defined as followed:
+\begin{verbatim}
+[pmu::][event_name][:unit_mask][:modifier|:modifier=val] 
+\end{verbatim}
+
+\begin{itemize}
+	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
+	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
+	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign. 
+		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern. 
+\end{itemize}
+
+
+% ===========================================================================
+
 \section{Sample Sources}
 
 This section provide an overview of how to use sample sources supported by HPCToolkit.  To

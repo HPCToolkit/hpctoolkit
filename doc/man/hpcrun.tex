@@ -144,10 +144,10 @@ the number of frequency as the sample threshold by
 prefixing with f before the number.
 For instance, to have 100 samples per second, the period
 is: @f100 .\\
-N.B.: WALLCLOCK and hardware events cannot be mixed.
-
+N.B.:
 \begin{itemize}
   \item The special event \Prog{WALLCLOCK} may be used to profile the actual elapsed time in microseconds
+  \item WALLCLOCK and hardware events cannot be mixed.
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
 
@@ -363,6 +363,21 @@ supported by the PMU. Examples of hardware events include cycles, instructions
 completed, cache misses, and stall cycles. Using instrumentation built in to the Linux kernel,
 the \texttt{perf\_events} interface can measure software events. Examples of software events include page
 faults, context switches, and CPU migrations. 
+
+
+HPCToolkit uses libpfm4 to translate from an event name string to an event code recognized by the kernel. 
+An event name is case insensitive and is defined as followed:
+\begin{verbatim}
+[pmu::][event_name][:unit_mask][:modifier|:modifier=val] 
+\end{verbatim}
+
+\begin{itemize}
+	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
+	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
+	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign. 
+		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern. 
+\end{itemize}
 
 Some capabilities of HPCToolkit's \texttt{perf\_events} Interface include:
 \begin{itemize}
