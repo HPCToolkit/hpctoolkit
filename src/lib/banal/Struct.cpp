@@ -237,11 +237,11 @@ static void
 debugFuncHeader(FileInfo *, ProcInfo *, long, long, string = "");
 
 static void
-debugStmt(VMA, int, string &, SrcFile::ln);
+debugStmt(VMA, int, string &, SrcFile::ln, RealPathMgr *);
 
 static void
 debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
-	  vector <Edge *> &, HeaderList &);
+	  vector <Edge *> &, HeaderList &, RealPathMgr *);
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
@@ -1280,6 +1280,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 static void
 doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
+  HPC::StringTable * strTab = env.strTab;
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
   long num_funcs = ginfo->procMap.size();
@@ -1320,7 +1321,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     auto call_it = callMap.find(entry_addr);
 
     if (call_it != callMap.end()) {
-      Inline::analyzeAddr(prefix, call_it->second, env.realPath);
+      analyzeAddr(prefix, call_it->second, env.realPath);
     }
 
 #if DEBUG_CFG_SOURCE
@@ -1445,7 +1446,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
       }
     }
     cout << "\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
+    debugInlineTree(root, NULL, *strTab, 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
 	 << "  link='" << pinfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n";
@@ -1614,7 +1615,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
+    debugStmt(vma, len, filenm, line, env.realPath);
 #endif
 
     addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line);
@@ -1649,7 +1650,7 @@ doCudaList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
 #if DEBUG_CFG_SOURCE
     cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
+    debugInlineTree(root, NULL, *(env.strTab), 0, true);
 #endif
   }
 }
@@ -1677,7 +1678,7 @@ doCudaFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
+    debugStmt(vma, len, filenm, line, env.realPath);
 #endif
 
     addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line);
@@ -1757,6 +1758,9 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 	       ParseAPI::Function * func, TreeNode * root, Loop * loop,
 	       const string & loopName)
 {
+  HPC::StringTable * strTab = env.strTab;
+  long empty_index = strTab->str2index("");
+
   //------------------------------------------------------------
   // Step 1 -- build the list of loop exit conditions
   //------------------------------------------------------------
@@ -1764,7 +1768,6 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
-  long empty_index = env.strTab->str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1810,8 +1813,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       clist[src_vma] = HeaderInfo(block);
       clist[src_vma].is_excl = loop->hasBlockExclusive(block);
       clist[src_vma].depth = seqn.size();
-      clist[src_vma].file_index = env.strTab->str2index(filenm);
-      clist[src_vma].base_index = env.strTab->str2index(FileUtil::basename(filenm));
+      clist[src_vma].file_index = strTab->str2index(filenm);
+      clist[src_vma].base_index = strTab->str2index(FileUtil::basename(filenm));
       clist[src_vma].line_num = line;
     }
   }
@@ -1833,8 +1836,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   cout << "\nraw inline tree:  " << loopName
        << "  '" << func->name() << "'\n"
        << "file:  '" << finfo->fileName << "'\n\n";
-  debugInlineTree(root, NULL, strTab, 0, false);
-  debugLoop(ginfo, func, loop, loopName, backEdges, clist);
+  debugInlineTree(root, NULL, *strTab, 0, false);
+  debugLoop(ginfo, func, loop, loopName, backEdges, clist, env.realPath);
   cout << "\nsearching inline tree:\n";
 #endif
 
@@ -1885,8 +1888,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
     depth_root++;
 
     DEBUG_CFG("inline:  l=" << flp.line_num
-	       << "  f='" << strTab.index2str(flp.file_index)
-	       << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
+	       << "  f='" << strTab->index2str(flp.file_index)
+	       << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
 	       << "'\n");
   }
 found_level:
@@ -1898,8 +1901,8 @@ found_level:
     for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
       FLPIndex flp = nit->first;
       cout << "inline:  l=" << flp.line_num
-	   << "  f='" << strTab.index2str(flp.file_index)
-	   << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
+	   << "  f='" << strTab->index2str(flp.file_index)
+	   << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
 	   << "'\n";
     }
   }
@@ -1925,8 +1928,8 @@ found_level:
   // exit cond and matches some other anchor: either the enclosing
   // func (if top-level), or else an inline subtree.
 
-  long proc_file = env.strTab->str2index(finfo->fileName);
-  long proc_base = env.strTab->str2index(FileUtil::basename(finfo->fileName));
+  long proc_file = strTab->str2index(finfo->fileName);
+  long proc_base = strTab->str2index(FileUtil::basename(finfo->fileName));
   long file_ans = empty_index;
   long base_ans = empty_index;
   long line_ans = 0;
@@ -2050,7 +2053,7 @@ found_file:
   }
 
   DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
-	     << strTab.index2str(file_ans) << "'\n");
+	     << strTab->index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
@@ -2066,7 +2069,7 @@ found_file:
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
        << "  '" << func->name() << "'\n\n";
-  debugInlineTree(root, info, strTab, 0, false);
+  debugInlineTree(root, info, *strTab, 0, false);
 #endif
 
   return info;
@@ -2259,17 +2262,19 @@ debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
 //----------------------------------------------------------------------
 
 static void
-debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
+debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
+	  RealPathMgr * realPath)
+
 {
-  cout << INDENT << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
+  cout << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
        << "  l=" << line << "  f='" << filenm << "'\n";
 
   Inline::InlineSeqn nodeList;
-  Inline::analyzeAddr(nodeList, vma);
+  Inline::analyzeAddr(nodeList, vma, realPath);
 
   // list is outermost to innermost
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
-    cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+    cout << INDENT << "inline:  l=" << nit->getLineNum()
 	 << "  f='" << nit->getFileName()
 	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
@@ -2301,7 +2306,8 @@ debugAddr(GroupInfo * ginfo, VMA vma)
 static void
 debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 	  Loop * loop, const string & loopName,
-	  vector <Edge *> & backEdges, HeaderList & clist)
+	  vector <Edge *> & backEdges, HeaderList & clist,
+	  RealPathMgr * realPath)
 {
   vector <Block *> entBlocks;
   int num_ents = loop->getLoopEntries(entBlocks);
@@ -2337,7 +2343,7 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
 
     InlineSeqn seqn;
-    analyzeAddr(seqn, vma);
+    analyzeAddr(seqn, vma, realPath);
 
     StatementVector svec;
     getStatement(svec, vma, ginfo->sym_func);
