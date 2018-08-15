@@ -107,7 +107,12 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   }
   else if (overwrite == 1) {
     // Open file for writing; truncate file already exists.
-    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode); 
+    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode);
+    if (fd < 0) {
+      char errbuf[100];
+      fprintf(stderr, "Failed hpcio_fopen_w: err = %s, dir = %s, file = %s\n",
+	      strerror(errno), getcwd(errbuf, sizeof(errbuf)), fnm);
+    }
   }
   else if (overwrite == 2) {
     // Options specific to /dev/null.
