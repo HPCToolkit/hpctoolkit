@@ -78,6 +78,7 @@
 #include "Metric-Mgr.hpp"
 #include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
+#include "StringSet.hpp"
 
 #include <lib/support/FileUtil.hpp> // dirname
 
@@ -128,14 +129,15 @@ public:
   { return m_fmtVersion; }
 
 
-  const std::set<std::string>&
+  const StringSet&
   traceFileNameSet() const
   { return m_traceFileNameSet; }
 
-  std::set<std::string>&
+
+  StringSet&
   traceFileNameSet()
   { return m_traceFileNameSet; }
-  
+
   // enable/disable redundancy of procedure names
   // @param flag: true  -- redundancy is eliminated
   // 		  false -- redundancy is allowed
@@ -147,17 +149,16 @@ public:
   addDirectory(std::string filename) {
     std::string directory = FileUtil::dirname(filename);
     if (!directory.empty()) {
-      std::string dir(directory);
-      m_directorySet.insert(dir);
+      m_directorySet.insert(directory);
     }
   }
 
   void
-  copyDirectory(std::set<std::string> directorySet) {
-    m_directorySet.insert(directorySet.begin(), directorySet.end());
+  copyDirectory(const StringSet &rhs) {
+    m_directorySet += rhs;
   }
 
-  const std::set<std::string>&
+  StringSet&
   directorySet() {
     return m_directorySet;
   }
@@ -373,13 +374,12 @@ private:
   double m_fmtVersion;
   epoch_flags_t m_flags;
   uint64_t m_measurementGranularity;
-  uint32_t m_raToCallsiteOfst;
 
   std::string m_profileFileName; // non-empty, if relevant
-  std::set<std::string> m_directorySet; // list of directories
+  StringSet m_directorySet; // set of directories containing profiles
 
   std::string m_traceFileName;   // non-empty, if relevant
-  std::set<std::string> m_traceFileNameSet;
+  StringSet m_traceFileNameSet;
   uint64_t m_traceMinTime, m_traceMaxTime;
 
   //typedef std::map<std::string, std::string> StrToStrMap;

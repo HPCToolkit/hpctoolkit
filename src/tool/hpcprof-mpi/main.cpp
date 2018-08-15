@@ -159,11 +159,11 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
 static void
 writeStructure(const Prof::Struct::Tree& structure, const char* baseNm,
-	       int myRank);
+	       int myRank) __attribute__((unused));
 
 static void
 writeProfile(const Prof::CallPath::Profile& prof, const char* baseNm,
-	     int myRank);
+	     int myRank) __attribute__((unused));
 
 static std::string
 makeFileName(const char* baseNm, const char* ext, int myRank);
@@ -258,7 +258,7 @@ realmain(int argc, char* const* argv)
     myNormalizeProfileArgs(args.profileFiles, groupIdToGroupSizeMap,
 			   myRank, numRanks, rootRank);
 
-  if (nArgs.paths->size() == 0) {
+  if (nArgs.paths->size() == 0 && myRank == 0) {
     std::cerr << "ERROR: command line directories"
       " contain no .hpcrun files; no database generated\n";
     exit(-1);
@@ -289,6 +289,8 @@ realmain(int argc, char* const* argv)
   // are merged (and sorted by always merging left-child before right)
   ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
 
+  ParallelAnalysis::reduce(&profLcl->directorySet(), myRank, numRanks - 1);
+
   if (myRank == rootRank) {
     profGbl = profLcl;
     profLcl = NULL;
@@ -297,14 +299,8 @@ realmain(int argc, char* const* argv)
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
 
-  if (myRank != rootRank) {
-    // copy back the set of directory into the global profile
-    //
-    // during the broadcast we'll lose the information of directory set
-    // this directory set will be used later for kernel symbol looking to
-    // find vmlinux files
-    profGbl->copyDirectory(profLcl->directorySet());
-  }
+  ParallelAnalysis::broadcast(&profGbl->directorySet(), myRank, numRanks - 1, rootRank);
+
   delete profLcl;
 
   // -------------------------------------------------------
@@ -320,10 +316,13 @@ realmain(int argc, char* const* argv)
   }
   profGbl->structure(structure);
 
+
   // N.B.: Ensures that each rank adds static structure in the same
   // order so that new corresponding nodes have identical node ids.
+  bool printProgress =  (myRank == rootRank);
   Analysis::CallPath::overlayStaticStructureMain(*profGbl, args.agent,
-						 args.doNormalizeTy);
+						 args.doNormalizeTy,
+                                                 printProgress);
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
   profGbl->cct()->makeDensePreorderIds();
@@ -582,10 +581,8 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
     Prof::Metric::AExprIncr* expr = mm->expr();
     if (expr) {
-      expr->srcId(j++);
-      if (expr->hasAccum2()) {
-	expr->src2Id(j++); // cf. Metric::Mgr::makeSummaryMetricIncr()
-      }
+      for (uint k = 0; k < expr->numAccum(); ++k)
+	expr->srcId(k, j++);
     }
   }
 

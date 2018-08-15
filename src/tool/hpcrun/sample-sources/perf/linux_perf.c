@@ -561,7 +561,10 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
 
-  return 1;
+  blame_shift_apply(metric, sv->sample_node, 
+                    counter /*metricIncr*/);
+
+  return sv;
 }
 
 /**
@@ -849,7 +852,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
-    prop = (strcasestr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    if (strcasestr(name, "CYCLES") != NULL) {
+      prop = metric_property_cycles;
+      blame_shift_source_register(bs_type_cycles);
+    } else {
+      prop = metric_property_none;
+    }
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
@@ -970,7 +978,7 @@ read_fd(int fd)
 
 #define ss_name linux_perf
 #define ss_cls SS_HARDWARE
-#define ss_sort_order  70
+#define ss_sort_order  60
 
 #include "sample-sources/ss_obj.h"
 

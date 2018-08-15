@@ -293,11 +293,10 @@ perf_util_get_precise_ip(struct perf_event_attr *attr)
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
-    perf_util_set_max_precise_ip(attr);
   }
-  // at the moment there is no way to be able to detect the highest
-  // precise_ip. We just return 0 to ensure it works everywhere
-  return 0;
+  perf_util_set_max_precise_ip(attr);
+
+  return attr->precise_ip;
 }
 
 
@@ -538,9 +537,6 @@ perf_util_attr_init(
   attr->size   = sizeof(struct perf_event_attr); /* Size of attribute structure */
   attr->freq   = (usePeriod ? 0 : 1);
 
-  attr->precise_ip = perf_util_get_precise_ip(attr);   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
-
   attr->sample_period = threshold;          /* Period or frequency of sampling     */
   int max_sample_rate = perf_util_get_max_sample_rate();
 
@@ -570,6 +566,10 @@ perf_util_attr_init(
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
+
+  attr->precise_ip    = perf_util_get_precise_ip(attr);   /* the precision is either detected automatically
+                                              as precise as possible or  on the user's variable.  */
+
   return true;
 }
 

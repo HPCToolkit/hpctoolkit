@@ -208,11 +208,12 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
+  sigjmp_buf_t     *current_jmp_buf;
+  sigjmp_buf_t     bad_interval;
   sigjmp_buf_t     bad_unwind;
   sigjmp_buf_t     mem_error;
   bool             deadlock_drop;
   int              handling_sample;
-  int              splay_lock;
   int              fnbounds_lock;
 
   // ----------------------------------------

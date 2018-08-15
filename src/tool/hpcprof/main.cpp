@@ -189,8 +189,11 @@ realmain(int argc, char* const* argv)
   }
   prof->structure(structure);
 
+  bool printProgress = true;
+
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
-						 args.doNormalizeTy);
+						 args.doNormalizeTy,
+                                                 printProgress);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
