@@ -81,6 +81,7 @@
 //******************************************************************************
 
 #define HPCRUN_OPTION_MERGE_THREAD "HPCRUN_MERGE_THREADS"
+#define HPCRUN_THREADS_DEBUG 0
 
 //******************************************************************************
 // data structure
@@ -97,6 +98,10 @@ typedef struct thread_list_s {
 static atomic_int_least32_t threadmgr_active_threads = ATOMIC_VAR_INIT(1); // one for the process main thread
 
 static atomic_int_least32_t threadmgr_num_threads = ATOMIC_VAR_INIT(1); // number of logical threads
+
+#if HPCRUN_THREADS_DEBUG
+static atomic_int_least32_t threadmgr_tot_threads = ATOMIC_VAR_INIT(1); // number of total threads
+#endif
 
 static SLIST_HEAD(thread_list_head, thread_list_s) list_thread_head =
     SLIST_HEAD_INITIALIZER(thread_list_head);
@@ -271,6 +276,10 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
     TMSG(PROCESS, "%d: reuse thread data from %d", id, data->core_profile_trace_data.id);
   }
 
+#if HPCRUN_THREADS_DEBUG
+  atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
+#endif
+
   return data;
 }
 
@@ -369,6 +378,10 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
 
     TMSG(PROCESS, "%d: write thread data, finally", td->core_profile_trace_data.id);
   }
+#if HPCRUN_THREADS_DEBUG
+  int tot_threads = atomic_load_explicit(&threadmgr_tot_threads, memory_order_relaxed);
+  EMSG("Total threads: %d, logical threads: %d", tot_threads, num_threads);
+#endif
 }
 
 
