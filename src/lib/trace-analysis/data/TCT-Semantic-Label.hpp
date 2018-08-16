@@ -57,15 +57,8 @@
 #include <string>
 using std::string;
 
-#include <regex>
-using std::regex;
-using std::regex_match;
-using std::regex_constants::icase;
-
-#include "../TraceAnalysisCommon.hpp"
-
 namespace TraceAnalysis {
-  // A function frame on a call path can be classified as computation or communication.
+    // A function frame on a call path can be classified as computation or communication.
   const uint SEMANTIC_LABEL_COMPUTATION   = 0x0;
   const uint SEMANTIC_LABEL_COMMUNICATION = 0x1;
   
@@ -76,8 +69,8 @@ namespace TraceAnalysis {
   const uint SEMANTIC_LABEL_WAIT          = 0x30 | SEMANTIC_LABEL_COMMUNICATION; // Internal functions in communication libraries that wait for various reasons. 
 
   // Further break downs.
-  const uint SEMANTIC_LABEL_MESSAGE_TRANSFER  = 0x100 | SEMANTIC_LABEL_DATA_TRANSFER; // inter-node message transfer.
-  const uint SEMANTIC_LABEL_DATA_COPY         = 0x200 | SEMANTIC_LABEL_DATA_TRANSFER; // intra-node data copy.
+  const uint SEMANTIC_LABEL_MESSAGE_TRANSFER  = 0x100 | SEMANTIC_LABEL_DATA_TRANSFER; // message transfer.
+  const uint SEMANTIC_LABEL_IN_MEMORY_COPY    = 0x200 | SEMANTIC_LABEL_DATA_TRANSFER; // in-memory data copy.
   const uint SEMANTIC_LABEL_DEVICE_TRANSFER   = 0x300 | SEMANTIC_LABEL_DATA_TRANSFER; // data transfer with devices.
   const uint SEMANTIC_LABEL_IO                = 0x400 | SEMANTIC_LABEL_DATA_TRANSFER; // I/O
   
@@ -96,8 +89,8 @@ namespace TraceAnalysis {
     {SEMANTIC_LABEL_SYNC,             "synchronization"},
     {SEMANTIC_LABEL_DATA_TRANSFER,    "data transfer"},
     {SEMANTIC_LABEL_WAIT,             "wait"},
-    {SEMANTIC_LABEL_MESSAGE_TRANSFER, "inter-node message transfer"},
-    {SEMANTIC_LABEL_DATA_COPY,        "intra-node data copy"},
+    {SEMANTIC_LABEL_MESSAGE_TRANSFER, "message transfer"},
+    {SEMANTIC_LABEL_IN_MEMORY_COPY,   "in-memory data copy"},
     {SEMANTIC_LABEL_DEVICE_TRANSFER,  "data transfer with devices"},
     {SEMANTIC_LABEL_IO,               "I/O"},
     {SEMANTIC_LABEL_WAIT_SEND_RECV,   "wait for sender/receiver"},
@@ -116,51 +109,12 @@ namespace TraceAnalysis {
   
   /*******************************************/
   
-  typedef struct FUNC_TO_LABEL_ENTRY {
-    const regex func_name_regex;
-    const uint label;
-    const uint priority;
-  } FUNC_TO_LABEL_ENTRY;
+  typedef struct FUNC_SEMANTIC_INFO {
+    const uint semantic_label; // semantic label for a function.
+    const bool ignore_child;   // if children of the function should be ignored in trace analysis.
+  } FUNC_SEMANTIC_INFO;
   
-  const FUNC_TO_LABEL_ENTRY FUNC_TO_LABEL_ARRAY[] = {
-  // Calls to MPI
-    {regex("PMPI_(.+)", icase), SEMANTIC_LABEL_COMMUNICATION, 1},
-    {regex("MPI_(.+)", icase),  SEMANTIC_LABEL_COMMUNICATION, 1},
-    
-    // Calls to MPI collective operations where all ranks entering them will leave at the same time.
-    {regex("MPI_Barrier", icase),       SEMANTIC_LABEL_SYNC, 2},
-    {regex("MPI_Allgather(.*)", icase), SEMANTIC_LABEL_SYNC, 2},
-    {regex("MPI_Allreduce", icase),     SEMANTIC_LABEL_SYNC, 2},
-    {regex("MPI_Alltoall(.*)", icase),  SEMANTIC_LABEL_SYNC, 2},
-    
-    // Calls to MPI parallel I/O
-    {regex("MPI_File_(.+)", icase),             SEMANTIC_LABEL_IO,    2},
-    {regex("MPI_File_open", icase),             SEMANTIC_LABEL_SYNC,  3},
-    {regex("MPI_File_close", icase),            SEMANTIC_LABEL_SYNC,  3},
-    {regex("MPI_File_read_all(.*)", icase),     SEMANTIC_LABEL_SYNC,  3},
-    {regex("MPI_File_read_at_all(.*)", icase),  SEMANTIC_LABEL_SYNC,  3},
-    {regex("MPI_File_write_all(.*)", icase),    SEMANTIC_LABEL_SYNC,  3},
-    {regex("MPI_File_write_at_all(.*)", icase), SEMANTIC_LABEL_SYNC,  3},
-    
-    // Implemention in MPICH that corresponds to wait for sender/receiver.
-    {regex("MPIDI_CH3I_Progress(.*)", icase),   SEMANTIC_LABEL_WAIT_SEND_RECV,  5}
-  };
-  
-  const uint FUNC_TO_LABEL_ARRAY_SIZE = sizeof(FUNC_TO_LABEL_ARRAY) / sizeof(FUNC_TO_LABEL_ENTRY);
-  
-  inline uint getSemanticLabel(string func_name) {
-    uint label = SEMANTIC_LABEL_COMPUTATION;
-    uint priority = 0;
-    for (uint i = 0; i < FUNC_TO_LABEL_ARRAY_SIZE; i++)
-      if (regex_match(func_name, FUNC_TO_LABEL_ARRAY[i].func_name_regex)
-              && FUNC_TO_LABEL_ARRAY[i].priority >= priority) {
-        if (FUNC_TO_LABEL_ARRAY[i].priority == priority)
-          print_msg(MSG_PRIO_HIGH, "ERROR: func %s is mapped to two semantic labels.\n", func_name.c_str());
-        label = FUNC_TO_LABEL_ARRAY[i].label;
-        priority = FUNC_TO_LABEL_ARRAY[i].priority;
-      }
-    return label;
-  }
+  FUNC_SEMANTIC_INFO getFuncSemanticInfo(string func_name);
 }
 
 #endif /* TCT_SEMANTIC_LABEL_HPP */

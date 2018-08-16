@@ -77,6 +77,7 @@ MYSOURCES = \
 	data/TCT-Cluster.hpp data/TCT-Cluster.cpp \
 	data/TCT-Metrics.hpp data/TCT-Metrics.cpp \
 	data/TCT-Serialization.hpp data/TCT-Serialization.cpp \
+	data/TCT-Semantic-Label.hpp data/TCT-Semantic-Label.cpp \
 	TraceAnalysis.hpp TraceAnalysis.cpp \
 	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
 	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \

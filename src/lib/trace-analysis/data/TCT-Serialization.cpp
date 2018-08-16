@@ -199,7 +199,7 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTANode::save(Archive& ar, const unsigned int version) const {
     ar & const_cast<TCTID&>(id) & const_cast<VMA&>(ra);
-    ar & name & depth & weight;
+    ar & name & depth & weight & retCount;
     ar & time & diffScore & plm;
     
     // Special handling for cfgGraph
@@ -214,7 +214,7 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTANode::load(Archive& ar, const unsigned int version) {
     ar & const_cast<TCTID&>(id) & const_cast<VMA&>(ra);
-    ar & name & depth & weight;
+    ar & name & depth & weight & retCount;
     ar & time & diffScore & plm;
     
     // Special handling for cfgGraph

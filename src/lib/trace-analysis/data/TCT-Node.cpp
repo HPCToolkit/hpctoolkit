@@ -77,10 +77,17 @@ namespace TraceAnalysis {
     ret += name + id.toString();
     ret += " " + time.toString();
     if (weight > 1) ret += ", w = " + std::to_string(weight);
+    ret += ", retCount = " + std::to_string(retCount);
     
     if (diffScore.getInclusive() > 0)
       ret += ", DiffScore = " + std::to_string((long)diffScore.getInclusive())
               + "/" + std::to_string((long)diffScore.getExclusive());
+    
+    if (plm.getMinDuration() < plm.getMaxDuration()) {
+      ret += ", PLM = " + std::to_string(plm.getMinDuration()) 
+              + "/" + std::to_string(plm.getMaxDuration())
+              + "/" + std::to_string(plm.getAvgDuration(weight));
+    }
     
     if (type == TCTANode::Root) {
       ret += ", Sampling Period = " + std::to_string((Time)(this->getDuration() / this->getNumSamples()));
@@ -198,8 +205,9 @@ namespace TraceAnalysis {
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& loop1, long weight1, const TCTLoopNode& loop2, long weight2, bool accumulate) : TCTANode(loop1) {
     time.setAsAverageTime(loop1.getTime(), weight1, loop2.getTime(), weight2);
-    weight = weight1 + weight2;
-    //TODO: plm
+    setWeight(weight1 + weight2);
+    setRetCount(loop1.retCount + loop2.retCount);
+    getPerfLossMetric().setDuratonMetric(loop1.plm, loop2.plm);
     
     if (loop1.numIteration != loop2.numIteration)
       print_msg(MSG_PRIO_MAX, "ERROR: merging two loops with different number of iterations %d vs %d.\n", loop1.numIteration, loop2.numIteration);
@@ -248,7 +256,7 @@ namespace TraceAnalysis {
   }
   
   TCTProfileNode* TCTLoopNode::getProfileNode() {
-    if (profileNode == NULL)
+    if (profileNode == NULL) 
       profileNode = TCTProfileNode::newProfileNode(this);
     return profileNode;
   }
@@ -322,6 +330,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "ERROR: TCTLoopNode::finalizeEnclosingLoops() called when profileNode is not NULL for loop %s.\n", getName().c_str());
     profileNode = TCTProfileNode::newProfileNode(this);
     profileNode->clearDiffScore();
+    profileNode->initPerfLossMetric();
     
     if (clusterNode != NULL) {
       clusterNode->getTime().setNumSamples(getNumSamples());
@@ -341,6 +350,13 @@ namespace TraceAnalysis {
         print_msg(MSG_PRIO_LOW, "\n");
       }
     }
+  }
+  
+  void TCTLoopNode::initPerfLossMetric() {
+    TCTANode::initPerfLossMetric();
+    if (clusterNode != NULL) clusterNode->initPerfLossMetric();
+    if (rejectedIterations != NULL) rejectedIterations->initPerfLossMetric();
+    if (profileNode != NULL) profileNode->initPerfLossMetric();
   }
   
   void TCTLoopNode::adjustIterationNumbers(long inc) {
@@ -372,7 +388,7 @@ namespace TraceAnalysis {
 
   TCTClusterNode::TCTClusterNode(const TCTClusterNode& cluster1, const TCTClusterNode& cluster2) : TCTANode(cluster1) {
     getTime().setAsAverageTime(cluster1.getTime(), cluster1.getWeight(), cluster2.getTime(), cluster1.getWeight());
-    weight = cluster1.weight + cluster2.weight;
+    setWeight(cluster1.weight + cluster2.weight);
     
     numClusters = cluster1.numClusters + cluster2.numClusters;
     
@@ -411,6 +427,7 @@ namespace TraceAnalysis {
   
   void TCTClusterNode::addChild(TCTANode* child, long idx) {
     child->adjustIterationNumbers(idx);
+    child->initPerfLossMetric();
     
     clusters[numClusters].representative = child;
     child->setName("CLUSTER_#" + std::to_string(numClusters) + " REP");
@@ -506,7 +523,7 @@ namespace TraceAnalysis {
       for (int k = 0; k < loop.getClusterNode()->getNumClusters(); k++) {
         TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.getClusterNode()->getClusterRepAt(k));
         child->setDepth(this->depth);
-        child->amplify(child->weight, weight);
+        child->amplify(child->weight, weight, getTime());
         for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
           if (childMap.find(iit->second->id) == childMap.end())
             childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
@@ -557,6 +574,7 @@ namespace TraceAnalysis {
   }
   
   void TCTProfileNode::merge(const TCTProfileNode* other) {
+    retCount += other->retCount;
     time.addTime(other->time);
     for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
       if (childMap.find(it->second->id) == childMap.end())
@@ -576,12 +594,16 @@ namespace TraceAnalysis {
     }
   }
   
-  void TCTProfileNode::amplify(long amplifier, long divider) {  
+  void TCTProfileNode::amplify(long amplifier, long divider, const TCTTime& parent_time) {  
     getTime().setNumSamples(getNumSamples() * amplifier / divider);
     getTime().setDuration(getMinDuration() * amplifier / divider, getMaxDuration() * amplifier / divider);
+    if (getTime().getMaxDuration() > parent_time.getMaxDuration()) {
+      long diff = getTime().getMaxDuration() - parent_time.getMaxDuration();
+      getTime().setDuration(getMinDuration() + diff, getMaxDuration() - diff);
+    }
     
     for (auto it = childMap.begin(); it != childMap.end(); it++)
-      it->second->amplify(amplifier, divider);
+      it->second->amplify(amplifier, divider, getTime());
     
     setWeight(weight * divider / amplifier);
   }

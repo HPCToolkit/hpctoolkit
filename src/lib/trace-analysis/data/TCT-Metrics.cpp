@@ -55,10 +55,10 @@
 #include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  void TCTPerfLossMetric::initDurationMetric(Time duration, int weight) {
-    maxDuration = duration;
-    minDuration = duration;
-    totalDuration = (double)duration * (double)weight;
+  void TCTPerfLossMetric::initDurationMetric(const TCTTime& time, int weight) {
+    maxDuration = time.getMinDuration();
+    minDuration = time.getMaxDuration();
+    totalDuration = (double)time.getDuration() * (double)weight;
   }
   
   void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {

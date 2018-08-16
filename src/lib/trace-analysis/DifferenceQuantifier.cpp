@@ -120,9 +120,10 @@ namespace TraceAnalysis {
     mergedProf->getTime().setAsAverageTime(prof1->getTime(), weight1, prof2->getTime(), weight2);
     if (!isScoreOnly) {
       mergedProf->setWeight(weight1 + weight2);
+      mergedProf->setRetCount(prof1->getRetCount() + prof2->getRetCount());
       mergedProf->getPerfLossMetric().setDuratonMetric(prof1->getPerfLossMetric(), prof2->getPerfLossMetric());
     }
-
+    
     /**
      * When accumulating difference scores, the inclusive difference score of a node is the sum of difference scores in its subtree.
      * Inclusive difference score of the merged profile node consists of the following components --
@@ -158,6 +159,7 @@ namespace TraceAnalysis {
         TCTProfileNode* child2 = (TCTProfileNode*) child1->voidDuplicate();
         child2->setWeight(weight2);
         child2->getTime().setDuration(child1->getMinDuration() - child1->getDuration(), child1->getMaxDuration() - child1->getDuration());
+        child2->initPerfLossMetric();
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -176,6 +178,7 @@ namespace TraceAnalysis {
         TCTProfileNode* child1 = (TCTProfileNode*) child2->voidDuplicate();
         child1->setWeight(weight1);
         child1->getTime().setDuration(child2->getMinDuration() - child2->getDuration(), child2->getMaxDuration() - child2->getDuration());
+        child1->initPerfLossMetric();
         
         TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
@@ -246,6 +249,7 @@ namespace TraceAnalysis {
     mergedTrace->getTime().setAsAverageTime(trace1->getTime(), weight1, trace2->getTime(), weight2);
     if (!isScoreOnly) {
       mergedTrace->setWeight(weight1 + weight2);
+      mergedTrace->setRetCount(trace1->getRetCount() + trace2->getRetCount());
       mergedTrace->getPerfLossMetric().setDuratonMetric(trace1->getPerfLossMetric(), trace2->getPerfLossMetric());
     }
 
@@ -359,6 +363,8 @@ namespace TraceAnalysis {
           child2->getTime().setStartTime(startExclusive, startInclusive);
           child2->getTime().setEndTime(startExclusive, startInclusive);
           
+          child2->initPerfLossMetric();
+          
           TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating
 
@@ -400,6 +406,8 @@ namespace TraceAnalysis {
           // Set the midpoints as start/end time for the dummy node.
           child1->getTime().setStartTime(startExclusive, startInclusive);
           child1->getTime().setEndTime(startExclusive, startInclusive);
+          
+          child1->initPerfLossMetric();
           
           TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating

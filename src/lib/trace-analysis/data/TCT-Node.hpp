@@ -137,18 +137,18 @@ namespace TraceAnalysis {
     BOOST_SERIALIZATION_SPLIT_MEMBER();
   protected:
     // Constructor for serialization only.
-    TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), time(),
+    TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), retCount(0), time(),
         diffScore(), plm() {}
     
   public:
     TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), time(),
+        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), retCount(0), time(),
         diffScore(), plm() {}
     TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time),
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), retCount(orig.retCount), time(orig.time),
         diffScore(orig.diffScore), plm(orig.plm) {}
     TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), time(orig.time),
+        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), retCount(orig.retCount), time(orig.time),
         diffScore(orig.diffScore), plm(orig.plm) {}
     
     virtual ~TCTANode() {
@@ -206,12 +206,24 @@ namespace TraceAnalysis {
       this->weight = weight;
     }
     
+    virtual long getRetCount() const {
+      return retCount;
+    }
+    
+    virtual void setRetCount(long retCount) {
+      this->retCount = retCount;
+    }
+    
     virtual TCTDiffScore& getDiffScore() {
       return diffScore;
     }
     
     virtual const TCTDiffScore& getDiffScore() const {
       return diffScore;
+    }
+    
+    virtual void initPerfLossMetric() {
+      plm.initDurationMetric(time, weight);
     }
     
     virtual TCTPerfLossMetric& getPerfLossMetric() {
@@ -253,6 +265,7 @@ namespace TraceAnalysis {
     string name;
     int depth;
     long weight;
+    long retCount;
     TCTTime time;
     TCTDiffScore diffScore;
     TCTPerfLossMetric plm;
@@ -308,6 +321,12 @@ namespace TraceAnalysis {
       return ret;
     }
     
+    virtual void clearChildren() {
+      for (auto it = children.begin(); it != children.end(); it++)
+        delete (*it);
+      children.clear();
+    }
+    
     // Return the end time of child #(idx-1). 
     // When idx = 0, return the start time of the node itself.
     virtual void getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const;
@@ -335,6 +354,12 @@ namespace TraceAnalysis {
     virtual void adjustIterationNumbers(long inc) {
       for (int i = 0; i < getNumChild(); i++)
         getChild(i)->adjustIterationNumbers(inc);
+    }
+    
+    virtual void initPerfLossMetric() {
+      TCTANode::initPerfLossMetric();
+      for (int i = 0; i < getNumChild(); i++)
+        getChild(i)->initPerfLossMetric();
     }
     
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
@@ -484,6 +509,8 @@ namespace TraceAnalysis {
     
     virtual void adjustIterationNumbers(long inc);
   
+    virtual void initPerfLossMetric();
+    
     TCTProfileNode* getProfileNode();
     
     const TCTProfileNode* getProfileNode() const {
@@ -565,7 +592,7 @@ namespace TraceAnalysis {
     virtual void addChild(TCTANode* child) {
       print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterNode::addChild(TCTANode*) not implemented. Use TCTClusterNode::addChild(TCTANode*, long) instead.\n");
     }
-    
+      
     virtual void addChild(TCTANode* child, long idx);
     
     int getNumClusters() const {
@@ -579,6 +606,12 @@ namespace TraceAnalysis {
     virtual void finalizeEnclosingLoops() {}
     
     virtual void adjustIterationNumbers(long inc);
+    
+    virtual void initPerfLossMetric() {
+      TCTANode::initPerfLossMetric();
+      for (int i = 0; i < numClusters; i++)
+        clusters[i].representative->initPerfLossMetric();
+    }
     
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
@@ -618,6 +651,7 @@ namespace TraceAnalysis {
     
     virtual TCTANode* voidDuplicate() const {
       TCTProfileNode* ret = new TCTProfileNode(*this, false);
+      ret->retCount = 0;
       ret->time.clear();
       ret->diffScore.clear();
       ret->plm.clear();
@@ -646,6 +680,12 @@ namespace TraceAnalysis {
     
     virtual void adjustIterationNumbers(long inc) {}
     
+    virtual void initPerfLossMetric() {
+      TCTANode::initPerfLossMetric();
+      for (auto it = childMap.begin(); it != childMap.end(); it++)
+        it->second->initPerfLossMetric();  
+    }
+    
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
@@ -662,7 +702,7 @@ namespace TraceAnalysis {
         it->second->setDepth(depth+1);
     }
         
-    void amplify(long amplifier, long divider);
+    void amplify(long amplifier, long divider, const TCTTime& parent_time);
   };
 }
 

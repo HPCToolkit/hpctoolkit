@@ -78,6 +78,7 @@ using std::unordered_map;
 
 #include "data/TCT-CFG.hpp"
 #include "data/TCT-Node.hpp"
+#include "data/TCT-Semantic-Label.hpp"
 
 namespace TraceAnalysis {
 
@@ -113,9 +114,11 @@ namespace TraceAnalysis {
       else startSample = nodeStartSample[node->id.id];
       node->getTime().setNumSamples(endSample - startSample);
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
-      node->getPerfLossMetric().initDurationMetric(node->getDuration(), node->getWeight());
+      
+      node->setRetCount(1);
+      node->getPerfLossMetric().initDurationMetric(node->getTime(), node->getWeight());
+      
       activeStack.pop_back();
-
       if (activeStack.size() > 0) activeStack.back()->addChild(node);
     }
 
@@ -321,15 +324,6 @@ namespace TraceAnalysis {
       return depth;
     }
     
-    // Frames whose children will be filtered.
-    bool filterFrame(const CallPathFrame& frame) {
-      if (frame.name.length() >= 5 && frame.name.substr(0, 5) == "PMPI_")
-        return true;
-      if (frame.name.length() >= 4 && frame.name.substr(0, 4) == "MPI_")
-        return true;
-      return false;
-    }
-    
     TCTRootNode* analyze() {
       // Init and process first sample
       CallPathSample* current = reader.readNextSample();
@@ -339,21 +333,21 @@ namespace TraceAnalysis {
           CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
           if (frame.type == CallPathFrame::Root) {
             root = new TCTRootNode(frame.id, frame.procID, frame.name, activeStack.size());
-            pushOneNode(root, 0, current->timestamp, numSamples);
+            pushOneNode(root, -1, current->timestamp, numSamples);
           } 
           else if (frame.type == CallPathFrame::Loop) {
             TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
                     binaryAnalyzer.findLoop(frame.vma));
-            pushActiveStack(node, 0, current->timestamp);
+            pushActiveStack(node, -1, current->timestamp);
           }
           else {
             // frame.type == CallPathFrame::Func
             TCTANode* node = new TCTFunctionTraceNode(frame.id, frame.procID, frame.name, activeStack.size(),
                     binaryAnalyzer.findFunc(frame.vma), frame.ra);
-            pushActiveStack(node, 0, current->timestamp);
+            pushActiveStack(node, -1, current->timestamp);
+            // if semantic label of a function indicates that its children should be ignored in trace analysis, break.
+            if (getFuncSemanticInfo(frame.name).ignore_child) break;
           }
-          
-          if (filterFrame(frame)) break;
         }
       }
 
@@ -372,11 +366,11 @@ namespace TraceAnalysis {
           popActiveStack(prev->timestamp, current->timestamp);
         }
         
-        if (prevDepth < lcaDepth) // when prevDepth is smaller than lcaDepth due to filtered frames
+        if (prevDepth < lcaDepth) // when prevDepth is smaller than lcaDepth due to ignored children frames
           lcaDepth = prevDepth; // reset lcaDepth
         
         currentDepth = lcaDepth;
-        if (!filterFrame(current->getFrameAtDepth(lcaDepth))) {
+        if (!getFuncSemanticInfo(current->getFrameAtDepth(lcaDepth).name).ignore_child) {
           for (currentDepth = lcaDepth + 1; currentDepth <= current->getDepth(); currentDepth++) {
             CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
             if (frame.type == CallPathFrame::Loop) {
@@ -388,9 +382,9 @@ namespace TraceAnalysis {
               TCTANode* node = new TCTFunctionTraceNode(frame.id, frame.procID, frame.name, activeStack.size(),
                       binaryAnalyzer.findFunc(frame.vma), frame.ra);
               pushActiveStack(node, prev->timestamp, current->timestamp);
+              // if semantic label of a function indicates that its children should be ignored in trace analysis, break.
+              if (getFuncSemanticInfo(frame.name).ignore_child) break;
             }
-            
-            if (filterFrame(frame)) break;
           }
         }
 

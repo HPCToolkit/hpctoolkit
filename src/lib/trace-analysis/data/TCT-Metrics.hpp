@@ -56,6 +56,8 @@
 
 #include "../TraceAnalysisCommon.hpp"
 
+#include "TCT-Time.hpp"
+
 #include <boost/serialization/access.hpp>
 
 namespace TraceAnalysis {
@@ -106,13 +108,25 @@ namespace TraceAnalysis {
         maxDuration(other.maxDuration), totalDuration(other.totalDuration){}
     virtual ~TCTPerfLossMetric() {}
     
-    void initDurationMetric(Time duration, int weight);
+    void initDurationMetric(const TCTTime& time, int weight);
     void setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2);
     
     void clear() {
       minDuration = 0;
       maxDuration = 0;
       totalDuration = 0;
+    }
+    
+    Time getMinDuration() const {
+      return minDuration;
+    }
+    
+    Time getMaxDuration() const {
+      return maxDuration;
+    }
+
+    Time getAvgDuration(long weight) const {
+      return (Time)(totalDuration / weight);
     }
     
   private:
