@@ -397,6 +397,68 @@ public:
 
 //----------------------------------------------------------------------
 
+// Comparison functions to sort blocks, edges, loops for more
+// deterministic output.
+
+// Sort Blocks by start address, low to high.
+static bool
+BlockLessThan(Block * b1, Block * b2)
+{
+  return b1->start() < b2->start();
+}
+
+// Sort Edges first by target address (usually all the same), and then
+// by source address.
+static bool
+EdgeLessThan(Edge * e1, Edge * e2)
+{
+  return (e1->trg()->start() < e2->trg()->start())
+      || (e1->trg()->start() == e2->trg()->start()
+	  && e1->src()->last() < e2->src()->last());
+}
+
+// Sort Work Items by the expected 'cost' of their proc group, largest
+// to smallest.
+static bool
+WorkItemGreaterThan(WorkItem * w1, WorkItem * w2)
+{
+  return w1->cost > w2->cost;
+}
+
+// Returns: the min entry VMA for the loop, or else 0 if the loop is
+// somehow invalid.  Irreducible loops have more than one entry
+// address.
+static VMA
+LoopMinEntryAddr(Loop * loop)
+{
+  if (loop == NULL) {
+    return 0;
+  }
+
+  vector <Block *> entBlocks;
+  int num_ents = loop->getLoopEntries(entBlocks);
+
+  if (num_ents < 1) {
+    return 0;
+  }
+
+  VMA ans = VMA_MAX;
+  for (int i = 0; i < num_ents; i++) {
+    ans = std::min(ans, entBlocks[i]->start());
+  }
+
+  return ans;
+}
+
+// Sort Loops (from their LoopTreeNodes) by min entry VMAs.
+static bool
+LoopTreeLessThan(LoopTreeNode * n1, LoopTreeNode * n2)
+{
+  return LoopMinEntryAddr(n1->loop) < LoopMinEntryAddr(n2->loop);
+}
+
+//----------------------------------------------------------------------
+
 // Line map info from SymtabAPI.  Try the Module associated with the
 // Symtab Function as a hint first, else look for other modules that
 // might contain vma.
@@ -666,15 +728,6 @@ doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
 }
 
 //----------------------------------------------------------------------
-
-// Order Work Items by the expected 'cost' of their proc group,
-// largest to smallest.
-//
-static bool
-WorkItemGreaterThan(WorkItem * w1, WorkItem * w2)
-{
-  return w1->cost > w2->cost;
-}
 
 //
 // Make work lists for the print order and parallel launch order from
@@ -1281,15 +1334,15 @@ static void
 doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
   HPC::StringTable * strTab = env.strTab;
+  long num_funcs = ginfo->procMap.size();
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
-  long num_funcs = ginfo->procMap.size();
 
   // make a map of internal call edges (from target to source) across
   // all funcs in this group.  we use this to strip the inline seqn at
   // the call source from the target func.
   //
-  std::map <VMA, VMA> callMap;
+  map <VMA, VMA> callMap;
 
   if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
@@ -1367,18 +1420,24 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
       continue;
     }
 
-    // basic blocks for this function
-    const ParseAPI::Function::blocklist & blist = func->blocks();
+    // basic blocks for this function.  put into a vector and sort by
+    // start VMA for deterministic output.
+    vector <Block *> bvec;
     BlockSet visited;
+
+    const ParseAPI::Function::blocklist & blist = func->blocks();
 
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
+      bvec.push_back(block);
       visited[block] = false;
     }
 
+    std::sort(bvec.begin(), bvec.end(), BlockLessThan);
+
     // add to the group's set of covered blocks
     if (! ginfo->alt_file) {
-      for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
 	Block * block = *bit;
 	covered.insert(block->start(), block->end());
       }
@@ -1409,7 +1468,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     DEBUG_CFG("\nnon-loop blocks:\n");
 
     // process any blocks not in a loop
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
 	doBlock(env, ginfo, func, visited, block, root);
@@ -1508,6 +1567,8 @@ doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   // process the children of the loop tree
   vector <LoopTreeNode *> clist = ltnode->children;
 
+  std::sort(clist.begin(), clist.end(), LoopTreeLessThan);
+
   for (uint i = 0; i < clist.size(); i++) {
     LoopList *subList =
       doLoopTree(env, finfo, ginfo, func, visited, clist[i]);
@@ -1564,12 +1625,14 @@ doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   DEBUG_CFG("\nbegin loop:  " << loopName << "  '" << func->name() << "'\n");
 
   // add the inclusive blocks not contained in a subloop
-  vector <Block *> blist;
-  loop->getLoopBasicBlocks(blist);
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
 
-  for (uint i = 0; i < blist.size(); i++) {
-    if (! visited[blist[i]]) {
-      doBlock(env, ginfo, func, visited, blist[i], root);
+  std::sort(bvec.begin(), bvec.end(), BlockLessThan);
+
+  for (uint i = 0; i < bvec.size(); i++) {
+    if (! visited[bvec[i]]) {
+      doBlock(env, ginfo, func, visited, bvec[i], root);
     }
   }
 
@@ -1776,7 +1839,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 
   // a stmt is a loop exit condition if it has outgoing edges to
   // blocks both inside and outside the loop.  but don't include call
-  // edges.
+  // edges.  (don't need to sort blocks and edges here because the
+  // real answer is clist and clist is a map.)
   //
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
     Block * block = *bit;
@@ -1819,9 +1883,12 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
     }
   }
 
-  // see if stmt is also a back edge source
+  // see if stmt is also a back edge source.  (we sort the back edges
+  // only for debug output.)
   vector <Edge *> backEdges;
   loop->getBackEdges(backEdges);
+
+  std::sort(backEdges.begin(), backEdges.end(), EdgeLessThan);
 
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
     VMA src_vma = (*eit)->src()->last();
@@ -2057,7 +2124,7 @@ found_file:
 
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
-  VMA entry_vma = (*(entryBlocks.begin()))->start();
+  VMA entry_vma = VMA_MAX;
 
   for (auto bit = entryBlocks.begin(); bit != entryBlocks.end(); ++bit) {
     entry_vma = std::min(entry_vma, (*bit)->start());
@@ -2283,7 +2350,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
 //----------------------------------------------------------------------
 
 static void
-debugAddr(GroupInfo * ginfo, VMA vma)
+debugAddr(GroupInfo * ginfo, VMA vma, RealPathMgr * realPath)
 {
   StatementVector svec;
   string filenm = "";
@@ -2294,7 +2361,7 @@ debugAddr(GroupInfo * ginfo, VMA vma)
   if (! svec.empty()) {
     filenm = svec[0]->getFile();
     line = svec[0]->getLine();
-    RealPathMgr::singleton().realpath(filenm);
+    realPath->realpath(filenm);
   }
 
   cout << "0x" << hex << vma << dec
@@ -2312,12 +2379,14 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> entBlocks;
   int num_ents = loop->getLoopEntries(entBlocks);
 
+  std::sort(entBlocks.begin(), entBlocks.end(), BlockLessThan);
+
   cout << "\nheader info:  " << loopName
        << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
        << "  '" << func->name() << "'\n";
 
   cout << "\nfunc header:\n";
-  debugAddr(ginfo, func->addr());
+  debugAddr(ginfo, func->addr(), realPath);
 
   cout << "\nentry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
@@ -2351,7 +2420,7 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
-      RealPathMgr::singleton().realpath(filenm);
+      realPath->realpath(filenm);
     }
 
     cout << "0x" << hex << vma << dec
