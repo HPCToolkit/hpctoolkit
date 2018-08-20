@@ -74,6 +74,7 @@
 #include <string.h>
 #include <stdio.h>  // fdopen(), fputc_unlocked()
 
+#include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -105,10 +106,9 @@ hpcio_fopen_w(const char* fnm, int overwrite)
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
     if (fd < 0) { return NULL; }  
   }
-  else if (overwrite == 1) {
+  else if (overwrite == 1)
     // Open file for writing; truncate file already exists.
-    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode); 
-  }
+    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode);
   else if (overwrite == 2) {
     // Options specific to /dev/null.
     fd = open(fnm, O_WRONLY);
@@ -117,6 +117,17 @@ hpcio_fopen_w(const char* fnm, int overwrite)
     return NULL; // blech
   }
   
+  if (fd < 0) {
+    int e = errno;
+    char buf[PATH_MAX] = "no error";
+    strerror_r(e, buf, PATH_MAX);
+    fprintf(stderr, "Failed hpcio_fopen_w: err = %s", buf);
+    char *name = realpath(fnm, buf);
+    if (name)
+      fprintf(stderr, ", file = %s", name);
+    fprintf(stderr, "\n");
+  }
+
   // Get a buffered stream since we will be performing many small writes.
   fs = fdopen(fd, "w");
   return fs;

@@ -1495,7 +1495,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     else {
       DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
       DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-      cct->root(node);
+      if (cct->empty()) cct->root(node);
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
