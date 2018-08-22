@@ -105,6 +105,23 @@ packStringSet(const StringSet& profile,
 static StringSet*
 unpackStringSet(uint8_t* buffer, size_t bufferSz);
 
+//***************************************************************************
+// private functions
+//***************************************************************************
+
+static void 
+broadcast_sizet
+(
+  size_t &size, 
+  int root, 
+  MPI_Comm comm
+)
+{ 
+  long size_l = size;
+  MPI_Bcast(&size_l, 1, MPI_LONG, root, comm);
+  size = size_l;
+} 
+
 
 
 //***************************************************************************
@@ -112,38 +129,67 @@ unpackStringSet(uint8_t* buffer, size_t bufferSz);
 //***************************************************************************
 
 void
-broadcast(Prof::CallPath::Profile*& profile,
-	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
+broadcast
+(
+  Prof::CallPath::Profile*& profile,
+  int myRank, 
+  int maxRank, 
+  int rootRank, 
+  MPI_Comm comm
+)
 {
+  size_t profileSize = 0;
+  uint8_t* profileBuf = NULL;
+
+  if (myRank == rootRank) {
+    packProfile(*profile, &profileBuf, &profileSize);
+  }
+
+  broadcast_sizet(profileSize, rootRank, comm);
+
+  if (myRank != rootRank) {
+    profileBuf = new uint8_t[profileSize];
+  }
+
+  MPI_Bcast(profileBuf, profileSize, MPI_BYTE, rootRank, comm);
+
   if (myRank != RankTree::rootRank) {
-    DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
-    profile = new Prof::CallPath::Profile("[ParallelAnalysis::broadcast]");
-    profile->isMetricMgrVirtual(true);
+    profile = unpackProfile(profileBuf, profileSize);
   }
-  
-  int max_level = RankTree::level(maxRank);
-  for (int level = 0; level < max_level; ++level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; ++i) {
-      // merge i into its left child (i_lchild)
-      int i_lchild = RankTree::leftChild(i);
-      if (i_lchild <= maxRank) {
-	mergeNonLocal(profile, i_lchild, i, myRank);
-      }
 
-      // merge i into its right child (i_rchild)
-      int i_rchild = RankTree::rightChild(i);
-      if (i_rchild <= maxRank) {
-	mergeNonLocal(profile, i_rchild, i, myRank);
-      }
-    }
-
-    MPI_Barrier(comm);
-  }
   if (myRank == rootRank) {
     profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
+  }
+}
+
+
+void
+broadcast
+(
+  StringSet* stringSet,
+  int myRank, 
+  int maxRank, 
+  int rootRank, 
+  MPI_Comm comm
+)
+{
+  size_t size = 0;
+  uint8_t* buf = NULL;
+
+  if (myRank == rootRank) {
+    packStringSet(*stringSet, &buf, &size);
+  }
+
+  broadcast_sizet(size, rootRank, comm);
+
+  if (myRank != rootRank) {
+    buf = new uint8_t[size];
+  }
+
+  MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
+
+  if (myRank != RankTree::rootRank) {
+    stringSet = unpackStringSet(buf, size);
   }
 }
 
@@ -240,33 +286,6 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
     // rank_y sends metric data to rank_x
     MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataSize(),
 	     MPI_DOUBLE, rank_x, tag, comm);
-  }
-}
-
-
-void
-broadcast(StringSet* stringSet,
-	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
-{
-  int max_level = RankTree::level(maxRank);
-  for (int level = 0; level < max_level; ++level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; ++i) {
-      // merge i into its left child (i_lchild)
-      int i_lchild = RankTree::leftChild(i);
-      if (i_lchild <= maxRank) {
-	mergeNonLocal(stringSet, i_lchild, i, myRank);
-      }
-
-      // merge i into its right child (i_rchild)
-      int i_rchild = RankTree::rightChild(i);
-      if (i_rchild <= maxRank) {
-	mergeNonLocal(stringSet, i_rchild, i, myRank);
-      }
-    }
-    MPI_Barrier(comm);
   }
 }
 
