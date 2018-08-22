@@ -72,17 +72,22 @@ using std::string;
 
 #include <map>
 #include <algorithm>
+#include <sstream>
 
 #include <cstdio>
 #include <cstring> // strcmp
 #include <cmath> // abs
 
 #include <stdint.h>
+#include <unistd.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 
 #include <alloca.h>
+#include <linux/limits.h>
+
+
 
 //*************************** User Include Files ****************************
 
@@ -116,6 +121,32 @@ using namespace xml;
 #define MAX_PREFIX_CHARS 64
 
 //***************************************************************************
+// private operations
+//***************************************************************************
+
+
+static void
+getFileErrorString(const std::string &fnm, std::string &errorString)
+{
+  char pathbuf[PATH_MAX];
+  char error[1024];
+
+  // grab the error string for the open failure before calling getcwd, 
+  // which may overwrite errno 
+  strerror_r(errno, error, sizeof(error));
+
+  const char *path = realpath(fnm.c_str(), pathbuf); 
+  if (path == NULL) {
+    path = fnm.c_str();
+  }
+
+  std::stringstream ss;  
+
+  ss << "(path ='" << path << "', error ='" << error << "')"; 
+
+  errorString = ss.str();
+}
+
 
 
 //***************************************************************************
@@ -401,7 +432,10 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   const string& inFnm = m_traceFileName;
   FILE* infs = hpcio_fopen_r(inFnm.c_str());
   if (!infs) {
-    DIAG_Throw("error opening trace file '" << m_traceFileName << "'");
+    std::string errorString;
+    getFileErrorString(inFnm, errorString);
+    DIAG_EMsg("failed to open trace file " << errorString << "; skip this one."); 
+    return; 
   }
   ret = setvbuf(infs, infsBuf, _IOFBF, HPCIO_RWBufferSz);
   DIAG_AssertWarn(ret == 0, inFnm << ": Profile::merge_fixTrace: setvbuf!");
@@ -412,7 +446,18 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
   const string& outFnm = traceFileNameTmp;
   FILE* outfs = hpcio_fopen_w(outFnm.c_str(), 1/*overwrite*/);
   if (!outfs) {
-    DIAG_Throw("error opening trace file '" << outFnm << "'");
+    if (errno == EDQUOT) {
+      DIAG_EMsg("disk quota exceeded; unable to write trace data file  " << 
+		outFnm << "; aborting.");
+      exit(-1);
+    } else {
+      std::string errorString;
+      getFileErrorString(outFnm, errorString);
+      DIAG_EMsg("failed to open output trace file " << errorString << 
+		"when processing trace file " << inFnm << "; skip this one.");
+      hpcio_fclose(infs);
+      return; 
+    }
   }
   ret = setvbuf(outfs, outfsBuf, _IOFBF, HPCIO_RWBufferSz);
   DIAG_AssertWarn(ret == 0, outFnm << ": Profile::merge_fixTrace: setvbuf!");
@@ -427,7 +472,11 @@ Profile::merge_fixTrace(const CCT::MergeEffectList* mrgEffects)
       break;
     }
     else if (ret == HPCFMT_ERR) {
-      DIAG_Throw("error reading trace file '" << m_traceFileName << "'");
+      DIAG_EMsg("failed reading a record from trace file " << inFnm << "; skip this one.");
+      hpcio_fclose(infs);
+      hpcio_fclose(outfs);
+      unlink(outFnm.c_str()); // delete incomplete output file
+      return;
     }
     
     // 2. Translate cct id

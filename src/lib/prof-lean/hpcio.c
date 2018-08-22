@@ -85,12 +85,14 @@
 
 #include "hpcio.h"
 
+
+
 //*************************** Forward Declarations **************************
 
-//***************************************************************************
+
 
 //***************************************************************************
-//
+// interface operations
 //***************************************************************************
 
 // See header for interface information.
@@ -104,10 +106,9 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   if (overwrite == 0) {
     // Open file for writing; fail if the file already exists.  
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
-    if (fd < 0) { return NULL; }  
   }
   else if (overwrite == 1)
-    // Open file for writing; truncate file already exists.
+    // Open file for writing; truncate if file already exists.
     fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode);
   else if (overwrite == 2) {
     // Options specific to /dev/null.
@@ -116,20 +117,14 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   else {
     return NULL; // blech
   }
-  
-  if (fd < 0) {
-    int e = errno;
-    char buf[PATH_MAX] = "no error";
-    strerror_r(e, buf, PATH_MAX);
-    fprintf(stderr, "Failed hpcio_fopen_w: err = %s", buf);
-    char *name = realpath(fnm, buf);
-    if (name)
-      fprintf(stderr, ", file = %s", name);
-    fprintf(stderr, "\n");
-  }
 
+  if (fd < 0) {
+    return NULL; 
+  }
+  
   // Get a buffered stream since we will be performing many small writes.
   fs = fdopen(fd, "w");
+
   return fs;
 }
 
