@@ -339,10 +339,10 @@ template<typename T>
 void
 reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 {
-  int lchild = leftChild(myRank);
+  int lchild = RankTree::leftChild(myRank);
   if (lchild < maxRank) {
     mergeNonLocal(object, myRank, lchild, myRank);
-    int rchild = rightChild(myRank);
+    int rchild = RankTree::rightChild(myRank);
     if (rchild < maxRank)
       mergeNonLocal(object, myRank, rchild, myRank);
   }
