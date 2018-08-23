@@ -175,13 +175,6 @@ doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
 	TreeNode *, HPC::StringTable &);
 
 static void
-doCudaList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &);
-
-static void
-doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
-	       HPC::StringTable & strTab);
-
-static void
 addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
 
 static void
@@ -356,7 +349,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
       (*mit)->getSourceLines(svec, vma);
       if (! svec.empty()) {
-	break;
+        break;
       }
     }
   }
@@ -430,10 +423,7 @@ makeStructure(InputFile & inputFile,
       code_obj->parse();
     } else {
 #if 1
-      if (readCubinCFG(elfFile, the_symtab, &code_src, &code_obj)) {
-        // if we can parse a cubin, we treat it like a regular binary
-        // cuda_file = false; 
-      }
+      readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
 #else
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
@@ -456,12 +446,7 @@ makeStructure(InputFile & inputFile,
 	GroupInfo * ginfo = git->second;
 
 	// make the inline tree for all funcs in one group
-	if (cuda_file) {
-	  doCudaList(symtab, finfo, ginfo, strTab);
-	}
-	else {
 	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-	}
 
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
@@ -1281,75 +1266,14 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-#ifdef DYNINST_INSTRUCTION_PTR
-    int  len = iit->second->size();
-#else
-    int  len = iit->second.size();
-#endif
-
-    lmcache.getLineInfo(vma, filenm, line);
-
-#if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
-#endif
-
-    addStmtToTree(root, strTab, vma, len, filenm, line);
-  }
-}
-
-//----------------------------------------------------------------------
-
-// CUDA functions
-//
-static void
-doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	   HPC::StringTable & strTab)
-{
-  // not sure if cuda generates multiple functions, but we'll handle
-  // this case until proven otherwise.
-  long num = 0;
-  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-    ProcInfo * pinfo = pit->second;
-    ParseAPI::Function * func = pinfo->func;
-    num++;
-
-#if DEBUG_CFG_SOURCE
-    long num_funcs = ginfo->procMap.size();
-    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
-#endif
-
-    TreeNode * root = new TreeNode;
-
-    doCudaFunction(ginfo, func, root, strTab);
-
-    pinfo->root = root;
-
-#if DEBUG_CFG_SOURCE
-    cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
-#endif
-  }
-}
-
-//----------------------------------------------------------------------
-
-// Process one cuda function.
-//
-// We don't have cuda instruction parsing (yet), so just one flat
-// block per function and no loops.
-//
-static void
-doCudaFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,
-	       HPC::StringTable & strTab)
-{
-  LineMapCache lmcache (ginfo->sym_func);
-
-  DEBUG_CFG("\ncuda blocks:\n");
-
-  int len = 4;
-  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) {
-    string filenm = "";
-    uint line = 0;
+//#ifdef DYNINST_INSTRUCTION_PTR
+//    int  len = iit->second->size();
+//#else
+//    int  len = iit->second.size();
+//#endif
+    // only works for sm70
+    // TODO(keren): Fix
+    int len = 16;
 
     lmcache.getLineInfo(vma, filenm, line);
 

@@ -148,34 +148,33 @@ readCubinCFG
   }
 
   // Parse dot cfg
-  std::vector<CudaParse::Function *> *functions = 
-    new std::vector<CudaParse::Function *>();
+  std::vector<CudaParse::Function *> functions;
 
-  parseDotCFG(dot, *functions);
+  parseDotCFG(dot, functions);
 
   // relocate instructions according to the 
   // relocated symbols in the_symtab
-  relocateInstructions(the_symtab, *functions);
+  relocateInstructions(the_symtab, functions);
 
-  CFGFactory *cfg_fact = new CudaCFGFactory(*functions);
+  CFGFactory *cfg_fact = new CudaCFGFactory(functions);
 
   if (cfg_fact != NULL) {
 
-    *code_src = new CudaCodeSource(*functions, the_symtab); 
+    *code_src = new CudaCodeSource(functions, the_symtab); 
 
     *code_obj = new CodeObject(*code_src, cfg_fact);
     (*code_obj)->parse();
 
-    delete cfg_fact;
+    //delete cfg_fact;
   }
 
-#if 1
-  for (auto *function : *functions) {
-    cout << "cuda function: " << // function->name().c_str() << " " << 
-      std::hex << (void *) function << std::dec << endl;
-    // delete function;
-  }
-#endif
+//#if 1
+//  for (auto *function : functions) {
+//    cout << "cuda function: " << function->name << " " << 
+//      std::hex << (void *) function << std::dec << endl;
+//    delete function;
+//  }
+//#endif
 
   return true;
 }
