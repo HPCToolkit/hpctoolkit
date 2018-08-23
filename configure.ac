@@ -101,7 +101,7 @@ AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.69)
-AM_INIT_AUTOMAKE(1.15)
+AM_INIT_AUTOMAKE(1.15.1)
 LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
