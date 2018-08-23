@@ -15,7 +15,7 @@ class CFGParser {
   CFGParser() : _block_parent(0) {}
   void parse(const Graph &graph, std::vector<Function *> &functions);
 
-  ~CFGParser() {};
+  ~CFGParser() {}
 
  private:
   void parse_calls(std::vector<Function *> &functions);

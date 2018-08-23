@@ -141,6 +141,7 @@ static const string & unknown_link = "_unknown_proc_";
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
+static int cuda_arch;
 
 
 //----------------------------------------------------------------------
@@ -423,6 +424,7 @@ makeStructure(InputFile & inputFile,
       code_obj->parse();
     } else {
 #if 1
+      cuda_arch = elfFile->getArch();
       readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
 #else
       code_src = new SymtabCodeSource(symtab);
@@ -1265,15 +1267,21 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
+    int len = 0;
 
-//#ifdef DYNINST_INSTRUCTION_PTR
-//    int  len = iit->second->size();
-//#else
-//    int  len = iit->second.size();
-//#endif
-    // only works for sm70
-    // TODO(keren): Fix
-    int len = 16;
+    if (cuda_arch > 0) {
+      if (cuda_arch < 70) {
+        len = 8;
+      } else {
+        len = 16;
+      }
+    } else {
+#ifdef DYNINST_INSTRUCTION_PTR
+        len = iit->second->size();
+#else
+        len = iit->second.size();
+#endif
+    }
 
     lmcache.getLineInfo(vma, filenm, line);
 

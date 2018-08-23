@@ -12,8 +12,9 @@ namespace ParseAPI {
 
 class PARSER_EXPORT CudaCFGFactory : public CFGFactory {   
  public:
-   CudaCFGFactory(std::vector<CudaParse::Function *> &functions) : _functions(functions) {};
-   virtual ~CudaCFGFactory() {};
+   CudaCFGFactory(std::vector<CudaParse::Function *> &functions) :
+     _functions(functions) {}
+   virtual ~CudaCFGFactory() {}
 
  protected:
    virtual Function * mkfunc(Address addr, FuncSource src, 

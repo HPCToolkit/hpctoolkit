@@ -117,6 +117,7 @@ ElfFile::open
 #ifdef EM_CUDA
 
   if (ehdr->e_machine == EM_CUDA) {
+    this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);

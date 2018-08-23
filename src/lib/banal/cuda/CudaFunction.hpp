@@ -6,7 +6,7 @@
 namespace Dyninst {
 namespace ParseAPI {
 
-  class PARSER_EXPORT CudaFunction : public ParseAPI::Function {
+class PARSER_EXPORT CudaFunction : public ParseAPI::Function {
  public:
    CudaFunction(Address addr, std::string name, CodeObject * obj, 
      CodeRegion * region, InstructionSource * isource) :

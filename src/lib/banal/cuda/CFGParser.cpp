@@ -37,7 +37,7 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
               break;
             }
           }
-	  if (callee_function != 0) 
+          if (callee_function != 0) 
             block->targets.push_back(new Target(inst, callee_function->blocks[0], CALL));
           else {
             std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 

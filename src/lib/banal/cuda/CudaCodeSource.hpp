@@ -13,7 +13,7 @@ namespace ParseAPI {
  public:
   CudaCodeSource(std::vector<CudaParse::Function *> &functions, 
 		 Dyninst::SymtabAPI::Symtab *s);
-    ~CudaCodeSource() {};
+    ~CudaCodeSource() {}
 
  public:
     /** InstructionSource implementation **/
