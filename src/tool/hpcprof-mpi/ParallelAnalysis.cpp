@@ -147,9 +147,8 @@ broadcast
 
   broadcast_sizet(profileSize, rootRank, comm);
 
-  uint8_t profileSpace[profileSize];
   if (myRank != rootRank) {
-    profileBuf = profileSpace;
+    profileBuf = new uint8_t[profileSize];
   }
 
   MPI_Bcast(profileBuf, profileSize, MPI_BYTE, rootRank, comm);
@@ -157,6 +156,7 @@ broadcast
   if (myRank != RankTree::rootRank) {
     profile = unpackProfile(profileBuf, profileSize);
   }
+  delete [] profileBuf;
 
   if (myRank == rootRank) {
     profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
@@ -183,9 +183,8 @@ broadcast
 
   broadcast_sizet(size, rootRank, comm);
 
-  uint8_t space[size];
   if (myRank != rootRank) {
-    buf = space;
+    buf = new uint8_t[size];
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
@@ -193,6 +192,7 @@ broadcast
   if (myRank != RankTree::rootRank) {
     stringSet = unpackStringSet(buf, size);
   }
+  delete [] buf;
 }
 
 
