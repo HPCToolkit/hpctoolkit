@@ -147,8 +147,9 @@ broadcast
 
   broadcast_sizet(profileSize, rootRank, comm);
 
+  uint8_t profileSpace[profileSize];
   if (myRank != rootRank) {
-    profileBuf = new uint8_t[profileSize];
+    profileBuf = profileSpace;
   }
 
   MPI_Bcast(profileBuf, profileSize, MPI_BYTE, rootRank, comm);
@@ -182,8 +183,9 @@ broadcast
 
   broadcast_sizet(size, rootRank, comm);
 
+  uint8_t space[size];
   if (myRank != rootRank) {
-    buf = new uint8_t[size];
+    buf = space;
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
