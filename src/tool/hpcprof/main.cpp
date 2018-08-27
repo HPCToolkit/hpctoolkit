@@ -93,6 +93,16 @@ makeMetrics(Prof::CallPath::Profile& prof,
 
 //****************************************************************************
 
+void 
+prof_abort
+(
+  int error_code
+)
+{
+  exit(error_code);
+}
+
+
 int 
 main(int argc, char* const* argv) 
 {
