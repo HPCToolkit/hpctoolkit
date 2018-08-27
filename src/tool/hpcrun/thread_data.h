@@ -211,7 +211,7 @@ typedef struct thread_data_t {
   sigjmp_buf_t     *current_jmp_buf;
   sigjmp_buf_t     bad_interval;
   sigjmp_buf_t     bad_unwind;
-  sigjmp_buf_t     mem_error;
+
   bool             deadlock_drop;
   int              handling_sample;
   int              fnbounds_lock;

@@ -66,6 +66,8 @@
 #include <iostream>
 #include <fstream>
 #include <typeinfo>
+#include <signal.h>
+#include <unistd.h>
 
 #include <string>
 using std::string;
@@ -200,6 +202,28 @@ main(int argc, char* const* argv)
 }
 
 
+static void
+abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  abort();
+}
+
+static void
+hpcprof_set_abort_timeout()
+{
+  char *error_timeout = getenv("HPCPROF_ABORT_TIMEOUT");
+  if (error_timeout) {
+     int seconds = atoi(error_timeout);
+     if (seconds != 0) {
+       struct sigaction act;
+       act.sa_sigaction = abort_timeout_handler;
+       act.sa_flags = SA_SIGINFO;
+       sigaction(SIGALRM, &act, NULL);
+       alarm(seconds);
+     }
+  }
+}
+
 static int
 realmain(int argc, char* const* argv) 
 {
@@ -207,6 +231,7 @@ realmain(int argc, char* const* argv)
   args.parse(argc, argv); // may call exit()
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr());
+  hpcprof_set_abort_timeout();
 
   // -------------------------------------------------------
   // 0. MPI initialize
@@ -237,6 +262,9 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // 0. Make empty Experiment database (ensure file system works)
   // -------------------------------------------------------
+  if (myRank == rootRank)
+    args.makeDatabaseDir();
+
   char dbDirBuf[PATH_MAX];
   if (myRank == rootRank) {
     memset(dbDirBuf, '\0', PATH_MAX); // avoid artificial valgrind warnings
@@ -272,13 +300,6 @@ realmain(int argc, char* const* argv)
     (nArgs.groupMax > 1) ? nArgs.groupMap : NULL;
 
   profLcl = Analysis::CallPath::read(*nArgs.paths, groupMap, mergeTy, rFlags);
-
-  // -------------------------------------------------------
-  // 0. Make empty Experiment database (ensure file system works)
-  // -------------------------------------------------------
-
-  if (myRank == rootRank)
-    args.makeDatabaseDir();
 
   // -------------------------------------------------------
   // 1b. Create canonical CCT (metrics merged by <group>.<name>.*)
