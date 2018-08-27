@@ -153,7 +153,7 @@ broadcast
 
   MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
 
-  if (myRank != RankTree::rootRank) {
+  if (myRank != 0) {
     profile = unpackProfile(buf, size);
   }
 
@@ -190,7 +190,7 @@ broadcast
 
   MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
 
-  if (myRank != RankTree::rootRank) {
+  if (myRank != 0) {
     StringSet *rhs = unpackStringSet(buf, size);
     stringSet += *rhs;
     delete rhs;

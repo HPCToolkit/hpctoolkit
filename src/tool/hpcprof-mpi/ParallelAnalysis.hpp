@@ -84,84 +84,6 @@
 
 //*************************** Forward Declarations **************************
 
-
-//***************************************************************************
-// RankTree: Implicit tree representation for reductions/broadcasts
-//***************************************************************************
-
-namespace RankTree {
-
-// Representing a 1-based list of ranks (from 1 to n) as a binary tree:
-//
-//             1               |  level 0
-//          __/ \__            |
-//        2         3          |  level 1
-//       / \       / \         |
-//      4   5     6   7        |  level 2
-//    / |  / \   / \  | \      |
-//   8  9 10 11 12 13 14 15    |  level 3
-//
-// For rank i:
-//   parent(i):      floor(i/2), if i > 1
-//   left-child(i):  2i
-//   right-child(i): 2i + 1
-//   
-// Let the root have level 0.  Then, level l:
-//   begins with node 2^l
-//   ends with node 2^(l + 1) - 1 (assuming a complete level)
-// 
-// Given node i, its level is floor(log2(i))
-
-const int rootRank = 0;
-
-inline int 
-make1BasedRank(int rank0)
-{
-  return (rank0 + 1);
-}
-
-
-inline int 
-make0BasedRank(int rank1)
-{
-  return (rank1 - 1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns its level
-inline int 
-parent(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int parent1 = rank1 / 2; //  floor() via truncation
-  return make0BasedRank(parent1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns a
-// 0-based rank for its left child
-inline int 
-leftChild(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int child1 = 2 * rank1;
-  return make0BasedRank(child1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns a
-// 0-based rank for its right child
-inline int 
-rightChild(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int child1 = 2 * rank1 + 1;
-  return make0BasedRank(child1);
-}
-
-} // namespace RankTree
-
-
 //***************************************************************************
 // PackedMetrics: a packable matrix
 //***************************************************************************
@@ -308,16 +230,16 @@ template<typename T>
 void
 reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 {
-  int lchild = RankTree::leftChild(myRank);
+  int lchild = 2 * myRank + 1;
   if (lchild <= maxRank) {
     mergeNonLocal(object, myRank, lchild, myRank);
-    int rchild = RankTree::rightChild(myRank);
+    int rchild = 2 * myRank + 2;
     if (rchild <= maxRank) {
       mergeNonLocal(object, myRank, rchild, myRank);
     }
   }
   if (myRank > 0) {
-    int parent = RankTree::parent(myRank);
+    int parent = (myRank - 1) / 2;
     mergeNonLocal(object, parent, myRank, myRank);
   }
 }
