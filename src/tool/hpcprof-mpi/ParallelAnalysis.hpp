@@ -70,7 +70,6 @@
 #include <string>
 #include <vector>
 
-#include <cmath>
 #include <cstring> // for memset()
 
 #include <stdint.h>
@@ -159,36 +158,6 @@ rightChild(int rank0)
   int child1 = 2 * rank1 + 1;
   return make0BasedRank(child1);
 }
-
-
-// level: Given a 0-based rank for a node in the binary tree, returns
-// its parent's 0-based rank
-inline int 
-level(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int level = (int) log2(rank1); // floor() via truncation
-  return level;
-}
-
-
-// begNode: Given a tree level, return the first node (0-based rank)
-// on that level
-inline int 
-begNode(int level)
-{
-  int rank1 = (int) pow(2.0, level);
-  return make0BasedRank(rank1);
-}
-
-
-inline int 
-endNode(int level)
-{
-  int rank1 = (int) pow(2.0, level + 1) - 1;
-  return make0BasedRank(rank1);
-}
-
 
 } // namespace RankTree
 
