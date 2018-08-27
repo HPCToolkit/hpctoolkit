@@ -340,11 +340,12 @@ void
 reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 {
   int lchild = RankTree::leftChild(myRank);
-  if (lchild < maxRank) {
+  if (lchild <= maxRank) {
     mergeNonLocal(object, myRank, lchild, myRank);
     int rchild = RankTree::rightChild(myRank);
-    if (rchild < maxRank)
+    if (rchild <= maxRank) {
       mergeNonLocal(object, myRank, rchild, myRank);
+    }
   }
   if (myRank > 0) {
     int parent = RankTree::parent(myRank);
