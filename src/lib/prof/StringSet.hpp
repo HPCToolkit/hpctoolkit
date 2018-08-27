@@ -87,6 +87,7 @@ public:
   static int
   fmt_fwrite(const StringSet& stringSet, FILE* outfs);
 
+  void dump(void);
 };
 
 #endif
