@@ -329,8 +329,7 @@ mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 // ------------------------------------------------------------------------
 // reduce: Uses a tree-based reduction to reduce the profile at every
 // rank into a canonical profile at the tree's root, rank 0.  Assumes
-// 0-based ranks.  Uses lg(maxRank) barriers, one at each level of the
-// binary tree.
+// 0-based ranks.
 // 
 // T: Prof::CallPath::Profile*
 // T: std::pair<Prof::CallPath::Profile*, ParallelAnalysis::PackedMetrics*>
@@ -340,26 +339,16 @@ template<typename T>
 void
 reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
 {
-  for (int level = RankTree::level(maxRank); level >= 1; --level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; i += 2) {
-      int parent = RankTree::parent(i);
-      int lchild = i;     // left child of parent
-      int rchild = i + 1; // right child of parent (if it exists)
-
-      // merge lchild into parent (merging left child first maintains
-      // metric order for CallPath::Profiles)
-      mergeNonLocal(object, parent, lchild, myRank);
-
-      // merge rchild into parent
-      if (rchild <= i_end) {
-	mergeNonLocal(object, parent, rchild, myRank);
-      }
-    }
-    
-    MPI_Barrier(comm);
+  int lchild = RankTree::leftChild(myRank);
+  if (lchild < maxRank) {
+    mergeNonLocal(object, myRank, lchild, myRank);
+    int rchild = RankTree::rightChild(myRank);
+    if (rchild < maxRank)
+      mergeNonLocal(object, myRank, rchild, myRank);
+  }
+  if (myRank > 0) {
+    int parent = RankTree::parent(myRank);
+    mergeNonLocal(object, parent, myRank, myRank);
   }
 }
 

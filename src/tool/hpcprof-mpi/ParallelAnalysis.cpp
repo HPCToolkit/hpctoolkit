@@ -157,7 +157,7 @@ broadcast
     profile = unpackProfile(buf, size);
   }
 
-  delete buf;
+  delete [] buf;
 
   if (myRank == rootRank) {
     profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
@@ -196,7 +196,7 @@ broadcast
     delete rhs;
   }
 
-  delete buf;
+  delete [] buf;
 }
 
 
