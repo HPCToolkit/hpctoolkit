@@ -320,7 +320,7 @@ realmain(int argc, char* const* argv)
   // Post-INVARIANT: 'profGbl' is the canonical CCT
   ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1, rootRank);
 
-  ParallelAnalysis::broadcast(&profGbl->directorySet(), myRank, numRanks - 1, rootRank);
+  ParallelAnalysis::broadcast(profGbl->directorySet(), myRank, numRanks - 1, rootRank);
 
   delete profLcl;
 

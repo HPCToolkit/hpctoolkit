@@ -138,46 +138,11 @@ broadcast
   MPI_Comm comm
 )
 {
-  size_t profileSize = 0;
-  uint8_t* profileBuf = NULL;
-
-  if (myRank == rootRank) {
-    packProfile(*profile, &profileBuf, &profileSize);
-  }
-
-  broadcast_sizet(profileSize, rootRank, comm);
-
-  if (myRank != rootRank) {
-    profileBuf = new uint8_t[profileSize];
-  }
-
-  MPI_Bcast(profileBuf, profileSize, MPI_BYTE, rootRank, comm);
-
-  if (myRank != RankTree::rootRank) {
-    profile = unpackProfile(profileBuf, profileSize);
-  }
-
-  if (myRank == rootRank) {
-    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
-  }
-}
-
-
-void
-broadcast
-(
-  StringSet* stringSet,
-  int myRank, 
-  int maxRank, 
-  int rootRank, 
-  MPI_Comm comm
-)
-{
   size_t size = 0;
   uint8_t* buf = NULL;
 
   if (myRank == rootRank) {
-    packStringSet(*stringSet, &buf, &size);
+    packProfile(*profile, &buf, &size);
   }
 
   broadcast_sizet(size, rootRank, comm);
@@ -189,8 +154,49 @@ broadcast
   MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
 
   if (myRank != RankTree::rootRank) {
-    stringSet = unpackStringSet(buf, size);
+    profile = unpackProfile(buf, size);
   }
+
+  delete buf;
+
+  if (myRank == rootRank) {
+    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
+  }
+}
+
+
+void
+broadcast
+(
+  StringSet &stringSet,
+  int myRank, 
+  int maxRank, 
+  int rootRank, 
+  MPI_Comm comm
+)
+{
+  size_t size = 0;
+  uint8_t* buf = NULL;
+
+  if (myRank == rootRank) {
+    packStringSet(stringSet, &buf, &size);
+  }
+
+  broadcast_sizet(size, rootRank, comm);
+
+  if (myRank != rootRank) {
+    buf = new uint8_t[size];
+  }
+
+  MPI_Bcast(buf, size, MPI_BYTE, rootRank, comm);
+
+  if (myRank != RankTree::rootRank) {
+    StringSet *rhs = unpackStringSet(buf, size);
+    stringSet += *rhs;
+    delete rhs;
+  }
+
+  delete buf;
 }
 
 
@@ -318,7 +324,7 @@ mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 	     rank_y, tag, comm, &mpistat);
 
     stringSet_y = unpackStringSet(stringSetBuf, 
-					(size_t) stringSetBufSz);
+				  (size_t) stringSetBufSz);
     delete[] stringSetBuf;
 
     *stringSet_x += *stringSet_y;

@@ -374,7 +374,7 @@ void
 broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
 	  int rootRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
-broadcast(StringSet *stringSet, int myRank, int maxRank, 
+broadcast(StringSet &stringSet, int myRank, int maxRank, 
 	  int rootRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
