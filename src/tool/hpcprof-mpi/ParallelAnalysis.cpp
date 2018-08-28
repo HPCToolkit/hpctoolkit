@@ -192,149 +192,114 @@ broadcast
 
 
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm)
+packSend(Prof::CallPath::Profile* profile,
+	 int dest, int myRank, MPI_Comm comm)
 {
-  int tag = rank_y; // sender
-
   uint8_t* profileBuf = NULL;
-
-  Prof::CallPath::Profile* profile_x = NULL;
-  Prof::CallPath::Profile* profile_y = NULL;
-
-  if (myRank == rank_x) {
-    profile_x = profile;
-
-    // rank_x probes rank_y
-    int profileBufSz = 0;
-    MPI_Status mpistat;
-    MPI_Probe(rank_y, tag, comm, &mpistat);
-    MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
-    profileBuf = new uint8_t[profileBufSz];
-
-    // rank_x receives profile from rank_y
-    MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, tag, comm, &mpistat);
-
-    profile_y = unpackProfile(profileBuf, (size_t)profileBufSz);
-    delete[] profileBuf;
-
-    if (DBG_CCT_MERGE) {
-      string pfx0 = "[" + StrUtil::toStr(rank_x) + "]";
-      string pfx1 = "[" + StrUtil::toStr(rank_y) + "]";
-      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx0.c_str()));
-      DIAG_DevMsgIf(1, profile_y->metricMgr()->toString(pfx1.c_str()));
-    }
-    
-    int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
-    profile_x->merge(*profile_y, mergeTy);
-
-    // merging the perf event statistics
-    profile_x->metricMgr()->mergePerfEventStatistics(profile_y->metricMgr());
-
-    if (DBG_CCT_MERGE) {
-      string pfx = ("[" + StrUtil::toStr(rank_y)
-		    + " => " + StrUtil::toStr(rank_x) + "]");
-      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx.c_str()));
-    }
-
-    delete profile_y;
-  }
-
-  if (myRank == rank_y) {
-    profile_y = profile;
-
-    size_t profileBufSz = 0;
-    packProfile(*profile_y, &profileBuf, &profileBufSz);
-
-    // rank_y sends profile to rank_x
-    MPI_Send(profileBuf, (int)profileBufSz, MPI_BYTE, rank_x, tag, comm);
-
-    free(profileBuf);
-  }
+  size_t profileBufSz = 0;
+  packProfile(*profile, &profileBuf, &profileBufSz);
+  MPI_Send(profileBuf, (int)profileBufSz, MPI_BYTE, dest, myRank, comm);
+  free(profileBuf);
 }
 
+void
+recvMerge(Prof::CallPath::Profile* profile,
+	  int src, int myRank, MPI_Comm comm)
+{
+  // rank_x probes src
+  MPI_Status mpistat;
+  MPI_Probe(src, src, comm, &mpistat);
+  int profileBufSz;
+  MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
+
+  // receive profile from src
+  uint8_t *profileBuf = new uint8_t[profileBufSz];
+  MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, src, src, comm, &mpistat);
+  Prof::CallPath::Profile* new_profile =
+    unpackProfile(profileBuf, (size_t)profileBufSz);
+  delete[] profileBuf;
+
+  if (DBG_CCT_MERGE) {
+    string pfx0 = "[" + StrUtil::toStr(myRank) + "]";
+    string pfx1 = "[" + StrUtil::toStr(src) + "]";
+    DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx0.c_str()));
+    DIAG_DevMsgIf(1, new_profile->metricMgr()->toString(pfx1.c_str()));
+  }
+    
+  int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
+  profile->merge(*new_profile, mergeTy);
+
+  // merging the perf event statistics
+  profile->metricMgr()->mergePerfEventStatistics(new_profile->metricMgr());
+
+  if (DBG_CCT_MERGE) {
+    string pfx = ("[" + StrUtil::toStr(src)
+		  + " => " + StrUtil::toStr(myRank) + "]");
+    DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx.c_str()));
+  }
+
+  delete new_profile;
+}
 
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*,
+packSend(std::pair<Prof::CallPath::Profile*,
 	                ParallelAnalysis::PackedMetrics*> data,
-	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
+	 int dest, int myRank, MPI_Comm comm)
 {
-  int tag = rank_y; // sender
-
-  if (myRank == rank_x) {
-    Prof::CallPath::Profile* profile_x = data.first;
-    ParallelAnalysis::PackedMetrics* packedMetrics_x = data.second;
-
-    // rank_x receives metric data from rank_y
-    MPI_Status mpistat;
-    MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataSize(),
-	     MPI_DOUBLE, rank_y, tag, comm, &mpistat);
-    DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
-    
-    unpackMetrics(*profile_x, *packedMetrics_x);
-  }
-
-  if (myRank == rank_y) {
-    Prof::CallPath::Profile* profile_y = data.first;
-    ParallelAnalysis::PackedMetrics* packedMetrics_y = data.second;
-
-    packMetrics(*profile_y, *packedMetrics_y);
-    
-    // rank_y sends metric data to rank_x
-    MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataSize(),
-	     MPI_DOUBLE, rank_x, tag, comm);
-  }
+  Prof::CallPath::Profile* profile = data.first;
+  ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
+  packMetrics(*profile, *packedMetrics);
+  MPI_Send(packedMetrics->data(), packedMetrics->dataSize(),
+	   MPI_DOUBLE, dest, myRank, comm);
 }
 
+void
+recvMerge(std::pair<Prof::CallPath::Profile*,
+	  ParallelAnalysis::PackedMetrics*> data,
+	  int src, int myRank, MPI_Comm comm)
+{
+  Prof::CallPath::Profile* profile = data.first;
+  ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
+
+  // receive new metric data from src
+  MPI_Status mpistat;
+  MPI_Recv(packedMetrics->data(), packedMetrics->dataSize(),
+	   MPI_DOUBLE, src, src, comm, &mpistat);
+  DIAG_Assert(packedMetrics->verify(), DIAG_UnexpectedInput);
+  unpackMetrics(*profile, *packedMetrics);
+}
 
 void
-mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm)
+packSend(StringSet *stringSet,
+	 int dest, int myRank, MPI_Comm comm)
 {
-  int tag = rank_y; // sender
-
   uint8_t* stringSetBuf = NULL;
+  size_t stringSetBufSz = 0;
+  packStringSet(*stringSet, &stringSetBuf, &stringSetBufSz);
+  MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, 
+	   dest, myRank, comm);
+  free(stringSetBuf);
+}
 
-  StringSet *stringSet_x = NULL;
-  StringSet *stringSet_y = NULL;
+void
+recvMerge(StringSet *stringSet,
+	  int src, int myRank, MPI_Comm comm)
+{
+  // determine size of incoming packed directory set from src
+  MPI_Status mpistat;
+  MPI_Probe(src, src, comm, &mpistat);
+  int stringSetBufSz = 0;
+  MPI_Get_count(&mpistat, MPI_BYTE, &stringSetBufSz);
 
-  if (myRank == rank_x) {
-    stringSet_x  = stringSet;
-
-    int stringSetBufSz = 0;
-
-    // determine size of incoming packed directory set from rank_y
-    MPI_Status mpistat;
-    MPI_Probe(rank_y, tag, comm, &mpistat);
-    MPI_Get_count(&mpistat, MPI_BYTE, &stringSetBufSz);
-
-    stringSetBuf = new uint8_t[stringSetBufSz];
-
-    // rank_x receives stringSet from rank_y
-    MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, 
-	     rank_y, tag, comm, &mpistat);
-
-    stringSet_y = unpackStringSet(stringSetBuf, 
-				  (size_t) stringSetBufSz);
-    delete[] stringSetBuf;
-
-    *stringSet_x += *stringSet_y;
-
-    delete stringSet_y;
-  }
-
-  if (myRank == rank_y) {
-    stringSet_y = stringSet;
-
-    size_t stringSetBufSz = 0;
-    packStringSet(*stringSet_y, &stringSetBuf, &stringSetBufSz);
-
-    // rank_y sends stringSet to rank_x
-    MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, 
-	     rank_x, tag, comm);
-
-    free(stringSetBuf);
-  }
+  // receive new stringSet from src
+  uint8_t *stringSetBuf = new uint8_t[stringSetBufSz];
+  MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, 
+	   src, src, comm, &mpistat);
+  StringSet *new_stringSet =
+    unpackStringSet(stringSetBuf, (size_t) stringSetBufSz);
+  delete[] stringSetBuf;
+  *stringSet += *new_stringSet;
+  delete new_stringSet;
 }
 
 

@@ -204,15 +204,25 @@ namespace ParallelAnalysis {
 // ------------------------------------------------------------------------
 
 void
+packSend(Prof::CallPath::Profile* profile,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
 mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+packSend(std::pair<Prof::CallPath::Profile*,
+	                ParallelAnalysis::PackedMetrics*> data,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
 mergeNonLocal(std::pair<Prof::CallPath::Profile*,
                         ParallelAnalysis::PackedMetrics*> data,
 	      int rank_x, int rank_y, int myRank,
 	      MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+packSend(StringSet *stringSet,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
 mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
@@ -232,15 +242,15 @@ reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 {
   int lchild = 2 * myRank + 1;
   if (lchild < numRanks) {
-    mergeNonLocal(object, myRank, lchild, myRank);
+    packSend(object, lchild, myRank);
     int rchild = 2 * myRank + 2;
     if (rchild < numRanks) {
-      mergeNonLocal(object, myRank, rchild, myRank);
+      packSend(object, rchild, myRank);
     }
   }
   if (myRank > 0) {
     int parent = (myRank - 1) / 2;
-    mergeNonLocal(object, parent, myRank, myRank);
+    packSend(object, parent, myRank);
   }
 }
 
