@@ -317,9 +317,12 @@ realmain(int argc, char* const* argv)
   }
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
-  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl, myRank);
+  if (myRank == 0) {
+    profGbl->metricMgr()->mergePerfEventStatistics_finalize(numRanks - 1);
+  }
 
-  ParallelAnalysis::broadcast(profGbl->directorySet(), myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl->directorySet(), myRank);
 
   delete profLcl;
 

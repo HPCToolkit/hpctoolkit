@@ -246,16 +246,14 @@ reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 
 
 // ------------------------------------------------------------------------
-// broadcast: Use a tree-based broadcast to broadcast the profile at
-// the tree's root (rank 0) to every other rank.  Assumes 0-based
-// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
-// tree.
+// broadcast: Broadcast the profile at the tree's root (rank 0) to every
+// other rank.  Assumes 0-based ranks.
 // ------------------------------------------------------------------------
 void
-broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
+broadcast(Prof::CallPath::Profile*& profile, int myRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
 void
-broadcast(StringSet &stringSet, int myRank, int maxRank, 
+broadcast(StringSet &stringSet, int myRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------

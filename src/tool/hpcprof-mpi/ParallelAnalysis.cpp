@@ -133,7 +133,6 @@ broadcast
 (
   Prof::CallPath::Profile*& profile,
   int myRank, 
-  int maxRank, 
   MPI_Comm comm
 )
 {
@@ -157,19 +156,13 @@ broadcast
   }
 
   delete [] buf;
-
-  if (myRank == 0) {
-    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
-  }
 }
-
 
 void
 broadcast
 (
   StringSet &stringSet,
   int myRank, 
-  int maxRank, 
   MPI_Comm comm
 )
 {
