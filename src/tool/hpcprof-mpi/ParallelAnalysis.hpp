@@ -228,13 +228,13 @@ mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 
 template<typename T>
 void
-reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
+reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 {
   int lchild = 2 * myRank + 1;
-  if (lchild <= maxRank) {
+  if (lchild < numRanks) {
     mergeNonLocal(object, myRank, lchild, myRank);
     int rchild = 2 * myRank + 2;
-    if (rchild <= maxRank) {
+    if (rchild < numRanks) {
       mergeNonLocal(object, myRank, rchild, myRank);
     }
   }
