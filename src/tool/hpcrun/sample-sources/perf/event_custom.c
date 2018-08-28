@@ -76,7 +76,7 @@ event_custom_find(const char *name)
 
   // check if we already have the event
   SLIST_FOREACH(item, &list_events_head, entries) {
-	if (item != NULL &&	strcmp(item->event->name, name)==0)
+	if (item != NULL && strcasecmp(item->event->name, name)==0)
 	  return item->event;
   }
   return NULL;

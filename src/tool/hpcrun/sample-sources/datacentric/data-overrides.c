@@ -45,9 +45,8 @@
 // ******************************************************* EndRiceCopyright *
 
 // DATACENTRIC overrides the malloc family of functions and provides two
-// metrics: number of bytes allocated and number of bytes freed per
-// dynamic context.  Subtracting these two values is a way to find
-// memory leaks.
+// metrics: number of bytes allocated and the start address
+// dynamic context.  
 //
 // Override functions:
 // posix_memalign, memalign, valloc
@@ -185,7 +184,7 @@ static char *loc_name[4] = {
 static int datainfo_size = sizeof(struct datatree_info_s);
 
 static int alloc_metric_id  = -1;
-static int free_metric_id   = -1;
+static int addr_metric_id   = -1;
 
 /******************************************************************************
  * private operations
@@ -231,6 +230,12 @@ get_metric_alloc_id()
   return alloc_metric_id;
 }
 
+static int
+get_metric_address()
+{
+  return addr_metric_id;
+}
+
 /**
  * @return true if the module was initialized, and active
  */
@@ -241,20 +246,6 @@ is_active()
 }
 
 
-/**
- * increment metric free
- * @param node: the current cct
- * @param incr: the incremental factor
- */
-static void
-increment_free_metric(cct_node_t* node, int incr)
-{
-  if (node != NULL) {
-    cct_metric_data_increment(free_metric_id,
-            node,
-            (cct_metric_data_t){.i = incr});
-  }
-}
 
 /**
  * initialize metrics
@@ -266,11 +257,11 @@ metric_initialize()
   if (alloc_metric_id >= 0)
     return; // been registered
 
+  addr_metric_id = hpcrun_new_metric();
   alloc_metric_id = hpcrun_new_metric();
-  free_metric_id = hpcrun_new_metric();
 
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes Allocated");
-  hpcrun_set_metric_info(free_metric_id,  "Bytes Freed");
+  hpcrun_set_metric_info(addr_metric_id,  "Address");
+  hpcrun_set_metric_info(alloc_metric_id, "Bytes");
 
   size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
   metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
@@ -442,6 +433,13 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     sample_val_t smpl = hpcrun_sample_callpath(uc, metric,
                                                (hpcrun_metricVal_t) {.i=bytes},
                                                0, 1, &info);
+
+    metric_set_t *mset = hpcrun_reify_metric_set(smpl.sample_node);
+    hpcrun_metricVal_t value;
+    value.p = appl_ptr;
+
+    hpcrun_metric_std_set(get_metric_address(), mset, value);
+
     info_ptr->context = smpl.sample_node;
     
     thread_data_t *td = hpcrun_get_thread_data();
@@ -528,39 +526,6 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   return appl_ptr;
 }
 
-
-// Reclaim the data in the leakinfo struct, add metric to CCT,
-// invalidate the struct and print TMSG.
-//
-// sys_ptr = the system malloc pointer
-// appl_ptr = the application malloc pointer
-// info_ptr = pointer to our leakinfo struct
-// loc = enum constant for header/footer/none
-//
-static void
-datacentric_free_helper(const char *name, void *sys_ptr, void *appl_ptr,
-		    datatree_info_t *info_ptr, int loc)
-{
-  char *loc_str;
-
-  if (info_ptr == NULL) {
-    return;
-  }
-
-  if (info_ptr->context != NULL && !hpcrun_cct_var_static(info_ptr->context)
-      && is_active()) {
-
-    increment_free_metric(info_ptr->context, info_ptr->bytes);
-    loc_str = loc_name[loc];
-  } else {
-    loc_str = "inactive";
-  }
-  info_ptr->magic = 0;
-
-  TMSG(DATACENTRIC, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
-       name, info_ptr->bytes, sys_ptr, appl_ptr, info_ptr,
-       info_ptr->context, loc_str);
-}
 
 
 /******************************************************************************
@@ -743,7 +708,6 @@ MONITOR_EXT_WRAP_NAME(free)(void *ptr)
 
   loc = datacentric_get_free_loc(ptr, &sys_ptr, &info_ptr);
   if (loc != DATACENTRIC_LOC_NONE) {
-    datacentric_free_helper("free", sys_ptr, ptr, info_ptr, loc);
     real_free(sys_ptr);
   } else {
     real_free(ptr);
@@ -790,7 +754,6 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
 
   // for datacentric metric, treat realloc as a free of the old bytes
   loc = datacentric_get_free_loc(ptr, &sys_ptr, &info_ptr);
-  datacentric_free_helper("realloc/free", sys_ptr, ptr, info_ptr, loc);
 
   // realloc(ptr, 0) means free(ptr)
   if (bytes == 0) {
