@@ -66,17 +66,17 @@ namespace TraceAnalysis {
   const uint SEMANTIC_LABEL_SYNC          = 0x10 | SEMANTIC_LABEL_COMMUNICATION; // e.g. MPI barrier / allreduce, OpenMP barriers.
     // Synchronization is defined as functions where all processes and threads entering them will leave at the same time.
   const uint SEMANTIC_LABEL_DATA_TRANSFER = 0x20 | SEMANTIC_LABEL_COMMUNICATION; // Internal functions in communication libraries that transfer data.
-  const uint SEMANTIC_LABEL_WAIT          = 0x30 | SEMANTIC_LABEL_COMMUNICATION; // Internal functions in communication libraries that wait for various reasons. 
+  const uint SEMANTIC_LABEL_WAIT          = 0x40 | SEMANTIC_LABEL_COMMUNICATION; // Internal functions in communication libraries that wait for various reasons. 
 
   // Further break downs.
   const uint SEMANTIC_LABEL_MESSAGE_TRANSFER  = 0x100 | SEMANTIC_LABEL_DATA_TRANSFER; // message transfer.
   const uint SEMANTIC_LABEL_IN_MEMORY_COPY    = 0x200 | SEMANTIC_LABEL_DATA_TRANSFER; // in-memory data copy.
-  const uint SEMANTIC_LABEL_DEVICE_TRANSFER   = 0x300 | SEMANTIC_LABEL_DATA_TRANSFER; // data transfer with devices.
-  const uint SEMANTIC_LABEL_IO                = 0x400 | SEMANTIC_LABEL_DATA_TRANSFER; // I/O
+  const uint SEMANTIC_LABEL_DEVICE_TRANSFER   = 0x400 | SEMANTIC_LABEL_DATA_TRANSFER; // data transfer with devices.
+  const uint SEMANTIC_LABEL_IO                = 0x800 | SEMANTIC_LABEL_DATA_TRANSFER; // I/O
   
   const uint SEMANTIC_LABEL_WAIT_SEND_RECV  = 0x100 | SEMANTIC_LABEL_WAIT; // wait for sender/receiver
   const uint SEMANTIC_LABEL_WAIT_LOCK       = 0x200 | SEMANTIC_LABEL_WAIT; // wait for lock
-  const uint SEMANTIC_LABEL_WAIT_RESOURCE   = 0x300 | SEMANTIC_LABEL_WAIT; // wait for various resources (e.g. message send buffers)
+  const uint SEMANTIC_LABEL_WAIT_RESOURCE   = 0x400 | SEMANTIC_LABEL_WAIT; // wait for various resources (e.g. message send buffers)
   
   typedef struct SEMANTIC_LABEL_ENTRY {
     const uint label;

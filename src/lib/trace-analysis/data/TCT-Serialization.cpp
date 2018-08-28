@@ -268,6 +268,7 @@ namespace TraceAnalysis {
   void TCTClusterNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & numClusters;
+    ar & avgRep;
     for (int i = 0; i < numClusters; i++)
       ar & clusters[i].members & clusters[i].representative;
     for (int i = 0; i < numClusters; i++)

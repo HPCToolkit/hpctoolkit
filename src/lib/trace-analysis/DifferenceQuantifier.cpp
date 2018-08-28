@@ -682,7 +682,31 @@ namespace TraceAnalysis {
     dst->getDiffScore().setScores(inclusive, exclusive);
     
     addDiffScore(dst->getProfileNode(), src->getProfileNode(), ratio);
-  } 
+  }
+  
+  TCTANode* DifferenceQuantifier::computeAvgRep(const TCTClusterNode* cluster) {
+    if (cluster->getNumClusters() == 0) return NULL;
+    
+    TCTANode* avgRep = cluster->getClusterRepAt(0)->duplicate();
+    for (int k = 1; k < cluster->getNumClusters(); k++) {
+      TCTANode* temp = mergeNode(avgRep, avgRep->getWeight(), cluster->getClusterRepAt(k), cluster->getClusterRepAt(k)->getWeight(), false, false);
+      delete avgRep;
+      avgRep = temp;
+    }
+    avgRep->clearDiffScore();
+    
+    for (int k = 0; k < cluster->getNumClusters(); k++)
+      addDiffScore(avgRep, cluster->getClusterRepAt(k), 1);
+    
+    for (int i = 0; i < cluster->getNumClusters(); i++)
+      for (int j = i+1; j < cluster->getNumClusters(); j++) {
+        TCTANode* temp = mergeNode(cluster->getClusterRepAt(i), cluster->getClusterRepAt(i)->getWeight(), cluster->getClusterRepAt(j), cluster->getClusterRepAt(j)->getWeight(), false, false);
+        addDiffScore(avgRep, temp, 1);
+        delete temp;
+      }
+    
+    return avgRep;
+  }
   
   DifferenceQuantifier diffQ;
 }

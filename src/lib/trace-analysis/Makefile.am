@@ -84,7 +84,8 @@ MYSOURCES = \
 	CCTVisitor.hpp CCTVisitor.cpp \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
 	TraceFileReader.hpp TraceFileReader.cpp \
-	DifferenceQuantifier.hpp DifferenceQuantifier.cpp
+	DifferenceQuantifier.hpp DifferenceQuantifier.cpp \
+	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 BOOST_INC = @BOOST_INC@

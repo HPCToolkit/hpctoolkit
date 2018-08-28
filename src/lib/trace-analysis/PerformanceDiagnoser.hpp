@@ -45,26 +45,29 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TCT-Metrics.cpp
+ * File:   PerformanceDiagnoser.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on June 29, 2018, 10:11 AM
+ * Created on August 20, 2018, 1:26 PM
  */
 
-#include "TCT-Metrics.hpp"
-#include "TCT-Node.hpp"
+#ifndef PERFORMANCEDIAGNOSER_HPP
+#define PERFORMANCEDIAGNOSER_HPP
+
+#include <string>
+using std::string;
+
+#include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  void TCTPerfLossMetric::initDurationMetric(const TCTTime& time, int weight) {
-    maxDuration = time.getDuration();
-    minDuration = time.getDuration();
-    totalDuration = (double)time.getDuration() * (double)weight;
-  }
-  
-  void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {
-    maxDuration = std::max(rep1.maxDuration, rep2.maxDuration);
-    minDuration = std::min(rep1.minDuration, rep2.minDuration);
-    totalDuration = rep1.totalDuration + rep2.totalDuration;
-  }
+  class PerformanceDiagnoser {
+  public:
+    PerformanceDiagnoser() {}
+    virtual ~PerformanceDiagnoser() {}
+    
+    void generateDiagnosis(TCTRootNode* mergedRoot, string dbDir);
+  };
 }
-  
+
+#endif /* PERFORMANCEDIAGNOSER_HPP */
+

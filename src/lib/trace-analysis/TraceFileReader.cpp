@@ -84,6 +84,8 @@ namespace TraceAnalysis {
         string name = last->structure() != NULL ? last->structure()->name() : "";
         bool isFake;
         name = normalize_name(name.c_str(), isFake);
+        if (name.find_first_of('(') != string::npos)
+          name = name.substr(0, name.find_first_of('(') - 1);
         CallPathFrame func(
                 cur->id(),
                 last->id(),

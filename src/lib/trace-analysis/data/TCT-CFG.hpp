@@ -97,7 +97,7 @@ namespace TraceAnalysis {
     }
 
     // Return -1 if addr2 is a successor of addr1; 1 if addr1 is a successor of addr2;
-    // 0 when there is no clear relationship between addr1 and addr2, insluding the case that 
+    // 0 when there is no clear relationship between addr1 and addr2, including the case that 
     // addr1 or addr2 is not a child of this CFG.
     virtual int compareChild(VMA addr1, VMA addr2) {
       if (!hasChild(addr1)) return 0;

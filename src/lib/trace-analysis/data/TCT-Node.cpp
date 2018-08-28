@@ -238,7 +238,7 @@ namespace TraceAnalysis {
       if (loop2.rejectedIterations == NULL) delete rej2;
     }
     
-    if (loop1.accept() && loop2.accept()) 
+    if (loop1.accept() && loop2.accept())
       clusterNode = new TCTClusterNode(*loop1.getClusterNode(), *loop2.getClusterNode());
     else
       clusterNode = NULL;
@@ -336,6 +336,7 @@ namespace TraceAnalysis {
       clusterNode->getTime().setNumSamples(getNumSamples());
       clusterNode->getTime().setStartTime(getTime().getStartTimeExclusive(), getTime().getStartTimeInclusive());
       clusterNode->getTime().setEndTime(getTime().getEndTimeInclusive(), getTime().getEndTimeExclusive());
+      clusterNode->computeAvgRep();
     }
     
     if (accept() && getNumIteration() > 1) {
@@ -350,6 +351,13 @@ namespace TraceAnalysis {
         print_msg(MSG_PRIO_LOW, "\n");
       }
     }
+  }
+  
+  void TCTLoopNode::clearDiffScore() {
+    TCTANode::clearDiffScore();
+    if (clusterNode != NULL) clusterNode->clearDiffScore();
+    if (rejectedIterations != NULL) rejectedIterations->clearDiffScore();
+    if (profileNode != NULL) profileNode->clearDiffScore();
   }
   
   void TCTLoopNode::initPerfLossMetric() {
@@ -373,9 +381,12 @@ namespace TraceAnalysis {
   TCTClusterNode::TCTClusterNode(const TCTClusterNode& other, bool isVoid) : TCTANode(other) {
     if (isVoid) {
       numClusters = 0;
+      avgRep = NULL;
     }
     else {
       numClusters = other.numClusters;
+      if (other.avgRep != NULL) avgRep = other.avgRep->duplicate();
+      else avgRep = NULL;
       for (int i = 0; i < numClusters; i++) {
         clusters[i].representative = other.clusters[i].representative->duplicate();
         clusters[i].members = other.clusters[i].members->duplicate();
@@ -391,6 +402,16 @@ namespace TraceAnalysis {
     setWeight(cluster1.weight + cluster2.weight);
     
     numClusters = cluster1.numClusters + cluster2.numClusters;
+    
+    if (cluster1.avgRep != NULL && cluster2.avgRep != NULL) 
+      avgRep = diffQ.mergeNode(cluster1.avgRep, cluster1.avgRep->getWeight(), cluster2.avgRep, cluster2.avgRep->getWeight(), false, false);
+    else if (cluster1.avgRep != NULL)
+      avgRep = cluster1.avgRep->duplicate();
+    else if (cluster2.avgRep != NULL)
+      avgRep = cluster2.avgRep->duplicate();
+    else
+      avgRep = NULL;
+    if (avgRep != NULL) avgRep->clearDiffScore();
     
     for (int i = 0; i < cluster1.numClusters; i++) {
       clusters[i].representative = cluster1.clusters[i].representative->duplicate();
@@ -418,7 +439,14 @@ namespace TraceAnalysis {
     while (numClusters > 1 && mergeClusters());
   }
   
+  void TCTClusterNode::computeAvgRep() {
+    if (avgRep != NULL) 
+      print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterNode::computeAvgRep() called when avgRep isn't NULL.\n");
+    avgRep = diffQ.computeAvgRep(this);
+  }
+  
   void TCTClusterNode::adjustIterationNumbers(long inc) {
+    if (avgRep != NULL) avgRep->adjustIterationNumbers(inc);
     for (int i = 0; i < numClusters; i++) {
       clusters[i].members->shiftID(inc);
       clusters[i].representative->adjustIterationNumbers(inc);
@@ -546,8 +574,17 @@ namespace TraceAnalysis {
       delete child;
     }
     
-    if (loop.hasPendingIteration())
-      print_msg(MSG_PRIO_MAX, "ERROR: Loop %s converted to profile with pending iteration not been processed.\n", loop.getName().c_str());
+    if (loop.hasPendingIteration()) {
+      TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.getPendingIteration());
+      child->setDepth(this->depth);
+      for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
+        if (childMap.find(iit->second->id) == childMap.end())
+          childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+        else
+          childMap[iit->second->id]->merge(iit->second);
+      }
+      delete child;
+    }
   }
   
   TCTProfileNode::TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {

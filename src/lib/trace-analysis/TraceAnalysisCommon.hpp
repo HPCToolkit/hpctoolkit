@@ -96,6 +96,13 @@ namespace TraceAnalysis {
   const int RSD_DETECTION_WINDOW = 16;
   const int RSD_DETECTION_LENGTH = 5;
   const int PRSD_DETECTION_LENGTH = 3;
+  
+  // Parameters for performance diagnosis.
+  const double MIN_SYNC_IMB_IR = 0.001;
+  const double MIN_SYNC_COMM_IR = 0.001;
+  const double MIN_INC_IR = 0.003;
+  const double MIN_EXECUTION_SEGMENT_IR = 0.01;
+  const double HOT_PATH_RATIO = 0.5;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

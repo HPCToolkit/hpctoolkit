@@ -214,6 +214,10 @@ namespace TraceAnalysis {
       this->retCount = retCount;
     }
     
+    virtual void clearDiffScore() {
+      diffScore.clear();
+    }
+    
     virtual TCTDiffScore& getDiffScore() {
       return diffScore;
     }
@@ -356,6 +360,12 @@ namespace TraceAnalysis {
         getChild(i)->adjustIterationNumbers(inc);
     }
     
+    virtual void clearDiffScore() {
+      TCTANode::clearDiffScore();
+      for (int i = 0; i < getNumChild(); i++)
+        getChild(i)->clearDiffScore();
+    }
+    
     virtual void initPerfLossMetric() {
       TCTANode::initPerfLossMetric();
       for (int i = 0; i < getNumChild(); i++)
@@ -459,7 +469,6 @@ namespace TraceAnalysis {
     }
     virtual TCTANode* voidDuplicate() const {
       TCTLoopNode* ret = new TCTLoopNode(id.id, name, depth, cfgGraph);
-      //ret->finalizeEnclosingLoops();
       return ret;
     }
     
@@ -479,6 +488,10 @@ namespace TraceAnalysis {
       TCTIterationTraceNode* ret = pendingIteration;
       pendingIteration = NULL;
       return ret;
+    }
+    
+    const TCTIterationTraceNode* getPendingIteration() const {
+      return pendingIteration;
     }
     
     int getNumIteration() const {
@@ -509,6 +522,8 @@ namespace TraceAnalysis {
     
     virtual void adjustIterationNumbers(long inc);
   
+    virtual void clearDiffScore();
+    
     virtual void initPerfLossMetric();
     
     TCTProfileNode* getProfileNode();
@@ -532,7 +547,7 @@ namespace TraceAnalysis {
   private:
     int numIteration;
     int numAcceptedIteration;
-    // stores the last iteration, which may hasn't been finished yet.
+    // stores the last iteration that hasn't been finalized yet.
     TCTIterationTraceNode* pendingIteration;
     
 #ifdef KEEP_ACCEPTED_ITERATION
@@ -568,13 +583,14 @@ namespace TraceAnalysis {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTClusterNode() : TCTANode(Cluster), numClusters(-1) {}  
+    TCTClusterNode() : TCTANode(Cluster), numClusters(-1), avgRep(NULL) {}  
     
   public:
-    TCTClusterNode(const TCTANode& node) : TCTANode(node, Cluster), numClusters(0) {}
+    TCTClusterNode(const TCTANode& node) : TCTANode(node, Cluster), numClusters(0), avgRep(NULL) {}
     TCTClusterNode(const TCTClusterNode& other, bool isVoid);
     TCTClusterNode(const TCTClusterNode& cluster1, const TCTClusterNode& cluster2);
     virtual ~TCTClusterNode() {
+      if (avgRep != NULL) delete avgRep;
       for (int i = 0; i < numClusters; i++) {
         delete clusters[i].representative;
         delete clusters[i].members;
@@ -593,7 +609,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterNode::addChild(TCTANode*) not implemented. Use TCTClusterNode::addChild(TCTANode*, long) instead.\n");
     }
       
-    virtual void addChild(TCTANode* child, long idx);
+    void addChild(TCTANode* child, long idx);
     
     int getNumClusters() const {
       return numClusters;
@@ -603,12 +619,24 @@ namespace TraceAnalysis {
       return clusters[idx].representative;
     }
     
+    void computeAvgRep();
+    
+    const TCTANode* getAvgRep() const {
+      return avgRep;
+    }
+    
     virtual void finalizeEnclosingLoops() {}
     
     virtual void adjustIterationNumbers(long inc);
     
+    void clearDiffScore() {
+      TCTANode::clearDiffScore();
+      if (avgRep != NULL) avgRep->clearDiffScore();
+    }
+    
     virtual void initPerfLossMetric() {
       TCTANode::initPerfLossMetric();
+      if (avgRep != NULL) avgRep->initPerfLossMetric();
       for (int i = 0; i < numClusters; i++)
         clusters[i].representative->initPerfLossMetric();
     }
@@ -621,6 +649,8 @@ namespace TraceAnalysis {
     int numClusters;
     TCTCluster clusters[MAX_NUM_CLUSTER*2];
     double diffRatio[MAX_NUM_CLUSTER*2][MAX_NUM_CLUSTER*2] = {};
+    
+    TCTANode* avgRep;
   };
   
   class TCTProfileNode : public TCTANode {
@@ -654,7 +684,7 @@ namespace TraceAnalysis {
       ret->retCount = 0;
       ret->time.clear();
       ret->diffScore.clear();
-      ret->plm.clear();
+      ret->plm.clearDurationMetric();
       return ret;
     }
     
@@ -670,15 +700,15 @@ namespace TraceAnalysis {
     // This node won't hold any reference to the input node or its children.
     virtual void merge(const TCTProfileNode* other);
     
-    virtual void clearDiffScore() {
-      diffScore.setScores(0, 0);
-      for (auto it = childMap.begin(); it != childMap.end(); it++)
-        it->second->clearDiffScore();
-    }
-    
     virtual void finalizeEnclosingLoops() {}
     
     virtual void adjustIterationNumbers(long inc) {}
+    
+    virtual void clearDiffScore() {
+      TCTANode::clearDiffScore();
+      for (auto it = childMap.begin(); it != childMap.end(); it++)
+        it->second->clearDiffScore();        
+    }
     
     virtual void initPerfLossMetric() {
       TCTANode::initPerfLossMetric();

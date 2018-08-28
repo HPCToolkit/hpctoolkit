@@ -73,6 +73,8 @@ namespace TraceAnalysis {
     TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
     
+    TCTANode* computeAvgRep(const TCTClusterNode* cluster);
+    
   private:
     void addDiffScore(TCTANode* dst, const TCTANode* src, double ratio);
     void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
