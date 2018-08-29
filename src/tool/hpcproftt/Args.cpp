@@ -98,16 +98,14 @@ static const char* usage_summary =
 "<profile-file>...\n";
 
 static const char* usage_details = "\
-hpcproftt generates textual dumps of profile files.  The\n\
-profile list may contain either flat or call path profile files.\n\
+
+hpcproftt generates textual dumps of call path profiles\n\
+recorded by hpcrun.  The profile list may contain one or\n\
+more call path profiles.\n\
 \n\
-Options: General:\n\
-  -v [<n>], --verbose [<n>]\n\
-                       Verbose: generate progress messages to stderr at\n\
-                       verbosity level <n>. {1}\n\
+Options:\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
-  --debug [<n>]        Debug: use debug level <n>. {1}\n\
 ";
 
 #define CLP CmdLineParser
@@ -116,14 +114,10 @@ Options: General:\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // General
-  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
-     CLP::isOptArg_long },
   { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
-     CLP::isOptArg_long },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
@@ -228,15 +222,6 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.isOpt("debug")) {
-      int dbg = 1;
-      if (parser.isOptArg("debug")) {
-	const string& arg = parser.getOptArg("debug");
-	dbg = (int)CmdLineParser::toLong(arg);
-      }
-      Diagnostics_SetDiagnosticFilterLevel(dbg);
-      trace = dbg;
-    }
     if (parser.isOpt("help")) {
       printUsage(std::cerr);
       exit(1);
@@ -244,14 +229,6 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
-    }
-    if (parser.isOpt("verbose")) {
-      int verb = 1;
-      if (parser.isOptArg("verbose")) {
-	const string& arg = parser.getOptArg("verbose");
-	verb = (int)CmdLineParser::toLong(arg);
-      }
-      Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
     // FIXME: sanity check that options correspond to mode
