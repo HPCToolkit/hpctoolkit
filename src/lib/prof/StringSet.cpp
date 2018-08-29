@@ -144,3 +144,20 @@ StringSet::fmt_fwrite
 
   return HPCFMT_OK;
 }
+
+
+void
+StringSet::dump
+(
+ void
+)
+{
+  // ------------------------------------------------------------------
+  // dump strings in string set
+  // ------------------------------------------------------------------
+  std::cerr << "StringSet (" << this << ")" << std::endl;
+  for (auto s = begin(); s != end(); s++) {
+    std::cerr << "\t" << *s << std::endl;
+  }
+
+}
