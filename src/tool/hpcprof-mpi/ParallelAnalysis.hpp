@@ -204,15 +204,25 @@ namespace ParallelAnalysis {
 // ------------------------------------------------------------------------
 
 void
+packSend(Prof::CallPath::Profile* profile,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
 mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+packSend(std::pair<Prof::CallPath::Profile*,
+	                ParallelAnalysis::PackedMetrics*> data,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
 mergeNonLocal(std::pair<Prof::CallPath::Profile*,
                         ParallelAnalysis::PackedMetrics*> data,
 	      int rank_x, int rank_y, int myRank,
 	      MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+packSend(StringSet *stringSet,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
 mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
@@ -228,34 +238,32 @@ mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
 
 template<typename T>
 void
-reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
+reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 {
   int lchild = 2 * myRank + 1;
-  if (lchild <= maxRank) {
-    mergeNonLocal(object, myRank, lchild, myRank);
+  if (lchild < numRanks) {
+    packSend(object, lchild, myRank);
     int rchild = 2 * myRank + 2;
-    if (rchild <= maxRank) {
-      mergeNonLocal(object, myRank, rchild, myRank);
+    if (rchild < numRanks) {
+      packSend(object, rchild, myRank);
     }
   }
   if (myRank > 0) {
     int parent = (myRank - 1) / 2;
-    mergeNonLocal(object, parent, myRank, myRank);
+    packSend(object, parent, myRank);
   }
 }
 
 
 // ------------------------------------------------------------------------
-// broadcast: Use a tree-based broadcast to broadcast the profile at
-// the tree's root (rank 0) to every other rank.  Assumes 0-based
-// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
-// tree.
+// broadcast: Broadcast the profile at the tree's root (rank 0) to every
+// other rank.  Assumes 0-based ranks.
 // ------------------------------------------------------------------------
 void
-broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
+broadcast(Prof::CallPath::Profile*& profile, int myRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
 void
-broadcast(StringSet &stringSet, int myRank, int maxRank, 
+broadcast(StringSet &stringSet, int myRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------

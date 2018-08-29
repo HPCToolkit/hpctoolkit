@@ -319,9 +319,9 @@ realmain(int argc, char* const* argv)
 
   // Post-INVARIANT: rank 0's 'profLcl' is the canonical CCT.  Metrics
   // are merged (and sorted by always merging left-child before right)
-  ParallelAnalysis::reduce(profLcl, myRank, numRanks - 1);
+  ParallelAnalysis::reduce(profLcl, myRank, numRanks);
 
-  ParallelAnalysis::reduce(&profLcl->directorySet(), myRank, numRanks - 1);
+  ParallelAnalysis::reduce(&profLcl->directorySet(), myRank, numRanks);
 
   if (myRank == 0) {
     profGbl = profLcl;
@@ -329,9 +329,12 @@ realmain(int argc, char* const* argv)
   }
 
   // Post-INVARIANT: 'profGbl' is the canonical CCT
-  ParallelAnalysis::broadcast(profGbl, myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl, myRank);
+  if (myRank == 0) {
+    profGbl->metricMgr()->mergePerfEventStatistics_finalize(numRanks - 1);
+  }
 
-  ParallelAnalysis::broadcast(profGbl->directorySet(), myRank, numRanks - 1);
+  ParallelAnalysis::broadcast(profGbl->directorySet(), myRank);
 
   delete profLcl;
 
@@ -632,7 +635,7 @@ makeSummaryMetrics(Prof::CallPath::Profile& profGbl,
 
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   ParallelAnalysis::reduce(std::make_pair(&profGbl, packedMetrics),
-			   myRank, numRanks - 1);
+			   myRank, numRanks);
 
   // -------------------------------------------------------
   // finalize metrics
