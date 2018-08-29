@@ -113,12 +113,11 @@ static void
 broadcast_sizet
 (
   size_t &size, 
-  int root, 
   MPI_Comm comm
 )
 { 
   long size_l = size;
-  MPI_Bcast(&size_l, 1, MPI_LONG, root, comm);
+  MPI_Bcast(&size_l, 1, MPI_LONG, 0, comm);
   size = size_l;
 } 
 
@@ -206,7 +205,7 @@ void
 recvMerge(Prof::CallPath::Profile* profile,
 	  int src, int myRank, MPI_Comm comm)
 {
-  // rank_x probes src
+  // probe src
   MPI_Status mpistat;
   MPI_Probe(src, src, comm, &mpistat);
   int profileBufSz;
