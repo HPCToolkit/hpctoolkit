@@ -200,32 +200,31 @@ private:
 namespace ParallelAnalysis {
 
 // ------------------------------------------------------------------------
-// mergeNonLocal: merge profile on rank_y into profile on rank_x
+// recvMerge: merge profile on rank_y into profile on rank_x
 // ------------------------------------------------------------------------
 
 void
 packSend(Prof::CallPath::Profile* profile,
 	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+recvMerge(Prof::CallPath::Profile* profile,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 void
 packSend(std::pair<Prof::CallPath::Profile*,
 	                ParallelAnalysis::PackedMetrics*> data,
 	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*,
-                        ParallelAnalysis::PackedMetrics*> data,
-	      int rank_x, int rank_y, int myRank,
-	      MPI_Comm comm = MPI_COMM_WORLD);
+recvMerge(std::pair<Prof::CallPath::Profile*,
+	  ParallelAnalysis::PackedMetrics*> data,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 void
 packSend(StringSet *stringSet,
 	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 void
-mergeNonLocal(StringSet *stringSet, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+recvMerge(StringSet *stringSet,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
 // reduce: Uses a tree-based reduction to reduce the profile at every
