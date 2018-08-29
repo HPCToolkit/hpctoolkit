@@ -206,7 +206,7 @@ void
 recvMerge(Prof::CallPath::Profile* profile,
 	  int src, int myRank, MPI_Comm comm)
 {
-  // rank_x probes src
+  // probe src
   MPI_Status mpistat;
   MPI_Probe(src, src, comm, &mpistat);
   int profileBufSz;
