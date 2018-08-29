@@ -283,7 +283,7 @@ realmain(int argc, char* const* argv)
     dbDirBuf[PATH_MAX - 1] = '\0';
   }
 
-  MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, MPI_COMM_WORLD);
+  MPI_Bcast((void*)dbDirBuf, PATH_MAX, MPI_CHAR, 0, MPI_COMM_WORLD);
   args.db_dir = dbDirBuf;
 
   // -------------------------------------------------------

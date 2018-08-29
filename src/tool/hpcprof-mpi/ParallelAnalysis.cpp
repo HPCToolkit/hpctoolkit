@@ -113,12 +113,11 @@ static void
 broadcast_sizet
 (
   size_t &size, 
-  int root, 
   MPI_Comm comm
 )
 { 
   long size_l = size;
-  MPI_Bcast(&size_l, 1, MPI_LONG, root, comm);
+  MPI_Bcast(&size_l, 1, MPI_LONG, 0, comm);
   size = size_l;
 } 
 
