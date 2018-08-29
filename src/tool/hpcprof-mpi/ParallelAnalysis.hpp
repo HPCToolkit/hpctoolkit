@@ -242,10 +242,10 @@ reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 {
   int lchild = 2 * myRank + 1;
   if (lchild < numRanks) {
-    packSend(object, lchild, myRank);
+    recvMerge(object, lchild, myRank);
     int rchild = 2 * myRank + 2;
     if (rchild < numRanks) {
-      packSend(object, rchild, myRank);
+      recvMerge(object, rchild, myRank);
     }
   }
   if (myRank > 0) {
