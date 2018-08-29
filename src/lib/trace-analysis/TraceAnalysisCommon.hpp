@@ -102,7 +102,9 @@ namespace TraceAnalysis {
   const double MIN_SYNC_COMM_IR = 0.001;
   const double MIN_INC_IR = 0.003;
   const double MIN_EXECUTION_SEGMENT_IR = 0.01;
-  const double HOT_PATH_RATIO = 0.5;
+  
+  const double HOT_PATH_RATIO = 0.7;
+  const double SIDE_PATH_RATIO = 0.1;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

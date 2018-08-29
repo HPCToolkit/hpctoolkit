@@ -65,11 +65,14 @@ using std::vector;
 #include <unordered_map>
 using std::unordered_map;
 
+#include <set>
+using std::set;
+
 #include <algorithm>
 using std::max;
 
 namespace TraceAnalysis {
-  struct CallPathMetrics {
+  struct CallpathMetrics {
     uint semanticLabel;
     double inclusiveImbIR;
     double exclusiveImbIR;
@@ -90,7 +93,7 @@ namespace TraceAnalysis {
       return ir;
     }
     
-    void addChildMetrics(const CallPathMetrics* childMetrics) {
+    void addChildMetrics(const CallpathMetrics* childMetrics) {
       inclusiveImbIR += childMetrics->inclusiveImbIR;
       for (auto it = childMetrics->inclusiveCommIR.begin(); it != childMetrics->inclusiveCommIR.end(); it++)
         if (inclusiveCommIR.find(it->first) != inclusiveCommIR.end())
@@ -105,6 +108,10 @@ namespace TraceAnalysis {
 
     Callpath(const vector<const TCTANode*>& cp) {
       callpath = cp;
+    }
+    
+    Callpath(const Callpath& orig) {
+      callpath = orig.callpath;
     }
   };
   
@@ -144,7 +151,7 @@ namespace TraceAnalysis {
       
       vector<const TCTANode*> callpath;
       callpath.push_back(root);
-      generateDiagnosisReport(callpath);
+      generateDiagnosisReport(callpath, false);
       if (current_segment->totalCommIR + current_segment->totalImbIR >= MIN_EXECUTION_SEGMENT_IR)
         all_segments.push_back(current_segment);
       else
@@ -162,26 +169,27 @@ namespace TraceAnalysis {
     
   private:
     void computeMetrics(const TCTANode* node, uint parentSemanticLabel) {
-      CallPathMetrics* metrics = new CallPathMetrics();
+      CallpathMetrics* metrics = new CallpathMetrics();
       metricsMap[node] = metrics;
       
       metrics->semanticLabel = getFuncSemanticInfo(node->getName()).semantic_label | parentSemanticLabel;
       double imbalance, comm;
+      double samplePeriod = node->getDuration() / node->getNumSamples();
       if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) {
         // imb(S) = avg(S) - min(S);
-        imbalance = node->getPerfLossMetric().getAvgDuration(node->getWeight()) - node->getPerfLossMetric().getMinDuration();
+        imbalance = node->getPerfLossMetric().getAvgDuration(node->getWeight()) - node->getPerfLossMetric().getMinDuration() - samplePeriod;
         // comm(S) = min(S);
         comm = node->getPerfLossMetric().getMinDuration();
       }
       else if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         // imb(W) = max(W) - avg(W);
-        imbalance = node->getPerfLossMetric().getMaxDuration() - node->getPerfLossMetric().getAvgDuration(node->getWeight());
+        imbalance = node->getPerfLossMetric().getMaxDuration() - node->getPerfLossMetric().getAvgDuration(node->getWeight()) - samplePeriod;
         // comm(W) = avg(W);
         comm = node->getPerfLossMetric().getAvgDuration(node->getWeight());
       }
       else {
         // imb(C) = max(C) - avg(C);
-        imbalance = node->getPerfLossMetric().getMaxDuration() - node->getPerfLossMetric().getAvgDuration(node->getWeight());
+        imbalance = node->getPerfLossMetric().getMaxDuration() - node->getPerfLossMetric().getAvgDuration(node->getWeight()) - samplePeriod;
         comm = 0;
       }
       
@@ -193,8 +201,8 @@ namespace TraceAnalysis {
       
       // Set exclusive communication improvement ratio in metrics
       double commIR = comm * node->getWeight() / numProc / totalDuration;
-      // If commIR is larger than zero, enumerate all semantic labels
-      if (commIR > 0) {
+      // If is communication, enumerate all semantic labels
+      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
           // if the label is a communication label
           if ((SEMANTIC_LABEL_ARRAY[i].label & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION
@@ -265,9 +273,9 @@ namespace TraceAnalysis {
     }
     
     // Return true if one or more inefficient execution segment is generated.
-    void generateDiagnosisReport(vector<const TCTANode*>& callpath) {
+    void generateDiagnosisReport(vector<const TCTANode*>& callpath, bool isParentAdded) {
       const TCTANode* node = callpath.back();
-      CallPathMetrics* metrics = metricsMap[node];
+      CallpathMetrics* metrics = metricsMap[node];
       
       // If the current node is synchronization.
       if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) {
@@ -294,114 +302,204 @@ namespace TraceAnalysis {
       
       // If the node has a sync successor in its subtree.
       bool hasSync = (metrics->inclusiveCommIR.find(SEMANTIC_LABEL_SYNC) != metrics->inclusiveCommIR.end());
-      double incIR = metrics->getInclusiveIR();
-      double excIR = metrics->getExclusiveIR();
       // If improvement ratio of this node is not significant and the node has no sync successor, return.
-      if (incIR < MIN_INC_IR && (!hasSync)) return;
+      if (metrics->getInclusiveIR() < MIN_INC_IR && (!hasSync)) return;
+
+      // If the node's imbalance in the subtree can be mostly explained by itself
+      bool significantImbalance = false;
+      // A set of semantic labels where time spent in the subtree can be mostly explained by the node itself.
+      set<uint> significantComm;
       
-      // If the node is communication, add to significant callpaths and return. (Details in its subtree will be investigated later)
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
-        current_segment->totalImbIR += metrics->inclusiveImbIR;
-        current_segment->totalCommIR += (incIR - metrics->inclusiveImbIR);
-        current_segment->callpaths.push_back(new Callpath(callpath));
-        return;
+      if (!hasSync) {
+        significantImbalance = (metrics->exclusiveImbIR >= metrics->inclusiveImbIR * HOT_PATH_RATIO && metrics->inclusiveImbIR >= MIN_INC_IR);
+        for (auto it = metrics->exclusiveCommIR.begin(); it != metrics->exclusiveCommIR.end(); it++)
+          if (it->second >= metrics->inclusiveCommIR[it->first] * HOT_PATH_RATIO && metrics->inclusiveCommIR[it->first] >= MIN_INC_IR)
+            significantComm.insert(it->first); 
+          
+        if (node->type == TCTANode::Loop) {
+          significantImbalance = false;
+          significantComm.clear();
+        }
+        else if (node->type == TCTANode::Prof) {
+          const TCTProfileNode* prof = (const TCTProfileNode*) node;
+          for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
+            const TCTANode* child = it->second;
+            CallpathMetrics* childMetrics = metricsMap[child];
+            
+            // Check if the child's imbalance dominates.
+            if (childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * HOT_PATH_RATIO)
+              significantImbalance = false;
+            // Check if some communication in the children dominates.
+            for (auto it = childMetrics->inclusiveCommIR.begin(); it != childMetrics->inclusiveCommIR.end(); it++)
+              if (it->second >= metrics->inclusiveCommIR[it->first] * HOT_PATH_RATIO)
+                significantComm.erase(it->first);
+          }
+        }
+        else {
+          const TCTATraceNode* trace = (const TCTATraceNode*) node;
+          for (int i = 0; i < trace->getNumChild(); i++) {
+            const TCTANode* child = trace->getChild(i);
+            CallpathMetrics* childMetrics = metricsMap[child];
+            
+            // Check if the child's imbalance dominates.
+            if (childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * HOT_PATH_RATIO)
+              significantImbalance = false;
+            // Check if some communication in the children dominates.
+            for (auto it = childMetrics->inclusiveCommIR.begin(); it != childMetrics->inclusiveCommIR.end(); it++)
+              if (it->second >= metrics->inclusiveCommIR[it->first] * HOT_PATH_RATIO)
+                significantComm.erase(it->first);
+          }
+        }
       }
       
-      // If the node is computation
-      bool inspectChild = hasSync;
-
+      if (significantImbalance || significantComm.size() > 0) {
+        if (!isParentAdded) {
+          current_segment->totalImbIR += metrics->inclusiveImbIR;
+          if (metrics->inclusiveCommIR.find(SEMANTIC_LABEL_COMMUNICATION) != metrics->inclusiveCommIR.end())
+            current_segment->totalCommIR += metrics->inclusiveCommIR[SEMANTIC_LABEL_COMMUNICATION];
+        }
+        current_segment->callpaths.push_back(new Callpath(callpath));
+        isParentAdded = true;
+      }
+      
       if (node->type == TCTANode::Loop) {
-        inspectChild = true;
         const TCTANode* avgRep = ((TCTLoopNode*)node)->getClusterNode()->getAvgRep();
         callpath.push_back(avgRep);
-        generateDiagnosisReport(callpath);
+        generateDiagnosisReport(callpath, isParentAdded);
         callpath.pop_back();
       }
       else if (node->type == TCTANode::Prof) {
         const TCTProfileNode* prof = (const TCTProfileNode*) node;
-        // First, see if there is a "hot path" child.
-        if (!inspectChild) {
-          for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
-            double childIncIR = metricsMap[it->second]->getInclusiveIR();
-            if (childIncIR >= excIR * HOT_PATH_RATIO) {
-              inspectChild = true;
-              break;
+
+        // Copy all children into an array
+        uint numChildren = prof->getChildMap().size();
+        const TCTProfileNode** children = new const TCTProfileNode*[numChildren];
+        uint k = 0;
+        for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++)
+          children[k++] = it->second;
+
+        // Arrange children according to their order in CFG
+        if (prof->cfgGraph != NULL) {
+          for (uint i = 0; i < numChildren; i++)
+            for (uint j = i+1; j < numChildren; j++) {
+              // If one of the RA is not a located in the CFG, the corresponding node is considered as "predecessor".
+              int compare = 0;
+              bool hasChildi = prof->cfgGraph->hasChild(children[i]->ra);
+              bool hasChildj = prof->cfgGraph->hasChild(children[j]->ra);
+              if ((!hasChildi) && hasChildj) compare = -1;
+              if (hasChildi && (!hasChildj)) compare = 1;
+
+              if (compare == 0)
+                compare = prof->cfgGraph->compareChild(children[i]->ra, children[j]->ra);
+
+              // Use their id as tie breaker
+              if ( (compare == 1) || (compare == 0 && children[j]->id < children[i]->id) ) {
+                const TCTProfileNode* swap = children[i];
+                children[i] = children[j];
+                children[j] = swap;
+              }
             }
+        }
+
+        for (k = 0; k < numChildren; k++) {
+          const TCTANode* child = children[k];
+          CallpathMetrics* childMetrics = metricsMap[child];
+          
+          bool inspect = false;
+          // Inspect the child if it contains sync.
+          if (childMetrics->inclusiveCommIR.find(SEMANTIC_LABEL_SYNC) != childMetrics->inclusiveCommIR.end())
+            inspect = true;
+          // Inspect the child if its imbalance in the subtree needs to be inspected.
+          if (childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * HOT_PATH_RATIO)
+            inspect = true;
+          if ((!significantImbalance) && childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * SIDE_PATH_RATIO)
+            inspect = true;
+          // Inspect the child if some communication in the subtree needs to be inspected.
+          for (auto it = childMetrics->inclusiveCommIR.begin(); it != childMetrics->inclusiveCommIR.end(); it++) {
+            if (inspect) break;
+            if (it->second >= metrics->inclusiveCommIR[it->first] * HOT_PATH_RATIO)
+              inspect = true;
+            if ((significantComm.find(it->first) == significantComm.end()) &&
+                    (it->second >= metrics->inclusiveCommIR[it->first] * SIDE_PATH_RATIO))
+              inspect = true;
+          }
+          
+          if (inspect) {
+            callpath.push_back(child);
+            generateDiagnosisReport(callpath, isParentAdded);
+            callpath.pop_back();
           }
         }
-        // If there is, inspect every child.
-        if (inspectChild) {
-          uint numSegments = all_segments.size();
+        
+        delete children;
+      }
+      else {
+        const TCTATraceNode* trace = (const TCTATraceNode*) node;
+
+        for (int k = 0; k < trace->getNumChild(); k++) {
+          const TCTANode* child = trace->getChild(k);
+          CallpathMetrics* childMetrics = metricsMap[child];
           
+          bool inspect = false;
+          // Inspect the child if it contains sync.
+          if (childMetrics->inclusiveCommIR.find(SEMANTIC_LABEL_SYNC) != childMetrics->inclusiveCommIR.end())
+            inspect = true;
+          // Inspect the child if its imbalance in the subtree needs to be inspected.
+          if (childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * HOT_PATH_RATIO)
+            inspect = true;
+          if ((!significantImbalance) && childMetrics->inclusiveImbIR >= metrics->inclusiveImbIR * SIDE_PATH_RATIO)
+            inspect = true;
+          // Inspect the child if some communication in the subtree needs to be inspected.
+          for (auto it = childMetrics->inclusiveCommIR.begin(); it != childMetrics->inclusiveCommIR.end(); it++) {
+            if (inspect) break;
+            if (it->second >= metrics->inclusiveCommIR[it->first] * HOT_PATH_RATIO)
+              inspect = true;
+            if ((significantComm.find(it->first) == significantComm.end()) &&
+                    (it->second >= metrics->inclusiveCommIR[it->first] * SIDE_PATH_RATIO))
+              inspect = true;
+          }
+          
+          if (inspect) {
+            callpath.push_back(child);
+            generateDiagnosisReport(callpath, isParentAdded);
+            callpath.pop_back();
+          }
+        }
+      }
+      
+    }
+    
+    void inspectCallpath(Callpath* callpath, vector<Callpath*>& subCallpaths) {
+      const TCTANode* node = callpath->callpath.back();
+      CallpathMetrics* metrics = metricsMap[node];
+      
+      if (metrics->getInclusiveIR() < MIN_INC_IR) return;
+      
+      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+        if (node->type == TCTANode::Loop) {
+          const TCTANode* avgRep = ((TCTLoopNode*)node)->getClusterNode()->getAvgRep();
+          callpath->callpath.push_back(avgRep);
+          inspectCallpath(callpath, subCallpaths);
+          callpath->callpath.pop_back();
+        }
+        else if (node->type == TCTANode::Prof) {
+          const TCTProfileNode* prof = (const TCTProfileNode*) node;
+
           // Copy all children into an array
           uint numChildren = prof->getChildMap().size();
           const TCTProfileNode** children = new const TCTProfileNode*[numChildren];
           uint k = 0;
           for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++)
             children[k++] = it->second;
-          
-          // Arrange children according to their order in CFG
-          if (prof->cfgGraph != NULL) {
-            for (uint i = 0; i < numChildren; i++)
-              for (uint j = i+1; j < numChildren; j++) {
-                // If one of the RA is not a located in the CFG, the corresponding node is considered as "predecessor".
-                int compare = 0;
-                bool hasChildi = prof->cfgGraph->hasChild(children[i]->ra);
-                bool hasChildj = prof->cfgGraph->hasChild(children[j]->ra);
-                if ((!hasChildi) && hasChildj) compare = -1;
-                if (hasChildi && (!hasChildj)) compare = 1;
-                
-                if (compare == 0)
-                  compare = prof->cfgGraph->compareChild(children[i]->ra, children[j]->ra);
-                
-                // Use their id as tie breaker
-                if ( (compare == 1) || (compare == 0 && children[j]->id < children[i]->id) ) {
-                  const TCTProfileNode* swap = children[i];
-                  children[i] = children[j];
-                  children[j] = swap;
-                }
-              }
-          }
-          
-          for (k = 0; k < numChildren; k++) {
-            callpath.push_back(children[k]);
-            generateDiagnosisReport(callpath);
-            callpath.pop_back();
-          }
-          
-          // All execution segments generated will be merged into one.
-          //TODO mergeExecutionSegmentsAfter(numSegments);
         }
-      }
-      else {
-        const TCTATraceNode* trace = (const TCTATraceNode*) node;
-        if (!inspectChild) {
+        else {
+          const TCTATraceNode* trace = (const TCTATraceNode*) node;
           for (int i = 0; i < trace->getNumChild(); i++) {
-            double childIncIR = metricsMap[trace->getChild(i)]->getInclusiveIR();
-            if (childIncIR >= excIR * HOT_PATH_RATIO) {
-              inspectChild = true;
-              break;
-            }
+            //callpath.push_back(trace->getChild(i));
+            //generateDiagnosisReport(callpath); 
+            //callpath.pop_back();
           }
         }
-        if (inspectChild) {
-          uint numSegments = all_segments.size();
-          
-          for (int i = 0; i < trace->getNumChild(); i++) {
-            callpath.push_back(trace->getChild(i));
-            generateDiagnosisReport(callpath); 
-            callpath.pop_back();
-          }
-          
-          // All execution segments generated will be merged into one for loops
-          //TODO mergeExecutionSegmentsAfter(numSegments);
-        }
-      }
-      
-      // When no child is significant, report the inefficiency at the current callpath depth.
-      if (!inspectChild) {
-        current_segment->totalImbIR += metrics->inclusiveImbIR;
-        current_segment->callpaths.push_back(new Callpath(callpath));
       }
     }
     
@@ -438,29 +536,33 @@ namespace TraceAnalysis {
         indent += "  ";
       }
       
-      for (uint k = depth; k < callpath->callpath.size()-1; k++) {
+      for (uint k = depth; k < callpath->callpath.size(); k++) {
         const TCTANode* node = callpath->callpath[k];
-        CallPathMetrics* metrics = metricsMap[node];
-        if (idx > 0)
-          print_msg(MSG_PRIO, "%s%s%s: all = %.2f%%(%.2f%%), imb = %.2f%%(%.2f%%)\n", indent.c_str(), node->getName().c_str(), node->id.toString().c_str(),
-                  metrics->getInclusiveIR() * 100, metrics->getExclusiveIR() * 100, metrics->inclusiveImbIR * 100, metrics->exclusiveImbIR * 100);
-        else
+        CallpathMetrics* metrics = metricsMap[node];
+        if (idx > 0) {
+          if (k == callpath->callpath.size() - 1) {
+            if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) 
+              indent += "**Sync #" + std::to_string(idx) + " ";
+            else
+              indent += "**Cause #" + std::to_string(idx) + " ";
+          }
+          
+          print_msg(MSG_PRIO, "%s%s%s: all = %.2f%%(%.2f%%)", indent.c_str(), node->getName().c_str(), node->id.toString().c_str(),
+                  metrics->getInclusiveIR() * 100, metrics->getExclusiveIR() * 100);
+          print_msg(MSG_PRIO, ", imbalance = %.2f%%(%.2f%%)", metrics->inclusiveImbIR * 100, metrics->exclusiveImbIR * 100); 
+          for (auto it = metrics->exclusiveCommIR.begin(); it != metrics->exclusiveCommIR.end(); it++)
+            print_msg(MSG_PRIO, ", %s = %.2f%%(%.2f%%)", semanticLabelToString(it->first).c_str(), 
+                    metrics->inclusiveCommIR[it->first] * 100, it->second * 100);
+          print_msg(MSG_PRIO, "\n");
+        }
+        // idx == 0. which stands for prior sync callpath
+        else if (k < callpath->callpath.size() - 1)
           print_msg(MSG_PRIO, "%s%s%s\n", indent.c_str(), node->getName().c_str(), node->id.toString().c_str());
+        else
+          print_msg(MSG_PRIO, "%s**PRIOR SYNC** %s%s\n", indent.c_str(), node->getName().c_str(), node->id.toString().c_str());
+          
         indent += "  ";
       }
-      
-      const TCTANode* node = callpath->callpath.back();
-      CallPathMetrics* metrics = metricsMap[node];
-      if (idx > 0) {
-        if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) 
-          indent += "**Sync #" + std::to_string(idx) + " ";
-        else
-          indent += "**Cause #" + std::to_string(idx) + " ";
-        print_msg(MSG_PRIO, "%s%s%s: all = %.2f%%(%.2f%%), imb = %.2f%%(%.2f%%)\n", indent.c_str(), node->getName().c_str(), node->id.toString().c_str(),
-                metrics->getInclusiveIR() * 100, metrics->getExclusiveIR() * 100, metrics->inclusiveImbIR * 100, metrics->exclusiveImbIR * 100);
-      }
-      else
-        print_msg(MSG_PRIO, "%s**PRIOR SYNC** %s%s\n", indent.c_str(), node->getName().c_str(), node->id.toString().c_str());
     }
     
   private:
@@ -469,7 +571,7 @@ namespace TraceAnalysis {
     string dbDir;
     Time totalDuration;
     
-    unordered_map<const TCTANode*, CallPathMetrics*> metricsMap;
+    unordered_map<const TCTANode*, CallpathMetrics*> metricsMap;
     
     ExecutionSegment* current_segment;
     vector<ExecutionSegment*> all_segments;
