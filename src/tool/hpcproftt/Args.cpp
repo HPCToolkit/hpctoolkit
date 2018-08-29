@@ -97,15 +97,14 @@ static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 static const char* usage_summary =
 "profile-file [profile-file]*\n";
 
-static const char* usage_details = "\
-hpcproftt generates textual dumps of call path profiles\n\
-recorded by hpcrun.  The argument list may contain one or\n\
-more call path profiles.\n\
-\n\
-Options:\n\
-  -V, --version        Print version information.\n\
-  -h, --help           Print this help.\n\
-";
+static const char* usage_details =
+		 "hpcproftt generates textual dumps of call path profiles\n"
+		 "recorded by hpcrun.  The profile list may contain one or\n"
+		 "more call path profiles.\n"
+		 "\n"
+		 "Options:\n"
+		 "  -V, --version        Print version information.\n"
+		 "  -h, --help           Print this help.\n";
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
