@@ -103,6 +103,7 @@ using std::vector;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
+#define DBG_PROF_MPI 0
 
 //*************************** Forward Declarations ***************************
 
@@ -346,7 +347,13 @@ realmain(int argc, char* const* argv)
                                                  printProgress);
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
+  if (DBG_PROF_MPI)
+    std::cout << "numcct before: " << profGbl->cct()->maxDenseId() << std::endl;
+
   profGbl->cct()->makeDensePreorderIds();
+
+  if (DBG_PROF_MPI)
+    std::cout << "numcct after: " << profGbl->cct()->maxDenseId() << std::endl;
 
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
