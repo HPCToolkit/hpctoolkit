@@ -98,6 +98,7 @@ static const char* usage_summary =
 "<profile-file>...\n";
 
 static const char* usage_details = "\
+
 hpcproftt generates textual dumps of call path profiles\n\
 recorded by hpcrun.  The profile list may contain one or\n\
 more call path profiles.\n\
