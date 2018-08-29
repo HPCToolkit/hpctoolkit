@@ -79,6 +79,16 @@ main_rawData(const std::vector<string>& profileFiles);
 
 //****************************************************************************
 
+void 
+prof_abort
+(
+  int error_code
+)
+{
+  exit(error_code);
+}
+
+
 int 
 main(int argc, char* const* argv) 
 {

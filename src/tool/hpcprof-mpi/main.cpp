@@ -94,6 +94,7 @@ using std::vector;
 #include <lib/banal/Struct.hpp>
 
 #include <lib/binutils/VMAInterval.hpp>
+#include <lib/prof/FileError.hpp>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
@@ -173,6 +174,16 @@ makeFileName(const char* baseNm, const char* ext, int myRank);
 
 //****************************************************************************
 
+void 
+prof_abort
+(
+  int error_code
+)
+{
+  MPI_Abort(MPI_COMM_WORLD, error_code);
+}
+
+
 int 
 main(int argc, char* const* argv) 
 {
@@ -223,6 +234,7 @@ hpcprof_set_abort_timeout()
      }
   }
 }
+
 
 static int
 realmain(int argc, char* const* argv) 
@@ -288,7 +300,7 @@ realmain(int argc, char* const* argv)
   if (nArgs.paths->size() == 0 && myRank == 0) {
     std::cerr << "ERROR: command line directories"
       " contain no .hpcrun files; no database generated\n";
-    exit(-1);
+    prof_abort(-1);
   }
 
   int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
@@ -981,7 +993,13 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
 
   FILE* fs = hpcio_fopen_w(metricDBFnm.c_str(), 1);
   if (!fs) {
-    DIAG_Throw("error opening file '" << metricDBFnm << "'");
+    std::string errorString;
+    hpcrun_getFileErrorString(metricDBFnm, errorString);
+
+    DIAG_EMsg("failed opening profile result file for writing " << 
+	      errorString << "; aborting."); 
+
+    prof_abort(-1);
   }
   DIAG_MsgIf(0, "writeMetricsDB: " << metricDBFnm);
 
@@ -992,7 +1010,9 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
   hdr.numNodes = numNodes;
   hdr.numMetrics = mEndId - mBegId; // [mBegId mEndId)
 
-  hpcmetricDB_fmt_hdr_fwrite(&hdr, fs);
+  int ret;
+  ret = hpcmetricDB_fmt_hdr_fwrite(&hdr, fs);
+  if (ret == HPCFMT_ERR) goto badwrite;
 
   // 2. metric values
   //    - first row corresponds to node 1.
@@ -1003,11 +1023,23 @@ writeMetricsDB(Prof::CallPath::Profile& profGbl, uint mBegId, uint mEndId,
     for (uint mId1 = 0, mId2 = mBegId; mId2 < mEndId; ++mId1, ++mId2) {
       double mval = packedMetrics.idx(nodeId, mId1);
       DIAG_MsgIf(0,  "  " << nodeId << " -> " << mval);
-      hpcfmt_real8_fwrite(mval, fs);
+      ret = hpcfmt_real8_fwrite(mval, fs);
+      if (ret == HPCFMT_ERR) goto badwrite;
     }
   }
 
   hpcio_fclose(fs);
+  return;
+
+badwrite:
+  {
+    std::string errorString;
+    hpcrun_getFileErrorString(metricDBFnm, errorString);
+
+    DIAG_EMsg("failed writing profile result file" << 
+	      errorString << "; aborting."); 
+    prof_abort(-1);
+  }
 }
 
 
