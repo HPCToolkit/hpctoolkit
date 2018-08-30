@@ -47,47 +47,63 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   FileError.cpp
 //
 // Purpose:
-//   [The purpose of this file]
+//   Implementation of interface for error reporting for hpcprof and hpcprof-mpi
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   Handle error reporting for hpcprof and hpcprof-mpi
+//   
 //
 //***************************************************************************
 
-
-#ifndef String_Set_hpp
-#define String_Set_hpp
-
 //***************************************************************************
-// system include files
+// global includes
 //***************************************************************************
 
-#include <set>
-#include <string>
+#include <linux/limits.h>
+#include <string.h>
+
+#include <sstream>
+#include <iostream>
 
 
 
 //***************************************************************************
-// type declarations
+// local includes
 //***************************************************************************
 
-class StringSet: public std::set<std::string> {
-public:
-  void operator+=(const StringSet &rhs) {
-    this->insert(rhs.begin(), rhs.end());
-  };
+#include "FileError.hpp"
 
 
-  static int
-  fmt_fread(StringSet* &stringSet, FILE* infs); 
 
-  static int
-  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
+//***************************************************************************
+// interface operations
+//***************************************************************************
 
-  void dump(void);
-};
+void
+hpcrun_getFileErrorString
+(
+  const std::string &fnm, 
+  std::string &errorString
+)
+{
+  char pathbuf[PATH_MAX];
+  char errbuf[1024];
 
-#endif
+  // grab the error string for the open failure before calling getcwd, 
+  // which may overwrite errno 
+  char *err = strerror_r(errno, errbuf, sizeof(errbuf));
+
+  const char *path = realpath(fnm.c_str(), pathbuf);
+  if (path == NULL) {
+    path = fnm.c_str();
+  }
+
+  std::stringstream ss;
+
+  ss << "'" << path << "', error ='" << err << "'";
+
+  errorString = ss.str();
+}

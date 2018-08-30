@@ -47,47 +47,30 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   FileError.cpp
 //
 // Purpose:
-//   [The purpose of this file]
+//   Interface for error reporting for hpcprof and hpcprof-mpi
 //
 // Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   Handle error reporting for hpcprof and hpcprof-mpi
+//   
 //
 //***************************************************************************
 
-
-#ifndef String_Set_hpp
-#define String_Set_hpp
-
 //***************************************************************************
-// system include files
+// global includes
 //***************************************************************************
-
-#include <set>
 #include <string>
 
 
 
 //***************************************************************************
-// type declarations
+// interface operations
 //***************************************************************************
-
-class StringSet: public std::set<std::string> {
-public:
-  void operator+=(const StringSet &rhs) {
-    this->insert(rhs.begin(), rhs.end());
-  };
-
-
-  static int
-  fmt_fread(StringSet* &stringSet, FILE* infs); 
-
-  static int
-  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
-
-  void dump(void);
-};
-
-#endif
+void
+hpcrun_getFileErrorString
+(
+  const std::string &fnm, 
+  std::string &errorString
+);
