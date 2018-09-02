@@ -13,6 +13,7 @@
   <!--   (n)ame -->
   <!--   (l)ine range: "beg-end" (inclusive range) -->
   <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
 	i CDATA #REQUIRED
@@ -55,8 +56,9 @@
 	l CDATA #REQUIRED
 	v CDATA #IMPLIED>
   <!-- Callsite (a special Statement) -->
-  <!ELEMENT C EMPTY>
+  <!ELEMENT C (C)*>
   <!ATTLIST C
 	i CDATA #REQUIRED
 	l CDATA #REQUIRED
-	v CDATA #IMPLIED>
+	v CDATA #IMPLIED
+  t CDATA #IMPLIED>
