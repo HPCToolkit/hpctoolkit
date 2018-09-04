@@ -1,0 +1,62 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2018, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+
+#ifndef __PERF_SKID_H__
+#define __PERF_SKID_H__
+
+#define PRECISE_IP_NONE     -1
+#define PRECISE_IP_DEFAULT   0
+
+// parse the event into event_name and the type of precise_ip
+//  the name of the event excludes the precise ip suffix
+// returns:
+//   PRECISE_IP_NONE     : if there is no precise ip
+//   PRECISE_IP_DEFAULT  : if precise ip is not specified (use the default)
+//   x                   : if a precise_ip value is specified
+int
+perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size);
+
+u64
+perf_skid_get_precise_ip(struct perf_event_attr *attr);
+#endif
