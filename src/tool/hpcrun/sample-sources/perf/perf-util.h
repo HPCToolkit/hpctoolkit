@@ -47,34 +47,13 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
+#include "perf_constants.h"
 #include "event_custom.h"
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#define THREAD_SELF     0
-#define CPU_ANY        -1
-#define GROUP_FD       -1
-#define PERF_FLAGS      0
-#define PERF_REQUEST_0_SKID      2
-#define PERF_WAKEUP_EACH_SAMPLE  1
-
-#define EXCLUDE    1
-#define INCLUDE    0
-
-#define EXCLUDE_CALLCHAIN EXCLUDE
-#define INCLUDE_CALLCHAIN INCLUDE
-
-
-#ifndef u32
-typedef __u32 u32;
-#endif
-
-
-#ifndef u64
-typedef __u64 u64;
-#endif
 
 // the number of maximum frames (call chains) 
 // For kernel only call chain, I think 32 is a good number.
@@ -169,6 +148,7 @@ perf_util_init();
 
 int
 perf_util_attr_init(
+  char *event_name,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -182,4 +162,8 @@ perf_util_get_paranoid_level();
 
 int
 perf_util_get_max_sample_rate();
+
+int
+perf_util_check_precise_ip_suffix(char *event);
+
 #endif

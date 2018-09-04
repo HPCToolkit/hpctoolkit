@@ -347,7 +347,8 @@ MY_BASE_FILES +=  \
 	sample-sources/perf/event_custom.c  \
 	sample-sources/perf/linux_perf.c    \
 	sample-sources/perf/perf-util.c     \
-	sample-sources/perf/perf_mmap.c
+	sample-sources/perf/perf_mmap.c     \
+	sample-sources/perf/perf_skid.c
 
 MY_CPP_DEFINES  += -DHPCRUN_SS_LINUX_PERF
 

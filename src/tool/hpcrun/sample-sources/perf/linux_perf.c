@@ -113,6 +113,8 @@
 
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
+#include "perf_skid.h"
+
 #include "event_custom.h"     // api for pre-defined events
 
 #include "sample-sources/display.h" // api to display available events
@@ -163,6 +165,7 @@
 #define DEFAULT_COMPRESSION 5
 
 #define PERF_FD_FINALIZED (-2)
+
 
 //******************************************************************************
 // type declarations
@@ -219,6 +222,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 // private operations 
 //******************************************************************************
+
 
 /* 
  * determine whether the perf sample source has been finalized for this thread
@@ -763,7 +767,11 @@ METHOD_FN(supports_event, const char *ev_str)
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
   char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
+
+  // check if the user specifies explicitly precise event
+  perf_skid_parse_event(ev_str, ev_tmp, sizeof(ev_tmp));
+
+  hpcrun_extract_ev_thresh(ev_tmp, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
 
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL)
@@ -819,7 +827,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
+    int precise_ip  = perf_skid_parse_event(event, name, sizeof(name));
+    int period_type = hpcrun_extract_ev_thresh(name, sizeof(name), name, &threshold,
         default_threshold.threshold_val);
 
     // ------------------------------------------------------------
@@ -851,7 +860,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_util_attr_init(event_attr, is_period, threshold, 0);
+    perf_util_attr_init(event, event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric
