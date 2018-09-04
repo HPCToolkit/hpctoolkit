@@ -64,6 +64,7 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <string.h>
 #include <include/uint.h>
 
 #include <map>
@@ -674,6 +675,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
+  bool is_shared = ! (the_symtab->isExec());
 
   // map of code regions to find end of region
   RegionMap codeMap;
@@ -774,6 +776,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	    prettynm = *pretty_it;
 	  }
 	}
+	if (is_shared) {
+	  prettynm += " (" + basename + ")";
+	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
 					sym_func->getFirstSymbol()->getIndex());
@@ -797,6 +802,9 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	string parse_base = FileUtil::basename(parse_filenm.c_str());
 	stringstream buf;
 	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
+	if (is_shared) {
+	  buf << " (" << basename << ")";
+	}
 
 	linknm = func->name();
 	prettynm = buf.str();
@@ -861,6 +869,22 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
       }
       else {
 	end = vma + 20;
+      }
+
+      // treat short parseapi functions with no symtab symbol as a plt
+      // stub.  not an ideal test, but I (krentel) can't find any
+      // counter examples.
+      if (end - vma <= 32) {
+	int len = linknm.length();
+	const char *str = linknm.c_str();
+
+	if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
+	  linknm += "@plt";
+	  prettynm += "@plt";
+	}
+      }
+      if (is_shared) {
+	prettynm += " (" + basename + ")";
       }
 
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
@@ -1236,7 +1260,6 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 
   return root;
 }
-
 //----------------------------------------------------------------------
 
 // Process one basic block.
@@ -1253,6 +1276,23 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
   DEBUG_CFG("\nblock:\n");
 
+  // see if this block ends with a call edge
+  const Block::edgelist & outEdges = block->targets();
+  bool is_call = false;
+  bool is_sink = false;
+  VMA  target = 0;
+
+  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+    Edge * edge = *eit;
+
+    if (edge->type() == ParseAPI::CALL) {
+      is_call = true;
+      is_sink = edge->sinkEdge();
+      target = edge->trg()->start();
+      break;
+    }
+  }
+
   LineMapCache lmcache (ginfo->sym_func);
 
   // iterate through the instructions in this block
@@ -1264,6 +1304,98 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+    auto next_it = iit;  next_it++;
+    Offset vma = iit->first;
+    string filenm = "";
+    uint line = 0;
+    int len;
+
+    if (cuda_arch > 0) {
+      if (cuda_arch < 70) {
+        len = 8;
+      } else {
+        len = 16;
+      }
+    } else {
+
+#ifdef DYNINST_INSTRUCTION_PTR
+      len = iit->second->size();
+#else
+      len = iit->second.size();
+#endif
+    }
+
+    lmcache.getLineInfo(vma, filenm, line);
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(vma, len, filenm, line);
+#endif
+
+    // a call must be the last instruction in the block
+    if (next_it == imap.end() && is_call) {
+      addStmtToTree(root, strTab, vma, len, filenm, line,
+		    is_call, is_sink, target);
+    }
+    else {
+      addStmtToTree(root, strTab, vma, len, filenm, line);
+    }
+  }
+
+#if DEBUG_CFG_SOURCE
+  if (is_call) {
+    cout << "call:  0x" << hex << block->last()
+	 << "  targ:  0x" << target << dec
+	 << (is_sink ? "  (sink)" : "") << "\n";
+  }
+#endif
+}
+
+#if 0
+//----------------------------------------------------------------------
+
+// Process one basic block.
+//
+static void
+doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
+	BlockSet & visited, Block * block, TreeNode * root,
+	HPC::StringTable & strTab)
+{
+  if (block == NULL || visited[block]) {
+    return;
+  }
+  visited[block] = true;
+
+  DEBUG_CFG("\nblock:\n");
+
+  // see if this block ends with a call edge
+  const Block::edgelist & outEdges = block->targets();
+  bool is_call = false;
+  bool is_sink = false;
+  VMA  target = 0;
+
+  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+    Edge * edge = *eit;
+
+    if (edge->type() == ParseAPI::CALL) {
+      is_call = true;
+      is_sink = edge->sinkEdge();
+      target = edge->trg()->start();
+      break;
+    }
+  }
+
+  LineMapCache lmcache (ginfo->sym_func);
+
+  // iterate through the instructions in this block
+#ifdef DYNINST_INSTRUCTION_PTR
+  map <Offset, Instruction::Ptr> imap;
+#else
+  map <Offset, Instruction> imap;
+#endif
+  block->getInsns(imap);
+
+  for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+    auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
@@ -1279,7 +1411,65 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #ifdef DYNINST_INSTRUCTION_PTR
         len = iit->second->size();
 #else
-        len = iit->second.size();
+    len = iit->second.size();
+#endif
+
+    lmcache.getLineInfo(vma, filenm, line);
+
+#if DEBUG_CFG_SOURCE
+    debugStmt(vma, len, filenm, line);
+#endif
+
+    // a call must be the last instruction in the block
+    if (next_it == imap.end() && is_call) {
+      addStmtToTree(root, strTab, vma, len, filenm, line,
+		    is_call, is_sink, target);
+    }
+    else {
+      addStmtToTree(root, strTab, vma, len, filenm, line);
+    }
+  }
+
+#if DEBUG_CFG_SOURCE
+  if (is_call) {
+    cout << "call:  0x" << hex << block->last()
+	 << "  targ:  0x" << target << dec
+	 << (is_sink ? "  (sink)" : "") << "\n";
+  }
+#endif
+}
+
+//----------------------------------------------------------------------
+
+// CUDA functions
+//
+static void
+doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
+	   HPC::StringTable & strTab)
+{
+  // not sure if cuda generates multiple functions, but we'll handle
+  // this case until proven otherwise.
+  long num = 0;
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+    ProcInfo * pinfo = pit->second;
+    ParseAPI::Function * func = pinfo->func;
+    num++;
+
+#if DEBUG_CFG_SOURCE
+    long num_funcs = ginfo->procMap.size();
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
+#endif
+
+    TreeNode * root = new TreeNode;
+
+    doCudaFunction(ginfo, func, root, strTab);
+
+    pinfo->root = root;
+
+#if DEBUG_CFG_SOURCE
+    cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
+    debugInlineTree(root, NULL, strTab, 0, true);
+>>>>>>> ab9efddb94e73335586c14a8ac1869e54165b7d3
 #endif
     }
 
@@ -1292,6 +1482,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     addStmtToTree(root, strTab, vma, len, filenm, line);
   }
 }
+#endif
 
 //----------------------------------------------------------------------
 
@@ -1869,7 +2060,7 @@ debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
 static void
 debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 {
-  cout << INDENT << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
+  cout << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
        << "  l=" << line << "  f='" << filenm << "'\n";
 
   Inline::InlineSeqn nodeList;
@@ -1877,7 +2068,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 
   // list is outermost to innermost
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
-    cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+    cout << INDENT << "inline:  l=" << nit->getLineNum()
 	 << "  f='" << nit->getFileName()
 	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
@@ -2007,7 +2198,8 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
     }
-    cout << "stmt:  0x" << hex << sinfo->vma << dec << " (" << sinfo->len << ")"
+    cout << "stmt:  0x" << hex << sinfo->vma << dec
+	 << " (" << sinfo->len << (sinfo->is_call ? "/c" : "") << ")"
 	 << "  l=" << sinfo->line_num
 	 << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
   }

@@ -189,6 +189,7 @@ METHOD_FN(display_events)
 
 #define ss_name io
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  40
 
 #include "ss_obj.h"
 

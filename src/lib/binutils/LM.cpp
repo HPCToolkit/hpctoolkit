@@ -1180,18 +1180,6 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 
 
 
-bool
-BinUtil::LM::isPseudolLoadModule()
-{
-  return LM::isFakeLoadModule(m_name.c_str());
-}
-
-const char*
-BinUtil::LM::getPseudoLoadModuleName()
-{
-  return LINUX_KERNEL_NAME;
-}
-
 static void
 dumpSymFlag(std::ostream& o, 
 	    asymbol* sym, int flag, const char* txt, bool& hasPrinted)

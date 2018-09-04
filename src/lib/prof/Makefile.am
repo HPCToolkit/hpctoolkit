@@ -78,6 +78,8 @@ MYSOURCES = \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
 	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
 	\
+	FileError.hpp FileError.cpp \
+	\
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
@@ -90,6 +92,8 @@ MYSOURCES = \
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
+	\
+	StringSet.hpp StringSet.cpp \
 	NameMappings.hpp NameMappings.cpp 
 
 

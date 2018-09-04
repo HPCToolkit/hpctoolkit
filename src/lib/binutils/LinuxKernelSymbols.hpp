@@ -78,6 +78,8 @@ public:
     }
   }
 
+  const char *unified_name();
+
   bool match(const char *pathname);
   SimpleSymbols *create();
 

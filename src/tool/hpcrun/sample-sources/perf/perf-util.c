@@ -292,6 +292,34 @@ getEnvLong(const char *env_var, long default_value)
   return default_value;
 }
 
+/**
+ * set precise_ip attribute to the max value
+ *
+ * TODO: this method only works on some platforms, and not
+ *       general enough on all the platforms.
+ */
+static void
+set_max_precise_ip(struct perf_event_attr *attr)
+{
+  // start with the most restrict skid (3) then 2, 1 and 0
+  // this is specified in perf_event_open man page
+  // if there's a change in the specification, we need to change
+  // this one too (unfortunately)
+  for(int i=perf_skid_flavors-1; i>=0; i--) {
+	attr->precise_ip = perf_skid_precision[i];
+
+	// ask sys to "create" the event
+	// it returns -1 if it fails.
+	int ret = perf_util_event_open(attr,
+			THREAD_SELF, CPU_ANY,
+			GROUP_FD, PERF_FLAGS);
+	if (ret >= 0) {
+	  close(ret);
+	  // just quit when the returned value is correct
+	  return;
+	}
+  }
+}
 
 //----------------------------------------------------------
 // find the best precise ip value in this platform
@@ -302,12 +330,6 @@ getEnvLong(const char *env_var, long default_value)
 static u64
 get_precise_ip(struct perf_event_attr *attr)
 {
-  static int precise_ip = -1;
-
-  // check if already computed
-  if (precise_ip >= 0)
-    return precise_ip;
-
   // check if user wants a specific ip-precision
   int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
   if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
@@ -320,34 +342,14 @@ get_precise_ip(struct perf_event_attr *attr)
             THREAD_SELF, CPU_ANY,
             GROUP_FD, PERF_FLAGS);
     if (ret >= 0) {
-      precise_ip = val;
-      return precise_ip;
+      return val;
     }
     EMSG("The kernel does not support the requested ip-precision: %d."
          " hpcrun will use auto-detect ip-precision instead.", val);
   }
+  set_max_precise_ip(attr);
 
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-    attr->precise_ip = perf_skid_precision[i];
-
-    // ask sys to "create" the event
-    // it returns -1 if it fails.
-    int ret = perf_util_event_open(attr,
-            THREAD_SELF, CPU_ANY,
-            GROUP_FD, PERF_FLAGS);
-    if (ret >= 0) {
-      close(ret);
-      precise_ip = i;
-      // just quit when the returned value is correct
-      return i;
-    }
-  }
-  precise_ip = 0;
-  return precise_ip;
+  return attr->precise_ip;
 }
 
 
@@ -531,6 +533,7 @@ perf_util_attr_init(
 
   attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
                                               as precise as possible or  on the user's variable.  */
+
   return true;
 }
 

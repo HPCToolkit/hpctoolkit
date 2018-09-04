@@ -81,12 +81,6 @@
 
 class Args : public Analysis::Args {
 public:
-  enum Mode_t {
-    Mode_NULL,
-    Mode_SourceCorrelation,
-    Mode_ObjectCorrelation,
-    Mode_RawDataDump
-  };
 
   class Exception : public Diagnostics::Exception {
   public:
@@ -137,17 +131,9 @@ public:
   getCmd() /*const*/;
 
   static void
-  parseArg_source(Args* args, const std::string& opts, const char* errTag);
-
-  static void
-  parseArg_object(Args* args, const std::string& opts, const char* errTag);
-
-  static void
   parseArg_metric(Args* args, const std::string& opts, const char* errTag);
 
 public:
-  // Parsed Data
-  Mode_t mode;
 
   // Object Correlation args
   std::vector<std::string> obj_procGlobs;

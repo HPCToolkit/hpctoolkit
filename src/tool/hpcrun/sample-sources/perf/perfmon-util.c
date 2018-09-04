@@ -320,7 +320,7 @@ pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr
   memset(&attr, 0, sizeof(struct perf_event_attr));
 
   arg.attr = &attr;
-  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT, &arg);
+  int ret = pfm_get_os_event_encoding(eventname, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
 
   if (ret == PFM_SUCCESS) {
     memcpy(event_attr, arg.attr, sizeof(struct perf_event_attr));

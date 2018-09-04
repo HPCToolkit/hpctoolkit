@@ -44,83 +44,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "sample_sources_registered.h"
+#include <string.h>
+#include "x86-unwind-interval-fixup.h"
+#include "x86-unwind-interval.h"
 
-#undef _TPx
-#undef _T3
-#undef _make_id
-#undef _st
-#undef _st1
+#define X86_FAIL_INTERVALS_DEBUG 1
 
-#define _TPx(a,b,c) a ## b ## c
-#define _T3(a, b, c) _TPx(a, b, c)
-#define _make_id(tpl) _T3 tpl
-
-#define _st(n) # n
-#define _st1(n) _st(n)
-
-#undef obj_name
-#undef ss_str
-#undef reg_fn_name
-
-#ifndef ss_sort_order
-#define ss_sort_order  50
-#endif
-
-#include "ss-obj-name.h"
-
-#define obj_name() SS_OBJ_NAME(ss_name)
-#define ss_str  _st1(ss_name) 
-#define reg_fn_name _make_id((,ss_name,_obj_reg))
-
-sample_source_t obj_name() = {
-  // common methods
-
-  .add_event     = hpcrun_ss_add_event,
-  .store_event   = hpcrun_ss_store_event,
-  .store_metric_id = hpcrun_ss_store_metric_id,
-  .get_event_str = hpcrun_ss_get_event_str,
-  .started       = hpcrun_ss_started,
-
-  // specific methods
-
-  .init = init,
-  .thread_init = thread_init,
-  .thread_init_action = thread_init_action,
-  .start = start,
-  .thread_fini_action = thread_fini_action,
-  .stop  = stop,
-  .shutdown = shutdown,
-  .supports_event = supports_event,
-  .process_event_list = process_event_list,
-  .gen_event_set = gen_event_set,
-  .display_events = display_events,
-
-  // data
-  .evl = {
-    .evl_spec = {[0] = '\0'},
-    .nevents = 0
-  },
-  .sel_idx   = -1,
-  .name = ss_str,
-  .cls  = ss_cls,
-  .state = UNINIT,
-  .sort_order = ss_sort_order,
+static char fail_signature[] = {
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3                          // retq
 };
 
 
-/******************************************************************************
- * constructor 
- *****************************************************************************/
-
-void
-SS_OBJ_CONSTRUCTOR(ss_name)(void)
+int
+x86_fail_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-  hpcrun_ss_register(&obj_name());
+#ifdef X86_FAIL_INTERVALS_DEBUG 
+  int siglen = sizeof(fail_signature);
+
+  if (len > siglen && strncmp((char *) fail_signature, ins, siglen) == 0) {
+    // signature matched 
+    char *null = 0;
+
+    *null = 0; // cause a SEGV by storing to the null pointer
+  }
+ 
+#endif
+  return 0;
 }
-
-#undef ss_str
-#undef reg_fn_name
-
-#undef _st
-#undef _st1
