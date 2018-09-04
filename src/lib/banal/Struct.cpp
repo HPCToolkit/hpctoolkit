@@ -1272,6 +1272,23 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
   DEBUG_CFG("\nblock:\n");
 
+  // see if this block ends with a call edge
+  const Block::edgelist & outEdges = block->targets();
+  bool is_call = false;
+  bool is_sink = false;
+  VMA  target = 0;
+
+  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+    Edge * edge = *eit;
+
+    if (edge->type() == ParseAPI::CALL) {
+      is_call = true;
+      is_sink = edge->sinkEdge();
+      target = edge->trg()->start();
+      break;
+    }
+  }
+
   LineMapCache lmcache (ginfo->sym_func);
 
   // iterate through the instructions in this block
@@ -1283,6 +1300,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+    auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
@@ -1299,8 +1317,23 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     debugStmt(vma, len, filenm, line);
 #endif
 
-    addStmtToTree(root, strTab, vma, len, filenm, line);
+    // a call must be the last instruction in the block
+    if (next_it == imap.end() && is_call) {
+      addStmtToTree(root, strTab, vma, len, filenm, line,
+		    is_call, is_sink, target);
+    }
+    else {
+      addStmtToTree(root, strTab, vma, len, filenm, line);
+    }
   }
+
+#if DEBUG_CFG_SOURCE
+  if (is_call) {
+    cout << "call:  0x" << hex << block->last()
+	 << "  targ:  0x" << target << dec
+	 << (is_sink ? "  (sink)" : "") << "\n";
+  }
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -1943,7 +1976,7 @@ debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
 static void
 debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 {
-  cout << INDENT << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
+  cout << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
        << "  l=" << line << "  f='" << filenm << "'\n";
 
   Inline::InlineSeqn nodeList;
@@ -1951,7 +1984,7 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 
   // list is outermost to innermost
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
-    cout << INDENT << INDENT << "inline:  l=" << nit->getLineNum()
+    cout << INDENT << "inline:  l=" << nit->getLineNum()
 	 << "  f='" << nit->getFileName()
 	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
@@ -2081,7 +2114,8 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     for (int i = 1; i <= depth; i++) {
       cout << INDENT;
     }
-    cout << "stmt:  0x" << hex << sinfo->vma << dec << " (" << sinfo->len << ")"
+    cout << "stmt:  0x" << hex << sinfo->vma << dec
+	 << " (" << sinfo->len << (sinfo->is_call ? "/c" : "") << ")"
 	 << "  l=" << sinfo->line_num
 	 << "  f='" << strTab.index2str(sinfo->file_index) << "'\n";
   }
