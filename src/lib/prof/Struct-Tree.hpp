@@ -1787,12 +1787,12 @@ public:
   stmtType(StmtType type)
   { m_stmt_type = type; }
 
-  std::string &
+  VMA &
   target()
   { return m_target; }
 
   void
-  target(const std::string &x)
+  target(VMA x)
   { m_target = x; }
 
   // --------------------------------------------------------
@@ -1808,7 +1808,7 @@ public:
 
 private:
   StmtType m_stmt_type;
-  std::string m_target;
+  VMA m_target;
   int m_sortId;
 };
 
