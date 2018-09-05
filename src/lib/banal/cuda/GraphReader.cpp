@@ -35,17 +35,17 @@ void GraphReader::read_vertices(
     // if the block contains a .weak name indicating it represents a function
     // use the .weak name instead
     if (vertex_name[0] == '.') {
-        std::string tmp = vertex_label;
-        auto weak = tmp.find(WEAK_NAME);
-	if (weak != std::string::npos) {
-            tmp = tmp.substr(weak+strlen(WEAK_NAME));
-            auto endweak = tmp.find("\\");
-	    if (endweak != std::string::npos) {
-	      // std::cerr << "replacing name \n\t" << vertex_name << " with \n\t";
-              vertex_name = tmp.substr(0, endweak);
-	      // std::cerr << vertex_name << std::endl;
-            }
-        } 
+      std::string tmp = vertex_label;
+      auto weak = tmp.find(WEAK_NAME);
+      if (weak != std::string::npos) {
+        tmp = tmp.substr(weak+strlen(WEAK_NAME));
+        auto endweak = tmp.find("\\");
+        if (endweak != std::string::npos) {
+          // std::cerr << "replacing name \n\t" << vertex_name << " with \n\t";
+          vertex_name = tmp.substr(0, endweak);
+          // std::cerr << vertex_name << std::endl;
+        }
+      } 
     }
 
     graph.vertices.push_back(new Vertex(vertex_id, vertex_name, vertex_label));

@@ -13,24 +13,33 @@ namespace CudaParse {
 
 struct Inst {
   int offset;
-  bool dual;
+  bool dual_first;
+  bool dual_second;
   std::string predicate;
   std::string opcode;
   std::string port;
   std::vector<std::string> operands;
 
-  Inst(std::string &inst_str) : offset(0), dual(false) {
+  bool is_call() {
+    if (opcode.find("CALL") != std::string::npos || // sm_70
+      opcode.find("CAL") != std::string::npos) { // sm_60
+      return true;
+    }
+    return false;
+  }
+
+  Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
       inst_str.replace(pos, 1, " ");
-      dual = true;
+      dual_first = true;
     }
     if (inst_str.find("}") != std::string::npos) {  // Dual second
       inst_str = inst_str.substr(2);
       auto pos = inst_str.find("*/");
       if (pos != std::string::npos) {  
         inst_str.replace(pos, 2, ":");
-        dual = true;
+        dual_second = true;
       }
     }
     std::istringstream iss(inst_str);
@@ -75,12 +84,17 @@ struct Inst {
 
 struct Block;
 
+// TODO(Keren): consistent with dyninst
 enum TargetType {
   CALL = 0,
   COND_TAKEN,
   COND_NOT_TAKEN,
+  INDIRECT,
+  DIRECT,
   FALLTHROUGH,
-  DIRECT
+  CATCH,
+  CALL_FT,
+  RET
 };
 
 struct Target {

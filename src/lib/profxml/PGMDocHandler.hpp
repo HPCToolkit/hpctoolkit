@@ -250,6 +250,7 @@ private:
   const XMLCh *const elemAlien;
   const XMLCh *const elemLoop;
   const XMLCh *const elemStmt;
+  const XMLCh *const elemCall;
   const XMLCh *const elemGroup;
 
   // attribute names
@@ -260,6 +261,7 @@ private:
   const XMLCh *const attrLnName;
   const XMLCh *const attrLine;
   const XMLCh *const attrVMA;
+  const XMLCh *const attrTarget;
 };
 
 

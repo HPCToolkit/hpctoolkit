@@ -216,6 +216,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     elemAlien(XMLString::transcode("A")),
     elemLoop(XMLString::transcode("L")),
     elemStmt(XMLString::transcode("S")),
+    elemCall(XMLString::transcode("C")),
     elemGroup(XMLString::transcode("G")),
 
     // attribute names
@@ -225,7 +226,8 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
     attrLine(XMLString::transcode("l")),
-    attrVMA(XMLString::transcode("v"))
+    attrVMA(XMLString::transcode("v")),
+    attrTarget(XMLString::transcode("t"))
 {
   m_version = -1;
 
@@ -247,6 +249,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&elemAlien);
   XMLString::release((XMLCh**)&elemLoop);
   XMLString::release((XMLCh**)&elemStmt);
+  XMLString::release((XMLCh**)&elemCall);
   XMLString::release((XMLCh**)&elemGroup);
 
   // attribute names
@@ -257,6 +260,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrLnName);
   XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrVMA);
+  XMLString::release((XMLCh**)&attrTarget);
 
   DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
@@ -447,6 +451,42 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     curStrct = stmtNode;
   }
 
+  // Call
+  else if ( XMLString::equals(name, elemCall)) {
+    int numAttr = attributes.getLength();
+
+    // 'begin' is required but 'end' is implied (and can be in any order)
+    DIAG_Assert(1 <= numAttr && numAttr <= 5, DIAG_UnexpectedInput);
+
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
+
+    // for now insist that line range include one line (since we don't nest S)
+    DIAG_Assert(begLn == endLn, "S line range [" << begLn << ", " << endLn << "]");
+
+    string vma = getAttr(attributes, attrVMA);
+
+    string target = getAttr(attributes, attrTarget);
+
+    // by now the file and function names should have been found
+    Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
+    DIAG_Assert(m_curProc != NULL, "");
+
+    Struct::Stmt* stmtNode = new Struct::Stmt(parent, begLn, endLn, 0, 0, Struct::Stmt::STMT_CALL);
+    if (!vma.empty()) {
+      stmtNode->vmaSet().fromString(vma.c_str());
+    }
+    if (!target.empty()) {
+      stmtNode->target(target);
+    }
+    string node_id = getAttr(attributes, attrId);
+    stmtNode->m_origId = atoi(node_id.c_str());
+
+    DIAG_DevMsgIf(DBG, "PGMDocHandler: " << stmtNode->toStringMe());
+
+    curStrct = stmtNode;
+  }
+
   // Group
   else if (XMLString::equals(name, elemGroup)) {
     string grpnm = getAttr(attributes, attrName); // must exist
@@ -525,6 +565,11 @@ PGMDocHandler::endElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
   // Stmt
   else if (XMLString::equals(name, elemStmt)) {
+    if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
+  }
+  
+  // Stmt
+  else if (XMLString::equals(name, elemCall)) {
     if (m_docty == Doc_GROUP) { processGroupDocEndTag(); }
   }
 
