@@ -242,6 +242,7 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
     strcpy(event_name, (const char*)event);
     return PERF_EVENT_SKID_ARBITRARY;
   }
+  memset(event_name, 0, event_name_size);
   memcpy(event_name, event, ptr_att-event);
 
   char *ptr_next = ptr_att + len_suf;
