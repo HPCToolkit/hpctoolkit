@@ -827,7 +827,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    int precise_ip  = perf_skid_parse_event(event, name, sizeof(name));
+    perf_skid_parse_event(event, name, sizeof(name));
     int period_type = hpcrun_extract_ev_thresh(name, sizeof(name), name, &threshold,
         default_threshold.threshold_val);
 

@@ -429,14 +429,17 @@ perf_util_attr_init(
   int precise_ip_type = perf_skid_parse_event(event_name, name, 1024);
   u64 precise_ip;
 
-  if (precise_ip_type == PERF_EVENT_AUTODETECT_SKID) {
-    precise_ip = perf_skid_get_precise_ip(attr);
-  }
-  else if (precise_ip_type == PERF_EVENT_SKID_ERROR) {
-    precise_ip = PERF_EVENT_SKID_ARBITRARY;
-  } 
-  else {
-    precise_ip = precise_ip_type;
+  switch (precise_ip_type) {
+    case PERF_EVENT_AUTODETECT_SKID: 
+            perf_skid_set_max_precise_ip(attr);
+	    break;
+    case PERF_EVENT_SKID_ERROR:
+    case PERF_EVENT_SKID_ARBITRARY:
+	    // check the HPCRUN_PRECISE_IP env variable
+	    precise_ip = perf_skid_get_precise_ip(attr);
+	    break;
+    default:
+            precise_ip = precise_ip_type;
   }
 
   attr->precise_ip    = precise_ip;

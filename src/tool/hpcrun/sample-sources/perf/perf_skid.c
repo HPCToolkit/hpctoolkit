@@ -111,9 +111,46 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
 }
 
 
-// -----------------------------------------------------
-// API
-// -----------------------------------------------------
+/*
+ * get int long value of variable environment.
+ * If the variable is not set, return the default value 
+ */
+static long
+getEnvLong(const char *env_var, long default_value)
+{
+  const char *str_val= getenv(env_var);
+
+  if (str_val) {
+    char *end_ptr;
+    long val = strtol( str_val, &end_ptr, 10 );
+    if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
+      return val;
+    }
+  }
+  // invalid value
+  return default_value;
+}
+
+
+static char* 
+strlaststr(const char* haystack, const char* needle)
+{
+   char*  loc = 0;
+   char*  found = 0;
+   size_t pos = 0;
+
+   while ((found = strstr(haystack + pos, needle)) != 0)
+   {
+      loc = found;
+      pos = (found - haystack) + 1;
+   }
+
+   return loc;
+}
+
+//===================================================================
+// INTERFACES
+//===================================================================
 
 /**
  * set precise_ip attribute to the max value
@@ -121,7 +158,7 @@ perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
  * TODO: this method only works on some platforms, and not
  *       general enough on all the platforms.
  */
-static void
+void
 perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 {
   // start with the most restrict skid (3) then 2, 1 and 0
@@ -144,47 +181,6 @@ perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
   }
 }
 
-
-/*
- * get int long value of variable environment.
- * If the variable is not set, return the default value 
- */
-static long
-getEnvLong(const char *env_var, long default_value)
-{
-  const char *str_val= getenv(env_var);
-
-  if (str_val) {
-    char *end_ptr;
-    long val = strtol( str_val, &end_ptr, 10 );
-    if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
-      return val;
-    }
-  }
-  // invalid value
-  return default_value;
-}
-
-
-char* 
-strlaststr(const char* haystack, const char* needle)
-{
-   char*  loc = 0;
-   char*  found = 0;
-   size_t pos = 0;
-
-   while ((found = strstr(haystack + pos, needle)) != 0)
-   {
-      loc = found;
-      pos = (found - haystack) + 1;
-   }
-
-   return loc;
-}
-
-//===================================================================
-// INTERFACES
-//===================================================================
 
 //----------------------------------------------------------
 // find the best precise ip value in this platform
@@ -210,8 +206,11 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
       return val;
     }
   }
-  perf_skid_set_max_precise_ip(attr);
-
+  // no variable is set or the value is not valid
+  // set to the most arbitrary skid to ensure it works
+  //
+  attr->precise_ip = PERF_EVENT_SKID_ARBITRARY;
+  
   return attr->precise_ip;
 }
 

@@ -67,6 +67,9 @@
 int
 perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size);
 
+void
+perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
+
 u64
 perf_skid_get_precise_ip(struct perf_event_attr *attr);
 #endif
