@@ -77,15 +77,6 @@
 //  4  Detect automatically to have the most precise possible (default)
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
-// default option for precise_ip: autodetect skid
-#define PERF_EVENT_AUTODETECT_SKID    4
-
-// constants of precise_ip (see the man page)
-#define PERF_EVENT_SKID_ZERO_REQUIRED    3
-#define PERF_EVENT_SKID_ZERO_REQUESTED   2
-#define PERF_EVENT_SKID_CONSTANT         1
-#define PERF_EVENT_SKID_ARBITRARY        0
-
 #define PRECISE_IP_SUFFIX   ":p"
 
 #define SIGN_EQUAL          '='
@@ -228,9 +219,12 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
-//   PRECISE_IP_NONE     : if there is no precise ip
-//   PRECISE_IP_DEFAULT  : if precise ip is not specified (use the default)
-//   x                   : if a precise_ip value is specified
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_ERROR   
 int
 perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size)
 {
@@ -238,7 +232,7 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
   int len_evt = strlen(event);
 
   if (len_evt <= len_suf) 
-    return PRECISE_IP_NONE;
+    return PERF_EVENT_SKID_ARBITRARY;
 
   // continuously looking for ":p" pattern inside the event_name
   // if an event has foo::par:peer:p it should return the last ":p"
@@ -246,24 +240,29 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
 
   if (!ptr_att) {
     strcpy(event_name, (const char*)event);
-    return PRECISE_IP_NONE;
+    return PERF_EVENT_SKID_ARBITRARY;
   }
   memcpy(event_name, event, ptr_att-event);
 
   char *ptr_next = ptr_att + len_suf;
   if (!ptr_next)
     // shouldn't happen here
-    return PRECISE_IP_NONE;
+    return PERF_EVENT_SKID_ARBITRARY;
 
+  // check if the user doesn't specify anything after :p
   if (*ptr_next == '\0') {
-    return PRECISE_IP_DEFAULT;
+    return PERF_EVENT_AUTODETECT_SKID;
   }
 
+  // check if the user specify a value of precise_ip
   if (ptr_next && *ptr_next == '=') {
     ptr_next++;
 
     if (ptr_next && isdigit(*ptr_next)) {
-      u64 precise_ip = *ptr_next - '0';
+      int precise_ip = *ptr_next - '0';
+      if (precise_ip < PERF_EVENT_SKID_ARBITRARY || 
+          precise_ip > PERF_EVENT_AUTODETECT_SKID)
+	return PERF_EVENT_SKID_ERROR;
 
       ptr_next++;
       if (*ptr_next == DELIMITER_PERIOD) {
@@ -274,14 +273,14 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
 
     // precise_ip suffix is present but incorrect value
     // should we fail or return to default ?
-    return PRECISE_IP_DEFAULT;
+    return PERF_EVENT_AUTODETECT_SKID;
   }
 
   if (*ptr_next == DELIMITER_PERIOD) {
     strcat(event_name, ptr_next);
   }
 
-  return PRECISE_IP_NONE;
+  return PERF_EVENT_SKID_ARBITRARY;
 }
 
 #if     _PERF_UTIL_DEBUG_

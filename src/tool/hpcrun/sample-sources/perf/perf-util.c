@@ -429,11 +429,11 @@ perf_util_attr_init(
   int precise_ip_type = perf_skid_parse_event(event_name, name, 1024);
   u64 precise_ip;
 
-  if (precise_ip_type == PRECISE_IP_DEFAULT) {
+  if (precise_ip_type == PERF_EVENT_AUTODETECT_SKID) {
     precise_ip = perf_skid_get_precise_ip(attr);
   }
-  else if (precise_ip_type == PRECISE_IP_NONE ) {
-    precise_ip = 0;
+  else if (precise_ip_type == PERF_EVENT_SKID_ERROR) {
+    precise_ip = PERF_EVENT_SKID_ARBITRARY;
   } 
   else {
     precise_ip = precise_ip_type;

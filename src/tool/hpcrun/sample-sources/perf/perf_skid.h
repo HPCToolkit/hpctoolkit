@@ -45,15 +45,25 @@
 #ifndef __PERF_SKID_H__
 #define __PERF_SKID_H__
 
-#define PRECISE_IP_NONE     -1
-#define PRECISE_IP_DEFAULT   0
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_AUTODETECT_SKID       4
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
+#define PERF_EVENT_SKID_ERROR           -1
+
 
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
-//   PRECISE_IP_NONE     : if there is no precise ip
-//   PRECISE_IP_DEFAULT  : if precise ip is not specified (use the default)
-//   x                   : if a precise_ip value is specified
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_NONE    
+//  PERF_EVENT_SKID_ERROR        
 int
 perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size);
 
