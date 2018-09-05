@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,10 +44,33 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATA_OVERRIDES_H
-#define __DATA_OVERRIDES_H
+//***************************************************************************
+//
+// File:
+//   FileError.cpp
+//
+// Purpose:
+//   Interface for error reporting for hpcprof and hpcprof-mpi
+//
+// Description:
+//   Handle error reporting for hpcprof and hpcprof-mpi
+//   
+//
+//***************************************************************************
 
-cct_node_t *splay_lookup(void *key, void **start, void **end);
+//***************************************************************************
+// global includes
+//***************************************************************************
+#include <string>
 
-#endif
 
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+void
+hpcrun_getFileErrorString
+(
+  const std::string &fnm, 
+  std::string &errorString
+);

@@ -120,9 +120,8 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-bin_SCRIPTS = hpcproftt
-
 pkglibexec_PROGRAMS = hpcproftt-bin
+pkglibexec_SCRIPTS = hpcproftt
 
 hpcproftt_bin_SOURCES   = $(MYSOURCES)
 hpcproftt_bin_CFLAGS    = $(MYCFLAGS)
