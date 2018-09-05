@@ -477,7 +477,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
       stmtNode->vmaSet().fromString(vma.c_str());
     }
     if (!target.empty()) {
-      stmtNode->target(target);
+      stmtNode->target((SrcFile::ln)StrUtil::toLong(target));
     }
     string node_id = getAttr(attributes, attrId);
     stmtNode->m_origId = atoi(node_id.c_str());
