@@ -70,6 +70,7 @@
 #include <list>
 #include <map>
 
+#include <lib/isa/ISA.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -203,10 +204,12 @@ public:
   VMA   target;
   bool  is_call;
   bool  is_sink;
+  DeviceType device_type;
 
   // constructor by index
   StmtInfo(VMA vm, int ln, long file, long base, long line,
-	   bool call = false, bool sink = false, VMA targ = 0)
+	   bool call = false, bool sink = false,
+     VMA targ = 0, DeviceType device = DEVICE_NONE)
   {
     vma = vm;
     len = ln;
@@ -216,12 +219,14 @@ public:
     target = targ;
     is_call = call;
     is_sink = sink;
+    device_type = device;
   }
 
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
 	   const std::string & filenm, long line,
-	   bool call = false, bool sink = false, VMA targ = 0)
+	   bool call = false, bool sink = false,
+     VMA targ = 0, DeviceType device = DEVICE_NONE)
   {
     vma = vm;
     len = ln;
@@ -231,6 +236,7 @@ public:
     target = targ;
     is_call = call;
     is_sink = sink;
+    device_type = device;
   }
 
   // returns: true if vma is contained within this range
@@ -362,7 +368,8 @@ bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line,
-	      bool is_call = false, bool is_sink = false, VMA target = 0);
+	      bool is_call = false, bool is_sink = false,
+        VMA target = 0, DeviceType device_type = DEVICE_NONE);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

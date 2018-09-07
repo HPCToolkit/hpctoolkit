@@ -142,7 +142,7 @@ static const string & unknown_link = "_unknown_proc_";
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
-static int cuda_arch;
+static int cuda_arch = 0;
 
 
 //----------------------------------------------------------------------
@@ -1303,21 +1303,25 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
   block->getInsns(imap);
 
+  int len;
+  DeviceType device_type = DEVICE_NONE;
+
+  if (cuda_arch > 0) {
+    device_type = DEVICE_NVIDIA;
+    if (cuda_arch < 70) {
+      len = 8;
+    } else {
+      len = 16;
+    }
+  }
+
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
-    uint line = 0;
-    int len;
+    uint line;
 
-    if (cuda_arch > 0) {
-      if (cuda_arch < 70) {
-        len = 8;
-      } else {
-        len = 16;
-      }
-    } else {
-
+    if (cuda_arch == 0) {
 #ifdef DYNINST_INSTRUCTION_PTR
       len = iit->second->size();
 #else
@@ -1334,10 +1338,10 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
       addStmtToTree(root, strTab, vma, len, filenm, line,
-		    is_call, is_sink, target);
+		    is_call, is_sink, target, device_type);
     }
     else {
-      addStmtToTree(root, strTab, vma, len, filenm, line);
+      addStmtToTree(root, strTab, vma, len, filenm, line, device_type);
     }
   }
 
