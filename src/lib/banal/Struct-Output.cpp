@@ -98,7 +98,7 @@ static const char * hpcstruct_xml_head =
   ;
 
 // temp options to control call <C> tags and target (t) field
-#define ENABLE_CALL_TAGS     0
+#define ENABLE_CALL_TAGS     1
 #define ENABLE_TARGET_FIELD  1
 
 //----------------------------------------------------------------------

@@ -262,6 +262,7 @@ private:
   const XMLCh *const attrLine;
   const XMLCh *const attrVMA;
   const XMLCh *const attrTarget;
+  const XMLCh *const attrDevice;
 };
 
 

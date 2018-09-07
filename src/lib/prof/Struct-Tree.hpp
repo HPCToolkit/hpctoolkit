@@ -77,6 +77,7 @@
 
 #include "Metric-IData.hpp"
 
+#include <lib/isa/ISA.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -1795,6 +1796,14 @@ public:
   target(VMA x)
   { m_target = x; }
 
+  DeviceType
+  device_type()
+  { return m_device_type; }
+
+  void
+  device_type(DeviceType type)
+  { m_device_type = type; }
+
   // --------------------------------------------------------
   // Output
   // --------------------------------------------------------
@@ -1808,6 +1817,7 @@ public:
 
 private:
   StmtType m_stmt_type;
+  DeviceType m_device_type;
   VMA m_target;
   int m_sortId;
 };

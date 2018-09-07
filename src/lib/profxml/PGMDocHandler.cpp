@@ -84,6 +84,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
+#include <lib/isa/ISA.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 using namespace Prof;
 
@@ -227,7 +228,8 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrLnName(XMLString::transcode("ln")),
     attrLine(XMLString::transcode("l")),
     attrVMA(XMLString::transcode("v")),
-    attrTarget(XMLString::transcode("t"))
+    attrTarget(XMLString::transcode("t")),
+    attrDevice(XMLString::transcode("d"))
 {
   m_version = -1;
 
@@ -261,6 +263,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrVMA);
   XMLString::release((XMLCh**)&attrTarget);
+  XMLString::release((XMLCh**)&attrDevice);
 
   DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
@@ -468,6 +471,8 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
 
     string target = getAttr(attributes, attrTarget);
 
+    string device = getAttr(attributes, attrDevice);
+
     // by now the file and function names should have been found
     Struct::ACodeNode* parent = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
     DIAG_Assert(m_curProc != NULL, "");
@@ -478,6 +483,11 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     }
     if (!target.empty()) {
       stmtNode->target((SrcFile::ln)StrUtil::toLong(target));
+    }
+    if (!device.empty()) {
+      if (device == "NVIDIA") {
+        stmtNode->device_type(DEVICE_NVIDIA);
+      }
     }
     string node_id = getAttr(attributes, attrId);
     stmtNode->m_origId = atoi(node_id.c_str());

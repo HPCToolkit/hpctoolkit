@@ -14,6 +14,7 @@
   <!--   (l)ine range: "beg-end" (inclusive range) -->
   <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
   <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
 	i CDATA #REQUIRED
@@ -61,4 +62,5 @@
 	i CDATA #REQUIRED
 	l CDATA #REQUIRED
 	v CDATA #IMPLIED
-	t CDATA #IMPLIED>
+	t CDATA #IMPLIED
+  d CDATA #IMPLIED>
