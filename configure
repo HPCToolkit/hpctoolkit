@@ -792,11 +792,8 @@ BOOST_COPY
 BOOST_LIB_LIST
 BOOST_LIB
 BOOST_INC
-OPT_HAVE_BINUTILS_IA64_FALSE
-OPT_HAVE_BINUTILS_IA64_TRUE
-GNUBINUTILS_LDLIBS
-GNUBINUTILS_LDFLAGS
-GNUBINUTILS_IFLAGS
+BINUTILS_LIBS
+BINUTILS_IFLAGS
 wordsize_cflag
 CXX_PATH
 CC_PATH
@@ -1006,6 +1003,7 @@ with_boost
 with_bzip
 with_libdwarf
 with_libelf
+with_libiberty
 with_libmonitor
 with_libunwind
 enable_libunwind_primary
@@ -1763,6 +1761,8 @@ Optional Packages:
   --with-bzip=PATH        path to bzip install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libelf=PATH      path to libelf install directory
+  --with-libiberty=PATH   path to libiberty install directory (only needed if
+                          binutils does not contain libiberty.a)
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   path to libunwind install directory
   --with-lzma=PATH        path to lzma (xz) install directory
@@ -19470,6 +19470,7 @@ default_bzip_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
 default_libdwarf_prefix=no
+default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
@@ -19564,6 +19565,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg libdwarf ; then
     default_libdwarf_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libiberty ; then
+    default_libiberty_prefix="$spack_ans"
   fi
   if find_spack_pkg libmonitor ; then
     default_libmonitor_prefix="$spack_ans"
@@ -19785,38 +19789,81 @@ esac
 
 
 #-------------------------------------------------
-# Check for GNU's binutils (binary interface)
+# Option: --with-binutils=PATH
 #-------------------------------------------------
 
-GNUBINUTILS_IFLAGS=
-GNUBINUTILS_LDFLAGS=
-GNUBINUTILS_LDLIBS=
+# Binutils uses four main libraries: libbfd.a, libopcodes.a,
+# libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
+# The first two must be in the binutils package, but the last two may
+# be in binutils or separate (libiberty and zlib).
 
-GNUBINUTILS="$default_binutils_prefix"
+BINUTILS="$default_binutils_prefix"
 
 
 # Check whether --with-binutils was given.
 if test "${with_binutils+set}" = set; then :
-  withval=$with_binutils; GNUBINUTILS="$withval"
+  withval=$with_binutils; BINUTILS="$withval"
 fi
 
+
+BINUTILS_IFLAGS=
+BINUTILS_LIBS=
+binutils_has_libiberty=no
+binutils_has_libz=no
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for binutils" >&5
 $as_echo_n "checking for binutils... " >&6; }
 
-case "$GNUBINUTILS" in
+case "$BINUTILS" in
   /* )
-    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
-      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-      for dir in lib32 lib64 ; do
-        if test -d "${GNUBINUTILS}/$dir" ; then
-	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
-	fi
-      done
+    # bfd.h must exist
+    if test -f "${BINUTILS}/include/bfd.h" ; then
+      BINUTILS_IFLAGS="-I${BINUTILS}/include"
     else
-      as_fn_error $? "invalid binutils directory: $GNUBINUTILS" "$LINENO" 5
+      as_fn_error $? "unable to find bfd.h in: $BINUTILS" "$LINENO" 5
     fi
+
+    # libopcodes.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libopcodes.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        as_fn_error $? "unable to find libopcodes.a in: $BINUTILS" "$LINENO" 5
+      fi
+    done
+
+    # libbfd.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libbfd.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        as_fn_error $? "unable to find libbfd.a in: $BINUTILS" "$LINENO" 5
+      fi
+    done
+
+    # libiberty.a may be here or may be in libiberty
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libiberty.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libiberty=yes
+	break
+      fi
+    done
+
+    # libz.a may be here or may be in zlib
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libz.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libz=yes
+	break
+      fi
+    done
     ;;
   no )
     ;;
@@ -19825,187 +19872,23 @@ case "$GNUBINUTILS" in
     ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GNUBINUTILS" >&5
-$as_echo "$GNUBINUTILS" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BINUTILS" >&5
+$as_echo "$BINUTILS" >&6; }
 
-# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
-test_binutils_libs()
-{
-  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+binlibs=
+for lib in $BINUTILS_LIBS ; do
+  binlibs="$binlibs `basename $lib`"
+done
 
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+{ $as_echo "$as_me:${as_lineno-$LINENO}: binutils libs: $binlibs" >&5
+$as_echo "$as_me: binutils libs: $binlibs" >&6;}
 
+# FIXME: libbfd requires -ldl unless plugins are disabled (default is
+# enabled).  But we could test for this.
 
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  long size = bfd_get_symtab_upper_bound(abfd);
-  std::cout << size;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ans=0
-else
-  ans=1
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-  return $ans
-}
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-ORIG_LIBS="$LIBS"
-CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
-
-# Test for binutils libs.  We always use bfd, opcodes and libiberty,
-# and newer binutils also use libdl and libz.
-
-case "$GNUBINUTILS" in
-  /* )
-    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
-    if test_binutils_libs ; then :
-    else
-      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
-      if test_binutils_libs ; then :
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find link flags for binutils" >&5
-$as_echo "$as_me: WARNING: unable to find link flags for binutils" >&2;}
-      fi
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: binutils libraries: $GNUBINUTILS_LDLIBS" >&5
-$as_echo "$as_me: binutils libraries: $GNUBINUTILS_LDLIBS" >&6;}
-    ;;
-esac
-
-
-
-
-
-# Test for special, hpctoolkit-patched binutils.
-
-hpc_binutils=no
-LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
-
-case "$GNUBINUTILS" in
-  /* )
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hpctoolkit patched binutils" >&5
-$as_echo_n "checking for hpctoolkit patched binutils... " >&6; }
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  bfd_vma vma = bfd_get_first_addr(abfd);
-  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
-  std::cout << vma << ret;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  hpc_binutils=yes
-else
-  hpc_binutils=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpc_binutils" >&5
-$as_echo "$hpc_binutils" >&6; }
-    ;;
-esac
-
-if test "$hpc_binutils" = yes ; then
-
-$as_echo "#define HAVE_HPC_GNUBINUTILS 1" >>confdefs.h
-
-fi
-
-# Test if binutils has support for IA64 (Itanium).
-
-binutils_ia64=no
-
-case "$GNUBINUTILS" in
-  /* )
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if binutils supports ia64" >&5
-$as_echo_n "checking if binutils supports ia64... " >&6; }
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-#include <dis-asm.h>
-int main(int argc, char **argv)
-{
-  disassemble_info myinfo;
-  bfd_init();
-  int ret = print_insn_ia64(0x400400, &myinfo);
-  std::cout << ret;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  binutils_ia64=yes
-else
-  binutils_ia64=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $binutils_ia64" >&5
-$as_echo "$binutils_ia64" >&6; }
-    ;;
-esac
-
-if test "$binutils_ia64" = yes ; then
-
-$as_echo "#define ENABLE_BINUTILS_IA64 1" >>confdefs.h
-
-fi
-
- if test "$binutils_ia64" = yes; then
-  OPT_HAVE_BINUTILS_IA64_TRUE=
-  OPT_HAVE_BINUTILS_IA64_FALSE='#'
-else
-  OPT_HAVE_BINUTILS_IA64_TRUE='#'
-  OPT_HAVE_BINUTILS_IA64_FALSE=
-fi
-
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-LIBS="$ORIG_LIBS"
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
@@ -20232,6 +20115,53 @@ $as_echo "$LIBELF" >&6; }
 
 
 
+
+
+#-------------------------------------------------
+# Option: --with-libiberty=PATH
+#-------------------------------------------------
+
+# This is only used if binutils doesn't have libiberty.a.
+
+LIBIBERTY="$default_libiberty_prefix"
+
+
+# Check whether --with-libiberty was given.
+if test "${with_libiberty+set}" = set; then :
+  withval=$with_libiberty; LIBIBERTY="$withval"
+fi
+
+
+if test "$BINUTILS" = no || test "$binutils_has_libiberty" = yes
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping libiberty for binutils" >&5
+$as_echo "$as_me: skipping libiberty for binutils" >&6;}
+  LIBIBERTY=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libiberty.a for binutils" >&5
+$as_echo_n "checking for libiberty.a for binutils... " >&6; }
+
+  found_libiberty=no
+  case "$LIBIBERTY" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${LIBIBERTY}/${lib}/libiberty.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libiberty=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $found_libiberty" >&5
+$as_echo "$found_libiberty" >&6; }
+
+  if test "$found_libiberty" != yes ; then
+    as_fn_error $? "unable to find libiberty.a in binutils or libiberty" "$LINENO" 5
+  fi
+fi
 
 
 #-------------------------------------------------
@@ -21838,6 +21768,8 @@ $as_echo "${XERCES}" >&6; }
 # Option: --with-zlib=PATH
 #-------------------------------------------------
 
+# Zlib is used both independently and for binutils.
+
 ZLIB="$default_zlib_prefix"
 
 
@@ -21882,6 +21814,37 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ZLIB" >&5
 $as_echo "$ZLIB" >&6; }
+
+# If binutils doesn't include libz.a, then try here.
+if test "$BINUTILS" = no || test "$binutils_has_libz" = yes
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping libz for binutils" >&5
+$as_echo "$as_me: skipping libz for binutils" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libz.a for binutils" >&5
+$as_echo_n "checking for libz.a for binutils... " >&6; }
+
+  found_libz=no
+  case "$ZLIB" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${ZLIB}/${lib}/libz.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libz=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $found_libz" >&5
+$as_echo "$found_libz" >&6; }
+
+  if test "$found_libz" != yes ; then
+    as_fn_error $? "unable to find libz.a in binutils or zlib" "$LINENO" 5
+  fi
+fi
 
  if test "$ZLIB" != no; then
   OPT_USE_ZLIB_TRUE=
@@ -23270,10 +23233,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_HAVE_BINUTILS_IA64_TRUE}" && test -z "${OPT_HAVE_BINUTILS_IA64_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_BINUTILS_IA64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${USE_BOOST_LIBS_TRUE}" && test -z "${USE_BOOST_LIBS_FALSE}"; then
@@ -26003,8 +25962,8 @@ $as_echo "$as_me:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&6;}
 $as_echo "$as_me:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${GNUBINUTILS}" >&5
-$as_echo "$as_me:   binutils:     ${GNUBINUTILS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${BINUTILS}" >&5
+$as_echo "$as_me:   binutils:     ${BINUTILS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   boost:        ${BOOST}" >&5
 $as_echo "$as_me:   boost:        ${BOOST}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   bzip:         ${BZIP}" >&5
@@ -26013,6 +25972,8 @@ $as_echo "$as_me:   bzip:         ${BZIP}" >&6;}
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libelf:       ${LIBELF}" >&5
 $as_echo "$as_me:   libelf:       ${LIBELF}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
+$as_echo "$as_me:   libiberty:    ${LIBIBERTY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libmonitor:   ${LIBMONITOR}" >&5
 $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   monitor/old:  ${MONITOR}" >&5

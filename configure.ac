@@ -1395,6 +1395,7 @@ default_bzip_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
 default_libdwarf_prefix=no
+default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
@@ -1487,6 +1488,9 @@ then
   fi
   if find_spack_pkg libdwarf ; then
     default_libdwarf_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libiberty ; then
+    default_libiberty_prefix="$spack_ans"
   fi
   if find_spack_pkg libmonitor ; then
     default_libmonitor_prefix="$spack_ans"
@@ -1620,36 +1624,79 @@ AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
-# Check for GNU's binutils (binary interface)
+# Option: --with-binutils=PATH
 #-------------------------------------------------
 
-GNUBINUTILS_IFLAGS=
-GNUBINUTILS_LDFLAGS=
-GNUBINUTILS_LDLIBS=
+# Binutils uses four main libraries: libbfd.a, libopcodes.a,
+# libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
+# The first two must be in the binutils package, but the last two may
+# be in binutils or separate (libiberty and zlib).
 
-GNUBINUTILS="$default_binutils_prefix"
+BINUTILS="$default_binutils_prefix"
 
 AC_ARG_WITH([binutils],
   [AS_HELP_STRING([--with-binutils=PATH],
-	[path to binutils install directory])],
-  [GNUBINUTILS="$withval"],
+      [path to binutils install directory])],
+  [BINUTILS="$withval"],
   [])
+
+BINUTILS_IFLAGS=
+BINUTILS_LIBS=
+binutils_has_libiberty=no
+binutils_has_libz=no
 
 AC_MSG_CHECKING([for binutils])
 
-case "$GNUBINUTILS" in
+case "$BINUTILS" in
   /* )
-    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
-      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-      for dir in lib32 lib64 ; do
-        if test -d "${GNUBINUTILS}/$dir" ; then
-	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
-	fi
-      done
+    # bfd.h must exist
+    if test -f "${BINUTILS}/include/bfd.h" ; then
+      BINUTILS_IFLAGS="-I${BINUTILS}/include"
     else
-      AC_MSG_ERROR([invalid binutils directory: $GNUBINUTILS])
+      AC_MSG_ERROR([unable to find bfd.h in: $BINUTILS])
     fi
+
+    # libopcodes.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libopcodes.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        AC_MSG_ERROR([unable to find libopcodes.a in: $BINUTILS])
+      fi
+    done
+
+    # libbfd.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libbfd.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        AC_MSG_ERROR([unable to find libbfd.a in: $BINUTILS])
+      fi
+    done
+
+    # libiberty.a may be here or may be in libiberty
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libiberty.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libiberty=yes
+	break
+      fi
+    done
+
+    # libz.a may be here or may be in zlib
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libz.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libz=yes
+	break
+      fi
+    done
     ;;
   no )
     ;;
@@ -1658,130 +1705,22 @@ case "$GNUBINUTILS" in
     ;;
 esac
 
-AC_MSG_RESULT([$GNUBINUTILS])
+AC_MSG_RESULT([$BINUTILS])
 
-# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
-test_binutils_libs()
-{
-  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+binlibs=
+for lib in $BINUTILS_LIBS ; do
+  binlibs="$binlibs `basename $lib`"
+done
 
-  AC_LINK_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  long size = bfd_get_symtab_upper_bound(abfd);
-  std::cout << size;
-  return 0;
-}
-]])], [ans=0], [ans=1])
+AC_MSG_NOTICE([binutils libs: $binlibs])
 
-  return $ans
-}
+# FIXME: libbfd requires -ldl unless plugins are disabled (default is
+# enabled).  But we could test for this.
 
-AC_LANG_PUSH([C++])
+BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-ORIG_LIBS="$LIBS"
-CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
-
-# Test for binutils libs.  We always use bfd, opcodes and libiberty,
-# and newer binutils also use libdl and libz.
-
-case "$GNUBINUTILS" in
-  /* )
-    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
-    if test_binutils_libs ; then :
-    else
-      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
-      if test_binutils_libs ; then :
-      else
-        AC_MSG_WARN([unable to find link flags for binutils])
-      fi
-    fi
-    AC_MSG_NOTICE([binutils libraries: $GNUBINUTILS_LDLIBS])
-    ;;
-esac
-
-AC_SUBST([GNUBINUTILS_IFLAGS])
-AC_SUBST([GNUBINUTILS_LDFLAGS])
-AC_SUBST([GNUBINUTILS_LDLIBS])
-
-# Test for special, hpctoolkit-patched binutils.
-
-hpc_binutils=no
-LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
-
-case "$GNUBINUTILS" in
-  /* )
-    AC_MSG_CHECKING([for hpctoolkit patched binutils])
-
-    AC_LINK_IFELSE([
-    AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  bfd_vma vma = bfd_get_first_addr(abfd);
-  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
-  std::cout << vma << ret;
-  return 0;
-}
-]])], [hpc_binutils=yes], [hpc_binutils=no])
-
-    AC_MSG_RESULT([$hpc_binutils])
-    ;;
-esac
-
-if test "$hpc_binutils" = yes ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit patched binutils])
-fi
-
-# Test if binutils has support for IA64 (Itanium).
-
-binutils_ia64=no
-
-case "$GNUBINUTILS" in
-  /* )
-    AC_MSG_CHECKING([if binutils supports ia64])
-
-    AC_LINK_IFELSE([
-    AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-#include <dis-asm.h>
-int main(int argc, char **argv)
-{
-  disassemble_info myinfo;
-  bfd_init();
-  int ret = print_insn_ia64(0x400400, &myinfo);
-  std::cout << ret;
-  return 0;
-}
-]])], [binutils_ia64=yes], [binutils_ia64=no])
-
-    AC_MSG_RESULT([$binutils_ia64])
-    ;;
-esac
-
-if test "$binutils_ia64" = yes ; then
-  AC_DEFINE([ENABLE_BINUTILS_IA64], [1], [Binutils has support for ia64])
-fi
-
-AM_CONDITIONAL([OPT_HAVE_BINUTILS_IA64], [test "$binutils_ia64" = yes])
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-LIBS="$ORIG_LIBS"
-
-AC_LANG_POP
+AC_SUBST([BINUTILS_IFLAGS])
+AC_SUBST([BINUTILS_LIBS])
 
 
 #-------------------------------------------------
@@ -1986,6 +1925,50 @@ AC_MSG_RESULT([$LIBELF])
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
+
+
+#-------------------------------------------------
+# Option: --with-libiberty=PATH
+#-------------------------------------------------
+
+# This is only used if binutils doesn't have libiberty.a.
+
+LIBIBERTY="$default_libiberty_prefix"
+
+AC_ARG_WITH([libiberty],
+  [AS_HELP_STRING([--with-libiberty=PATH],
+      [path to libiberty install directory (only needed if binutils
+       does not contain libiberty.a)])],
+  [LIBIBERTY="$withval"],
+  [])
+
+if test "$BINUTILS" = no || test "$binutils_has_libiberty" = yes
+then
+  AC_MSG_NOTICE([skipping libiberty for binutils])
+  LIBIBERTY=no
+else
+  AC_MSG_CHECKING([for libiberty.a for binutils])
+
+  found_libiberty=no
+  case "$LIBIBERTY" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${LIBIBERTY}/${lib}/libiberty.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libiberty=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  AC_MSG_RESULT([$found_libiberty])
+
+  if test "$found_libiberty" != yes ; then
+    AC_MSG_ERROR([unable to find libiberty.a in binutils or libiberty])
+  fi
+fi
 
 
 #-------------------------------------------------
@@ -3301,6 +3284,8 @@ AC_SUBST([XERCES_LIB])
 # Option: --with-zlib=PATH
 #-------------------------------------------------
 
+# Zlib is used both independently and for binutils.
+
 ZLIB="$default_zlib_prefix"
 
 AC_ARG_WITH([zlib],
@@ -3342,6 +3327,34 @@ case "$ZLIB" in
 esac
 
 AC_MSG_RESULT([$ZLIB])
+
+# If binutils doesn't include libz.a, then try here.
+if test "$BINUTILS" = no || test "$binutils_has_libz" = yes
+then
+  AC_MSG_NOTICE([skipping libz for binutils])
+else
+  AC_MSG_CHECKING([for libz.a for binutils])
+
+  found_libz=no
+  case "$ZLIB" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${ZLIB}/${lib}/libz.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libz=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  AC_MSG_RESULT([$found_libz])
+
+  if test "$found_libz" != yes ; then
+    AC_MSG_ERROR([unable to find libz.a in binutils or zlib])
+  fi
+fi
 
 AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
@@ -4302,11 +4315,12 @@ AC_MSG_NOTICE([  MPIF77:    '${MPIF77}'])
 AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  binutils:     ${BINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libelf:       ${LIBELF}])
+AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
