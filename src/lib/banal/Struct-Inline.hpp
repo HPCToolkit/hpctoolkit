@@ -368,8 +368,9 @@ bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line,
+        DeviceType device_type = DEVICE_NONE,
 	      bool is_call = false, bool is_sink = false,
-        VMA target = 0, DeviceType device_type = DEVICE_NONE);
+        VMA target = 0);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

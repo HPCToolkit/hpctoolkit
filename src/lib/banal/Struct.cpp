@@ -1337,8 +1337,8 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
-      addStmtToTree(root, strTab, vma, len, filenm, line,
-		    is_call, is_sink, target, device_type);
+      addStmtToTree(root, strTab, vma, len, filenm, line, device_type,
+		    is_call, is_sink, target);
     }
     else {
       addStmtToTree(root, strTab, vma, len, filenm, line, device_type);

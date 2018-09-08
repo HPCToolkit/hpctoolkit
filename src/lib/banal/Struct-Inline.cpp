@@ -453,8 +453,8 @@ StmtMap::insert(StmtInfo * sinfo)
 //
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line,
-	      bool is_call, bool is_sink, VMA target, DeviceType device_type)
+	      int len, string & filenm, SrcFile::ln line, DeviceType device_type,
+	      bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;
   TreeNode *node;
