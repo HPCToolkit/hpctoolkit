@@ -804,6 +804,8 @@ if OPT_ENABLE_CUPTI
   libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
   libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
   libhpcrun_la_LDFLAGS  += $(CUPTI_LD_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
 
 if OPT_PAPI_CUPTI

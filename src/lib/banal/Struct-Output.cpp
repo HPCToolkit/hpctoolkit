@@ -100,6 +100,7 @@ static const char * hpcstruct_xml_head =
 // temp options to control call <C> tags and target (t) field
 #define ENABLE_CALL_TAGS     1
 #define ENABLE_TARGET_FIELD  1
+#define ENABLE_DEVICE_FIELD  1
 
 //----------------------------------------------------------------------
 
@@ -615,6 +616,11 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     if (! sinfo->is_sink && ENABLE_TARGET_FIELD) {
       *os << " t=\"0x" << hex << sinfo->target << dec << "\"";
+    }
+    if (ENABLE_DEVICE_FIELD) {
+      if (sinfo->device_type == DEVICE_NVIDIA) {
+        *os << " d=\"NVIDIA\"";
+      }
     }
     *os << "/>\n";
   }
