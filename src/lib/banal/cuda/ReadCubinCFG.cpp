@@ -129,7 +129,7 @@ readCubinCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 ) 
 {
-  static bool nvdisasm_usable =  test_nvdisasm();
+  static bool nvdisasm_usable = test_nvdisasm();
   
   if (!nvdisasm_usable) return false; 
 
@@ -152,29 +152,18 @@ readCubinCFG
 
   parseDotCFG(dot, functions);
 
-  // relocate instructions according to the 
+  // Relocate instructions according to the 
   // relocated symbols in the_symtab
   relocateInstructions(the_symtab, functions);
 
   CFGFactory *cfg_fact = new CudaCFGFactory(functions);
 
   if (cfg_fact != NULL) {
-
     *code_src = new CudaCodeSource(functions, the_symtab); 
-
     *code_obj = new CodeObject(*code_src, cfg_fact);
+
     (*code_obj)->parse();
-
-    //delete cfg_fact;
   }
-
-//#if 1
-//  for (auto *function : functions) {
-//    cout << "cuda function: " << function->name << " " << 
-//      std::hex << (void *) function << std::dec << endl;
-//    delete function;
-//  }
-//#endif
 
   return true;
 }

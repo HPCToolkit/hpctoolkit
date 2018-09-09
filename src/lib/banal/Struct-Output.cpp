@@ -73,6 +73,7 @@
 #include <ostream>
 #include <string>
 
+#include <lib/isa/ISA.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
@@ -97,7 +98,7 @@ static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
 
-// temp options to control call <C> tags and target (t) field
+// temp options to control call <C> tags, target (t) field, and device (d) field
 #define ENABLE_CALL_TAGS     1
 #define ENABLE_TARGET_FIELD  1
 #define ENABLE_DEVICE_FIELD  1
@@ -136,6 +137,33 @@ namespace Output {
 typedef map <long, TreeNode *> AlienMap;
 typedef map <long, VMAIntervalSet *> LineNumberMap;
 
+
+struct CallInfo {
+  DeviceType device_type;
+  VMA target;
+  bool is_sink;
+
+  CallInfo() : device_type(DEVICE_NONE), target(0), is_sink(false) {}
+
+  CallInfo(DeviceType device, VMA target, bool is_sink) :
+    device_type(device), target(target), is_sink(is_sink) {}
+
+  bool operator < (CallInfo &other) const {
+    if (device_type < other.device_type) {
+      return true;
+    } else if (target < other.target) {
+      return true;
+    } else if (is_sink < other.is_sink) {
+      return true;
+    }
+    return false;
+  }
+};
+
+
+typedef map <long, CallInfo> LineNumberCallMap;
+
+
 class ScopeInfo {
 public:
   long  file_index;
@@ -165,16 +193,6 @@ doLoopList(ostream *, int, TreeNode *, HPC::StringTable &);
 static void
 locateTree(TreeNode *, ScopeInfo &, HPC::StringTable &, bool = false);
 
-//----------------------------------------------------------------------
-
-// Sort StmtInfo by line number and then by vma.
-static bool
-StmtLessThan(StmtInfo * s1, StmtInfo * s2)
-{
-  if (s1->line_num < s2->line_num) { return true; }
-  if (s1->line_num > s2->line_num) { return false; }
-  return s1->vma < s2->vma;
-}
 
 //----------------------------------------------------------------------
 
@@ -553,7 +571,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 
 // Print the terminal statements at 'node' as <S> and <C> tags.
 // Non-call <S> stmts combine their vma ranges by line number.
-// Call <C> stmts are always single instructions and never merged.
+// Call <C> stmts will override Non-call <S> by line number.
 //
 // Any guard alien, if needed, has already been printed.
 //
@@ -561,68 +579,74 @@ static void
 doStmtList(ostream * os, int depth, TreeNode * node)
 {
   LineNumberMap lineMap;
-  vector <StmtInfo *> callVec;
+  LineNumberCallMap callMap;
 
-  // split StmtInfo's into call and non-call sets.  the non-call stmts
-  // with the same line number are merged into a single vma set.  call
-  // stmts are never merged.
+  // stmts with the same line number are merged into a single vma set.
+  // call stmts are recorded into a map.
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
     StmtInfo * sinfo = sit->second;
 
-    if (sinfo->is_call && ENABLE_CALL_TAGS) {
-      callVec.push_back(sinfo);
+    VMAIntervalSet * vset = NULL;
+    auto mit = lineMap.find(sinfo->line_num);
+
+    if (mit != lineMap.end()) {
+      vset = mit->second;
     }
     else {
-      VMAIntervalSet * vset = NULL;
-      auto mit = lineMap.find(sinfo->line_num);
+      vset = new VMAIntervalSet;
+      lineMap[sinfo->line_num] = vset;
+    }
+    vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
 
-      if (mit != lineMap.end()) {
-	vset = mit->second;
+    if (sinfo->is_call && ENABLE_CALL_TAGS) {
+      if (callMap.find(sinfo->line_num) == callMap.end()) {
+        CallInfo call_info(sinfo->device_type, sinfo->target, sinfo->is_sink);
+        callMap.emplace(sinfo->line_num, std::move(call_info));
       }
       else {
-	vset = new VMAIntervalSet;
-	lineMap[sinfo->line_num] = vset;
+        // If one of the instructions is sink, then the call line maps to a sink
+        if (callMap[sinfo->line_num].is_sink == false) {
+          callMap[sinfo->line_num].is_sink = sinfo->is_sink;
+        }
       }
-      vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
     }
   }
 
-  std::sort(callVec.begin(), callVec.end(), StmtLessThan);
-
-  // print non-call vma set as a single <S> stmt
   for (auto mit = lineMap.begin(); mit != lineMap.end(); ++mit) {
     long line = mit->first;
     VMAIntervalSet * vset = mit->second;
 
-    doIndent(os, depth);
-    *os << "<S"
-	<< INDEX
-	<< NUMBER("l", line)
-	<< " v=\"" << vset->toString() << "\""
-	<< "/>\n";
+    // print each call stmt as a separate <C> tag
+    if (ENABLE_CALL_TAGS && callMap.find(line) != callMap.end()) {
+      doIndent(os, depth);
+      *os << "<C"
+        << INDEX
+        << NUMBER("l", line)
+        << " v=\"" << vset->toString() << "\"";
+
+      CallInfo call_info = callMap[line];
+
+      if (!call_info.is_sink && ENABLE_TARGET_FIELD) {
+        *os << " t=\"0x" << hex << call_info.target << dec << "\"";
+      }
+
+      if (ENABLE_DEVICE_FIELD) {
+        if (call_info.device_type == DEVICE_NVIDIA) {
+          *os << " d=\"NVIDIA\"";
+        }
+      }
+      *os << "/>\n";
+    }
+    else { // print non-call vma set as a single <S> stmt
+      doIndent(os, depth);
+      *os << "<S"
+        << INDEX
+        << NUMBER("l", line)
+        << " v=\"" << vset->toString() << "\""
+        << "/>\n";
+    }
 
     delete vset;
-  }
-
-  // print each call stmt as a separate <C> tag
-  for (uint i = 0; i < callVec.size(); i++) {
-    StmtInfo * sinfo = callVec[i];
-
-    doIndent(os, depth);
-    *os << "<C"
-	<< INDEX
-	<< NUMBER("l", sinfo->line_num)
-	<< VRANGE(sinfo->vma, sinfo->len);
-
-    if (! sinfo->is_sink && ENABLE_TARGET_FIELD) {
-      *os << " t=\"0x" << hex << sinfo->target << dec << "\"";
-    }
-    if (ENABLE_DEVICE_FIELD) {
-      if (sinfo->device_type == DEVICE_NVIDIA) {
-        *os << " d=\"NVIDIA\"";
-      }
-    }
-    *os << "/>\n";
   }
 }
 
