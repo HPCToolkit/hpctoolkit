@@ -422,7 +422,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       libunw_finalize_cursor(cursor);
     }
 
-    if (unw_res == STEP_STOP || unw_res == STEP_ERROR) {
+    if (unw_res == STEP_STOP || unw_res == STEP_OK) {
       return unw_res;
     }
   }
