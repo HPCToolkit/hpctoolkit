@@ -102,8 +102,8 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
 }
 
-step_state
-libunw_find_step(hpcrun_unw_cursor_t* cursor)
+bool
+libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
 {
   // starting pc
   unw_cursor_t *unw_cursor = &(cursor->uc);
@@ -116,15 +116,9 @@ libunw_find_step(hpcrun_unw_cursor_t* cursor)
   cursor->pc_unnorm = pc;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
   compute_normalized_ips(cursor);
-  if (!found)
-    {
-      TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
-      cursor->libunw_status = LIBUNW_FAIL;
-      return STEP_ERROR;
-    }
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   cursor->libunw_status = LIBUNW_OK;
-  return STEP_OK;
+  return found;
 }
 
 step_state
@@ -142,16 +136,15 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
   // unwind stops.
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
-  if (cursor->fence != FENCE_NONE)
-    {
-      TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
-      return STEP_STOP;
-    }
+  if (cursor->fence != FENCE_NONE) {
+    TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
+    return STEP_STOP;
+  }
 
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
   if (!uw) {
-      TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
-      return STEP_ERROR;
+    TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+    return STEP_ERROR;
   }
   uwi_t *uwi = bitree_uwi_rootval(uw);
   unw_apply_reg_state(unw_cursor, uwi->recipe);
@@ -169,7 +162,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
 
   if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
-    libunw_find_step(cursor);
+    libunw_finalize_cursor(cursor);
   }
 }
 
@@ -210,7 +203,7 @@ btuwi_status_t
 libunw_build_intervals(char *beg_insn, unsigned int len)
 {
   unw_context_t uc;
-  unw_getcontext(&uc);
+  (void) unw_getcontext(&uc);
   unw_cursor_t c;
   unw_init_local2(&c, &uc, UNW_INIT_SIGNAL_FRAME);
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
@@ -247,9 +240,8 @@ step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state result = libunw_take_step(cursor);
-  if (result != STEP_OK) 
-    return result;
-  if (STEP_OK != libunw_find_step(cursor))
-    return STEP_ERROR;
-  return (STEP_OK);
+  if (result == STEP_OK) {
+    libunw_finalize_cursor(cursor);
+  }
+  return result;
 }
