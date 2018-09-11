@@ -109,9 +109,13 @@ relocateInstructions
   for (auto *symbol : symbols) {
     for (auto *function : functions) {
       if (function->name == symbol->getMangledName()) {
-        for (auto *block : function->blocks) {
-          for (auto *inst : block->insts) {
-            inst->offset += symbol->getOffset();
+        if (function->blocks.size() > 0 &&
+          function->blocks[0]->insts.size() > 0) {
+          auto begin_offset = function->blocks[0]->insts[0]->offset;
+          for (auto *block : function->blocks) {
+            for (auto *inst : block->insts) {
+              inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
+            }
           }
         }
       }

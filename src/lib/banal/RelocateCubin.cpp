@@ -461,8 +461,8 @@ relocateSymbolsHelper
 	case STT_FUNC:
 	  {
 	    int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
-#if DEBUG_CUBIN_RELOCATION
 	    Elf64_Addr addr_signed = sym.st_value;
+#if DEBUG_CUBIN_RELOCATION
 	    std::cout << "elf symbol " << elf_strptr(elf, shdr->sh_link, sym.st_name)
 		      << " value=0x" << std::hex << addr_signed
 		      << " binding=" << binding_name(&sym)
@@ -472,9 +472,9 @@ relocateSymbolsHelper
 #endif
 	    // update each function symbol's offset to match the new offset of the
 	    // text section that contains it.
-	    sym.st_value = (Elf64_Addr) s_offset;
+	    sym.st_value = (Elf64_Addr) s_offset + addr_signed;
 	    gelf_update_sym(datap, i, &sym);
-	    (*symbol_values)[i] = s_offset;
+	    (*symbol_values)[i] = s_offset + addr_signed;
 	  }
 	default: break;
 	}
