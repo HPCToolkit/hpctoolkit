@@ -49,14 +49,7 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
             ret_target_block = _block_filter[target->block->id];
           }
 
-          Edge *ret_edge = NULL;
-          if (target->type == CudaParse::CALL) {
-            ret_edge = new Edge(ret_block, ret_target_block, CALL);
-          } else if (target->type == CudaParse::FALLTHROUGH) { 
-            ret_edge = new Edge(ret_block, ret_target_block, FALLTHROUGH);
-          } else {  // TODO(Keren): Add more edge types
-            ret_edge = new Edge(ret_block, ret_target_block, DIRECT);
-          }
+          Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);
           ret_edge->install();
           edges_.add(*ret_edge);
         }

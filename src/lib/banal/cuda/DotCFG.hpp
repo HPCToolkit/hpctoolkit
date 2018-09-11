@@ -8,6 +8,8 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+// dyninst
+#include <CFG.h>
 
 namespace CudaParse {
 
@@ -85,17 +87,7 @@ struct Inst {
 struct Block;
 
 // TODO(Keren): consistent with dyninst
-enum TargetType {
-  CALL = 0,
-  COND_TAKEN,
-  COND_NOT_TAKEN,
-  INDIRECT,
-  DIRECT,
-  FALLTHROUGH,
-  CATCH,
-  CALL_FT,
-  RET
-};
+typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 
 struct Target {
   Inst *inst;
