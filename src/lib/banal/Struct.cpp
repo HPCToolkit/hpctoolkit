@@ -424,8 +424,13 @@ makeStructure(InputFile & inputFile,
       code_obj = new CodeObject(code_src);
       code_obj->parse();
     } else {
+#if 1
       cuda_arch = elfFile->getArch();
       readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
+#else
+      code_src = new SymtabCodeSource(symtab);
+      code_obj = new CodeObject(code_src);
+#endif
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -441,22 +446,22 @@ makeStructure(InputFile & inputFile,
 
       // process the groups within one file
       for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
-        GroupInfo * ginfo = git->second;
+	GroupInfo * ginfo = git->second;
 
-        // make the inline tree for all funcs in one group
-        doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+	// make the inline tree for all funcs in one group
+	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
 
-        for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-          ProcInfo * pinfo = pit->second;
+	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+	  ProcInfo * pinfo = pit->second;
 
-          if (! pinfo->gap_only) {
-            Output::printProc(outFile, gapsFile, gaps_filenm,
-              finfo, ginfo, pinfo, strTab);
-          }
+	  if (! pinfo->gap_only) {
+	    Output::printProc(outFile, gapsFile, gaps_filenm,
+			      finfo, ginfo, pinfo, strTab);
+	  }
 
-          delete pinfo->root;
-          pinfo->root = NULL;
-        }
+	  delete pinfo->root;
+	  pinfo->root = NULL;
+	}
       }
       Output::printFileEnd(outFile, finfo);
     }
