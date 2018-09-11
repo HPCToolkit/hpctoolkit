@@ -73,6 +73,7 @@
 #include <ostream>
 #include <string>
 
+#include <lib/isa/ISA.hpp> 
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
@@ -97,7 +98,7 @@ static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
 
-// temp options to control call <C> tags and target (t) field
+// temp options to control call <C> tags, target (t) field, and device (d) field 
 #define ENABLE_CALL_TAGS     1
 #define ENABLE_TARGET_FIELD  1
 #define ENABLE_DEVICE_FIELD  1
