@@ -117,7 +117,7 @@ libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
   compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
-  cursor->libunw_status = LIBUNW_OK;
+  cursor->libunw_status = found ? LIBUNW_READY : LIBUNW_UNAVAIL;
   return found;
 }
 

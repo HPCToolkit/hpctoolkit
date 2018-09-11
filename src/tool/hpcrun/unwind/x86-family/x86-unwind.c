@@ -244,7 +244,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
   save_registers(cursor, pc, bp, sp, NULL);
 
-  if (cursor->libunw_status == LIBUNW_OK)
+  if (cursor->libunw_status == LIBUNW_READY)
     return;
 
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
@@ -400,7 +400,6 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
   LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)sp;
   LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)bp;
   unw_init_local(&cursor->uc, &uc);
-  cursor->libunw_status = LIBUNW_OK;
   return libunw_finalize_cursor(cursor);
 }
 
@@ -409,7 +408,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   step_state unw_res;
 
-  if (cursor->libunw_status == LIBUNW_OK) {
+  if (cursor->libunw_status == LIBUNW_READY) {
     unw_res = libunw_take_step(cursor);
 
     void *pc, **bp, *sp;
