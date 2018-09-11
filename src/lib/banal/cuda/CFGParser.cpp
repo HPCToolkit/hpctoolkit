@@ -213,6 +213,8 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
         }
       }
       std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
+      int begin_offset = function->blocks[0]->insts[0]->offset;
+      function->begin_offset = begin_offset == 8 ? 0 : begin_offset;
       functions.push_back(function);
     }
   }

@@ -143,8 +143,11 @@ struct Function {
   std::vector<Block *> blocks;
   size_t id;
   std::string name;
+  int begin_offset;
+  int address;
 
-  Function(size_t id, const std::string &name) : id(id), name(name) {}
+  Function(size_t id, const std::string &name) : id(id), name(name),
+    begin_offset(0), address(0) {}
 
   ~Function() {
     for (auto *block : blocks) {

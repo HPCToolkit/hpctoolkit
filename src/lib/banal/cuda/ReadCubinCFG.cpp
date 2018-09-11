@@ -98,7 +98,7 @@ parseDotCFG
 
 
 static void
-relocateInstructions
+relocateFunctions
 (
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  std::vector<CudaParse::Function *> &functions
@@ -109,15 +109,13 @@ relocateInstructions
   for (auto *symbol : symbols) {
     for (auto *function : functions) {
       if (function->name == symbol->getMangledName()) {
-        if (function->blocks.size() > 0 &&
-          function->blocks[0]->insts.size() > 0) {
-          auto begin_offset = function->blocks[0]->insts[0]->offset;
-          for (auto *block : function->blocks) {
-            for (auto *inst : block->insts) {
-              inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-            }
+        auto begin_offset = function->begin_offset;
+        for (auto *block : function->blocks) {
+          for (auto *inst : block->insts) {
+            inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
           }
         }
+        function->address = symbol->getOffset();
       }
     }
   }
@@ -158,7 +156,7 @@ readCubinCFG
 
   // Relocate instructions according to the 
   // relocated symbols in the_symtab
-  relocateInstructions(the_symtab, functions);
+  relocateFunctions(the_symtab, functions);
 
   CFGFactory *cfg_fact = new CudaCFGFactory(functions);
 
