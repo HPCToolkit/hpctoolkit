@@ -180,14 +180,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
     unw_cursor_t *unw_cursor = &(cursor->uc);
     if (unw_step(unw_cursor)) {
       cursor->libunw_status = LIBUNW_OK;
-      void *pc;
-      unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
-      cursor->pc_unnorm = pc;
-      void *func_start_pc =  (void*) cursor->unwr_info.interval.start;
-      load_module_t* lm = cursor->unwr_info.lm;
-      cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
-      cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
-      state = STEP_OK;
+      state = libunw_find_step(cursor);
     }
   }
   return state;
