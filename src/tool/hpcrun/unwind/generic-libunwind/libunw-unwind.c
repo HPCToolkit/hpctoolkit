@@ -174,8 +174,7 @@ step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state state = STEP_ERROR;
-  if (cursor->libunw_status == LIBUNW_READY)
-    state = libunw_unw_step(cursor);
+  state = libunw_unw_step(cursor);
   if (state == STEP_ERROR) {
     unw_cursor_t *unw_cursor = &(cursor->uc);
     if (unw_step(unw_cursor)) {
