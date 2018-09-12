@@ -402,7 +402,7 @@ StmtMap::insert(StmtInfo * sinfo)
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
     info = new StmtInfo(vma, end_vma - vma, file, base, line,
-			sinfo->is_call, sinfo->is_sink, sinfo->target, sinfo->device_type);
+			sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
   else if (left->base_index == base && left->line_num == line
@@ -420,7 +420,7 @@ StmtMap::insert(StmtInfo * sinfo)
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
       info = new StmtInfo(vma, end_vma - vma, file, base, line,
-			  sinfo->is_call, sinfo->is_sink, sinfo->target, sinfo->device_type);
+        sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }
@@ -453,7 +453,7 @@ StmtMap::insert(StmtInfo * sinfo)
 //
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line, DeviceType device_type,
+	      int len, string & filenm, SrcFile::ln line, string & device,
 	      bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;
@@ -481,7 +481,7 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
   // insert statement at this level
   long file = strTab.str2index(filenm);
   long base = strTab.str2index(FileUtil::basename(filenm.c_str()));
-  StmtInfo info(vma, len, file, base, line, is_call, is_sink, target, device_type);
+  StmtInfo info(vma, len, file, base, line, device, is_call, is_sink, target);
 
   node->stmtMap.insert(&info);
 }

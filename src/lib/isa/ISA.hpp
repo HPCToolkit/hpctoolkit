@@ -75,12 +75,6 @@
 
 //*************************** Forward Declarations ***************************
 
-enum DeviceType {
-  DEVICE_NONE = 0,
-  DEVICE_NVIDIA = 1,
-  DEVICE_ARM = 2
-};
-
 // A one-element decoding cache.  Used to reduce the slowness
 // of multiple calls to the disassemblers (especially the GNU ones).
 class DecodingCache {

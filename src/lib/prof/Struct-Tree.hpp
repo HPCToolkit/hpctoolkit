@@ -1796,13 +1796,13 @@ public:
   target(VMA x)
   { m_target = x; }
 
-  DeviceType
-  device_type()
-  { return m_device_type; }
+  std::string
+  device()
+  { return m_device; }
 
   void
-  device_type(DeviceType type)
-  { m_device_type = type; }
+  device(const std::string &device)
+  { m_device = device; }
 
   // --------------------------------------------------------
   // Output
@@ -1817,7 +1817,7 @@ public:
 
 private:
   StmtType m_stmt_type;
-  DeviceType m_device_type;
+  std::string m_device;
   VMA m_target;
   int m_sortId;
 };

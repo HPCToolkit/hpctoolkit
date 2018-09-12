@@ -465,7 +465,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     getLineAttr(begLn, endLn, attributes);
 
     // for now insist that line range include one line (since we don't nest S)
-    DIAG_Assert(begLn == endLn, "S line range [" << begLn << ", " << endLn << "]");
+    DIAG_Assert(begLn == endLn, "C line range [" << begLn << ", " << endLn << "]");
 
     string vma = getAttr(attributes, attrVMA);
 
@@ -485,9 +485,7 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
       stmtNode->target((SrcFile::ln)StrUtil::toLong(target));
     }
     if (!device.empty()) {
-      if (device == "NVIDIA") {
-        stmtNode->device_type(DEVICE_NVIDIA);
-      }
+      stmtNode->device(device);
     }
     string node_id = getAttr(attributes, attrId);
     stmtNode->m_origId = atoi(node_id.c_str());

@@ -1304,10 +1304,10 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
   block->getInsns(imap);
 
   int len;
-  DeviceType device_type = DEVICE_NONE;
+  std::string device;
 
   if (cuda_arch > 0) {
-    device_type = DEVICE_NVIDIA;
+    device= "NVIDIA sm_" + std::to_string(cuda_arch);
     if (cuda_arch < 70) {
       len = 8;
     } else {
@@ -1337,11 +1337,11 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
-      addStmtToTree(root, strTab, vma, len, filenm, line, device_type,
-		    is_call, is_sink, target);
+      addStmtToTree(root, strTab, vma, len, filenm, line, 
+		    device, is_call, is_sink, target);
     }
     else {
-      addStmtToTree(root, strTab, vma, len, filenm, line, device_type);
+      addStmtToTree(root, strTab, vma, len, filenm, line, device);
     }
   }
 
@@ -1393,14 +1393,16 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
         SrcFile::ln line = svec[0]->getLine();
         VMA end = std::min(((VMA) svec[0]->endAddr()), end_gap);
 
-        addStmtToTree(root, strTab, vma, end - vma, filenm, line);
+        std::string device;
+        addStmtToTree(root, strTab, vma, end - vma, filenm, line, device);
         vma = end;
       }
       else {
         // fixme: could be better at finding end of range
         VMA end = std::min(vma + 4, end_gap);
 
-        addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num);
+        std::string device;
+        addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num, device);
         vma = end;
       }
     }

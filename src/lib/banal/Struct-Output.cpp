@@ -619,9 +619,7 @@ doStmtList(ostream * os, int depth, TreeNode * node)
       *os << " t=\"0x" << hex << sinfo->target << dec << "\"";
     }
     if (ENABLE_DEVICE_FIELD) {
-      if (sinfo->device_type == DEVICE_NVIDIA) {
-        *os << " d=\"NVIDIA\"";
-      }
+      *os << " d=\"" << sinfo->device << "\"";
     }
     *os << "/>\n";
   }

@@ -204,12 +204,13 @@ public:
   VMA   target;
   bool  is_call;
   bool  is_sink;
-  DeviceType device_type;
+  std::string device;
 
   // constructor by index
   StmtInfo(VMA vm, int ln, long file, long base, long line,
+     const std::string & device_tag,
 	   bool call = false, bool sink = false,
-     VMA targ = 0, DeviceType device = DEVICE_NONE)
+     VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -219,14 +220,15 @@ public:
     target = targ;
     is_call = call;
     is_sink = sink;
-    device_type = device;
+    device = device_tag;
   }
 
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
 	   const std::string & filenm, long line,
+     const std::string & device_tag,
 	   bool call = false, bool sink = false,
-     VMA targ = 0, DeviceType device = DEVICE_NONE)
+     VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -236,7 +238,7 @@ public:
     target = targ;
     is_call = call;
     is_sink = sink;
-    device_type = device;
+    device = device_tag;
   }
 
   // returns: true if vma is contained within this range
@@ -368,7 +370,7 @@ bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
 	      int len, string & filenm, SrcFile::ln line,
-        DeviceType device_type = DEVICE_NONE,
+        std::string & device,
 	      bool is_call = false, bool is_sink = false,
         VMA target = 0);
 
