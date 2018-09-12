@@ -92,6 +92,17 @@
 // private functions
 //************************************************
 
+static void *
+libunw_cursor_get_pc(hpcrun_unw_cursor_t* cursor)
+{
+  unw_word_t tmp;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
+
+  return (void *) tmp;
+}
+
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
@@ -105,14 +116,7 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 bool
 libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
 {
-  // starting pc
-  unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  // update for new pc
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
+  void *pc = libunw_cursor_get_pc(cursor);
   cursor->pc_unnorm = pc;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
   compute_normalized_ips(cursor);
@@ -124,18 +128,13 @@ libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
 step_state
 libunw_take_step(hpcrun_unw_cursor_t* cursor)
 {
-  // starting pc
-  unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
+  void *pc = libunw_cursor_get_pc(cursor); // pc after step
 
   // full unwind: stop at libmonitor fence.  this is where we hope the
   // unwind stops.
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
+
   if (cursor->fence != FENCE_NONE) {
     TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
     return STEP_STOP;
@@ -146,8 +145,10 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
     TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
     return STEP_ERROR;
   }
+
   uwi_t *uwi = bitree_uwi_rootval(uw);
-  unw_apply_reg_state(unw_cursor, uwi->recipe);
+  unw_apply_reg_state(&(cursor->uc), uwi->recipe);
+
   return STEP_OK;
 }
 
@@ -240,7 +241,7 @@ step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state result = libunw_take_step(cursor);
-  if (result == STEP_OK) {
+  if (result != STEP_ERROR) {
     libunw_finalize_cursor(cursor);
   }
   return result;
