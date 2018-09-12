@@ -390,7 +390,7 @@ vrecord(void *from, void *to, validation_status vstat)
 }
 
 
-static step_state
+static bool
 hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
 			      void *pc, void **sp, void **bp)
 {
