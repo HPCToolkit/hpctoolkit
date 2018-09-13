@@ -245,7 +245,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
   save_registers(cursor, pc, bp, sp, NULL);
 
-  if (cursor->libunw_status == LIBUNW_OK)
+  if (cursor->libunw_status == LIBUNW_READY)
     return;
 
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
@@ -391,7 +391,7 @@ vrecord(void *from, void *to, validation_status vstat)
 }
 
 
-static step_state
+static bool
 hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
 			      void *pc, void **sp, void **bp)
 {
@@ -401,8 +401,7 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
   LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)sp;
   LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)bp;
   unw_init_local(&cursor->uc, &uc);
-  cursor->libunw_status = LIBUNW_OK;
-  return (libunw_find_step(cursor));
+  return libunw_finalize_cursor(cursor);
 }
 
 step_state
@@ -410,7 +409,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 {
   step_state unw_res;
 
-  if (cursor->libunw_status == LIBUNW_OK) {
+  if (cursor->libunw_status == LIBUNW_READY) {
     unw_res = libunw_take_step(cursor);
 
     void *pc, **bp, *sp;
@@ -419,11 +418,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
     save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
 
-    if (unw_res == STEP_STOP)
-      return (STEP_STOP);
+    if (unw_res == STEP_OK) {
+      libunw_finalize_cursor(cursor);
+    }
 
-    if (libunw_find_step(cursor) == STEP_OK)
-      return (STEP_OK);
+    if (unw_res == STEP_STOP || unw_res == STEP_OK) {
+      return unw_res;
+    }
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){
@@ -506,7 +507,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     }
   }
 
-  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp) == STEP_OK)
+  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
     return STEP_OK;
 
 
@@ -577,7 +578,7 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   void *next_pc  = *next_sp++;
 
   
-  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp) == STEP_OK)
+  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
     return STEP_OK;
 
   // this condition is a weak correctness check. only

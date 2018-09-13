@@ -101,15 +101,16 @@ hpcio_fopen_w(const char* fnm, int overwrite)
 {
   mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
   int fd;
-  FILE* fs = NULL;
+  FILE* fs = NULL; // default return value
 
   if (overwrite == 0) {
     // Open file for writing; fail if the file already exists.  
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
   }
-  else if (overwrite == 1)
-    // Open file for writing; truncate if file already exists.
+  else if (overwrite == 1) {
+    // Open file for writing; truncate if the file already exists.
     fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode);
+  }
   else if (overwrite == 2) {
     // Options specific to /dev/null.
     fd = open(fnm, O_WRONLY);
@@ -118,12 +119,11 @@ hpcio_fopen_w(const char* fnm, int overwrite)
     return NULL; // blech
   }
 
-  if (fd < 0) {
-    return NULL; 
+  if (fd != -1 ) {
+    // open succeeded. create a buffered stream since we 
+    // will perform many small writes.
+    fs = fdopen(fd, "w");
   }
-  
-  // Get a buffered stream since we will be performing many small writes.
-  fs = fdopen(fd, "w");
 
   return fs;
 }

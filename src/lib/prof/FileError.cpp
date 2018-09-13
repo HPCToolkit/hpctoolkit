@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,27 +44,66 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//   FileError.cpp
+//
+// Purpose:
+//   Implementation of interface for error reporting for hpcprof and hpcprof-mpi
+//
+// Description:
+//   Handle error reporting for hpcprof and hpcprof-mpi
+//   
+//
+//***************************************************************************
 
-#ifndef sample_source_datacentric_h
-#define sample_source_datacentric_h
+//***************************************************************************
+// global includes
+//***************************************************************************
 
-/******************************************************************************
- * local includes 
- ******************************************************************************/
+#include <linux/limits.h>
+#include <string.h>
 
-#include <cct/cct.h>
+#include <sstream>
+#include <iostream>
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
 
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
 
-int hpcrun_datacentric_alloc_id(); 
-int hpcrun_datacentric_active();
-void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);
+//***************************************************************************
+// local includes
+//***************************************************************************
 
-#endif // sample_source_memleak_h
+#include "FileError.hpp"
 
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
+void
+hpcrun_getFileErrorString
+(
+  const std::string &fnm, 
+  std::string &errorString
+)
+{
+  char pathbuf[PATH_MAX];
+  char errbuf[1024];
+
+  // grab the error string for the open failure before calling getcwd, 
+  // which may overwrite errno 
+  char *err = strerror_r(errno, errbuf, sizeof(errbuf));
+
+  const char *path = realpath(fnm.c_str(), pathbuf);
+  if (path == NULL) {
+    path = fnm.c_str();
+  }
+
+  std::stringstream ss;
+
+  ss << "'" << path << "', error ='" << err << "'";
+
+  errorString = ss.str();
+}
