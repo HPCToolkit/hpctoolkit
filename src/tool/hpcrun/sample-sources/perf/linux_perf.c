@@ -929,7 +929,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   {
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
+      EEMSG("Failed to initialize the %s event.", event_desc[i].metric_desc->name);
     }
   }
 
