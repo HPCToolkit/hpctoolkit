@@ -133,7 +133,8 @@ prof_abort
 // macros
 //***************************************************************************
 
-#define DBG 0
+#define DBG               0
+#define DBG_DATA          1
 #define MAX_PREFIX_CHARS 64
 
 
@@ -1469,6 +1470,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
   ExprEval eval;
   std::vector<CCT::Stmt*> listMemAccessNodes;
+  DIAG_DevMsgIf(DBG, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1536,12 +1538,13 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       if (typeid(*node_parent) == typeid(CCT::Stmt)) {
         CCT::Stmt *parent_stmt = (CCT::Stmt*) node_parent;
 
-        parent_stmt->id_node_alloc(nodeFmt.id_node_alloc);
-        parent_stmt->start_address(nodeFmt.start_address);
+        parent_stmt->id_node_alloc(nodeFmt.data.id_node_alloc);
+        parent_stmt->start_address(nodeFmt.data.start_address);
 
         listMemAccessNodes.push_back(parent_stmt);
-        DIAG_DevMsgIf(0, "add mem access " << nodeFmt.id_node_alloc <<
-                         " @ " << nodeFmt.start_address);
+        DIAG_DevMsgIf(0, "add mem access " << nodeFmt.data.id_node_alloc <<
+                         " @ " << nodeFmt.data.start_address);
+
       }
     }
     else {
@@ -1579,19 +1582,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
   }
 
-  // specific to data-centric to relink with the node
-  // where the variable is allocated
+  // specific to data-centric to connect with the location of allocation node
+  // theoretically, the allocation occurs in a statement node (leaf node)
 
   for(CCT::Stmt *stmt : listMemAccessNodes) {
     // most allocated node is leaf
-    // start with leaf mark (negative)
+    // start with leaf mark (negative id)
     int id_alloc = - stmt->id_node_alloc();
 
     CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(id_alloc);
 
     if (it != cctNodeMap.end()) {
       stmt->node_alloc(it->second);
-      DIAG_DevMsgIf(0, "id_alloc " << id_alloc <<" -> " << it->second);
+      DIAG_DevMsgIf(0, stmt->id() << " id_alloc " << id_alloc <<" -> " << it->second->id());
 
     } else {
       // try with non-leaf nodes
@@ -1765,6 +1768,8 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   ret = hpcfmt_int8_fwrite(numNodes, fs);
   if (ret != HPCFMT_OK) return HPCFMT_ERR;
 
+  DIAG_DevMsgIf(DBG_DATA, ". write nodes: " << numNodes );
+
   // ------------------------------------------------------------
   // Write each CCT node
   // ------------------------------------------------------------
@@ -1786,6 +1791,9 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     ret = hpcrun_fmt_cct_node_fwrite(&nodeFmt, prof.m_flags, fs);
     if (ret != HPCFMT_OK) return HPCFMT_ERR;
   }
+
+  //debug
+  DIAG_DevMsgIf(DBG_DATA, "CallPath-Profile num nodes: " << numNodes << std::endl);
 
   return HPCFMT_OK;
 }
@@ -1934,9 +1942,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     cpId = nodeId;
   }
 
-  LoadMap::LMId_t lmId = nodeFmt.lm_id;
+  LoadMap::LMId_t lmId = nodeFmt.lm.lm_id;
 
-  VMA lmIP        = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  VMA lmIP        = (VMA)nodeFmt.lm.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
   ushort opIdx    = 0;
   lush_lip_t* lip = NULL;
 
@@ -2084,8 +2092,8 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
-    n_fmt.lm_ip   = 0;
+    n_fmt.lm.lm_id   = Prof::LoadMap::LMId_NULL;
+    n_fmt.lm.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
@@ -2096,8 +2104,8 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
       n_fmt.as_info = n_dyn.assocInfo();
     }
     
-    n_fmt.lm_id = (uint16_t) n_dyn.lmId();
-    n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
+    n_fmt.lm.lm_id = (uint16_t) n_dyn.lmId();
+    n_fmt.lm.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

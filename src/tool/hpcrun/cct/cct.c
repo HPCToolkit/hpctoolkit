@@ -308,20 +308,20 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
       memcpy(&(tmp->lip), &(addr->lip), sizeof(lush_lip_t));
     }
   }
-  tmp->lm_id = (addr->ip_norm).lm_id;
+  tmp->lm.lm_id = (addr->ip_norm).lm_id;
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
+  tmp->lm.lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
   tmp->node_type = node->node_type;
 
   // -------------------------
   // datacentric
   // -------------------------
-  tmp->id_node_alloc = 0;
-  tmp->start_address = 0;
-
   if (hpcrun_fmt_is_allocation_type(node->node_type)) {
+
+    tmp->data.id_node_alloc = 0;
+    tmp->data.start_address = 0;
 
     // for node allocation, we add the allocation information
     // if the node is dynamic allocation, then we point to the node
@@ -330,14 +330,14 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
     // if the node is stataic allocation, then we mark with DATA_STATIC_CONTEXT
     //   since there is no information of location of the node
 
-    tmp->start_address = node->var.start_address;
+    tmp->data.start_address = node->var.start_address;
 
     uint32_t id_alloc = 0;
 
     if (!hpcrun_cct_var_static(node)) {
       id_alloc = node->var.allocation_node->persistent_id;
     }
-    tmp->id_node_alloc = id_alloc;
+    tmp->data.id_node_alloc = id_alloc;
   }
 
   // -------------------------
