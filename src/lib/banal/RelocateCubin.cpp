@@ -69,7 +69,7 @@
 
 #include <assert.h>
 #include <string.h>
-
+#include <algorithm>
 
 
 //******************************************************************************
@@ -451,33 +451,64 @@ relocateSymbolsHelper
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = new Elf_SymbolVector(nsymbols);
+
+    // Update symbol offsets
     for (int i = 0; i < nsymbols; i++) {
       GElf_Sym sym;
       GElf_Sym *symp = gelf_getsym(datap, i, &sym);
       if (symp) { // symbol properly read
-	int symtype = GELF_ST_TYPE(sym.st_info);
-	if (sym.st_shndx == SHN_UNDEF) continue;
-	switch(symtype) {
-	case STT_FUNC:
-	  {
-	    int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
-	    Elf64_Addr addr_signed = sym.st_value;
+        int symtype = GELF_ST_TYPE(sym.st_info);
+        if (sym.st_shndx == SHN_UNDEF) continue;
+        switch(symtype) {
+          case STT_FUNC:
+            {
+              int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
+              Elf64_Addr addr_signed = sym.st_value;
 #if DEBUG_CUBIN_RELOCATION
-	    std::cout << "elf symbol " << elf_strptr(elf, shdr->sh_link, sym.st_name)
-		      << " value=0x" << std::hex << addr_signed
-		      << " binding=" << binding_name(&sym)
-		      << " section=" << std::dec << section_index(sym.st_shndx)
-		      << " section offset=0x" << std::hex << s_offset
-		      << std::endl;
+              std::cout << "elf symbol " << elf_strptr(elf, shdr->sh_link, sym.st_name)
+                << " value=0x" << std::hex << addr_signed
+                << " binding=" << binding_name(&sym)
+                << " section=" << std::dec << section_index(sym.st_shndx)
+                << " section offset=0x" << std::hex << s_offset
+                << std::endl;
 #endif
-	    // update each function symbol's offset to match the new offset of the
-	    // text section that contains it.
-	    sym.st_value = (Elf64_Addr) s_offset + addr_signed;
-	    gelf_update_sym(datap, i, &sym);
-	    (*symbol_values)[i] = s_offset + addr_signed;
-	  }
-	default: break;
-	}
+              // update each function symbol's offset to match the new offset of the
+              // text section that contains it.
+              sym.st_value = (Elf64_Addr) s_offset + addr_signed;
+              gelf_update_sym(datap, i, &sym);
+              (*symbol_values)[i] = s_offset + addr_signed;
+            }
+          default: break;
+        }
+      }
+    }
+
+    // Update symbol size
+    // We assume that local function sizes are always correct,
+    // only need to update global functions
+    for (int i = 0; i < nsymbols; i++) {
+      GElf_Sym sym;
+      GElf_Sym *symp = gelf_getsym(datap, i, &sym);
+      if (symp) { // symbol properly read
+        // sort functions that are in the same section
+        int sym_bind = GELF_ST_BIND(sym.st_info);
+        if (sym_bind == STB_GLOBAL) {
+          std::vector<int64_t> offsets;
+          for (int j = 0; j < nsymbols; ++j) {
+            GElf_Sym nsym;
+            GElf_Sym *nsymp = gelf_getsym(datap, j, &nsym);
+            if (nsymp) {
+              if (GELF_ST_TYPE(nsym.st_info) == STT_FUNC && nsym.st_shndx == sym.st_shndx) {
+                offsets.push_back((*symbol_values)[j]);
+              }
+            }
+          }
+          if (offsets.size() > 1) {
+            std::sort(offsets.begin(), offsets.end());
+            sym.st_size = offsets[1] - offsets[0];
+            gelf_update_sym(datap, i, &sym);
+          }
+        }
       }
     }
   }

@@ -130,6 +130,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
+#define NUM_GPU_ENTRY_INSTRUCTIONS 4
 
 //******************************************************************************
 // variables
@@ -423,14 +424,10 @@ makeStructure(InputFile & inputFile,
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
+      cuda_arch = 0;
     } else {
-#if 1
       cuda_arch = elfFile->getArch();
       readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
-#else
-      code_src = new SymtabCodeSource(symtab);
-      code_obj = new CodeObject(code_src);
-#endif
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -565,6 +562,27 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
 {
   svec.clear();
 
+  if (cuda_arch > 0) {
+    int len;
+    if (cuda_arch < 70) {
+      len = 8;
+    } else {
+      len = 16;
+    }
+
+    Module * mod = sym_func->getModule();
+    mod->getSourceLines(svec, vma);
+
+    for (size_t i = vma + len; i < end && i < vma + len * NUM_GPU_ENTRY_INSTRUCTIONS; i += len) {
+      StatementVector tmp;
+      mod->getSourceLines(tmp, i);
+      if (tmp[0]->getFile() == svec[0]->getFile() && tmp[0]->getLine() < svec[0]->getLine()) {
+        svec[0] = tmp[0];
+      }
+    }
+    return;
+  }
+
   // try a full module lookup first
   getStatement(svec, vma, sym_func);
   if (! svec.empty()) {
@@ -659,6 +677,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
        << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
+
 
 // makeSkeleton -- the new buildLMSkeleton
 //
@@ -794,8 +813,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	getProcLineMap(pvec, vma, sym_end, sym_func);
 
 	if (! pvec.empty()) {
-	  parse_filenm = pvec[0]->getFile();
-	  parse_line = pvec[0]->getLine();
+    parse_filenm = pvec[0]->getFile();
+    parse_line = pvec[0]->getLine();
 	  RealPathMgr::singleton().realpath(parse_filenm);
 	}
 
