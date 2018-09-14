@@ -576,8 +576,10 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
     for (size_t i = vma + len; i < end && i < vma + len * NUM_GPU_ENTRY_INSTRUCTIONS; i += len) {
       StatementVector tmp;
       mod->getSourceLines(tmp, i);
-      if (tmp[0]->getFile() == svec[0]->getFile() && tmp[0]->getLine() < svec[0]->getLine()) {
-        svec[0] = tmp[0];
+      if (!tmp.empty() && !svec.empty()) {
+        if (tmp[0]->getFile() == svec[0]->getFile() && tmp[0]->getLine() < svec[0]->getLine()) {
+          svec[0] = tmp[0];
+        }
       }
     }
     return;
