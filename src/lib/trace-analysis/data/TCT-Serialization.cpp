@@ -183,7 +183,8 @@ namespace TraceAnalysis {
   
   template<class Archive>
   void TCTPerfLossMetric::serialize(Archive& ar, const unsigned int version) {
-    ar & minDuration & maxDuration & totalDuration;
+    ar & minDurationInc & maxDurationInc & totalDurationInc;
+    ar & minDurationExc & maxDurationExc & totalDurationExc;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTPerfLossMetric)
 

@@ -56,12 +56,11 @@
 
 #include "../TraceAnalysisCommon.hpp"
 
-#include "TCT-Time.hpp"
-#include "TCT-Semantic-Label.hpp"
-
 #include <boost/serialization/access.hpp>
 
 namespace TraceAnalysis {
+  class TCTANode;
+    
   class TCTDiffScore {
     friend class boost::serialization::access;
   private:
@@ -104,36 +103,54 @@ namespace TraceAnalysis {
     void serialize(Archive & ar, const unsigned int version);
     
   public:
-    TCTPerfLossMetric(): minDuration(0), maxDuration(0), totalDuration(0) {}
-    TCTPerfLossMetric(const TCTPerfLossMetric& other): minDuration(other.minDuration), 
-        maxDuration(other.maxDuration), totalDuration(other.totalDuration){}
+    TCTPerfLossMetric(): minDurationInc(0), maxDurationInc(0), totalDurationInc(0),
+                         minDurationExc(0), maxDurationExc(0), totalDurationExc(0){}
+    TCTPerfLossMetric(const TCTPerfLossMetric& other): minDurationInc(other.minDurationInc), 
+        maxDurationInc(other.maxDurationInc), totalDurationInc(other.totalDurationInc),
+        minDurationExc(other.minDurationExc), maxDurationExc(other.maxDurationExc), totalDurationExc(other.totalDurationExc) {}
     virtual ~TCTPerfLossMetric() {}
     
-    void initDurationMetric(const TCTTime& time, int weight);
+    void initDurationMetric(const TCTANode* node, int weight);
     void setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2);
     void clearDurationMetric() {
-      minDuration = 0;
-      maxDuration = 0;
-      totalDuration = 0;
+      minDurationInc = 0;
+      maxDurationInc = 0;
+      totalDurationInc = 0;
     }
     
-    Time getMinDuration() const {
-      return minDuration;
+    Time getMinDurationInc() const {
+      return minDurationInc;
     }
     
-    Time getMaxDuration() const {
-      return maxDuration;
+    Time getMaxDurationInc() const {
+      return maxDurationInc;
     }
 
-    double getAvgDuration(long weight) const {
-      return totalDuration / (double)weight;
+    double getAvgDurationInc(long weight) const {
+      return totalDurationInc / (double)weight;
+    }
+    
+    Time getMinDurationExc() const {
+      return minDurationExc;
+    }
+    
+    Time getMaxDurationExc() const {
+      return maxDurationExc;
+    }
+
+    double getAvgDurationExc(long weight) const {
+      return totalDurationExc / (double)weight;
     }
     
   private:
     // Metrics that records durations of all instances represented by this TCTANode
-    Time minDuration;
-    Time maxDuration;
-    double totalDuration;
+    Time minDurationInc;
+    Time maxDurationInc;
+    double totalDurationInc;
+    
+    Time minDurationExc;
+    Time maxDurationExc;
+    double totalDurationExc;
   };
 }
 

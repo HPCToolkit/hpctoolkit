@@ -100,11 +100,15 @@ namespace TraceAnalysis {
   // Parameters for performance diagnosis.
   const double MIN_SYNC_IMB_IR = 0.001;
   const double MIN_SYNC_COMM_IR = 0.001;
-  const double MIN_INC_IR = 0.003;
+  const double MIN_SUBTREE_IR = 0.003;
   const double MIN_EXECUTION_SEGMENT_IR = 0.01;
   
   const double HOT_PATH_RATIO = 0.7;
   const double SIDE_PATH_RATIO = 0.1;
+  
+  const double IMB_RESOLVE_RATIO = 0.2;
+  const double COMM_LONG_INSTANCE_SAMPLES = 100;
+  const double COMM_SHORT_INSTANCE_SAMPLES = 10;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

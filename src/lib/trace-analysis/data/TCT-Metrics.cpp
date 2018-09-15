@@ -55,16 +55,24 @@
 #include "TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  void TCTPerfLossMetric::initDurationMetric(const TCTTime& time, int weight) {
-    maxDuration = time.getDuration();
-    minDuration = time.getDuration();
-    totalDuration = (double)time.getDuration() * (double)weight;
+  void TCTPerfLossMetric::initDurationMetric(const TCTANode* node, int weight) {
+    maxDurationInc = node->getDuration();
+    minDurationInc = maxDurationInc;
+    totalDurationInc = (double)maxDurationInc * (double)weight;
+    
+    maxDurationExc = node->getExclusiveDuration();
+    minDurationExc = maxDurationExc;
+    totalDurationExc = (double)maxDurationExc * (double)weight;
   }
   
   void TCTPerfLossMetric::setDuratonMetric(const TCTPerfLossMetric& rep1, const TCTPerfLossMetric& rep2) {
-    maxDuration = std::max(rep1.maxDuration, rep2.maxDuration);
-    minDuration = std::min(rep1.minDuration, rep2.minDuration);
-    totalDuration = rep1.totalDuration + rep2.totalDuration;
+    maxDurationInc = std::max(rep1.maxDurationInc, rep2.maxDurationInc);
+    minDurationInc = std::min(rep1.minDurationInc, rep2.minDurationInc);
+    totalDurationInc = rep1.totalDurationInc + rep2.totalDurationInc;
+    
+    maxDurationExc = std::max(rep1.maxDurationExc, rep2.maxDurationExc);
+    minDurationExc = std::min(rep1.minDurationExc, rep2.minDurationExc);
+    totalDurationExc = rep1.totalDurationExc + rep2.totalDurationExc;
   }
 }
   

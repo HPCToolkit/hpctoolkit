@@ -154,6 +154,12 @@ namespace TraceAnalysis {
     virtual ~TCTANode() {
     }
     
+    virtual bool isLoop() const {
+      if (id.procID == 0 && id.id != 0)
+        return true;
+      return false;
+    }
+    
     virtual TCTTime& getTime() {
       return time;
     }
@@ -198,6 +204,10 @@ namespace TraceAnalysis {
       return time.getMaxDuration();
     }
     
+    // Return the exclusive time in this node, which excludes time spent in
+    // functions called by this node.
+    virtual Time getExclusiveDuration() const = 0;
+    
     virtual long getWeight() const {
       return weight;
     }
@@ -227,7 +237,7 @@ namespace TraceAnalysis {
     }
     
     virtual void initPerfLossMetric() {
-      plm.initDurationMetric(time, weight);
+      plm.initDurationMetric(this, weight);
     }
     
     virtual TCTPerfLossMetric& getPerfLossMetric() {
@@ -296,7 +306,7 @@ namespace TraceAnalysis {
       for (auto it = children.begin(); it != children.end(); it++)
         delete (*it);
     }
-    
+     
     virtual int getNumChild() const {
       return children.size();
     }
@@ -344,6 +354,8 @@ namespace TraceAnalysis {
     // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
     virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
     
+    virtual Time getExclusiveDuration() const;
+   
     virtual void shiftTime(Time offset) {
       TCTANode::shiftTime(offset);
       for (int i = 0; i < getNumChild(); i++)
@@ -472,6 +484,8 @@ namespace TraceAnalysis {
       return ret;
     }
     
+    virtual Time getExclusiveDuration() const;
+    
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
     virtual void addChild(TCTANode* child) {
@@ -597,6 +611,10 @@ namespace TraceAnalysis {
       }
     }
     
+    virtual Time getExclusiveDuration() const {
+      return 0;
+    }
+    
     virtual TCTANode* duplicate() const {
       return new TCTClusterNode(*this, false);
     }
@@ -693,6 +711,8 @@ namespace TraceAnalysis {
     virtual const map<TCTID, TCTProfileNode*>& getChildMap() const {
       return childMap;
     }
+    
+    virtual Time getExclusiveDuration() const;
     
     virtual void getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const;
     

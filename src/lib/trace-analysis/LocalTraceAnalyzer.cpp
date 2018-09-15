@@ -116,7 +116,7 @@ namespace TraceAnalysis {
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
       
       node->setRetCount(1);
-      node->getPerfLossMetric().initDurationMetric(node->getTime(), node->getWeight());
+      node->getPerfLossMetric().initDurationMetric(node, node->getWeight());
       
       activeStack.pop_back();
       if (activeStack.size() > 0) activeStack.back()->addChild(node);

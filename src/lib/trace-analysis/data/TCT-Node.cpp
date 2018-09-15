@@ -83,10 +83,10 @@ namespace TraceAnalysis {
       ret += ", DiffScore = " + std::to_string((long)diffScore.getInclusive())
               + "/" + std::to_string((long)diffScore.getExclusive());
     
-    if (plm.getMinDuration() < plm.getMaxDuration()) {
-      ret += ", PLM = " + std::to_string(plm.getMinDuration()) 
-              + "/" + std::to_string(plm.getMaxDuration())
-              + "/" + std::to_string(plm.getAvgDuration(weight));
+    if (plm.getMinDurationInc() < plm.getMaxDurationInc()) {
+      ret += ", PLM = " + std::to_string(plm.getMinDurationInc()) 
+              + "/" + std::to_string(plm.getMaxDurationInc())
+              + "/" + std::to_string(plm.getAvgDurationInc(weight));
     }
     
     if (type == TCTANode::Root) {
@@ -253,6 +253,16 @@ namespace TraceAnalysis {
 #endif
     if (clusterNode != NULL) delete clusterNode;
     if (profileNode != NULL) delete profileNode;
+  }
+  
+  Time TCTLoopNode::getExclusiveDuration() const {
+    if (profileNode != NULL)
+      return profileNode->getExclusiveDuration();
+    
+    TCTProfileNode* tmp = TCTProfileNode::newProfileNode(this);
+    Time exclusive = tmp->getExclusiveDuration();
+    delete tmp;
+    return exclusive;
   }
   
   TCTProfileNode* TCTLoopNode::getProfileNode() {
@@ -621,6 +631,16 @@ namespace TraceAnalysis {
     }
   }
   
+  Time TCTProfileNode::getExclusiveDuration() const {
+    Time exclusive = getDuration();
+    for (auto it = childMap.begin(); it != childMap.end(); it++)
+      if (it->second->isLoop())
+        exclusive -= (it->second->getDuration() - it->second->getExclusiveDuration());
+      else
+        exclusive -= it->second->getDuration();
+    return exclusive;
+  }
+  
   void TCTProfileNode::getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const {
     minExclusive = getMinDuration();
     maxExclusive = getMaxDuration();
@@ -643,6 +663,16 @@ namespace TraceAnalysis {
       it->second->amplify(amplifier, divider, getTime());
     
     setWeight(weight * divider / amplifier);
+  }
+  
+  Time TCTATraceNode::getExclusiveDuration() const {
+    Time exclusive = getDuration();
+    for (auto it = children.begin(); it != children.end(); it++)
+      if ((*it)->isLoop()) 
+        exclusive -= ((*it)->getDuration() - (*it)->getExclusiveDuration());
+      else
+        exclusive -= (*it)->getDuration();
+    return exclusive;
   }
   
   void TCTATraceNode::getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const {
