@@ -1671,7 +1671,6 @@ found_level:
   if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
-    std::cout << "here4" << std::endl;
     goto found_file;
   }
 
