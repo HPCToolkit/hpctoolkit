@@ -303,7 +303,6 @@ copyPath(IncomingSamplesMap &incoming_samples,
   CCTGraph &cct_graph, 
   Prof::CCT::ANode *cur, Prof::CCT::ANode *prev,
   double adjust_factor) {
-  std::cout << adjust_factor << std::endl;
   // Copy node
   auto *new_node = cur->clone();
   new_node->link(prev);
