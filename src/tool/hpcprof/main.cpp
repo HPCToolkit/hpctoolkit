@@ -204,6 +204,8 @@ realmain(int argc, char* const* argv)
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
+
+  Analysis::CallPath::transformCudaCFGMain(*prof);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
@@ -212,8 +214,6 @@ realmain(int argc, char* const* argv)
   if (Analysis::Args::MetricFlg_isSum(args.prof_metrics)) {
     makeMetrics(*prof, args, nArgs);
   }
-
-  Analysis::CallPath::transformCudaCFGMain(*prof);
 
   // -------------------------------------------------------
   // 2b. Prune and normalize canonical CCT
