@@ -41,13 +41,38 @@ void CFGParser::parse_inst_strings(
   while (std::getline(ss, s)) {
     inst_strings.push_back(s);
   }
-  while (inst_strings.size() > 0) {
-    if (isdigit(inst_strings.front()[0]) || inst_strings.front()[0] == '<') {
+
+  // The first and the last string must start with '{' and '}' accordingly
+  inst_strings.pop_front();
+  inst_strings.pop_back();
+
+  int last_invalid_string_index = -1;
+  for (size_t i = 0; i < inst_strings.size(); ++i) {
+    if (inst_strings[i].size() == 0) {
+      last_invalid_string_index = i;
+    } else if (inst_strings[i][0] == '<') {
+      // sth. like <exit>00f0
       break;
+    } else {
+      // Validate if the offset is a hex number, we can do sth. smarter, but we don't have to right now
+      std::istringstream iss(inst_strings[i]);
+      if (std::getline(iss, s, ':')) {
+        if (std::all_of(s.begin(), s.end(), ::isxdigit) == false) {
+          last_invalid_string_index = i;
+        } else {
+          // Must have a instruction followed
+          if (std::getline(iss, s, ':')) {
+            break;
+          }
+          // Might be a funny function name like abcd
+          last_invalid_string_index = i;
+        }
+      }
     }
+  }
+  for (int i = 0; i <= last_invalid_string_index; ++i) {
     inst_strings.pop_front();
   }
-  inst_strings.pop_back();
 }
 
 
