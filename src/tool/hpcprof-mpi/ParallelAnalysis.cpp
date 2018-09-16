@@ -148,6 +148,7 @@ broadcast
     buf = new uint8_t[size];
   }
 
+  DIAG_DevMsgIf(1, "broadcast " << size << " bytes" << std::endl);
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
 
   if (myRank != 0) {

@@ -230,6 +230,11 @@ public:
   void
   ddump() const;
 
+  int getNumNodeId() {
+    if (m_nodeidMap)
+      return m_nodeidMap->size();
+    return 0;
+  }
 
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
