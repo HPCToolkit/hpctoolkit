@@ -103,6 +103,25 @@ Monitoring Statically Linked Applications}.
 
 % ===========================================================================
 
+\section{Harware counter event names}
+
+HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel. 
+An event name is case insensitive and is defined as followed:
+\begin{verbatim}
+[pmu::][event_name][:unit_mask][:modifier|:modifier=val] 
+\end{verbatim}
+
+\begin{itemize}
+	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
+	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
+	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign. 
+		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern. 
+\end{itemize}
+
+
+% ===========================================================================
+
 \section{Sample Sources}
 
 This section provide an overview of how to use sample sources supported by HPCToolkit.  To
@@ -235,6 +254,21 @@ hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
 \subsubsection{Caveats}
 
 \begin{itemize}
+\item
+Linux \perfevents{} requires to use one file descriptor for each event. 
+Furthermore, since \hpcrun{} generates one hpcrun file for each thread, and an additional hpctrace file if traces is enabled.
+Hence for $e$ number of events and $t$ number of threads, the required number of file descriptors is: 
+\begin{quote}
+  $t \times e + t + t$ (if trace is enabled) 
+\end{quote}
+For instance, if one profiles a multi-threaded program ran with 500 threads using 4 events, then the required number of file descriptors: 
+\begin{quote}
+  500 threads $\times$ 4 events + 500 hpcrun file + 500 hpctrace file \\
+  = 3000 file descriptor
+\end{quote}
+If the number of file descriptors exceeds the number of maximum opened files, then the program will crash. 
+To remedy this issue, one needs to increase the number of maximum opened files.
+
 \item
 \sloppy
 When a system is configured with suitable permissions, HPCToolkit will sample call stacks

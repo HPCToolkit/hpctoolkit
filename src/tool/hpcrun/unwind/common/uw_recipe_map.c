@@ -80,6 +80,7 @@
 //---------------------------------------------------------------------
 #include <memory/hpcrun-malloc.h>
 #include <main.h>
+#include "thread_data.h"
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>
@@ -151,8 +152,7 @@ ilmstat_btuwi_pair_inrange(void *itp, void *address)
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
 static mcs_lock_t GFL_lock;  // lock for GF_ilmstat_btuwi
 static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread local free list of ilmstat_btuwi_pair_t*
-// for storing the current btuwi in case of segv
-static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
+
 
 //******************************************************************************
 // Constructors
@@ -252,10 +252,10 @@ ilmstat_btuwi_pair_malloc(
 //******************************************************************************
 
 static void
-ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair)
+ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair, unwinder_t uw)
 {
   if (!pair) return;
-  bitree_uwi_free(0, pair->btuwi);
+  bitree_uwi_free(uw, pair->btuwi);
 
   // add pair to the front of the  global free list of ilmstat_btuwi_pair_t*:
   mcs_node_t me;
@@ -381,7 +381,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end, unwinder_t uw)
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
   csklnode_t *node = cskl_insert(addr2recipe_map[uw], itpair, my_alloc);
   if (itpair != (ilmstat_btuwi_pair_t*)node->val)
-    ilmstat_btuwi_pair_free(itpair);
+    ilmstat_btuwi_pair_free(itpair, uw);
 }
 
 
@@ -396,7 +396,7 @@ uw_recipe_map_inrange_find(uintptr_t addr, unwinder_t uw)
 }
 
 static void
-cskl_ilmstat_btuwi_free(void *anode)
+cskl_ilmstat_btuwi_free_uw(void *anode, unwinder_t uw)
 {
 #if CSKL_ILS_BTU
 //  printf("DXN_DBG cskl_ilmstat_btuwi_free(%p)...\n", anode);
@@ -404,17 +404,33 @@ cskl_ilmstat_btuwi_free(void *anode)
 
   csklnode_t *node = (csklnode_t*) anode;
   ilmstat_btuwi_pair_t *ilmstat_btuwi = (ilmstat_btuwi_pair_t*)node->val;
-  ilmstat_btuwi_pair_free(ilmstat_btuwi);
+  ilmstat_btuwi_pair_free(ilmstat_btuwi, uw);
   node->val = NULL;
   cskl_free(node);
 }
+
+static void
+cskl_ilmstat_btuwi_free_0(void *anode)
+{
+  cskl_ilmstat_btuwi_free_uw(anode, 0);
+}
+
+
+static void
+cskl_ilmstat_btuwi_free_1(void *anode)
+{
+  cskl_ilmstat_btuwi_free_uw(anode, 1);
+}
+
+static void (*cskl_ilmstat_btuwi_free[])(void *anode) =
+{cskl_ilmstat_btuwi_free_0, cskl_ilmstat_btuwi_free_1};
 
 static bool
 uw_recipe_map_cmp_del_bulk_unsynch(
 	ilmstat_btuwi_pair_t* key,
 	unwinder_t uw)
 {
-  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], key, key, cskl_ilmstat_btuwi_free);
+  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], key, key, cskl_ilmstat_btuwi_free[uw]);
 }
 
 static void
@@ -514,7 +530,7 @@ uw_recipe_map_notify_unmap(void *start, void *end)
   TMSG(UW_RECIPE_MAP, "uw_recipe_map_delete_range from %p to %p", start, end);
   unwinder_t uw;
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
-    cskl_inrange_del_bulk_unsynch(addr2recipe_map[uw], start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free);
+    cskl_inrange_del_bulk_unsynch(addr2recipe_map[uw], start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free[uw]);
 
   // join poisoned intervals here.
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
@@ -534,15 +550,6 @@ uw_recipe_map_notify_init()
 }
 
 
-/*
- * clean-up the state in case of emergency such as SEGV
- */
-static void
-uw_cleanup(void)
-{
-  if (current_btuwi)
-    atomic_store_explicit(&current_btuwi->stat, NEVER, memory_order_release);
-}
 
 //---------------------------------------------------------------------
 // interface operations
@@ -575,9 +582,6 @@ uw_recipe_map_init(void)
 	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
-
-  // register to segv signal handler to call this function 
-  hpcrun_segv_register_cb(uw_cleanup);
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
@@ -634,7 +638,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 	if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
 	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
 	  // so free the unused copy and use the mapped one
-	  ilmstat_btuwi_pair_free(ilm_btui);
+	  ilmstat_btuwi_pair_free(ilm_btui, uw);
 	  ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
 	}
 	// ilm_btui is now in the map.
@@ -650,17 +654,33 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     void *fcn_start = (void*)ilm_btui->interval.start;
     void *fcn_end   = (void*)ilm_btui->interval.end;
 
+    // ----------------------------------------------------------
     // potentially crash in this statement. need to save the state 
-    current_btuwi = ilm_btui;
+    // ----------------------------------------------------------
 
-    btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
-    if (btuwi_stat.error != 0) {
-      TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
-	   fcn_start, fcn_end, btuwi_stat.error);
+    thread_data_t* td    = hpcrun_get_thread_data();
+    sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
+
+    td->current_jmp_buf  = &(td->bad_interval);
+
+    int ljmp = sigsetjmp(td->bad_interval.jb, 1);
+    if (ljmp == 0) {
+      btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
+      if (btuwi_stat.error != 0) {
+        TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
+       fcn_start, fcn_end, btuwi_stat.error);
+      }
+      ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
+      atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
+
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+
+    } else {
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+      EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
+      atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
+      return false;
     }
-    ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
-    current_btuwi = NULL;
-    atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
   }
   else {
     while (FORTHCOMING == oldstat)

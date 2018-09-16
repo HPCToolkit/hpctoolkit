@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://hpctoolkit.googlecode.com/svn/trunk/src/tool/hpcrun/unwind/x86-family/manual-intervals/x86-intel11-f90main.c $
-// $Id: x86-intel11-f90main.c 4422 2014-02-10 21:24:59Z mwkrentel $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -48,48 +48,30 @@
 #include "x86-unwind-interval-fixup.h"
 #include "x86-unwind-interval.h"
 
-static char gcc_main64_signature[] = { 
- 0x4c, 0x8d, 0x54, 0x24, 0x08,  // lea    0x8(%rsp),%r10
- 0x48, 0x83, 0xe4, 0xe0,        // and    $0xffffffffffffffe0,%rsp
- 0x41, 0xff, 0x72, 0xf8,        // pushq  -0x8(%r10)
- 0x55,                          // push   %rbp
- 0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
+#define X86_FAIL_INTERVALS_DEBUG 1
+
+static char fail_signature[] = {
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3,                         // retq
+  0xc3                          // retq
 };
 
 
-int 
-x86_adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
+int
+x86_fail_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-  int siglen = sizeof(gcc_main64_signature);
+#ifdef X86_FAIL_INTERVALS_DEBUG 
+  int siglen = sizeof(fail_signature);
 
-  if (len > siglen && strncmp((char *)gcc_main64_signature, ins, siglen) == 0) {
+  if (len > siglen && strncmp((char *) fail_signature, ins, siglen) == 0) {
     // signature matched 
-    unwind_interval *ui = (unwind_interval *) stat->first;
+    char *null = 0;
 
-    // this won't fix all of the intervals, but it will fix the ones 
-    // that we care about.
-    //
-    // The method is as follows:
-    // Ignore (do not correct) intervals before 1st std frame
-    // For 1st STD_FRAME, compute the corrections for this interval and subsequent intervals
-    // For this interval and subsequent interval, apply the corrected offsets
-    //
-
-    for(; UWI_RECIPE(ui)->ra_status != RA_STD_FRAME; ui = UWI_NEXT(ui));
-
-    // this is only correct for 64-bit code
-    for(; ui; ui =  UWI_NEXT(ui)) {
-      x86recipe_t *xr = UWI_RECIPE(ui);
-      if (xr->ra_status == RA_SP_RELATIVE) continue;
-      if ((xr->ra_status == RA_STD_FRAME) || 
-          (xr->ra_status == RA_BP_FRAME)) {  
-         xr->ra_status = RA_BP_FRAME;
-         xr->reg.bp_ra_pos = 8;
-         xr->reg.bp_bp_pos = 0;
-      }
-    }
-
-    return 1;
-  } 
+    *null = 0; // cause a SEGV by storing to the null pointer
+  }
+ 
+#endif
   return 0;
 }

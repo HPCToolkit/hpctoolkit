@@ -333,11 +333,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
-  memset(&td->bad_unwind, 0, sizeof(td->bad_unwind));
-  memset(&td->mem_error, 0, sizeof(td->mem_error));
+  td->current_jmp_buf = NULL;
+  memset(&td->bad_interval, 0, sizeof(td->bad_interval));
+  memset(&td->bad_unwind,   0, sizeof(td->bad_unwind));
+
   td->deadlock_drop = false;
   hpcrun_init_handling_sample(td, 0, id);
-  td->splay_lock    = 0;
   td->fnbounds_lock = 0;
 
   // ----------------------------------------

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,27 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-#ifndef sample_source_datacentric_h
-#define sample_source_datacentric_h
 
-/******************************************************************************
- * local includes 
- ******************************************************************************/
+#ifndef String_Set_hpp
+#define String_Set_hpp
 
-#include <cct/cct.h>
+//***************************************************************************
+// system include files
+//***************************************************************************
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
+#include <set>
+#include <string>
 
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
 
-int hpcrun_datacentric_alloc_id(); 
-int hpcrun_datacentric_active();
-void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);
 
-#endif // sample_source_memleak_h
+//***************************************************************************
+// type declarations
+//***************************************************************************
 
+class StringSet: public std::set<std::string> {
+public:
+  void operator+=(const StringSet &rhs) {
+    this->insert(rhs.begin(), rhs.end());
+  };
+
+
+  static int
+  fmt_fread(StringSet* &stringSet, FILE* infs); 
+
+  static int
+  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
+
+  void dump(void);
+};
+
+#endif

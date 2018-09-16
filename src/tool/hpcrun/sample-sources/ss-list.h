@@ -44,10 +44,42 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATA_OVERRIDES_H
-#define __DATA_OVERRIDES_H
 
-cct_node_t *splay_lookup(void *key, void **start, void **end);
+//******************************************************************************
+// File: ss-list.h
+//
+// Purpose: 
+//   This file contains a list of sample sources wrapped by a call to an
+//   unspecified macro. The intended use of this file is to define the
+//   macro, include the file elsewhere one or more times to register the
+//   sample sources. This is not defined as a FORALL macro that applies
+//   a macro to each of the sample source names so that this file can
+//   contain ifdefs if a sample source is unused on a platform.
+//
+//******************************************************************************
 
+SAMPLE_SOURCE_DECL_MACRO(ga)
+SAMPLE_SOURCE_DECL_MACRO(io)  
+SAMPLE_SOURCE_DECL_MACRO(itimer)  
+
+#ifdef HPCRUN_SS_LINUX_PERF
+SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
 #endif
 
+SAMPLE_SOURCE_DECL_MACRO(memleak)  
+
+SAMPLE_SOURCE_DECL_MACRO(none)  
+
+#ifdef HPCRUN_SS_PAPI
+SAMPLE_SOURCE_DECL_MACRO(papi)  
+#endif
+
+SAMPLE_SOURCE_DECL_MACRO(directed_blame)
+
+#ifdef HOST_CPU_x86_64
+SAMPLE_SOURCE_DECL_MACRO(retcnt)
+#endif
+
+#ifdef HPCRUN_SS_PAPI_C_CUPTI
+SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
+#endif

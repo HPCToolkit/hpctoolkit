@@ -143,12 +143,12 @@ am__objects_1 = libHPCprof_la-Metric-Mgr.lo \
 	libHPCprof_la-Metric-ADesc.lo libHPCprof_la-Metric-IData.lo \
 	libHPCprof_la-Metric-AExpr.lo \
 	libHPCprof_la-Metric-AExprIncr.lo \
-	libHPCprof_la-Metric-IDBExpr.lo libHPCprof_la-LoadMap.lo \
-	libHPCprof_la-Struct-Tree.lo \
+	libHPCprof_la-Metric-IDBExpr.lo libHPCprof_la-FileError.lo \
+	libHPCprof_la-LoadMap.lo libHPCprof_la-Struct-Tree.lo \
 	libHPCprof_la-Struct-TreeIterator.lo libHPCprof_la-CCT-Tree.lo \
 	libHPCprof_la-CCT-TreeIterator.lo libHPCprof_la-CCT-Merge.lo \
 	libHPCprof_la-Flat-ProfileData.lo \
-	libHPCprof_la-CallPath-Profile.lo \
+	libHPCprof_la-CallPath-Profile.lo libHPCprof_la-StringSet.lo \
 	libHPCprof_la-NameMappings.lo
 am_libHPCprof_la_OBJECTS = $(am__objects_1)
 libHPCprof_la_OBJECTS = $(am_libHPCprof_la_OBJECTS)
@@ -525,6 +525,8 @@ MYSOURCES = \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
 	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
 	\
+	FileError.hpp FileError.cpp \
+	\
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
@@ -537,6 +539,8 @@ MYSOURCES = \
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
+	\
+	StringSet.hpp StringSet.cpp \
 	NameMappings.hpp NameMappings.cpp 
 
 
@@ -625,6 +629,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CCT-Tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CCT-TreeIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-CallPath-Profile.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-FileError.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Flat-ProfileData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-LoadMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-ADesc.Plo@am__quote@
@@ -634,6 +639,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-IData.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Metric-Mgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-NameMappings.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-StringSet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-Tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Plo@am__quote@
 
@@ -700,6 +706,13 @@ libHPCprof_la-Metric-IDBExpr.lo: Metric-IDBExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-Metric-IDBExpr.lo `test -f 'Metric-IDBExpr.cpp' || echo '$(srcdir)/'`Metric-IDBExpr.cpp
 
+libHPCprof_la-FileError.lo: FileError.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-FileError.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-FileError.Tpo -c -o libHPCprof_la-FileError.lo `test -f 'FileError.cpp' || echo '$(srcdir)/'`FileError.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_la-FileError.Tpo $(DEPDIR)/libHPCprof_la-FileError.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='FileError.cpp' object='libHPCprof_la-FileError.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-FileError.lo `test -f 'FileError.cpp' || echo '$(srcdir)/'`FileError.cpp
+
 libHPCprof_la-LoadMap.lo: LoadMap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-LoadMap.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-LoadMap.Tpo -c -o libHPCprof_la-LoadMap.lo `test -f 'LoadMap.cpp' || echo '$(srcdir)/'`LoadMap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_la-LoadMap.Tpo $(DEPDIR)/libHPCprof_la-LoadMap.Plo
@@ -755,6 +768,13 @@ libHPCprof_la-CallPath-Profile.lo: CallPath-Profile.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-Profile.cpp' object='libHPCprof_la-CallPath-Profile.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-CallPath-Profile.lo `test -f 'CallPath-Profile.cpp' || echo '$(srcdir)/'`CallPath-Profile.cpp
+
+libHPCprof_la-StringSet.lo: StringSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-StringSet.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-StringSet.Tpo -c -o libHPCprof_la-StringSet.lo `test -f 'StringSet.cpp' || echo '$(srcdir)/'`StringSet.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_la-StringSet.Tpo $(DEPDIR)/libHPCprof_la-StringSet.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='StringSet.cpp' object='libHPCprof_la-StringSet.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_la-StringSet.lo `test -f 'StringSet.cpp' || echo '$(srcdir)/'`StringSet.cpp
 
 libHPCprof_la-NameMappings.lo: NameMappings.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_la-NameMappings.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-NameMappings.Tpo -c -o libHPCprof_la-NameMappings.lo `test -f 'NameMappings.cpp' || echo '$(srcdir)/'`NameMappings.cpp
