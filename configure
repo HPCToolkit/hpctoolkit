@@ -681,8 +681,6 @@ OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
 OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
-OPT_ENABLE_HPCRUN_FLAT_FALSE
-OPT_ENABLE_HPCRUN_FLAT_TRUE
 OPT_BUILD_TOOL_ALL_FALSE
 OPT_BUILD_TOOL_ALL_TRUE
 OPT_BUILD_LIB_ALL_FALSE
@@ -749,9 +747,6 @@ OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
-OPT_INSTALL_MONITOR
-HPC_MONITOR
-MONITOR
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
@@ -1002,14 +997,12 @@ with_binutils
 with_boost
 with_bzip
 with_libdwarf
-with_libelf
+with_elfutils
 with_libiberty
 with_libmonitor
 with_libunwind
 enable_libunwind_primary
 with_lzma
-with_monitor
-with_open_analysis
 with_papi
 enable_force_papi
 enable_papi_c
@@ -1017,14 +1010,13 @@ enable_papi_c_cupti
 with_perfmon
 enable_perf_events
 enable_kernel_blocking
-with_symtabAPI
+with_dyninst
 with_dyninst_type
 with_tbb
-with_xed2
+with_xed
 with_xerces
 with_zlib
 enable_back_end
-enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
@@ -1723,7 +1715,6 @@ Optional Features:
                           fails to auto-detect correctly
   --enable-back-end       build only those tools needed to run hpcrun and
                           hpclink on the back-end compute nodes
-  --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
@@ -1754,30 +1745,27 @@ Optional Packages:
                           compiler's sysroot if not specified).
 
   --with-externals=PATH   path to hpctoolkit-externals build or install
-                          directory (normally required)
+                          directory
   --with-spack=PATH       path to spack arch/compiler install directory
   --with-binutils=PATH    path to binutils install directory
   --with-boost=PATH       path to boost install directory
-  --with-bzip=PATH        path to bzip install directory
+  --with-bzip=PATH        path to bzip2 install directory
   --with-libdwarf=PATH    path to libdwarf install directory
-  --with-libelf=PATH      path to libelf install directory
+  --with-elfutils=PATH    path to elfutils install directory
   --with-libiberty=PATH   path to libiberty install directory (only needed if
                           binutils does not contain libiberty.a)
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   path to libunwind install directory
-  --with-lzma=PATH        path to lzma (xz) install directory
-  --with-monitor=PATH     use given (old) libmonitor installation
-  --with-open-analysis=PATH
-                          deprecated option, no longer used
+  --with-lzma=PATH        path to lzma (xz utils) install directory
   --with-papi=PATH        path to papi install directory
   --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
-  --with-symtabAPI=PATH   path to symtabAPI (dyninst) install directory
+  --with-dyninst=PATH     path to dyninst install directory
   --with-dyninst-type=TYPE
                           temp option for dyninst version (old, libdw, cuda),
                           only needed if autoconf fails to detect correctly
   --with-tbb=PATH         path to intel tbb install directory
-  --with-xed2=PATH        path to xed2 install directory
-  --with-xerces=PATH      use given XercesC installation
+  --with-xed=PATH         path to intel xed install directory
+  --with-xerces=PATH      path to xerces-c install directory
   --with-zlib=PATH        path to zlib install directory
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-cuda=PATH        use given CUDA installation (absolute path) with
@@ -19387,8 +19375,6 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
-warn_no_externals=no
-
 
 # Check whether --with-dummy-blank-line was given.
 if test "${with_dummy_blank_line+set}" = set; then :
@@ -19409,17 +19395,15 @@ if test "${with_externals}" != "no"; then
   if test ! -f "$ext_file" ; then
     as_fn_error $? "missing externals file: $ext_file" "$LINENO" 5
   fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: using externals tree: $with_externals" >&5
-$as_echo "$as_me: using externals tree: $with_externals" >&6;}
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using --with-externals" >&5
-$as_echo "$as_me: WARNING: not using --with-externals" >&2;}
   use_externals=no
-  warn_no_externals=yes
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: externals directory: $with_externals" >&5
+$as_echo "$as_me: externals directory: $with_externals" >&6;}
 
 
 #-------------------------------------------------
@@ -19448,11 +19432,10 @@ if test "x$with_spack" != xno ; then
     as_fn_error $? "bad spack install directory: $with_spack" "$LINENO" 5
   fi
   with_spack="$dir"
-  warn_no_externals=no
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: spack install directory: $with_spack" >&5
-$as_echo "$as_me: spack install directory: $with_spack" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: spack directory: $with_spack" >&5
+$as_echo "$as_me: spack directory: $with_spack" >&6;}
 
 
 #-------------------------------------------------
@@ -19474,9 +19457,10 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
-default_xed2_prefix=no
+default_xed_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
 
@@ -19494,7 +19478,7 @@ if test "$use_externals" = yes ; then
   if test "x$ext_perfmon_prefix" != x ; then
     default_perfmon_prefix="$ext_perfmon_prefix"
   fi
-  default_xed2_prefix="$ext_xed2_prefix"
+  default_xed_prefix="$ext_xed2_prefix"
   default_xerces_prefix="$ext_xerces_prefix"
   default_zlib_prefix="$ext_zlib_prefix"
 fi
@@ -19578,6 +19562,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
   fi
+  if find_spack_pkg papi ; then
+    default_papi_prefix="$spack_ans"
+  fi
   if find_spack_pkg libpfm4 ; then
     default_perfmon_prefix="$spack_ans"
   fi
@@ -19585,7 +19572,7 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
     default_tbb_prefix="$spack_ans"
   fi
   if find_spack_pkg intel-xed ; then
-    default_xed2_prefix="$spack_ans"
+    default_xed_prefix="$spack_ans"
   fi
   if find_spack_pkg xerces-c ; then
     default_xerces_prefix="$spack_ans"
@@ -20064,20 +20051,20 @@ $as_echo "$LIBDWARF" >&6; }
 
 
 #-------------------------------------------------
-# Option: --with-libelf=PATH
+# Option: --with-elfutils=PATH
 #-------------------------------------------------
 
 LIBELF="$default_elfutils_prefix"
 
 
-# Check whether --with-libelf was given.
-if test "${with_libelf+set}" = set; then :
-  withval=$with_libelf; LIBELF="$withval"
+# Check whether --with-elfutils was given.
+if test "${with_elfutils+set}" = set; then :
+  withval=$with_elfutils; LIBELF="$withval"
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libelf" >&5
-$as_echo_n "checking for libelf... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for elfutils" >&5
+$as_echo_n "checking for elfutils... " >&6; }
 
 LIBELF_INC=no
 LIBELF_LIB=no
@@ -20485,106 +20472,16 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 
 
 #-------------------------------------------------
-# with-monitor
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for monitor" >&5
-$as_echo_n "checking for monitor... " >&6; }
-
-OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
-MONITOR=
-MONITOR_LIBS=
-HPC_MONITOR=
-
-# By default, disable old-monitor and hpcrun-flat in a cross compile.
-# It can be reenabled with an explicit --with-monitor option.
-
-if test "$use_externals" = yes && test -z "$is_cross_compile"
-then
-  MONITOR="$ext_old_monitor_prefix"
-  case "$MONITOR" in
-    /* )  OPT_WITH_MONITOR=yes
-	  OPT_INSTALL_MONITOR=yes
-	  ;;
-  esac
-fi
-
-
-# Check whether --with-monitor was given.
-if test "${with_monitor+set}" = set; then :
-  withval=$with_monitor; if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=yes
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi
-fi
-
-
-for lib in ${LIB_SEARCH_PATH} ; do
-  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
-    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
-  fi
-done
-MONITOR_LIBS=`echo ${MONITOR_LIBS}`
-
-MONITOR_IFLAGS="-I${MONITOR}/include"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
-  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
-else
-  HPC_MONITOR="${MONITOR}"
-fi
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-
-$as_echo "#define HAVE_MONITOR 1" >>confdefs.h
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${MONITOR_LIBS})" >&5
-$as_echo "yes (${MONITOR_LIBS})" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (not needed)" >&5
-$as_echo "no (not needed)" >&6; }
-fi
-
-
-
-
-
-
-#-------------------------------------------------
-# Check for Open Analysis (CFG builder, etc.)
-#-------------------------------------------------
-
-# Open Analysis is no longer used.  Now, it's ParseAPI or nothing.
-# For the transition, keep the option and issue a warning if used.
-
-OA=no
-
-
-# Check whether --with-open-analysis was given.
-if test "${with_open_analysis+set}" = set; then :
-  withval=$with_open_analysis; OA="$withval"
-fi
-
-
-if test "x$OA" != xno ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: open analysis is deprecated and no longer used" >&5
-$as_echo "$as_me: WARNING: open analysis is deprecated and no longer used" >&2;}
-fi
-
-
-#-------------------------------------------------
 # Option: --with-papi=PATH
 #-------------------------------------------------
 
-OPT_PAPI=no
 OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
+
+OPT_PAPI="$default_papi_prefix"
 
 
 # Check whether --with-papi was given.
@@ -21159,7 +21056,7 @@ fi
 
 
 #-------------------------------------------------
-# Option: --with-symtabAPI=PATH
+# Option: --with-dyninst=PATH
 #-------------------------------------------------
 
 # Now require full ParseAPI with CFG loop support or nothing.
@@ -21167,9 +21064,9 @@ fi
 SYMTABAPI="$default_dyninst_prefix"
 
 
-# Check whether --with-symtabAPI was given.
-if test "${with_symtabAPI+set}" = set; then :
-  withval=$with_symtabAPI; SYMTABAPI="$withval"
+# Check whether --with-dyninst was given.
+if test "${with_dyninst+set}" = set; then :
+  withval=$with_dyninst; SYMTABAPI="$withval"
 fi
 
 
@@ -21534,7 +21431,7 @@ $as_echo "$TBB" >&6; }
 
 
 #-------------------------------------------------
-# Option: --with-xed2=PATH
+# Option: --with-xed=PATH
 #-------------------------------------------------
 
 # Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
@@ -21555,12 +21452,12 @@ XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
-XED2="$default_xed2_prefix"
+XED2="$default_xed_prefix"
 
 
-# Check whether --with-xed2 was given.
-if test "${with_xed2+set}" = set; then :
-  withval=$with_xed2; XED2="$withval"
+# Check whether --with-xed was given.
+if test "${with_xed+set}" = set; then :
+  withval=$with_xed; XED2="$withval"
 fi
 
 
@@ -21937,43 +21834,6 @@ fi
 else
   OPT_BUILD_TOOL_ALL_TRUE='#'
   OPT_BUILD_TOOL_ALL_FALSE=
-fi
-
-
-
-#-------------------------------------------------
-# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
-#-------------------------------------------------
-
-# Check whether --enable-hpcrun-flat was given.
-if test "${enable_hpcrun_flat+set}" = set; then :
-  enableval=$enable_hpcrun_flat;
-else
-  enable_hpcrun_flat=yes
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build hpcrun-flat" >&5
-$as_echo_n "checking whether to build hpcrun-flat... " >&6; }
-
-OPT_ENABLE_HPCRUN_FLAT="no"
-
-if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes \
-   && test "${OPT_WITH_MONITOR}" = yes \
-   && test "${HOST_OS}" = "Linux"
-then
-  OPT_ENABLE_HPCRUN_FLAT="yes"
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_ENABLE_HPCRUN_FLAT" >&5
-$as_echo "$OPT_ENABLE_HPCRUN_FLAT" >&6; }
- if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
-  OPT_ENABLE_HPCRUN_FLAT_TRUE=
-  OPT_ENABLE_HPCRUN_FLAT_FALSE='#'
-else
-  OPT_ENABLE_HPCRUN_FLAT_TRUE='#'
-  OPT_ENABLE_HPCRUN_FLAT_FALSE=
 fi
 
 
@@ -23309,10 +23169,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_TOOL_ALL_TRUE}" && test -z "${OPT_BUILD_TOOL_ALL_FALSE}"; then
   as_fn_error $? "conditional \"OPT_BUILD_TOOL_ALL\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_HPCRUN_FLAT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; then
@@ -25904,8 +25760,6 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&5
 $as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
-$as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   unwinder:     ${unwinder_mesg}" >&5
 $as_echo "$as_me:   unwinder:     ${unwinder_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
@@ -25968,43 +25822,36 @@ $as_echo "$as_me:   binutils:     ${BINUTILS}" >&6;}
 $as_echo "$as_me:   boost:        ${BOOST}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   bzip:         ${BZIP}" >&5
 $as_echo "$as_me:   bzip:         ${BZIP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   dyninst:      ${SYMTABAPI}" >&5
+$as_echo "$as_me:   dyninst:      ${SYMTABAPI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   elfutils:     ${LIBELF}" >&5
+$as_echo "$as_me:   elfutils:     ${LIBELF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   libelf:       ${LIBELF}" >&5
-$as_echo "$as_me:   libelf:       ${LIBELF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
 $as_echo "$as_me:   libiberty:    ${LIBIBERTY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libmonitor:   ${LIBMONITOR}" >&5
 $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   monitor/old:  ${MONITOR}" >&5
-$as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${LIBUNWIND}" >&5
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   lzma:         ${LZMA}" >&5
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
+$as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perfmon:      ${perfmon_mesg}" >&5
 $as_echo "$as_me:   perfmon:      ${perfmon_mesg}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
-$as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   tbb:          ${TBB}" >&5
 $as_echo "$as_me:   tbb:          ${TBB}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5
-$as_echo "$as_me:   xed2:         ${XED2}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   xed:          ${XED2}" >&5
+$as_echo "$as_me:   xed:          ${XED2}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xerces:       ${XERCES}" >&5
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   zlib:         ${ZLIB}" >&5
 $as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
-$as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
-
-if test "x$OA" != xno ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: open analysis is deprecated and no longer used" >&5
-$as_echo "$as_me: WARNING: open analysis is deprecated and no longer used" >&2;}
-fi
 
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
@@ -26060,11 +25907,11 @@ $as_echo "$as_me: WARNING: Perf events is enabled, but perfmon is not available.
 $as_echo "$as_me: WARNING: Mnemonic names will not be available for perf events." >&2;}
 fi
 
-if test "$warn_no_externals" = yes ; then
+if test "x$with_externals" = xno && test "x$with_spack" = xno ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit-externals." >&5
-$as_echo "$as_me: WARNING: Not using hpctoolkit-externals." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit externals or spack." >&5
+$as_echo "$as_me: WARNING: Not using hpctoolkit externals or spack." >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&5
 $as_echo "$as_me: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: this is probably an error.  First, checkout, configure and" >&5

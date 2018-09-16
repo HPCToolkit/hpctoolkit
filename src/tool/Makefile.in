@@ -101,15 +101,12 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@	misc
 
 @OPT_BUILD_TOOL_ALL_TRUE@@OPT_ENABLE_HPCSERVER_TRUE@am__append_2 = hpcserver
-@OPT_ENABLE_HPCRUN_FLAT_TRUE@am__append_3 = hpcrun-flat \
-@OPT_ENABLE_HPCRUN_FLAT_TRUE@	hpcprof-flat
-
-@OPT_ENABLE_HPCRUN_TRUE@am__append_4 = \
+@OPT_ENABLE_HPCRUN_TRUE@am__append_3 = \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds
 
-@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcprof-mpi 
-@OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_6 = hpcserver/mpi
+@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi 
+@OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcserver/mpi
 subdir = src/tool
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -182,8 +179,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpclump hpctracedump misc \
-	hpcserver hpcrun-flat hpcprof-flat hpcrun hpcfnbounds \
-	hpcprof-mpi hpcserver/mpi
+	hpcserver hpcrun hpcfnbounds hpcprof-mpi hpcserver/mpi
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -274,7 +270,6 @@ HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
 HPC_LT_LDFLAGS = @HPC_LT_LDFLAGS@
-HPC_MONITOR = @HPC_MONITOR@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -319,7 +314,6 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MONITOR = @MONITOR@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
 MPIF77 = @MPIF77@
@@ -336,7 +330,6 @@ OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
-OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -456,14 +449,10 @@ wordsize_cflag = @wordsize_cflag@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
-# Local settings
-#############################################################################
-
-#############################################################################
 # Automake rules
 #############################################################################
 SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5) $(am__append_6)
+	$(am__append_4) $(am__append_5)
 all: all-recursive
 
 .SUFFIXES:
@@ -775,10 +764,6 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
 
 #############################################################################
 # Other rules

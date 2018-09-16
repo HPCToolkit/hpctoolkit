@@ -36,9 +36,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* Monitor library */
-#undef HAVE_MONITOR
-
 /* HOST OS: 32 and 64 bit OS libraries */
 #undef HAVE_OS_MULTILIB
 

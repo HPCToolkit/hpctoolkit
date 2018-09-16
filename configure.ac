@@ -1325,13 +1325,10 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
-warn_no_externals=no
-
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
   [AS_HELP_STRING([--with-externals=PATH],
-	  [path to hpctoolkit-externals build or install directory
-	   (normally required)])],
+	  [path to hpctoolkit-externals build or install directory])],
   [],
   [with_externals=no])
 
@@ -1340,15 +1337,14 @@ if test "${with_externals}" != "no"; then
   if test ! -f "$ext_file" ; then
     AC_MSG_ERROR([missing externals file: $ext_file])
   fi
-  AC_MSG_NOTICE([using externals tree: $with_externals])
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
 else
-  AC_MSG_WARN([not using --with-externals])
   use_externals=no
-  warn_no_externals=yes
 fi
+
+AC_MSG_NOTICE([externals directory: $with_externals])
 
 
 #-------------------------------------------------
@@ -1374,10 +1370,9 @@ if test "x$with_spack" != xno ; then
     AC_MSG_ERROR([bad spack install directory: $with_spack])
   fi
   with_spack="$dir"
-  warn_no_externals=no
 fi
 
-AC_MSG_NOTICE([spack install directory: $with_spack])
+AC_MSG_NOTICE([spack directory: $with_spack])
 
 
 #-------------------------------------------------
@@ -1399,9 +1394,10 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
-default_xed2_prefix=no
+default_xed_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
 
@@ -1419,7 +1415,7 @@ if test "$use_externals" = yes ; then
   if test "x$ext_perfmon_prefix" != x ; then
     default_perfmon_prefix="$ext_perfmon_prefix"
   fi
-  default_xed2_prefix="$ext_xed2_prefix"
+  default_xed_prefix="$ext_xed2_prefix"
   default_xerces_prefix="$ext_xerces_prefix"
   default_zlib_prefix="$ext_zlib_prefix"
 fi
@@ -1501,6 +1497,9 @@ then
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
   fi
+  if find_spack_pkg papi ; then
+    default_papi_prefix="$spack_ans"
+  fi
   if find_spack_pkg libpfm4 ; then
     default_perfmon_prefix="$spack_ans"
   fi
@@ -1508,7 +1507,7 @@ then
     default_tbb_prefix="$spack_ans"
   fi
   if find_spack_pkg intel-xed ; then
-    default_xed2_prefix="$spack_ans"
+    default_xed_prefix="$spack_ans"
   fi
   if find_spack_pkg xerces-c ; then
     default_xerces_prefix="$spack_ans"
@@ -1803,7 +1802,7 @@ BZIP="$default_bzip_prefix"
 
 AC_ARG_WITH([bzip],
   [AS_HELP_STRING([--with-bzip=PATH],
-      [path to bzip install directory])],
+      [path to bzip2 install directory])],
   [BZIP="$withval"],
   [])
 
@@ -1877,18 +1876,18 @@ AC_SUBST([LIBDWARF_COPY])
 
 
 #-------------------------------------------------
-# Option: --with-libelf=PATH
+# Option: --with-elfutils=PATH
 #-------------------------------------------------
 
 LIBELF="$default_elfutils_prefix"
 
-AC_ARG_WITH([libelf],
-  [AS_HELP_STRING([--with-libelf=PATH],
-      [path to libelf install directory])],
+AC_ARG_WITH([elfutils],
+  [AS_HELP_STRING([--with-elfutils=PATH],
+      [path to elfutils install directory])],
   [LIBELF="$withval"],
   [])
 
-AC_MSG_CHECKING([for libelf])
+AC_MSG_CHECKING([for elfutils])
 
 LIBELF_INC=no
 LIBELF_LIB=no
@@ -2192,7 +2191,7 @@ LZMA="$default_lzma_prefix"
 
 AC_ARG_WITH([lzma],
   [AS_HELP_STRING([--with-lzma=PATH],
-      [path to lzma (xz) install directory])],
+      [path to lzma (xz utils) install directory])],
   [LZMA="$withval"],
   [])
 
@@ -2248,98 +2247,16 @@ AC_SUBST([LZMA_LIB])
 
 
 #-------------------------------------------------
-# with-monitor
-#-------------------------------------------------
-
-AC_MSG_CHECKING([for monitor])
-
-OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
-MONITOR=
-MONITOR_LIBS=
-HPC_MONITOR=
-
-# By default, disable old-monitor and hpcrun-flat in a cross compile.
-# It can be reenabled with an explicit --with-monitor option.
-
-if test "$use_externals" = yes && test -z "$is_cross_compile"
-then
-  MONITOR="$ext_old_monitor_prefix"
-  case "$MONITOR" in
-    /* )  OPT_WITH_MONITOR=yes
-	  OPT_INSTALL_MONITOR=yes
-	  ;;
-  esac
-fi
-
-AC_ARG_WITH([monitor],
-  AS_HELP_STRING([--with-monitor=PATH],
-                 [use given (old) libmonitor installation]),
-  [if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=yes
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi],
-  [])
-
-for lib in ${LIB_SEARCH_PATH} ; do
-  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
-    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
-  fi
-done
-MONITOR_LIBS=`echo ${MONITOR_LIBS}`
-
-MONITOR_IFLAGS="-I${MONITOR}/include"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
-  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
-else 
-  HPC_MONITOR="${MONITOR}"
-fi
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  AC_DEFINE([HAVE_MONITOR], [1], [Monitor library])
-  AC_MSG_RESULT([yes (${MONITOR_LIBS})])
-else
-  AC_MSG_RESULT([no (not needed)])
-fi
-
-AC_SUBST([MONITOR])
-AC_SUBST([HPC_MONITOR])
-AC_SUBST([OPT_INSTALL_MONITOR])
-
-
-#-------------------------------------------------
-# Check for Open Analysis (CFG builder, etc.)
-#-------------------------------------------------
-
-# Open Analysis is no longer used.  Now, it's ParseAPI or nothing.
-# For the transition, keep the option and issue a warning if used.
-
-OA=no
-
-AC_ARG_WITH([open-analysis],
-  [AS_HELP_STRING([--with-open-analysis=PATH],
-      [deprecated option, no longer used])],
-  [OA="$withval"],
-  [])
-
-if test "x$OA" != xno ; then
-  AC_MSG_WARN([open analysis is deprecated and no longer used])
-fi
-
-
-#-------------------------------------------------
 # Option: --with-papi=PATH
 #-------------------------------------------------
 
-OPT_PAPI=no
 OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
+
+OPT_PAPI="$default_papi_prefix"
 
 AC_ARG_WITH([papi],
   [AS_HELP_STRING([--with-papi=PATH],
@@ -2781,16 +2698,16 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 
 #-------------------------------------------------
-# Option: --with-symtabAPI=PATH
+# Option: --with-dyninst=PATH
 #-------------------------------------------------
 
 # Now require full ParseAPI with CFG loop support or nothing.
 
 SYMTABAPI="$default_dyninst_prefix"
 
-AC_ARG_WITH([symtabAPI],
-  [AS_HELP_STRING([--with-symtabAPI=PATH],
-      [path to symtabAPI (dyninst) install directory])],
+AC_ARG_WITH([dyninst],
+  [AS_HELP_STRING([--with-dyninst=PATH],
+      [path to dyninst install directory])],
   [SYMTABAPI="$withval"],
   [])
 
@@ -3082,7 +2999,7 @@ AC_SUBST([TBB_COPY])
 
 
 #-------------------------------------------------
-# Option: --with-xed2=PATH
+# Option: --with-xed=PATH
 #-------------------------------------------------
 
 # Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
@@ -3103,11 +3020,11 @@ XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
-XED2="$default_xed2_prefix"
+XED2="$default_xed_prefix"
 
-AC_ARG_WITH([xed2],
-  [AS_HELP_STRING([--with-xed2=PATH],
-  	    [path to xed2 install directory])],
+AC_ARG_WITH([xed],
+  [AS_HELP_STRING([--with-xed=PATH],
+  	    [path to intel xed install directory])],
   [XED2="$withval"],
   [])
 
@@ -3244,8 +3161,8 @@ XERCES="$default_xerces_prefix"
 AC_MSG_CHECKING([for XercesC])
 
 AC_ARG_WITH([xerces],
-  AS_HELP_STRING([--with-xerces=PATH],
-                 [use given XercesC installation]),
+  [AS_HELP_STRING([--with-xerces=PATH],
+                  [path to xerces-c install directory])],
   [if test $withval != no; then
      XERCES=${withval}
    fi],
@@ -3413,32 +3330,6 @@ AM_CONDITIONAL(OPT_BUILD_FRONT_END, [test $enable_back_end = no])
 
 AM_CONDITIONAL(OPT_BUILD_LIB_ALL,  [test $enable_back_end = no])
 AM_CONDITIONAL(OPT_BUILD_TOOL_ALL, [test $enable_back_end = no])
-
-
-#-------------------------------------------------
-# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
-#-------------------------------------------------
-
-AC_ARG_ENABLE([hpcrun-flat],
-  [AS_HELP_STRING([--enable-hpcrun-flat],
-	  [build hpcrun-flat (default yes)])],
-  [],
-  [enable_hpcrun_flat=yes])
-
-AC_MSG_CHECKING([whether to build hpcrun-flat])
-
-OPT_ENABLE_HPCRUN_FLAT="no"
-
-if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes \
-   && test "${OPT_WITH_MONITOR}" = yes \
-   && test "${HOST_OS}" = "Linux"
-then
-  OPT_ENABLE_HPCRUN_FLAT="yes"
-fi
-
-AC_MSG_RESULT([$OPT_ENABLE_HPCRUN_FLAT])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
 #-------------------------------------------------
@@ -4286,7 +4177,6 @@ AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
-AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
 AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
@@ -4318,26 +4208,21 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${BINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  bzip:         ${BZIP}])
+AC_MSG_NOTICE([  dyninst:      ${SYMTABAPI}])
+AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
-AC_MSG_NOTICE([  libelf:       ${LIBELF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
-AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
+AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
-AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
 AC_MSG_NOTICE([  tbb:          ${TBB}])
-AC_MSG_NOTICE([  xed2:         ${XED2}])
+AC_MSG_NOTICE([  xed:          ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
-AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-
-if test "x$OA" != xno ; then
-  AC_MSG_WARN([open analysis is deprecated and no longer used])
-fi
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])
@@ -4372,9 +4257,9 @@ if test "$warn_no_perfmon" = yes ; then
   AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
-if test "$warn_no_externals" = yes ; then
+if test "x$with_externals" = xno && test "x$with_spack" = xno ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using hpctoolkit-externals.])
+  AC_MSG_WARN([Not using hpctoolkit externals or spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
   AC_MSG_WARN([this is probably an error.  First, checkout, configure and])
   AC_MSG_WARN([build externals and then reconfigure hpctoolkit with:])
