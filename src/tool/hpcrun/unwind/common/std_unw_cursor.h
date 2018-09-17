@@ -76,8 +76,8 @@
 #endif
 
 enum libunw_state {
-  LIBUNW_OK,
-  LIBUNW_FAIL,
+  LIBUNW_UNAVAIL,
+  LIBUNW_READY,
 };
 
 typedef struct hpcrun_unw_cursor_t {

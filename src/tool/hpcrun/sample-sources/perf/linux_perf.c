@@ -928,7 +928,8 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init(et, attr) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize fd=%d", event_thread[i].fd);
+      metric_desc_t *mdesc = hpcrun_id2metric(i);
+      EEMSG("Failed to initialize event %d (%s)", i, mdesc->name);
     }
   }
 

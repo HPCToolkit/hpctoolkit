@@ -152,8 +152,7 @@ ilmstat_btuwi_pair_inrange(void *itp, void *address)
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
 static mcs_lock_t GFL_lock;  // lock for GF_ilmstat_btuwi
 static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread local free list of ilmstat_btuwi_pair_t*
-// for storing the current btuwi in case of segv
-static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
+
 
 //******************************************************************************
 // Constructors
@@ -551,15 +550,6 @@ uw_recipe_map_notify_init()
 }
 
 
-/*
- * clean-up the state in case of emergency such as SEGV
- */
-static void
-uw_cleanup(void)
-{
-  if (current_btuwi)
-    atomic_store_explicit(&current_btuwi->stat, NEVER, memory_order_release);
-}
 
 //---------------------------------------------------------------------
 // interface operations
@@ -592,9 +582,6 @@ uw_recipe_map_init(void)
 	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
-
-  // register to segv signal handler to call this function 
-  hpcrun_segv_register_cb(uw_cleanup);
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
@@ -671,7 +658,6 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     // potentially crash in this statement. need to save the state 
     // ----------------------------------------------------------
 
-    current_btuwi        = ilm_btui;
     thread_data_t* td    = hpcrun_get_thread_data();
     sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
 
@@ -685,15 +671,16 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
        fcn_start, fcn_end, btuwi_stat.error);
       }
       ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
-      current_btuwi = NULL;
       atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
 
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+
     } else {
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
       EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
       atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
       return false;
     }
-    td->current_jmp_buf = oldjmp;   // restore the ouer sigjmp
   }
   else {
     while (FORTHCOMING == oldstat)
