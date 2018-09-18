@@ -83,6 +83,7 @@ namespace TraceAnalysis {
     {regex("P?MPI_Allgather(.*)", icase | optimize),  SEMANTIC_LABEL_SYNC, 2, true},
     {regex("P?MPI_Allreduce",     icase | optimize),  SEMANTIC_LABEL_SYNC, 2, true},
     {regex("P?MPI_Alltoall(.*)",  icase | optimize),  SEMANTIC_LABEL_SYNC, 2, true},
+    {regex("P?MPI_Finalize(.*)",  icase | optimize),  SEMANTIC_LABEL_SYNC, 2, true},
     
     // Calls to MPI parallel I/O
     {regex("P?MPI_File_(.+)",             icase | optimize),  SEMANTIC_LABEL_IO,    2, true},
