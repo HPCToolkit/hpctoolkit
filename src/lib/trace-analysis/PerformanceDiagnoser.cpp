@@ -73,7 +73,8 @@ using std::max;
 
 namespace TraceAnalysis {
   struct CallpathMetrics {
-    uint semanticLabel;
+    uint originalLabel;
+    uint derivedLabel;
     double subtreeImbIR; // sum of imbalance in inclusive time of the entire sub-tree
     double nodeImbIR; // imbalance in inclusive time 
     double nodeExcImbIR; // imbalance in exclusive time
@@ -206,55 +207,56 @@ namespace TraceAnalysis {
     void assignSemanticLabel(const TCTANode* node, uint parentSemanticLabel) {
       CallpathMetrics* metrics = new CallpathMetrics();
       metricsMap[node] = metrics;
-      metrics->semanticLabel = getFuncSemanticInfo(node->getName()).semantic_label | parentSemanticLabel;
+      metrics->originalLabel = getFuncSemanticInfo(node->getName()).semantic_label | parentSemanticLabel;
       
       if (node->type == TCTANode::Prof) {
         const TCTProfileNode* prof = (const TCTProfileNode*) node;
         for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
-          assignSemanticLabel(it->second, metrics->semanticLabel);
+          assignSemanticLabel(it->second, metrics->originalLabel);
           metrics->addChildMetrics(metricsMap[it->second]);
         }
       }
       else if (node->type == TCTANode::Loop) {
         const TCTANode* avgRep = ((TCTLoopNode*)node)->getClusterNode()->getAvgRep();
-        assignSemanticLabel(avgRep, metrics->semanticLabel);
+        assignSemanticLabel(avgRep, metrics->originalLabel);
         metrics->addChildMetrics(metricsMap[avgRep]);
         
         const TCTANode* rejected = ((TCTLoopNode*)node)->getRejectedIterations();
         if (rejected != NULL) {
-          assignSemanticLabel(rejected, metrics->semanticLabel);
+          assignSemanticLabel(rejected, metrics->originalLabel);
           metrics->addChildMetrics(metricsMap[rejected]);
         }
       }
       else {
         const TCTATraceNode* trace = (const TCTATraceNode*) node;
         for (int i = 0; i < trace->getNumChild(); i++) {
-          assignSemanticLabel(trace->getChild(i), metrics->semanticLabel);
+          assignSemanticLabel(trace->getChild(i), metrics->originalLabel);
           metrics->addChildMetrics(metricsMap[trace->getChild(i)]);
         }
       }
 
       double totalDuration = (double)node->getDuration() * (double)node->getWeight();
       
+      metrics->derivedLabel = metrics->originalLabel;
       // Check if communication is the major source of the time spent in this node.
       for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
-        // metrics->semanticLabel is computation, or SEMANTIC_LABEL_ARRAY[i].label is a child of metrics->semanticLabel
-        if (((SEMANTIC_LABEL_ARRAY[i].label & metrics->semanticLabel) == metrics->semanticLabel) 
-            && (SEMANTIC_LABEL_ARRAY[i].label != metrics->semanticLabel)
+        // metrics->derivedLabel is computation, or SEMANTIC_LABEL_ARRAY[i].label is a child of metrics->semanticLabel
+        if (((SEMANTIC_LABEL_ARRAY[i].label & metrics->derivedLabel) == metrics->derivedLabel) 
+            && (SEMANTIC_LABEL_ARRAY[i].label != metrics->derivedLabel)
             && (metrics->subTreeCommIR.find(SEMANTIC_LABEL_ARRAY[i].label) != metrics->subTreeCommIR.end())
             // SEMANTIC_LABEL_ARRAY[i].label is the major source
             && (metrics->subTreeCommIR[SEMANTIC_LABEL_ARRAY[i].label] >= totalDuration * HOT_PATH_RATIO) ) {
           // If so, change the semantic label of this node.
-          metrics->semanticLabel = SEMANTIC_LABEL_ARRAY[i].label;
+          metrics->derivedLabel = SEMANTIC_LABEL_ARRAY[i].label;
         }
       
       // If is communication, enumerate all semantic labels
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
           // if the label is a communication label
           if ((SEMANTIC_LABEL_ARRAY[i].label & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION
                   // and the node's semantic label is in accordance with the enumerated label
-                  && (metrics->semanticLabel & SEMANTIC_LABEL_ARRAY[i].label) == SEMANTIC_LABEL_ARRAY[i].label)
+                  && (metrics->originalLabel & SEMANTIC_LABEL_ARRAY[i].label) == SEMANTIC_LABEL_ARRAY[i].label)
             metrics->subTreeCommIR[SEMANTIC_LABEL_ARRAY[i].label] = totalDuration;
       }
       
@@ -267,14 +269,14 @@ namespace TraceAnalysis {
 
       double imb, comm, excImb;
       double samplePeriod = node->getDuration() / node->getNumSamples();
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_DATA_TRANSFER) == SEMANTIC_LABEL_DATA_TRANSFER) {
+      if ((metrics->derivedLabel & SEMANTIC_LABEL_DATA_TRANSFER) == SEMANTIC_LABEL_DATA_TRANSFER) {
         // imb(W) = max(W) - avg(W);
         imb = node->getPerfLossMetric().getMaxDurationInc() - node->getPerfLossMetric().getAvgDurationInc(node->getWeight()) - samplePeriod;
         excImb = 0; //TODO
         // comm(W) = avg(W);
         comm = node->getPerfLossMetric().getAvgDurationInc(node->getWeight());
       }
-      else if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      else if ((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         // imb(S) = avg(S) - min(S);
         imb = node->getPerfLossMetric().getAvgDurationInc(node->getWeight()) - node->getPerfLossMetric().getMinDurationInc() - samplePeriod;
         excImb = 0; //TODO
@@ -302,12 +304,12 @@ namespace TraceAnalysis {
       // Set node communication improvement ratio in metrics
       double commIR = comm * node->getWeight() / numProc / totalDuration;
       // If is communication, enumerate all semantic labels
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
           // if the label is a communication label
           if ((SEMANTIC_LABEL_ARRAY[i].label & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION
                   // and the node's semantic label is in accordance with the enumerated label
-                  && (metrics->semanticLabel & SEMANTIC_LABEL_ARRAY[i].label) == SEMANTIC_LABEL_ARRAY[i].label)
+                  && (metrics->originalLabel & SEMANTIC_LABEL_ARRAY[i].label) == SEMANTIC_LABEL_ARRAY[i].label)
             metrics->nodeCommIR[SEMANTIC_LABEL_ARRAY[i].label] = commIR;
       }
       
@@ -335,7 +337,7 @@ namespace TraceAnalysis {
       
       // Adjust subtree IRs when they are less than node IRs.
       metrics->subtreeImbIR = max(metrics->nodeImbIR, metrics->subtreeImbIR);
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         for (auto it = metrics->nodeCommIR.begin(); it != metrics->nodeCommIR.end(); it++)
           if (metrics->subTreeCommIR.find(it->first) != metrics->subTreeCommIR.end())
             metrics->subTreeCommIR[it->first] = max(it->second, metrics->subTreeCommIR[it->first]);
@@ -377,7 +379,7 @@ namespace TraceAnalysis {
       CallpathMetrics* metrics = metricsMap[node];
       
       // If the current node is synchronization.
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) {
         // If IR passes the threshold, terminate the current execution segment.
         if (metrics->nodeImbIR >= MIN_SYNC_IMB_IR
                 || metrics->nodeCommIR[SEMANTIC_LABEL_SYNC] >= MIN_SYNC_COMM_IR) {
@@ -406,7 +408,7 @@ namespace TraceAnalysis {
 
       // If the node is communication, add to significant callpaths and return. 
       // (Details in its subtree will be investigated later)
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         if (!isParentAdded) {
           currentSegment->totalImbIR += metrics->subtreeImbIR;
           currentSegment->totalCommIR += (metrics->getSubtreeIR() - metrics->subtreeImbIR);
@@ -603,7 +605,7 @@ namespace TraceAnalysis {
       
       if (metrics->getSubtreeIR() < MIN_SUBTREE_IR) return;
       
-      if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
+      if ((metrics->originalLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
         if (node->type == TCTANode::Loop) {
           const TCTANode* avgRep = ((TCTLoopNode*)node)->getClusterNode()->getAvgRep();
           callpath->callpath.push_back(avgRep);
@@ -654,7 +656,7 @@ namespace TraceAnalysis {
           imb[k] = metrics->subtreeImbIR;
         else
           imb[k] = metrics->nodeExcImbIR;
-        isComm[k] = ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION);
+        isComm[k] = ((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION);
       }
       
       // Compute LCA depth for neighboring call paths.
@@ -772,7 +774,7 @@ namespace TraceAnalysis {
       for (uint k = 0; k < segment->callpaths.size(); k++) {
         const TCTANode* node = segment->callpaths[k]->callpath.back();
         CallpathMetrics* metrics = metricsMap[node];
-        if (((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION)
+        if (((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION)
             && (metrics->subTreeCommIR[SEMANTIC_LABEL_COMMUNICATION] >= MIN_SUBTREE_IR)) {
           uint label = SEMANTIC_LABEL_COMMUNICATION;
           double ir = metrics->subTreeCommIR[label];
@@ -883,7 +885,7 @@ namespace TraceAnalysis {
         CallpathMetrics* metrics = metricsMap[node];
         if (idx > 0) {
           if (k == callpath->callpath.size() - 1) {
-            if ((metrics->semanticLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) 
+            if ((metrics->derivedLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) 
               indent += "**Sync #" + std::to_string(idx);
             else
               indent += "**Cause #" + std::to_string(idx);
@@ -895,16 +897,18 @@ namespace TraceAnalysis {
           }
 
           print_msg(MSG_PRIO, "%s%s%s [%s]: all = %.2f%%(%.2f%%)", indent.c_str(), node->getName().c_str(), node->id.toString().c_str(),
-                  semanticLabelToString(metrics->semanticLabel).c_str(), metrics->getSubtreeIR() * 100, metrics->getNodeIR() * 100);
+                  semanticLabelToString(metrics->derivedLabel).c_str(), metrics->getSubtreeIR() * 100, metrics->getNodeIR() * 100);
           print_msg(MSG_PRIO, ", imbalance = %.2f%%(%.2f%%)", metrics->subtreeImbIR * 100, metrics->nodeImbIR * 100); 
-          if ((metrics->semanticLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION)
-            for (auto it = metrics->subTreeCommIR.begin(); it != metrics->subTreeCommIR.end(); it++) {
-              double nodeIR = 0;
-              if (metrics->nodeCommIR.find(it->first) != metrics->nodeCommIR.end())
-                nodeIR = metrics->nodeCommIR[it->first];
-              print_msg(MSG_PRIO, ", %s = %.2f%%(%.2f%%)", semanticLabelToString(it->first).c_str(), 
-                      it->second * 100, nodeIR * 100);
-            }
+          if ((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION)
+            for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
+              if (metrics->subTreeCommIR.find(SEMANTIC_LABEL_ARRAY[i].label) != metrics->subTreeCommIR.end()) {
+                double nodeIR = 0;
+                if (metrics->nodeCommIR.find(SEMANTIC_LABEL_ARRAY[i].label) != metrics->nodeCommIR.end())
+                  nodeIR = metrics->nodeCommIR[SEMANTIC_LABEL_ARRAY[i].label];
+                print_msg(MSG_PRIO, ", %s = %.2f%%(%.2f%%)", semanticLabelToString(SEMANTIC_LABEL_ARRAY[i].label).c_str(), 
+                    metrics->subTreeCommIR[SEMANTIC_LABEL_ARRAY[i].label] * 100, nodeIR * 100);
+              }
+          
           if ((k == callpath->callpath.size() - 1) && (!callpath->isInclusive))
             print_msg(MSG_PRIO, ", excImb = %.2f%%", metrics->nodeExcImbIR * 100);
           
