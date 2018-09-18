@@ -114,9 +114,11 @@ namespace TraceAnalysis {
   string TCTLoopNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {
     if (accept()) {
       string ret = TCTANode::toString(maxDepth, minDuration, minDiffScore);
-      
-      string temp = profileNode->toString(maxDepth, minDuration, minDiffScore);
-      ret += temp.substr(temp.find_first_of('\n') + 1);
+     
+      if (profileNode != NULL) { 
+        string temp = profileNode->toString(maxDepth, minDuration, minDiffScore);
+        ret += temp.substr(temp.find_first_of('\n') + 1);
+      }
       
       if (clusterNode != NULL)
         ret += clusterNode->toString(maxDepth, minDuration, minDiffScore);

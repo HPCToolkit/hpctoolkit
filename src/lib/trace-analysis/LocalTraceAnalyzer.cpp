@@ -426,6 +426,14 @@ namespace TraceAnalysis {
     }
     return 0;
   }
+
+  // Return true if it is a worker thread.
+  bool workerThreadFilter(string filename) {
+    if (filename.find("-000-") == string::npos)
+      return true;
+    else
+      return false;
+  }
   
   TCTClusterNode* LocalTraceAnalyzer::analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
     // Step 1: analyze binary files to get CFGs for later analysis
@@ -456,7 +464,8 @@ namespace TraceAnalysis {
                                  hpctraceFileFilter, alphasort);
       if (dirEntriesSz > 0) {
         for (int i = 0; i < dirEntriesSz; ++i) {
-          traceFiles.push_back(path + dirEntries[i]->d_name);
+          if (!workerThreadFilter(dirEntries[i]->d_name))
+            traceFiles.push_back(path + dirEntries[i]->d_name);
           free(dirEntries[i]);
         }
         free(dirEntries);

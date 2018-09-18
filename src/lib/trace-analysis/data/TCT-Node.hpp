@@ -462,6 +462,7 @@ namespace TraceAnalysis {
   };
   
   class TCTLoopNode : public TCTANode {
+    friend class TCTProfileNode;
     friend class boost::serialization::access;
   private:
     template<class Archive>
@@ -683,8 +684,12 @@ namespace TraceAnalysis {
     static TCTProfileNode* newProfileNode(const TCTANode* node) {
       if (node->type == TCTANode::Prof)
         return new TCTProfileNode(*((TCTProfileNode*)node), true);
-      if (node->type == TCTANode::Loop)
-        return new TCTProfileNode(*((TCTLoopNode*)node));
+      if (node->type == TCTANode::Loop) {
+        if (((TCTLoopNode*)node)->profileNode != NULL)
+          return new TCTProfileNode(*(((TCTLoopNode*)node)->profileNode), true);
+        else 
+          return new TCTProfileNode(*((TCTLoopNode*)node));
+      }
       return new TCTProfileNode(*((TCTATraceNode*)node));
     }
     

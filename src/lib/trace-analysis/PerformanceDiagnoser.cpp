@@ -235,6 +235,10 @@ namespace TraceAnalysis {
       excImb = max(excImb, 0.0);
       comm = max(comm, 0.0);
       
+      // exclusive imbalance in loops is not considered.
+      if (node->isLoop())
+        excImb = 0;
+      
       // Set node imbalance improvement ratio in metrics
       metrics->nodeImbIR = imb * node->getWeight() / numProc / totalDuration;
       metrics->nodeExcImbIR = excImb * node->getWeight() / numProc / totalDuration;
