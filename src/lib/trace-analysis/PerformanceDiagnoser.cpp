@@ -644,7 +644,6 @@ namespace TraceAnalysis {
     void diagnoseLoadImbalance(ExecutionSegment* segment) {
       const int END = -3;
       const int RESOLVED = -2;
-      const int UNSOLVED = -1;
       
       // Extract the imbalance of each call path.
       double* imb = new double[segment->callpaths.size()];
@@ -661,110 +660,101 @@ namespace TraceAnalysis {
       
       // Compute LCA depth for neighboring call paths.
       int* lcaDepth = new int[segment->callpaths.size()+1];
-      for (uint k = 1; k < segment->callpaths.size(); k++)
+      int maxLCADepth = 0;
+      for (uint k = 1; k < segment->callpaths.size(); k++) {
         lcaDepth[k] = computeLCADepth(segment->callpaths[k-1], segment->callpaths[k]);
+        maxLCADepth = max(maxLCADepth, lcaDepth[k]);
+      }
       lcaDepth[0] = END;
       lcaDepth[segment->callpaths.size()] = END;
       
-      while (true) {
-        // find idx such that lcaDepth[idx] is largest -- corresponding two call paths are "closest".
-        int idx = 0;
-        for (uint k = 1; k < segment->callpaths.size(); k++)
-          if (lcaDepth[k] > lcaDepth[idx])
-            idx = k;
-        
-        if (lcaDepth[idx] < 0) break;
-        
-        int startIdx = idx-1;
-        int endIdx = idx;
-        // Locate all call paths who have the same LCA.
-        while (lcaDepth[startIdx] == lcaDepth[idx] || lcaDepth[startIdx] == UNSOLVED || lcaDepth[startIdx] == RESOLVED)
-          startIdx--;
-        while (lcaDepth[endIdx+1] == lcaDepth[idx] || lcaDepth[endIdx+1] == UNSOLVED || lcaDepth[endIdx+1] == RESOLVED)
-          endIdx++;
-        
-        // Compute totalImb for unsolved call paths.
-        double commImb = 0;
-        double compImb = 0;
-        vector<int> commIdxes;
-        vector<int> compIdxes;
-        for (int k = startIdx; k <= endIdx; k++)
-          if (lcaDepth[k] != RESOLVED && lcaDepth[k+1] != RESOLVED && imb[k] >= MIN_SUBTREE_IR) {
-            if (isComm[k]) {
-              commImb += imb[k];
-              commIdxes.push_back(k);
-            }
-            else {
-              compImb += imb[k];
-              compIdxes.push_back(k);
-            }
-          }
-        
-        // When all significant call paths are resolved.
-        if (commIdxes.size() + compIdxes.size() == 0) {
-          for (int k = startIdx+1; k <= endIdx; k++)
-            lcaDepth[k] = RESOLVED;
-          continue;
-        }
-        
-        // Only one call path hasn't been resolved
-        if (commIdxes.size() + compIdxes.size() == 1) {
-          LoadImbalance* imbalance = new LoadImbalance();
-          imbalance->symptomIdxes = commIdxes;
-          imbalance->symptomIdxes.insert(imbalance->symptomIdxes.end(), compIdxes.begin(), compIdxes.end());
-          imbalance->lcaDepth = lcaDepth[idx];
-          imbalance->resolved = false;
-          imbalance->minIR = commImb + compImb;
-          imbalance->maxIR = imbalance->minIR;
-          segment->imbs.push_back(imbalance);
+      for (int depth = maxLCADepth; depth >= 0; depth--) {
+        int startIdx = 0;
+        while (startIdx < (int)segment->callpaths.size()) {
+          int endIdx = startIdx + 1;
+          while (lcaDepth[endIdx] >= depth || lcaDepth[endIdx] == RESOLVED)
+            endIdx++;
           
-          for (int k = startIdx+1; k <= endIdx; k++)
-            lcaDepth[k] = RESOLVED;
-          continue;
-        }
-        
-        // Multiple call path hasn't been resolved
-        const TCTANode* lcaNode = segment->callpaths[idx]->callpath[lcaDepth[idx]];
-        CallpathMetrics* lcaMetrics = metricsMap[lcaNode];
-        // Imbalance of all unsolved call paths from startIdx to endIdx is resolved at depth lcaDepth[idx].
-        if (lcaMetrics->nodeImbIR <= (commImb + compImb) * IMB_RESOLVE_RATIO) {
-          LoadImbalance* imbalance = new LoadImbalance();
-          imbalance->lcaDepth = lcaDepth[idx];
-          imbalance->resolved = true;
-          
-          // See if imbalance from computation is offset by imbalance in communication
-          double diff = compImb - commImb;
-          if (diff < 0) diff = -diff;
-          imbalance->minIR = max(compImb, commImb);
-          imbalance->maxIR = imbalance->minIR;
-          if (diff <= imbalance->minIR * IMB_RESOLVE_RATIO) {
-            // If so, computation call paths are causes while communication ones are symptoms.
-            imbalance->causeIdxes = compIdxes;
-            imbalance->symptomIdxes = commIdxes;
-          }
-          else {
-            // If not, cause-symptom relationship is unclear.
-            imbalance->symptomIdxes = compIdxes;
-            imbalance->symptomIdxes.insert(imbalance->symptomIdxes.end(), commIdxes.begin(), commIdxes.end());
+          // the LCA depth of all call paths from startIdx to endIdx-1 is no less than depth.
+          if (endIdx > startIdx + 1) {
+            // Compute totalImb for all call paths.
+            double commImb = 0;
+            double compImb = 0;
+            vector<int> commIdxes;
+            vector<int> compIdxes;
+            for (int k = startIdx; k < endIdx; k++)
+              if (lcaDepth[k] != RESOLVED && lcaDepth[k+1] != RESOLVED && imb[k] >= MIN_SUBTREE_IR) {
+                if (isComm[k]) {
+                  commImb += imb[k];
+                  commIdxes.push_back(k);
+                }
+                else {
+                  compImb += imb[k];
+                  compIdxes.push_back(k);
+                }
+              }
             
-            imbalance->minIR = imb[imbalance->symptomIdxes[0]];
-            for (uint i = 1; i < imbalance->symptomIdxes.size(); i++)
-              if (imb[imbalance->symptomIdxes[i]] > imbalance->minIR)
-                imbalance->minIR = imb[imbalance->symptomIdxes[i]];
-            imbalance->maxIR = max(imbalance->minIR, (commImb+compImb)/2);
+            const TCTANode* lcaNode = segment->callpaths[startIdx]->callpath[depth];
+            CallpathMetrics* lcaMetrics = metricsMap[lcaNode];
+            
+            // When all significant call paths has already been resolved.
+            if (commIdxes.size() + compIdxes.size() == 0) {
+              for (int k = startIdx+1; k < endIdx; k++)
+                lcaDepth[k] = RESOLVED;
+            }
+            // When imbalance of all unsolved call paths from startIdx to endIdx-1 is resolved at the current depth
+            else if (lcaMetrics->nodeImbIR <= (commImb + compImb) * IMB_RESOLVE_RATIO) {
+              // Mark them as resolved
+              for (int k = startIdx+1; k < endIdx; k++)
+                lcaDepth[k] = RESOLVED;
+              
+              // Only one call path
+              if (commIdxes.size() + compIdxes.size() == 1) {
+                LoadImbalance* imbalance = new LoadImbalance();
+                imbalance->symptomIdxes = commIdxes;
+                imbalance->symptomIdxes.insert(imbalance->symptomIdxes.end(), compIdxes.begin(), compIdxes.end());
+                imbalance->lcaDepth = depth;
+                imbalance->resolved = false;
+                imbalance->minIR = commImb + compImb;
+                imbalance->maxIR = imbalance->minIR;
+                segment->imbs.push_back(imbalance);
+              }
+              // Multiple call paths
+              else {
+                LoadImbalance* imbalance = new LoadImbalance();
+                imbalance->lcaDepth = depth;
+                imbalance->resolved = true;
+
+                // See if imbalance from computation is offset by imbalance in communication
+                double diff = compImb - commImb;
+                if (diff < 0) diff = -diff;
+                imbalance->minIR = max(compImb, commImb);
+                imbalance->maxIR = imbalance->minIR;
+                if (diff <= imbalance->minIR * IMB_RESOLVE_RATIO) {
+                  // If so, computation call paths are causes while communication ones are symptoms.
+                  imbalance->causeIdxes = compIdxes;
+                  imbalance->symptomIdxes = commIdxes;
+                }
+                else {
+                  // If not, cause-symptom relationship is unclear.
+                  imbalance->symptomIdxes = compIdxes;
+                  imbalance->symptomIdxes.insert(imbalance->symptomIdxes.end(), commIdxes.begin(), commIdxes.end());
+
+                  imbalance->minIR = imb[imbalance->symptomIdxes[0]];
+                  for (uint i = 1; i < imbalance->symptomIdxes.size(); i++)
+                    if (imb[imbalance->symptomIdxes[i]] > imbalance->minIR)
+                      imbalance->minIR = imb[imbalance->symptomIdxes[i]];
+                  imbalance->maxIR = max(imbalance->minIR, (commImb+compImb)/2);
+                }
+                
+                segment->imbs.push_back(imbalance);
+              }
+            }
           }
-          
-          segment->imbs.push_back(imbalance);
-          
-          for (int k = startIdx+1; k <= endIdx; k++)
-            lcaDepth[k] = RESOLVED;
-        }
-        else {
-          for (int k = startIdx+1; k <= endIdx; k++)
-            lcaDepth[k] = UNSOLVED;
+          startIdx = endIdx;
         }
       }
-      
+
       delete lcaDepth;
       delete isComm;
       delete imb;
