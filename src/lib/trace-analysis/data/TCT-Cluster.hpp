@@ -194,8 +194,8 @@ namespace TraceAnalysis {
     void detectRSD(int nested_level, int last_idx);
     void constructRSD(int nested_level, int first_idx, int stride, int length);
     
-    // Return the index of the RSD with first_id == id.
-    int findID(long id, int nested_level, int min_idx, int max_idx);
+    // Return the index of the RSD with last_id == id.
+    int findLastIDIndex(long id, int nested_level, int min_idx, int max_idx);
     void increaseMaxLevel();
   };
 }

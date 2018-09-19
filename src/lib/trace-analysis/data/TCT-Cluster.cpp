@@ -149,13 +149,13 @@ namespace TraceAnalysis {
     while (first1 != NULL || first2 != NULL)
       if ((first2 == NULL) ||
               (first1 != NULL && first1->getLastID() < first2->getLastID())) {
-        addMember(first1);
         idx1[first1->nested_level]++;
+        addMember(first1);
         first1 = getFirstInstance(other1.max_level, other1.members, idx1);
       }
       else {
-        addMember(first2);
         idx2[first2->nested_level]++;
+        addMember(first2);
         first2 = getFirstInstance(other2.max_level, other2.members, idx2);
       }
     
@@ -213,19 +213,19 @@ namespace TraceAnalysis {
       if (members[prev_idx]->isIsomorphic(members[last_idx])) {
         int first_idx = prev_idx;
         int length = 2;
-        int stride = members[last_idx]->getFirstID() - members[first_idx]->getFirstID();
+        int stride = members[last_idx]->getLastID() - members[first_idx]->getLastID();
         if (stride <= 0) {
           print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterMemberRSD::detectRSD() -- stride %d <= 0.\n", stride);
           continue;
         }
         // Check previous members to see if they are in the same sequence.
-        long temp_id = members[first_idx]->getFirstID() - stride;
-        int temp_idx = findID(temp_id, nested_level, max(0, first_idx - RSD_DETECTION_WINDOW), first_idx - 1);
+        long temp_id = members[first_idx]->getLastID() - stride;
+        int temp_idx = findLastIDIndex(temp_id, nested_level, max(0, first_idx - RSD_DETECTION_WINDOW), first_idx - 1);
         while (temp_idx != -1 && members[temp_idx]->isIsomorphic(members[last_idx])) {
           first_idx = temp_idx;
           length++;
           temp_id -= stride;
-          temp_idx = findID(temp_id, nested_level, max(0, first_idx - RSD_DETECTION_WINDOW), first_idx - 1);
+          temp_idx = findLastIDIndex(temp_id, nested_level, max(0, first_idx - RSD_DETECTION_WINDOW), first_idx - 1);
         }
         
         // if length passes certain threshold, construct RSD.
@@ -245,7 +245,7 @@ namespace TraceAnalysis {
     
     // Remove members that are represented by the new RSD
     vector<TCTClusterMemberRSD*>& members = this->members[nested_level];
-    long id = members[first_idx]->getFirstID();
+    long id = members[first_idx]->getLastID();
     int idx = first_idx;
     
     while (length > 0) {
@@ -258,20 +258,20 @@ namespace TraceAnalysis {
       members.erase(members.begin() + idx);
       length--;
       id += stride;
-      idx = findID(id, nested_level, idx, min((int)members.size() - 1, idx + RSD_DETECTION_WINDOW));
+      idx = findLastIDIndex(id, nested_level, idx, min((int)members.size() - 1, idx + RSD_DETECTION_WINDOW));
     }
   }
   
-  int TCTClusterMembers::findID(long id, int nested_level, int min_idx, int max_idx) {
+  int TCTClusterMembers::findLastIDIndex(long id, int nested_level, int min_idx, int max_idx) {
     if (min_idx >= max_idx) {
-      if (members[nested_level][min_idx]->getFirstID() == id) return min_idx;
+      if (members[nested_level][min_idx]->getLastID() == id) return min_idx;
       else return -1;
     }
     
     int mid_idx = (min_idx + max_idx) / 2;
     
-    if (members[nested_level][mid_idx]->getFirstID() >= id) return findID(id, nested_level, min_idx, mid_idx);
-    else return findID(id, nested_level, mid_idx+1, max_idx);
+    if (members[nested_level][mid_idx]->getLastID() >= id) return findLastIDIndex(id, nested_level, min_idx, mid_idx);
+    else return findLastIDIndex(id, nested_level, mid_idx+1, max_idx);
   }
   
   void TCTClusterMembers::increaseMaxLevel() {
