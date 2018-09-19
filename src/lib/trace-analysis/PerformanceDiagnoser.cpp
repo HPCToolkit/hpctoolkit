@@ -124,7 +124,6 @@ namespace TraceAnalysis {
     vector<int> symptomIdxes;
     vector<int> causeIdxes;
     int lcaDepth;
-    bool resolved;
     double minIR;
     double maxIR;
   };
@@ -714,7 +713,6 @@ namespace TraceAnalysis {
                 imbalance->symptomIdxes = commIdxes;
                 imbalance->symptomIdxes.insert(imbalance->symptomIdxes.end(), compIdxes.begin(), compIdxes.end());
                 imbalance->lcaDepth = depth;
-                imbalance->resolved = false;
                 imbalance->minIR = commImb + compImb;
                 imbalance->maxIR = imbalance->minIR;
                 segment->imbs.push_back(imbalance);
@@ -723,7 +721,6 @@ namespace TraceAnalysis {
               else {
                 LoadImbalance* imbalance = new LoadImbalance();
                 imbalance->lcaDepth = depth;
-                imbalance->resolved = true;
 
                 // See if imbalance from computation is offset by imbalance in communication
                 double diff = compImb - commImb;
@@ -809,12 +806,9 @@ namespace TraceAnalysis {
         if (causeStr.size() > 0)
           print_msg(MSG_PRIO, "Imbalance in [%s (cause)] caused the imbalance in [%s (symptom)] at LCA depth %d: IR = %.2f%%\n",  
                 causeStr.c_str(), symptomStr.c_str(), imbalance->lcaDepth, imbalance->minIR * 100);
-        else if (imbalance->resolved) 
+        else
           print_msg(MSG_PRIO, "Imbalance in [%s] is resolved at LCA depth %d but the cause-symptom relationship is unclear: minIR = %.2f%%, maxIR = %.2f%%\n",  
                 symptomStr.c_str(), imbalance->lcaDepth, imbalance->minIR * 100, imbalance->maxIR * 100);
-        else
-          print_msg(MSG_PRIO, "Imbalance in [%s] is not resolved: IR = %.2f%%\n",  
-                symptomStr.c_str(), imbalance->minIR * 100);
       }
     }
     
