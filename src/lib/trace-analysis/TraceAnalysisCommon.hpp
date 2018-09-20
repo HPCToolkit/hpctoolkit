@@ -98,6 +98,8 @@ namespace TraceAnalysis {
   const int PRSD_DETECTION_LENGTH = 3;
   
   // Parameters for performance diagnosis.
+  const double COMM_DOMINANT_RATIO = 0.5;
+  
   const double MIN_SYNC_IMB_IR = 0.001;
   const double MIN_SYNC_COMM_IR = 0.001;
   const double MIN_SUBTREE_IR = 0.003;

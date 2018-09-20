@@ -178,7 +178,7 @@ namespace TraceAnalysis {
       currentSegment = new ExecutionSegment();
       
       assignSemanticLabel(root, SEMANTIC_LABEL_COMPUTATION);
-      computeMetrics(root);
+      computeMetrics(root, SEMANTIC_LABEL_COMPUTATION);
       
       vector<const TCTANode*> callpath;
       callpath.push_back(root);
@@ -203,10 +203,10 @@ namespace TraceAnalysis {
   private:
     // Determine the semantic label of all nodes.
     // CallpathMetrics::subTreeCommIR is used to accumulate the time spent in communication.
-    void assignSemanticLabel(const TCTANode* node, uint parentSemanticLabel) {
+    void assignSemanticLabel(const TCTANode* node, uint parentOriginalLabel) {
       CallpathMetrics* metrics = new CallpathMetrics();
       metricsMap[node] = metrics;
-      metrics->originalLabel = getFuncSemanticInfo(node->getName()).semantic_label | parentSemanticLabel;
+      metrics->originalLabel = getFuncSemanticInfo(node->getName()).semantic_label | parentOriginalLabel;
       
       if (node->type == TCTANode::Prof) {
         const TCTProfileNode* prof = (const TCTProfileNode*) node;
@@ -244,7 +244,7 @@ namespace TraceAnalysis {
             && (SEMANTIC_LABEL_ARRAY[i].label != metrics->derivedLabel)
             && (metrics->subTreeCommIR.find(SEMANTIC_LABEL_ARRAY[i].label) != metrics->subTreeCommIR.end())
             // SEMANTIC_LABEL_ARRAY[i].label is the major source
-            && (metrics->subTreeCommIR[SEMANTIC_LABEL_ARRAY[i].label] >= totalDuration * HOT_PATH_RATIO) ) {
+            && (metrics->subTreeCommIR[SEMANTIC_LABEL_ARRAY[i].label] >= totalDuration * COMM_DOMINANT_RATIO) ) {
           // If so, change the semantic label of this node.
           metrics->derivedLabel = SEMANTIC_LABEL_ARRAY[i].label;
         }
@@ -262,8 +262,9 @@ namespace TraceAnalysis {
       return;
     }
     
-    void computeMetrics(const TCTANode* node) {
+    void computeMetrics(const TCTANode* node, uint parentDerivedLabel) {
       CallpathMetrics* metrics = metricsMap[node];
+      metrics->derivedLabel |= parentDerivedLabel;
       metrics->subTreeCommIR.clear();
 
       double imb, comm, excImb;
@@ -316,20 +317,20 @@ namespace TraceAnalysis {
       if (node->type == TCTANode::Prof) {
         const TCTProfileNode* prof = (const TCTProfileNode*) node;
         for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
-          computeMetrics(it->second);
+          computeMetrics(it->second, metrics->derivedLabel);
           metrics->addChildMetrics(metricsMap[it->second]);
         }
       }
       else if (node->type == TCTANode::Loop) {
         const TCTANode* avgRep = ((TCTLoopNode*)node)->getClusterNode()->getAvgRep();
-        computeMetrics(avgRep);
+        computeMetrics(avgRep, metrics->derivedLabel);
         //TODO metrics from rejected iterations are ignored.
         metrics->addChildMetrics(metricsMap[avgRep]);
       }
       else {
         const TCTATraceNode* trace = (const TCTATraceNode*) node;
         for (int i = 0; i < trace->getNumChild(); i++) {
-          computeMetrics(trace->getChild(i));
+          computeMetrics(trace->getChild(i), metrics->derivedLabel);
           metrics->addChildMetrics(metricsMap[trace->getChild(i)]);
         }
       }

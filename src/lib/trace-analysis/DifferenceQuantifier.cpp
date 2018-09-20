@@ -252,10 +252,6 @@ namespace TraceAnalysis {
       mergedTrace->setRetCount(trace1->getRetCount() + trace2->getRetCount());
       mergedTrace->getPerfLossMetric().setDuratonMetric(trace1->getPerfLossMetric(), trace2->getPerfLossMetric());
     }
-
-    if (trace1->getName() == "hypre_BoomerAMGBuildCoarseOperator" && (!isScoreOnly)) {
-      int k = 2;
-    }
     
     /**
      * Inclusive difference score of the merged trace node consists of the following components --
@@ -492,10 +488,6 @@ namespace TraceAnalysis {
             || (loop1->getNumIteration() != loop2->getNumIteration())
             || (loop1->getNumAcceptedIteration() != loop2->getNumAcceptedIteration()))
       return mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, isScoreOnly);
-    
-    if (loop1->getName() == "loop@471" && (!isScoreOnly)) {
-      int k = 2;
-    }
     
     TCTLoopNode* mergedLoop = NULL;
     TCTProfileNode* mergedProf = NULL;
