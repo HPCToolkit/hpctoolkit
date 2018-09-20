@@ -66,6 +66,15 @@
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+
+//*************************** Constants ***************************
+
+#define OPERATION_ASSIGN    '='
+#define OPERATION_INCREMENT '+'
+#define OPERATION_MIN       '<'
+#define OPERATION_MAX       '>'
+
+
 //*************************** Concrete Data Types ***************************
 
 //
@@ -451,23 +460,44 @@ hpcrun_metric_std(int metric_id, metric_set_t* set,
   }
 
   hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(set, metric_id);
+
   switch (minfo->flags.fields.valFmt) {
     case MetricFlags_ValFmt_Int:
-      if (operation == '+')
+      if (operation == OPERATION_INCREMENT)
         loc->i += val.i; 
-      else if (operation == '=')
+      else if (operation == OPERATION_ASSIGN)
         loc->i = val.i;
       break;
+
     case MetricFlags_ValFmt_Real:
-      if (operation == '+')
+      if (operation == OPERATION_INCREMENT)
         loc->r += val.r;
-      else if (operation == '=')
+      else if (operation == OPERATION_ASSIGN)
         loc->r = val.r;
+      break;
+
+    case MetricFlags_ValFmt_Address:
+      if (operation == OPERATION_MIN) {
+        if ( (loc->p && loc->p > val.p) ||
+              loc->p == NULL) {
+          loc->p = val.p;
+        }
+      }
+      else if (operation == OPERATION_MAX) {
+        if ( (loc->p && loc->p < val.p) ||
+             loc->p == NULL) {
+          loc->p = val.p;
+        }
+      }
+      else if (operation == OPERATION_ASSIGN ||
+               operation == OPERATION_INCREMENT)
+        loc->p = val.p;
       break;
     default:
       assert(false);
   }
 }
+
 //
 // replace the old value with the new value
 //
@@ -486,6 +516,22 @@ hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 {
   hpcrun_metric_std(metric_id, set, '+', incr);
 }
+
+// set the minimum value (only applicable for address type value)s
+void
+hpcrun_metric_std_min(int metric_id, metric_set_t *set, hpcrun_metricVal_t val)
+{
+  hpcrun_metric_std(metric_id, set, '<', val);
+}
+
+// set the maximum value (only applicable for address type value)
+void
+hpcrun_metric_std_max(int metric_id, metric_set_t *set, hpcrun_metricVal_t val)
+{
+  hpcrun_metric_std(metric_id, set, '>', val);
+}
+
+
 
 //
 // copy a metric set

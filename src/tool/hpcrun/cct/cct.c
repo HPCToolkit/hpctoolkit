@@ -316,31 +316,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->node_type = node->node_type;
 
   // -------------------------
-  // datacentric
-  // -------------------------
-  if (hpcrun_fmt_is_allocation_type(node->node_type)) {
-
-    tmp->data.id_node_alloc = 0;
-    tmp->data.start_address = 0;
-
-    // for node allocation, we add the allocation information
-    // if the node is dynamic allocation, then we point to the node
-    //   where the malloc is located
-    //
-    // if the node is stataic allocation, then we mark with DATA_STATIC_CONTEXT
-    //   since there is no information of location of the node
-
-    tmp->data.start_address = node->var.start_address;
-
-    uint32_t id_alloc = 0;
-
-    if (!hpcrun_cct_var_static(node)) {
-      id_alloc = node->var.allocation_node->persistent_id;
-    }
-    tmp->data.id_node_alloc = id_alloc;
-  }
-
-  // -------------------------
   // metrics
   // -------------------------
   tmp->num_metrics = my_arg->num_metrics;
@@ -493,6 +468,18 @@ void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
   node->node_type |= NODE_TYPE_LEAF;
+}
+
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_ALLOCATION;
+}
+
+bool
+hpcrun_cct_is_node_allocation(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
 }
 
 //

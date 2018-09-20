@@ -134,7 +134,7 @@ prof_abort
 //***************************************************************************
 
 #define DBG               0
-#define DBG_DATA          1
+#define DBG_DATA          0
 #define MAX_PREFIX_CHARS 64
 
 
@@ -1470,7 +1470,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
   ExprEval eval;
   std::vector<CCT::Stmt*> listMemAccessNodes;
-  DIAG_DevMsgIf(DBG, ". read nodes: " << numNodes );
+  DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1530,56 +1530,37 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 #endif
 
-    if (hpcrun_fmt_is_allocation_type(nodeFmt.node_type) && node_parent) {
-      // special node for datacentric: this node points to the source of
-      //  variable allocation
-      // there is no need to add a new node since the information is embedded
-      // to the parent
-      if (typeid(*node_parent) == typeid(CCT::Stmt)) {
-        CCT::Stmt *parent_stmt = (CCT::Stmt*) node_parent;
+    // ----------------------------------------------------------
+    // Create node and link to parent
+    // ----------------------------------------------------------
 
-        parent_stmt->id_node_alloc(nodeFmt.data.id_node_alloc);
-        parent_stmt->start_address(nodeFmt.data.start_address);
+    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
+        cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
+    CCT::ADynNode* node = n2.first;
+    CCT::ADynNode* node_sib = n2.second;
 
-        listMemAccessNodes.push_back(parent_stmt);
-        DIAG_DevMsgIf(0, "add mem access " << nodeFmt.data.id_node_alloc <<
-                         " @ " << nodeFmt.data.start_address);
+    DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
 
+    if (node_parent) {
+      // If 'node' is not the secondary root, perform sanity check
+      if (!node->isSecondarySynthRoot()) {
+        if (node->lmId_real() == LoadMap::LMId_NULL) {
+          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+        }
+      }
+
+      node->link(node_parent);
+      if (node_sib) {
+        node_sib->link(node_parent);
       }
     }
     else {
-      // ----------------------------------------------------------
-      // Create node and link to parent
-      // ----------------------------------------------------------
-
-      std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-          cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
-      CCT::ADynNode* node = n2.first;
-      CCT::ADynNode* node_sib = n2.second;
-
-      DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
-
-      if (node_parent) {
-        // If 'node' is not the secondary root, perform sanity check
-        if (!node->isSecondarySynthRoot()) {
-          if (node->lmId_real() == LoadMap::LMId_NULL) {
-            DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-          }
-        }
-
-        node->link(node_parent);
-        if (node_sib) {
-          node_sib->link(node_parent);
-        }
-      }
-      else {
-        DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
-        DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-        cct->root(node);
-      }
-
-      cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+      DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
+      DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
+      cct->root(node);
     }
+
+    cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
   }
 
   // specific to data-centric to connect with the location of allocation node
@@ -2002,21 +1983,26 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
-    double mval = 0;
-    switch (mdesc->flags().fields.valFmt) {
-    case MetricFlags_ValFmt_Int:
-      mval = (double)m.i; break;
-    case MetricFlags_ValFmt_Real:
-      mval = m.r; break;
-    default:
-      DIAG_Die(DIAG_UnexpectedInput);
-    }
+    if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
+      // special treatment for address-type metric
+      // we don't want to convert to double and multiply by period
+      metricData.metricObject(i_dst) = m;
 
-    metricData.metric(i_dst) = mval * (double)mdesc->period();
+    } else {
 
-    if (!hpcrun_metricVal_isZero(m)) {
-      hasMetrics = true;
+      double mval = 0;
+      switch (mdesc->flags().fields.valFmt) {
+      case MetricFlags_ValFmt_Int:
+        mval = (double)m.i; break;
+      case MetricFlags_ValFmt_Real:
+        mval = m.r; break;
+
+      default:
+        DIAG_Die(DIAG_UnexpectedInput);
+      }
+      metricData.metric(i_dst) = mval * (double)mdesc->period();
     }
+    hasMetrics = !hpcrun_metricVal_isZero(m);
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||

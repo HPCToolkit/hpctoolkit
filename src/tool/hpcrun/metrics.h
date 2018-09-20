@@ -153,6 +153,15 @@ extern void hpcrun_metric_std_set(int metric_id, metric_set_t* set,
 				  hpcrun_metricVal_t value);
 extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 				  hpcrun_metricVal_t incr);
+
+// set the minimum value (only applicable for address type value)
+void
+hpcrun_metric_std_min(int metric_id, metric_set_t *set, hpcrun_metricVal_t val);
+
+// set the maximum value (only applicable for address type value)
+void
+hpcrun_metric_std_max(int metric_id, metric_set_t *set, hpcrun_metricVal_t val);
+
 //
 // copy a metric set
 //

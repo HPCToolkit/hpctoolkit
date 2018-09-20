@@ -250,6 +250,7 @@ typedef enum {
   MetricFlags_ValFmt_NULL = 0,
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
+  MetricFlags_ValFmt_Address
 
 } MetricFlags_ValFmt_t;
 
@@ -542,10 +543,6 @@ struct hpcrun_cct_node_lm_s {
 // data-centric fields
 // -------------------------
 
-struct hpcrun_cct_node_data_s {
-  uint32_t id_node_alloc;
-  uint64_t start_address;
-};
 
 typedef struct hpcrun_fmt_cct_node_t {
 
@@ -557,10 +554,7 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   lush_assoc_info_t as_info;
 
-  union {
-    struct hpcrun_cct_node_lm_s lm;
-    struct hpcrun_cct_node_data_s data;
-  };
+  struct hpcrun_cct_node_lm_s lm;
 
   // static logical instruction pointer
   lush_lip_t lip;
@@ -770,6 +764,7 @@ hpcrun_fmt_is_allocation_type(uint16_t node_type)
 {
   return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
 }
+
 
 // return true of the node type is an allocation node
 // used by data-centric code

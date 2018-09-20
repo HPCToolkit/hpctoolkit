@@ -88,7 +88,7 @@ using std::string;
 //*************************** Forward Declarations **************************
 
 #define DBG_CCT_MERGE 0
-#define DBG_PARALLEL_ANALYSIS 1
+#define DBG_PARALLEL_ANALYSIS 0
 
 //***************************************************************************
 

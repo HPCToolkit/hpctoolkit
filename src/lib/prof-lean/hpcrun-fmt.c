@@ -469,6 +469,10 @@ hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric
   else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
     return metric.r;
   }
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Address) {
+    double *pointer_double = (double*)metric.p;
+    return *pointer_double;
+  }
   // TODO: default value
   return metric.r;
 }
@@ -483,6 +487,11 @@ hpcrun_fmt_metric_set_value(metric_desc_t metric_desc,
   } 
   else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
     metric->r = value;
+  }
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Address) {
+    // conversion yuck
+    double *ptr_double = (double*) &value;
+    metric->p = *(void**) ptr_double;
   }
 }
 
@@ -506,6 +515,13 @@ hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
   metric->r = value;
 }
 
+void
+hpcrun_fmt_metric_set_value_address(hpcrun_metricFlags_t *flags,
+    hpcrun_metricVal_t *metric, double value)
+{
+  flags->fields.valFmt = MetricFlags_ValFmt_Address;
+  metric->r = value;
+}
 
 //***************************************************************************
 // loadmap
@@ -625,14 +641,8 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->as_info.bits, fs));
   }
 
-  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->data.id_node_alloc, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->data.start_address, fs));
-  } else {
-
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->lm.lm_id, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm.lm_ip, fs));
-  }
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->lm.lm_id, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->lm.lm_ip, fs));
 
   lush_lip_init(&x->lip);
   if (flags.fields.isLogicalUnwind) {
@@ -660,16 +670,8 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
     HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->as_info.bits, fs));
   }
 
-  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
-    // special data centric node: allocation node
-    HPCFMT_ThrowIfError( hpcfmt_int4_fwrite(x->data.id_node_alloc, fs) );
-    HPCFMT_ThrowIfError( hpcfmt_int8_fwrite(x->data.start_address, fs) );
-
-  } else {
-
-    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->lm.lm_id, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->lm.lm_ip, fs));
-  }
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->lm.lm_id, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->lm.lm_ip, fs));
 
   if (flags.fields.isLogicalUnwind) {
     HPCFMT_ThrowIfError(hpcrun_fmt_lip_fwrite(&x->lip, fs));
@@ -700,11 +702,7 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     fprintf(fs, "(as: %s) ", as_str);
   }
 
-  if (hpcrun_fmt_is_allocation_type(x->node_type)) {
-    fprintf(fs, "(alloc: %u) (addr: 0x%"PRIx64") ", (uint)x->data.id_node_alloc, x->data.start_address);
-  } else {
-    fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm.lm_id, x->lm.lm_ip);
-  }
+  fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm.lm_id, x->lm.lm_ip);
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");
@@ -721,13 +719,16 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     }
 
     switch (mflags.fields.valFmt) {
-      default:
-      case MetricFlags_ValFmt_Int:
-	fprintf(fs, " %"PRIu64, x->metrics[i].i);
-	break;
-      case MetricFlags_ValFmt_Real:
-	fprintf(fs, " %g", x->metrics[i].r);
-	break;
+    default:
+    case MetricFlags_ValFmt_Int:
+      fprintf(fs, " %"PRIu64, x->metrics[i].i);
+      break;
+    case MetricFlags_ValFmt_Real:
+      fprintf(fs, " %g", x->metrics[i].r);
+      break;
+    case MetricFlags_ValFmt_Address:
+      fprintf(fs, " %p", x->metrics[i].p);
+      break;
     }
 
     if (i + 1 < x->num_metrics) {

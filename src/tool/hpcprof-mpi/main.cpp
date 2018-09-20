@@ -104,7 +104,7 @@ using std::vector;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DBG_PROF_MPI 1
+#define DBG_PROF_MPI 0
 
 //*************************** Forward Declarations ***************************
 

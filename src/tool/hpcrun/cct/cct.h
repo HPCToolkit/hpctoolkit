@@ -293,6 +293,12 @@ bool
 hpcrun_cct_var_static(cct_node_t *node);
 
 void
+hpcrun_cct_set_node_allocation(cct_node_t *node);
+
+bool
+hpcrun_cct_is_node_allocation(cct_node_t *node);
+
+void
 hpcrun_cct_set_node_memaccess(cct_node_t *node);
 
 bool

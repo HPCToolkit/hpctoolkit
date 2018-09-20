@@ -83,6 +83,7 @@
 
 #include "cct_addr.h"       // struct var_addr_s
 #include "datacentric.h"
+#include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
 
@@ -147,6 +148,8 @@ struct perf_mem_metric {
   int memstore_l1_miss;
 
   int memllc_miss;
+
+  int node_alloc;
 };
 
 /******************************************************************************
@@ -306,9 +309,23 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       return;
     }
 
-    // if necessary, add the start of the variable address to the cct node
-    hpcrun_cct_var_add(node, start, info->context);
+    metric_set_t *mset = hpcrun_reify_metric_set(node);
+    if (mset) {
+      hpcrun_metricVal_t value;
+      value.p = (void *)mmap_data->addr;
 
+      // check if this is the minimum value. if this is the case, record it in the metric
+      int metric_id = datacentric_get_metric_addr_start();
+      hpcrun_metric_std_min(metric_id, mset, value);
+
+      // check if this is the maximum value. if this is the case, record it in the metric
+      metric_id = datacentric_get_metric_addr_end();
+      hpcrun_metric_std_max(metric_id, mset, value);
+
+      // record the node allocation id
+      value.i = hpcrun_cct_persistent_id(info->context);
+      hpcrun_metric_std_set(metric.node_alloc, mset, value);
+    }
     hpcrun_cct_set_node_memaccess(node);
   }
 
@@ -382,7 +399,11 @@ datacentric_register(sample_source_t *self,
   metric.memllc_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
 
-
+  // ------------------------------------------
+  // node allocation id
+  // ------------------------------------------
+  metric.node_alloc = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.node_alloc, "Alloc-id");
 
   return 1;
 }
