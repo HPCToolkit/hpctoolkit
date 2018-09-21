@@ -107,16 +107,14 @@ splay_lookup_with_root(struct datatree_info_s *root, void *key, void **start, vo
 
   root = interval_splay(root, key);
 
-  spinlock_unlock(&datatree_lock);
-
-  if(!root) {
-    return NULL;
-  }
-  if((root->memblock <= key) && (root->rmemblock > key)) {
+  if(root && (root->memblock <= key) && (root->rmemblock > key)) {
     *start = root->memblock;
     *end   = root->rmemblock;
+
+    spinlock_unlock(&datatree_lock);
     return root;
   }
+  spinlock_unlock(&datatree_lock);
   return NULL;
 }
 

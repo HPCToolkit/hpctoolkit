@@ -484,8 +484,7 @@ hpcrun_metric_std(int metric_id, metric_set_t* set,
         }
       }
       else if (operation == OPERATION_MAX) {
-        if ( (loc->p && loc->p < val.p) ||
-             loc->p == NULL) {
+        if (loc->p < val.p) {
           loc->p = val.p;
         }
       }

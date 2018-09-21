@@ -302,29 +302,31 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   // - if it's in our database, add it to the cct node
   // ---------------------------------------------------------
   if (mmap_data->addr) {
-    datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
-
-    if (info == NULL || start == NULL) {
-      // unknown or not in our database
-      return;
-    }
 
     metric_set_t *mset = hpcrun_reify_metric_set(node);
     if (mset) {
-      hpcrun_metricVal_t value;
-      value.p = (void *)mmap_data->addr;
 
-      // check if this is the minimum value. if this is the case, record it in the metric
-      int metric_id = datacentric_get_metric_addr_start();
-      hpcrun_metric_std_min(metric_id, mset, value);
+      datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
-      // check if this is the maximum value. if this is the case, record it in the metric
-      metric_id = datacentric_get_metric_addr_end();
-      hpcrun_metric_std_max(metric_id, mset, value);
+      if (info) {
+        // variable address is store in the database
+        // record the interval of this access
 
-      // record the node allocation id
-      value.i = hpcrun_cct_persistent_id(info->context);
-      hpcrun_metric_std_set(metric.node_alloc, mset, value);
+        hpcrun_metricVal_t value;
+        value.p = (void *)mmap_data->addr;
+
+        // check if this is the minimum value. if this is the case, record it in the metric
+        int metric_id = datacentric_get_metric_addr_start();
+        hpcrun_metric_std_min(metric_id, mset, value);
+
+        // check if this is the maximum value. if this is the case, record it in the metric
+        metric_id = datacentric_get_metric_addr_end();
+        hpcrun_metric_std_max(metric_id, mset, value);
+
+        // record the node allocation id
+        value.i = hpcrun_cct_persistent_id(info->context);
+        hpcrun_metric_std_set(metric.node_alloc, mset, value);
+      }
     }
     hpcrun_cct_set_node_memaccess(node);
   }
