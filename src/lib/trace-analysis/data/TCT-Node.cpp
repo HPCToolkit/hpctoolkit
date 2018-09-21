@@ -165,8 +165,44 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  TCTLoopNode::TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
-    TCTANode(Loop, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {
+  void TCTANode::assignDerivedSemanticLabel(Time* durations) {
+    // Accumulate durations into an array
+    Time subTreeDurations[SEMANTIC_LABEL_ARRAY_SIZE];
+    for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++) subTreeDurations[i] = 0;
+    accumulateSemanticDurations(subTreeDurations);
+
+    long totalDuration = getDuration() * getWeight();
+    uint tempDerivedLabel;
+    // Assign derived semantic label
+    if (getNumSamples() * getWeight() < DERIVED_SEMANTIC_LABEL_MIN)
+      // If we don't have enough samples to get accurate result for this node, use SEMANTIC_LABEL_ANY.
+      tempDerivedLabel = SEMANTIC_LABEL_ANY;
+    else {
+      // If so, assign to the finest possible label such as time spent in the label is no less than half of the node's total duration.
+      tempDerivedLabel = semanticLabel;
+      for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
+        // SEMANTIC_LABEL_ARRAY[i].label is a child of derivedLabel
+        if (((SEMANTIC_LABEL_ARRAY[i].label & tempDerivedLabel) == tempDerivedLabel) 
+            && (SEMANTIC_LABEL_ARRAY[i].label != tempDerivedLabel)
+            // SEMANTIC_LABEL_ARRAY[i].label is the major source
+            && (subTreeDurations[i] >= totalDuration / 2) )
+          // If so, change the semantic label of this node.
+          tempDerivedLabel = SEMANTIC_LABEL_ARRAY[i].label;
+    }
+    derivedLabel &= tempDerivedLabel;
+
+    // Accumulate durations from this sub-tree to the input array.
+    if (durations != NULL) {
+      for (uint i = 0; i < SEMANTIC_LABEL_ARRAY_SIZE; i++)
+        if ((semanticLabel & SEMANTIC_LABEL_ARRAY[i].label) == SEMANTIC_LABEL_ARRAY[i].label)
+          durations[i] += totalDuration;
+        else
+          durations[i] += subTreeDurations[i];
+    }
+  }
+  
+  TCTLoopNode::TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
+    TCTANode(Loop, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {
       numIteration = 0;
       numAcceptedIteration = 0;
       pendingIteration = NULL;
@@ -209,6 +245,7 @@ namespace TraceAnalysis {
     time.setAsAverageTime(loop1.getTime(), weight1, loop2.getTime(), weight2);
     setWeight(weight1 + weight2);
     setRetCount(loop1.retCount + loop2.retCount);
+    setDerivedSemanticLabel(loop1.derivedLabel & loop2.derivedLabel);
     getPerfLossMetric().setDuratonMetric(loop1.plm, loop2.plm);
     
     if (loop1.numIteration != loop2.numIteration)
@@ -344,6 +381,11 @@ namespace TraceAnalysis {
     profileNode->clearDiffScore();
     profileNode->initPerfLossMetric();
     
+    if (clusterNode->getNumClusters() == 0) {
+      delete clusterNode;
+      clusterNode = NULL;
+    }
+    
     if (clusterNode != NULL) {
       clusterNode->getTime().setNumSamples(getNumSamples());
       clusterNode->getTime().setStartTime(getTime().getStartTimeExclusive(), getTime().getStartTimeInclusive());
@@ -412,6 +454,8 @@ namespace TraceAnalysis {
   TCTClusterNode::TCTClusterNode(const TCTClusterNode& cluster1, const TCTClusterNode& cluster2) : TCTANode(cluster1) {
     getTime().setAsAverageTime(cluster1.getTime(), cluster1.getWeight(), cluster2.getTime(), cluster1.getWeight());
     setWeight(cluster1.weight + cluster2.weight);
+    setDerivedSemanticLabel(cluster1.derivedLabel & cluster2.derivedLabel);
+    getPerfLossMetric().setDuratonMetric(cluster1.plm, cluster2.plm);
     
     numClusters = cluster1.numClusters + cluster2.numClusters;
     

@@ -140,7 +140,7 @@ namespace TraceAnalysis {
           // if the loop is not "split", add to stack
           pushOneNode(node, startTimeExclusive, startTimeInclusive, numSamples);
           // create a iteration
-          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph),
+          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph, activeStack.back()->getOriginalSemanticLabel()),
                   startTimeExclusive, startTimeInclusive, numSamples);
           return;
         } else {
@@ -170,7 +170,7 @@ namespace TraceAnalysis {
           popOneNode(startTimeExclusive, startTimeInclusive, numSamples);
           
           // push the new iteration
-          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph),
+          pushOneNode(new TCTIterationTraceNode(activeStack.back()->id.id, activeStack.size(), activeStack.back()->cfgGraph, activeStack.back()->getOriginalSemanticLabel()),
                 startTimeExclusive, startTimeInclusive, numSamples);
         }
       }
@@ -329,6 +329,7 @@ namespace TraceAnalysis {
       CallPathSample* current = reader.readNextSample();
       int currentDepth = 0;
       if (current != NULL) {
+        uint sementicLabel = SEMANTIC_LABEL_COMPUTATION;
         for (currentDepth = 0; currentDepth <= current->getDepth(); currentDepth++) {
           CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
           if (frame.type == CallPathFrame::Root) {
@@ -337,16 +338,18 @@ namespace TraceAnalysis {
           } 
           else if (frame.type == CallPathFrame::Loop) {
             TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
-                    binaryAnalyzer.findLoop(frame.vma));
+                    binaryAnalyzer.findLoop(frame.vma), sementicLabel);
             pushActiveStack(node, -1, current->timestamp);
           }
           else {
             // frame.type == CallPathFrame::Func
+            FUNC_SEMANTIC_INFO info = getFuncSemanticInfo(frame.name);
+            sementicLabel |= info.semantic_label;
             TCTANode* node = new TCTFunctionTraceNode(frame.id, frame.procID, frame.name, activeStack.size(),
-                    binaryAnalyzer.findFunc(frame.vma), frame.ra);
+                    binaryAnalyzer.findFunc(frame.vma), frame.ra, sementicLabel);
             pushActiveStack(node, -1, current->timestamp);
             // if semantic label of a function indicates that its children should be ignored in trace analysis, break.
-            if (getFuncSemanticInfo(frame.name).ignore_child) break;
+            if (info.ignore_child) break;
           }
         }
       }
@@ -371,19 +374,22 @@ namespace TraceAnalysis {
         
         currentDepth = lcaDepth;
         if (!getFuncSemanticInfo(current->getFrameAtDepth(lcaDepth).name).ignore_child) {
+          uint sementicLabel = activeStack.back()->getOriginalSemanticLabel();
           for (currentDepth = lcaDepth + 1; currentDepth <= current->getDepth(); currentDepth++) {
             CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
             if (frame.type == CallPathFrame::Loop) {
               TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
-                      binaryAnalyzer.findLoop(frame.vma));
+                      binaryAnalyzer.findLoop(frame.vma), sementicLabel);
               pushActiveStack(node, prev->timestamp, current->timestamp);
             } else {
               // frame.type == CallPathFrame::Func
+              FUNC_SEMANTIC_INFO info = getFuncSemanticInfo(frame.name);
+              sementicLabel |= info.semantic_label;
               TCTANode* node = new TCTFunctionTraceNode(frame.id, frame.procID, frame.name, activeStack.size(),
-                      binaryAnalyzer.findFunc(frame.vma), frame.ra);
+                      binaryAnalyzer.findFunc(frame.vma), frame.ra, sementicLabel);
               pushActiveStack(node, prev->timestamp, current->timestamp);
               // if semantic label of a function indicates that its children should be ignored in trace analysis, break.
-              if (getFuncSemanticInfo(frame.name).ignore_child) break;
+              if (info.ignore_child) break;
             }
           }
         }
@@ -401,6 +407,7 @@ namespace TraceAnalysis {
       delete prev;
 
       root->finalizeEnclosingLoops();
+      root->assignDerivedSemanticLabel(NULL);
       //printLoops(root);
 
       return root;

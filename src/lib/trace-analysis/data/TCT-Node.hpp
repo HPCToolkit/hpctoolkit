@@ -70,6 +70,7 @@ using std::map;
 #include "TCT-Time.hpp"
 #include "TCT-Metrics.hpp"
 #include "TCT-Cluster.hpp"
+#include "TCT-Semantic-Label.hpp"
 
 #include <boost/serialization/split_member.hpp>
 
@@ -137,19 +138,19 @@ namespace TraceAnalysis {
     BOOST_SERIALIZATION_SPLIT_MEMBER();
   protected:
     // Constructor for serialization only.
-    TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), retCount(0), time(),
-        diffScore(), plm() {}
+    TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), retCount(0), 
+        semanticLabel(SEMANTIC_LABEL_ANY), derivedLabel(SEMANTIC_LABEL_ANY), time(), diffScore(), plm() {}
     
   public:
-    TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), retCount(0), time(),
-        diffScore(), plm() {}
-    TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), retCount(orig.retCount), time(orig.time),
-        diffScore(orig.diffScore), plm(orig.plm) {}
-    TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), 
-        ra(orig.ra), name(orig.name), depth(orig.depth), weight(orig.weight), retCount(orig.retCount), time(orig.time),
-        diffScore(orig.diffScore), plm(orig.plm) {}
+    TCTANode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+        type(type), id(id, procID), cfgGraph(cfgGraph), ra(ra), name(name), depth(depth), weight(1), retCount(0), 
+        semanticLabel(semanticLabel), derivedLabel(SEMANTIC_LABEL_ANY), time(), diffScore(), plm() {}
+    TCTANode(const TCTANode& orig) : type(orig.type), id(orig.id), cfgGraph(orig.cfgGraph), ra(orig.ra), name(orig.name), 
+        depth(orig.depth), weight(orig.weight), retCount(orig.retCount), semanticLabel(orig.semanticLabel), derivedLabel(orig.derivedLabel),
+        time(orig.time), diffScore(orig.diffScore), plm(orig.plm) {}
+    TCTANode(const TCTANode& orig, NodeType type) : type(type), id(orig.id), cfgGraph(orig.cfgGraph), ra(orig.ra), name(orig.name), 
+        depth(orig.depth), weight(orig.weight), retCount(orig.retCount), semanticLabel(orig.semanticLabel), derivedLabel(orig.derivedLabel),
+        time(orig.time), diffScore(orig.diffScore), plm(orig.plm) {}
     
     virtual ~TCTANode() {
     }
@@ -182,6 +183,18 @@ namespace TraceAnalysis {
     
     virtual int getDepth() const {
       return depth;
+    }
+    
+    virtual uint getOriginalSemanticLabel() const {
+      return semanticLabel;
+    }
+    
+    virtual uint getDerivedSemanticLabel() const {
+      return derivedLabel;
+    }
+    
+    virtual void setDerivedSemanticLabel(uint label) {
+      derivedLabel = label;
     }
     
     virtual double getNumSamples() const {
@@ -259,6 +272,10 @@ namespace TraceAnalysis {
     // finalize loops in the subtree.
     virtual void finalizeEnclosingLoops() = 0;
     
+    // Assign derived semantic labels to all nodes in the subtree.
+    // Input/output: durations -- an array that accumulates time spent in all semantic categories.
+    void assignDerivedSemanticLabel(Time* durations);
+    
     virtual void adjustIterationNumbers(long inc) = 0;
     
     // Print contents of an object to a string for debugging purpose.
@@ -280,9 +297,13 @@ namespace TraceAnalysis {
     int depth;
     long weight;
     long retCount;
+    uint semanticLabel;
+    uint derivedLabel;
     TCTTime time;
     TCTDiffScore diffScore;
     TCTPerfLossMetric plm;
+    
+    virtual void accumulateSemanticDurations(Time* durations) = 0;
   };
   
   // Temporal Context Tree Abstract Trace Node
@@ -296,8 +317,8 @@ namespace TraceAnalysis {
     TCTATraceNode(NodeType type) : TCTANode(type) {}
  
   public:
-    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-      TCTANode(type, id, procID, name, depth, cfgGraph, ra) {}
+    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
     TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
       for (auto it = orig.children.begin(); it != orig.children.end(); it++)
         children.push_back((*it)->duplicate());
@@ -388,6 +409,11 @@ namespace TraceAnalysis {
     
   protected:
     vector<TCTANode*> children;
+    
+    virtual void accumulateSemanticDurations(Time* durations) {
+      for (int i = 0; i < getNumChild(); i++)
+        getChild(i)->assignDerivedSemanticLabel(durations);
+    }
   };
   
   // Temporal Context Tree Function Trace Node
@@ -400,8 +426,8 @@ namespace TraceAnalysis {
     TCTFunctionTraceNode() : TCTATraceNode(Func) {}
     
   public:
-    TCTFunctionTraceNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra) :
-      TCTATraceNode(Func, id, procID, name, depth, cfgGraph, ra) {}
+    TCTFunctionTraceNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+      TCTATraceNode(Func, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
     TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTFunctionTraceNode() {}
     
@@ -409,7 +435,7 @@ namespace TraceAnalysis {
       return new TCTFunctionTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      return new TCTFunctionTraceNode(id.id, id.procID, name, depth, cfgGraph, ra);
+      return new TCTFunctionTraceNode(id.id, id.procID, name, depth, cfgGraph, ra, semanticLabel);
     }
   };
   
@@ -424,7 +450,7 @@ namespace TraceAnalysis {
     
   public:
     TCTRootNode(int id, int procID, string name, int depth) : 
-            TCTATraceNode(Root, id, procID, name, depth, NULL, 0) {}
+            TCTATraceNode(Root, id, procID, name, depth, NULL, 0, SEMANTIC_LABEL_COMPUTATION) {}
     TCTRootNode(const TCTRootNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTRootNode() {}
     
@@ -446,10 +472,10 @@ namespace TraceAnalysis {
     TCTIterationTraceNode() : TCTATraceNode(Iter) {}
     
   public:
-    TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
-    TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph) :
-      TCTATraceNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma) {}
+    TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
+      TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
+    TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
+      TCTATraceNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
     TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
     
@@ -457,7 +483,7 @@ namespace TraceAnalysis {
       return new TCTIterationTraceNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      return new TCTIterationTraceNode(id.id, name, depth, cfgGraph);
+      return new TCTIterationTraceNode(id.id, name, depth, cfgGraph, semanticLabel);
     }
   };
   
@@ -472,7 +498,7 @@ namespace TraceAnalysis {
       pendingIteration(NULL), clusterNode(NULL), rejectedIterations(NULL), profileNode(NULL) {}
     
   public:
-    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph);
+    TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel);
     TCTLoopNode(const TCTLoopNode& orig);
     TCTLoopNode(const TCTLoopNode& loop1, long weight1, const TCTLoopNode& loop2, long weight2, bool accumulate);
     virtual ~TCTLoopNode();
@@ -481,8 +507,7 @@ namespace TraceAnalysis {
       return new TCTLoopNode(*this);
     }
     virtual TCTANode* voidDuplicate() const {
-      TCTLoopNode* ret = new TCTLoopNode(id.id, name, depth, cfgGraph);
-      return ret;
+      return new TCTLoopNode(id.id, name, depth, cfgGraph, semanticLabel);
     }
     
     virtual Time getExclusiveDuration() const;
@@ -557,6 +582,12 @@ namespace TraceAnalysis {
     
     bool hasPendingIteration() const {
       return (pendingIteration != NULL);
+    }
+    
+  protected:
+    virtual void accumulateSemanticDurations(Time* durations) {
+      ((TCTANode*)profileNode)->assignDerivedSemanticLabel(durations);
+      if (clusterNode != NULL) ((TCTANode*)clusterNode)->assignDerivedSemanticLabel(NULL);
     }
     
   private:
@@ -662,6 +693,12 @@ namespace TraceAnalysis {
     
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
+  protected:
+    virtual void accumulateSemanticDurations(Time* durations) {
+      avgRep->assignDerivedSemanticLabel(durations);
+      //TODO calls to representative of each cluster.
+    }
+    
   private:
     bool mergeClusters();
     
@@ -758,6 +795,11 @@ namespace TraceAnalysis {
     }
         
     void amplify(long amplifier, long divider, const TCTTime& parent_time);
+    
+    virtual void accumulateSemanticDurations(Time* durations) {
+      for (auto it = childMap.begin(); it != childMap.end(); it++)
+        it->second->assignDerivedSemanticLabel(durations);
+    }
   };
 }
 

@@ -97,9 +97,10 @@ namespace TraceAnalysis {
   const int RSD_DETECTION_LENGTH = 5;
   const int PRSD_DETECTION_LENGTH = 3;
   
-  // Parameters for performance diagnosis.
-  const double COMM_DOMINANT_RATIO = 0.5;
+  // Parameters for semantic labeling
+  const int DERIVED_SEMANTIC_LABEL_MIN = 20; // 20 samples
   
+  // Parameters for performance diagnosis.
   const double MIN_SYNC_IMB_IR = 0.001;
   const double MIN_SYNC_COMM_IR = 0.001;
   const double MIN_SUBTREE_IR = 0.003;

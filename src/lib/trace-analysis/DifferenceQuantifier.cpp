@@ -121,6 +121,7 @@ namespace TraceAnalysis {
     if (!isScoreOnly) {
       mergedProf->setWeight(weight1 + weight2);
       mergedProf->setRetCount(prof1->getRetCount() + prof2->getRetCount());
+      mergedProf->setDerivedSemanticLabel(prof1->getDerivedSemanticLabel() & prof2->getDerivedSemanticLabel());
       mergedProf->getPerfLossMetric().setDuratonMetric(prof1->getPerfLossMetric(), prof2->getPerfLossMetric());
     }
     
@@ -250,6 +251,7 @@ namespace TraceAnalysis {
     if (!isScoreOnly) {
       mergedTrace->setWeight(weight1 + weight2);
       mergedTrace->setRetCount(trace1->getRetCount() + trace2->getRetCount());
+      mergedTrace->setDerivedSemanticLabel(trace1->getDerivedSemanticLabel() & trace2->getDerivedSemanticLabel());
       mergedTrace->getPerfLossMetric().setDuratonMetric(trace1->getPerfLossMetric(), trace2->getPerfLossMetric());
     }
     
