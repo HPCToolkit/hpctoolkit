@@ -189,13 +189,16 @@ namespace TraceAnalysis {
           TCTIterationTraceNode* parent = (TCTIterationTraceNode*)activeStack.back();
           // when a nested loop is split
           if (parent->getNumChild() > 0 && parent->getChild(parent->getNumChild()-1)->id.id == node->id.id) {
-            delete node;
-            // Push the loop and the pending iteration on to active stack.
-            TCTLoopNode* loop = (TCTLoopNode*) parent->removeChild(parent->getNumChild()-1);
+            // Push the nested loop on to active stack.
+            TCTANode* loop = parent->removeChild(parent->getNumChild()-1);
             pushOneNode(loop, loop->getTime().getStartTimeExclusive(), loop->getTime().getStartTimeInclusive(), nodeStartSample[loop->id.id]);
-            TCTANode* iter = loop->popLastChild();
-            pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive(), iterStartSample[iter->id.id]);
+            // If the loop wasn't turned into a profile node, also push the pending iteration on to active stack.
+            if (loop->type == TCTANode::Loop) {
+              TCTANode* iter = ((TCTLoopNode*)loop)->popLastChild();
+              pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive(), iterStartSample[iter->id.id]);
+            }
             
+            delete node;
             return true;
           }
         }
@@ -334,12 +337,12 @@ namespace TraceAnalysis {
           CallPathFrame& frame = current->getFrameAtDepth(currentDepth);
           if (frame.type == CallPathFrame::Root) {
             root = new TCTRootNode(frame.id, frame.procID, frame.name, activeStack.size());
-            pushOneNode(root, -1, current->timestamp, numSamples);
+            pushOneNode(root, current->timestamp-1, current->timestamp, numSamples);
           } 
           else if (frame.type == CallPathFrame::Loop) {
             TCTANode* node = new TCTLoopNode(frame.id, frame.name, activeStack.size(), 
                     binaryAnalyzer.findLoop(frame.vma), sementicLabel);
-            pushActiveStack(node, -1, current->timestamp);
+            pushActiveStack(node, current->timestamp-1, current->timestamp);
           }
           else {
             // frame.type == CallPathFrame::Func
@@ -347,7 +350,7 @@ namespace TraceAnalysis {
             sementicLabel |= info.semantic_label;
             TCTANode* node = new TCTFunctionTraceNode(frame.id, frame.procID, frame.name, activeStack.size(),
                     binaryAnalyzer.findFunc(frame.vma), frame.ra, sementicLabel);
-            pushActiveStack(node, -1, current->timestamp);
+            pushActiveStack(node, current->timestamp-1, current->timestamp);
             // if semantic label of a function indicates that its children should be ignored in trace analysis, break.
             if (info.ignore_child) break;
           }

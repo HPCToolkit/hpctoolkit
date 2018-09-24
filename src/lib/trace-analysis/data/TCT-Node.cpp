@@ -128,8 +128,10 @@ namespace TraceAnalysis {
                 
       return ret;
     }
-    else
+    else if (profileNode != NULL)
       return profileNode->toString(maxDepth, minDuration, minDiffScore);
+    else
+      return TCTANode::toString(maxDepth, minDuration, minDiffScore);
   }
   
   string TCTClusterNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {

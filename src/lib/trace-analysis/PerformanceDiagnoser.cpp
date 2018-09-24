@@ -241,7 +241,10 @@ namespace TraceAnalysis {
       comm = max(comm, 0.0);
       
       // exclusive imbalance in loops is not considered.
-      if (node->isLoop()) excImb = 0;
+      if (node->isLoop()) {
+        imb = 0;
+        excImb = 0;
+      }
       
       // Set node imbalance improvement ratio in metrics
       metrics->nodeImbIR = imb * node->getWeight() / numProc / totalDuration;
@@ -645,8 +648,11 @@ namespace TraceAnalysis {
             const TCTANode* lcaNode = segment->callpaths[startIdx]->callpath[depth];
             CallpathMetrics* lcaMetrics = metricsMap[lcaNode];
             
+            if (lcaNode->isLoop()) {
+              // Skip loops
+            }
             // When all significant call paths has already been resolved.
-            if (commIdxes.size() + compIdxes.size() == 0) {
+            else if (commIdxes.size() + compIdxes.size() == 0) {
               for (int k = startIdx+1; k < endIdx; k++)
                 lcaDepth[k] = RESOLVED;
             }
