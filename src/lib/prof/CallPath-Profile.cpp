@@ -1923,9 +1923,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     cpId = nodeId;
   }
 
-  LoadMap::LMId_t lmId = nodeFmt.lm.lm_id;
+  LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
-  VMA lmIP        = (VMA)nodeFmt.lm.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  VMA lmIP        = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
   ushort opIdx    = 0;
   lush_lip_t* lip = NULL;
 
@@ -2078,8 +2078,8 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm.lm_id   = Prof::LoadMap::LMId_NULL;
-    n_fmt.lm.lm_ip   = 0;
+    n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
+    n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
@@ -2090,8 +2090,8 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
       n_fmt.as_info = n_dyn.assocInfo();
     }
     
-    n_fmt.lm.lm_id = (uint16_t) n_dyn.lmId();
-    n_fmt.lm.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
+    n_fmt.lm_id = (uint16_t) n_dyn.lmId();
+    n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

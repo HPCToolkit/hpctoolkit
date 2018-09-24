@@ -528,16 +528,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
 
-struct hpcrun_cct_node_lm_s {
-  // load module id. Use HPCRUN_FMT_LMId_NULL as a NULL value.
-  uint32_t lm_id;
-
-  // static instruction pointer: more accurately, this is a static
-  // 'operation pointer'.  The operation in the instruction packet is
-  // represented by adding 0, 1, or 2 to the instruction pointer for
-  // the first, second and third operation, respectively.
-  hpcfmt_vma_t lm_ip;
-};
 
 // -------------------------
 // data-centric fields
@@ -554,7 +544,14 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   lush_assoc_info_t as_info;
 
-  struct hpcrun_cct_node_lm_s lm;
+  // load module id. Use HPCRUN_FMT_LMId_NULL as a NULL value.
+  uint16_t lm_id;
+
+  // static instruction pointer: more accurately, this is a static
+  // 'operation pointer'.  The operation in the instruction packet is
+  // represented by adding 0, 1, or 2 to the instruction pointer for
+  // the first, second and third operation, respectively.
+  hpcfmt_vma_t lm_ip;
 
   // static logical instruction pointer
   lush_lip_t lip;

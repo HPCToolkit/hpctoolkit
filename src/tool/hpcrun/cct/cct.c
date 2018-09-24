@@ -308,10 +308,10 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
       memcpy(&(tmp->lip), &(addr->lip), sizeof(lush_lip_t));
     }
   }
-  tmp->lm.lm_id = (addr->ip_norm).lm_id;
+  tmp->lm_id = (addr->ip_norm).lm_id;
 
   // double casts to avoid warnings when pointer is < 64 bits 
-  tmp->lm.lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
+  tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
   tmp->node_type = node->node_type;
 
