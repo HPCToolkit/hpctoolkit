@@ -101,7 +101,7 @@
  * prototypes and forward declaration
  *****************************************************************************/
 
-//FUNCTION_FOLDER(static)
+FUNCTION_FOLDER(STATIC)
 
 /******************************************************************************
  * data structure
@@ -156,6 +156,7 @@ struct perf_mem_metric {
  * local variables
  *****************************************************************************/
 
+static cct_node_t *root_static_node = NULL;
 
 static struct perf_mem_metric metric;
 
@@ -280,6 +281,33 @@ datacentric_record_store_mem( cct_node_t *node,
     }
 }
 
+/***
+ * create a cct node for static variable,
+ * only if the node is not created yet.
+ */
+static cct_node_t*
+datacentric_create_static_node(datatree_info_t *info)
+{
+  if (!root_static_node) {
+    root_static_node = hpcrun_cct_new_special((void*) FUNCTION_FOLDER_NAME(STATIC));
+  }
+
+  if (info->context == NULL) {
+    ip_normalized_t npc;
+    cct_addr_t addr;
+
+    memset(&npc,  0, sizeof(ip_normalized_t));
+    memset(&addr, 0, sizeof(cct_addr_t));
+
+    npc.lm_ip    = info->memblock;
+    addr.ip_norm = npc;
+
+    info->context= hpcrun_cct_insert_addr(root_static_node, &addr);
+    hpcrun_cct_set_node_allocation(info->context);
+  }
+
+  return info->context;
+}
 
 
 /***
@@ -323,8 +351,13 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
         metric_id = datacentric_get_metric_addr_end();
         hpcrun_metric_std_max(metric_id, mset, value);
 
+        cct_node_t *context = info->context;
+        if (info->magic == DATA_STATIC_MAGIC) {
+          context = datacentric_create_static_node(info);
+        }
+
         // record the node allocation id
-        value.i = hpcrun_cct_persistent_id(info->context);
+        value.i = hpcrun_cct_persistent_id(context);
         hpcrun_metric_std_set(metric.node_alloc, mset, value);
       }
     }

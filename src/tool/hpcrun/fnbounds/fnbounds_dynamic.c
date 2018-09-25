@@ -253,6 +253,7 @@ static void
 insert_var_table(void **var_table, unsigned long num)
 {
   if(!var_table) return;
+
   int i;
   for (i = 0; i < num; i+=2) {
     // create splay node
@@ -263,7 +264,7 @@ insert_var_table(void **var_table, unsigned long num)
     data_info->left     = data_info->right = NULL;
 
     data_info->magic    = DATA_STATIC_MAGIC;
-    data_info->context  = (void*) DATA_STATIC_CONTEXT;
+    data_info->context  = NULL;
 
     data_info->rmemblock = data_info->memblock + data_info->bytes;
 

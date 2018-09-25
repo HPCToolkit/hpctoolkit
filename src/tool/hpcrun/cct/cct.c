@@ -474,6 +474,7 @@ void
 hpcrun_cct_set_node_allocation(cct_node_t *node)
 {
   node->node_type |= NODE_TYPE_ALLOCATION;
+  hpcrun_cct_retain(node);
 }
 
 bool
@@ -855,48 +856,5 @@ hpcrun_cct_get_root(cct_node_t *node)
       current = hpcrun_cct_parent(current);
   }
   return current;
-}
-
-
-// ------------------------------------------------------------------------------
-// data-centric to manage list of variable addresses
-//  accessed by a node
-// ------------------------------------------------------------------------------
-
-bool
-hpcrun_cct_var_static(cct_node_t *node)
-{
-  uint64_t node_ip = (uint64_t) node->var.allocation_node;
-  return node_ip == DATA_STATIC_CONTEXT;
-}
-
-void
-hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target)
-{
-  if (node_source == NULL) return;
-
-  cct_node_t *node = cct_node_create(NULL, node_source);
-
-  node->node_type           = NODE_TYPE_ALLOCATION;
-  node->var.start_address   = (uint64_t)start;
-  node->var.allocation_node = node_target;
-
-  if (!hpcrun_cct_var_static(node)) {
-    TMSG(DATACENTRIC, "add var into %d alloc from %d == %d", node_source->persistent_id,
-        node_target->persistent_id, node->var.allocation_node->persistent_id);
-  }
-
-  // if the parent has no children, we add the new node to the parent.
-  // otherwise we add a new sibling on its child.
-
-  cct_node_t *child = node_source->children;
-  if (child != NULL) {
-    for(cct_node_t *sibling = child; sibling;
-        child = sibling, sibling = sibling->left);
-
-    child->left = node;
-  } else {
-    node_source->children = node;
-  }
 }
 

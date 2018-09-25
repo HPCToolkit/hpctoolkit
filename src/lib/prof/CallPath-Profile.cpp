@@ -1469,7 +1469,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     : NULL;
 
   ExprEval eval;
-  std::vector<CCT::Stmt*> listMemAccessNodes;
   DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
@@ -1561,30 +1560,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
-  }
-
-  // specific to data-centric to connect with the location of allocation node
-  // theoretically, the allocation occurs in a statement node (leaf node)
-
-  for(CCT::Stmt *stmt : listMemAccessNodes) {
-    // most allocated node is leaf
-    // start with leaf mark (negative id)
-    int id_alloc = - stmt->id_node_alloc();
-
-    CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(id_alloc);
-
-    if (it != cctNodeMap.end()) {
-      stmt->node_alloc(it->second);
-      DIAG_DevMsgIf(0, stmt->id() << " id_alloc " << id_alloc <<" -> " << it->second->id());
-
-    } else {
-      // try with non-leaf nodes
-      it = cctNodeMap.find(-id_alloc);
-      if (it != cctNodeMap.end()) {
-        stmt->node_alloc(it->second);
-        DIAG_DevMsgIf(0, "id_alloc " << -id_alloc <<" -> " << it->second);
-      }
-    }
   }
 
   if (outfs) {
@@ -2039,22 +2014,17 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
   if (!isLeaf) {
     if (hasMetrics) {
-      if (hpcrun_fmt_is_memaccess_type(nodeFmt.node_type)) {
-        //DIAG_Msg(0, "node mem access");
-      } else {
+      n_leaf = n;
 
-        n_leaf = n;
+      const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
 
-        const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
+      uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
+      Metric::IData metricData0(mSz);
 
-        uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
-        Metric::IData metricData0(mSz);
+      lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-        lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
-
-        n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
-        lipCopy, metricData0);
-      }
+      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
+      lipCopy, metricData0);
     }
     else {
       n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,

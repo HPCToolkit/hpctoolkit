@@ -445,6 +445,11 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     info_ptr->context = smpl.sample_node;
     loc_str = loc_name[loc];
     
+    // mark that this node is an allocation node
+    // inside hpcrun file, we'll give a special flag in this node so that
+    // hpcprof will keep its id and link it to the mem_access node
+    hpcrun_cct_set_node_allocation(smpl.sample_node);
+
   } else {
     info_ptr->context = NULL;
     loc_str = "inactive";

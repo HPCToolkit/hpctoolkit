@@ -517,8 +517,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_ALLOCATION   2
 #define NODE_TYPE_MEMACCESS    4
 
-#define DATA_STATIC_CONTEXT 0x1
-
 
 #define HPCRUN_FMT_LMId_NULL (0)
 

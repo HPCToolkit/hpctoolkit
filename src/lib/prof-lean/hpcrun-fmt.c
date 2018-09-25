@@ -652,7 +652,6 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   for (int i = 0; i < x->num_metrics; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->metrics[i].bits, fs));
   }
-  
   return HPCFMT_OK;
 }
 
