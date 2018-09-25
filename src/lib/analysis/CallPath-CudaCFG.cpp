@@ -72,6 +72,9 @@
 
 //*************************** User Include Files ****************************
 
+#include <boost/graph/strong_components.hpp>
+#include <boost/graph/adjacency_list.hpp>
+
 #include <include/uint.h>
 #include <include/gcc-attr.h>
 
@@ -98,6 +101,9 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
+#include <vector>
+#include <iostream>
+
 
 #define DEBUG_CALLPATH_CUDACFG 1
 
@@ -118,6 +124,9 @@ constructCCTGraph(Prof::CCT::ANode *root, CallMap &call_map, CCTGraph &cct_graph
 
 static void
 findGPURoots(CCTGraph &cct_graph, std::vector<Prof::CCT::ANode *> &gpu_roots);
+
+static bool
+findRecursion(CCTGraph &cct_graph);
 
 static void
 gatherIncomingSamples(CCTGraph &cct_graph,
@@ -183,6 +192,12 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     debugCallGraph(cct_graph);
   }
 
+  // TODO(keren): Handle SCCs
+  if (findRecursion(cct_graph)) {
+    std::cout << "Find recursive calls" << std::endl;
+    return ; 
+  }
+
   // Find gpu global functions
   std::vector<Prof::CCT::ANode *> gpu_roots;
   findGPURoots(cct_graph, gpu_roots);
@@ -190,8 +205,6 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // Record input samples for each node
   IncomingSamplesMap incoming_samples;
   gatherIncomingSamples(cct_graph, *(prof.metricMgr()), incoming_samples);
-
-  // TODO(keren): Test scc
 
   // Copy from every gpu_root to leafs
   constructCallingContext(incoming_samples, cct_graph, gpu_roots);
@@ -241,6 +254,31 @@ constructCCTGraph(Prof::CCT::ANode *root, CallMap &call_map,
       }
     }
   }
+}
+
+
+static bool
+findRecursion(CCTGraph &cct_graph) {
+  using namespace boost;
+  typedef adjacency_list <vecS, vecS, directedS> Graph;
+  const int N = cct_graph.size();
+  Graph G(N);
+
+  // Find recursive calls
+  for (auto it = cct_graph.edgeBegin(); it != cct_graph.edgeEnd(); ++it) {
+    auto from = it->from->id();
+    auto to = it->to->id();
+    add_edge(from, to, G);
+    if (from == to) {
+      return true;
+    }
+  }
+
+  // Find mutual recursive calls
+  std::vector<int> c(N);
+  int num = strong_components
+    (G, make_iterator_property_map(c.begin(), get(vertex_index, G), c[0]));
+  return num > 0;
 }
 
 

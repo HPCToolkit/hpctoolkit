@@ -166,6 +166,10 @@ class CCTGraph {
     }
   }
 
+  size_t size() {
+    return _nodes.size();
+  }  
+
  private:
   NeighborNodeMap _incoming_nodes;
   NeighborNodeMap _outgoing_nodes;
