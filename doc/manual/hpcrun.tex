@@ -128,8 +128,7 @@ This section provide an overview of how to use sample sources supported by HPCTo
 see a list of the available sample sources and events that \hpcrun{}
 supports, use `\verb|hpcrun -L|' (dynamic) or set
 `\verb|HPCRUN_EVENT_LIST=LIST|' (static).  Note that on systems with
-separate compute nodes, it is best to run this on one of the
-compute nodes.
+separate compute nodes, it is best to run this on a compute node.
 
 \newcommand{\perfevents}{{\tt perf\_events}}
 
@@ -151,15 +150,22 @@ faults, context switches, and CPU migrations.
 \subsubsection{Capabilities of HPCToolkit's \perfevents{} Interface}
 
 \paragraph{Frequency-based sampling.} 
-Rather than picking a sample period for a hardware counter,
-the Linux \perfevents{} interface enables one to specify the desired sampling frequency
-and have the kernel automatically select and adjust the period 
-to try to achieve the desired sampling frequency.\footnote{The kernel may be unable to deliver the desired frequency if 
+The Linux \perfevents{} interface supports frequency-based sampling. 
+With frequency-based sampling, the kernel automatically selects and adjusts an event period with the
+aim of delivering samples for that event at a target sampling frequency.\footnote{The 
+kernel may be unable to deliver the desired frequency if 
 there are fewer events per second than the desired frequency.}  
-To use frequency-based sampling, one can specify the sampling rate
-for an event as the desired number of samples per second
-by prefixing the
-rate with the letter “\verb|f|”. The subsequent subsection on {\em Launching} shows some
+Unless a user explicitly specifies an event count threshold for an event, 
+HPCToolkit's measurement interface will use frequency-based sampling by default.  
+HPCToolkit's default sampling frequency is ${\rm min}(300,M-1)$, where $M$ is the 
+value specified in the system configuration file \verb|/proc/sys/kernel/perf_event_max_sample_rate|.
+
+For circumstances where the user wants to use frequency-based sampling but 
+HPCToolkit's default sampling frequency is inappropriate, 
+one can specify the target sampling frequency for a particular event using the notation 
+{\em event}{\tt @f}{\em rate} when specifying an event or change the default sampling frequency.
+When measuring a dynamically-linked executable using {\tt hpcrun}, one can change the default sampling frequency using {\tt hpcrun}'s {\tt -c} option. To set a new default sampling frequency for a statically-linked executable instrumented with {\tt hpclink}, set the \verb|HPCRUN_PERF_COUNT| environment variable.
+The section below entitled {\em Launching} provides  
 examples of how to monitor an execution using frequency-based sampling.
 
 \paragraph{Multiplexing.} 
@@ -192,8 +198,8 @@ and analyzed together.
 
 \paragraph{Thread blocking.} When a program executes, 
 a thread may block waiting for the kernel to complete some operation on its behalf.
-Example operations include waiting for a {\tt read} operation to complete or having the
-kernel service a page fault or zero-fill a page. On systems running Linux 4.3 or newer, one can use the \perfevents{} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
+For instance, a thread may block waiting for data to become available so that a {\tt read} operation 
+can complete. On systems running Linux 4.3 or newer, one can use the \perfevents{} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
 the time a thread spends blocked, one can profile with \verb|BLOCKTIME| event and
 another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shouldn't have any frequency or period specified, whereas \verb|CYCLES| should have a frequency or period specified.
 
@@ -201,7 +207,8 @@ another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shou
 \label{sec:perf-launching}
 
 When sampling with native events, by default hpcrun will profile using \perfevents{}. 
-To force HPCToolkit to use PAPI (assuming it\textquotesingle s available) instead of \perfevents{}, 
+To force HPCToolkit to use PAPI rather than \perfevents{} to oversee monitoring of a PMU event 
+(assuming that HPCToolkit has been configured to include support for PAPI),
 one must prefix the event with \lq{\verb|papi::|}\rq{} as follows:
 
 \begin{quote}
@@ -231,8 +238,8 @@ hpcrun -e CYCLES@1000000 -e INSTRUCTIONS@1000000
 \end{verbatim}
 \end{quote}
 
-By default, hpcrun will use frequency-based sampling with the rate
-300 samples per second per event type. Hence the following command will cause HPCToolkit to
+By default, hpcrun uses frequency-based sampling with the rate
+300 samples per second per event type. Hence the following command causes HPCToolkit to
 sample \verb|CYCLES| at 300 samples per second and \verb|INSTRUCTIONS| at 300 samples per second:
 
 \begin{quote}
@@ -241,7 +248,8 @@ hpcrun -e CYCLES -e INSTRUCTIONS …
 \end{verbatim}
 \end{quote}
 
-One can a different default rate using the \verb|-c| option. The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
+One can specify a different default sampling period or frequency using the \verb|-c| option. 
+The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
 
 \begin{quote}
 \begin{verbatim}
@@ -251,20 +259,21 @@ hpcrun -c f200 -e CYCLES -e INSTRUCTIONS …
 
 
 
-\subsubsection{Caveats}
+\subsubsection{Notes}
 
 \begin{itemize}
 \item
-Linux \perfevents{} requires to use one file descriptor for each event. 
+Linux \perfevents{} uses one file descriptor for each event to be monitored. 
 Furthermore, since \hpcrun{} generates one hpcrun file for each thread, and an additional hpctrace file if traces is enabled.
-Hence for $e$ number of events and $t$ number of threads, the required number of file descriptors is: 
+Hence for $e$ events and $t$ threads, the required number of file descriptors is: 
 \begin{quote}
   $t \times e + t + t$ (if trace is enabled) 
 \end{quote}
-For instance, if one profiles a multi-threaded program ran with 500 threads using 4 events, then the required number of file descriptors: 
+For instance, if one profiles a multi-threaded program that executes with 500 threads using 4 events, 
+then the required number of file descriptors is
 \begin{quote}
-  500 threads $\times$ 4 events + 500 hpcrun file + 500 hpctrace file \\
-  = 3000 file descriptor
+  500 threads $\times$ 4 events + 500 hpcrun files + 500 hpctrace files \\
+  = 3000 file descriptors
 \end{quote}
 If the number of file descriptors exceeds the number of maximum opened files, then the program will crash. 
 To remedy this issue, one needs to increase the number of maximum opened files.
@@ -272,30 +281,41 @@ To remedy this issue, one needs to increase the number of maximum opened files.
 \item
 \sloppy
 When a system is configured with suitable permissions, HPCToolkit will sample call stacks
-within the Linux kernel in addition to application-level call stacks. This feature can be useful to diagnose where and why a thread blocks.
-For this feature to be available, the file
-\verb|/proc/sys/kernel/perf_event_paranoid| file must have value 1.  To associate addresses
+within the Linux kernel in addition to application-level call stacks. This feature can be useful to measure kernel activity on behalf of a thread (e.g., zero-filling allocated pages when they are first touched) 
+or to observe where, why, and how long a thread blocks.
+For a user to be able to sample kernel call stacks, the configuration file
+\verb|/proc/sys/kernel/perf_event_paranoid| must have a value $\leq 1$.  To associate addresses
 in kernel call paths with function names, the value of
-\verb|/proc/sys/kernel/kptr_restrict| must be 0 (number zero). If these settings are not configured in this way on your system, you will need someone with administrator privileges to change them.
+\verb|/proc/sys/kernel/kptr_restrict| must be 0 (number zero). If these settings are not configured in this way on your system, you will need someone with administrator privileges to change them for you to 
+be able to sample call stacks within the kernel.
 
 \item
-Due to a limitation of all Linux kernel versions currently available,  
-\hpcrun{} can only approximate a thread's blocking time using first-party sampling rather than directly measuring the time between when a thread blocks and when it resumes.  
+Due to a limitation present in all Linux kernel versions currently available,  
+HPCToolkit's measurement subsystem can only approximate a thread's blocking time.
+At present, Linux reports when a thread blocks but does not report when a thread resumes execution.
+For that reason, HPCToolkit's measurement subsystem approximates the time a thread spends blocked using sampling as the time between when the thread blocks and when the thread receives its first sample
+after resuming execution.
 
 
 \item
-Users need to be cautious to compare between different multiplexed
-counters. Currently, there is no direct information to 
-know if a metric is based on multiplexed counter. Currently the information
-is embedded in the \verb|experiment.xml| file produced when post-processing measurement data with \hpcprof{} or \hpcprofmpi, but not visible in the \hpcviewer.
+Users need to be cautious when considering measured counts of events that have been collected using 
+hardware counter multiplexing.  Currently, it is not obvious to a user
+if a metric was measured using a multiplexed counter. Information about whether a counter was 
+multiplexed is only available in the \verb|experiment.xml| file produced when post-processing measurement data with \hpcprof{} or \hpcprofmpi, but is not visible in \hpcviewer.
 \end{itemize}
 
 \subsection{PAPI}
 
 PAPI, the Performance API, is a library for providing access to the
-hardware performance counters.  This is an attempt to provide a
-consistent, high-level interface to the low-level performance
-counters.  PAPI is available from the University of Tennessee at:
+hardware performance counters. PAPI aims to provide a
+consistent, high-level interface that consists of a universal set of event names that can be used 
+to measure performance on any processor, independent of any processor-specific event names. 
+In some cases, PAPI event names
+represent quantities synthesized by combining measurements based on multiple native events 
+available on a particular processor.
+For instance, in some cases PAPI reports
+total cache misses by measuring and combining data misses and instruction misses. 
+PAPI is available from the University of Tennessee at:
 
 \begin{quote}
 \url{http://icl.cs.utk.edu/papi/}
@@ -376,40 +396,44 @@ When selecting the period for PAPI events, aim for a rate of
 approximately a few hundred samples per second.  So, roughly several
 million or tens of million for total cycles or a few hundred thousand
 for cache misses.  PAPI and \hpcrun{} will tolerate sampling rates as
-high as 1,000 or even 10,000 samples per second (or more).  But rates
-higher than a few thousand samples per second will only drive up the
-overhead and distort the running of your program.  It won't give more
+high as 1,000 or even 10,000 samples per second (or more).  However, rates
+higher than a few hundred samples per second will only increase measurement
+overhead and distort the execution of your program; they won't yield more
 accurate results.
 
-Earlier versions of PAPI required a separate patch (perfmon or
-perfctr) for the Linux kernel.  But beginning with kernel 2.6.32,
-support for accessing the performance counters (perf events) is now
-built in to the standard Linux kernel.  This means that on kernels
-2.6.32 or later, PAPI can be compiled and run entirely in user land
-without patching the kernel.  PAPI is highly recommended and well
-worth building if it is not already installed on your system.
+Beginning with Linux kernel version 2.6.32,
+support for accessing the performance counters is now 
+built in to the standard Linux kernel.  On kernels
+2.6.32 or later, PAPI can be compiled and run entirely in user mode
+without patching the kernel. 
+
+On Blue Gene platforms that are not based on Linux,
+PAPI is highly recommended as it provides an essential substrate for accessing
+hardware performance counters. On modern Linux systems that include support
+for \verb|perf_events|, PAPI is only recommended for monitoring 
+events outside the scope of the \verb|perf_events| interface. 
 
 \paragraph{Proxy Sampling}
 
-\HPCToolkit{} now supports proxy sampling for derived PAPI events.
-Normally, for \HPCToolkit{} to use a PAPI event, the event must not be
-derived and must support hardware interrupts.  However, for events
-that cannot trigger interrupts directly, it is still possible to
-sample on another event and then read the counters for the derived
-events and this is how proxy sampling works.  The native events serve
-as a proxy for the derived events.
+\HPCToolkit{} supports proxy sampling for derived PAPI events.
+For \HPCToolkit{} to sample a PAPI event directly, the event must not be
+derived and must trigger hardware interrupts when a threshold is exceeded.  
+For events that cannot trigger interrupts directly, HPCToolkit's proxy sampling
+sample on another event that is supported directly and then reads the 
+counter for the derived event. In this case, 
+a native event can serve as a proxy for one or more derived events.
 
 To use proxy sampling, specify the \hpcrun{} command line as usual and
 be sure to include at least one non-derived PAPI event.  The derived
-events will be counted automatically during the native samples.
-Normally, you would use \verb|PAPI_TOT_CYC| as the native event, but
-really this works as long as the event set contains at least one
-non-derived PAPI event.  Proxy sampling only applies to PAPI events,
-you can't use itimer as the native event.
+events will be accumulated automatically when processing a sample trigger for a native event.
+We recommend adding \verb|PAPI_TOT_CYC| as a native event when using proxy sampling, but
+proxy sampling will gather data  as long as the event set contains at least one
+non-derived PAPI event.  Proxy sampling requires one non-derived PAPI event to serve as the proxy;
+a Linux timer can't serve as the proxy for a PAPI derived event.
 
-For example, on newer Intel CPUs, often the floating point events are
+For example, on newer Intel CPUs, often PAPI floating point events are
 all derived and cannot be sampled directly.  In that case, you could
-count flops by using cycles a proxy event with a command line such as
+count FLOPs by using cycles a proxy event with a command line such as
 the following.  The period for derived events is ignored and may be
 omitted.
 
@@ -434,68 +458,73 @@ accurate.
 
 \subsection{Wallclock, Realtime and Cputime}
 
-\HPCToolkit{} supports three timer sample sources: \verb|WALLCLOCK|,
-\verb|REALTIME| and \verb|CPUTIME|.
+\HPCToolkit{} supports three timer-based sample sources: \verb|CPUTIME|,
+\verb|REALTIME| and \verb|WALLCLOCK|.
+The units for periods of these timers are all in microseconds.
+
+Before describing this capability further, it is worth noting
+that the CYCLES event supported by Linux \perfevents{} or PAPI's \verb|PAPI_TOT_CYC| 
+are generally superior to any of the timer-based sampling sources. 
+
+\sloppy
+The \verb|CPUTIME| and \verb|REALTIME| sample sources are based on the POSIX
+timers \verb|CLOCK_THREAD_CPUTIME_ID| and \verb|CLOCK_REALTIME| with 
+the Linux \verb|SIGEV_THREAD_ID| extension.  
+\verb|CPUTIME| only counts time when the CPU is running;  
+\verb|REALTIME| counts
+real (wall clock) time, whether the process is running or not. 
+Signal delivery for these timers is thread-specific, so these timers are suitable for
+profiling multithreaded programs.
+Sampling using the \verb|REALTIME| sample source
+may break some applications that don't handle interrupted syscalls well.  In that
+case, consider using \verb|CPUTIME| instead.
+It is worth noting that \verb|REALTIME| and \verb|CPUTIME| are not available on Blue Gene,
+where compute nodes run a custom microkernel instead of Linux.
+
 The \verb|WALLCLOCK| sample source is based on the \verb|ITIMER_PROF|
-interval timer.  Normally, \verb|PAPI_TOT_CYC| is just as good as
-\verb|WALLCLOCK| and often better, but \verb|WALLCLOCK| can be used on
-systems where PAPI is not available.  The units are in microseconds,
-so the following example will sample \verb|app| approximately 200
-times per second.
-
-\begin{quote}
-\begin{verbatim}
-hpcrun -e WALLCLOCK@5000 app arg ...
-\end{verbatim}
-\end{quote}
-
-Note that the maximum interrupt rate from itimer is limited by the
+interval timer. 
+\verb|WALLCLOCK| counts time when an application is running or the kernel is running on behalf of the
+application. 
+Unlike the POSIX timers that support  \verb|CPUTIME| and \verb|REALTIME|,
+the interval timer supporting \verb|WALLCLOCK| does not support thread-specific signal delivery 
+on Linux. 
+\verb|WALLCLOCK| is available on Blue Gene even though \verb|REALTIME| and \verb|CPUTIME| are not.
+On Linux the maximum interrupt rate for the interval itimer is limited by the
 system's Hz rate, commonly 1,000 cycles per second, but may be lower.
 That is, \verb|WALLCLOCK@10| will not generate any higher sampling rate
-than \verb|WALLCLOCK@1000|.  However, on IBM Blue Gene, itimer is not
+than \verb|WALLCLOCK@1000|.  
+On IBM Blue Gene, the interval timer is not
 bound by the Hz rate and so sampling rates faster than 1,000 per
 second are possible.
 
-Also, the \verb|WALLCLOCK| (itimer) signal is not thread-specific and
-may not work well in threaded programs.  In particular, the number of
-samples per thread may vary wildly, although this is very system
-dependent.  We recommend not using \verb|WALLCLOCK| in threaded
-programs, except possibly on Blue Gene.  Use \verb|REALTIME|,
-\verb|CPUTIME| or \verb|PAPI_TOT_CYC| instead.
+The following example, which specifies a period of 5000 microseconds will sample
+each thread in \verb|app| at a rate of approximately 200 times per second.
 
-The \verb|REALTIME| and \verb|CPUTIME| sources are based on the POSIX
-timers \verb|CLOCK_REALTIME| and \verb|CLOCK_THREAD_CPUTIME_ID| with
-the Linux \verb|SIGEV_THREAD_ID| extension.  \verb|REALTIME| counts
-real (wall clock) time, whether the process is running or not, and
-\verb|CPUTIME| only counts time when the CPU is running.  Both units
-are in microseconds.
+\begin{quote}
+\begin{verbatim}
+hpcrun -e REALTIME@5000 app arg ...
+\end{verbatim}
+\end{quote}
 
-\verb|REALTIME| and \verb|CPUTIME| are not available on all systems
-(in particular, not on Blue Gene), but they have important advantages
-over itimer.  These timers are thread-specific and will give a much
-more consistent number of samples in a threaded process.  Also,
-compared to itimer, \verb|REALTIME| includes time when the process is
-not running and so can identify times when the process is blocked
-waiting on a syscall.  However, \verb|REALTIME| could also break some
-applications that don't handle interrupted syscalls well.  In that
-case, consider using \verb|CPUTIME| instead.
 
-{\it Note:} do not use more than one timer event in the same run.
-Also, we recommend not using both PAPI and a timer event together.
-Technically, this is now possible and \hpcrun{} won't fall over.
-However, PAPI samples would be interrupted by timer signals and vice
-versa, and this would lead to many dropped samples and possibly
-distorted results.
+\noindent {\it Note:} do not use more than one timer-based sample source to monitor a program execution.
+When using a sample source such as \verb|CPUTIME|, \verb|REALTIME|, or \verb|WALLCLOCK|,
+we recommend not using another time-based sampling source such as 
+Linux \perfevents{} CYCLES or PAPI's \verb|PAPI_TOT_CYC|. 
+Technically, this is feasible and \hpcrun{} won't die.
+However, multiple time-based sample sources would compete with one another to measure the
+execution and likely lead to dropped samples and possibly distorted results.
 
 \subsection{IO}
 
 The \verb|IO| sample source counts the number of bytes read and
 written.  This displays two metrics in the viewer: ``IO Bytes Read''
 and ``IO Bytes Written.''  The \verb|IO| source is a synchronous sample
-source.  That is, it does not generate asynchronous interrupts.
-Instead, it overrides the functions \verb|read|, \verb|write|, \verb|fread|
+source.  
+It overrides the functions \verb|read|, \verb|write|, \verb|fread|
 and \verb|fwrite| and records the number of bytes read or
-written along with their dynamic context.
+written along with their dynamic context synchronously rather 
+than relying on data collection triggered by interrupts.
 
 To include this source, use the \verb|IO| event (no period).  In the
 static case, two steps are needed.  Use the \verb|--io| option for

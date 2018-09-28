@@ -191,9 +191,21 @@ Rice University\\
 \HPCToolkit{} works by sampling an execution of a multithreaded and/or multiprocess program using hardware performance counters, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred.
 Sampling has several advantages over instrumentation for measuring program performance: it requires no modification of source code, it avoids potential blind spots (such as code available in only binary form), and it has lower overhead.
 \HPCToolkit{} typically adds measurement overhead of only a few percent to an execution for reasonable sampling rates~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
-Sampling enables fine-grain measurement and attribution of costs in both serial and parallel programs. For parallel programs running on a cluster or supercomputer, HPCToolkit can measure the how often threads or compute nodes are idle, working, or communicating. To obtain detailed information about a program's computation performance, one can collect samples using the performance monitoring units built into modern processors  to measure metrics such as operation counts, pipeline stalls, cache misses, and cache-to-cache transfers between processor sockets.
-Such detailed measurements are essential for understanding the performance characteristics of applications on modern multicore microprocessors that employ instruction-level parallelism, out-of-order execution, and complex memory hierarchies.
-\HPCToolkit{} also supports computing derived metrics such as cycles per instruction, waste, and relative efficiency to provide insight into a program's shortcomings.
+Sampling enables fine-grain measurement and attribution of costs in both serial and parallel programs. 
+
+For parallel programs, one can use HPCToolkit to measure
+the fraction of time threads are idle, working, or communicating.
+To obtain detailed information about a program's computation
+performance, one can collect samples using performance monitoring
+units built into modern processors  to measure metrics such as
+operation counts, pipeline stalls, cache misses, and data movement
+between processor sockets.  Such detailed measurements are essential
+to understand the performance characteristics of applications
+on modern multicore microprocessors that employ instruction-level
+parallelism, out-of-order execution, and complex memory hierarchies.
+With \HPCToolkit{}, one can also easily compute derived metrics such as cycles
+per instruction, waste, and relative efficiency to provide insight
+into a program's shortcomings.
 
 A unique capability of \HPCToolkit{} is its ability to unwind the call stack of a thread executing highly optimized code to attribute time, hardware counter metrics, as well as software metrics (e.g., context switches) to a full calling context.
 Call stack unwinding is often difficult for highly optimized code~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}. For accurate call stack unwinding, HPCToolkit employs two strategies: 
