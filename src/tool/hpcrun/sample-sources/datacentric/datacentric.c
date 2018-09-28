@@ -299,7 +299,7 @@ datacentric_create_static_node(datatree_info_t *info)
     memset(&npc,  0, sizeof(ip_normalized_t));
     memset(&addr, 0, sizeof(cct_addr_t));
 
-    npc.lm_ip    = info->memblock;
+    npc.lm_ip    = (uintptr_t)info->memblock;
     addr.ip_norm = npc;
 
     info->context= hpcrun_cct_insert_addr(root_static_node, &addr);
@@ -334,22 +334,31 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     metric_set_t *mset = hpcrun_reify_metric_set(node);
     if (mset) {
 
+      // --------------------------------------------------------------
+      // store the memory address reported by the hardware counter to the metric
+      // even if the address is outside the range of recognized variable (see
+      //    datatree_splay_lookup() function which returns if the address is recognized)
+      // we may need to keep the information (?).
+      // another solution is to create a sibling node to avoid to step over the
+      //  recognized metric.
+      // --------------------------------------------------------------
+
+      hpcrun_metricVal_t value;
+      value.p = (void *)mmap_data->addr;
+
+      // check if this is the minimum value. if this is the case, record it in the metric
+      int metric_id = datacentric_get_metric_addr_start();
+      hpcrun_metric_std_min(metric_id, mset, value);
+
+      // check if this is the maximum value. if this is the case, record it in the metric
+      metric_id = datacentric_get_metric_addr_end();
+      hpcrun_metric_std_max(metric_id, mset, value);
+
       datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
       if (info) {
         // variable address is store in the database
         // record the interval of this access
-
-        hpcrun_metricVal_t value;
-        value.p = (void *)mmap_data->addr;
-
-        // check if this is the minimum value. if this is the case, record it in the metric
-        int metric_id = datacentric_get_metric_addr_start();
-        hpcrun_metric_std_min(metric_id, mset, value);
-
-        // check if this is the maximum value. if this is the case, record it in the metric
-        metric_id = datacentric_get_metric_addr_end();
-        hpcrun_metric_std_max(metric_id, mset, value);
 
         cct_node_t *context = info->context;
         if (info->magic == DATA_STATIC_MAGIC) {

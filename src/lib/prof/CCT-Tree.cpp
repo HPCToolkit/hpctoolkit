@@ -278,28 +278,29 @@ Tree::verifyUniqueCPIds()
 
 
 std::ostream&
-Tree::writeXML(std::ostream& os, uint metricBeg, uint metricEnd,
-	       uint oFlags) const
+Tree::writeXML(std::ostream& os, const Metric::Mgr *metricMgr,
+    uint metricBeg, uint metricEnd,
+    uint oFlags) const
 {
   if (m_root) {
-    m_root->writeXML(os, metricBeg, metricEnd, oFlags);
+    m_root->writeXML(os, metricMgr, metricBeg, metricEnd, oFlags);
   }
   return os;
 }
 
 
 std::ostream& 
-Tree::dump(std::ostream& os, uint oFlags) const
+Tree::dump(const Metric::Mgr *metricMgr, std::ostream& os, uint oFlags) const
 {
-  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags);
+  writeXML(os, metricMgr, Metric::IData::npos, Metric::IData::npos, oFlags);
   return os;
 }
 
 
 void 
-Tree::ddump() const
+Tree::ddump(const Metric::Mgr *metricMgr) const
 {
-  dump(std::cerr, Tree::OFlg_DebugAll);
+  dump(metricMgr, std::cerr, Tree::OFlg_DebugAll);
 }
 
 
@@ -1114,10 +1115,10 @@ ProcFrm::procNameDbg() const
 //**********************************************************************
 
 string 
-ANode::toString(uint oFlags, const char* pfx) const
+ANode::toString(const Metric::Mgr *metricMgr, uint oFlags, const char* pfx) const
 {
   std::ostringstream os;
-  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
+  writeXML(os, metricMgr, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
   return os.str();
 }
 
@@ -1386,7 +1387,8 @@ Stmt::toStringMe(uint oFlags) const
 
 
 std::ostream&
-ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
+ANode::writeXML(ostream& os, const Metric::Mgr *metricMgr,
+    uint metricBeg, uint metricEnd,
 		uint oFlags, const char* pfx) const
 {
   string indent = "  ";
@@ -1395,12 +1397,12 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
     indent = "";
   }
   
-  bool doPost = writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  bool doPost = writeXML_pre(os, metricMgr, metricBeg, metricEnd, oFlags, pfx);
   string prefix = pfx + indent;
   for (ANodeSortedChildIterator it(this, ANodeSortedIterator::cmpByStructureInfo);
        it.current(); it++) {
     ANode* n = it.current();
-    n->writeXML(os, metricBeg, metricEnd, oFlags, prefix.c_str());
+    n->writeXML(os, metricMgr, metricBeg, metricEnd, oFlags, prefix.c_str());
   }
   if (doPost) {
     writeXML_post(os, oFlags, pfx);
@@ -1410,8 +1412,10 @@ ANode::writeXML(ostream& os, uint metricBeg, uint metricEnd,
 
 
 std::ostream&
-ANode::writeXML_path(ostream& os, uint metricBeg, uint metricEnd,
-		     uint oFlags, const char* pfx) const
+ANode::writeXML_path(ostream& os,
+    const Metric::Mgr *metricMgr,
+    uint metricBeg, uint metricEnd,
+		uint oFlags, const char* pfx) const
 {
   string indent = "  ";
   if (oFlags & CCT::Tree::OFlg_Compressed) {
@@ -1421,34 +1425,34 @@ ANode::writeXML_path(ostream& os, uint metricBeg, uint metricEnd,
 
   ANode *parent = this->parent();
   if (parent) {
-    parent->writeXML_path(os, metricBeg, metricEnd, oFlags, pfx);
+    parent->writeXML_path(os, metricMgr, metricBeg, metricEnd, oFlags, pfx);
   }
   
-  writeXML_pre(os, metricBeg, metricEnd, oFlags, pfx);
+  writeXML_pre(os, metricMgr, metricBeg, metricEnd, oFlags, pfx);
   return os;
 }
 
 
 std::ostream&
-ANode::dump(ostream& os, uint oFlags, const char* pfx) const 
+ANode::dump(const Metric::Mgr *metricMgr, ostream& os, uint oFlags, const char* pfx) const
 {
-  writeXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx); 
+  writeXML(os, metricMgr, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
   return os;
 }
 
 
 void
-ANode::adump() const
+ANode::adump(const Metric::Mgr *metricMgr) const
 {
-  writeXML_path(std::cerr, Metric::IData::npos, Metric::IData::npos,
+  writeXML_path(std::cerr, metricMgr, Metric::IData::npos, Metric::IData::npos,
 	        Tree::OFlg_DebugAll, "");
 } 
 
 
 void
-ANode::ddump() const
+ANode::ddump(const Metric::Mgr *metricMgr) const
 {
-  writeXML(std::cerr, Metric::IData::npos, Metric::IData::npos,
+  writeXML(std::cerr, metricMgr, Metric::IData::npos, Metric::IData::npos,
 	   Tree::OFlg_DebugAll, "");
 } 
 
@@ -1462,7 +1466,7 @@ ANode::ddumpMe() const
 
 
 bool
-ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
+ANode::writeXML_pre(ostream& os, const Metric::Mgr *metricMgr, uint metricBeg, uint metricEnd,
 		    uint oFlags, const char* pfx) const
 {
   bool doTag = (type() != TyRoot);
@@ -1483,7 +1487,7 @@ ANode::writeXML_pre(ostream& os, uint metricBeg, uint metricEnd,
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, metricBeg, metricEnd, oFlags, pfx);
+    writeMetricsXML(os, metricMgr, metricBeg, metricEnd, oFlags, pfx);
     os << "\n";
   }
 

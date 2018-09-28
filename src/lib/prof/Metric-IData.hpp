@@ -80,6 +80,9 @@
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+// do not include Metric-Mgr.hpp. In g++, it will create chaos in compilation
+//#include "Metric-Mgr.hpp"
+
 //*************************** Forward Declarations **************************
 
 
@@ -87,6 +90,7 @@
 
 namespace Prof {
 namespace Metric {
+ class Mgr ;
 
 //***************************************************************************
 // IData
@@ -241,6 +245,7 @@ public:
   // [mBegId, mEndId)
   std::ostream& 
   writeMetricsXML(std::ostream& os,
+      const Mgr *metricMgr,
 		  uint mBegId = Metric::IData::npos,
 		  uint mEndId = Metric::IData::npos,
 		  int oFlags = 0, const char* pfx = "") const;
@@ -256,6 +261,7 @@ public:
   
 private:
   mutable MetricVec m_metrics;
+
 };
 
 //***************************************************************************

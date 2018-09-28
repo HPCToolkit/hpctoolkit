@@ -898,7 +898,7 @@ Profile::dump(std::ostream& os) const
   m_loadmap->dump(os);
 
   if (m_cct) {
-    m_cct->dump(os, CCT::Tree::OFlg_DebugAll);
+    m_cct->dump(m_mMgr, os, CCT::Tree::OFlg_DebugAll);
   }
   return os;
 }
@@ -1560,6 +1560,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+#if DBG_DATA
+    //if (node->metricMgr().)
+#endif
   }
 
   if (outfs) {

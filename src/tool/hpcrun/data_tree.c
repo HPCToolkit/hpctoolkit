@@ -176,7 +176,8 @@ datatree_splay_delete(void *memblock)
 
   datacentric_tree_root = splay(datacentric_tree_root, memblock);
 
-  if (memblock != datacentric_tree_root->memblock) {
+  if (!datacentric_tree_root ||
+      memblock != datacentric_tree_root->memblock) {
     spinlock_unlock(&datatree_lock);
     return NULL;
   }

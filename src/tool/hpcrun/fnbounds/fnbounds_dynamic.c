@@ -156,10 +156,13 @@ fnbounds_compute(const char *filename, void *start, void *end);
 static void
 fnbounds_map_executable();
 
+static bool
+fnbounds_is_datacentric_enabled();
 
 //*********************************************************************
 // interface operations
 //*********************************************************************
+
 
 //---------------------------------------------------------------------
 // function fnbounds_init: 
@@ -379,9 +382,7 @@ fnbounds_dso_exec(void)
     }
   }
 
-  char *events     = getenv(HPCRUN_EVENT_LIST);
-  bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
-  if (datacentric) {
+  if (fnbounds_is_datacentric_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_dso_exec %s", filename);
     // ----------------------------------------------------------
     // add into var data tree
@@ -411,9 +412,7 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
       isOk = false;
     }
 
-    char *events     = getenv(HPCRUN_EVENT_LIST);
-    bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
-    if (datacentric) {
+    if (fnbounds_is_datacentric_enabled()) {
       TMSG(DATACENTRIC, "fnbounds_ensure_mapped_dso %s", module_name);
       // ----------------------------------------------------------
       // add into var data tree
@@ -502,6 +501,15 @@ fnbounds_fetch_executable_table(void)
 // is already locked (mostly).
 //*********************************************************************
 
+
+static bool
+fnbounds_is_datacentric_enabled()
+{
+  char *events     = getenv(HPCRUN_EVENT_LIST);
+  return strcasestr(events, EVNAME_DATACENTRIC) != NULL;
+}
+
+
 static dso_info_t* 
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
 {
@@ -558,9 +566,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     }
   }
 
-  char *events     = getenv(HPCRUN_EVENT_LIST);
-  bool datacentric = strstr(events, EVNAME_DATACENTRIC) != NULL;
-  if (datacentric) {
+  if (fnbounds_is_datacentric_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_compute %s", filename);
     // ----------------------------------------------------------
     // add into var data tree
