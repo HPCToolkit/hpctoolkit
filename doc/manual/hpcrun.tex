@@ -19,35 +19,42 @@ profiling code into the application at runtime via \verb|LD_PRELOAD|.
 
 The basic options for \hpcrun{} are \verb|-e| (or \verb|--event|) to
 specify a sampling source and rate and \verb|-t| (or \verb|--trace|) to
-turn on tracing.  Sample sources are specified as `\verb|event@period|'
-where \verb|event| is the name of the source and \verb|period| is the
-period (threshold) for that event, and this option may be used
-multiple times.  Note that a higher period implies a lower rate of
-sampling.  The basic syntax for profiling an application with
+turn on tracing.  Sample sources are specified as `\verb|event@howoften|'
+where \verb|event| is the name of the source and \verb|howoften| is either
+a number specifying the period (threshold) for that event, or \verb|f| followed by a number, \eg{}, \verb|@f100| 
+specifying a target sampling frequency for the event in samples/second.\footnote{Frequency-based sampling and 
+the frequency-based notation for {\tt howoften} is only
+available for sample sources managed by Linux {\tt perf\_events}. For Linux {\tt perf\_events}, \HPCToolkit{} uses 
+a default sampling frequency of 300 samples/second.}
+Note that a higher period implies a lower rate of sampling.  
+The \verb|-e| option may be used multiple times to specify that multiple
+sample sources be used for measuring an execution.  
+The basic syntax for profiling an application with
 \hpcrun{} is:
 
 \begin{quote}
 \begin{verbatim}
-hpcrun -t -e event@period ... app arg ...
+hpcrun -t -e event@howoften ... app arg ...
 \end{verbatim}
 \end{quote}
 
-For example, to profile an application and sample every 15,000,000
-total cycles and every 400,000 L2 cache misses you would use:
+For example, to profile an application using hardware counter sample sources
+provided by Linux \verb|perf_events| and sample cycles at 300 times/second (the default sampling frequency) and sample every 4,000,000 instructions, 
+you would use:
 
 \begin{quote}
 \begin{verbatim}
-hpcrun -e PAPI_TOT_CYC@15000000 -e PAPI_L2_TCM@400000 app arg ...
+hpcrun -e CYCLES -e INSTRUCTIONS@4000000 app arg ...
 \end{verbatim}
 \end{quote}
 
-The units for the \verb|WALLCLOCK| sample source are in microseconds,
+The units for timer-based sample sources (\verb|CPUTIME|, \verb|REALTIME|, and \verb|WALLCLOCK|) are microseconds,
 so to sample an application with tracing every 5,000 microseconds
 (200~times/second), you would use:
 
 \begin{quote}
 \begin{verbatim}
-hpcrun -t -e WALLCLOCK@5000 app arg ...
+hpcrun -t -e CPUTIME@5000 app arg ...
 \end{verbatim}
 \end{quote}
 
@@ -74,7 +81,7 @@ line.  For example,
 
 \begin{quote}
 \begin{verbatim}
-mpirun -n 4 hpcrun -e PAPI_TOT_CYC@15000000 mpiapp arg ...
+mpirun -n 4 hpcrun -e CYCLES mpiapp arg ...
 \end{verbatim}
 \end{quote}
 
@@ -103,7 +110,7 @@ Monitoring Statically Linked Applications}.
 
 % ===========================================================================
 
-\section{Harware counter event names}
+\section{Harware Counter Event Names}
 
 HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel. 
 An event name is case insensitive and is defined as followed:
@@ -456,11 +463,11 @@ within the loop is likely to be off.  But as long as the loop is long
 enough, the count for the loop as a whole (and up the tree) should be
 accurate.
 
-\subsection{Wallclock, Realtime and Cputime}
+\subsection{WALLCLOCK, REALTIME and CPUTIME}
 
 \HPCToolkit{} supports three timer-based sample sources: \verb|CPUTIME|,
 \verb|REALTIME| and \verb|WALLCLOCK|.
-The units for periods of these timers are all in microseconds.
+The unit for periods of these timers is microseconds.
 
 Before describing this capability further, it is worth noting
 that the CYCLES event supported by Linux \perfevents{} or PAPI's \verb|PAPI_TOT_CYC| 
@@ -550,7 +557,7 @@ spent in syscalls such as \verb|read| and \verb|write|.  By adding the
 thus is able to more accurately count the time spent in these
 functions.
 
-\subsection{Memleak}
+\subsection{MEMLEAK}
 
 The \verb|MEMLEAK| sample source counts the number of bytes allocated
 and freed.  Like \verb|IO|, \verb|MEMLEAK| is a synchronous sample
@@ -651,9 +658,9 @@ For example, to monitor 10\% of the processes, use:
 
 \begin{quote}
 \begin{tabular}{@{}cl}
-(dynamic) & \verb|hpcrun -f 0.10 -e event@period app arg ...| \\
-(dynamic) & \verb|hpcrun -f 1/10 -e event@period app arg ...| \\
-(static)  & \verb|export HPCRUN_EVENT_LIST='event@period'| \\
+(dynamic) & \verb|hpcrun -f 0.10 -e event@howoften app arg ...| \\
+(dynamic) & \verb|hpcrun -f 1/10 -e event@howoften app arg ...| \\
+(static)  & \verb|export HPCRUN_EVENT_LIST='event@howoften'| \\
 & \verb|export HPCRUN_PROCESS_FRACTION=0.10| \\
 & \verb|app arg ...|
 \end{tabular}
@@ -757,8 +764,8 @@ off.  If you want it initially turned off, then use the \verb|-ds| (or
 
 \begin{quote}
 \begin{tabular}{@{}cl}
-(dynamic) & \verb|hpcrun -ds -e event@period app arg ...|  \\
-(static)  & \verb|export HPCRUN_EVENT_LIST='event@period'| \\
+(dynamic) & \verb|hpcrun -ds -e event@howoften app arg ...|  \\
+(static)  & \verb|export HPCRUN_EVENT_LIST='event@howoften'| \\
 & \verb|export HPCRUN_DELAY_SAMPLING=1| \\
 & \verb|app arg ...|
 \end{tabular}
@@ -791,17 +798,17 @@ a module for \HPCToolkit{} to initialize these environment variables to appropri
 would be convenient for users.
 
 \section{Platform-Specific Notes}
+\label{sec:platform-specific}
 
 %
 % system specific notes for titan, keenland?
 %
-\subsection{Cray XE6 and XK6}
-\label{sec:platform-specific}
+\subsection{Cray Systems}
 
-The ALPS job launcher used on Cray XE6 and XK6 systems copies 
+The ALPS job launcher used on Cray systems copies 
 programs to a special staging area before launching them,
 as described in Section~\ref{sec:env-vars}.
-Consequently, when using \hpcrun{} to monitor dynamically linked binaries on Cray XE6 and XK6 systems, you
+Consequently, when using \hpcrun{} to monitor dynamically-linked binaries on Cray systems, you
 should add the \verb|HPCTOOLKIT| environment variable to your launch
 script.  
 Set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} installation directory
@@ -822,7 +829,7 @@ export HPCTOOLKIT=/path/to/hpctoolkit/install/directory
 export CRAY_ROOTFS=DSL
 
 cd $PBS_O_WORKDIR
-aprun -n #nodes hpcrun -e event@period dynamic-app arg ...
+aprun -n #nodes hpcrun -e event@howoften dynamic-app arg ...
 \end{verbatim}
 \end{quote}
 % $
@@ -849,3 +856,19 @@ Your system may have a module installed for \verb|hpctoolkit| with the
 correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
 the easiest solution is to load the \verb|hpctoolkit| module.  Try
 ``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
+
+\subsection{Blue Gene/Q Systems}
+Blue Gene Q systems provide the \verb|WALLCLOCK| interval timer, but not the 
+POSIX \verb|CPUTIME| and \verb|REALTIME| timers.
+
+The Linux \verb|perf_events| subsystem is unavailable on Blue Gene Q systems. 
+One should use the PAPI interface to monitor executions using hardware performance counters. 
+
+\subsection{ARM Systems}
+\HPCToolkit{}'s measurement infrastructure depends upon \verb|libunwind| for call stack unwinding on ARM.
+On some ARM systems, compilers put DWARF Function Descriptor Entries (FDEs) in the ELF \verb|.debug_frame| segment rather 
+than the \verb|.eh_frame| segment. In such cases, \HPCToolkit{} requires a bleeding-edge version of \verb|libunwind| that is not included in 
+\HPCToolkit{}'s \verb|hpctoolkit-externals| package. 
+\footnote{We are in the midst of deprecating {\tt hpctoolkit-externals} as we move to a spack-based distribution system. While it is used for the
+current release, we are no longer maintaining it.}
+Contact the \HPCToolkit{} forum if you need a copy of a newer \verb|libunwind|. 

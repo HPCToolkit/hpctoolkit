@@ -116,7 +116,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2018.09}
 %\subtitle{}
 
 \author{
@@ -449,7 +449,7 @@ Then monitor \texttt{app} by passing \hpcrun{} options through environment varia
 For instance:
 \begin{quote}
 \begin{verbatim}
-export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000001"
+export HPCRUN_EVENT_LIST="CYCLES@f200"
 [<mpi-launcher>] app [app-arguments]
 \end{verbatim}
 \end{quote}
@@ -473,16 +473,17 @@ Currently, the database contains measurements files for each thread that are nam
 
 \HPCToolkit{} primarily monitors an application using asynchronous sampling.
 Consequently, the most common option to \hpcrun{} is a list of sample sources that define how samples are generated.
-A sample source takes the form of an event name $e$ and period $p$ and is specified as \texttt{$e$@$p$}, \eg{}, \mytt{PAPI_TOT_CYC@4000001}.
+A sample source takes the form of an event name $e$ and \texttt{howoften}, specified as \texttt{$e$@howoften}. The specifier \texttt{howoften} may 
+be a number, indicating a period, \eg{} \mytt{CYCLES@4000001} or it may be \texttt{f} followed by a number, \mytt{CYCLES@f200} indicating a frequency in samples/second.
 For a sample source with event $e$ and period $p$, after every \emph{p} instances of \emph{e}, a sample is generated that causes \hpcrun{} to inspect the and record information about the monitored application.
 
-To configure \hpcrun{} with two samples sources, \texttt{$e_1$@$p_1$} and \texttt{$e_2$@$p_2$}, use the following options:
+To configure \hpcrun{} with two samples sources, \texttt{$e_1$@howoften$_1$} and \texttt{$e_2$@howoften$_2$}, use the following options:
 \begin{quote}
-  \texttt{--event $e_1$@$p_1$ --event $e_2$@$p_2$}
+  \texttt{--event $e_1$@howoften$_1$ --event $e_2$@howoften$_2$}
 \end{quote}
 To use the same sample sources with an \hpclink{}-ed application, use a command similar to:
 \begin{quote}
-  \texttt{export HPCRUN\_EVENT\_LIST="$e_1$@$p_1$;$e_2$@$p_2$"}
+  \texttt{export HPCRUN\_EVENT\_LIST="$e_1$@howoften$_1$;$e_2$@howoften$_2$"}
 \end{quote}
 
 
@@ -995,7 +996,7 @@ Then, set the \mytt{HPCRUN_EVENT_LIST} environment variable in the launch script
 %
 \begin{quote}
 \begin{verbatim}
-export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000001"
+export HPCRUN_EVENT_LIST="CYCLES@f200"
 <mpi-launcher> app [app-arguments]
 \end{verbatim}
 %
@@ -1162,7 +1163,7 @@ For example, in a PBS script for a Cray system, you might write the following in
 #PBS -l size=64
 #PBS -l walltime=01:00:00
 cd $PBS_O_WORKDIR
-export HPCRUN_EVENT_LIST="PAPI_TOT_CYC@4000000 PAPI_L2_TCM@400000"
+export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
 aprun -n 64 ./app arg ...
 \end{verbatim}
 \end{quote}
@@ -1206,6 +1207,9 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 \section{How do I choose \hpcrun{} sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
 
+When using sample sources for hardware counter and software counter events provided by Linux \verb|perf_events|, 
+we recommend that you use frequency-based sampling. The default frequency is 300 samples/second. 
+
 Statisticians use samples sizes of approximately 3500 to make accurate projections about the voting preferences of millions of people.
 In an analogous way, rather than collect unnecessary large amounts of performance information, sampling-based performance measurement collects ``just enough'' representative performance data.
 You can control \hpcrun{}'s sampling periods to collect ``just enough'' representative data even for very long executions and, to a lesser degree, for very short executions.
@@ -1214,8 +1218,8 @@ For reasonable accuracy ($\pm 5\%$), there should be at least 20 samples in each
 Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate.
 
 We typically recommend targeting a frequency of hundreds of samples per second.
-For very short runs, you may need to try thousands of samples per second.
-For very long runs, tens of samples per second can be quite reasonable.
+For very short runs, you may need to collect thousands of samples per second to record an adequate number of samples.
+For long runs, tens of samples per second may suffice for performance diagnosis.
 
 Choosing sampling periods for some events, such as Linux timers, cycles and instructions, is easy given a target sampling frequency.
 Choosing sampling periods for other events such as cache misses is harder.
@@ -1250,7 +1254,9 @@ The most common causes for unusually high overhead are the following:
   \begin{quote}
   \verb|hpcsummary --all <hpctoolkit-measurements>|
   \end{quote}
-  Please let us know if there are problems.
+  Note: The \verb|hpcsummary| script is no longer included in the \verb|bin| directory of an \HPCToolkit{} installation; 
+  it is a developer script that can be found in the \verb|libexec/hpctoolkit| directory. 
+  Let us know if you encounter signficant problems with bad unwinds.
 
 \item You have very long call paths where long is in the hundreds or thousands.
   On x86-based architectures, try additionally using \hpcrun{}'s \texttt{RETCNT} event.
@@ -1323,7 +1329,7 @@ On Linux, try removing your \hpcviewer{} Eclipse workspace with default location
  \texttt{\$HOME/.hpctoolkit/hpcviewer} \\
  and run \hpcviewer{} again.  
 
-On MacOS, persistent state is currently stored within Mac app. If the Eclipse persistent state gets corrupted, one can’t simply clear the workspace because some initial persistent state is needed for Eclipse to function properly.  For MacOS, the thing to try is downloading a fresh copy of hpcviewer and running the freshly downloaded copy.
+On MacOS, persistent state is currently stored within Mac app. If the Eclipse persistent state gets corrupted, one can't simply clear the workspace because some initial persistent state is needed for Eclipse to function properly.  For MacOS, the thing to try is downloading a fresh copy of hpcviewer and running the freshly downloaded copy.
 
 If one of the aforementioned suggestions doesn’t fix the problem, report a bug.
 
