@@ -67,6 +67,7 @@
 #include <cstring>
 
 #include <typeinfo>
+#include <unordered_map>
 
 #include <sys/stat.h>
 
@@ -259,25 +260,54 @@ constructCCTGraph(Prof::CCT::ANode *root, CallMap &call_map,
 
 static bool
 findRecursion(CCTGraph &cct_graph) {
-  using namespace boost;
-  typedef adjacency_list <vecS, vecS, directedS> Graph;
+  std::unordered_map<int, int> graph_index_converter;
+  std::unordered_map<int, int> graph_index_reverse_converter;
+  int start_index = 0;
+  typedef boost::adjacency_list <boost::vecS, boost::vecS, boost::directedS> Graph;
   const int N = cct_graph.size();
   Graph G(N);
 
   // Find recursive calls
   for (auto it = cct_graph.edgeBegin(); it != cct_graph.edgeEnd(); ++it) {
-    auto from = it->from->id();
-    auto to = it->to->id();
-    add_edge(from, to, G);
-    if (from == to) {
+    auto from_id = it->from->id();
+    if (graph_index_converter.find(from_id) != graph_index_converter.end()) {
+      from_id = graph_index_converter[from_id];
+    } else {
+      graph_index_converter[from_id] = start_index;
+      graph_index_reverse_converter[start_index] = from_id;
+      from_id = start_index++;
+    }
+
+    auto to_id = it->to->id();
+    if (graph_index_converter.find(to_id) != graph_index_converter.end()) {
+      to_id = graph_index_converter[to_id];
+    } else {
+      graph_index_converter[to_id] = start_index;
+      graph_index_reverse_converter[start_index] = to_id;
+      to_id = start_index++;
+    }
+
+    add_edge(from_id, to_id, G);
+    if (from_id == to_id) {
       return true;
     }
   }
 
   // Find mutual recursive calls
-  std::vector<int> c(N);
-  int num = strong_components
-    (G, make_iterator_property_map(c.begin(), get(vertex_index, G), c[0]));
+  std::vector<int> c(num_vertices(G));
+  int num = boost::strong_components(G,
+    boost::make_iterator_property_map(c.begin(), boost::get(boost::vertex_index, G)));
+
+#ifdef DEBUG_CALLPATH_CUDACFG
+  std::cout << "CCT graph vertices " << cct_graph.size() << std::endl;
+  std::cout << "Num vertices " << num_vertices(G) << std::endl;
+  std::cout << "Find scc " << num << std::endl;
+  for (size_t i = 0; i != c.size(); ++i) {
+    std::cout << "Vertex " << i
+      <<" is in component " << c[i] << std::endl;
+  }
+#endif
+
   return num > 0;
 }
 
