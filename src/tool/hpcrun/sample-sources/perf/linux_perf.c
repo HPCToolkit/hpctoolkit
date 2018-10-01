@@ -138,7 +138,7 @@
 // will adjust the threshold to less than 100.
 //
 // 300 samples per sec with hpctoolkit has a similar overhead as perf
-#define DEFAULT_THRESHOLD  300
+#define DEFAULT_THRESHOLD  HPCRUN_DEFAULT_SAMPLE_RATE
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid

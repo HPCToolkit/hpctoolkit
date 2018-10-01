@@ -309,7 +309,7 @@ static int
 perf_util_get_max_sample_rate()
 {
   static int initialized = 0;
-  static int max_sample_rate  = 300; // unless otherwise limited
+  static int max_sample_rate  = HPCRUN_DEFAULT_SAMPLE_RATE; // unless otherwise limited
   if (!initialized) {
     FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
 
