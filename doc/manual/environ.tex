@@ -28,6 +28,23 @@ report when problems arise.
 \section{Environment Variables for Users}
 \label{user-env}
 
+\paragraph{HPCTOOLKIT.}
+Under normal circumstances, there is no need to use this environment variable. 
+However, there are two situations, however, \hpcrun{}
+\emph{must} consult the \verb+HPCTOOLKIT+ environment variable to determine the location
+of \HPCToolkit{}'s top-level installation directory:
+
+\begin{itemize}
+\item On some systems, parallel job launchers (e.g., Cray's aprun) \emph{copy} the
+       \hpcrun{} script to a different location. In this case, for \hpcrun{} to find libraries
+       and utilities it needs at runtime, you must set the \verb+HPCTOOLKIT+ environment variable to 
+       \HPCToolkit{}'s top-level installation directory.
+\item
+       If you launch the \hpcrun{} script via a file system link,
+       you must set \verb+HPCTOOLKIT+ for the same reason.
+\end{itemize}
+
+
 \paragraph{HPCRUN\_EVENT\_LIST.}
 
 This environment variable is used provide a set of (event, period)
@@ -218,21 +235,6 @@ dump (assuming that core dumps are enabled) to aid in debugging.
 Caution: for a large-scale parallel execution, this might cause a
 core dump for each process, depending upon the settings for your
 system. Be careful!
-
-\paragraph{HPCRUN\_QUIET}
-
-If this unfortunately-named environment variable is set, HPCToolkit's
-measurement subsystem will turn on a default set of dynamic debugging
-variables to log information about HPCToolkit's stack unwinding
-based on on-the-fly binary analysis. If set, HPCToolkit's measurement
-subsystem log information associated with the following debug flags:
-TROLL (when a return address was not found algorithmically
-and \HPCToolkit{} begins looking for possible return address values
-on the call stack), SUSPICIOUS\_INTERVAL (when an x86 unwind recipe
-is suspicious because it indicates that a base pointer is saved on
-the stack when a return instruction is encountered) and DROP (when
-samples are dropped because the measurement infrastructure was
-unable to record a sample in a timely fashion).
 
 \paragraph{HPCRUN\_FNBOUNDS\_CMD}
 
