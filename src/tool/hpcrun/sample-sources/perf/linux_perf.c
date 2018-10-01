@@ -137,7 +137,7 @@
 // will adjust the threshold to less than 100.
 //
 // 300 samples per sec with hpctoolkit has a similar overhead as perf
-#define DEFAULT_THRESHOLD  300
+#define DEFAULT_THRESHOLD  HPCRUN_DEFAULT_SAMPLE_RATE
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -938,7 +938,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   {
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
+      EEMSG("Failed to initialize the %s event.", event_desc[i].metric_desc->name);
     }
   }
 
