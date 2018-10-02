@@ -1630,6 +1630,9 @@ AC_SUBST([wordsize_cflag])
 # libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
 # The first two must be in the binutils package, but the last two may
 # be in binutils or separate (libiberty and zlib).
+#
+# Note: we no longer use binutils to crack instructions, so we don't
+# need libopcodes anymore, not on any platform.
 
 BINUTILS="$default_binutils_prefix"
 
@@ -1654,17 +1657,6 @@ case "$BINUTILS" in
     else
       AC_MSG_ERROR([unable to find bfd.h in: $BINUTILS])
     fi
-
-    # libopcodes.a must be in binutils
-    for lib in $multilib_path fail ; do
-      file="${BINUTILS}/${lib}/libopcodes.a"
-      if test -f "$file" ; then
-        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
-	break
-      elif test "$lib" = fail ; then
-        AC_MSG_ERROR([unable to find libopcodes.a in: $BINUTILS])
-      fi
-    done
 
     # libbfd.a must be in binutils
     for lib in $multilib_path fail ; do
