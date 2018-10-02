@@ -114,7 +114,7 @@ BUILT_SOURCES =
 CLEANFILES =
 
 if OPT_BUILD_FRONT_END
-  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpcsummary
   pkglibexec_SCRIPTS += scripts/hpclog
   include_HEADERS += hpctoolkit.h
 endif
