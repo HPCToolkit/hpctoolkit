@@ -137,18 +137,7 @@ is_compact_thread()
   return hpcrun_threadMgr_compact_thread() == OPTION_COMPACT_THREAD;
 }
 
-static thread_data_t*
-allocate_thread_data(int id, cct_ctxt_t *thr_ctxt)
-{
-  thread_data_t *data = hpcrun_allocate_thread_data(id);
 
-  // requires to set the data before calling thread_data_init
-  // since the function will query the thread local data :-(
-
-  hpcrun_set_thread_data(data);
-
-  return data;
-}
 
 static void
 finalize_thread_data(core_profile_trace_data_t *current_data)
@@ -249,6 +238,9 @@ hpcrun_threadMgr_compact_thread()
  * - if we want a compact thread, we check if there is already unused thread data
  *   - if there is an unused thread data, we'll reuse it again
  *   - if there is no more thread data available, we need to allocate a new one
+ *
+ *   Return true if we allocate a new thread data,
+ *          false if we reuse an existing data
  *****/
 bool
 hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
@@ -258,7 +250,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   // -----------------------------------------------------------------
 
   if (!is_compact_thread()) {
-    *data = allocate_thread_data(id, thr_ctxt);
+    *data = hpcrun_allocate_thread_data(id);
     return true;
   }
 
@@ -273,16 +265,8 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
 
   if (need_to_allocate) {
 
-    int32_t myid = adjust_num_logical_threads(1);
-    TMSG(PROCESS, "%d: new thread data", myid);
-
-    *data        = allocate_thread_data(myid, thr_ctxt);
-
-  } else {
-
-    hpcrun_set_thread_data(*data);
-
-    TMSG(PROCESS, "%d: reuse thread data from %d", id, (*data)->core_profile_trace_data.id);
+    adjust_num_logical_threads(1);
+    *data = hpcrun_allocate_thread_data(id);
   }
 
 #if HPCRUN_THREADS_DEBUG

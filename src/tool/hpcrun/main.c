@@ -671,11 +671,19 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   hpcrun_mmap_init();
 
+  // ----------------------------------------
+  // call thread manager to get a thread data. If there is unused thread data,
+  //  we can recycle it, otherwise we need to allocate a new one.
+  // If we allocate a new one, we need to initialize the data and trace file.
+  //
   //originally: hpcrun_allocate_thread_data(id);
+  // ----------------------------------------
+
   thread_data_t* td = NULL;
   bool new_data = hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+  hpcrun_set_thread_data(td);
 
-  if (new_data) {
+  if (new_data && td) {
 
     // ----------------------------------------
     // need to initialize thread_data here. before calling hpcrun_thread_data_init,
@@ -697,7 +705,6 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
-  hpcrun_set_thread_data(td);
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
@@ -710,11 +717,6 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
-
-  // laks: move hpcrun_epoch_init to hpcrun_thread_data_init
-  // set up initial 'epoch'
-  //TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  //hpcrun_epoch_init(thr_ctxt);
 
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
