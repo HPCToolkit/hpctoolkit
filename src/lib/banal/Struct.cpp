@@ -130,7 +130,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
-#define NUM_GPU_ENTRY_INSTRUCTIONS 4
+#define NUM_GPU_ENTRY_INSTRUCTIONS 16
 
 //******************************************************************************
 // variables

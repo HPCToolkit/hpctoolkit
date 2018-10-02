@@ -279,6 +279,7 @@ class Proc;
 class Loop;
 class Call;
 class Stmt;
+class SCC;  // recursion frame
 
 // ---------------------------------------------------------
 // ANode: The base node for a call stack profile tree.
@@ -300,7 +301,8 @@ public:
     TyCall,
     TyStmt,
     TyANY,
-    TyNUMBER
+    TyNUMBER,
+    TySCC
   };
   
   static const std::string&
@@ -470,6 +472,9 @@ public:
 
   Loop*
   ancestorLoop() const;
+
+  SCC*
+  ancestorSCC() const;
 
   Call*
   ancestorCall() const;
@@ -1318,6 +1323,59 @@ public:
   virtual ANode*
   clone()
   { return new Loop(*this); }
+
+private:
+};
+
+
+// --------------------------------------------------------------------------
+// SCC
+// --------------------------------------------------------------------------
+
+class SCC
+  : public ANode
+{
+public:
+  // Constructor/Destructor
+  SCC(ANode* parent, Struct::ACodeNode* strct = NULL)
+    : ANode(TySCC, parent, strct)
+  { }
+
+  virtual uint
+  fileId() const
+  {
+    uint id = 0;
+    if (m_strct) {
+      id = m_strct->id(); 
+    }
+    return id;
+  }
+
+  virtual ~SCC()
+  { }
+
+  // Dump contents for inspection
+  virtual std::string
+  toStringMe(uint oFlags = 0) const;
+  
+  // deep copy of internals (but without children)
+  SCC(const SCC& x)
+    : ANode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  SCC&
+  operator=(const SCC& x)
+  {
+    if (this != &x) {
+      ANode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new SCC(*this); }
 
 private:
 };

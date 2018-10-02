@@ -111,6 +111,8 @@ class CCTGraph {
   typedef std::map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > NeighborNodeMap;
 
  public:
+  CCTGraph() {}
+
   std::set<CCTEdge>::iterator edgeBegin() {
     return _edges.begin();
   }
