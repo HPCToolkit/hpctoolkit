@@ -75,8 +75,8 @@ void hpcrun_threadmgr_thread_delete();
 
 int hpcrun_threadmgr_thread_count();
 
-thread_data_t *
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources );
+bool
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data);
 
 void
 hpcrun_threadMgr_data_put( thread_data_t *data );

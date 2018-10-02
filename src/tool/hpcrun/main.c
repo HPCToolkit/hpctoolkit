@@ -672,7 +672,28 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   hpcrun_mmap_init();
 
   //originally: hpcrun_allocate_thread_data(id);
-  thread_data_t* td = hpcrun_threadMgr_data_get(id, thr_ctxt, hpcrun_get_num_sample_sources());
+  thread_data_t* td = NULL;
+  bool new_data = hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+
+  if (new_data) {
+
+    // ----------------------------------------
+    // need to initialize thread_data here. before calling hpcrun_thread_data_init,
+    // make sure we already call hpcrun_set_thread_data to set the variable.
+    // ----------------------------------------
+    hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
+
+    // ----------------------------------------
+    // set up initial 'epoch'
+    // ----------------------------------------
+    TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+    hpcrun_epoch_init(thr_ctxt);
+
+    // ----------------------------------------
+    // opening trace file
+    // ----------------------------------------
+    hpcrun_trace_open(&(td->core_profile_trace_data));
+  }
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
 

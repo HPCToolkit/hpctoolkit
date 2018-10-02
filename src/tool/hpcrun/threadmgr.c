@@ -138,7 +138,7 @@ is_compact_thread()
 }
 
 static thread_data_t*
-allocate_thread_data(int id, cct_ctxt_t *thr_ctxt, size_t num_sources)
+allocate_thread_data(int id, cct_ctxt_t *thr_ctxt)
 {
   thread_data_t *data = hpcrun_allocate_thread_data(id);
 
@@ -146,7 +146,6 @@ allocate_thread_data(int id, cct_ctxt_t *thr_ctxt, size_t num_sources)
   // since the function will query the thread local data :-(
 
   hpcrun_set_thread_data(data);
-  hpcrun_thread_data_init(id, thr_ctxt, 0, num_sources);
 
   return data;
 }
@@ -251,36 +250,46 @@ hpcrun_threadMgr_compact_thread()
  *   - if there is an unused thread data, we'll reuse it again
  *   - if there is no more thread data available, we need to allocate a new one
  *****/
-thread_data_t *
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, size_t num_sources )
+bool
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
 {
+  // -----------------------------------------------------------------
   // if we don't want coalesce threads, just allocate it and return
+  // -----------------------------------------------------------------
 
   if (!is_compact_thread()) {
-    return allocate_thread_data(id, thr_ctxt, num_sources);
+    *data = allocate_thread_data(id, thr_ctxt);
+    return true;
   }
 
-  thread_list_t *item = grab_thread_data();
-  thread_data_t *data = item ? item->thread_data : NULL;
+  // -----------------------------------------------------------------
+  // try to grab existing unused context. If no context available,
+  //  we need to allocate a new one.
+  // -----------------------------------------------------------------
 
-  if (data == NULL) {
+  thread_list_t *item = grab_thread_data();
+  *data = item ? item->thread_data : NULL;
+  bool need_to_allocate = (*data == NULL);
+
+  if (need_to_allocate) {
 
     int32_t myid = adjust_num_logical_threads(1);
-    data         = allocate_thread_data(myid, thr_ctxt, num_sources);
-
     TMSG(PROCESS, "%d: new thread data", myid);
+
+    *data        = allocate_thread_data(myid, thr_ctxt);
+
   } else {
 
-    hpcrun_set_thread_data(data);
+    hpcrun_set_thread_data(*data);
 
-    TMSG(PROCESS, "%d: reuse thread data from %d", id, data->core_profile_trace_data.id);
+    TMSG(PROCESS, "%d: reuse thread data from %d", id, (*data)->core_profile_trace_data.id);
   }
 
 #if HPCRUN_THREADS_DEBUG
   atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
 #endif
 
-  return data;
+  return need_to_allocate;
 }
 
 
