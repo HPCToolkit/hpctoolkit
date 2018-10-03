@@ -92,12 +92,6 @@
 
 //***************************** concrete data structure definition **********
 
-typedef struct cct_data_s {
-
-  cct_node_t *allocation_node;  // dynamic allocation
-  uint64_t   start_address;     // static allocation
-
-} cct_data_t;
 
 struct cct_node_t {
 
@@ -124,13 +118,7 @@ struct cct_node_t {
   struct cct_node_t* left;
   struct cct_node_t* right;
 
-  // ---------------------------------------------------------
-  // datacentric association with memory address
-  // ---------------------------------------------------------
-  union {
-    cct_data_t var;
-    cct_addr_t addr; // bundle abstract address components into a data type
-  };
+  cct_addr_t addr; // bundle abstract address components into a data type
 
 };
 
@@ -179,9 +167,6 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
     node->addr.as_info = addr->as_info; // LUSH
     node->addr.ip_norm = addr->ip_norm;
     node->addr.lip     = addr->lip;     // LUSH
-  } else {
-    node->var.allocation_node = NULL;
-    node->var.start_address   = 0;
   }
 
   node->persistent_id = new_persistent_id();

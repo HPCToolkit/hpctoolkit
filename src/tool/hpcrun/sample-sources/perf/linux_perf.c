@@ -488,12 +488,12 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
  * return 1 node of the sample if successful
  * return 0 if fails
  */
-static int
+static void
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, int metric, int freq, sample_val_t *sv)
 {
   if (current == NULL)
-    return 0;
+    return ;
 
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
@@ -563,8 +563,6 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 
   blame_shift_apply(metric, sv->sample_node, 
                     counter /*metricIncr*/);
-
-  return sv;
 }
 
 /**
