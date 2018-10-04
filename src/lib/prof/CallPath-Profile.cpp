@@ -1308,6 +1308,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN");
 
+    // keep the show status consistent between hpcrun and experiment.xml
+    m->isVisible(mdesc.flags.fields.show == 1);
+    m->doDispPercent(mdesc.flags.fields.showPercent == 1);
+
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
     }
@@ -1347,15 +1351,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     if (doMakeInclExcl) {
       Metric::SampledDesc* mSmpl =
-	new Metric::SampledDesc(nm, desc, mdesc.period,
-				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN");
+          new Metric::SampledDesc(nm, desc, mdesc.period,
+              true/*isUnitsEvents*/,
+              profFileName, profRelId, "HPCRUN");
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	mSmpl->nameSfx(m_sfx);
+        mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
-      
+      mSmpl->isVisible(mdesc.flags.fields.show);
+      mSmpl->doDispPercent(mdesc.flags.fields.showPercent);
+
       prof->metricMgr()->insert(mSmpl);
     }
   }

@@ -386,6 +386,27 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 }
 
 
+/****
+ * create a metric with more options to tune attributes like
+ * show and show_percent
+ *
+ * This method is mainly used by datacentric which requires helper metrics
+ * to store information but not to be consumed by users.
+ ***/
+metric_desc_t*
+hpcrun_set_metric_and_attributes(int metric_id, const char* name,
+    MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop,
+    uint8_t show, uint8_t show_percent)
+{
+  metric_desc_t* metric = hpcrun_set_metric_info_w_fn(metric_id, name, valFmt, period,
+            hpcrun_metric_std_inc, prop);
+
+  metric->flags.fields.show = show;
+  metric->flags.fields.showPercent = show_percent;
+
+  return metric;
+}
+
 metric_desc_t* 
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)

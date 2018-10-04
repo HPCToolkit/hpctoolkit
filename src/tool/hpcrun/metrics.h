@@ -137,6 +137,11 @@ hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
 				 MetricFlags_ValFmt_t valFmt, size_t period,
 				 metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
+metric_desc_t*
+hpcrun_set_metric_and_attributes(int metric_id, const char* name,
+    MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop,
+    uint8_t show, uint8_t show_percent);
+
 metric_desc_t* 
 hpcrun_set_metric_info_and_period(int metric_id, const char* name,
 				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);

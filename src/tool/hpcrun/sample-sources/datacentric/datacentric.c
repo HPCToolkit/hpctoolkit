@@ -447,7 +447,8 @@ datacentric_register(sample_source_t *self,
   // node allocation id
   // ------------------------------------------
   metric.node_alloc = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.node_alloc, "Alloc-id");
+  hpcrun_set_metric_and_attributes(metric.node_alloc, "Alloc-id",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
 
   return 1;
 }
