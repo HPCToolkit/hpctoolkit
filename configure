@@ -893,7 +893,6 @@ OPT_STRIP_HPCRUN_LIBS_TRUE
 OPT_ENABLE_DEVELOP_FALSE
 OPT_ENABLE_DEVELOP_TRUE
 HPCPROFMPI_LT_LDFLAGS
-HPC_LT_LDFLAGS
 HPCTOOLKIT_PLATFORM
 host_os
 host_vendor
@@ -977,6 +976,7 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_maintainer_mode
+enable_all_static
 enable_develop
 enable_strip_debug
 enable_dependency_tracking
@@ -1038,7 +1038,6 @@ enable_devtools
       ac_precious_vars='build_alias
 host_alias
 target_alias
-HPC_LT_LDFLAGS
 HPCPROFMPI_LT_LDFLAGS
 CXX
 CXXFLAGS
@@ -1682,6 +1681,8 @@ Optional Features:
   --enable-maintainer-mode
                           enable make rules and dependencies not useful (and
                           sometimes confusing) to the casual installer
+  --enable-all-static     needed when building a static hpcprof-mpi for the
+                          compute nodes (default no)
   --enable-develop        Build development version (enable debugging)
   --enable-strip-debug    strip the debug section from the hpcrun libraries
                           (default yes, unless --enable-develop is used)
@@ -1781,11 +1782,10 @@ Optional Packages:
                           use given objcopy when hiding hpcrun library symbols
 
 Some influential environment variables:
-  HPC_LT_LDFLAGS
-              pass libtool link mode flags to hpcstruct, hpcprof*, hpclump
   HPCPROFMPI_LT_LDFLAGS
-              pass libtool link mode flags to hpcprof-mpi (before
-              HPC_LT_LDFLAGS)
+              old method to add ldflags to hpcprof-mpi, now use
+              --enable-all-static to build a static binary for the compute
+              nodes
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -4114,12 +4114,32 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
+# enable-all-static
 #-------------------------------------------------
 
+# Add '-all-static' to LDFLAGS for hpcprof-mpi.  This is needed when
+# using an MPI compiler that builds a static hpcprof-mpi for the
+# compute nodes.
+#
+# The old way was to set HPCPROFMPI_LT_LDFLAGS='-all-static', the new
+# way is to use --enable-all-static.
 
 
 
+# Check whether --enable-all-static was given.
+if test "${enable_all_static+set}" = set; then :
+  enableval=$enable_all_static;
+else
+  enable_all_static=no
+fi
+
+
+if test "x$enable_all_static" = xyes ; then
+  HPCPROFMPI_LT_LDFLAGS="$HPCPROFMPI_LT_LDFLAGS -all-static"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS" >&5
+$as_echo "$as_me: HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS" >&6;}
 
 
 #-------------------------------------------------
@@ -20434,7 +20454,7 @@ case "$LZMA" in
       #
       # hpcprof-mpi: same as hpclink if fully static, else default
       #
-      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
       if test $? = 0 ; then
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
       else
@@ -21573,7 +21593,7 @@ $as_echo "$as_me: WARNING: unable to build hpclink: no static libxed.a" >&2;}
   #
   # hpcprof-mpi: same as hpclink if fully static, else default
   #
-  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
   if test $? = 0 ; then
     XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
   else
@@ -25802,8 +25822,6 @@ $as_echo "$as_me:   MPICC:     '${MPICC}'" >&6;}
 $as_echo "$as_me:   MPICXX:    '${MPICXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   MPIF77:    '${MPIF77}'" >&5
 $as_echo "$as_me:   MPIF77:    '${MPIF77}'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&5
-$as_echo "$as_me:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&5
 $as_echo "$as_me:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5

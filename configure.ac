@@ -169,14 +169,32 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
+# enable-all-static
 #-------------------------------------------------
 
-AC_ARG_VAR([HPC_LT_LDFLAGS],
-           [pass libtool link mode flags to hpcstruct, hpcprof*, hpclump])
+# Add '-all-static' to LDFLAGS for hpcprof-mpi.  This is needed when
+# using an MPI compiler that builds a static hpcprof-mpi for the
+# compute nodes.
+#
+# The old way was to set HPCPROFMPI_LT_LDFLAGS='-all-static', the new
+# way is to use --enable-all-static.
 
 AC_ARG_VAR([HPCPROFMPI_LT_LDFLAGS],
-           [pass libtool link mode flags to hpcprof-mpi (before HPC_LT_LDFLAGS)])
+  [old method to add ldflags to hpcprof-mpi, now use --enable-all-static
+  to build a static binary for the compute nodes])
+
+AC_ARG_ENABLE([all-static],
+  [AS_HELP_STRING([--enable-all-static],
+      [needed when building a static hpcprof-mpi for the compute nodes
+      (default no)])],
+  [],
+  [enable_all_static=no])
+
+if test "x$enable_all_static" = xyes ; then
+  HPCPROFMPI_LT_LDFLAGS="$HPCPROFMPI_LT_LDFLAGS -all-static"
+fi
+
+AC_MSG_NOTICE([HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS])
 
 
 #-------------------------------------------------
@@ -2211,7 +2229,7 @@ case "$LZMA" in
       #
       # hpcprof-mpi: same as hpclink if fully static, else default
       #
-      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
       if test $? = 0 ; then
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
       else
@@ -3113,7 +3131,7 @@ int my_xed_init(void)
   #
   # hpcprof-mpi: same as hpclink if fully static, else default
   #
-  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
   if test $? = 0 ; then
     XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
   else
@@ -4194,7 +4212,6 @@ AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
 AC_MSG_NOTICE([  MPICC:     '${MPICC}'])
 AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
 AC_MSG_NOTICE([  MPIF77:    '${MPIF77}'])
-AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${BINUTILS}])

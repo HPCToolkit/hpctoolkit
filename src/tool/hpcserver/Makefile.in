@@ -296,7 +296,6 @@ HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
-HPC_LT_LDFLAGS = @HPC_LT_LDFLAGS@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -1145,7 +1144,7 @@ uninstall-am: uninstall-binPROGRAMS
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
     rm -f "$2" ;  \
     mv -f "$1" "$2" ;  \
   fi
