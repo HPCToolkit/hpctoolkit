@@ -343,22 +343,22 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       //  recognized metric.
       // --------------------------------------------------------------
 
-      hpcrun_metricVal_t value;
-      value.p = (void *)mmap_data->addr;
-
-      // check if this is the minimum value. if this is the case, record it in the metric
-      int metric_id = datacentric_get_metric_addr_start();
-      hpcrun_metric_std_min(metric_id, mset, value);
-
-      // check if this is the maximum value. if this is the case, record it in the metric
-      metric_id = datacentric_get_metric_addr_end();
-      hpcrun_metric_std_max(metric_id, mset, value);
-
       datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
       if (info) {
         // variable address is store in the database
         // record the interval of this access
+
+        hpcrun_metricVal_t value;
+        value.p = (void *)mmap_data->addr;
+
+        // check if this is the minimum value. if this is the case, record it in the metric
+        int metric_id = datacentric_get_metric_addr_start();
+        hpcrun_metric_std_min(metric_id, mset, value);
+
+        // check if this is the maximum value. if this is the case, record it in the metric
+        metric_id = datacentric_get_metric_addr_end();
+        hpcrun_metric_std_max(metric_id, mset, value);
 
         cct_node_t *context = info->context;
         if (info->magic == DATA_STATIC_MAGIC) {
