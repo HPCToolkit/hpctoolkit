@@ -443,6 +443,17 @@ register_to_all_existing_regions(ompt_region_data_t* current_region, ompt_region
   }
 }
 
+//
+int
+is_already_registered(ompt_region_data_t* region_data){
+    int i;
+    for(i = top_index; i >= 0; i--) {
+        if(region_stack[i] == region_data->region_id)
+            return 1;
+    }
+    return 0;
+}
+
 void
 register_to_all_regions(){
   // FIXME vi3: maybe we should add thread local variable to store current region data
@@ -461,16 +472,19 @@ register_to_all_regions(){
 
   // is thread already register to region that is on the top of the stack
   // if that is the case, nothing has to be done
-  uint64_t top = top_region_stack();
-  if(top == current_region->region_id){
-    return;
-  }
+  if(is_already_registered(current_region))
+      return;
+//  uint64_t top = top_region_stack();
+//  if(top == current_region->region_id){
+//    return;
+//  }
 
   // Thread is not register to current region.
 
   // If there is not parent region and stack is not clear, then regions
   // from the stack should be removed. After that, all we need to do is to
   // register thread to the current region, so that stack will only contain it.
+  uint64_t top = top_region_stack();
   ompt_region_data_t* parent_region = hpcrun_ompt_get_parent_region_data();
   if (!parent_region){
     register_to_all_existing_regions(current_region, NULL);

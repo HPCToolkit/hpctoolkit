@@ -658,6 +658,8 @@ typedef struct ompt_notification_s{
   ompt_region_data_t *region_data;
   // struct ompt_threads_queue_s *threads_queue;
   ompt_wfq_t *threads_queue;
+
+  // pointer to the cct pseudo node of the region that should be resolve
 } ompt_notification_t;
 
 // trl = Thread's Regions List
