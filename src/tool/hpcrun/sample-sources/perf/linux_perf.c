@@ -114,6 +114,7 @@
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
 #include "perf_skid.h"
+#include "perf_event_open.h"
 
 #include "event_custom.h"     // api for pre-defined events
 
@@ -388,7 +389,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_util_event_open(&event->attr,
+  et->fd = perf_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
         et->fd, event->attr.precise_ip, event->attr.config,

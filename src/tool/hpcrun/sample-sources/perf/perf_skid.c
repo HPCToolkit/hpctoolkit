@@ -49,7 +49,7 @@
 #include <limits.h>
 #include <ctype.h>
 
-#define _PERF_UTIL_DEBUG_  0
+#define _PERF_UTIL_DEBUG_  1
 #if _PERF_UTIL_DEBUG_
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #endif
@@ -64,6 +64,7 @@
 
 #include "perf_constants.h"
 #include "perf_skid.h"
+#include "perf_event_open.h"
 
 // -----------------------------------------------------
 // precise ip / skid options
@@ -77,9 +78,11 @@
 //  4  Detect automatically to have the most precise possible (default)
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
-#define PRECISE_IP_SUFFIX   ":p"
+#define PRECISE_IP_CHAR_MODIFIER 'p'
+#define PRECISE_IP_STR_MODIFIER  "p"
 
-#define SIGN_EQUAL          '='
+#define PRECISE_IP_SUFFIX   	 ":" PRECISE_IP_STR_MODIFIER
+#define PRECISE_IP_MAX_SUFFIX    ":P"
 
 #define DELIMITER_PERIOD    '@'
 
@@ -100,16 +103,6 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 // -----------------------------------------------------
 // private methods
 // -----------------------------------------------------
-static long
-perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
-
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
-
 
 /*
  * get int long value of variable environment.
@@ -219,69 +212,62 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
-//  PERF_EVENT_AUTODETECT_SKID       
-//  PERF_EVENT_SKID_ZERO_REQUIRED    
-//  PERF_EVENT_SKID_ZERO_REQUESTED  
-//  PERF_EVENT_SKID_CONSTANT         
-//  PERF_EVENT_SKID_ARBITRARY        
-//  PERF_EVENT_SKID_ERROR   
+//  4 PERF_EVENT_AUTODETECT_SKID       
+//  3 PERF_EVENT_SKID_ZERO_REQUIRED    
+//  2 PERF_EVENT_SKID_ZERO_REQUESTED  
+//  1 PERF_EVENT_SKID_CONSTANT         
+//  0 PERF_EVENT_SKID_ARBITRARY        
+//  -1 PERF_EVENT_SKID_ERROR   
 int
 perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size)
 {
   int len_suf = strlen(PRECISE_IP_SUFFIX);
   int len_evt = strlen(event);
+  int precise = 0;
 
   if (len_evt <= len_suf) 
-    return PERF_EVENT_SKID_ARBITRARY;
+    return PERF_EVENT_SKID_ERROR;
+
+  memset(event_name, 0, event_name_size);
+
+  char *ptr_att = strlaststr(event, PRECISE_IP_MAX_SUFFIX);
+  if (ptr_att) {
+    memcpy(event_name, event, ptr_att-event);
+    strcat(event_name, ptr_att + strlen(PRECISE_IP_MAX_SUFFIX));
+    return PERF_EVENT_AUTODETECT_SKID;
+  }
 
   // continuously looking for ":p" pattern inside the event_name
   // if an event has foo::par:peer:p it should return the last ":p"
-  char *ptr_att = strlaststr(event, PRECISE_IP_SUFFIX);
+  ptr_att = strlaststr(event, PRECISE_IP_SUFFIX);
 
   if (!ptr_att) {
     strcpy(event_name, (const char*)event);
-    return PERF_EVENT_SKID_ARBITRARY;
+    return precise;
   }
-  memset(event_name, 0, event_name_size);
   memcpy(event_name, event, ptr_att-event);
+  precise++;
 
   char *ptr_next = ptr_att + len_suf;
   if (!ptr_next)
     // shouldn't happen here
-    return PERF_EVENT_SKID_ARBITRARY;
-
-  // check if the user doesn't specify anything after :p
-  if (*ptr_next == '\0') {
-    return PERF_EVENT_AUTODETECT_SKID;
-  }
+    return precise;
 
   // check if the user specify a value of precise_ip
-  if (ptr_next && *ptr_next == '=') {
+  while (ptr_next && ((char)*ptr_next) == PRECISE_IP_CHAR_MODIFIER) {
     ptr_next++;
-
-    if (ptr_next && isdigit(*ptr_next)) {
-      int precise_ip = *ptr_next - '0';
-      if (precise_ip < PERF_EVENT_SKID_ARBITRARY || 
-          precise_ip > PERF_EVENT_AUTODETECT_SKID)
-	return PERF_EVENT_SKID_ERROR;
-
-      ptr_next++;
-      if (*ptr_next == DELIMITER_PERIOD) {
-        strcat(event_name, ptr_next);
-      }
-      return precise_ip;
-    }
-
-    // precise_ip suffix is present but incorrect value
-    // should we fail or return to default ?
-    return PERF_EVENT_AUTODETECT_SKID;
+    precise++;
   }
 
   if (*ptr_next == DELIMITER_PERIOD) {
+    // next char is period
     strcat(event_name, ptr_next);
+  } else if (*ptr_next != '\0') {
+    // the next char is not recognized
+    precise--;
   }
 
-  return PERF_EVENT_SKID_ARBITRARY;
+  return precise;
 }
 
 #if     _PERF_UTIL_DEBUG_
@@ -291,10 +277,11 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
 int 
 main (int argc, char *argv[])
 {
-  char *ev[] = {"cycles:p", "cycles:p=3", "cycles", "cycles::popo:peer", 
-	  	"cycles::popo:oeer:p", "cycles::popo:peer:p=f", "cycles@100", 
-	  	"cycles::popo:oeer:p@100", "cycles::popo:peer:p=f@f10",
- 		"cycles::popo:peer:p=1@5050", "cycles::popo:peer:p=2" };
+  char *ev[] = {"cycles:p", "cycles:pp", "cycles", "cycles::popo:peer", 
+	  	"cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100", 
+	  	"cycles::popo:oeer:p@100", "cycles::popo:peer:p@f10",
+ 		"cycles::popo:peer:ppp@5050", "cycles::popo:peer:pp",
+ 		"cs:P", "cs:P@10000" };
   char name_event[MAX_NAME_EVENT];
   int num_events = sizeof(ev)/sizeof(ev[9]);
   int i;
