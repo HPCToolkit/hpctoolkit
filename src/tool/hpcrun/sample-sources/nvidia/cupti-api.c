@@ -445,12 +445,19 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
           if (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunch ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel) {
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz ||
+              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
             cupti_worker_activity_apply(cupti_activity_handle);
           }
           if (cb_info->callbackSite == CUPTI_API_ENTER) {
@@ -533,7 +540,10 @@ cupti_subscriber_callback
           if (cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000) {
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000 ||
+              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000) {  
             cupti_worker_activity_apply(cupti_activity_handle);
           }
           if (cb_info->callbackSite == CUPTI_API_ENTER) {
