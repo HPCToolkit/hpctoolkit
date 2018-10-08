@@ -49,7 +49,7 @@
 #include <limits.h>
 #include <ctype.h>
 
-#define _PERF_UTIL_DEBUG_  1
+#define _PERF_UTIL_DEBUG_  0
 #if _PERF_UTIL_DEBUG_
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #endif
