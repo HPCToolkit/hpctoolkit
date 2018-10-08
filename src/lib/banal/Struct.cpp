@@ -193,6 +193,12 @@ deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 
+static void 
+doUnparsableFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &); 
+ 
+static void 
+doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root, HPC::StringTable & strTab); 
+
 //----------------------------------------------------------------------
 
 #if DEBUG_ANY_ON
@@ -395,6 +401,7 @@ makeStructure(InputFile & inputFile,
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
+    bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
 
 #if DEBUG_ANY_ON
@@ -427,7 +434,7 @@ makeStructure(InputFile & inputFile,
       cuda_arch = 0;
     } else {
       cuda_arch = elfFile->getArch();
-      readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
+      parsable = readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -446,7 +453,11 @@ makeStructure(InputFile & inputFile,
 	GroupInfo * ginfo = git->second;
 
 	// make the inline tree for all funcs in one group
-	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+    if (parsable) {
+      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+    } else {
+      doUnparsableFunctionList(symtab, finfo, ginfo, strTab);
+    }
 
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
@@ -1375,6 +1386,50 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
 }
 
+ 
+//---------------------------------------------------------------------- 
+// Unparsable functions 
+// 
+static void 
+doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab) 
+{ 
+  // not sure if cuda generates multiple functions, but we'll handle 
+  // this case until proven otherwise. 
+  long num = 0; 
+ 
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) { 
+    ProcInfo * pinfo = pit->second; 
+    ParseAPI::Function * func = pinfo->func; 
+    num++; 
+ 
+#if DEBUG_CFG_SOURCE 
+    long num_funcs = ginfo->procMap.size(); 
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda"); 
+#endif 
+ 
+    TreeNode * root = new TreeNode; 
+ 
+    doUnparsableFunction(ginfo, func, root, strTab); 
+    pinfo->root = root; 
+  } 
+} 
+
+
+static void 
+doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,  HPC::StringTable & strTab)
+{ 
+  LineMapCache lmcache (ginfo->sym_func); 
+ 
+  int len = 4; 
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) { 
+    string filenm = ""; 
+    uint line = 0; 
+ 
+    lmcache.getLineInfo(vma, filenm, line); 
+    std::string device;
+    addStmtToTree(root, strTab, vma, len, filenm, line, device);
+  }
+}
 
 //----------------------------------------------------------------------
 

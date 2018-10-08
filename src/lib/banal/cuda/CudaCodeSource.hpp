@@ -12,8 +12,8 @@ namespace ParseAPI {
   class PARSER_EXPORT CudaCodeSource : public /*Symtab */ CodeSource {
  public:
   CudaCodeSource(std::vector<CudaParse::Function *> &functions, 
-		 Dyninst::SymtabAPI::Symtab *s);
-    ~CudaCodeSource() {}
+		Dyninst::SymtabAPI::Symtab *s);
+  ~CudaCodeSource() {}
 
  public:
     /** InstructionSource implementation **/

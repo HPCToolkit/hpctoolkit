@@ -131,45 +131,41 @@ readCubinCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 ) 
 {
-  static bool nvdisasm_usable =  test_nvdisasm();
-  
-  if (!nvdisasm_usable) return false; 
+  static bool nvdisasm_usable = test_nvdisasm();
+  bool dump_cubin_success = false;
+  bool dump_dot_success = false;
 
-  std::string filename = "tmp";
+  if (nvdisasm_usable) {
+    std::string filename = "tmp";
+    std::string cubin = filename;
+    std::string dot = filename + ".dot";
 
-  std::string cubin = filename;
-  if (!dumpCubin(cubin, elfFile)) {
-    cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << endl; 
-    return false;
+    dump_cubin_success = dumpCubin(cubin, elfFile) ? true : false;
+    if (!dump_cubin_success) {
+      cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << endl; 
+    } else {
+      dump_dot_success = dumpDot(cubin, dot) ? true : false;
+      if (!dump_dot_success) {
+        cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << endl; 
+      } else {
+        // Parse dot cfg
+        // relocate instructions according to the 
+        // relocated symbols in the_symtab
+        std::vector<CudaParse::Function *> functions;
+        parseDotCFG(dot, functions);
+        relocateFunctions(the_symtab, functions);
+
+        CFGFactory *cfg_fact = new CudaCFGFactory(functions);
+        *code_src = new CudaCodeSource(functions, the_symtab); 
+        *code_obj = new CodeObject(*code_src, cfg_fact);
+        (*code_obj)->parse();
+        return true;
+      }
+    }
   }
 
-  std::string dot = filename + ".dot";
-  if (!dumpDot(cubin, dot)) {
-    cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << endl; 
-    return false;
-  }
-
-  // Parse dot cfg
-  std::vector<CudaParse::Function *> functions;
-
-  parseDotCFG(dot, functions);
-
-  // relocate instructions according to the 
-  // relocated symbols in the_symtab
-  relocateFunctions(the_symtab, functions);
-
-  CFGFactory *cfg_fact = new CudaCFGFactory(functions);
-
-  if (cfg_fact != NULL) {
-
-    *code_src = new CudaCodeSource(functions, the_symtab); 
-
-    *code_obj = new CodeObject(*code_src, cfg_fact);
-    (*code_obj)->parse();
-
-    //delete cfg_fact;
-  }
-
+  *code_src = new SymtabCodeSource(the_symtab);
+  *code_obj = new CodeObject(*code_src);
 //#if 1
 //  for (auto *function : functions) {
 //    cout << "cuda function: " << function->name << " " << 
@@ -178,5 +174,5 @@ readCubinCFG
 //  }
 //#endif
 
-  return true;
+  return false;
 }
