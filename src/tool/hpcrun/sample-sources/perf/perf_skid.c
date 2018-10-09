@@ -79,9 +79,8 @@
 #define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
 
 #define PRECISE_IP_CHAR_MODIFIER 'p'
-#define PRECISE_IP_STR_MODIFIER  "p"
 
-#define PRECISE_IP_SUFFIX   	 ":" PRECISE_IP_STR_MODIFIER
+#define PRECISE_IP_SUFFIX   	 ":p"
 #define PRECISE_IP_MAX_SUFFIX    ":P"
 
 #define DELIMITER_PERIOD    '@'
@@ -253,14 +252,14 @@ perf_skid_parse_event(const char *event, char *event_name, size_t event_name_siz
     // shouldn't happen here
     return precise;
 
-  // check if the user specify a value of precise_ip
-  while (ptr_next && ((char)*ptr_next) == PRECISE_IP_CHAR_MODIFIER) {
+  // count the number of p in :ppp
+  while (ptr_next && *ptr_next == PRECISE_IP_CHAR_MODIFIER) {
     ptr_next++;
     precise++;
   }
 
   if (*ptr_next == DELIMITER_PERIOD) {
-    // next char is period
+    // next char is period threshold or frequency
     strcat(event_name, ptr_next);
   } else if (*ptr_next != '\0') {
     // the next char is not recognized

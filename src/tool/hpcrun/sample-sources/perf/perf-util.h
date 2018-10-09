@@ -61,6 +61,11 @@
 // If we include user call chains, it should be bigger than that.
 #define MAX_CALLCHAIN_FRAMES 32
 
+
+/******************************************************************************
+ * Data types
+ *****************************************************************************/
+
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
   struct perf_event_header header;
@@ -138,11 +143,10 @@ typedef struct event_thread_s {
 } event_thread_t;
 
 
-// calling perf event open system call
-long
-perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags);
 
+/******************************************************************************
+ * Interfaces
+ *****************************************************************************/
 
 void
 perf_util_init();

@@ -72,6 +72,7 @@
 
 #include <hpcrun/messages/messages.h>
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
+#include "perf_event_open.h"
 #include "sample-sources/display.h"
 
 /******************************************************************************
@@ -156,7 +157,7 @@ create_event(uint64_t code, uint64_t type)
   event_attr.exclude_hv     = 1;
   event_attr.exclude_idle   = 1;
 
-  int fd = perf_util_event_open(&event_attr, 0, -1, -1, 0);
+  int fd = perf_event_open(&event_attr, 0, -1, -1, 0);
   if (fd == -1) {
     return -1;
   }
