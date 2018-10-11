@@ -241,7 +241,7 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
-
+ 
 } thread_data_t;
 
 

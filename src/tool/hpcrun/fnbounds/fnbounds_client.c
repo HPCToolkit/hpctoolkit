@@ -630,6 +630,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
 void *
 hpcrun_syserv_query_var(const char *fname, struct fnbounds_file_header *fh)
 {
+  TMSG(SYSTEM_SERVER, "query variable for %s", fname);
   return hpcrun_syserv_query_specific(fname, fh, SYSERV_QUERY_VAR);
 }
 

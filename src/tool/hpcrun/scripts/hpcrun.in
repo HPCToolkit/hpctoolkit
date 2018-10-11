@@ -173,7 +173,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                       Only  available  for  events  managed  by Linux perf. This 
                       option specifies a default value for how often to sample. The 
                       value for <howoften> may be a number that will be used as a 
-                      default event period or an f followed by a number, e.g. f@100, 
+                      default event period or an f followed by a number, e.g. f100, 
                       to specify a default sampling frequency in samples/second.
 
   -t, --trace          Generate a call path trace in addition to a call

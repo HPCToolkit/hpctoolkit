@@ -73,11 +73,12 @@
 #include "eh-frames.h"
 #include "process-ranges.h"
 #include "function-entries.h"
+#include "variable-entries.h"
 #include "sections.h"
 #include "server.h"
 #include "syserv-mesg.h"
+
 #include "Symtab.h"
-#include "Symbol.h"
 
 using namespace std;
 using namespace Dyninst;
@@ -125,7 +126,7 @@ main(int argc, char* argv[])
 {
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char *object_file;
-  int n, fdin, fdout;
+  int n, fdin, fdout, query = SYSERV_QUERY;
 
   for (n = 1; n < argc; n++) {
     if (strcmp(argv[n], "-c") == 0) {
@@ -139,6 +140,7 @@ main(int argc, char* argv[])
     }
     else if (strcmp(argv[n], "-m") == 0) {
       // datacentric usage to query static variables
+      query = SYSERV_QUERY_VAR;
     }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
@@ -183,7 +185,7 @@ main(int argc, char* argv[])
 
   setup_segv_handler();
   if ( ! setjmp(segv_recover) ) {
-    dump_file_info(object_file, fn_discovery);
+    dump_file_info(object_file, fn_discovery, query);
   }
   else {
     fprintf(stderr,
@@ -359,7 +361,8 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
 
 
 static void 
-dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
+dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+    DiscoverFnTy fn_discovery)
 {
   note_code_ranges(syms, fn_discovery);
 
@@ -373,10 +376,11 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
     if (report_symbol(s) && s->getOffset() != 0) {
-      string mname = s->getMangledName();
+      string mname   = s->getMangledName();
+      bool invisible = (sl & Symbol::SL_GLOBAL) || (sl & Symbol::SL_WEAK);
+
       add_function_entry((void *) s->getOffset(), &mname,
-			 ((sl & Symbol::SL_GLOBAL) ||
-			  (sl & Symbol::SL_WEAK)));
+			 invisible, 0);
     }
   }
 
@@ -392,14 +396,43 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
 
 
 static void 
+dump_symbols_var(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+    DiscoverFnTy fn_discovery)
+{
+  for (unsigned int i = 0; i < symvec.size(); i++) {
+    Symbol *s = symvec[i];
+    if (s->getOffset() != 0) {
+
+      void *addr = (void*)s->getOffset();
+      long size  = s->getSize();
+      string comment = s->getMangledName();
+
+      add_variable_entry(addr, size, &comment, true);
+    }
+  }
+
+  //-----------------------------------------------------------------
+  // dump the address and comment for each function
+  //-----------------------------------------------------------------
+  dump_variables();
+}
+
+static void
 dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
-		  DiscoverFnTy fn_discovery)
+		  DiscoverFnTy fn_discovery, int query)
 {
   if (c_mode()) {
     printf("unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+  switch (query) {
+  case SYSERV_QUERY:
+    dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    break;
+  case SYSERV_QUERY_VAR:
+    dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
+    break;
+  }
 
   if (c_mode()) {
     printf("\n};\n");
@@ -446,7 +479,7 @@ assert_file_is_readable(const char *filename)
 
 
 void 
-dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
+dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
 {
   Symtab *syms;
   string sfile(filename);
@@ -493,7 +526,16 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
-  syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+  switch (query) {
+  case SYSERV_QUERY:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+    break;
+  case SYSERV_QUERY_VAR:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
+    break;
+  default:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_UNKNOWN);
+  }
 
 #ifdef __PPC64__
   {
@@ -522,7 +564,7 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
       fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
     }
 
-    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
     close(dwarf_fd);
 
     relocatable = syms->isExec() ? 0 : 1;

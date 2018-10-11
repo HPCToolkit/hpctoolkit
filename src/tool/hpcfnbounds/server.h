@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "code-ranges.h"
 
-void dump_file_info(const char *filename, DiscoverFnTy fn_discovery);
+void dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query);
 
 void dump_file_info_var(const char *filename, DiscoverFnTy fn_discovery);
 
