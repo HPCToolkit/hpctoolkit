@@ -863,15 +863,11 @@ cupti_sample_process
           cupti_correlation_id_map_delete(sample->correlationId);
         }
         cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-        cct_addr_t func_frm = { .ip_norm = function_index };
-        cct_node_t *cct_func = NULL;
-        if ((cct_func = hpcrun_cct_insert_addr(host_op_node, &func_frm)) != NULL) {
-          cct_node_t *cct_child = NULL;
-          if ((cct_child = hpcrun_cct_insert_addr(cct_func, &frm)) != NULL) {
-            cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
-            PRINT("cupti_sample_process %d\n", sample->stallReason);
-            cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
-          }
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
+          cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+          PRINT("cupti_sample_process %d\n", sample->stallReason);
+          cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
         }
       }
     }
