@@ -138,7 +138,6 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
-#define DISABLE_BROKEN_CODE_OBJECT_DELETE  0
 #define WORK_LIST_PCT  0.05
 
 
@@ -680,11 +679,9 @@ makeStructure(string filename,
 	delete wlPrint[i];
       }
 
-#if ! DISABLE_BROKEN_CODE_OBJECT_DELETE
       delete code_obj;
       delete code_src;
       Inline::closeSymtab();
-#endif
     }
   }
 
@@ -1333,7 +1330,6 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 static void
 doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
-  HPC::StringTable * strTab = env.strTab;
   long num_funcs = ginfo->procMap.size();
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
@@ -1505,7 +1501,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
       }
     }
     cout << "\n";
-    debugInlineTree(root, NULL, *strTab, 0, true);
+    debugInlineTree(root, NULL, *(env.strTab), 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
 	 << "  link='" << pinfo->linkName << "'\n"
 	 << "parse:  '" << func->name() << "'\n";
