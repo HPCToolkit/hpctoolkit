@@ -115,8 +115,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@USE_BOOST_LIBS_TRUE@am__append_1 = -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
+@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -143,14 +142,13 @@ am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-@USE_BOOST_LIBS_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
 	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_3)
-hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
+	$(am__DEPENDENCIES_1)
+hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -269,13 +267,9 @@ BACK_END_LABEL = @BACK_END_LABEL@
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
-BOOST_INC = @BOOST_INC@
-
-#----------------------------------------------------------------------
-
-# Fixme: new elfutils from spack wants bzip, xz and zlib.
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_COPY_LIST = @BOOST_COPY_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LIB_DIR = @BOOST_LIB_DIR@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -331,6 +325,10 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
+
+#----------------------------------------------------------------------
+
+# Fixme: new elfutils from spack wants bzip, xz and zlib.
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBDW_COPY = @LIBDW_COPY@
 LIBELF_COPY = @LIBELF_COPY@
@@ -527,17 +525,30 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = main.cpp Args.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	$(am__append_2)
+	$(am__append_1)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	-ldl
 
-MYLDADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) $(MY_LIB_XED) $(HPCLIB_XML) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(LZMA_LDFLAGS_DYN) -L$(SYMTABAPI_LIB) \
-	$(SYMTABAPI_LIB_LIST) $(MY_ELF_DWARF) @BINUTILS_LIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@ $(TBB_LFLAGS) $(am__append_1)
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Analysis) \
+	$(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) \
+	$(HPCLIB_Prof) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) \
+	$(MY_LIB_XED) \
+	$(HPCLIB_XML) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
+	$(LZMA_LDFLAGS_DYN) \
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	$(MY_ELF_DWARF) \
+	@BINUTILS_LIBS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
+	$(TBB_LFLAGS)
+
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 @OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 

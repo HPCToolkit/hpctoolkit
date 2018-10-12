@@ -1744,11 +1744,34 @@ AC_ARG_WITH([boost],
   [BOOST="$withval"],
   [])
 
+BOOST_IFLAGS=
+BOOST_LIB_DIR=
+BOOST_COPY=no
+
+# The copy list doesn't need to be exact.  copy-libs won't fail on a
+# missing library, so it's ok to use a superset.
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
+
 AC_MSG_CHECKING([for boost])
 
 case "$BOOST" in
   /* )
     if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      AC_MSG_ERROR([invalid boost directory: $BOOST])
+    fi
+    BOOST_IFLAGS="-I${BOOST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${BOOST}/$lib"
+      for f in "$dir"/libboost*system*.so* ; do
+        if test -f "$f" ; then
+	  BOOST_LIB_DIR="$dir"
+	  BOOST_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$BOOST_COPY" != yes ; then
       AC_MSG_ERROR([invalid boost directory: $BOOST])
     fi
     ;;
@@ -1761,40 +1784,10 @@ esac
 
 AC_MSG_RESULT([$BOOST])
 
-BOOST_INC="${BOOST}/include"
-
-# Test for libboost_thread-mt.so and libboost_system-mt.so.
-# If exist, then copy to ext-libs.  Recent dyninst uses these.
-
-AC_MSG_CHECKING([whether to copy boost libraries])
-
-BOOST_LIB=
-BOOST_LIB_LIST=
-BOOST_COPY=no
-
-for lib in $multilib_path ; do
-  boost_libdir="${BOOST}/$lib"
-  for f in "$boost_libdir"/libboost_thread* ; do
-    if test -f "$f" ; then
-      BOOST_LIB="$boost_libdir"
-      BOOST_COPY=yes
-      break 2
-    fi
-  done
-done
-
-if test "$BOOST_COPY" = yes ; then
-  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
-fi
-
-AC_MSG_RESULT([$BOOST_COPY])
-
-AC_SUBST([BOOST_INC])
-AC_SUBST([BOOST_LIB])
-AC_SUBST([BOOST_LIB_LIST])
+AC_SUBST([BOOST_IFLAGS])
+AC_SUBST([BOOST_LIB_DIR])
 AC_SUBST([BOOST_COPY])
-
-AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
+AC_SUBST([BOOST_COPY_LIST])
 
 
 #-------------------------------------------------
@@ -2768,7 +2761,7 @@ AC_SUBST([SYMTABAPI_LIB])
 # Chcek that ParseAPI includes CFG loop support.
 #
 ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} -I${SYMTABAPI_INC}"
 AC_LANG_PUSH([C++])
 
 if test "$SYMTABAPI" != no ; then
@@ -3329,7 +3322,6 @@ back_end_label=
 BACK_END_LABEL=
 
 if test "$enable_back_end" = yes ; then
-  OPT_INSTALL_MONITOR=no
   XERCES_COPY=no
 fi
 

@@ -236,14 +236,14 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
+
+#----------------------------------------------------------------------
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
-
-#----------------------------------------------------------------------
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_COPY_LIST = @BOOST_COPY_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LIB_DIR = @BOOST_LIB_DIR@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -508,7 +508,7 @@ MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
 	$(BINUTILS_IFLAGS)  \
-	-I$(BOOST_INC)  \
+	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS) \
 	-I$(LIBELF_INC)  \
 	-I$(SYMTABAPI_INC)  \
@@ -517,6 +517,10 @@ MYCXXFLAGS = \
 MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
+
+# if USE_BOOST_LIBS
+# dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+# endif
 libHPCbanal_la_SOURCES = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS) $(am__append_1)
 libHPCbanal_la_LIBADD = $(MYLIBADD)

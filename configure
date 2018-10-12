@@ -781,12 +781,10 @@ LIBDWARF_INC
 LIBDWARF_LIB
 BZIP_LIB
 BZIP_COPY
-USE_BOOST_LIBS_FALSE
-USE_BOOST_LIBS_TRUE
+BOOST_COPY_LIST
 BOOST_COPY
-BOOST_LIB_LIST
-BOOST_LIB
-BOOST_INC
+BOOST_LIB_DIR
+BOOST_IFLAGS
 BINUTILS_LIBS
 BINUTILS_IFLAGS
 wordsize_cflag
@@ -19904,12 +19902,35 @@ if test "${with_boost+set}" = set; then :
 fi
 
 
+BOOST_IFLAGS=
+BOOST_LIB_DIR=
+BOOST_COPY=no
+
+# The copy list doesn't need to be exact.  copy-libs won't fail on a
+# missing library, so it's ok to use a superset.
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
 $as_echo_n "checking for boost... " >&6; }
 
 case "$BOOST" in
   /* )
     if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
+      as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
+    fi
+    BOOST_IFLAGS="-I${BOOST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${BOOST}/$lib"
+      for f in "$dir"/libboost*system*.so* ; do
+        if test -f "$f" ; then
+	  BOOST_LIB_DIR="$dir"
+	  BOOST_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$BOOST_COPY" != yes ; then
       as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
     fi
     ;;
@@ -19923,48 +19944,9 @@ esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST" >&5
 $as_echo "$BOOST" >&6; }
 
-BOOST_INC="${BOOST}/include"
-
-# Test for libboost_thread-mt.so and libboost_system-mt.so.
-# If exist, then copy to ext-libs.  Recent dyninst uses these.
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to copy boost libraries" >&5
-$as_echo_n "checking whether to copy boost libraries... " >&6; }
-
-BOOST_LIB=
-BOOST_LIB_LIST=
-BOOST_COPY=no
-
-for lib in $multilib_path ; do
-  boost_libdir="${BOOST}/$lib"
-  for f in "$boost_libdir"/libboost_thread* ; do
-    if test -f "$f" ; then
-      BOOST_LIB="$boost_libdir"
-      BOOST_COPY=yes
-      break 2
-    fi
-  done
-done
-
-if test "$BOOST_COPY" = yes ; then
-  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST_COPY" >&5
-$as_echo "$BOOST_COPY" >&6; }
 
 
 
-
-
-
- if test "$BOOST_COPY" = yes; then
-  USE_BOOST_LIBS_TRUE=
-  USE_BOOST_LIBS_FALSE='#'
-else
-  USE_BOOST_LIBS_TRUE='#'
-  USE_BOOST_LIBS_FALSE=
-fi
 
 
 
@@ -21131,7 +21113,7 @@ SYMTABAPI_LIB="${SYMTABAPI}/lib"
 # Chcek that ParseAPI includes CFG loop support.
 #
 ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} -I${SYMTABAPI_INC}"
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -21809,7 +21791,6 @@ back_end_label=
 BACK_END_LABEL=
 
 if test "$enable_back_end" = yes ; then
-  OPT_INSTALL_MONITOR=no
   XERCES_COPY=no
 fi
 
@@ -23105,10 +23086,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${USE_BOOST_LIBS_TRUE}" && test -z "${USE_BOOST_LIBS_FALSE}"; then
-  as_fn_error $? "conditional \"USE_BOOST_LIBS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then

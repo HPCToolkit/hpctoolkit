@@ -50,11 +50,8 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
-
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+BOOST_IFLAGS = @BOOST_IFLAGS@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBELF_INC = @LIBELF_INC@
 SYMTABAPI_INC = @SYMTABAPI_INC@
@@ -80,7 +77,7 @@ MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
 	$(BINUTILS_IFLAGS)  \
-	-I$(BOOST_INC)  \
+	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS) \
 	-I$(LIBELF_INC)  \
 	-I$(SYMTABAPI_INC)  \
@@ -103,9 +100,9 @@ dotgraph_bin_SOURCES  = DotGraph.cpp
 dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
 dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) $(TBB_LFLAGS)
 
-if USE_BOOST_LIBS
-dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-endif
+# if USE_BOOST_LIBS
+# dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+# endif
 endif
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)

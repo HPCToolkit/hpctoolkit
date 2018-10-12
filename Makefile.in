@@ -223,9 +223,9 @@ BACK_END_LABEL = @BACK_END_LABEL@
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_COPY_LIST = @BOOST_COPY_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LIB_DIR = @BOOST_LIB_DIR@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -487,7 +487,6 @@ SUBDIRS = src $(am__append_1)
 #
 BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
 EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
-MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 ############################################################
 # Dist
@@ -860,45 +859,39 @@ uninstall-am: uninstall-dist_docDATA uninstall-pkglibexecSCRIPTS
 
 
 define copy-libs
-    @if test "$1" = yes ; then \
+    if test "$1" = yes ; then \
 	( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
 	true ; \
     fi
 endef
 
-install-exec-local: myinstall-monitor
+install-exec-local:
 	@echo "Copying external package libraries ..."
-	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost*.so*)
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost*.a*)
-	$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
-	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
-	$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
-	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
-	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
-	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
-	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
-	$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
-	$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
-	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
-	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
-	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
+	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
+	@for lib in $(BOOST_COPY_LIST) ; do  \
+	    $(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*.so*) ;  \
+	done
+	@$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
+	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
+	@$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
+	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
+	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
+	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
+	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
+	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
+	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
+	@$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
+	@$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
+	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
+	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
-myinstall-monitor:
-	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
-	  $(mkinstalldirs) $(MYMONITORDIR) ; \
-	  cp -R @MONITOR@/lib*/libmonitor* $(MYMONITORDIR)/ ; \
-	fi
-
-.PHONY: myinstall-monitor
-
+#
 # Strip the debug sections from the libraries (ours and externals)
 # used in hpcrun and hpclink.  This prevents our code from being
 # displayed in the viewer.
@@ -906,9 +899,8 @@ myinstall-monitor:
 #  $1 = directory containing the libraries
 #  $2 = glob pattern for library name
 #
-
 define strip-debug
-    @if cd "$1" 2>/dev/null ; then  \
+    if cd "$1" 2>/dev/null ; then  \
 	for lib in $2 ; do  \
 	    if test -f "$$lib" && test ! -L "$$lib" ; then  \
 		echo "$$lib" ;  \
@@ -921,17 +913,16 @@ endef
 
 @OPT_STRIP_HPCRUN_LIBS_TRUE@install-exec-hook:
 @OPT_STRIP_HPCRUN_LIBS_TRUE@	@echo "Strip debug sections from hpcrun libraries ..."
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
-@OPT_STRIP_HPCRUN_LIBS_TRUE@	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
+@OPT_STRIP_HPCRUN_LIBS_TRUE@	@$(call strip-debug,$(EXT_LIBS_DIR),libpfm.so*)
 
 dist hpc-dist:
 	@echo "cleaning source tree (ignore errors) ..."
