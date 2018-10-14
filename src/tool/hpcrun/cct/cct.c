@@ -440,11 +440,21 @@ hpcrun_cct_is_dummy(cct_node_t* node, cct_op_arg_t arg, size_t level)
 bool
 hpcrun_cct_children_all_dummy(cct_node_t *node)
 {
-  size_t count = 0;
-  hpcrun_cct_is_dummy(node->children, (void *)&count, 0);
-  return node->children != NULL && count == 1 &&
-    node->children->children == NULL && node->children->left == NULL &&
-    node->children->right == NULL;
+  if (node == NULL) {
+    return false;
+  }
+
+  while (node->children != NULL) {
+    size_t count = 0;
+    hpcrun_cct_is_dummy(node->children, (void *)&count, 0);
+    if (count == 1 && node->children->left == NULL &&
+      node->children->right == NULL) {
+      node = node->children;
+    } else {
+      return false;
+    }
+  }
+  return true;
 }
 
 
@@ -712,7 +722,6 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 
   size_t nodes = hpcrun_cct_num_nodes(cct);
   size_t dummy_nodes = hpcrun_cct_num_dummy_nodes(cct);
-  printf("nodes %d dummy_nodes %d\n", nodes, dummy_nodes);
   hpcfmt_int8_fwrite((uint64_t) nodes - dummy_nodes, fs);
   TMSG(DATA_WRITE, "num cct nodes = %d", nodes - dummy_nodes);
 
