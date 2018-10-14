@@ -186,3 +186,5 @@ cct2metrics_assoc(cct_node_id_t node, metric_data_list_t* kind_metrics)
   TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", THREAD_LOCAL_MAP());
   if (ENABLED(CCT2METRICS)) splay_tree_dump(THREAD_LOCAL_MAP());
 }
+
+

@@ -310,7 +310,6 @@ cupti_correlation_callback_cuda
   td->overhead--;
 
   // Compress callpath
-  cct_node_t *child = node;
   node = hpcrun_cct_parent(node);
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
   load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
@@ -338,7 +337,9 @@ cupti_correlation_callback_cuda
     module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
   }
 
-  cct_node_t *cct_child = hpcrun_cct_insert_addr(node, hpcrun_cct_addr(child));
+  // Get the dummy node, which will be eliminated before writing out,
+  // since we do not the actual callback node that maps to hpctoolkit.
+  cct_node_t *cct_child = hpcrun_cct_insert_dummy(node);
 
   // generate notification entry
   cupti_worker_notification_apply(*id, cct_child);

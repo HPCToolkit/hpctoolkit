@@ -265,6 +265,40 @@ typedef struct {
 
 
 static void
+collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
+{
+  cct_node_t* parent = hpcrun_cct_parent(node);
+  cct_addr_t* addr   = hpcrun_cct_addr(node);
+
+  // ignore dummy nodes
+  if ((addr->ip_norm).lm_id != HPCRUN_DUMMY_NODE) {
+    //if (parent != NULL) {
+    //  cct_addr_t* parent_addr = hpcrun_cct_addr(parent);
+    //  while ((parent_addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+    //    parent = hpcrun_cct_parent(parent);
+    //    parent_addr = hpcrun_cct_addr(parent);
+    //  }
+    //  hpcrun_cct_insert_addr(parent, addr);
+    //}
+    return;
+  }
+
+  //hpcrun_cct_delete_self(node);
+  //if (parent != NULL && parent->children == NULL) {
+  //  hpcrun_cct_terminate_path(parent);
+  //}
+  // merge dummy child metrics
+  metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list(parent);
+  metric_data_list_t *node_metrics = hpcrun_get_metric_data_list(node);
+  if (node_metrics != NULL) {
+    metric_data_list_t *ret_metrics = hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
+    if (parent_metrics == NULL) {
+      cct2metrics_assoc(parent, ret_metrics);
+    }
+  }
+}
+
+static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
   write_arg_t* my_arg = (write_arg_t*) arg;
@@ -273,12 +307,24 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   epoch_flags_t flags = my_arg->flags;
   cct_addr_t* addr    = hpcrun_cct_addr(node);
 
+  if ((addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+    return;
+  }
+
+  if (parent != NULL) {
+    cct_addr_t *parent_addr = hpcrun_cct_addr(parent);
+    while ((parent_addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+      parent = hpcrun_cct_parent(parent);
+      parent_addr = hpcrun_cct_addr(parent);
+    }
+  }
+
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
   // if no children, chg sign of id when written out
-  if (hpcrun_cct_no_children(node)) {
-    tmp->id = - tmp->id;
+  if (hpcrun_cct_no_children(node) || hpcrun_cct_children_all_dummy(node)) {
+    tmp->id = -tmp->id;
   }
   if (flags.fields.isLogicalUnwind){
     tmp->as_info = addr->as_info;
@@ -295,6 +341,9 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->num_metrics = my_arg->num_kind_metrics;
   hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_data_list(node),
 			       my_arg->num_kind_metrics);
+  if (tmp->id == 0) {
+    printf("here\n");
+  }
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -378,6 +427,26 @@ hpcrun_cct_is_root(cct_node_t* node)
   return ! node->parent;
 }
 
+void
+hpcrun_cct_is_dummy(cct_node_t* node, cct_op_arg_t arg, size_t level)
+{
+  size_t *count = (size_t *)arg;
+  cct_addr_t* addr = hpcrun_cct_addr(node);
+  if ((addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+    ++(*count);
+  }
+}
+
+bool
+hpcrun_cct_children_all_dummy(cct_node_t *node)
+{
+  size_t count = 0;
+  hpcrun_cct_is_dummy(node->children, (void *)&count, 0);
+  return node->children != NULL && count == 1 &&
+    node->children->children == NULL && node->children->left == NULL &&
+    node->children->right == NULL;
+}
+
 
 //
 // ********** Mutator functions: modify a given cct
@@ -428,6 +497,15 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     found->right = NULL;
   }
   return new;
+}
+
+cct_node_t*
+hpcrun_cct_insert_dummy(cct_node_t* node)
+{
+  ip_normalized_t ip = { .lm_id = HPCRUN_DUMMY_NODE, .lm_ip = 0 };
+  cct_addr_t frm = { .ip_norm = ip };
+  cct_node_t *dummy = hpcrun_cct_insert_addr(node, &frm);
+  return dummy;
 }
 
 cct_node_t*
@@ -632,8 +710,11 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
-  hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
-  TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
+  size_t nodes = hpcrun_cct_num_nodes(cct);
+  size_t dummy_nodes = hpcrun_cct_num_dummy_nodes(cct);
+  printf("nodes %d dummy_nodes %d\n", nodes, dummy_nodes);
+  hpcfmt_int8_fwrite((uint64_t) nodes - dummy_nodes, fs);
+  TMSG(DATA_WRITE, "num cct nodes = %d", nodes - dummy_nodes);
 
   hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
   TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_kind_metrics);
@@ -650,6 +731,7 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
   hpcrun_metricVal_t metrics[num_kind_metrics];
   tmp_node.metrics = &(metrics[0]);
 
+  hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
   return HPCRUN_OK;
@@ -663,6 +745,14 @@ hpcrun_cct_num_nodes(cct_node_t* cct)
 {
   size_t n = 0;
   hpcrun_cct_walk_node_1st(cct, l_count, &n);
+  return n;
+}
+
+size_t
+hpcrun_cct_num_dummy_nodes(cct_node_t* cct)
+{
+  size_t n = 0;
+  hpcrun_cct_walk_node_1st(cct, hpcrun_cct_is_dummy, &n);
   return n;
 }
 
