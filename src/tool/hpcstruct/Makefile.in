@@ -147,7 +147,7 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
 	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -269,7 +269,12 @@ BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
+
+#----------------------------------------------------------------------
+
+# Fixme: new elfutils from spack wants bzip, xz and zlib.
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -325,10 +330,6 @@ LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
-
-#----------------------------------------------------------------------
-
-# Fixme: new elfutils from spack wants bzip, xz and zlib.
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBDW_COPY = @LIBDW_COPY@
 LIBELF_COPY = @LIBELF_COPY@
@@ -544,6 +545,7 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(LZMA_LDFLAGS_DYN) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(BOOST_LIB_DIR) $(BOOST_LIB_LIST) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@ \

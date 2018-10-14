@@ -70,7 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_IFLAGS   = @BOOST_IFLAGS@
+BOOST_LIB_DIR  = @BOOST_LIB_DIR@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
@@ -102,7 +104,8 @@ MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = libeh_frames.a  \
 	$(HPCLIB_SupportLean) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
+	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(BOOST_LIB_DIR) $(BOOST_LIB_LIST)
 
 if OPT_DYNINST_LIBDW
   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl

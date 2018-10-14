@@ -178,7 +178,8 @@ hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = libeh_frames.a $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 hpcfnbounds_bin_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3)
@@ -332,6 +333,7 @@ BOOST_COPY_LIST = @BOOST_COPY_LIST@
 #############################################################################
 BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -596,8 +598,8 @@ MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 MYLDADD = libeh_frames.a $(HPCLIB_SupportLean) -L$(SYMTABAPI_LIB) \
-	$(SYMTABAPI_LIB_LIST) $(am__append_1) $(am__append_2) \
-	$(am__append_3)
+	$(SYMTABAPI_LIB_LIST) -L$(BOOST_LIB_DIR) $(BOOST_LIB_LIST) \
+	$(am__append_1) $(am__append_2) $(am__append_3)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LIBRARIES = libeh_frames.a
 pkglibexec_SCRIPTS = hpcfnbounds

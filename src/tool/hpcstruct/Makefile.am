@@ -52,6 +52,9 @@ include $(top_srcdir)/src/Makeinclude.config
 
 # Fixme: new elfutils from spack wants bzip, xz and zlib.
 
+BOOST_LIB_DIR  = @BOOST_LIB_DIR@
+BOOST_LIB_LIST = @BOOST_LIB_LIST@
+
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_LIB   = @LIBELF_LIB@
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
@@ -87,6 +90,7 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(LZMA_LDFLAGS_DYN) \
 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	-L$(BOOST_LIB_DIR) $(BOOST_LIB_LIST) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@ \

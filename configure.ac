@@ -1748,8 +1748,10 @@ BOOST_IFLAGS=
 BOOST_LIB_DIR=
 BOOST_COPY=no
 
-# The copy list doesn't need to be exact.  copy-libs won't fail on a
-# missing library, so it's ok to use a superset.
+# The copy list should include all libraries that any version of
+# dyninst would use (but no more).  But copy-libs won't fail on a
+# missing library, so it doesn't have to be exact.
+
 BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
 
 AC_MSG_CHECKING([for boost])
@@ -1784,8 +1786,24 @@ esac
 
 AC_MSG_RESULT([$BOOST])
 
+# Toolkit doesn't use a boost library directly, but something from a
+# dyninst header pulls in libboost_system (not sure how).  So, we just
+# add everything from the copy list to the link line.  (They're pulled
+# in indirectly anyway).
+
+BOOST_LIB_LIST=
+
+for lib in $BOOST_COPY_LIST ; do
+  if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+    BOOST_LIB_LIST="${BOOST_LIB_LIST} -lboost_$lib"
+  fi
+done
+
+AC_MSG_NOTICE([boost libs: $BOOST_LIB_LIST])
+
 AC_SUBST([BOOST_IFLAGS])
 AC_SUBST([BOOST_LIB_DIR])
+AC_SUBST([BOOST_LIB_LIST])
 AC_SUBST([BOOST_COPY])
 AC_SUBST([BOOST_COPY_LIST])
 
