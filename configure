@@ -711,6 +711,7 @@ XED2_LIB_DIR
 XED2_INC
 TBB_COPY
 TBB_LIB_DIR
+TBB_PROXY_LIB
 TBB_LFLAGS
 TBB_IFLAGS
 LIBDW_COPY
@@ -783,8 +784,8 @@ BZIP_LIB
 BZIP_COPY
 BOOST_COPY_LIST
 BOOST_COPY
-BOOST_LIB_LIST
 BOOST_LIB_DIR
+BOOST_LFLAGS
 BOOST_IFLAGS
 BINUTILS_LIBS
 BINUTILS_IFLAGS
@@ -19904,6 +19905,7 @@ fi
 
 
 BOOST_IFLAGS=
+BOOST_LFLAGS=
 BOOST_LIB_DIR=
 BOOST_COPY=no
 
@@ -19952,16 +19954,20 @@ $as_echo "$BOOST" >&6; }
 # add everything from the copy list to the link line.  (They're pulled
 # in indirectly anyway).
 
-BOOST_LIB_LIST=
+if test "x$BOOST_LIB_DIR" != x ; then
+  boost_lib_list=
 
-for lib in $BOOST_COPY_LIST ; do
-  if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
-    BOOST_LIB_LIST="${BOOST_LIB_LIST} -lboost_$lib"
-  fi
-done
+  for lib in $BOOST_COPY_LIST ; do
+    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+      boost_lib_list="${boost_lib_list} -lboost_$lib"
+    fi
+  done
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: boost libs: $BOOST_LIB_LIST" >&5
-$as_echo "$as_me: boost libs: $BOOST_LIB_LIST" >&6;}
+  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lib_list"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: boost libs: $boost_lib_list" >&5
+$as_echo "$as_me: boost libs: $boost_lib_list" >&6;}
+fi
 
 
 
@@ -21399,10 +21405,9 @@ LIBDW_COPY="$use_libdw"
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 
-TBB_IFLAGS=
-TBB_LFLAGS=
-TBB_LIB_DIR=
-TBB_COPY=no
+# Dyninst 10.x with parallel parsing uses Intel TBB, but older
+# versions do not, so this must be optional.  Also, we selectively add
+# proxy malloc to hpcstruct, so keep that separate.
 
 TBB="$default_tbb_prefix"
 
@@ -21413,20 +21418,35 @@ if test "${with_tbb+set}" = set; then :
 fi
 
 
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_PROXY_LIB=
+TBB_LIB_DIR=
+TBB_COPY=no
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for tbb" >&5
 $as_echo_n "checking for tbb... " >&6; }
 
 case "$TBB" in
   /* )
-    if test -f "${TBB}/include/tbb/concurrent_hash_map.h" \
-        && test -f "${TBB}/lib/libtbb.so"
-    then : ; else
+    if test ! -f "${TBB}/include/tbb/concurrent_hash_map.h" ; then
       as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
     fi
     TBB_IFLAGS="-I${TBB}/include"
-    TBB_LFLAGS="-L${TBB}/lib -ltbb -ltbbmalloc"
-    TBB_LIB_DIR="${TBB}/lib"
-    TBB_COPY=yes
+
+    for lib in $multilib_path ; do
+      dir="${TBB}/$lib"
+      for f in "$dir"/libtbb*.so* ; do
+        if test -f "$f" ; then
+	  TBB_LIB_DIR="$dir"
+	  TBB_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$TBB_COPY" != yes ; then
+      as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
+    fi
     ;;
   no )
     ;;
@@ -21437,6 +21457,27 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $TBB" >&5
 $as_echo "$TBB" >&6; }
+
+if test "x$TBB_LIB_DIR" != x ; then
+  tbb_lib_list=
+
+  for lib in tbb tbbmalloc ; do
+    if test -f "${TBB_LIB_DIR}/lib${lib}.so" ; then
+      tbb_lib_list="${tbb_lib_list} -l$lib"
+    fi
+  done
+
+  TBB_LFLAGS="-L${TBB_LIB_DIR} $tbb_lib_list"
+
+  # Keep proxy malloc separate.
+  if test -f "${TBB_LIB_DIR}/libtbbmalloc_proxy.so" ; then
+    TBB_PROXY_LIB='-ltbbmalloc_proxy'
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: tbb libs: $tbb_lib_list $TBB_PROXY_LIB" >&5
+$as_echo "$as_me: tbb libs: $tbb_lib_list $TBB_PROXY_LIB" >&6;}
+fi
+
 
 
 

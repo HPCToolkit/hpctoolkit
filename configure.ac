@@ -1745,6 +1745,7 @@ AC_ARG_WITH([boost],
   [])
 
 BOOST_IFLAGS=
+BOOST_LFLAGS=
 BOOST_LIB_DIR=
 BOOST_COPY=no
 
@@ -1791,19 +1792,23 @@ AC_MSG_RESULT([$BOOST])
 # add everything from the copy list to the link line.  (They're pulled
 # in indirectly anyway).
 
-BOOST_LIB_LIST=
+if test "x$BOOST_LIB_DIR" != x ; then
+  boost_lib_list=
 
-for lib in $BOOST_COPY_LIST ; do
-  if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
-    BOOST_LIB_LIST="${BOOST_LIB_LIST} -lboost_$lib"
-  fi
-done
+  for lib in $BOOST_COPY_LIST ; do
+    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+      boost_lib_list="${boost_lib_list} -lboost_$lib"
+    fi
+  done
 
-AC_MSG_NOTICE([boost libs: $BOOST_LIB_LIST])
+  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lib_list"
+
+  AC_MSG_NOTICE([boost libs: $boost_lib_list])
+fi
 
 AC_SUBST([BOOST_IFLAGS])
+AC_SUBST([BOOST_LFLAGS])
 AC_SUBST([BOOST_LIB_DIR])
-AC_SUBST([BOOST_LIB_LIST])
 AC_SUBST([BOOST_COPY])
 AC_SUBST([BOOST_COPY_LIST])
 
@@ -2977,10 +2982,9 @@ AC_SUBST([LIBDW_COPY])
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 
-TBB_IFLAGS=
-TBB_LFLAGS=
-TBB_LIB_DIR=
-TBB_COPY=no
+# Dyninst 10.x with parallel parsing uses Intel TBB, but older
+# versions do not, so this must be optional.  Also, we selectively add
+# proxy malloc to hpcstruct, so keep that separate.
 
 TBB="$default_tbb_prefix"
 
@@ -2990,19 +2994,34 @@ AC_ARG_WITH([tbb],
   [TBB="$withval"],
   [])
 
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_PROXY_LIB=
+TBB_LIB_DIR=
+TBB_COPY=no
+
 AC_MSG_CHECKING([for tbb])
 
 case "$TBB" in
   /* )
-    if test -f "${TBB}/include/tbb/concurrent_hash_map.h" \
-        && test -f "${TBB}/lib/libtbb.so"
-    then : ; else
+    if test ! -f "${TBB}/include/tbb/concurrent_hash_map.h" ; then
       AC_MSG_ERROR([invalid tbb directory: $TBB])
     fi
     TBB_IFLAGS="-I${TBB}/include"
-    TBB_LFLAGS="-L${TBB}/lib -ltbb -ltbbmalloc"
-    TBB_LIB_DIR="${TBB}/lib"
-    TBB_COPY=yes
+
+    for lib in $multilib_path ; do
+      dir="${TBB}/$lib"
+      for f in "$dir"/libtbb*.so* ; do
+        if test -f "$f" ; then
+	  TBB_LIB_DIR="$dir"
+	  TBB_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$TBB_COPY" != yes ; then
+      AC_MSG_ERROR([invalid tbb directory: $TBB])
+    fi
     ;;
   no )
     ;;
@@ -3013,8 +3032,28 @@ esac
 
 AC_MSG_RESULT([$TBB])
 
+if test "x$TBB_LIB_DIR" != x ; then
+  tbb_lib_list=
+
+  for lib in tbb tbbmalloc ; do
+    if test -f "${TBB_LIB_DIR}/lib${lib}.so" ; then
+      tbb_lib_list="${tbb_lib_list} -l$lib"
+    fi
+  done
+
+  TBB_LFLAGS="-L${TBB_LIB_DIR} $tbb_lib_list"
+
+  # Keep proxy malloc separate.
+  if test -f "${TBB_LIB_DIR}/libtbbmalloc_proxy.so" ; then
+    TBB_PROXY_LIB='-ltbbmalloc_proxy'
+  fi
+
+  AC_MSG_NOTICE([tbb libs: $tbb_lib_list $TBB_PROXY_LIB])
+fi
+
 AC_SUBST([TBB_IFLAGS])
 AC_SUBST([TBB_LFLAGS])
+AC_SUBST([TBB_PROXY_LIB])
 AC_SUBST([TBB_LIB_DIR])
 AC_SUBST([TBB_COPY])
 

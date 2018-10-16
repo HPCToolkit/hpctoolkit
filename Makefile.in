@@ -225,8 +225,8 @@ BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
 BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -369,6 +369,7 @@ TBB_COPY = @TBB_COPY@
 TBB_IFLAGS = @TBB_IFLAGS@
 TBB_LFLAGS = @TBB_LFLAGS@
 TBB_LIB_DIR = @TBB_LIB_DIR@
+TBB_PROXY_LIB = @TBB_PROXY_LIB@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
@@ -888,6 +889,7 @@ install-exec-local:
 	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
 	@$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
 	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
 	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
