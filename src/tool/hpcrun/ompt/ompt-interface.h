@@ -42,6 +42,7 @@ extern ompt_idle_t ompt_idle_placeholder_fn;
 #endif
 
 // lm_id(uint16_t): denote a device operation node
+// TODO(keren) replace this module id with dummy id
 #define OMPT_DEVICE_OPERATION 0xFFFF
 
 enum {

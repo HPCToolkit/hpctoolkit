@@ -234,11 +234,20 @@ walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
 //
 // walker op used by counting utility
 //
+typedef struct {
+  bool count_dummy;
+  size_t n;
+} count_arg_t;
+
 static void
 l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
 {
-  size_t* cnt = (size_t*) arg;
-  (*cnt)++;
+  count_arg_t *count_arg = (count_arg_t *)arg;
+  if (hpcrun_cct_is_dummy(n) && !count_arg->count_dummy) {
+    return;
+  }
+
+  (count_arg->n)++;
 }
 
 //
@@ -255,7 +264,6 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 //
 // Writing helpers
 //
-
 typedef struct {
   hpcfmt_uint_t num_kind_metrics;
   FILE* fs;
@@ -263,23 +271,13 @@ typedef struct {
   hpcrun_fmt_cct_node_t* tmp_node;
 } write_arg_t;
 
-
+//
+// Merge the metrics of dummy nodes to their parents
+//
 static void
 collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
 {
-  cct_node_t* parent = hpcrun_cct_parent(node);
-  cct_addr_t* addr   = hpcrun_cct_addr(node);
-
-  // ignore dummy nodes
-  if ((addr->ip_norm).lm_id != HPCRUN_DUMMY_NODE) {
-    //if (parent != NULL) {
-    //  cct_addr_t* parent_addr = hpcrun_cct_addr(parent);
-    //  while ((parent_addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
-    //    parent = hpcrun_cct_parent(parent);
-    //    parent_addr = hpcrun_cct_addr(parent);
-    //  }
-    //  hpcrun_cct_insert_addr(parent, addr);
-    //}
+  if (!hpcrun_cct_is_dummy(node)) {
     return;
   }
 
@@ -288,6 +286,7 @@ collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
   //  hpcrun_cct_terminate_path(parent);
   //}
   // merge dummy child metrics
+  cct_node_t* parent = hpcrun_cct_parent(node);
   metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list(parent);
   metric_data_list_t *node_metrics = hpcrun_get_metric_data_list(node);
   if (node_metrics != NULL) {
@@ -299,31 +298,41 @@ collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
 }
 
 static void
+l_dummy(cct_node_t* n, cct_op_arg_t arg, size_t level)
+{
+  bool *dummy = (bool *)arg;
+  if (!hpcrun_cct_is_dummy(n)) {
+    *dummy = false;
+  } 
+}
+
+static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
-  write_arg_t* my_arg = (write_arg_t*) arg;
-  hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
-  cct_node_t* parent = hpcrun_cct_parent(node);
-  epoch_flags_t flags = my_arg->flags;
-  cct_addr_t* addr    = hpcrun_cct_addr(node);
-
-  if ((addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+  // avoid writing dummy nodes
+  if (hpcrun_cct_is_dummy(node)) {
     return;
   }
 
-  if (parent != NULL) {
-    cct_addr_t *parent_addr = hpcrun_cct_addr(parent);
-    while ((parent_addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
-      parent = hpcrun_cct_parent(parent);
-      parent_addr = hpcrun_cct_addr(parent);
-    }
+  // skip all the dummy parents
+  cct_node_t* parent = hpcrun_cct_parent(node);
+  while (parent != NULL && hpcrun_cct_is_dummy(parent)) {
+    parent = hpcrun_cct_parent(parent);
   }
+
+  bool all_children_dummy = true;
+  hpcrun_cct_walk_node_1st(node->children, l_dummy, &all_children_dummy);
+
+  write_arg_t* my_arg = (write_arg_t*) arg;
+  hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
+  epoch_flags_t flags = my_arg->flags;
+  cct_addr_t* addr    = hpcrun_cct_addr(node);
 
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
   // if no children, chg sign of id when written out
-  if (hpcrun_cct_no_children(node) || hpcrun_cct_children_all_dummy(node)) {
+  if (hpcrun_cct_no_children(node) || all_children_dummy) {
     tmp->id = -tmp->id;
   }
   if (flags.fields.isLogicalUnwind){
@@ -341,9 +350,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->num_metrics = my_arg->num_kind_metrics;
   hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_data_list(node),
 			       my_arg->num_kind_metrics);
-  if (tmp->id == 0) {
-    printf("here\n");
-  }
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -427,36 +433,15 @@ hpcrun_cct_is_root(cct_node_t* node)
   return ! node->parent;
 }
 
-void
-hpcrun_cct_is_dummy(cct_node_t* node, cct_op_arg_t arg, size_t level)
+bool
+hpcrun_cct_is_dummy(cct_node_t* node)
 {
-  size_t *count = (size_t *)arg;
   cct_addr_t* addr = hpcrun_cct_addr(node);
   if ((addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
-    ++(*count);
+    return true;
   }
+  return false;
 }
-
-bool
-hpcrun_cct_children_all_dummy(cct_node_t *node)
-{
-  if (node == NULL) {
-    return false;
-  }
-
-  while (node->children != NULL) {
-    size_t count = 0;
-    hpcrun_cct_is_dummy(node->children, (void *)&count, 0);
-    if (count == 1 && node->children->left == NULL &&
-      node->children->right == NULL) {
-      node = node->children;
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
 
 //
 // ********** Mutator functions: modify a given cct
@@ -510,9 +495,9 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
 }
 
 cct_node_t*
-hpcrun_cct_insert_dummy(cct_node_t* node)
+hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip)
 {
-  ip_normalized_t ip = { .lm_id = HPCRUN_DUMMY_NODE, .lm_ip = 0 };
+  ip_normalized_t ip = { .lm_id = HPCRUN_DUMMY_NODE, .lm_ip = lm_ip };
   cct_addr_t frm = { .ip_norm = ip };
   cct_node_t *dummy = hpcrun_cct_insert_addr(node, &frm);
   return dummy;
@@ -720,10 +705,9 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
-  size_t nodes = hpcrun_cct_num_nodes(cct);
-  size_t dummy_nodes = hpcrun_cct_num_dummy_nodes(cct);
-  hpcfmt_int8_fwrite((uint64_t) nodes - dummy_nodes, fs);
-  TMSG(DATA_WRITE, "num cct nodes = %d", nodes - dummy_nodes);
+  size_t nodes = hpcrun_cct_num_nodes(cct, false);
+  hpcfmt_int8_fwrite((uint64_t) nodes, fs);
+  TMSG(DATA_WRITE, "num cct nodes = %d", nodes);
 
   hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
   TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_kind_metrics);
@@ -750,19 +734,14 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 // Utilities
 //
 size_t
-hpcrun_cct_num_nodes(cct_node_t* cct)
+hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy)
 {
-  size_t n = 0;
-  hpcrun_cct_walk_node_1st(cct, l_count, &n);
-  return n;
-}
-
-size_t
-hpcrun_cct_num_dummy_nodes(cct_node_t* cct)
-{
-  size_t n = 0;
-  hpcrun_cct_walk_node_1st(cct, hpcrun_cct_is_dummy, &n);
-  return n;
+  count_arg_t count_arg = {
+    .count_dummy = count_dummy,
+    .n = 0,
+  };
+  hpcrun_cct_walk_node_1st(cct, l_count, &count_arg);
+  return count_arg.n;
 }
 
 //

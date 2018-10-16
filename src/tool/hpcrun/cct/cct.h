@@ -147,7 +147,7 @@ extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
 extern bool hpcrun_cct_no_children(cct_node_t* node);
 extern bool hpcrun_cct_is_root(cct_node_t* node);
-extern bool hpcrun_cct_children_all_dummy(cct_node_t *node);
+extern bool hpcrun_cct_is_dummy(cct_node_t* node);
 
 //
 // Mutator functions: modify a given cct
@@ -165,7 +165,7 @@ extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
 //
 // Insert a dummy node to represent the callback function by hpcrun, which will
 // be eliminated before writing out the cct.
-extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node);
+extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
 
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
@@ -199,7 +199,6 @@ extern int hpcrun_cct_retained(cct_node_t* x);
 typedef void* cct_op_arg_t;
 typedef void (*cct_op_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
 
-extern void hpcrun_cct_is_dummy(cct_node_t* node, cct_op_arg_t arg, size_t level);
 //
 //     general walking functions: (client may select starting level)
 //       visits every node in the cct, calling op(node, arg, level)
@@ -263,8 +262,7 @@ int hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags);
 //
 // Utilities
 //
-extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
-extern size_t hpcrun_cct_num_dummy_nodes(cct_node_t* cct);
+extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy);
 //
 // look up addr in the set of cct's children
 // return the found node or NULL

@@ -339,7 +339,7 @@ cupti_correlation_callback_cuda
 
   // Get the dummy node, which will be eliminated before writing out,
   // since we do not the actual callback node that maps to hpctoolkit.
-  cct_node_t *cct_child = hpcrun_cct_insert_dummy(node);
+  cct_node_t *cct_child = hpcrun_cct_insert_dummy(node, 0);
 
   // generate notification entry
   cupti_worker_notification_apply(*id, cct_child);

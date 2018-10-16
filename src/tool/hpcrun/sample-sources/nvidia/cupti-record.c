@@ -12,7 +12,7 @@ static __thread cupti_record_t cupti_record = { .worker_notification_stack = NUL
                                                 .cupti_notification_stack = NULL,
                                                 .cupti_free_notification_stack = NULL,
                                                 .cupti_activity_stack = NULL,
-                                                .cupti_free_activity_stack = NULL };
+                                                .cupti_free_activity_stack = NULL, };
 static __thread bool cupti_record_initialized = false;
 
 
