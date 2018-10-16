@@ -281,18 +281,15 @@ collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
     return;
   }
 
-  //hpcrun_cct_delete_self(node);
-  //if (parent != NULL && parent->children == NULL) {
-  //  hpcrun_cct_terminate_path(parent);
-  //}
   // merge dummy child metrics
   cct_node_t* parent = hpcrun_cct_parent(node);
-  metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list(parent);
   metric_data_list_t *node_metrics = hpcrun_get_metric_data_list(node);
   if (node_metrics != NULL) {
-    metric_data_list_t *ret_metrics = hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
-    if (parent_metrics == NULL) {
-      cct2metrics_assoc(parent, ret_metrics);
+    metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list(parent);
+    if (parent_metrics != NULL) {
+      hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
+    } else {
+      hpcrun_move_metric_data_list(parent, node);
     }
   }
 }

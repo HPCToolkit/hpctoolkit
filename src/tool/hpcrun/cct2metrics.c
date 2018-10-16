@@ -145,6 +145,32 @@ hpcrun_get_metric_data_list(cct_node_id_t cct_id)
   return NULL;
 }
 
+metric_data_list_t *
+hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source)
+{
+  if (dest == NULL || source == NULL) {
+    return NULL;
+  }
+
+  cct2metrics_t* map = THREAD_LOCAL_MAP();
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", source, map);
+  if (! map) return NULL;
+
+  map = splay(map, source);
+  THREAD_LOCAL_MAP() = map;
+  TMSG(CCT2METRICS, " -- After Splay map = %p", source, map);
+
+  if (map->node == source) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
+    metric_data_list_t *metric_data_list = map->kind_metrics;
+    map->kind_metrics = NULL;
+    cct2metrics_assoc(dest, metric_data_list); 
+    return metric_data_list;
+  }
+  TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
+  return NULL;
+}
+
 //
 // associate a metric set with a cct node
 //

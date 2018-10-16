@@ -464,6 +464,7 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 
 //
 // merge two metrics list
+// pre-condition: dest_list is not NULL
 //
 metric_data_list_t *
 hpcrun_merge_cct_metrics(metric_data_list_t *dest_list, metric_data_list_t *source_list)
@@ -473,17 +474,12 @@ hpcrun_merge_cct_metrics(metric_data_list_t *dest_list, metric_data_list_t *sour
 
   for (curr_source = source_list; curr_source != NULL; curr_source = curr_source->next) {
     metric_data_list_t *rv = dest_list;
-    if (rv == NULL) {
-      dest_list = hpcrun_new_metric_data_list_kind(curr_source->kind);
-      curr_dest = dest_list;
-    } else {
-      for (curr_dest = rv; curr_dest != NULL && curr_dest->kind != curr_source->kind;
-        rv = curr_dest, curr_dest = curr_dest->next);
-      // Allocate a new metric_data_list
-      if (curr_dest == NULL) {
-        curr_dest = hpcrun_new_metric_data_list_kind(curr_source->kind);
-        rv->next = curr_dest;
-      }
+    for (curr_dest = rv; curr_dest != NULL && curr_dest->kind != curr_source->kind;
+      rv = curr_dest, curr_dest = curr_dest->next);
+    // Allocate a new metric_data_list
+    if (curr_dest == NULL) {
+      curr_dest = hpcrun_new_metric_data_list_kind(curr_source->kind);
+      rv->next = curr_dest;
     }
     int n_metrics = hpcrun_get_num_metrics(curr_source->kind);
     for (int i = 0; i < n_metrics; i++)
