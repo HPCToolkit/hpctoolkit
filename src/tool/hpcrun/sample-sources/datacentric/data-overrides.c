@@ -109,8 +109,8 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 1024
 #define NUM_DATA_METRICS 2
+
 
 /******************************************************************************
  * type definitions
@@ -519,7 +519,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 	 name, bytes, sys_ptr);
     return sys_ptr;
   }
-  if (bytes <= MIN_BYTES) return sys_ptr;
+  if (bytes <= DATACENTRIC_MIN_BYTES) return sys_ptr;
 
   TMSG(DATACENTRIC, "%s: bytes: %ld", name, bytes);
 
@@ -777,7 +777,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   } else if (use_datacentric_prob && (random()/(float)RAND_MAX > datacentric_prob)) {
     active = 0;
     inactive_mesg = "not sampled";
-  } else if (bytes <= MIN_BYTES) {
+  } else if (bytes <= DATACENTRIC_MIN_BYTES) {
     active = 0;
     inactive_mesg = "size too small";
   }

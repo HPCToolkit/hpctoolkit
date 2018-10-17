@@ -259,17 +259,21 @@ insert_var_table(void **var_table, unsigned long num)
 
   int i;
   for (i = 0; i < num; i+=2) {
+    size_t num_bytes   = (size_t)var_table[i+1];
+    if (num_bytes < DATACENTRIC_MIN_BYTES)
+      continue;
+
     // create splay node
     struct datatree_info_s *data_info = hpcrun_malloc(sizeof(struct datatree_info_s));
 
-    data_info->memblock = var_table[i];
-    data_info->bytes    = var_table[i+1] - var_table[i];
-    data_info->left     = data_info->right = NULL;
+    data_info->memblock  = var_table[i];
+    data_info->bytes     = num_bytes;
+    data_info->rmemblock = data_info->memblock + num_bytes;
 
-    data_info->magic    = DATA_STATIC_MAGIC;
-    data_info->context  = NULL;
+    data_info->left      = data_info->right = NULL;
 
-    data_info->rmemblock = data_info->memblock + data_info->bytes;
+    data_info->magic     = DATA_STATIC_MAGIC;
+    data_info->context   = NULL;
 
     datatree_splay_insert(data_info);
   }
@@ -280,11 +284,10 @@ insert_var_table(void **var_table, unsigned long num)
  * running hpcfnbounds to analyse static variable and its address
  */
 static void
-fnbounds_run_var_analysis(const char *module_name)
+fnbounds_run_var_analysis(dso_info_t *dso)
 {
   struct fnbounds_file_header fh;
-  char filename[PATH_MAX];
-  realpath(module_name, filename);
+  char *filename = dso->name;
 
   fh.is_relocatable   = 0;
   fh.mmap_size        = 0;
@@ -296,7 +299,7 @@ fnbounds_run_var_analysis(const char *module_name)
   if (var_table != NULL)
     insert_var_table(var_table, fh.num_entries);
 
-  TMSG(DATACENTRIC, "%s has %ld entries", module_name, fh.num_entries);
+  TMSG(DATACENTRIC, "%s has %ld entries", filename, fh.num_entries);
 }
 
 
@@ -382,15 +385,17 @@ fnbounds_dso_exec(void)
     }
   }
 
+  dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
+
   if (fnbounds_is_datacentric_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_dso_exec %s", filename);
     // ----------------------------------------------------------
     // add into var data tree
     // ----------------------------------------------------------
-    fnbounds_run_var_analysis(filename);
+    fnbounds_run_var_analysis(dso);
   }
 
-  return hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
+  return dso;
 }
 
 bool
@@ -410,14 +415,6 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
       EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",
 	   module_name, start, end);
       isOk = false;
-    }
-
-    if (fnbounds_is_datacentric_enabled()) {
-      TMSG(DATACENTRIC, "fnbounds_ensure_mapped_dso %s", module_name);
-      // ----------------------------------------------------------
-      // add into var data tree
-      // ----------------------------------------------------------
-      //fnbounds_run_var_analysis(module_name, dso);
     }
   }
 
@@ -566,14 +563,16 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
     }
   }
 
+  dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
+
   if (fnbounds_is_datacentric_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_compute %s", filename);
     // ----------------------------------------------------------
     // add into var data tree
     // ----------------------------------------------------------
-    fnbounds_run_var_analysis(filename);
+    fnbounds_run_var_analysis(dso);
   }
-  return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
+  return dso;
 }
 
 

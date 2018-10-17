@@ -60,10 +60,10 @@
 #include "data_tree.h"
 
 /******************************************************************************
- * type definitions
+ * macros
  *****************************************************************************/
 
-
+#define DATATREE_DEBUG 0
 
 
 /******************************************************************************
@@ -88,36 +88,34 @@ splay(struct datatree_info_s *root, void *key)
   return root;
 }
 
-static struct datatree_info_s *
-interval_splay(struct datatree_info_s *root, void *key)
+static struct datatree_info_s **
+interval_splay(struct datatree_info_s **root, void *key, void **start, void **end)
 {
-  INTERVAL_SPLAY_TREE(datatree_info_s, root, key, memblock, rmemblock, left, right);
+  INTERVAL_SPLAY_TREE(datatree_info_s, *root, key, memblock, rmemblock, left, right);
   return root;
 }
 
-/* interface for data-centric analysis */
-static struct datatree_info_s *
-splay_lookup_with_root(struct datatree_info_s *root, void *key, void **start, void **end)
+#if DATATREE_DEBUG
+// for debugging purpose
+static int
+splay_tree_count_size(struct datatree_info_s *current)
 {
-  if(!root || !key) {
-    return NULL;
-  }
+  int result = 0;
 
-  spinlock_lock(&datatree_lock);
+  if (!current) return 0;
+  result += splay_tree_count_size(current->left);
+  result += splay_tree_count_size(current->right);
 
-  root = interval_splay(root, key);
-
-  if(root && (root->memblock <= key) && (root->rmemblock > key)) {
-    *start = root->memblock;
-    *end   = root->rmemblock;
-
-    spinlock_unlock(&datatree_lock);
-    return root;
-  }
-  spinlock_unlock(&datatree_lock);
-  return NULL;
+  return result + 1;
 }
 
+
+static int
+splay_tree_size()
+{
+  return splay_tree_count_size(datacentric_tree_root);
+}
+#endif
 
 /******************************************************************************
  * PUBLIC splay operations
@@ -152,12 +150,12 @@ datatree_splay_insert(struct datatree_info_s *node)
   }
   datacentric_tree_root = node;
 
-  spinlock_unlock(&datatree_lock);
-
-#if 0
-  TMSG(DATACENTRIC, "[%x] add ctx %x addr %x (%d bytes)",
-      node->magic, node->context, node->memblock, node->bytes);
+#if DATATREE_DEBUG
+  TMSG(DATACENTRIC, "[%x] %d items  addr %x (%d bytes)",
+      node->magic, splay_tree_size(), node->memblock, node->bytes);
 #endif
+
+  spinlock_unlock(&datatree_lock);
 }
 
 /*
@@ -204,5 +202,34 @@ datatree_splay_delete(void *memblock)
 struct datatree_info_s *
 datatree_splay_lookup(void *key, void **start, void **end)
 {
-  return splay_lookup_with_root(datacentric_tree_root, key, start, end);
+  if(!datacentric_tree_root || !key) {
+    return NULL;
+  }
+
+  spinlock_lock(&datatree_lock);
+
+  struct datatree_info_s **root = NULL;
+  root = interval_splay(&datacentric_tree_root, key, start, end);
+  if (!root) {
+    spinlock_unlock(&datatree_lock);
+    return NULL;
+  }
+
+  struct datatree_info_s *info = *root;
+
+#if DATATREE_DEBUG
+  TMSG(DATACENTRIC, "lookup key: %p  %result: %p  ", key, info);
+#endif
+
+  if(info && (info->memblock <= key) && (info->rmemblock > key)) {
+    *start = info->memblock;
+    *end   = info->rmemblock;
+
+    spinlock_unlock(&datatree_lock);
+    return info;
+  }
+
+  spinlock_unlock(&datatree_lock);
+
+  return NULL;
 }

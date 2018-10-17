@@ -75,6 +75,7 @@
 #include <hpcrun/metrics.h>
 #include <sample_event.h>
 #include <main.h>
+#include <loadmap.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
@@ -343,7 +344,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       //  recognized metric.
       // --------------------------------------------------------------
 
-      datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+      datatree_info_t *info  = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
       if (info) {
         // variable address is store in the database
@@ -391,7 +392,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     datacentric_record_store_mem( node, &data_src );
   }
 
-  TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
+  //TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
 
 

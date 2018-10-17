@@ -56,6 +56,7 @@
 
 #define DATA_STATIC_MAGIC 0xFEA12B0B
 
+#define DATACENTRIC_MIN_BYTES 1024
 
 
 /******************************************************************************

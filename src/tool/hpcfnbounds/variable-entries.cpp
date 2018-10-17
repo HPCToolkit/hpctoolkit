@@ -184,8 +184,8 @@ dump_variable_entry(void *addr, long size, const char *comment)
   num_entries_total += 2;
 
   if (server_mode()) {
-    syserv_add_addr(addr, 2*variable_entries.size());
-    syserv_add_addr((void *)size, 2*variable_entries.size());
+    syserv_add_addr(addr, 2 * (long)variable_entries.size());
+    syserv_add_addr((void *)size, 2 * (long)variable_entries.size());
     return;
   }
 
