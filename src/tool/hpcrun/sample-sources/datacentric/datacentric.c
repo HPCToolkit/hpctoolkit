@@ -88,7 +88,7 @@
 #include "data_tree.h"
 #include "env.h"
 
-#include "place_folder.h"
+#include <cct/cct_bundle.h>
 
 #include "sample-sources/perf/event_custom.h"
 
@@ -102,7 +102,6 @@
  * prototypes and forward declaration
  *****************************************************************************/
 
-FUNCTION_FOLDER(STATIC)
 
 /******************************************************************************
  * data structure
@@ -157,7 +156,6 @@ struct perf_mem_metric {
  * local variables
  *****************************************************************************/
 
-static cct_node_t *root_static_node = NULL;
 
 static struct perf_mem_metric metric;
 
@@ -289,10 +287,6 @@ datacentric_record_store_mem( cct_node_t *node,
 static cct_node_t*
 datacentric_create_static_node(datatree_info_t *info)
 {
-  if (!root_static_node) {
-    root_static_node = hpcrun_cct_new_special((void*) FUNCTION_FOLDER_NAME(STATIC));
-  }
-
   if (info->context == NULL) {
     ip_normalized_t npc;
     cct_addr_t addr;
@@ -300,11 +294,32 @@ datacentric_create_static_node(datatree_info_t *info)
     memset(&npc,  0, sizeof(ip_normalized_t));
     memset(&addr, 0, sizeof(cct_addr_t));
 
+    // create a node with the ip = memory address
+    // this node will be translated by hpcprof and name it with
+    //  the static variable that matches with the memory address
+
     npc.lm_ip    = (uintptr_t)info->memblock;
     addr.ip_norm = npc;
 
-    info->context= hpcrun_cct_insert_addr(root_static_node, &addr);
+    thread_data_t* td    = hpcrun_get_thread_data();
+    cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
+    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_node(bundle);
+
+    info->context = hpcrun_cct_insert_addr(node, &addr);
     hpcrun_cct_set_node_allocation(info->context);
+
+    // assign the start address and the end address metric
+    // for this node
+    int metric_id      = datacentric_get_metric_addr_start();
+    metric_set_t *mset = hpcrun_reify_metric_set(info->context);
+
+    hpcrun_metricVal_t value;
+    value.p = info->memblock;
+    hpcrun_metric_std_set(metric_id, mset, value);
+
+    metric_id = datacentric_get_metric_addr_end();
+    value.p   = info->rmemblock;
+    hpcrun_metric_std_set(metric_id, mset, value);
   }
 
   return info->context;
@@ -398,6 +413,12 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
 /****
  * register datacentric event
+ * the method is designed to be called by the main thread or at least by one thread,
+ *  during initialization of the process (before creation of OpenMP threads).
+ *
+ *  This method will create metrics for different memory events and then the
+ *  metrics are read-only, it will not modified by others.
+ *  All children threads will use this metrics to record the memory activities.
  */
 static int
 datacentric_register(sample_source_t *self,
