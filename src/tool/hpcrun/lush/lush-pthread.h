@@ -643,7 +643,7 @@ lushPthr_freelstDeq(lushPthr_t* pthr)
     // Case 1: empty
     return NULL;
   }
-  else if (pthr->freelstHead == pthr->freelstHead) {
+  else {
     // Case 2: non-empty
     lushPtr_SyncObjData_t* x = pthr->freelstHead;
     pthr->freelstHead = x->next;

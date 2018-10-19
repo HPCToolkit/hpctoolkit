@@ -89,13 +89,7 @@ static epoch_flags_t epoch_flags = {
 
 static const uint64_t default_measurement_granularity = 1;
 
-static const uint32_t default_ra_to_callsite_distance =
-#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
-  8 // move past branch delay slot
-#else
-  1 // probably sufficient all architectures without a branch-delay slot
-#endif
-  ;
+
 
 //*****************************************************************************
 // local utilities
