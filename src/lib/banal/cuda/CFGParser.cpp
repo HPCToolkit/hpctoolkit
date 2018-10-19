@@ -20,13 +20,13 @@ static void debug_blocks(const std::vector<Block *> &blocks) {
 TargetType CFGParser::get_target_type(const Block *source_block, Inst *inst) {
   TargetType type;
   if (inst->predicate.find("!@") != std::string::npos) {
-    type = COND_TAKEN;
+    type = TargetType::COND_TAKEN;
   } else if (inst->predicate.find("@") != std::string::npos) {
-    type = COND_NOT_TAKEN;
+    type = TargetType::COND_NOT_TAKEN;
   } else if (inst == source_block->insts.back()) {
-    type = FALLTHROUGH;
+    type = TargetType::FALLTHROUGH;
   } else {
-    type = DIRECT;
+    type = TargetType::DIRECT;
   }
   return type;
 }
@@ -41,13 +41,38 @@ void CFGParser::parse_inst_strings(
   while (std::getline(ss, s)) {
     inst_strings.push_back(s);
   }
-  while (inst_strings.size() > 0) {
-    if (isdigit(inst_strings.front()[0]) || inst_strings.front()[0] == '<') {
+
+  // The first and the last string must start with '{' and '}' accordingly
+  inst_strings.pop_front();
+  inst_strings.pop_back();
+
+  int last_invalid_string_index = -1;
+  for (size_t i = 0; i < inst_strings.size(); ++i) {
+    if (inst_strings[i].size() == 0) {
+      last_invalid_string_index = i;
+    } else if (inst_strings[i][0] == '<') {
+      // sth. like <exit>00f0
       break;
+    } else {
+      // Validate if the offset is a hex number, we can do sth. smarter, but we don't have to right now
+      std::istringstream iss(inst_strings[i]);
+      if (std::getline(iss, s, ':')) {
+        if (std::all_of(s.begin(), s.end(), ::isxdigit) == false) {
+          last_invalid_string_index = i;
+        } else {
+          // Must have a instruction followed
+          if (std::getline(iss, s, ':')) {
+            break;
+          }
+          // Might be a funny function name like abcd
+          last_invalid_string_index = i;
+        }
+      }
     }
+  }
+  for (int i = 0; i <= last_invalid_string_index; ++i) {
     inst_strings.pop_front();
   }
-  inst_strings.pop_back();
 }
 
 
@@ -65,7 +90,7 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
             }
           }
           if (callee_function != 0) 
-            block->targets.push_back(new Target(inst, callee_function->blocks[0], CALL));
+            block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
           else {
             std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
           }
@@ -142,9 +167,9 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
           }
           TargetType type = get_target_type(source_block, inst);
           TargetType dual_type = get_target_type(source_block, dual_inst);
-          if (type == COND_TAKEN || type == COND_NOT_TAKEN) {
+          if (type == TargetType::COND_TAKEN || type == TargetType::COND_NOT_TAKEN) {
             source_block->targets.push_back(new Target(inst, target_block, type));
-          } else if (dual_type == COND_TAKEN || dual_type == COND_NOT_TAKEN) {
+          } else if (dual_type == TargetType::COND_TAKEN || dual_type == TargetType::COND_NOT_TAKEN) {
             source_block->targets.push_back(new Target(dual_inst, target_block, dual_type));
           } else {
             source_block->targets.push_back(new Target(inst, target_block, type));
@@ -160,9 +185,9 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
       Inst *inst = source_block->insts.back();
       TargetType type;
       if (inst->is_call()) {
-        type = CALL_FT;
+        type = TargetType::CALL_FT;
       } else {
-        type = FALLTHROUGH;
+        type = TargetType::FALLTHROUGH;
       }
       source_block->targets.push_back(new Target(inst, target_block, type));
     }
@@ -213,6 +238,12 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
         }
       }
       std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
+      int begin_offset = function->blocks[0]->insts[0]->offset;
+      // For sm_30 <= cuda arch < sm_70, the first 8 byte of outter functions are control codes.
+      // For sm_70, byte 0-16 will be the first instruction
+      // Inner (local) functions will not start with a control code
+      // So when we find a block starts with 8, just enforce the begin offset to be 0
+      function->begin_offset = begin_offset == 8 ? 0 : begin_offset;
       functions.push_back(function);
     }
   }
@@ -318,7 +349,7 @@ void CFGParser::split_blocks(
             }
           }
           if (call_split) {
-            TargetType next_block_type = CALL_FT;
+            TargetType next_block_type = TargetType::CALL_FT;
             Block *next_block = new_blocks[i + 1];
             new_block->targets.push_back(new Target(
                 new_block->insts.back(), next_block, next_block_type));
@@ -329,15 +360,15 @@ void CFGParser::split_blocks(
             TargetType target_block_type;
             Block *next_block = new_blocks[i + 1];
 
-            if (target->type == COND_TAKEN) {
-              target_block_type = COND_TAKEN;
-              next_block_type = COND_NOT_TAKEN;
-            } else if (target->type == COND_NOT_TAKEN) {
-              target_block_type = COND_NOT_TAKEN;
-              next_block_type = COND_TAKEN;
+            if (target->type == TargetType::COND_TAKEN) {
+              target_block_type = TargetType::COND_TAKEN;
+              next_block_type = TargetType::COND_NOT_TAKEN;
+            } else if (target->type == TargetType::COND_NOT_TAKEN) {
+              target_block_type = TargetType::COND_NOT_TAKEN;
+              next_block_type = TargetType::COND_TAKEN;
             } else {
-              target_block_type = DIRECT;
-              next_block_type = INDIRECT;
+              target_block_type = TargetType::DIRECT;
+              next_block_type = TargetType::INDIRECT;
             }
 
             new_block->targets.push_back(new Target(

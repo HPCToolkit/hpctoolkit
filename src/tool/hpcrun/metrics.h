@@ -136,6 +136,7 @@ extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
 extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
 				  hpcrun_metricVal_t incr);
 extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
+extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t *kind);
 
 //
 // copy a metric set
@@ -143,5 +144,7 @@ extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 					 metric_data_list_t* list,
 					 int num_metrics);
+
+extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
 
 #endif // METRICS_H

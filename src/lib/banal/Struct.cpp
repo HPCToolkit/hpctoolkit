@@ -119,7 +119,7 @@ using namespace std;
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
 
-#define DEBUG_CFG_SOURCE  1
+#define DEBUG_CFG_SOURCE  0
 #define DEBUG_MAKE_SKEL   1
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  1
@@ -130,6 +130,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
+#define NUM_GPU_ENTRY_INSTRUCTIONS 16
 
 //******************************************************************************
 // variables
@@ -142,7 +143,7 @@ static const string & unknown_link = "_unknown_proc_";
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
-static int cuda_arch;
+static int cuda_arch = 0;
 
 
 //----------------------------------------------------------------------
@@ -191,6 +192,12 @@ deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
+
+static void 
+doUnparsableFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &); 
+ 
+static void 
+doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root, HPC::StringTable & strTab); 
 
 //----------------------------------------------------------------------
 
@@ -394,6 +401,7 @@ makeStructure(InputFile & inputFile,
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
+    bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
 
 #if DEBUG_ANY_ON
@@ -423,14 +431,10 @@ makeStructure(InputFile & inputFile,
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
+      cuda_arch = 0;
     } else {
-#if 1
       cuda_arch = elfFile->getArch();
-      readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
-#else
-      code_src = new SymtabCodeSource(symtab);
-      code_obj = new CodeObject(code_src);
-#endif
+      parsable = readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -449,7 +453,11 @@ makeStructure(InputFile & inputFile,
 	GroupInfo * ginfo = git->second;
 
 	// make the inline tree for all funcs in one group
-	  doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+    if (parsable) {
+      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
+    } else {
+      doUnparsableFunctionList(symtab, finfo, ginfo, strTab);
+    }
 
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
@@ -565,6 +573,29 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
 {
   svec.clear();
 
+  if (cuda_arch > 0) {
+    int len;
+    if (cuda_arch < 70) {
+      len = 8;
+    } else {
+      len = 16;
+    }
+
+    Module * mod = sym_func->getModule();
+    mod->getSourceLines(svec, vma);
+
+    for (size_t i = vma + len; i < end && i < vma + len * NUM_GPU_ENTRY_INSTRUCTIONS; i += len) {
+      StatementVector tmp;
+      mod->getSourceLines(tmp, i);
+      if (!tmp.empty() && !svec.empty()) {
+        if (tmp[0]->getFile() == svec[0]->getFile() && tmp[0]->getLine() < svec[0]->getLine()) {
+          svec[0] = tmp[0];
+        }
+      }
+    }
+    return;
+  }
+
   // try a full module lookup first
   getStatement(svec, vma, sym_func);
   if (! svec.empty()) {
@@ -659,6 +690,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
        << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
+
 
 // makeSkeleton -- the new buildLMSkeleton
 //
@@ -794,8 +826,8 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	getProcLineMap(pvec, vma, sym_end, sym_func);
 
 	if (! pvec.empty()) {
-	  parse_filenm = pvec[0]->getFile();
-	  parse_line = pvec[0]->getLine();
+    parse_filenm = pvec[0]->getFile();
+    parse_line = pvec[0]->getLine();
 	  RealPathMgr::singleton().realpath(parse_filenm);
 	}
 
@@ -833,81 +865,6 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	  pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
 	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
 	}
-#if 0
-=======
-        //
-        // case 1 -- group leader of a valid symtab func.  take proc
-        // names from symtab func.  this is the normal case (but other
-        // cases are also valid).
-        //
-        DEBUG_SKEL("(case 1)\n");
-
-        auto mangled_it = sym_func->mangled_names_begin();
-        auto pretty_it = sym_func->pretty_names_begin();
-
-        if (mangled_it != sym_func->mangled_names_end()) {
-          linknm = *mangled_it;
-
-          if (ourDemangle) {
-            prettynm = BinUtil::demangleProcName(linknm);
-          }
-          else if (pretty_it != sym_func->pretty_names_end()) {
-            prettynm = *pretty_it;
-          }
-        }
-
-        ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
-          sym_func->getFirstSymbol()->getIndex());
-        addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-      }
-      else {
-        // outline func -- see if parseapi and symtab file names match
-        string parse_filenm = unknown_base;
-        SrcFile::ln parse_line = 0;
-
-        // line map for parseapi func
-        vector <Statement::Ptr> pvec;
-        getProcLineMap(pvec, vma, sym_end, sym_func);
-
-        if (! pvec.empty()) {
-          parse_filenm = pvec[0]->getFile();
-          parse_line = pvec[0]->getLine();
-          RealPathMgr::singleton().realpath(parse_filenm);
-        }
-
-        string parse_base = FileUtil::basename(parse_filenm.c_str());
-        stringstream buf;
-        buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
-
-        linknm = func->name();
-        prettynm = buf.str();
-
-        if (filenm == parse_filenm) {
-          //
-          // case 2 -- outline func inside symtab func with same file
-          // name.  use 'outline 0xxxxxx' proc name.
-          //
-          DEBUG_SKEL("(case 2)\n");
-
-          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-        }
-        else {
-          //
-          // case 3 -- outline func but from a different file name.
-          // add proc info to both files: outline file for full parse
-          // (but no gaps), and symtab file for gap only.
-          //
-          DEBUG_SKEL("(case 3)\n");
-
-          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-          addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
-
-          pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
-          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-        }
->>>>>>> keren/ompt-device-cfg
-#endif
       }
     }
     else {
@@ -1378,21 +1335,25 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
   block->getInsns(imap);
 
+  int len;
+  std::string device;
+
+  if (cuda_arch > 0) {
+    device= "NVIDIA sm_" + std::to_string(cuda_arch);
+    if (cuda_arch < 70) {
+      len = 8;
+    } else {
+      len = 16;
+    }
+  }
+
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
-    uint line = 0;
-    int len;
+    uint line;
 
-    if (cuda_arch > 0) {
-      if (cuda_arch < 70) {
-        len = 8;
-      } else {
-        len = 16;
-      }
-    } else {
-
+    if (cuda_arch == 0) {
 #ifdef DYNINST_INSTRUCTION_PTR
       len = iit->second->size();
 #else
@@ -1408,11 +1369,11 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
-      addStmtToTree(root, strTab, vma, len, filenm, line,
-		    is_call, is_sink, target);
+      addStmtToTree(root, strTab, vma, len, filenm, line, 
+		    device, is_call, is_sink, target);
     }
     else {
-      addStmtToTree(root, strTab, vma, len, filenm, line);
+      addStmtToTree(root, strTab, vma, len, filenm, line, device);
     }
   }
 
@@ -1425,143 +1386,50 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
 }
 
-#if 0
-//----------------------------------------------------------------------
+ 
+//---------------------------------------------------------------------- 
+// Unparsable functions 
+// 
+static void 
+doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab) 
+{ 
+  // not sure if cuda generates multiple functions, but we'll handle 
+  // this case until proven otherwise. 
+  long num = 0; 
+ 
+  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) { 
+    ProcInfo * pinfo = pit->second; 
+    ParseAPI::Function * func = pinfo->func; 
+    num++; 
+ 
+#if DEBUG_CFG_SOURCE 
+    long num_funcs = ginfo->procMap.size(); 
+    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda"); 
+#endif 
+ 
+    TreeNode * root = new TreeNode; 
+ 
+    doUnparsableFunction(ginfo, func, root, strTab); 
+    pinfo->root = root; 
+  } 
+} 
 
-// Process one basic block.
-//
-static void
-doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
-	BlockSet & visited, Block * block, TreeNode * root,
-	HPC::StringTable & strTab)
-{
-  if (block == NULL || visited[block]) {
-    return;
-  }
-  visited[block] = true;
 
-  DEBUG_CFG("\nblock:\n");
-
-  // see if this block ends with a call edge
-  const Block::edgelist & outEdges = block->targets();
-  bool is_call = false;
-  bool is_sink = false;
-  VMA  target = 0;
-
-  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
-    Edge * edge = *eit;
-
-    if (edge->type() == ParseAPI::CALL) {
-      is_call = true;
-      is_sink = edge->sinkEdge();
-      target = edge->trg()->start();
-      break;
-    }
-  }
-
-  LineMapCache lmcache (ginfo->sym_func);
-
-  // iterate through the instructions in this block
-#ifdef DYNINST_INSTRUCTION_PTR
-  map <Offset, Instruction::Ptr> imap;
-#else
-  map <Offset, Instruction> imap;
-#endif
-  block->getInsns(imap);
-
-  for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
-    auto next_it = iit;  next_it++;
-    Offset vma = iit->first;
-    string filenm = "";
-    uint line = 0;
-    int len = 0;
-
-    if (cuda_arch > 0) {
-      if (cuda_arch < 70) {
-        len = 8;
-      } else {
-        len = 16;
-      }
-    } else {
-#ifdef DYNINST_INSTRUCTION_PTR
-      len = iit->second->size();
-#else
-<<<<<<< HEAD
-    len = iit->second.size();
-#endif
-
-    lmcache.getLineInfo(vma, filenm, line);
-
-#if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
-#endif
-
-    // a call must be the last instruction in the block
-    if (next_it == imap.end() && is_call) {
-      addStmtToTree(root, strTab, vma, len, filenm, line,
-		    is_call, is_sink, target);
-    }
-    else {
-      addStmtToTree(root, strTab, vma, len, filenm, line);
-    }
-  }
-
-#if DEBUG_CFG_SOURCE
-  if (is_call) {
-    cout << "call:  0x" << hex << block->last()
-	 << "  targ:  0x" << target << dec
-	 << (is_sink ? "  (sink)" : "") << "\n";
-  }
-#endif
-}
-
-//----------------------------------------------------------------------
-
-// CUDA functions
-//
-static void
-doCudaList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	   HPC::StringTable & strTab)
-{
-  // not sure if cuda generates multiple functions, but we'll handle
-  // this case until proven otherwise.
-  long num = 0;
-  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-    ProcInfo * pinfo = pit->second;
-    ParseAPI::Function * func = pinfo->func;
-    num++;
-
-#if DEBUG_CFG_SOURCE
-    long num_funcs = ginfo->procMap.size();
-    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda");
-#endif
-
-    TreeNode * root = new TreeNode;
-
-    doCudaFunction(ginfo, func, root, strTab);
-
-    pinfo->root = root;
-
-#if DEBUG_CFG_SOURCE
-    cout << "\nfinal cuda tree:  '" << pinfo->linkName << "'\n\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
->>>>>>> ab9efddb94e73335586c14a8ac1869e54165b7d3
-=======
-      len = iit->second.size();
->>>>>>> keren/ompt-device-cfg
-#endif
-    }
-
-    lmcache.getLineInfo(vma, filenm, line);
-
-#if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
-#endif
-
-    addStmtToTree(root, strTab, vma, len, filenm, line);
+static void 
+doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,  HPC::StringTable & strTab)
+{ 
+  LineMapCache lmcache (ginfo->sym_func); 
+ 
+  int len = 4; 
+  for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) { 
+    string filenm = ""; 
+    uint line = 0; 
+ 
+    lmcache.getLineInfo(vma, filenm, line); 
+    std::string device;
+    addStmtToTree(root, strTab, vma, len, filenm, line, device);
   }
 }
-#endif
 
 //----------------------------------------------------------------------
 
@@ -1601,14 +1469,16 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
         SrcFile::ln line = svec[0]->getLine();
         VMA end = std::min(((VMA) svec[0]->endAddr()), end_gap);
 
-        addStmtToTree(root, strTab, vma, end - vma, filenm, line);
+        std::string device;
+        addStmtToTree(root, strTab, vma, end - vma, filenm, line, device);
         vma = end;
       }
       else {
         // fixme: could be better at finding end of range
         VMA end = std::min(vma + 4, end_gap);
 
-        addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num);
+        std::string device;
+        addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num, device);
         vma = end;
       }
     }
@@ -1856,7 +1726,6 @@ found_level:
   if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
-    std::cout << "here4" << std::endl;
     goto found_file;
   }
 

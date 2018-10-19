@@ -14,6 +14,8 @@ class PARSER_EXPORT CudaBlock : public Block {
 
    virtual void getInsns(Insns &insns) const;
 
+   virtual Address last() const;
+
  private:
    std::vector<Offset> _inst_offsets;
 };

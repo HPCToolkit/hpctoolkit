@@ -378,7 +378,6 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
-
   // -------------------------------------------------------
   // Basic normalization
   // -------------------------------------------------------
@@ -541,10 +540,11 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
-					unkProcNm);
+        Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
+				unkProcNm);
       
       n->structure(strct);
+
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
@@ -711,46 +711,51 @@ coalesceStmts(Prof::CCT::ANode* node)
     if ( n->isLeaf() && (typeid(*n) == typeid(Prof::CCT::Stmt)) ) {
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
-      SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it_stmt = stmtMap->find(line);
-      if (it_stmt != stmtMap->end()) {
-	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
+      auto *strct = dynamic_cast<Prof::Struct::Stmt *>(n_stmt->structure());
 
-        DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
-		   << "\tx: " 
-		   << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
-		   << "\n\ty: " 
-		   << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+      // Filter out call stmts
+      if (strct->stmtType() == Prof::Struct::Stmt::STMT_STMT) {
+        SrcFile::ln line = n_stmt->begLine();
+        LineToStmtMap::iterator it_stmt = stmtMap->find(line);
+        if (it_stmt != stmtMap->end()) {
+          // found -- we have a duplicate
+          Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
 
-	// N.B.: Because (a) trace records contain a function's
-	// representative IP and (b) two traces that contain samples
-	// from the same function should have their conflict resolved
-	// in Prof::CallPath::Profile::merge(), we would expect that
-	// merge effects are impossible.  That is, we expect that it
-	// is impossible that a CCT::ProcFrm has multiple CCT::Stmts
-	// with distinct trace ids.
-	//
-	// However, merge effects are possible *after* static
-	// structure is added to the CCT.  The reason is that multiple
-	// object-level procedures can map to one source-level
-	// procedure (e.g., multiple template instantiations mapping
-	// to the same source template or multiple stripped functions
-	// mapping to UnknownProcNm).
-	if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
-	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
-	  DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
-		      << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
-		      << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
-	
-	  // remove 'n_stmt' from tree
-	  n_stmt->unlink();
-	  delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
-	}
-      }
-      else {
-	// no entry found -- add
-	stmtMap->insert(std::make_pair(line, n_stmt));
+          DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
+            << "\tx: " 
+            << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
+            << "\n\ty: " 
+            << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+          // N.B.: Because (a) trace records contain a function's
+          // representative IP and (b) two traces that contain samples
+          // from the same function should have their conflict resolved
+          // in Prof::CallPath::Profile::merge(), we would expect that
+          // merge effects are impossible.  That is, we expect that it
+          // is impossible that a CCT::ProcFrm has multiple CCT::Stmts
+          // with distinct trace ids.
+          //
+          // However, merge effects are possible *after* static
+          // structure is added to the CCT.  The reason is that multiple
+          // object-level procedures can map to one source-level
+          // procedure (e.g., multiple template instantiations mapping
+          // to the same source template or multiple stripped functions
+          // mapping to UnknownProcNm).
+          if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
+            Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
+            DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
+              << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+              << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+            // remove 'n_stmt' from tree
+            n_stmt->unlink();
+            delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+          }
+        }
+        else {
+          // no entry found -- add
+          stmtMap->insert(std::make_pair(line, n_stmt));
+        }
       }
     }
     else if (!n->isLeaf()) {

@@ -212,7 +212,6 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel-align64.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
-	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
 	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
@@ -805,6 +804,8 @@ if OPT_ENABLE_CUPTI
   libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
   libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
   libhpcrun_la_LDFLAGS  += $(CUPTI_LD_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
 
 if OPT_PAPI_CUPTI

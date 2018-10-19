@@ -11,6 +11,12 @@ CudaBlock::CudaBlock(CodeObject * o, CodeRegion * r,
   }
 }
 
+
+Address CudaBlock::last() const {
+  return this->_inst_offsets.back();
+}
+
+
 void CudaBlock::getInsns(Insns &insns) const {
   for (auto offset : _inst_offsets) {
     insns.insert(std::pair<long unsigned int, 
