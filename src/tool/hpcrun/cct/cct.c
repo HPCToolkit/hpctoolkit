@@ -105,7 +105,7 @@ struct cct_node_t {
   int32_t persistent_id;
   
   uint16_t node_type;
-  
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -370,11 +370,6 @@ hpcrun_cct_addr(cct_node_t* node)
   return node ? &(node->addr) : NULL;
 }
 
-bool
-hpcrun_cct_is_leaf(cct_node_t* node)
-{
-  return node ? (!(node->children)) : false;
-}
 
 //
 // NOTE: having no children is not exactly the same as being a leaf
@@ -460,6 +455,16 @@ hpcrun_cct_set_node_allocation(cct_node_t *node)
 {
   node->node_type |= NODE_TYPE_ALLOCATION;
   hpcrun_cct_retain(node);
+}
+
+bool
+hpcrun_cct_is_leaf(cct_node_t *node)
+{
+  if (node) {
+    bool leaf_type = (node->node_type & NODE_TYPE_LEAF) == NODE_TYPE_LEAF;
+    return leaf_type || (!node->children);
+  }
+  return false;
 }
 
 bool
