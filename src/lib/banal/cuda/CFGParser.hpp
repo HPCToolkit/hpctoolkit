@@ -22,14 +22,21 @@ class CFGParser {
 
   void parse_inst_strings(const std::string &label, std::deque<std::string> &inst_strings);
 
-  void split_blocks(std::vector<std::pair<size_t, size_t> > &edges,
-    std::vector<Block *> &blocks, std::unordered_map<size_t, Block *> &block_map);
+  void link_fallthrough_edges(
+    const Graph &graph,
+    const std::vector<Block *> &blocks,
+    std::unordered_map<size_t, Block *> &block_id_map);
 
-  size_t find_block_parent(size_t node);
+  void split_blocks(std::vector<Block *> &blocks,
+    std::unordered_map<size_t, Block *> &block_id_map);
 
-  void unite_blocks(size_t l, size_t r);
+  void find_block_parent(const std::vector<Block *> &blocks);
 
-  TargetType get_target_type(const Block *source_block, Inst *inst);
+  void unite_blocks(const Block *block, bool *visited, size_t parent);
+
+  TargetType get_target_type(const Inst *inst);
+
+  TargetType get_fallthrough_type(const Inst *inst);
 
  private:
   std::vector<size_t> _block_parent;

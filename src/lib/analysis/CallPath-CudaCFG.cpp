@@ -430,7 +430,7 @@ copyPath(IncomingSamplesMap &incoming_samples,
     new_node->metric(i) *= adjust_factor;
   }
 
-  bool isCall = getCudaCallStmt(cur) == NULL ? isSCCNode(cur) : false;
+  bool isCall = getCudaCallStmt(cur) == NULL ? isSCCNode(cur) : true;
   if (isCall) {
     // Case 1: Call node or SCC node, skip to the procedure
     auto *n = cct_graph.outgoing_nodes(cur)->second[0];
@@ -441,8 +441,14 @@ copyPath(IncomingSamplesMap &incoming_samples,
     }
     double cur_samples = incoming_samples[n][cur];
     adjust_factor *= cur_samples / sum_samples;
+#ifdef DEBUG_CALLPATH_CUDACFG
+    std::cout << "Lay over a call" << std::endl;
+#endif
     copyPath(incoming_samples, cct_graph, n, new_node, adjust_factor);
   } else if (!cur->isLeaf()) {
+#ifdef DEBUG_CALLPATH_CUDACFG
+    std::cout << "Not a call" << std::endl;
+#endif
     // Case 2: Iterate through children
     Prof::CCT::ANodeChildIterator it(cur, NULL/*filter*/);
     for (Prof::CCT::ANode *n = NULL; (n = it.current()); ++it) {

@@ -20,11 +20,32 @@ struct Inst {
   std::string predicate;
   std::string opcode;
   std::string port;
+  std::string target;
   std::vector<std::string> operands;
 
-  bool is_call() {
+  bool is_call() const {
     if (opcode.find("CALL") != std::string::npos || // sm_70
       opcode.find("CAL") != std::string::npos) { // sm_60
+      return true;
+    }
+    return false;
+  }
+
+  bool is_jump() {
+    if (opcode.find("BRA") != std::string::npos ||
+      opcode.find("BRX") != std::string::npos ||
+      opcode.find("JMP") != std::string::npos ||
+      opcode.find("JMX") != std::string::npos ||
+      opcode.find("BREAK") != std::string::npos ||
+      opcode.find("JMXU") != std::string::npos) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool is_sync() {
+    if (opcode.find("SYNC") != std::string::npos) {
       return true;
     }
     return false;
@@ -49,7 +70,10 @@ struct Inst {
     if (std::getline(iss, s, ':')) {
       if (s.find("<") != std::string::npos) {
         auto pos = s.find(">");
-        this->port = s.substr(1, pos - 1);
+        auto port = s.substr(1, pos - 1);
+        if (port.find("exitpost") == std::string::npos) {
+          this->port = port;
+        }
         s = s.substr(pos + 1); 
       }
       std::stringstream ss;
@@ -75,6 +99,21 @@ struct Inst {
               }
             } else {
               operands.push_back(s);
+              if (is_jump() || is_sync()) {
+                auto pos = s.find(".L_");
+                if (pos != std::string::npos) {
+                  auto end_pos = pos + 3;
+                  size_t len = 0;
+                  while (end_pos != std::string::npos) {
+                    if (!std::isdigit(s[end_pos])) {
+                      break;
+                    }
+                    ++len;
+                    ++end_pos;
+                  }
+                  this->target = s.substr(pos, len + 3);
+                }
+              }
             }
           }
         }
