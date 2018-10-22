@@ -53,23 +53,27 @@ The following prerequisites apply to our default source code distribution.
 
 <ol class="noindent">
 
-<li><p>HPCToolkit can be installed on the following platforms:</p>
+<li><p>HPCToolkit is supported on the following platforms:</p>
 
-  <table cellpadding="2" cellspacing="2" border="1" width="90%">
+  <table cellpadding="2" cellspacing="2" border="1" width="70%">
     <tr>
-      <th>Platform (Supported)</th>
+      <th>Supported Platforms</th>
       <th>Notes</th>
     </tr>
     <tr>
-      <td>Linux + x86_64</td>
+      <td>Linux + x86_64 (64-bit)</td>
       <td></td>
     </tr>
     <tr>
-      <td>Linux + x86 (32-bit)</td>
+      <td>Linux + KNL</td>
       <td></td>
     </tr>
     <tr>
-      <td>Linux + ppc64</td>
+      <td>Linux + power7 (big endian)</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>Linux + power8, 9 (little endian)</td>
       <td></td>
     </tr>
     <tr>
@@ -78,41 +82,36 @@ The following prerequisites apply to our default source code distribution.
     </tr>
     <tr>
       <td>IBM Blue Gene/Q (BG/Q kernel + ppc64)</td>
+      <td>Use branch 'gcc-4.4' of externals</td>
+    </tr>
+    <tr>
+      <td>ARM aarch64 (64-bit)</td>
       <td></td>
-    </tr>
-    <tr>
-      <td>IBM Blue Gene/P (BG/P kernel + ppc32)</td>
-      <td>BG/P kernel &ge; V1R3M0</td>
-    </tr>
-    <tr>
-      <th>Platform (Legacy and Not Supported)</th>
-      <th> </th>
-    </tr>
-    <tr>
-      <td>Linux + IA64 </td>
-      <td>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)</td>
-    </tr>
-
-    <tr>
-      <td>Linux + MIPS-le (64 and n32)</td>
-      <td>for SiCortex clusters; little endian MIPS (no longer tested) </td>
     </tr>
   </table>
 </li>
 
 <li>
-<p>Compiler: HPCToolkit requires GNU GCC version 4.4 or later.  Some
-vendor compilers that support GNU extensions may also work, but we
-recommend building with GNU gcc/g++.  HPCToolkit also requires GNU
-make, preferably version 3.81 or later.
-</p>
+  <p>Compiler: HPCToolkit requires GNU GCC minimum version 4.8, but
+    preferably 5.x or later.  Some vendor compilers that support GNU
+    extensions may also work, but this is not supported.  For old
+    systems with GCC 4.4 (eg, Blue Gene/Q and Red Hat 6.x), if a newer
+    compiler is not available, then use branch 'gcc-4.4' for
+    hpctoolkit-externals.
+  </p>
+</li>
+
+<li>
+  <p>Other build tools: HPCToolkit also requires GNU make 3.81 or
+    later and cmake 2.8.12 or later.
+  </p>
 </li>
 
 <li>
 <p>To use <span class="hpctool">hpcviewer</span>
 and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's
 graphical interface) on MacOS, Windows, or Linux, a Java runtime
-environment (JRE) &ge; 1.6 is required.  Use the Oracle or IBM
+environment (JRE) &ge; 1.7 is required.  Use the Oracle or IBM
 version; we have had problems with OpenJDK.
 </p>
 
@@ -131,26 +130,13 @@ Without PAPI, HPCToolkit can only collect measurements based on an operating sys
 IBM's native Universal Performance Counters directly.)
 </p>
 
-<p>There are currently three ways to support PAPI on Linux-based OSs:</p>
-  <ul>
-    <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf_events</a> (see also: <a href="http://web.eecs.utk.edu/~vweaver1/projects/perf-events/">this</a>), which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31) and which is now becoming part of standard distributions.
-	<b>With perf_events, use PAPI &ge; 4.1.2</b>.
-       </p>
-    </li>
-
-    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch (x86_64-based systems only).
-	One benefit of perfctr is that it includes out-of-the-box support for many Red Hat kernels.
-	As of this writing, perfctr supports vanilla kernels through 2.6.32.
-       </p>
-    </li>
-
-    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch.
-         As of this writing, perfmon2 supports vanilla kernels through 2.6.30.
-	 (Unfortunately, development has stopped because of perf_events.)
-       </p>
-     </li>
-  </ul>
-  
+<p>Use a kernel
+with <a href="https://perf.wiki.kernel.org">perf_events</a> (see
+also: <a href="http://web.eecs.utk.edu/~vweaver1/projects/perf-events/">this</a>),
+which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel
+2.6.31) and which is now becoming part of standard distributions.
+With perf_events, use PAPI &ge; 4.1.2.
+</p>
 </li>
 
 <li>
@@ -189,14 +175,8 @@ We have successfully used versions 5.6.x - 5.10.x.
       <code>git clone https://github.com/HPCToolkit/hpctoolkit-externals.git</code>
     </div>
       <p>
-      Think of hpctoolkit-externals as a "package manager" that automatically configures and builds 
-      support libraries that hpctoolkit needs.
-      It contains several external libraries.
-      (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.
-      Others, like OpenAnalysis and SymtabAPI are almost never available.
-      Finally, a few packages, like GNU binutils have been heavily patched.)
-      In some cases it may be possible to use versions of these packages that are already installed on your system.
-      However, we do not support such configurations.
+      Think of hpctoolkit-externals as a "mini package manager" that
+      configures and builds prerequisite libraries for hpctoolkit.
     </p>
   </li>
 
@@ -361,7 +341,11 @@ To profile on a remote machine that has different system or architecture configu
 	      </code>
 	  </dd>
 
-          <p><dt>HPCToolkit's Externals</dt>
+          <p><dt>HPCToolkit's Externals.  The front end of Blue Gene/Q
+	      is normally Red Hat 6.x with gcc 4.4 which won't build the
+	      current externals.  If a more recent compiler is not
+	      available, then use branch 'gcc-4.4' of externals.
+	    </dt>
           <dd><code>../configure --prefix=`pwd`/../powerpc64-linux \<br/>
                &nbsp;&nbsp;&nbsp;&nbsp; --enable-bgq
               </code>
@@ -386,27 +370,6 @@ To profile on a remote machine that has different system or architecture configu
 	  </dt>
 	  <p><dt>Note: The paths for <code>MPICXX</code> and PAPI may be different on your system.</dt>
         </dl>
-    </li>
-
-    <li><p>Blue Gene/P:</p>
-	<dl class="indent">
-          <dt>HPCToolkit's Externals</dt>
-	  <dd><code>../configure --prefix=`pwd`/../powerpc32-linux
-	      </code>
-  	  </dd>
-
-          <dt>HPCToolkit</dt>
-	  <!-- Explanation: Must link against backend libstdc++ and libc. -->
-	  <dd><code>../configure \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib -lstdc++" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc32-linux
-	      </code>
-          </dd>
-	  <dt>&nbsp;</dt>
-	  <dt>Note: PAPI is not available on Blue Gene/P.</dt>
-	</dl>
     </li>
 
     <li><p>Cray XT/XE/XK/XC:</p>
@@ -441,7 +404,42 @@ To profile on a remote machine that has different system or architecture configu
 	</dl>
     </li>
 
-    <li><p>Intel MIC (early and experimental):</p>
+    <li><p>Old systems with GCC 4.4:</p>
+        <dl class="indent">
+	  <dt>
+	    The current versions of Dyninst and hpctoolkit-externals
+	    require GCC 4.8 or later (and preferably 5.x or later).
+	    As a transition for old systems with GCC 4.4 (eg, Blue
+	    Gene/Q and Red Hat 6.x), if a newer compiler is not
+	    available, then use branch 'gcc-4.4' of externals.  This
+	    contains a snapshot of the last version of externals that
+	    will build with GCC 4.4.
+	  </dt>
+	  <dd>
+	    <code>
+	      git clone https://github.com/HPCToolkit/hpctoolkit-externals.git<br/>
+	      cd hpctoolkit-externals<br/>
+	      git checkout gcc-4.4
+	    </code>
+	  </dd>
+	  <dt>&nbsp;</dt>
+	  <dt>
+	    Then, configure and build as usual.
+	  </dt>
+        </dl>
+    </li>
+
+    <li><p>Blue Gene/P: no longer supported.</p>
+    </li>
+
+    <li><p>Intel MIC (k1om): no longer supported.</p>
+    </li>
+
+    <li><p>Linux + i386 (32-bit): no longer supported.</p>
+    </li>
+
+    <!--
+    <li><p>Intel MIC k1om (no longer supported).</p>
       <dl class="indent">
 	<dt>
 	Systems such as Stampede at TACC (Texas Advanced Computing Center)
@@ -536,28 +534,7 @@ To profile on a remote machine that has different system or architecture configu
 	</dd>
       </dl>
     </li>
-
-    <li><p>Linux-x86 (32-bit) on Linux-x86_64:</p>
-	<dl class="indent">
-          <dt>HPCToolkit's Externals</dt>
-	  <dd><code>
-              ../configure CC="gcc -m32" CXX="g++ -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind
-	      </code>
-	  </dd>
-
-          <dt>HPCToolkit</dt>
-	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
-	      </code>
-          </dd>
-	</dl>
-    </li>
-
+    -->
 
   </ul>
 
@@ -672,7 +649,7 @@ To profile on a remote machine that has different system or architecture configu
 
 </ul>
 
-<p>[<span class="lastupdated">Page last updated: 2017/01/20</span>]
+<p>[<span class="lastupdated">Page last updated: 2018/10/22</span>]
 </p>
 
 <!-- ********************************************************************** -->
