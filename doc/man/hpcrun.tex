@@ -160,20 +160,6 @@ For Linux perf events, if no value for \Arg{howoften} is specified, \Prog{hpcrun
                        specifies a default value for how often to sample. The value for \Arg{howoften} may be a number that will be used as a default
                        event period or an f followed by a number, e.g. f100, to specify a default sampling frequency in samples/second.
 
-\item[\OptArg{-p}{level}, \OptArg{--precise-ip}{level}]
-Specify how precisely a Linux perf sample source must attribute a hardware counter event to an instruction. 
-On modern out-of-order processors, without making special arrangements, a hardware counter event may be attributed to a 
-nearby instruction rather than the instruction that caused the event -- a phenomenon known as 'skid'. 
-For instance, skid can cause a cache miss to be attributed to an instruction that operates only on register values. 
-\Prog{hpcrun} allows a user to request that hardware counter events be attributed with a specific level of precision.
-Values for \Arg{level}:
-\begin{itemize}
- \item 0: instruction attribution may have arbitrary skid
- \item 1: instruction attribution must have constant skid
- \item 2: instruction attribution is requested to have 0 skid
- \item 3: instruction attribution must have 0 skid
-\end{itemize}
-
 By default, \Prog{hpcrun} will allow attribution of hardware counter events to have arbitrary skid. 
 Some processor architectures, e.g., ARM,  don't support attribution with any higher level of precision.
 If a processor does not support the specified level of attribution precision for a hardware counter event, 
@@ -379,21 +365,19 @@ An event name is case insensitive and is defined as followed:
 	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign. 
 		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern. 
 	\begin{itemize}
-		\item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid. Skid is how many instructions execute between an event of interest happening and the kernel being able to stop and record the event. Smaller skid allows more accurate reporting of which events correspond to which instructions. By default, hpcrun allows arbitrary skid.\\
-			The syntax to set the skid modifier:
-	\begin{verbatim}
-	:p[=k]
-	\end{verbatim}
-			It is optional to set the value of skid. If no value is specified, HPCToolkit attempts to detect the best skid possible.
-			Possible values of k are:
-			\begin{itemize}
-				\item 0 : sample can have arbitrary skid.
-				\item 1 : sample must have constant skid.
-				\item 2 : sample requested to have 0 skid.
-				\item 3 : sample must have 0 skid.  
-			\end{itemize}
-			Attention: If the kernel or the hardware does not support the specified value of the skid, no samples will be delivered.\\
-	\end{itemize}
+                \item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid.
+Skid is a measure of how many instructions may execute between an event and the PC where the event is reported.
+Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures
+don't support anything more precise.  One may optionally specify one of the following as a skid modifier:
+                        \begin{itemize}
+                                \item \verb|:p| : sample must have constant skid.
+                                \item \verb|:pp| : sample requested to have 0 skid.
+                                \item \verb|:ppp| : sample must have 0 skid.
+                                \item \verb|:P| : autodetect the least skid possible.
+                        \end{itemize}
+                        NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported
+but no samples will be delivered.
+        \end{itemize}
 \end{itemize}
 
 Some capabilities of HPCToolkit's \texttt{perf\_events} Interface include:
@@ -439,7 +423,7 @@ In addition to events whose names begin with the \verb+PAPI_+ prefix, platforms 
 A complete list of events supported by the PAPI library for your platform may be obtained by using the \texttt{--list-events} option.
 Any event whose name begins with the \verb+PAPI_+ prefix that is listed as "Profilable" can be used as an event in a sampling source provided it does not conflict with another event.
 
-The precise rules for selecting good events and periods are complex.
+The rules of thumb for selecting an appropriate set of events and their associated periods are complex.
 \begin{itemize}
 
 \item \textbf{Choosing sampling events.}
