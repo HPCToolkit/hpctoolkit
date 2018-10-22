@@ -412,8 +412,10 @@ perf_util_attr_init(
     attr->exclude_kernel           = INCLUDE;
   }
   
-  char name[1024];
-  int precise_ip_type = perf_skid_parse_event(event_name, name, 1024);
+  char *name;
+  int precise_ip_type = perf_skid_parse_event(event_name, &name);
+  free(name);
+
   u64 precise_ip;
 
   switch (precise_ip_type) {

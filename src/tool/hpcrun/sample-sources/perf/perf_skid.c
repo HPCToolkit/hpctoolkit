@@ -49,8 +49,7 @@
 #include <limits.h>
 #include <ctype.h>
 
-#define _PERF_UTIL_DEBUG_  0
-#if _PERF_UTIL_DEBUG_
+#ifdef _PERF_SKID_DEBUG_
 #define _GNU_SOURCE         /* See feature_test_macros(7) */
 #endif
 
@@ -83,7 +82,7 @@
 #define PRECISE_IP_SUFFIX   	 ":p"
 #define PRECISE_IP_MAX_SUFFIX    ":P"
 
-#define DELIMITER_PERIOD    '@'
+#define DELIMITER_HOWOFTEN    '@'
 
 // -----------------------------------------------------
 // constants
@@ -139,6 +138,30 @@ strlaststr(const char* haystack, const char* needle)
 
    return loc;
 }
+
+
+static const char *
+find_precise_suffix(const char *s, const char *suffix, char allowed)
+{
+  char *ptr_att = strlaststr(s, suffix);
+  if (ptr_att) {
+    const char *end =  ptr_att + strlen(suffix);
+
+    // skip allowable characters after suffix
+    if (allowed) {
+      if (*end == allowed) end++; 
+      if (*end == allowed) end++; 
+    }
+
+    // check that either 
+    // (1) there is nothing left, or 
+    // (2) it is followed by DELIMITER_HOWOFTEN
+    if (*end != 0 && *end != DELIMITER_HOWOFTEN) ptr_att = 0;
+  }
+  return ptr_att;
+}
+
+
 
 //===================================================================
 // INTERFACES
@@ -207,7 +230,6 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
   return attr->precise_ip;
 }
 
-
 // parse the event into event_name and the type of precise_ip
 //  the name of the event excludes the precise ip suffix
 // returns:
@@ -218,58 +240,69 @@ perf_skid_get_precise_ip(struct perf_event_attr *attr)
 //  0 PERF_EVENT_SKID_ARBITRARY        
 //  -1 PERF_EVENT_SKID_ERROR   
 int
-perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size)
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks)
 {
   int len_suf = strlen(PRECISE_IP_SUFFIX);
-  int len_evt = strlen(event);
+  int len_evt = strlen(event_string);
   int precise = 0;
 
   if (len_evt <= len_suf) 
     return PERF_EVENT_SKID_ERROR;
 
-  memset(event_name, 0, event_name_size);
-
-  char *ptr_att = strlaststr(event, PRECISE_IP_MAX_SUFFIX);
+  const char *ptr_att = find_precise_suffix(event_string, PRECISE_IP_MAX_SUFFIX, 0);
   if (ptr_att) {
-    memcpy(event_name, event, ptr_att-event);
-    strcat(event_name, ptr_att + strlen(PRECISE_IP_MAX_SUFFIX));
+    char buffer[1024];
+#ifdef _PERF_SKID_DEBUG_
+    memset(buffer,1, sizeof(buffer));
+#endif
+    memcpy(buffer, event_string, ptr_att - event_string);
+    buffer[ptr_att - event_string] = 0;
+    strcat(buffer, ptr_att + strlen(PRECISE_IP_MAX_SUFFIX));
+    *event_string_without_skidmarks = strdup(buffer);
     return PERF_EVENT_AUTODETECT_SKID;
   }
 
   // continuously looking for ":p" pattern inside the event_name
   // if an event has foo::par:peer:p it should return the last ":p"
-  ptr_att = strlaststr(event, PRECISE_IP_SUFFIX);
+  ptr_att = find_precise_suffix(event_string, PRECISE_IP_SUFFIX, PRECISE_IP_CHAR_MODIFIER);
 
   if (!ptr_att) {
-    strcpy(event_name, (const char*)event);
-    return precise;
-  }
-  memcpy(event_name, event, ptr_att-event);
-  precise++;
-
-  char *ptr_next = ptr_att + len_suf;
-  if (!ptr_next)
-    // shouldn't happen here
-    return precise;
-
-  // count the number of p in :ppp
-  while (ptr_next && *ptr_next == PRECISE_IP_CHAR_MODIFIER) {
-    ptr_next++;
+    *event_string_without_skidmarks = strdup(event_string);
+  } else {
+    char buffer[1024];
+#ifdef _PERF_SKID_DEBUG_
+    memset(buffer,1, sizeof(buffer));
+#endif
+    memcpy(buffer, event_string, ptr_att - event_string);
+    buffer[ptr_att - event_string] = 0;
     precise++;
-  }
+    
+    const char *ptr_next = ptr_att + len_suf;
+    if (!ptr_next)
+      // shouldn't happen here
+      return precise;
 
-  if (*ptr_next == DELIMITER_PERIOD) {
-    // next char is period threshold or frequency
-    strcat(event_name, ptr_next);
-  } else if (*ptr_next != '\0') {
-    // the next char is not recognized
-    precise--;
+    // count the number of p in :ppp
+    while (ptr_next && *ptr_next == PRECISE_IP_CHAR_MODIFIER) {
+      ptr_next++;
+      precise++;
+    }
+
+    if (*ptr_next == DELIMITER_HOWOFTEN) {
+      // next char is period threshold or frequency
+      strcat(buffer, ptr_next);
+    } else if (*ptr_next != '\0') {
+      // the next char is not recognized
+      precise--;
+    }
+
+    *event_string_without_skidmarks = strdup(buffer);
   }
 
   return precise;
 }
 
-#if     _PERF_UTIL_DEBUG_
+#ifdef _PERF_SKID_DEBUG_
 #include <stdio.h>
 
 #define MAX_NAME_EVENT 128
@@ -280,14 +313,13 @@ main (int argc, char *argv[])
 	  	"cycles::popo:oeer:ppp", "cycles::popo:peer:p", "cycles@100", 
 	  	"cycles::popo:oeer:p@100", "cycles::popo:peer:p@f10",
  		"cycles::popo:peer:ppp@5050", "cycles::popo:peer:pp",
- 		"cs:P", "cs:P@10000" };
-  char name_event[MAX_NAME_EVENT];
+ 		"cs:P", "cs:Pp", "cs:pppp", "cs:P@10000" };
   int num_events = sizeof(ev)/sizeof(ev[9]);
   int i;
 
   for (i=0; i<num_events; i++) {
-    memset(name_event, 0, MAX_NAME_EVENT);
-    int r = perf_skid_parse_event(ev[i], name_event, MAX_NAME_EVENT);
+    char *name_event;
+    int r = perf_skid_parse_event(ev[i], &name_event);
     printf("event: %s  name: %s   -> %d\n", ev[i], name_event,  r);
   }
 }

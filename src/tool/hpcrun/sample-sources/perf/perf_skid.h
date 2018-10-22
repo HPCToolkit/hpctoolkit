@@ -65,7 +65,7 @@
 //  PERF_EVENT_SKID_NONE    
 //  PERF_EVENT_SKID_ERROR        
 int
-perf_skid_parse_event(const char *event, char *event_name, size_t event_name_size);
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 
 void
 perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
