@@ -28,7 +28,7 @@ TargetType CFGParser::get_target_type(const Inst *inst) {
     type = TargetType::COND_NOT_TAKEN;
   } else if (inst->predicate.find("@") != std::string::npos) {
     type = TargetType::COND_TAKEN;
-  } else if (inst->is_call()) {
+  } else if (inst->is_call) {
     type = TargetType::CALL;
   } else {
     type = TargetType::DIRECT;
@@ -39,7 +39,7 @@ TargetType CFGParser::get_target_type(const Inst *inst) {
 
 TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
   TargetType type;
-  if (inst->is_call()) {
+  if (inst->is_call) {
     type = TargetType::CALL_FT;
   } else {
     type = TargetType::FALLTHROUGH;
@@ -96,7 +96,7 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
-        if (inst->is_call()) {
+        if (inst->is_call) {
           std::string &operand = inst->operands[0];
           Function *callee_function = 0;
           for (auto *ff : functions) {
@@ -291,7 +291,7 @@ void CFGParser::split_blocks(
     // Step 1: filter out all branch instructions
     for (size_t i = 0; i < block->insts.size(); ++i) {
       Inst *inst = block->insts[i];
-      if (inst->is_call()) {
+      if (inst->is_call) {
         split_inst_index.push_back(i);
         continue;
       }
@@ -381,16 +381,16 @@ void CFGParser::split_blocks(
             TargetType next_block_type = TargetType::CALL_FT;
             Block *next_block = new_blocks[i + 1];
             new_block->targets.push_back(new Target(
-                new_block->insts.back(), next_block, next_block_type));
+              new_block->insts.back(), next_block, next_block_type));
           } else {
             Block *next_block = new_blocks[i + 1];
             TargetType next_block_type = get_fallthrough_type(target->inst);
             TargetType target_block_type = get_target_type(target->inst);
 
             new_block->targets.push_back(new Target(
-                target->inst, next_block, next_block_type));
+              target->inst, next_block, next_block_type));
             new_block->targets.push_back(new Target(
-                target->inst, target->block, target_block_type));
+              target->inst, target->block, target_block_type));
           }
         }
       }

@@ -17,41 +17,17 @@ struct Inst {
   int offset;
   bool dual_first;
   bool dual_second;
+  bool is_call;
+  bool is_jump;
+  bool is_sync;
   std::string predicate;
   std::string opcode;
   std::string port;
   std::string target;
   std::vector<std::string> operands;
 
-  bool is_call() const {
-    if (opcode.find("CALL") != std::string::npos || // sm_70
-      opcode.find("CAL") != std::string::npos) { // sm_60
-      return true;
-    }
-    return false;
-  }
-
-  bool is_jump() {
-    if (opcode.find("BRA") != std::string::npos ||
-      opcode.find("BRX") != std::string::npos ||
-      opcode.find("JMP") != std::string::npos ||
-      opcode.find("JMX") != std::string::npos ||
-      opcode.find("BREAK") != std::string::npos ||
-      opcode.find("JMXU") != std::string::npos) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  bool is_sync() {
-    if (opcode.find("SYNC") != std::string::npos) {
-      return true;
-    }
-    return false;
-  }
-
-  Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false) {
+  Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
+    is_call(false), is_jump(false), is_sync(false) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
       inst_str.replace(pos, 1, " ");
@@ -70,10 +46,7 @@ struct Inst {
     if (std::getline(iss, s, ':')) {
       if (s.find("<") != std::string::npos) {
         auto pos = s.find(">");
-        auto port = s.substr(1, pos - 1);
-        if (port.find("exitpost") == std::string::npos) {
-          this->port = port;
-        }
+        this->port = s.substr(1, pos - 1);
         s = s.substr(pos + 1); 
       }
       std::stringstream ss;
@@ -96,10 +69,26 @@ struct Inst {
                 predicate = s;
               } else {
                 opcode = s;
+                if (opcode.find("CALL") != std::string::npos || // sm_70
+                  opcode.find("CAL") != std::string::npos) { // sm_60
+                  this->is_call = true;
+                } else if (opcode.find("BRA") != std::string::npos ||
+                  opcode.find("BRX") != std::string::npos ||
+                  opcode.find("JMP") != std::string::npos ||
+                  opcode.find("JMX") != std::string::npos ||
+                  opcode.find("BREAK") != std::string::npos ||
+                  opcode.find("JMXU") != std::string::npos) {
+                  this->is_jump = true;
+                } else if (opcode.find("SYNC") != std::string::npos ||
+                  opcode.find("SSY") != std::string::npos ||
+                  opcode.find("BSSY") != std::string::npos) {
+                  // TODO(Keren): add more sync instructions
+                  this->is_sync = true;
+                }
               }
             } else {
               operands.push_back(s);
-              if (is_jump() || is_sync()) {
+              if (is_jump || is_sync) {
                 auto pos = s.find(".L_");
                 if (pos != std::string::npos) {
                   auto end_pos = pos + 3;
