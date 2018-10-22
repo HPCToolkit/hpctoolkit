@@ -61,17 +61,17 @@ To install the www/html files to the hpctoolkit.org web site:
 
 1. Configure, make and make install as above.
 
-2. The html files for hpctoolkit.org are on orion/carme in:
+2. The html files for hpctoolkit.org are on kalyke/elara in:
 
    /net/www1/sites/hpctoolkit/htdocs/hpctoolkit/
 
 Tar-copy the share/doc/hpctoolkit *install* directory into the live
-web site on orion or carme with:
+web site on kalyke or elara with:
 
    cd install/share/doc
    tar cf hpctk.tar hpctoolkit
 
-   on orion/carme ...
+   on kalyke/elara ...
    cd /net/www1/sites/hpctoolkit/htdocs
    tar xf hpctk.tar
    (ignore 'Cannot utime: Operation not permitted' errors)
