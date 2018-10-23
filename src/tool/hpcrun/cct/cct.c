@@ -87,6 +87,8 @@
 #include "cct_addr.h"
 #include "cct2metrics.h"
 
+#define HPCRUN_CCT_KEEP_DUMMY 0
+
 //***************************** concrete data structure definition **********
 
 struct cct_node_t {
@@ -307,18 +309,28 @@ static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
   // avoid writing dummy nodes
-  if (hpcrun_cct_is_dummy(node)) {
-    return;
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    if (hpcrun_cct_is_dummy(node)) {
+      return;
+    }
   }
 
   // skip all the dummy parents
   cct_node_t* parent = hpcrun_cct_parent(node);
-  while (parent != NULL && hpcrun_cct_is_dummy(parent)) {
-    parent = hpcrun_cct_parent(parent);
+
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    while (parent != NULL && hpcrun_cct_is_dummy(parent)) {
+      parent = hpcrun_cct_parent(parent);
+    }
   }
 
-  bool all_children_dummy = true;
-  hpcrun_cct_walk_node_1st(node->children, l_dummy, &all_children_dummy);
+  bool all_children_dummy;
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    all_children_dummy = true;
+    hpcrun_cct_walk_node_1st(node->children, l_dummy, &all_children_dummy);
+  } else {
+    all_children_dummy = false;
+  }
 
   write_arg_t* my_arg = (write_arg_t*) arg;
   hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
@@ -702,7 +714,13 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
-  size_t nodes = hpcrun_cct_num_nodes(cct, false);
+  size_t nodes = 0;
+  if (HPCRUN_CCT_KEEP_DUMMY) {
+    nodes = hpcrun_cct_num_nodes(cct, true);
+  } else {
+    nodes = hpcrun_cct_num_nodes(cct, false);
+  }
+
   hpcfmt_int8_fwrite((uint64_t) nodes, fs);
   TMSG(DATA_WRITE, "num cct nodes = %d", nodes);
 
@@ -721,7 +739,9 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
   hpcrun_metricVal_t metrics[num_kind_metrics];
   tmp_node.metrics = &(metrics[0]);
 
-  hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
+  }
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
   return HPCRUN_OK;
