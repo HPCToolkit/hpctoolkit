@@ -163,7 +163,79 @@ The information pane contains some information concerning the range status of th
  \item Cross Hair. The information of current crosshair position in time and process dimensions. 
 \end{itemize}
 
+
 % ===========================================================================
+% ===========================================================================
+\subsection{Depth view}
+
+Depthview shows all the call path for a certain time range [t_1,t_2]= \{t | t_1 <= t <= t_2\} in a specified process rank $p$. The content of Depth view is always consistent with the position of the cross-hair in Trace view.
+For instance once the user clicks in process $p$ and time $t$, while the current depth of call path is $d$, then the Depth view's content is updated to display all the call path of process $p$ and shows its cross-hair on the time $t$ and the call path depth $d$.
+
+On the other hand, any user action such as cross-hair and time range selection in Depth view will update the content within Trace view. Similarly, the selection of new call path depth in Call view invokes a new position in Depth view.
+
+In Depth view a user can specify a new cross-hair time and a new time range.
+
+\textbf{Specifying a new cross-hair time.} Selecting a new cross-hair time $t$ can be performed by clicking a pixel within Depth view. This will update the cross-hair in Trace view and the call path in Call view.
+
+\textbf{Selecting a new time range.} Selecting a new time range [t_m,t_n]= \{t | t_m <= t <= t_n\} is performed by first clicking the position of $t_m$ and drag the cursor to the position of $t_n$. A new content in Depth view and Trace view is then updated. Note that this action will not update the call path in Call view since it does not change the position of the cross-hair.
+
+
+% ===========================================================================
+% ===========================================================================
+\subsection{Summary view}
+
+Summary view presents the proportion of number of calls of time $t$ across the current displayed rank of proces $p$. 
+Similar to Depth view, the time range in Summary view is always consistent with the time range in Trace view.
+
+
+% ===========================================================================
+% ===========================================================================
+\subsection{Call view}
+
+This view lists the call path of process \textbf{p} and time \textbf{t} specified in Trace view and Depth view.
+This view can show a call path from depth $0$ to the maximum depth, and the current depth is shown in the depth editor (located on the top part of the view).
+
+In this view, the user can select the depth dimension by either typing the depth in the depth editor or selecting a procedure in the table of call path.
+
+% ===========================================================================
+% ===========================================================================
+\subsection{Mini view}
+
+The Mini view shows, relative to the process/time dimensions, the portion of the execution shown by the Trace view.
+In Mini view, the user can select a new process/time (p_a,t_a),(p_b,t_b) dimensions by clicking the first process/time position (p_a,t_a) and then drag the cursor to the second position (p_b,t_b).
+The user can also moving the current selected region to another region by clicking the white rectangle and drag it to the new place.
+
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Menus}
+\Prog{hpctraceviewer} provides three main menus:
+\begin{itemize}
+ \item \textbf{File} menu which contains two sub menus:
+ \begin{itemize}
+   \item \textbf{Open database}: to load a database experiment directory. The directory has to contain \texttt{experiment.xml} (CCT and metric information) or \texttt{callpath.xml} (uniquely CCT information), and \texttt{*.hpctrace} or \texttt{experiment.mt} files which provide trace information.
+   \item \textbf{Exit}: to quit the application.
+ \end{itemize}
+ \item \textbf{View} menu to enhance appearance which contains two sub menus:
+ \begin{itemize}
+   \item \textbf{Show debug info}: to enable/disabe the display of debugging information in the form of \textbf{`a(b)'} where \textbf{a} is the maximum depth (this number is shown if the current depth reaches the maximum depth) and \textbf{b} is the number of records on the trace view. 
+The number of records can be useful to identify blocking procedures (such as I/O operations). Note: the numbers are displayed only if there's enough space in the process time line.
+   \item \textbf{Using midpoint painting}: if checked, the trace painting will use {midpoint} painting algorithm. By using the later, for every samples $S1$ at time $T1$, $S2$ at time $T2$ and $S3$ at time $T3$, \Prog{hpctraceviewer} renders a block from $T1$ to $(T1+T2)/2$ to sample $S1$, and a block from from  $(T1+T2)/2$ to  $(T2+T3(/2$ for sample $S2$, and so forth. 
+If the menu is not checked, then a simpler {rightmost} algorithm is used: it will render a block from  $T1$ to $T2$ for sample $S1$, and a block from $T2$ to  $T3$ for sample $S2$, and so forth.
+   \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpctraceviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
+   \item \textbf{Filter ranks}: to open a window for selecting which ranks should be displayed. Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). \Prog{hpctraceviewer} allows two types of filtering: either you specify which ranks {to show} or {to hide} (default is to hide). 
+To add a pattern to filter, you need to click "add" button and type the pattern in the dialog box. To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+ \end{itemize}
+ \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
+ \begin{itemize}
+  \item \textbf{Reset layout}: to reset the layout to the original one.
+ \end{itemize}
+\end{itemize}
+
+\Prog{hpctraceviewer} also provides a context menu to save the current image of the view. 
+This context menu is available is three views: trace view, depth view and summary view.
 % ===========================================================================
 
 
