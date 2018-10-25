@@ -1862,6 +1862,338 @@ AC_SUBST([BZIP_LIB])
 
 
 #-------------------------------------------------
+# Option: --with-dyninst=PATH
+#-------------------------------------------------
+
+# Now require full ParseAPI with CFG loop support or nothing.
+
+DYNINST="$default_dyninst_prefix"
+
+AC_ARG_WITH([dyninst],
+  [AS_HELP_STRING([--with-dyninst=PATH],
+      [path to dyninst install directory])],
+  [DYNINST="$withval"],
+  [])
+
+DYNINST_IFLAGS=
+DYNINST_LFLAGS=
+DYNINST_LIB_DIR=
+DYNINST_COPY=no
+dyninst_features=
+
+AC_MSG_CHECKING([for dyninst])
+
+case "${DYNINST}" in
+  /* )
+    if test -f "${DYNINST}/include/Symtab.h"  \
+       && test -f "${DYNINST}/include/CFG.h"
+    then : ; else
+      AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
+    fi
+    DYNINST_IFLAGS="-I${DYNINST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${DYNINST}/$lib"
+      if test -f "${dir}/libparseAPI.so" ; then
+        DYNINST_LIB_DIR="$dir"
+	DYNINST_COPY=yes
+	break
+      fi
+    done
+    if test "$DYNINST_COPY" != yes ; then
+      AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
+    fi
+    DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
+    DYNINST_LFLAGS="${DYNINST_LFLAGS} -ldynDwarf -ldynElf -lcommon"
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([dyninst directory must be absolute path: $DYNINST])
+    ;;
+esac
+
+AC_MSG_RESULT([$DYNINST])
+
+AC_SUBST([DYNINST_IFLAGS])
+AC_SUBST([DYNINST_LFLAGS])
+AC_SUBST([DYNINST_LIB_DIR])
+AC_SUBST([DYNINST_COPY])
+
+#-------------------------------------------------
+
+# Check that ParseAPI includes CFG loop support.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} ${DYNINST_IFLAGS}"
+AC_LANG_PUSH([C++])
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([for parseapi CFG loop support])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  return (long) bvec.size();
+}
+]])],
+  [cfg_loop_support=yes ; dyninst_features="$dyninst_features cfg"],
+  [cfg_loop_support=no])
+
+  AC_MSG_RESULT([$cfg_loop_support])
+
+  if test "$cfg_loop_support" != yes ; then
+    AC_MSG_ERROR([parseAPI does not include CFG loop support])
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if Block::getInsns() uses Instruction::Ptr or Instruction.
+# 9.3 uses Instruction::Ptr, new-par-par and 10.x use Instruction.
+
+use_instn_ptr=yes
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if parseapi uses Instruction::Ptr])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long instruction_size(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.begin()->second->size();
+}
+]])], [use_instn_ptr=yes], [use_instn_ptr=no])
+
+  AC_MSG_RESULT([$use_instn_ptr])
+fi
+
+if test "$use_instn_ptr" = yes ; then
+  AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There is not a good compile or link test for this, so we fall back
+# on ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+
+use_libdw=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst built with libdw.so])
+
+  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  AC_MSG_RESULT([$use_libdw])
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  if test "$use_libdw" = yes
+  then dyninst_features="$dyninst_features libdw"
+  else dyninst_features="$dyninst_features libdwarf"
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst supports cuda.
+
+use_cuda=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports cuda])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+]])],
+  [use_cuda=yes ; dyninst_features="$dyninst_features cuda"],
+  [use_cuda=no])
+
+  AC_MSG_RESULT([$use_cuda])
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with openmp support.
+# Again, not really a good test.
+
+dyninst_openmp=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst built with openmp])
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$parseapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        dyninst_openmp=yes
+	dyninst_features="$dyninst_features openmp"
+	break
+      fi
+    done
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  AC_MSG_RESULT([$dyninst_openmp])
+fi
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=unset
+
+AC_ARG_WITH([dyninst-type],
+  [AS_HELP_STRING([--with-dyninst-type=TYPE],
+      [temp option for dyninst version (old, libdw, cuda),
+       only needed if autoconf fails to detect correctly])],
+  [dyninst_type="$withval"],
+  [])
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
+  esac
+
+  AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
+fi
+
+AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
+AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+
+if test "$use_libdw" = yes ; then
+  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+fi
+
+if test "$use_cuda" = yes ; then
+  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
+fi
+
+
+#-------------------------------------------------
+# Option: --with-elfutils=PATH
+#-------------------------------------------------
+
+LIBELF="$default_elfutils_prefix"
+
+AC_ARG_WITH([elfutils],
+  [AS_HELP_STRING([--with-elfutils=PATH],
+      [path to elfutils install directory])],
+  [LIBELF="$withval"],
+  [])
+
+AC_MSG_CHECKING([for elfutils])
+
+LIBELF_INC=no
+LIBELF_LIB=no
+LIBELF_COPY=no
+have_libdw=no
+
+case "$LIBELF" in
+  /* )
+    if test ! -f "${LIBELF}/include/libelf.h" \
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+    then
+      AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
+    fi
+    LIBELF_INC="${LIBELF}/include"
+    for lib in $multilib_path ; do
+      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+        LIBELF_LIB="${LIBELF}/${lib}"
+	break
+      fi
+    done
+    if test "$LIBELF_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
+    fi
+    LIBELF_COPY=yes
+
+    if test -f "${LIBELF_LIB}/libdw.so" ; then
+      have_libdw=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
+    ;;
+esac
+
+AC_MSG_RESULT([$LIBELF])
+
+if test "$use_libdw" = yes && test "$have_libdw" != yes ; then
+  AC_MSG_WARN([dyninst uses libdw but elfutils is missing libdw])
+  AC_MSG_WARN([dyninst:  $DYNINST])
+  AC_MSG_WARN([elfutils: $LIBELF])
+fi
+
+AC_SUBST([LIBELF_INC])
+AC_SUBST([LIBELF_LIB])
+AC_SUBST([LIBELF_COPY])
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
@@ -1899,57 +2231,6 @@ AC_MSG_RESULT([$LIBDWARF])
 AC_SUBST([LIBDWARF_LIB])
 AC_SUBST([LIBDWARF_INC])
 AC_SUBST([LIBDWARF_COPY])
-
-
-#-------------------------------------------------
-# Option: --with-elfutils=PATH
-#-------------------------------------------------
-
-LIBELF="$default_elfutils_prefix"
-
-AC_ARG_WITH([elfutils],
-  [AS_HELP_STRING([--with-elfutils=PATH],
-      [path to elfutils install directory])],
-  [LIBELF="$withval"],
-  [])
-
-AC_MSG_CHECKING([for elfutils])
-
-LIBELF_INC=no
-LIBELF_LIB=no
-LIBELF_COPY=no
-
-case "$LIBELF" in
-  /* )
-    if test ! -f "${LIBELF}/include/libelf.h" \
-        && test ! -f "${LIBELF}/include/libelf/libelf.h"
-    then
-      AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
-    fi
-    LIBELF_INC="${LIBELF}/include"
-    for lib in $multilib_path ; do
-      if test -f "${LIBELF}/${lib}/libelf.so" ; then
-        LIBELF_LIB="${LIBELF}/${lib}"
-	break
-      fi
-    done
-    if test "$LIBELF_LIB" = no ; then
-      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
-    fi
-    LIBELF_COPY=yes
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
-    ;;
-esac
-
-AC_MSG_RESULT([$LIBELF])
-
-AC_SUBST([LIBELF_INC])
-AC_SUBST([LIBELF_LIB])
-AC_SUBST([LIBELF_COPY])
 
 
 #-------------------------------------------------
@@ -2724,261 +3005,6 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 
 #-------------------------------------------------
-# Option: --with-dyninst=PATH
-#-------------------------------------------------
-
-# Now require full ParseAPI with CFG loop support or nothing.
-
-SYMTABAPI="$default_dyninst_prefix"
-
-AC_ARG_WITH([dyninst],
-  [AS_HELP_STRING([--with-dyninst=PATH],
-      [path to dyninst install directory])],
-  [SYMTABAPI="$withval"],
-  [])
-
-#
-# Basic test that symtab and parseapi files exist.
-#
-AC_MSG_CHECKING([for symtabAPI])
-
-SYMTABAPI_COPY=no
-SYMTABAPI_LIB_LIST=
-hpcstruct_mesg=no
-
-case "${SYMTABAPI}" in
-  /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h"  \
-       && test -f "${SYMTABAPI}/include/CFG.h"  \
-       && test -f "${SYMTABAPI}/lib/libsymtabAPI.so"  \
-       && test -f "${SYMTABAPI}/lib/libparseAPI.so"
-    then :
-    else
-       AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
-    fi
-    SYMTABAPI_COPY=yes
-    SYMTABAPI_LIB_LIST='-lparseAPI -linstructionAPI -lsymtabAPI -lcommon'
-    SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
-    hpcstruct_mesg=parseapi
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
-    ;;
-esac
-
-AC_MSG_RESULT([$SYMTABAPI])
-
-SYMTABAPI_INC="${SYMTABAPI}/include"
-SYMTABAPI_LIB="${SYMTABAPI}/lib"
-
-AC_SUBST([SYMTABAPI_COPY])
-AC_SUBST([SYMTABAPI_LIB_LIST])
-AC_SUBST([SYMTABAPI_INC])
-AC_SUBST([SYMTABAPI_LIB])
-
-#-------------------------------------------------
-
-#
-# Chcek that ParseAPI includes CFG loop support.
-#
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} -I${SYMTABAPI_INC}"
-AC_LANG_PUSH([C++])
-
-if test "$SYMTABAPI" != no ; then
-  AC_MSG_CHECKING([for parseAPI CFG loop support])
-
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <vector>
-#include <Symtab.h>
-#include <Function.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace std;
-void get_blocks(LoopTreeNode * node)
-{
-  Loop * loop = node->loop;
-  vector <Block *> bvec;
-  loop->getLoopBasicBlocks(bvec);
-  std::cout << bvec.size();
-}
-]])], [cfg_loop_support=yes], [cfg_loop_support=no])
-
-  AC_MSG_RESULT([$cfg_loop_support])
-
-  if test "$cfg_loop_support" != yes ; then
-    AC_MSG_ERROR([parseAPI does not include CFG loop support])
-  fi
-fi
-
-#
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There's not a good compile or link test for this, so we fall back on
-# ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-#
-use_libdw=no
-
-if test "$SYMTABAPI" != no ; then
-  AC_MSG_CHECKING([if dyninst built with libdw.so])
-
-  dyn_dwarf="${SYMTABAPI_LIB}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
-    fi
-  fi
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  AC_MSG_RESULT([$use_libdw])
-fi
-
-#
-# Test if dyninst was built with openmp support.
-# Again, not really a good test.
-#
-dyninst_openmp=no
-
-if test "$SYMTABAPI" != no ; then
-  AC_MSG_CHECKING([if dyninst built openmp])
-
-  parseapi="${SYMTABAPI_LIB}/libparseAPI.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$parseapi" ; then
-    for lib in $openmp_lib_list ; do
-      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
-      if test $? -eq 0 ; then
-        dyninst_openmp=yes
-	break
-      fi
-    done
-  fi
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  AC_MSG_RESULT([$dyninst_openmp])
-fi
-
-#
-# Test if dyninst supports cuda.
-#
-use_cuda=no
-
-if test "$SYMTABAPI" != no ; then
-  AC_MSG_CHECKING([if dyninst supports cuda])
-
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <Symtab.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-long cuda_type()
-{
-  return (long) Dyninst::Arch_cuda;
-}
-]])], [use_cuda=yes], [use_cuda=no])
-
-  AC_MSG_RESULT([$use_cuda])
-fi
-
-#
-# Test if ParseAPI uses Instruction or Instruction::Ptr.
-#
-use_instn_ptr=yes
-
-if test "$SYMTABAPI" != no ; then
-  AC_MSG_CHECKING([if parseapi uses Instruction::Ptr])
-
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <map>
-#include <Symtab.h>
-#include <Function.h>
-#include <Instruction.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace InstructionAPI;
-using namespace ParseAPI;
-using namespace std;
-long num_instructions(Block * block)
-{
-  map <Offset, Instruction::Ptr> imap;
-  block->getInsns(imap);
-  return (long) imap.size();
-}
-]])], [use_instn_ptr=yes], [use_instn_ptr=no])
-
-  AC_MSG_RESULT([$use_instn_ptr])
-fi
-
-if test "$use_instn_ptr" = yes ; then
-  AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
-fi
-
-AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#
-# Temporary option to identify version of dyninst, only necessary if
-# the above tests produce the wrong answer.
-#
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
-#  cuda = uses libdw and supports cuda
-#
-dyninst_type=unset
-
-AC_ARG_WITH([dyninst-type],
-  [AS_HELP_STRING([--with-dyninst-type=TYPE],
-      [temp option for dyninst version (old, libdw, cuda),
-       only needed if autoconf fails to detect correctly])],
-  [dyninst_type="$withval"],
-  [])
-
-if test "$dyninst_type" != unset ; then
-  case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
-    libdw ) use_libdw=yes ; use_cuda=no ;;
-    cuda )  use_libdw=yes ; use_cuda=yes ;;
-    * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
-  esac
-
-  AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
-fi
-
-AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
-AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
-
-if test "$use_libdw" = yes ; then
-  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
-fi
-
-if test "$use_cuda" = yes ; then
-  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
-fi
-
-LIBDW_COPY="$use_libdw"
-AC_SUBST([LIBDW_COPY])
-
-
-#-------------------------------------------------
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 
@@ -3409,7 +3435,7 @@ if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
-     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
+     test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
@@ -4224,6 +4250,8 @@ dnl fi
 # Summary of the config options.
 #-------------------------------------------------
 
+dyninst_features=`echo $dyninst_features`
+
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
@@ -4242,7 +4270,6 @@ AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
-AC_MSG_NOTICE([  hpcstruct:    $hpcstruct_mesg])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
@@ -4266,7 +4293,8 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  binutils:     ${BINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
 AC_MSG_NOTICE([  bzip:         ${BZIP}])
-AC_MSG_NOTICE([  dyninst:      ${SYMTABAPI}])
+AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
+AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])

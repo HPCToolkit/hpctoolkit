@@ -126,19 +126,17 @@ install-exec-local:
 	@echo "Copying external package libraries ..."
 	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	@for lib in $(BOOST_COPY_LIST) ; do  \
-	    $(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*.so*) ;  \
+	    $(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*so*) ;  \
 	done
 	@$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
-	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
-	@$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
-	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
+	@for lib in common dynElf dynDwarf instructionAPI parseAPI symtabAPI ; do  \
+	    $(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
+	done
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
+	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
 	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
-	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
-	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
-	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
-	@$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
 	@$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
 	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
 	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
