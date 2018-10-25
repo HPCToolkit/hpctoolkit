@@ -246,7 +246,6 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
  
-
 } thread_data_t;
 
 

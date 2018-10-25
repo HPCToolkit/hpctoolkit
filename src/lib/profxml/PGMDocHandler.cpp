@@ -258,7 +258,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrVMA);
 
-  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
+  DIAG_AssertWarn(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
 
 
