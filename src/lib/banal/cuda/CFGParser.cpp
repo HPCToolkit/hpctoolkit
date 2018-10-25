@@ -13,20 +13,36 @@ static void debug_blocks(const std::vector<Block *> &blocks) {
       " , name: " << block->name << std::endl;
     std::cout << "Range: [" << block->insts[0]->offset <<
       ", " << block->insts.back()->offset << "]" << std::endl;
+    for (auto *target : block->targets) {
+      std::cout << "Target block id: " << target->block->id <<
+        " , name: " << target->block->name << std::endl;
+    }
+    std::cout << std::endl;
   }
 }
 
 
-TargetType CFGParser::get_target_type(const Block *source_block, Inst *inst) {
+TargetType CFGParser::get_target_type(const Inst *inst) {
   TargetType type;
   if (inst->predicate.find("!@") != std::string::npos) {
-    type = TargetType::COND_TAKEN;
-  } else if (inst->predicate.find("@") != std::string::npos) {
     type = TargetType::COND_NOT_TAKEN;
-  } else if (inst == source_block->insts.back()) {
-    type = TargetType::FALLTHROUGH;
+  } else if (inst->predicate.find("@") != std::string::npos) {
+    type = TargetType::COND_TAKEN;
+  } else if (inst->is_call) {
+    type = TargetType::CALL;
   } else {
     type = TargetType::DIRECT;
+  }
+  return type;
+}
+
+
+TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
+  TargetType type;
+  if (inst->is_call) {
+    type = TargetType::CALL_FT;
+  } else {
+    type = TargetType::FALLTHROUGH;
   }
   return type;
 }
@@ -80,7 +96,7 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
-        if (inst->is_call()) {
+        if (inst->is_call) {
           std::string &operand = inst->operands[0];
           Function *callee_function = 0;
           for (auto *ff : functions) {
@@ -101,21 +117,36 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
 }
 
 
-size_t CFGParser::find_block_parent(size_t node) {
-  size_t parent = _block_parent[node];
-  size_t block_size = _block_parent.size();
-  if (parent == block_size) {
-    return _block_parent[node] = node;
-  } else if (parent == node) {
-    return node;
-  } else {
-    return _block_parent[node] = find_block_parent(parent);
+void CFGParser::find_block_parent(const std::vector<Block *> &blocks) {
+  bool incoming_nodes[blocks.size()];
+  std::fill(incoming_nodes, incoming_nodes + blocks.size(), false);
+  for (auto *block : blocks) {
+    for (auto *target : block->targets) {
+      incoming_nodes[target->block->id] = true;
+    }
+  }
+  bool visited[blocks.size()];
+  std::fill(visited, visited + blocks.size(), false);
+  for (auto *block : blocks) {
+    if (visited[block->id] == false) {
+      if (incoming_nodes[block->id] == false) {
+        visited[block->id] = true;
+        _block_parent[block->id] = block->id;
+        unite_blocks(block, visited, block->id);
+      }
+    }
   }
 }
 
 
-void CFGParser::unite_blocks(size_t l, size_t r) {
-  _block_parent[l] = find_block_parent(r);
+void CFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
+  for (auto *target : block->targets) {
+    if (visited[target->block->id] == false) {
+      visited[target->block->id] = true;
+      _block_parent[target->block->id] = parent;
+      unite_blocks(target->block, visited, parent);
+    }
+  }
 }
 
 
@@ -130,9 +161,9 @@ static bool compare_target_ptr(Target *l, Target *r) {
 
 
 void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
-  std::unordered_map<size_t, Block *> block_map;
+  std::unordered_map<size_t, Block *> block_id_map;
+  std::unordered_map<std::string, Block *> block_name_map;
   std::vector<Block *> blocks;
-  std::vector<std::pair<size_t, size_t> > edges;
 
   // Parse every vertex to build blocks
   for (auto *vertex : graph.vertices) {
@@ -145,53 +176,24 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
     }
 
     blocks.push_back(block);
-    block_map[block->id] = block;
+    block_id_map[block->id] = block;
+    block_name_map[block->name] = block;
   }
 
-  // Parse every edge to build block relations
-  for (auto *edge : graph.edges) {
-    edges.push_back(std::pair<size_t, size_t>(edge->source_id, edge->target_id));
-    Block *target_block = block_map[edge->target_id];
-    Block *source_block = block_map[edge->source_id];
-    
-    // Link blocks
-    for (size_t i = 0; i < source_block->insts.size(); ++i) {
-      Inst *inst = source_block->insts[i];
-      if (inst->port == edge->source_port[0]) {
-        if (inst->dual_first == true || inst->dual_second == true) {
-          Inst *dual_inst = NULL;
-          if (inst->dual_first) {
-            dual_inst = source_block->insts[i + 1];
-          } else if (inst->dual_second) {
-            dual_inst = source_block->insts[i - 1];
-          }
-          TargetType type = get_target_type(source_block, inst);
-          TargetType dual_type = get_target_type(source_block, dual_inst);
-          if (type == TargetType::COND_TAKEN || type == TargetType::COND_NOT_TAKEN) {
-            source_block->targets.push_back(new Target(inst, target_block, type));
-          } else if (dual_type == TargetType::COND_TAKEN || dual_type == TargetType::COND_NOT_TAKEN) {
-            source_block->targets.push_back(new Target(dual_inst, target_block, dual_type));
-          } else {
-            source_block->targets.push_back(new Target(inst, target_block, type));
-          }
-        } else {
-          TargetType type = get_target_type(source_block, inst);
-          source_block->targets.push_back(new Target(inst, target_block, type));
-        }
+  // Find target block labels by checking every instruction
+  for (auto *block : blocks) {
+    for (auto *inst : block->insts) {
+      if (inst->target.size() != 0) {
+        auto *target_block = block_name_map[inst->target];
+        TargetType type = get_target_type(inst);
+        auto *target = new Target(inst, target_block, type);
+        block->targets.push_back(target);
       }
-    }
-    // Some edges may not have port information
-    if (source_block->targets.size() == 0) {
-      Inst *inst = source_block->insts.back();
-      TargetType type;
-      if (inst->is_call()) {
-        type = TargetType::CALL_FT;
-      } else {
-        type = TargetType::FALLTHROUGH;
-      }
-      source_block->targets.push_back(new Target(inst, target_block, type));
     }
   }
+
+  // Link fallthrough edges at the end of blocks
+  link_fallthrough_edges(graph, blocks, block_id_map);
 
 #ifdef DEBUG_CUDA_CFGPARSER
   std::cout << "Before split" << std::endl;
@@ -200,40 +202,34 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
 
   // Split blocks for loop analysis ans CALL instructions
   // TODO(keren): identify RET edges?
-  split_blocks(edges, blocks, block_map);
+  split_blocks(blocks, block_id_map);
 
 #ifdef DEBUG_CUDA_CFGPARSER
   std::cout << "After split" << std::endl;
   debug_blocks(blocks);
 #endif
 
-  // Resize before union find
-  _block_parent.resize(blocks.size());
-  for (size_t i = 0; i < blocks.size(); ++i) {
-    _block_parent[i] = blocks.size();
-  }
-
   // Find toppest block
-  for (size_t i = 0; i < edges.size(); ++i) {
-    auto source_id = edges[i].first;
-    auto target_id = edges[i].second;
-    unite_blocks(target_id, source_id);
-  }
+  _block_parent.resize(blocks.size());
+  find_block_parent(blocks);
 
   // Build functions
   size_t function_id = 0;
   for (auto *block : blocks) {
     // Sort block targets according to inst offset
     std::sort(block->targets.begin(), block->targets.end(), compare_target_ptr);
-    if (find_block_parent(block->id) == block->id) {
+    if (_block_parent[block->id] == block->id) {
       // Filter out self contained useless loops. A normal function will not start with "."
-      if (block_map[block->id]->name[0] == '.') {
+      if (block_id_map[block->id]->name[0] == '.') {
         continue;
       }
-      Function *function = new Function(function_id, block_map[block->id]->name);
+      Function *function = new Function(function_id, block_id_map[block->id]->name);
       ++function_id;
       for (auto *bb : blocks) {
-        if (find_block_parent(bb->id) == block->id) {
+        if (_block_parent[bb->id] == block->id) {
+#ifdef DEBUG_CUDA_CFGPARSER
+          std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
+#endif
           function->blocks.push_back(bb);
         }
       }
@@ -252,10 +248,42 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
 }
 
 
+
+void CFGParser::link_fallthrough_edges(
+  const Graph &graph,
+  const std::vector<Block *> &blocks,
+  std::unordered_map<size_t, Block *> &block_id_map) {
+  std::map<std::pair<size_t, size_t>, size_t> edges;
+  for (auto *edge : graph.edges) {
+    edges[std::pair<size_t, size_t>(edge->source_id, edge->target_id)]++;
+  }
+
+  for (auto *block : blocks) {
+    for (auto *target : block->targets) {
+      auto source_id = block->id;
+      auto target_id = target->block->id;
+      edges[std::pair<size_t, size_t>(source_id, target_id)]--;
+    }
+  }
+
+  for (auto edge : edges) {
+    if (edge.second != 0) {
+      auto source_id = edge.first.first;
+      auto target_id = edge.first.second;
+      auto *block = block_id_map[source_id];
+      auto *target_block = block_id_map[target_id];
+      auto *inst = block->insts.back();
+      auto type = get_fallthrough_type(inst);
+      auto *target = new Target(inst, target_block, type);
+      block->targets.push_back(target);
+    }
+  }
+}
+
+
 void CFGParser::split_blocks(
-  std::vector<std::pair<size_t, size_t> > &edges,
   std::vector<Block *> &blocks,
-  std::unordered_map<size_t, Block *> &block_map) {
+  std::unordered_map<size_t, Block *> &block_id_map) {
   size_t extra_block_id = blocks.size();
   std::vector<Block *> candidate_blocks;
   for (auto *block : blocks) {
@@ -263,7 +291,7 @@ void CFGParser::split_blocks(
     // Step 1: filter out all branch instructions
     for (size_t i = 0; i < block->insts.size(); ++i) {
       Inst *inst = block->insts[i];
-      if (inst->is_call()) {
+      if (inst->is_call) {
         split_inst_index.push_back(i);
         continue;
       }
@@ -279,7 +307,8 @@ void CFGParser::split_blocks(
     std::cout << "Split index:" << std::endl;
     for (size_t i = 0; i < split_inst_index.size(); ++i) {
       std::cout << "Block: " << block->name <<
-        ", offset: " << block->insts[i]->offset << std::endl;
+        ", offset: " << block->insts[split_inst_index[i]]->offset <<
+        " " << block->insts[split_inst_index[i]]->opcode << std::endl;
     }
 #endif
 
@@ -316,7 +345,7 @@ void CFGParser::split_blocks(
           new_block = new Block(extra_block_id++, block_name);
           // Update block records
           candidate_blocks.push_back(new_block);
-          block_map[new_block->id] = new_block;
+          block_id_map[new_block->id] = new_block;
         }
         new_blocks.push_back(new_block);
         // Update instructions
@@ -338,7 +367,7 @@ void CFGParser::split_blocks(
             }
           }
         } else {
-          // A conditional call is treated by branch split, not call split
+          // A conditional call is treated as a branch split, not call split
           bool call_split = true;
           Target *target = NULL;
           for (size_t j = 0; j < targets.size(); ++j) {
@@ -352,31 +381,16 @@ void CFGParser::split_blocks(
             TargetType next_block_type = TargetType::CALL_FT;
             Block *next_block = new_blocks[i + 1];
             new_block->targets.push_back(new Target(
-                new_block->insts.back(), next_block, next_block_type));
-            // Push back new edge
-            edges.push_back(std::pair<size_t, size_t>(new_block->id, next_block->id));
+              new_block->insts.back(), next_block, next_block_type));
           } else {
-            TargetType next_block_type;
-            TargetType target_block_type;
             Block *next_block = new_blocks[i + 1];
-
-            if (target->type == TargetType::COND_TAKEN) {
-              target_block_type = TargetType::COND_TAKEN;
-              next_block_type = TargetType::COND_NOT_TAKEN;
-            } else if (target->type == TargetType::COND_NOT_TAKEN) {
-              target_block_type = TargetType::COND_NOT_TAKEN;
-              next_block_type = TargetType::COND_TAKEN;
-            } else {
-              target_block_type = TargetType::DIRECT;
-              next_block_type = TargetType::INDIRECT;
-            }
+            TargetType next_block_type = get_fallthrough_type(target->inst);
+            TargetType target_block_type = get_target_type(target->inst);
 
             new_block->targets.push_back(new Target(
-                target->inst, next_block, next_block_type));
+              target->inst, next_block, next_block_type));
             new_block->targets.push_back(new Target(
-                target->inst, target->block, target_block_type));
-            // Push back new edge
-            edges.push_back(std::pair<size_t, size_t>(new_block->id, next_block->id));
+              target->inst, target->block, target_block_type));
           }
         }
       }
