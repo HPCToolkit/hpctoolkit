@@ -204,15 +204,6 @@ Options: Profiling (Defaults shown in curly brackets {})
                        profiles of the same <command> will be placed in the
                        same output directory.
 
-  -p,  --precise-ip <level>
-                       Specify the precise ip level (used only with perf events):
-                       0: sample ip can have arbitrary skid
-                       1: sample ip must have constant skid
-                       2: sample ip requested to have 0 skid
-                       3: sample ip must have 0 skid
-                       NOTE: Some architectures support a precise IP with 0 skid.
-                             Incorrect level will unable hpcrun to sample the events.
-
   -r, --retain-recursion
                        Normally, hpcrun will collapse (simple) recursive call chains
                        to save space and analysis time. This option disables that 
