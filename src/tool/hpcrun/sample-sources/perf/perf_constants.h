@@ -34,35 +34,46 @@
 // express or implied warranties, including, but not limited to, the
 // implied warranties of merchantability and fitness for a particular
 // purpose are disclaimed. In no event shall RICE or contributors be
-// liable for any direct, indirect, incidental, special, exemplary, or
-// consequential damages (including, but not limited to, procurement of
-// substitute goods or services; loss of use, data, or profits; or
-// business interruption) however caused and on any theory of liability,
-// whether in contract, strict liability, or tort (including negligence
-// or otherwise) arising in any way out of the use of this software, even
-// if advised of the possibility of such damage.
-//
-// ******************************************************* EndRiceCopyright *
 
-#ifndef __HPCRUN_TOKENIZE_H__
-#define __HPCRUN_TOKENIZE_H__
+#ifndef __PERF_CONSTANTS_H__
+#define __PERF_CONSTANTS_H__
 
-#include <stdbool.h>
+#include <unistd.h>
+#include <sys/types.h>
 
-// macros:
-// return value of hpcrun_extract_ev_thresh()
-//
-#define THRESH_DEFAULT 0
-#define THRESH_VALUE   1
-#define THRESH_FREQ    2
+#include <linux/types.h>
+#include <linux/perf_event.h>
 
 
+/******************************************************************************
+ * macros
+ *****************************************************************************/
 
-extern char *start_tok(char *l);
-extern int   more_tok(void);
-extern char *next_tok(void);
-extern int hpcrun_extract_threshold(const char *in, long *th, long def);
-extern int hpcrun_extract_ev_thresh(const char*, int, char*, long*, long);
-extern bool hpcrun_ev_is(const char* candidate, const char* event_name);
+#define THREAD_SELF     0
+#define CPU_ANY        -1
+#define GROUP_FD       -1
+#define PERF_FLAGS      0
+#define PERF_REQUEST_0_SKID      2
+#define PERF_WAKEUP_EACH_SAMPLE  1
+
+#define EXCLUDE    1
+#define INCLUDE    0
+
+#define EXCLUDE_CALLCHAIN EXCLUDE
+#define INCLUDE_CALLCHAIN INCLUDE
+
+#ifndef HPCRUN_DEFAULT_SAMPLE_RATE
+#define HPCRUN_DEFAULT_SAMPLE_RATE	  300
+#endif
+
+#ifndef u32
+typedef __u32 u32;
+#endif
+
+
+#ifndef u64
+typedef __u64 u64;
+#endif
+
 
 #endif
