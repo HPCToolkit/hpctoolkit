@@ -6,6 +6,8 @@ linux_perf.c: the main code, contains interface with sample-sourcesa and
  			  
 perfmon-util.*: interface for libpfm4 library to gather information on native
 				hardware (and software) counters.			  
+
+perf-util.*: swiss army utility (bad name, needs to be renamed).
  
 kernel_blocking.*: specialized event to compute the blocking time spent in
  					the kernel. Currently only available if the kernel is a
@@ -13,7 +15,7 @@ kernel_blocking.*: specialized event to compute the blocking time spent in
  					
 perf_mmap.*: utility to parse mmap buffer and copy it in a data structure.
 
-perf-util.*: swiss army utility (bad name, needs to be renamed).
+perf_skid.*: special module to parse precise_ip modifier in an event.
 
 perf_barrier.*: library containing the definition and implementation of all
 				barrier for most of the platforms.

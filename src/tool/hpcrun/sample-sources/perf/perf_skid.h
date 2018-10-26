@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,25 +41,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __HPCRUN_TOKENIZE_H__
-#define __HPCRUN_TOKENIZE_H__
 
-#include <stdbool.h>
+#ifndef __PERF_SKID_H__
+#define __PERF_SKID_H__
 
-// macros:
-// return value of hpcrun_extract_ev_thresh()
-//
-#define THRESH_DEFAULT 0
-#define THRESH_VALUE   1
-#define THRESH_FREQ    2
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_AUTODETECT_SKID       4
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
+#define PERF_EVENT_SKID_ERROR           -1
 
 
+// parse the event into event_name and the type of precise_ip
+//  the name of the event excludes the precise ip suffix
+// returns:
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_NONE    
+//  PERF_EVENT_SKID_ERROR        
+int
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 
-extern char *start_tok(char *l);
-extern int   more_tok(void);
-extern char *next_tok(void);
-extern int hpcrun_extract_threshold(const char *in, long *th, long def);
-extern int hpcrun_extract_ev_thresh(const char*, int, char*, long*, long);
-extern bool hpcrun_ev_is(const char* candidate, const char* event_name);
+void
+perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
 
+u64
+perf_skid_get_precise_ip(struct perf_event_attr *attr);
 #endif

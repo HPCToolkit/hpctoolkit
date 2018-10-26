@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,25 +41,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __HPCRUN_TOKENIZE_H__
-#define __HPCRUN_TOKENIZE_H__
+#ifndef __PERF_EVENT_OPEN_H__
+#define __PERF_EVENT_OPEN_H__
 
-#include <stdbool.h>
+#include <unistd.h>		// pid_t
+#include <linux/perf_event.h>	// perf data structure
 
-// macros:
-// return value of hpcrun_extract_ev_thresh()
-//
-#define THRESH_DEFAULT 0
-#define THRESH_VALUE   1
-#define THRESH_FREQ    2
-
-
-
-extern char *start_tok(char *l);
-extern int   more_tok(void);
-extern char *next_tok(void);
-extern int hpcrun_extract_threshold(const char *in, long *th, long def);
-extern int hpcrun_extract_ev_thresh(const char*, int, char*, long*, long);
-extern bool hpcrun_ev_is(const char* candidate, const char* event_name);
+long
+perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags);
 
 #endif
