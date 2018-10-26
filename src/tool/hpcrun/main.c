@@ -675,33 +675,11 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // call thread manager to get a thread data. If there is unused thread data,
   //  we can recycle it, otherwise we need to allocate a new one.
   // If we allocate a new one, we need to initialize the data and trace file.
-  //
-  //originally: hpcrun_allocate_thread_data(id);
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  bool new_data = hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+  hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
   hpcrun_set_thread_data(td);
-
-  if (new_data && td) {
-
-    // ----------------------------------------
-    // need to initialize thread_data here. before calling hpcrun_thread_data_init,
-    // make sure we already call hpcrun_set_thread_data to set the variable.
-    // ----------------------------------------
-    hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
-
-    // ----------------------------------------
-    // set up initial 'epoch'
-    // ----------------------------------------
-    TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-    hpcrun_epoch_init(thr_ctxt);
-
-    // ----------------------------------------
-    // opening trace file
-    // ----------------------------------------
-    hpcrun_trace_open(&(td->core_profile_trace_data));
-  }
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
@@ -709,9 +687,6 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   
   if (ENABLED(THREAD_CTXT))
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
-
-  // this has been replaced in hpcrun_threadMgr_data_get()
-  // hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
@@ -750,47 +725,18 @@ hpcrun_thread_fini(epoch_t *epoch)
     SAMPLE_SOURCES(thread_fini_action);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
 
-    // FIXME: currently breaks the build.
-#if 0 // defined(HOST_SYSTEM_IBM_BLUEGENE)
-    EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(epoch, epoch->btbuf_cur);
-#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
-
     if (hpcrun_get_disabled()) {
       return;
     }
 
-    // case 1: non-compact threads:
-    //  if it's in non-compact thread, we write the profile data,
-    //  close the trace file, and exit
+    // inform thread manager that we are terminating the thread
+    // thread manager may enqueue the thread_data (in compact mode)
+    // or flush the data into hpcrun file
 
     thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_threadMgr_data_put(epoch, td);
 
-    if (hpcrun_threadMgr_compact_thread() == OPTION_NO_COMPACT_THREAD) {
-
-      hpcrun_write_profile_data( &td->core_profile_trace_data );
-      hpcrun_trace_close( &td->core_profile_trace_data );
-
-      return;
-    }
-
-    // case 2: for compact threads only:
-    //  save the data in the queue. We may reuse again later.
-    //  writing the profile will be performed later in hpcrun_fini_internal
-    //  unless there's a shutdown or cancellation, we need to write the
-    //  the profile here
-
-    hpcrun_threadMgr_data_put(td);
-
-    // get the dummy node that marks the end of the thread
-    cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
-    hpcrun_cct_retain(node);
-
-    // mark the end of the thread in the trace
-    int32_t trace_id    = hpcrun_cct_persistent_id(node);
-    hpcrun_trace_append(&td->core_profile_trace_data, trace_id, 0);
-
-    TMSG(PROCESS, "End of thread trace_id: %d", trace_id);
+    TMSG(PROCESS, "End of thread");
   }
 }
 

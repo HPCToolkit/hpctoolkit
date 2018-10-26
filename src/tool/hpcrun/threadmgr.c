@@ -68,6 +68,7 @@
 #include "thread_data.h"
 #include "write_data.h"
 #include "trace.h"
+#include "sample_sources_all.h"
 
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
@@ -267,6 +268,28 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
 
     adjust_num_logical_threads(1);
     *data = hpcrun_allocate_thread_data(id);
+
+    // we need to immediately set the thread data here since the following statements
+    // under the hood, will call get_thread_data()
+
+    hpcrun_set_thread_data(*data);
+
+    // ----------------------------------------
+    // need to initialize thread_data here. before calling hpcrun_thread_data_init,
+    // make sure we already call hpcrun_set_thread_data to set the variable.
+    // ----------------------------------------
+    hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
+
+    // ----------------------------------------
+    // set up initial 'epoch'
+    // ----------------------------------------
+    TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+    hpcrun_epoch_init(thr_ctxt);
+
+    // ----------------------------------------
+    // opening trace file
+    // ----------------------------------------
+    hpcrun_trace_open(&((*data)->core_profile_trace_data));
   }
 
 #if HPCRUN_THREADS_DEBUG
@@ -278,12 +301,31 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
 
 
 void
-hpcrun_threadMgr_data_put( thread_data_t *data )
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
 {
-  // case compact threads mode
+
+  // ---------------------------------------------------------------------
+  // case 1: non-compact threads:
+  //  if it's in non-compact thread, we write the profile data,
+  //  close the trace file, and exit
+  // ---------------------------------------------------------------------
+
+  if (hpcrun_threadMgr_compact_thread() == OPTION_NO_COMPACT_THREAD) {
+
+    hpcrun_write_profile_data( &data->core_profile_trace_data );
+    hpcrun_trace_close( &data->core_profile_trace_data );
+
+    return;
+  }
+
+  // ---------------------------------------------------------------------
+  // case 2: compact threads mode
   //         enqueue the thread data in the list to be reused by
   //         other thread (if any). The thread data will be written
   //         to the file at the end of the process
+  // ---------------------------------------------------------------------
+
+  // step 1: enqueue thread data into the free list
 
   spinlock_lock(&threaddata_lock);
 
@@ -292,6 +334,11 @@ hpcrun_threadMgr_data_put( thread_data_t *data )
   SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
   spinlock_unlock(&threaddata_lock);
+
+  // step 2: get the dummy node that marks the end of the thread trace
+
+  cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
+  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

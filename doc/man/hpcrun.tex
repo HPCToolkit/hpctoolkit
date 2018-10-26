@@ -370,10 +370,10 @@ Skid is a measure of how many instructions may execute between an event and the 
 Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures
 don't support anything more precise.  One may optionally specify one of the following as a skid modifier:
                         \begin{itemize}
-                                \item \verb|:p| : a sample must have constant skid.
-                                \item \verb|:pp| : a sample is requested to have 0 skid.
-                                \item \verb|:ppp| : a sample must have 0 skid.
-                                \item \verb|:P| : autodetect the least skid possible.
+                                \item \verb+:p+ : a sample must have constant skid.
+                                \item \verb+:pp+ : a sample is requested to have 0 skid.
+                                \item \verb+:ppp+ : a sample must have 0 skid.
+                                \item \verb+:P+ : autodetect the least skid possible.
                         \end{itemize}
                         NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported
 but no samples will be delivered.
