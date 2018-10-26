@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2018/07/13}
+\setDate{2018/10/26}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -253,6 +253,116 @@ Note: graphs are currently available only for databases created by \Prog{hpcprof
 (but not by \Prog{hpcprof}).
 See \emph{Plotting Graphs of Thread-level Metric Values} in the User's Manual
 for details and sample graphs.
+
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Menus}
+
+\Prog{hpcviewer} provides five main menus:
+
+% ==========================================================
+% ==========================================================
+
+\subsection{File}
+This menu includes several menu items for controlling basic viewer operations.
+\begin{itemize}
+\item \textbf{New window}
+  Open a new \Prog{hpcviewer} window that is independent from the existing one.
+
+\item \textbf{Open database...}
+  Load a performance database into the current \Prog{hpcviewer} window. 
+Currently \Prog{hpcviewer} restricts maximum of five database open at a time. 
+If you want to display more than five, either you close an existing open database first, or you open a new \Prog{hpcviewer} window.
+
+\item \textbf{Close database...}
+  Unloading one of more open performance database.
+
+\item \textbf{Merge database CCT.../Merge database flat tree...}
+  Merging two database that are currently in the viewer. If \Prog{hpcviewer} has more than two
+open database, then you need to choose which database you want to merge.
+
+Currently \Prog{hpcviewer} does not support storing a merged database into a file.
+
+\item \textbf{Preferences...}
+  Display the settings dialog box.
+
+\item \textbf{Close window}
+  Closing the current window. If there is only one window, then this menu will also exit \Prog{hpcviewer} application.
+
+\item \textbf{Exit}
+  Quit the \Prog{hpcviewer} application.
+
+\end{itemize}
+
+% ==========================================================
+% ==========================================================
+
+\subsection{Filter}
+This menu only contains one submenu:
+\begin{itemize}
+ \item \textbf{Show filter property}
+  Open a filter property window which lists a set of filters and its properties.
+\Prog{hpcviewer} allows  users to define multiple filters, and each filter is associated with a type and a glob pattern (A glob pattern specifies which name to be removed by using wildcard characters such as *, ? and +).
+There are three types of filter: ``\textbf{self only}'' to omit matched nodes, 
+``\textbf{descendants only}'' to exclude only the subtree of the matched nodes, and ``\textbf{self and descendants}'' to
+remove matched nodes and its descendants.
+
+\end{itemize}
+
+% ==========================================================
+% ==========================================================
+
+\subsection{View}
+This menu is only visible if at least one database is loaded.
+All actions in this menu are intended primarily for tool developer use. 
+By default, the menu is hidden. Once you open a database, the menu is then shown.
+
+\begin{itemize}
+ \item \textbf{Show views}
+ Display all the list of views (calling context views, callers view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
+
+ \item \textbf{Show metric properties}
+ Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.
+
+ \item \textbf{Debug}
+ A special set of menus for advanced users. These menus are useful to debug \Prog{hpcviewer}. The menu consists of:
+
+   \begin{itemize}
+     \item \textbf{Show database raw's XML}
+ 	Enable one to request display of raw XML representation for performance data.
+
+     \item \textbf{Show CCT label}
+ 	Display calling context ID for each node in the tree. This option is important to match between the node tree in hpcviewer with the data in experiment.xml.
+
+     \item \textbf{Show flat label}
+ 	Display static ID for each node in the tree.
+  \end{itemize}
+
+\end{itemize}
+% ==========================================================
+% ==========================================================
+
+\subsection{Window}
+This menu contains only one submenu to reset the position of the views to the original default position.
+Since \Prog{hpcviewer} is built on top of Eclipse, sometimes Eclipse fails to reposition its views due to its bugs.
+A work-around to fix this issue is an ongoing work.
+
+% ==========================================================
+% ==========================================================
+
+\subsection{Help}
+
+This menu displays information about the viewer. The menu contains two items:
+\begin{itemize}
+
+\item \textbf{About}.
+  Displays brief information about the viewer, including used plug-ins and error log.
+
+\end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
