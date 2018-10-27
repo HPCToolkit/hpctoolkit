@@ -19599,11 +19599,6 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
   fi
-
-  if test "x$mult_spack_pkgs" != x ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: multiple spack packages for: $mult_spack_pkgs" >&5
-$as_echo "$as_me: WARNING: multiple spack packages for: $mult_spack_pkgs" >&2;}
-  fi
 fi
 
 
@@ -19798,6 +19793,8 @@ esac
 # Option: --with-binutils=PATH
 #-------------------------------------------------
 
+num_pkgs=0
+
 # Binutils uses four main libraries: libbfd.a, libopcodes.a,
 # libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
 # The first two must be in the binutils package, but the last two may
@@ -19862,6 +19859,7 @@ case "$BINUTILS" in
 	break
       fi
     done
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -19937,6 +19935,7 @@ case "$BOOST" in
     if test "$BOOST_COPY" != yes ; then
       as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20011,6 +20010,7 @@ case "$BZIP" in
       as_fn_error $? "unable to find libbz2.so in: $BZIP" "$LINENO" 5
     fi
     BZIP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20072,6 +20072,7 @@ case "${DYNINST}" in
     fi
     DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
     DYNINST_LFLAGS="${DYNINST_LFLAGS} -ldynDwarf -ldynElf -lcommon"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20406,6 +20407,7 @@ case "$LIBELF" in
     if test -f "${LIBELF_LIB}/libdw.so" ; then
       have_libdw=yes
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20454,6 +20456,7 @@ case "${LIBDWARF}" in
         as_fn_error $? "invalid libdwarf directory: $LIBDWARF" "$LINENO" 5
     fi
     LIBDWARF_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBDWARF_COPY=no
@@ -20509,6 +20512,7 @@ $as_echo_n "checking for libiberty.a for binutils... " >&6; }
 	  break
 	fi
       done
+      num_pkgs=`expr 1 + $num_pkgs`
       ;;
   esac
 
@@ -20561,6 +20565,7 @@ case "${LIBMONITOR}" in
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBMONITOR_COPY=no
@@ -20651,6 +20656,7 @@ case "$LIBUNWIND" in
     if test "x$LIBUNWIND_LIB" = x ; then
       as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20818,8 +20824,8 @@ case "$LZMA" in
       else
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
       fi
-
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20897,6 +20903,7 @@ case "$OPT_PAPI" in
     if test "x$OPT_PAPI_LIBPATH" = x ; then
       as_fn_error $? "unable to find libpapi in: $OPT_PAPI" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -21184,6 +21191,7 @@ case "$PERFMON" in
     if test "x$PERFMON_LIB" = x ; then
       as_fn_error $? "unable to find libpfm in: $PERFMON" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
 esac
 
@@ -21471,6 +21479,7 @@ case "$TBB" in
     if test "$TBB_COPY" != yes ; then
       as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -21558,6 +21567,7 @@ case "$XED2" in
     XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
     xed2_avail=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -21728,6 +21738,7 @@ if test "$XERCES" = no ; then
 else
   XERCES_COPY=yes
   XERCES_LIB="${XERCES}/lib"
+  num_pkgs=`expr 1 + $num_pkgs`
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${XERCES}" >&5
@@ -21780,6 +21791,7 @@ case "$ZLIB" in
       as_fn_error $? "unable to find zlib.so or zlib.a in: $ZLIB" "$LINENO" 5
     fi
     ZLIB_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -22100,6 +22112,15 @@ if test "$enable_openmp" = yes ; then
 
 $as_echo "#define ENABLE_OPENMP 1" >>confdefs.h
 
+  hpcstruct_mesg=openmp
+else
+  OPENMP_FLAG=
+  hpcstruct_mesg=serial
+fi
+
+if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
+then
+  hpcstruct_mesg=no
 fi
 
  if test "$enable_openmp" = yes; then
@@ -25848,6 +25869,8 @@ $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 $as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcserver?:   ${enable_hpcserver}" >&5
 $as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcstruct:    ${hpcstruct_mesg}" >&5
+$as_echo "$as_me:   hpcstruct:    ${hpcstruct_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perf-events:  ${perf_event_mesg}" >&5
 $as_echo "$as_me:   perf-events:  ${perf_event_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
@@ -25927,6 +25950,14 @@ $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 
+if test "x$mult_spack_pkgs" != x ; then
+  mult_spack_pkgs=`echo $mult_spack_pkgs`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: multiple spack packages for: $mult_spack_pkgs" >&5
+$as_echo "$as_me: WARNING: multiple spack packages for: $mult_spack_pkgs" >&2;}
+fi
+
 if test "$warn_config_site" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
@@ -25981,7 +26012,9 @@ $as_echo "$as_me: WARNING: Perf events is enabled, but perfmon is not available.
 $as_echo "$as_me: WARNING: Mnemonic names will not be available for perf events." >&2;}
 fi
 
-if test "x$with_externals" = xno && test "x$with_spack" = xno ; then
+if test "x$with_externals" = xno && test "x$with_spack" = xno  \
+   && test "$num_pkgs" -lt 8
+then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit externals or spack." >&5

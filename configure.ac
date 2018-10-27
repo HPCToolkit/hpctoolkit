@@ -1533,10 +1533,6 @@ then
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
   fi
-
-  if test "x$mult_spack_pkgs" != x ; then
-    AC_MSG_WARN([multiple spack packages for: $mult_spack_pkgs])
-  fi
 fi
 
 
@@ -1644,6 +1640,8 @@ AC_SUBST([wordsize_cflag])
 # Option: --with-binutils=PATH
 #-------------------------------------------------
 
+num_pkgs=0
+
 # Binutils uses four main libraries: libbfd.a, libopcodes.a,
 # libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
 # The first two must be in the binutils package, but the last two may
@@ -1706,6 +1704,7 @@ case "$BINUTILS" in
 	break
       fi
     done
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1777,6 +1776,7 @@ case "$BOOST" in
     if test "$BOOST_COPY" != yes ; then
       AC_MSG_ERROR([invalid boost directory: $BOOST])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1847,6 +1847,7 @@ case "$BZIP" in
       AC_MSG_ERROR([unable to find libbz2.so in: $BZIP])
     fi
     BZIP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1905,6 +1906,7 @@ case "${DYNINST}" in
     fi
     DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
     DYNINST_LFLAGS="${DYNINST_LFLAGS} -ldynDwarf -ldynElf -lcommon"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2172,6 +2174,7 @@ case "$LIBELF" in
     if test -f "${LIBELF_LIB}/libdw.so" ; then
       have_libdw=yes
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2214,6 +2217,7 @@ case "${LIBDWARF}" in
         AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
     fi
     LIBDWARF_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBDWARF_COPY=no
@@ -2266,6 +2270,7 @@ else
 	  break
 	fi
       done
+      num_pkgs=`expr 1 + $num_pkgs`
       ;;
   esac
 
@@ -2315,6 +2320,7 @@ case "${LIBMONITOR}" in
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBMONITOR_COPY=no
@@ -2400,6 +2406,7 @@ case "$LIBUNWIND" in
     if test "x$LIBUNWIND_LIB" = x ; then
       AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2532,8 +2539,8 @@ case "$LZMA" in
       else
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
       fi
-    
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2606,6 +2613,7 @@ case "$OPT_PAPI" in
     if test "x$OPT_PAPI_LIBPATH" = x ; then
       AC_MSG_ERROR([unable to find libpapi in: $OPT_PAPI])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2842,6 +2850,7 @@ case "$PERFMON" in
     if test "x$PERFMON_LIB" = x ; then
       AC_MSG_ERROR([unable to find libpfm in: $PERFMON])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
 esac
 
@@ -3048,6 +3057,7 @@ case "$TBB" in
     if test "$TBB_COPY" != yes ; then
       AC_MSG_ERROR([invalid tbb directory: $TBB])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -3131,6 +3141,7 @@ case "$XED2" in
     XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
     xed2_avail=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -3272,6 +3283,7 @@ if test "$XERCES" = no ; then
 else
   XERCES_COPY=yes
   XERCES_LIB="${XERCES}/lib"
+  num_pkgs=`expr 1 + $num_pkgs`
 fi
 
 AC_MSG_RESULT([${XERCES}])
@@ -3321,6 +3333,7 @@ case "$ZLIB" in
       AC_MSG_ERROR([unable to find zlib.so or zlib.a in: $ZLIB])
     fi
     ZLIB_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -3555,6 +3568,15 @@ esac
 
 if test "$enable_openmp" = yes ; then
   AC_DEFINE([ENABLE_OPENMP], [1], [Build with openmp support])
+  hpcstruct_mesg=openmp
+else
+  OPENMP_FLAG=
+  hpcstruct_mesg=serial
+fi
+
+if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
+then
+  hpcstruct_mesg=no
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
@@ -4270,6 +4292,7 @@ AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
+AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
@@ -4310,6 +4333,12 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 
+if test "x$mult_spack_pkgs" != x ; then
+  mult_spack_pkgs=`echo $mult_spack_pkgs`
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([multiple spack packages for: $mult_spack_pkgs])
+fi
+
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([You have CONFIG_SITE set in your environment.])
@@ -4343,7 +4372,9 @@ if test "$warn_no_perfmon" = yes ; then
   AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
-if test "x$with_externals" = xno && test "x$with_spack" = xno ; then
+if test "x$with_externals" = xno && test "x$with_spack" = xno  \
+   && test "$num_pkgs" -lt 8
+then
   AC_MSG_NOTICE([])
   AC_MSG_WARN([Not using hpctoolkit externals or spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
