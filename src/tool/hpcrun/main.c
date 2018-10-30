@@ -173,6 +173,13 @@ struct hpcrun_aux_cleanup_t {
   struct hpcrun_aux_cleanup_t * prev;
 };
 
+//***************************************************************************
+// forward declarations
+//***************************************************************************
+
+static int
+dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
+__attribute__ ((unused));
 
 //***************************************************************************
 // global variables

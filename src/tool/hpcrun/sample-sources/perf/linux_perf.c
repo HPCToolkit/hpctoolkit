@@ -113,6 +113,9 @@
 
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
+#include "perf_skid.h"
+#include "perf_event_open.h"
+
 #include "event_custom.h"     // api for pre-defined events
 
 #include "sample-sources/display.h" // api to display available events
@@ -163,6 +166,7 @@
 #define DEFAULT_COMPRESSION 5
 
 #define PERF_FD_FINALIZED (-2)
+
 
 //******************************************************************************
 // type declarations
@@ -219,6 +223,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 // private operations 
 //******************************************************************************
+
 
 /* 
  * determine whether the perf sample source has been finalized for this thread
@@ -384,7 +389,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_util_event_open(&event->attr,
+  et->fd = perf_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
         et->fd, event->attr.precise_ip, event->attr.config,
@@ -762,15 +767,23 @@ METHOD_FN(supports_event, const char *ev_str)
 
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
-  char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
+  char *ev_tmp;
+
+  // check if the user specifies explicitly precise event
+  perf_skid_parse_event(ev_str, &ev_tmp);
+
+  hpcrun_extract_ev_thresh(ev_tmp, strlen(ev_tmp), ev_tmp, &thresh, 0) ;
 
   // check if the event is a predefined event
-  if (event_custom_find(ev_tmp) != NULL)
+  if (event_custom_find(ev_tmp) != NULL) {
+    free(ev_tmp);
     return true;
+  }
 
   // this is not a predefined event, we need to consult to perfmon (if enabled)
-  return pfmu_isSupported(ev_tmp) >= 0;
+  bool retval = pfmu_isSupported(ev_tmp) >= 0;
+  free(ev_tmp);
+  return retval;
 }
 
 
@@ -814,12 +827,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   // during thread initialization for perf event creation
   // ----------------------------------------------------------------------
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
-    char name[1024];
+    char *name;
     long threshold = 1;
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
+    perf_skid_parse_event(event, &name);
+    int period_type = hpcrun_extract_ev_thresh(name, strlen(name), name, &threshold,
         default_threshold.threshold_val);
 
     // ------------------------------------------------------------
@@ -851,7 +865,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_util_attr_init(event_attr, is_period, threshold, 0);
+    perf_util_attr_init(event, event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric
@@ -890,6 +904,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
     event_desc[i].metric_desc = m;
     METHOD_CALL(self, store_event, event_attr->config, threshold);
+    free(name);
   }
 
   if (num_events > 0)

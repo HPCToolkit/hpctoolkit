@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,28 +41,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
 
-#ifndef _UW_RECIPE_MAP_H_
-#define _UW_RECIPE_MAP_H_
+#ifndef __PERF_SKID_H__
+#define __PERF_SKID_H__
 
-#include "unwindr_info.h"
-
-
-void
-uw_recipe_map_init(void);
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_AUTODETECT_SKID       4
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
+#define PERF_EVENT_SKID_ERROR           -1
 
 
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
+// parse the event into event_name and the type of precise_ip
+//  the name of the event excludes the precise ip suffix
+// returns:
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_NONE    
+//  PERF_EVENT_SKID_ERROR        
+int
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 
-#endif  /* !_UW_RECIPE_MAP_H_ */
+int
+perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
+
+u64
+perf_skid_get_precise_ip(struct perf_event_attr *attr);
+#endif
