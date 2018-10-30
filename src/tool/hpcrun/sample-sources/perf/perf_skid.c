@@ -173,7 +173,7 @@ find_precise_suffix(const char *s, const char *suffix, char allowed)
  * TODO: this method only works on some platforms, and not
  *       general enough on all the platforms.
  */
-void
+int
 perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 {
   // start with the most restrict skid (3) then 2, 1 and 0
@@ -191,9 +191,10 @@ perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 	if (ret >= 0) {
 	  close(ret);
 	  // just quit when the returned value is correct
-	  return;
+	  return attr->precise_ip;
 	}
   }
+  return 0;
 }
 
 

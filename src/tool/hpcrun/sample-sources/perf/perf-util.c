@@ -420,7 +420,7 @@ perf_util_attr_init(
 
   switch (precise_ip_type) {
     case PERF_EVENT_AUTODETECT_SKID: 
-            perf_skid_set_max_precise_ip(attr);
+            precise_ip = perf_skid_set_max_precise_ip(attr);
 	    break;
     case PERF_EVENT_SKID_ERROR:
     case PERF_EVENT_SKID_ARBITRARY:
