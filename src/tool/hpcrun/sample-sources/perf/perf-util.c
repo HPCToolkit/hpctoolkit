@@ -83,8 +83,6 @@ const u64 anomalous_ip = 0xffffffffffffff80;
 
 static uint16_t perf_kernel_lm_id = 0;
 
-static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
-
 static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
 
@@ -98,6 +96,9 @@ static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 // implementation
 //******************************************************************************
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+
+static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
 
 /***
  * if the input is a retained (leaf) cct node, return a sibling
@@ -201,8 +202,10 @@ perf_get_kernel_lm_id()
   }
   return perf_kernel_lm_id;
 }
+#endif
 
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 
 //----------------------------------------------------------
 // extend a user-mode callchain with kernel frames (if any)
@@ -244,7 +247,7 @@ perf_add_kernel_callchain(
   return parent;
 }
 
-
+#endif
 
 
 //----------------------------------------------------------
@@ -289,6 +292,7 @@ perf_util_get_max_sample_rate()
 }
 
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 //----------------------------------------------------------
 // testing perf availability
 //----------------------------------------------------------
@@ -308,7 +312,7 @@ perf_util_kernel_syms_avail()
 
   return level;
 }
-
+#endif
 
 
 /*************************************************************
