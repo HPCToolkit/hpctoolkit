@@ -363,5 +363,5 @@ libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 void
 libunw_uw_recipe_tostr(void *uwr, char str[])
 {
-  sprintf(str, MAX_RECIPE_STR, "*");
+  snprintf(str, MAX_RECIPE_STR, "*");
 }
