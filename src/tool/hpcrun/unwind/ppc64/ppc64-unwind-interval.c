@@ -183,7 +183,7 @@ ppc64recipe_print(void* recipe)
  * unwind recipe specified in uw_recipe.h
  */
 void
-uw_recipe_tostr(void* recipe, char str[])
+uw_recipe_tostr(void* recipe, char str[], unwinder_t uw)
 {
   ppc64recipe_tostr(recipe, str);
 }
