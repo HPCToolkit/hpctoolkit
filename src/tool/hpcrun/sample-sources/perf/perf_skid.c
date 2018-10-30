@@ -247,8 +247,13 @@ perf_skid_parse_event(const char *event_string, char **event_string_without_skid
   int len_evt = strlen(event_string);
   int precise = 0;
 
-  if (len_evt <= len_suf) 
-    return PERF_EVENT_SKID_ERROR;
+  if (len_evt <= len_suf) {
+    // some events consist only of two letters (e.g,: cs)
+    // Using this event (which has two letters) is not an error,
+    // we just doesn't need to parse it.
+    *event_string_without_skidmarks = strdup(event_string);
+    return PERF_EVENT_SKID_ARBITRARY;
+  }
 
   const char *ptr_att = find_precise_suffix(event_string, PRECISE_IP_MAX_SUFFIX, 0);
   if (ptr_att) {
