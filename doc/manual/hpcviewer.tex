@@ -25,8 +25,6 @@ Without this argument, \hpcviewer{} will prompt for the location of a database.
 
 The possible options are as follows:
 \begin{itemize}
- \item \texttt{-n}: Do not display the Callers View.  (May save memory and time.)
-
  \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
    (To get a console window, be sure to use java as the VM instead of javaw.)
 
@@ -42,7 +40,7 @@ The possible options are as follows:
 
 \subsection{Requirements}
 \begin{itemize}
- \item Java Runtime Environment (JRE) 1.6 or greater.
+ \item Java Runtime Environment (JRE) 1.7 or greater.
    Use the Oracle or IBM version or the latest version of OpenJDK.
    Specifically we recommend Oracle on x86 platforms, and IBM java on POWER.
    Take special note on POWER systems: we require the 64-bit java, even on a 32-bit
@@ -862,6 +860,12 @@ This menu displays information about the viewer. The menu contains two items:
 
 Some important \hpcviewer{} limitations are listed below:
 \begin{itemize}
+
+\item \textbf{No support for Java 9 or newer}.
+\hpcviewer{} does not support Java 9 or newer. Users are required to install Java 8 on their platform. Support for Java 9 and newer is still under development.
+
+\item \textbf{No support for ARM platform}.
+Due to Eclipse dependency and no planned support for ARM from Eclipse community, \hpcviewer{} is not available on ARM platform.
 
 \item \textbf{Limited number of metrics}.
   With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
