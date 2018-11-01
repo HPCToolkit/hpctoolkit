@@ -38,6 +38,10 @@ class CFGParser {
 
   TargetType get_fallthrough_type(const Inst *inst);
 
+  void link_dangling_blocks(
+    std::set<Block *> &dangling_blocks,
+    std::vector<Function *> &functions);
+
  private:
   std::vector<size_t> _block_parent;
 };

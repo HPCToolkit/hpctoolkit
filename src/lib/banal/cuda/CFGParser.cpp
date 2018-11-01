@@ -92,6 +92,31 @@ void CFGParser::parse_inst_strings(
 }
 
 
+void CFGParser::link_dangling_blocks(
+  std::set<Block *> &dangling_blocks,
+  std::vector<Function *> &functions) {
+  for (auto *function : functions) {
+    auto *last_block = function->blocks.back();
+
+    auto next_offset1 = last_block->insts.back()->offset + 8;
+    auto next_offset2 = last_block->insts.back()->offset + 16;
+
+    for (auto iter = dangling_blocks.begin(); iter != dangling_blocks.end(); ++iter) {
+      auto *block = *iter;
+      if (block->insts.front()->offset == next_offset1 ||
+        block->insts.front()->offset == next_offset2) {
+        dangling_blocks.erase(iter);
+        auto *last_block = function->blocks.back();
+        last_block->targets.push_back(
+          new Target(last_block->insts.back(), block, TargetType::FALLTHROUGH));
+        function->blocks.push_back(block);
+        break;
+      }
+    }
+  }
+}
+
+
 void CFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
@@ -211,9 +236,18 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
 
   // Find toppest block
   _block_parent.resize(blocks.size());
+  for (size_t i = 0; i < _block_parent.size(); ++i) {
+    _block_parent[i] = i;
+  }
   find_block_parent(blocks);
 
   // Build functions
+  // Find dangling blocks
+  std::set<Block *> dangling_blocks;
+  for (auto *block : blocks) {
+    dangling_blocks.insert(block);
+  }
+
   size_t function_id = 0;
   for (auto *block : blocks) {
     // Sort block targets according to inst offset
@@ -231,6 +265,11 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
           std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
 #endif
           function->blocks.push_back(bb);
+
+          auto iter = dangling_blocks.find(bb);
+          if (iter != dangling_blocks.end()) {
+            dangling_blocks.erase(iter);
+          }
         }
       }
       std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
@@ -244,9 +283,10 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
     }
   }
 
+  link_dangling_blocks(dangling_blocks, functions);
+
   parse_calls(functions);
 }
-
 
 
 void CFGParser::link_fallthrough_edges(
