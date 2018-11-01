@@ -139,7 +139,7 @@ mergeSCCNodes(CCTGraph &cct_graph, CCTGraph &old_cct_graph,
 
 static void
 gatherIncomingSamples(CCTGraph &cct_graph,
-  Prof::Metric::Mgr &mgr, IncomingSamplesMap &node_map);
+  Prof::Metric::Mgr &mgr, IncomingSamplesMap &node_map, bool find_recursion);
 
 static void
 constructCallingContext(IncomingSamplesMap &incoming_samples,
@@ -235,7 +235,9 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
   // TODO(keren): Handle SCCs
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > cct_groups;
+  bool find_recursion = false;
   if (findRecursion(*cct_graph, cct_groups)) {
+    find_recursion = true;
     if (DEBUG_CALLPATH_CUDACFG) {
       std::cout << "Find recursive calls" << std::endl;
     }
@@ -254,7 +256,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
   // Record input samples for each node
   IncomingSamplesMap incoming_samples;
-  gatherIncomingSamples(*cct_graph, *(prof.metricMgr()), incoming_samples);
+  gatherIncomingSamples(*cct_graph, *(prof.metricMgr()), incoming_samples, find_recursion);
 
   // Copy from every gpu_root to leafs
   if (DEBUG_CALLPATH_CUDACFG) {
@@ -429,7 +431,8 @@ findGPURoots(CCTGraph &cct_graph, std::vector<Prof::CCT::ANode *> &gpu_roots) {
 
 static void
 gatherIncomingSamples(CCTGraph &cct_graph,
-  Prof::Metric::Mgr &mgr, IncomingSamplesMap &node_map) {
+  Prof::Metric::Mgr &mgr, IncomingSamplesMap &node_map,
+  bool find_recursion) {
   int sample_metric_idx = -1;
   for (size_t i = 0; i < mgr.size(); ++i) {
     if (mgr.metric(i)->namePfxBase() == "GPU_ISAMP") {
@@ -440,7 +443,7 @@ gatherIncomingSamples(CCTGraph &cct_graph,
   // Gather call and scc samples
   for (auto it = cct_graph.nodeBegin(); it != cct_graph.nodeEnd(); ++it) {
     Prof::CCT::ANode *node = *it;
-    if (isSCCNode(node)) {
+    if ((find_recursion && isSCCNode(node)) || (!find_recursion && getProcStmt(node) != NULL)) {
       if (cct_graph.incoming_nodes(node) != cct_graph.incoming_nodes_end()) {
         std::vector<Prof::CCT::ANode *> &vec = cct_graph.incoming_nodes(node)->second;
         if (sample_metric_idx == -1) {
@@ -463,17 +466,22 @@ static void
 constructCallingContext(IncomingSamplesMap &incoming_samples,
   CCTGraph &cct_graph, std::vector<Prof::CCT::ANode *> &gpu_roots) {
   for (auto *gpu_root : gpu_roots) {
-    auto edge_iterator = cct_graph.outgoing_nodes(gpu_root);  // must be an scc node
-    for (auto *n : edge_iterator->second) {
-      if (gpu_root->childCount() > 1 && OUTPUT_SCC_FRAME) {  // keep SCC frame
-        auto *new_node = gpu_root->clone();
-        auto *parent = n->parent();  
-        new_node->link(parent);
-        copyPath(incoming_samples, cct_graph, n, new_node, 1.0);
-      } else {
-        auto *parent = n->parent();  
-        copyPath(incoming_samples, cct_graph, n, parent, 1.0);
+    if (isSCCNode(gpu_root)) {  // root is scc
+      auto edge_iterator = cct_graph.outgoing_nodes(gpu_root);
+      for (auto *n : edge_iterator->second) {
+        if (cct_graph.outgoing_nodes_size(gpu_root) > 1 && OUTPUT_SCC_FRAME) {  // keep SCC frame
+          auto *new_node = gpu_root->clone();
+          auto *parent = n->parent();  
+          new_node->link(parent);
+          copyPath(incoming_samples, cct_graph, n, new_node, 1.0);
+        } else {
+          auto *parent = n->parent();  
+          copyPath(incoming_samples, cct_graph, n, parent, 1.0);
+        }
       }
+    } else {
+      auto *parent = gpu_root->parent(); 
+      copyPath(incoming_samples, cct_graph, gpu_root, parent, 1.0);
     }
   }
   for (auto it = cct_graph.nodeBegin(); it != cct_graph.nodeEnd(); ++it) {
@@ -533,7 +541,7 @@ copyPath(IncomingSamplesMap &incoming_samples,
         std::cout << "Lay over a SCC" << std::endl;
       }
       // Keep scc in frame
-      if (new_node->childCount() > 1 && OUTPUT_SCC_FRAME) {
+      if (cct_graph.outgoing_nodes_size(cur) > 1 && OUTPUT_SCC_FRAME) {
         copyPath(incoming_samples, cct_graph, n, new_node, adjust_factor);
       } else {
         copyPath(incoming_samples, cct_graph, n, prev, adjust_factor);
