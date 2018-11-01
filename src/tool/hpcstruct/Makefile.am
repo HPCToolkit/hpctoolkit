@@ -52,16 +52,25 @@ include $(top_srcdir)/src/Makeinclude.config
 
 # Fixme: new elfutils from spack wants bzip, xz and zlib.
 
+BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
 DYNINST_LFLAGS = @DYNINST_LFLAGS@
 
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 ZLIB_LIB = @ZLIB_LIB@
+
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LDFLAGS_DYN  = @LZMA_LDFLAGS_DYN@
 
+TBB_IFLAGS    = @TBB_IFLAGS@
 TBB_LFLAGS    = @TBB_LFLAGS@
 TBB_PROXY_LIB = @TBB_PROXY_LIB@
 
@@ -71,6 +80,18 @@ MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
 	@BINUTILS_IFLAGS@
+
+DOT_CXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)    \
+	$(BOOST_IFLAGS)  \
+	$(DYNINST_IFLAGS) \
+	-I$(LIBELF_INC)  \
+	$(TBB_IFLAGS)
+
+if OPT_DYNINST_LIBDWARF
+DOT_CXXFLAGS += -I$(LIBDWARF_INC)
+endif
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
@@ -96,6 +117,13 @@ MYLDADD = \
 	@HOST_HPCSTRUCT_LDFLAGS@ \
 	$(TBB_LFLAGS) $(TBB_PROXY_LIB)
 
+DOT_LDADD = \
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
+
 if OPT_DYNINST_LIBDW
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 else
@@ -104,6 +132,7 @@ endif
 
 if OPT_ENABLE_OPENMP
 MYCXXFLAGS += $(OPENMP_FLAG)
+DOT_CXXFLAGS += $(OPENMP_FLAG)
 endif
 
 if HOST_CPU_X86_FAMILY
@@ -120,12 +149,16 @@ pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_PROGRAMS = hpcstruct-bin
+pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
+
+dotgraph_bin_SOURCES  = DotGraph.cpp
+dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
+dotgraph_bin_LDADD    = $(DOT_LDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

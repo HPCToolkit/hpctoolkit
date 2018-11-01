@@ -518,10 +518,6 @@ MYCXXFLAGS = \
 MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
-
-# if USE_BOOST_LIBS
-# dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-# endif
 libHPCbanal_la_SOURCES = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS) $(am__append_1)
 libHPCbanal_la_LIBADD = $(MYLIBADD)

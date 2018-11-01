@@ -53,11 +53,9 @@ include $(top_srcdir)/src/Makeinclude.config
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BOOST_IFLAGS = @BOOST_IFLAGS@
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
-DYNINST_LFLAGS = @DYNINST_LFLAGS@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBELF_INC = @LIBELF_INC@
 TBB_IFLAGS = @TBB_IFLAGS@
-TBB_LFLAGS = @TBB_LFLAGS@
 
 if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
@@ -93,18 +91,6 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibexecdir = @my_pkglibexecdir@
 
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
-
-if FALSE
-pkglibexec_PROGRAMS = dotgraph-bin
-
-dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
-dotgraph_bin_LDADD    = $(DYNINST_LFLAGS) $(TBB_LFLAGS)
-
-# if USE_BOOST_LIBS
-# dotgraph_bin_LDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-# endif
-endif
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)

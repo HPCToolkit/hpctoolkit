@@ -115,8 +115,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
-pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT)
+@OPT_DYNINST_LIBDWARF_TRUE@am__append_1 = -I$(LIBDWARF_INC)
+@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
+@OPT_ENABLE_OPENMP_TRUE@am__append_3 = $(OPENMP_FLAG)
+pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT) dotgraph-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -136,24 +138,33 @@ CONFIG_CLEAN_FILES = hpcstruct
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"
 PROGRAMS = $(pkglibexec_PROGRAMS)
-am__objects_1 = hpcstruct_bin-main.$(OBJEXT) \
-	hpcstruct_bin-Args.$(OBJEXT)
-am_hpcstruct_bin_OBJECTS = $(am__objects_1)
-hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
+am_dotgraph_bin_OBJECTS = dotgraph_bin-DotGraph.$(OBJEXT)
+dotgraph_bin_OBJECTS = $(am_dotgraph_bin_OBJECTS)
 am__DEPENDENCIES_1 =
-@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
+dotgraph_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+dotgraph_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(dotgraph_bin_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__objects_1 = hpcstruct_bin-main.$(OBJEXT) \
+	hpcstruct_bin-Args.$(OBJEXT)
+am_hpcstruct_bin_OBJECTS = $(am__objects_1)
+hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ISA) $(am__DEPENDENCIES_3) $(HPCLIB_XML) \
+	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 hpcstruct_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) $(hpcstruct_bin_LDFLAGS) \
@@ -220,8 +231,8 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(hpcstruct_bin_SOURCES)
-DIST_SOURCES = $(hpcstruct_bin_SOURCES)
+SOURCES = $(dotgraph_bin_SOURCES) $(hpcstruct_bin_SOURCES)
+DIST_SOURCES = $(dotgraph_bin_SOURCES) $(hpcstruct_bin_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -269,11 +280,11 @@ BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
-BOOST_IFLAGS = @BOOST_IFLAGS@
 
 #----------------------------------------------------------------------
 
 # Fixme: new elfutils from spack wants bzip, xz and zlib.
+BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
 BZIP_COPY = @BZIP_COPY@
@@ -527,7 +538,10 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = main.cpp Args.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	$(am__append_1)
+	$(am__append_2)
+DOT_CXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) $(BOOST_IFLAGS) \
+	$(DYNINST_IFLAGS) -I$(LIBELF_INC) $(TBB_IFLAGS) \
+	$(am__append_1) $(am__append_3)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	-ldl
@@ -552,6 +566,13 @@ MYLDADD = \
 	@HOST_HPCSTRUCT_LDFLAGS@ \
 	$(TBB_LFLAGS) $(TBB_PROXY_LIB)
 
+DOT_LDADD = \
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
+
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 @OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
@@ -562,6 +583,9 @@ hpcstruct_bin_SOURCES = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
 hpcstruct_bin_LDADD = $(MYLDADD)
+dotgraph_bin_SOURCES = DotGraph.cpp
+dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
+dotgraph_bin_LDADD = $(DOT_LDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -657,6 +681,10 @@ clean-pkglibexecPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
+dotgraph-bin$(EXEEXT): $(dotgraph_bin_OBJECTS) $(dotgraph_bin_DEPENDENCIES) $(EXTRA_dotgraph_bin_DEPENDENCIES) 
+	@rm -f dotgraph-bin$(EXEEXT)
+	$(AM_V_CXXLD)$(dotgraph_bin_LINK) $(dotgraph_bin_OBJECTS) $(dotgraph_bin_LDADD) $(LIBS)
+
 hpcstruct-bin$(EXEEXT): $(hpcstruct_bin_OBJECTS) $(hpcstruct_bin_DEPENDENCIES) $(EXTRA_hpcstruct_bin_DEPENDENCIES) 
 	@rm -f hpcstruct-bin$(EXEEXT)
 	$(AM_V_CXXLD)$(hpcstruct_bin_LINK) $(hpcstruct_bin_OBJECTS) $(hpcstruct_bin_LDADD) $(LIBS)
@@ -702,6 +730,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dotgraph_bin-DotGraph.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct_bin-main.Po@am__quote@
 
@@ -725,6 +754,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
+
+dotgraph_bin-DotGraph.o: DotGraph.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dotgraph_bin_CXXFLAGS) $(CXXFLAGS) -MT dotgraph_bin-DotGraph.o -MD -MP -MF $(DEPDIR)/dotgraph_bin-DotGraph.Tpo -c -o dotgraph_bin-DotGraph.o `test -f 'DotGraph.cpp' || echo '$(srcdir)/'`DotGraph.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dotgraph_bin-DotGraph.Tpo $(DEPDIR)/dotgraph_bin-DotGraph.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='DotGraph.cpp' object='dotgraph_bin-DotGraph.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dotgraph_bin_CXXFLAGS) $(CXXFLAGS) -c -o dotgraph_bin-DotGraph.o `test -f 'DotGraph.cpp' || echo '$(srcdir)/'`DotGraph.cpp
+
+dotgraph_bin-DotGraph.obj: DotGraph.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dotgraph_bin_CXXFLAGS) $(CXXFLAGS) -MT dotgraph_bin-DotGraph.obj -MD -MP -MF $(DEPDIR)/dotgraph_bin-DotGraph.Tpo -c -o dotgraph_bin-DotGraph.obj `if test -f 'DotGraph.cpp'; then $(CYGPATH_W) 'DotGraph.cpp'; else $(CYGPATH_W) '$(srcdir)/DotGraph.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/dotgraph_bin-DotGraph.Tpo $(DEPDIR)/dotgraph_bin-DotGraph.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='DotGraph.cpp' object='dotgraph_bin-DotGraph.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(dotgraph_bin_CXXFLAGS) $(CXXFLAGS) -c -o dotgraph_bin-DotGraph.obj `if test -f 'DotGraph.cpp'; then $(CYGPATH_W) 'DotGraph.cpp'; else $(CYGPATH_W) '$(srcdir)/DotGraph.cpp'; fi`
 
 hpcstruct_bin-main.o: main.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct_bin-main.o -MD -MP -MF $(DEPDIR)/hpcstruct_bin-main.Tpo -c -o hpcstruct_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
