@@ -442,7 +442,11 @@ Args::parse(int argc, const char* const argv[])
             if (output_name.size() == 0) {
               out_filenm.push_back(file_name + ".hpcstruct");
             } else {
-              out_filenm.push_back(output_name + "/" + file_name + ".hpcstruct");
+              if (output_name == "-") {
+                out_filenm.push_back("-");
+              } else {
+                out_filenm.push_back(output_name + "/" + file_name + ".hpcstruct");
+              }
             }
           }
         }
@@ -454,7 +458,7 @@ Args::parse(int argc, const char* const argv[])
         string base_filenm = FileUtil::basename(input_name);
         out_filenm.push_back(base_filenm + ".hpcstruct");
       } else {
-        out_filenm.push_back(output_name + ".hpcstruct");
+        out_filenm.push_back(output_name);
       }
     }
   }
