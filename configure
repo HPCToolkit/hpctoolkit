@@ -22983,6 +22983,8 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
+ac_config_files="$ac_config_files src/tool/hpcstruct/dotgraph"
+
 
 
 copyright_hash="${srcdir}/config/copyright-hash"
@@ -24340,6 +24342,7 @@ do
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
     "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
+    "src/tool/hpcstruct/dotgraph") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/dotgraph" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -25786,6 +25789,7 @@ _LT_EOF
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
     "src/tool/hpcstruct/hpcstruct":F) chmod +x src/tool/hpcstruct/hpcstruct ;;
+    "src/tool/hpcstruct/dotgraph":F) chmod +x src/tool/hpcstruct/dotgraph ;;
 
   esac
 done # for ac_tag

@@ -4247,6 +4247,8 @@ AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
+AC_CONFIG_FILES([src/tool/hpcstruct/dotgraph],
+  [chmod +x src/tool/hpcstruct/dotgraph])
 
 AC_SUBST_FILE([copyright_hash])
 copyright_hash="${srcdir}/config/copyright-hash"

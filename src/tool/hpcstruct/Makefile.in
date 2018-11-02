@@ -134,9 +134,10 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
-CONFIG_CLEAN_FILES = hpcstruct
+CONFIG_CLEAN_FILES = hpcstruct dotgraph
 CONFIG_CLEAN_VPATH_FILES =
-am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(pkglibexecdir)"
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am_dotgraph_bin_OBJECTS = dotgraph_bin-DotGraph.$(OBJEXT)
 dotgraph_bin_OBJECTS = $(am_dotgraph_bin_OBJECTS)
@@ -196,7 +197,7 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-SCRIPTS = $(bin_SCRIPTS)
+SCRIPTS = $(bin_SCRIPTS) $(pkglibexec_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -257,8 +258,8 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/hpcstruct.in \
-	$(top_srcdir)/config/depcomp \
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/dotgraph.in \
+	$(srcdir)/hpcstruct.in $(top_srcdir)/config/depcomp \
 	$(top_srcdir)/config/mkinstalldirs \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
@@ -579,6 +580,7 @@ DOT_LDADD = \
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_SCRIPTS = hpcstruct
+pkglibexec_SCRIPTS = dotgraph
 hpcstruct_bin_SOURCES = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
@@ -630,6 +632,8 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 hpcstruct: $(top_builddir)/config.status $(srcdir)/hpcstruct.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+dotgraph: $(top_builddir)/config.status $(srcdir)/dotgraph.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
 	@$(NORMAL_INSTALL)
@@ -723,6 +727,41 @@ uninstall-binSCRIPTS:
 	files=`for p in $$list; do echo "$$p"; done | \
 	       sed -e 's,.*/,,;$(transform)'`; \
 	dir='$(DESTDIR)$(bindir)'; $(am__uninstall_files_from_dir)
+install-pkglibexecSCRIPTS: $(pkglibexec_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@list='$(pkglibexec_SCRIPTS)'; test -n "$(pkglibexecdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibexecdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n' \
+	    -e 'h;s|.*|.|' \
+	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
+	      if (++n[d] == $(am__install_max)) { \
+		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
+	    else { print "f", d "/" $$4, $$1 } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	     test -z "$$files" || { \
+	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(pkglibexecdir)$$dir'"; \
+	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(pkglibexecdir)$$dir" || exit $$?; \
+	     } \
+	; done
+
+uninstall-pkglibexecSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(pkglibexec_SCRIPTS)'; test -n "$(pkglibexecdir)" || exit 0; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	       sed -e 's,.*/,,;$(transform)'`; \
+	dir='$(DESTDIR)$(pkglibexecdir)'; $(am__uninstall_files_from_dir)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -889,7 +928,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(SCRIPTS)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -952,7 +991,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binSCRIPTS install-pkglibexecPROGRAMS
+install-exec-am: install-binSCRIPTS install-pkglibexecPROGRAMS \
+	install-pkglibexecSCRIPTS
 
 install-html: install-html-am
 
@@ -992,7 +1032,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
+uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS \
+	uninstall-pkglibexecSCRIPTS
 
 .MAKE: install-am install-strip
 
@@ -1004,12 +1045,14 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 	install-data install-data-am install-dvi install-dvi-am \
 	install-exec install-exec-am install-html install-html-am \
 	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-pkglibexecPROGRAMS install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
+	install-pdf-am install-pkglibexecPROGRAMS \
+	install-pkglibexecSCRIPTS install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS \
+	uninstall-pkglibexecSCRIPTS
 
 .PRECIOUS: Makefile
 

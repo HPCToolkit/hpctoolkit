@@ -149,6 +149,7 @@ pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcstruct
+pkglibexec_SCRIPTS = dotgraph
 pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
