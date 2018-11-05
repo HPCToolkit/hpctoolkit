@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,28 +41,21 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
+#include <unistd.h>		// pid_t
+#include <asm/unistd.h>		// __NR_perf_event_open
+#include <linux/perf_event.h>	// perf data structure
 
-#ifndef _UW_RECIPE_MAP_H_
-#define _UW_RECIPE_MAP_H_
+//----------------------------------------------------------
+// create a new event
+//----------------------------------------------------------
 
-#include "unwindr_info.h"
+long
+perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
+{
+   int ret;
 
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
+}
 
-void
-uw_recipe_map_init(void);
-
-
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
-
-#endif  /* !_UW_RECIPE_MAP_H_ */

@@ -34,38 +34,46 @@
 // express or implied warranties, including, but not limited to, the
 // implied warranties of merchantability and fitness for a particular
 // purpose are disclaimed. In no event shall RICE or contributors be
-// liable for any direct, indirect, incidental, special, exemplary, or
-// consequential damages (including, but not limited to, procurement of
-// substitute goods or services; loss of use, data, or profits; or
-// business interruption) however caused and on any theory of liability,
-// whether in contract, strict liability, or tort (including negligence
-// or otherwise) arising in any way out of the use of this software, even
-// if advised of the possibility of such damage.
-//
-// ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
+#ifndef __PERF_CONSTANTS_H__
+#define __PERF_CONSTANTS_H__
 
-#ifndef _UW_RECIPE_MAP_H_
-#define _UW_RECIPE_MAP_H_
+#include <unistd.h>
+#include <sys/types.h>
 
-#include "unwindr_info.h"
+#include <linux/types.h>
+#include <linux/perf_event.h>
 
 
-void
-uw_recipe_map_init(void);
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+#define THREAD_SELF     0
+#define CPU_ANY        -1
+#define GROUP_FD       -1
+#define PERF_FLAGS      0
+#define PERF_REQUEST_0_SKID      2
+#define PERF_WAKEUP_EACH_SAMPLE  1
+
+#define EXCLUDE    1
+#define INCLUDE    0
+
+#define EXCLUDE_CALLCHAIN EXCLUDE
+#define INCLUDE_CALLCHAIN INCLUDE
+
+#ifndef HPCRUN_DEFAULT_SAMPLE_RATE
+#define HPCRUN_DEFAULT_SAMPLE_RATE	  300
+#endif
+
+#ifndef u32
+typedef __u32 u32;
+#endif
 
 
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
+#ifndef u64
+typedef __u64 u64;
+#endif
 
-#endif  /* !_UW_RECIPE_MAP_H_ */
+
+#endif
