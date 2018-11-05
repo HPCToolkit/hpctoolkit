@@ -278,7 +278,7 @@ private:
   bool m_isPopulated; // cache has been populated
   bool m_isFull;      // max size has been reached
 
-  const uint64_t s_sizeMax = 20 * 1024 * 1024; // default is 20 MB
+  static const uint64_t s_sizeMax = 20 * 1024 * 1024; // default is 20 MB
   uint64_t m_size;
 
   std::string m_pathfind_ans;
