@@ -68,7 +68,8 @@
 const char*
 RealPath(const char* nm)
 {
-  static char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+
   if (realpath(nm, _RealPathBuf) == NULL) {
     return nm; /* error; return orig string */
   }
