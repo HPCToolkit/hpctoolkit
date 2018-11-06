@@ -75,17 +75,15 @@ MYSOURCES = \
 	RemoteTraceAnalyzer.hpp RemoteTraceAnalyzer.cpp 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
-BOOST_INC = @BOOST_INC@
 LIBDWARF_INC = @LIBDWARF_INC@
-SYMTABAPI_INC = @SYMTABAPI_INC@
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@GNUBINUTILS_IFLAGS@  \
-	-I$(BOOST_INC)  \
-	-I$(LIBDWARF_INC)  \
-	-I$(SYMTABAPI_INC)
+	@BINUTILS_IFLAGS@  \
+	@BOOST_IFLAGS@  \
+    @DYNINST_IFLAGS@ \
+	-I$(LIBDWARF_INC)
 
 MYLDADD = \
 	$(HPCLIB_TraceAnalysis)

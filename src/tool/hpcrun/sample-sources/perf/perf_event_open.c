@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,36 +41,21 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
+#include <unistd.h>		// pid_t
+#include <asm/unistd.h>		// __NR_perf_event_open
+#include <linux/perf_event.h>	// perf data structure
 
-#include <stdio.h>  // for FILENAME_MAX
+//----------------------------------------------------------
+// create a new event
+//----------------------------------------------------------
 
-#define __USE_XOPEN_EXTENDED // realpath()
-#include <stdlib.h>
-
-/**************************** User Include Files ****************************/
-
-#include "realpath.h"
-
-/**************************** Forward Declarations **************************/
-
-/****************************************************************************/
-
-/*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
- * This is a C wrapper for the standard routine so that it can be available
- * for C++ programs.
- *
- */
-const char*
-RealPath(const char* nm)
+long
+perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags)
 {
-  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+   int ret;
 
-  if (realpath(nm, _RealPathBuf) == NULL) {
-    return nm; /* error; return orig string */
-  }
-  else {
-    return _RealPathBuf; /* resolved name has been copied here */
-  }
+   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
+   return ret;
 }
+

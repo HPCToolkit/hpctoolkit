@@ -183,22 +183,6 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
-  -p,  --precise-ip <level>
-                       Specify how precisely a Linux perf sample source must attribute 
-                       a hardware counter event to an instruction. Values for <level>:
-
-                       0: instruction attribution may have arbitrary skid
-                       1: instruction attribution must have constant skid
-                       2: instruction attribution is requested to have 0 skid
-                       3: instruction attribution must have 0 skid
-
-                       By default, hpcrun will allow attribution of hardware counter 
-                       events to have arbitrary skid. Some processor architectures, 
-                       e.g., ARM, don't support attribution with any higher level of 
-                       precision.  If a processor does not support the specified level 
-                       of attribution precision for a hardware counter event, hpcrun 
-                       may record 0 occurrences of the event without reporting an error.
-   
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -319,11 +303,6 @@ do
 
  	-c | --count )
  	 	export HPCRUN_PERF_COUNT="$1"
-	    shift
-	    ;;
-
-	-p | --precise-ip )
-	    export HPCRUN_PRECISE_IP="$1"
 	    shift
 	    ;;
 

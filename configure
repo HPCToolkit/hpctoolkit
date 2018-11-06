@@ -670,6 +670,8 @@ MPIF77
 MPICC
 OPT_ENABLE_MPI_FALSE
 OPT_ENABLE_MPI_TRUE
+OPT_ENABLE_OPENMP_FALSE
+OPT_ENABLE_OPENMP_TRUE
 OPT_ENABLE_HPCSERVER_FALSE
 OPT_ENABLE_HPCSERVER_TRUE
 OPT_ENABLE_HPCRUN_DYNAMIC_FALSE
@@ -677,11 +679,8 @@ OPT_ENABLE_HPCRUN_DYNAMIC_TRUE
 HPCLINK_LD_FLAGS
 OPT_ENABLE_HPCRUN_STATIC_FALSE
 OPT_ENABLE_HPCRUN_STATIC_TRUE
-HPCRUN_LIBCXX_PATH
 OPT_ENABLE_HPCRUN_FALSE
 OPT_ENABLE_HPCRUN_TRUE
-OPT_ENABLE_HPCRUN_FLAT_FALSE
-OPT_ENABLE_HPCRUN_FLAT_TRUE
 OPT_BUILD_TOOL_ALL_FALSE
 OPT_BUILD_TOOL_ALL_TRUE
 OPT_BUILD_LIB_ALL_FALSE
@@ -710,15 +709,11 @@ XED2_HPCRUN_LIBS
 XED2_LIB_FLAGS
 XED2_LIB_DIR
 XED2_INC
-LIBDW_COPY
-OPT_DYNINST_LIBDW_FALSE
-OPT_DYNINST_LIBDW_TRUE
-OPT_DYNINST_LIBDWARF_FALSE
-OPT_DYNINST_LIBDWARF_TRUE
-SYMTABAPI_LIB
-SYMTABAPI_INC
-SYMTABAPI_LIB_LIST
-SYMTABAPI_COPY
+TBB_COPY
+TBB_LIB_DIR
+TBB_PROXY_LIB
+TBB_LFLAGS
+TBB_IFLAGS
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -744,9 +739,6 @@ OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
-OPT_INSTALL_MONITOR
-HPC_MONITOR
-MONITOR
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
@@ -773,25 +765,29 @@ LIBMONITOR_RUN_DIR
 LIBMONITOR_COPY
 LIBMONITOR_LIB
 LIBMONITOR_INC
-LIBELF_COPY
-LIBELF_LIB
-LIBELF_INC
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+LIBELF_COPY
+LIBELF_LIB
+LIBELF_INC
+OPT_DYNINST_LIBDW_FALSE
+OPT_DYNINST_LIBDW_TRUE
+OPT_DYNINST_LIBDWARF_FALSE
+OPT_DYNINST_LIBDWARF_TRUE
+DYNINST_COPY
+DYNINST_LIB_DIR
+DYNINST_LFLAGS
+DYNINST_IFLAGS
 BZIP_LIB
 BZIP_COPY
-USE_BOOST_LIBS_FALSE
-USE_BOOST_LIBS_TRUE
+BOOST_COPY_LIST
 BOOST_COPY
-BOOST_LIB_LIST
-BOOST_LIB
-BOOST_INC
-OPT_HAVE_BINUTILS_IA64_FALSE
-OPT_HAVE_BINUTILS_IA64_TRUE
-GNUBINUTILS_LDLIBS
-GNUBINUTILS_LDFLAGS
-GNUBINUTILS_IFLAGS
+BOOST_LIB_DIR
+BOOST_LFLAGS
+BOOST_IFLAGS
+BINUTILS_LIBS
+BINUTILS_IFLAGS
 wordsize_cflag
 CXX_PATH
 CC_PATH
@@ -815,6 +811,8 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
+OPENMP_FLAG
+HPCRUN_LIBCXX_PATH
 cxx_c11_flag
 CXX11_FLAG
 HOST_CPU_AARCH64_FALSE
@@ -894,7 +892,6 @@ OPT_STRIP_HPCRUN_LIBS_TRUE
 OPT_ENABLE_DEVELOP_FALSE
 OPT_ENABLE_DEVELOP_TRUE
 HPCPROFMPI_LT_LDFLAGS
-HPC_LT_LDFLAGS
 HPCTOOLKIT_PLATFORM
 host_os
 host_vendor
@@ -978,6 +975,7 @@ ac_user_opts='
 enable_option_checking
 enable_silent_rules
 enable_maintainer_mode
+enable_all_static
 enable_develop
 enable_strip_debug
 enable_dependency_tracking
@@ -993,17 +991,19 @@ enable_endian
 enable_bgq
 with_dummy_blank_line
 with_externals
+with_spack
 with_binutils
 with_boost
 with_bzip
+with_dyninst
+with_dyninst_type
+with_elfutils
 with_libdwarf
-with_libelf
+with_libiberty
 with_libmonitor
 with_libunwind
 enable_libunwind_primary
 with_lzma
-with_monitor
-with_open_analysis
 with_papi
 enable_force_papi
 enable_papi_c
@@ -1011,16 +1011,15 @@ enable_papi_c_cupti
 with_perfmon
 enable_perf_events
 enable_kernel_blocking
-with_symtabAPI
-with_dyninst_type
-with_xed2
+with_tbb
+with_xed
 with_xerces
 with_zlib
 enable_back_end
-enable_hpcrun_flat
 enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
+enable_openmp
 enable_mpi
 enable_mpi_wrapper
 enable_lush
@@ -1038,7 +1037,6 @@ enable_devtools
       ac_precious_vars='build_alias
 host_alias
 target_alias
-HPC_LT_LDFLAGS
 HPCPROFMPI_LT_LDFLAGS
 CXX
 CXXFLAGS
@@ -1682,6 +1680,8 @@ Optional Features:
   --enable-maintainer-mode
                           enable make rules and dependencies not useful (and
                           sometimes confusing) to the casual installer
+  --enable-all-static     needed when building a static hpcprof-mpi for the
+                          compute nodes (default no)
   --enable-develop        Build development version (enable debugging)
   --enable-strip-debug    strip the debug section from the hpcrun libraries
                           (default yes, unless --enable-develop is used)
@@ -1715,11 +1715,12 @@ Optional Features:
                           fails to auto-detect correctly
   --enable-back-end       build only those tools needed to run hpcrun and
                           hpclink on the back-end compute nodes
-  --enable-hpcrun-flat    build hpcrun-flat (default yes)
   --enable-hpcrun         build hpcrun (default yes)
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
+  --enable-openmp         enable openmp support in hpcstruct (default is to
+                          test dyninst)
   --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    enable MPI wrapper support, requires MPICC, MPIF77
                           and MPI_INC (default no)
@@ -1744,26 +1745,27 @@ Optional Packages:
                           compiler's sysroot if not specified).
 
   --with-externals=PATH   path to hpctoolkit-externals build or install
-                          directory (normally required)
+                          directory
+  --with-spack=PATH       path to spack arch/compiler install directory
   --with-binutils=PATH    path to binutils install directory
   --with-boost=PATH       path to boost install directory
-  --with-bzip=PATH        path to bzip install directory
-  --with-libdwarf=PATH    path to libdwarf install directory
-  --with-libelf=PATH      path to libelf install directory
-  --with-libmonitor=PATH  path to libmonitor install directory
-  --with-libunwind=PATH   path to libunwind install directory
-  --with-lzma=PATH        path to lzma (xz) install directory
-  --with-monitor=PATH     use given (old) libmonitor installation
-  --with-open-analysis=PATH
-                          deprecated option, no longer used
-  --with-papi=PATH        path to papi install directory
-  --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
-  --with-symtabAPI=PATH   path to symtabAPI (dyninst) install directory
+  --with-bzip=PATH        path to bzip2 install directory
+  --with-dyninst=PATH     path to dyninst install directory
   --with-dyninst-type=TYPE
                           temp option for dyninst version (old, libdw, cuda),
                           only needed if autoconf fails to detect correctly
-  --with-xed2=PATH        path to xed2 install directory
-  --with-xerces=PATH      use given XercesC installation
+  --with-elfutils=PATH    path to elfutils install directory
+  --with-libdwarf=PATH    path to libdwarf install directory
+  --with-libiberty=PATH   path to libiberty install directory (only needed if
+                          binutils does not contain libiberty.a)
+  --with-libmonitor=PATH  path to libmonitor install directory
+  --with-libunwind=PATH   path to libunwind install directory
+  --with-lzma=PATH        path to lzma (xz utils) install directory
+  --with-papi=PATH        path to papi install directory
+  --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
+  --with-tbb=PATH         path to intel tbb install directory
+  --with-xed=PATH         path to intel xed install directory
+  --with-xerces=PATH      path to xerces-c install directory
   --with-zlib=PATH        path to zlib install directory
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-cuda=PATH        use given CUDA installation (absolute path) with
@@ -1779,11 +1781,10 @@ Optional Packages:
                           use given objcopy when hiding hpcrun library symbols
 
 Some influential environment variables:
-  HPC_LT_LDFLAGS
-              pass libtool link mode flags to hpcstruct, hpcprof*, hpclump
   HPCPROFMPI_LT_LDFLAGS
-              pass libtool link mode flags to hpcprof-mpi (before
-              HPC_LT_LDFLAGS)
+              old method to add ldflags to hpcprof-mpi, now use
+              --enable-all-static to build a static binary for the compute
+              nodes
   CXX         C++ compiler command
   CXXFLAGS    C++ compiler flags
   LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
@@ -4142,12 +4143,32 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
+# enable-all-static
 #-------------------------------------------------
 
+# Add '-all-static' to LDFLAGS for hpcprof-mpi.  This is needed when
+# using an MPI compiler that builds a static hpcprof-mpi for the
+# compute nodes.
+#
+# The old way was to set HPCPROFMPI_LT_LDFLAGS='-all-static', the new
+# way is to use --enable-all-static.
 
 
 
+# Check whether --enable-all-static was given.
+if test "${enable_all_static+set}" = set; then :
+  enableval=$enable_all_static;
+else
+  enable_all_static=no
+fi
+
+
+if test "x$enable_all_static" = xyes ; then
+  HPCPROFMPI_LT_LDFLAGS="$HPCPROFMPI_LT_LDFLAGS -all-static"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS" >&5
+$as_echo "$as_me: HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS" >&6;}
 
 
 #-------------------------------------------------
@@ -18830,8 +18851,8 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking CXXFLAGS for C++11 standard" >&5
-$as_echo_n "checking CXXFLAGS for C++11 standard... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CXX flag for C++11" >&5
+$as_echo_n "checking for CXX flag for C++11... " >&6; }
 
 for opt in $c11_list
 do
@@ -18889,6 +18910,211 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 
+
+#-------------------------------------------------
+
+# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
+# hpcfnbounds.
+#
+# Try --print-file-name first.  If that doesn't work, then try ldd.
+# If --print-file-name works, then its answer is more reliable because
+# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
+# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
+#
+# Of course, --print-file-name and libstdc++.so are GNU-specific.
+# (Intel icc seems to support both, but computes an answer based on
+# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
+# here?
+
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
+
+case "$libcxx_file" in
+  /* ) ;;
+  * )
+    src="hpc_hello.$$.cc"
+    obj="hpc_hello.$$.out"
+    rm -f "$src" "$obj"
+    cat <<"EOF" >"$src"
+main(){}
+EOF
+    ${CXX} -o "$obj" "$src"
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    rm -f "$src" "$obj"
+    ;;
+esac
+
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&5
+$as_echo "$as_me: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&6;} ;;
+  * )  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find libstdc++.so" >&5
+$as_echo "$as_me: WARNING: unable to find libstdc++.so" >&2;} ;;
+esac
+
+
+
+
+#-------------------------------------------------
+# CXXFLAGS for OpenMP
+#-------------------------------------------------
+
+# Find a CC/CXX flag for openmp, normally -fopenmp for gcc/g++.
+# We could add an ARG_VAR variable for this, but that's probably not
+# necessary.
+
+openmp_flag=no
+
+flag_list='-fopenmp -openmp -qopenmp -qsmp=omp'
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for CXX flag for openmp" >&5
+$as_echo_n "checking for CXX flag for openmp... " >&6; }
+
+for flag in $flag_list
+do
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <iostream>
+#include <omp.h>
+void myprint(int len)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < len; i++) {
+    std::cout << i << "\n";
+  }
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test "$ans" = yes ; then
+    openmp_flag="$flag"
+    break
+  fi
+done
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $openmp_flag" >&5
+$as_echo "$openmp_flag" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# If unable to verify an openmp flag, then -fopenmp probably works.
+if test "x$openmp_flag" = xno ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find flag for openmp, using -fopenmp" >&5
+$as_echo "$as_me: WARNING: unable to find flag for openmp, using -fopenmp" >&2;}
+  openmp_flag='-fopenmp'
+fi
+
+OPENMP_FLAG="$openmp_flag"
+
+
+
+#-------------------------------------------------
+
+# Find the openmp library and its directory.  We add the directory to
+# the launch script for hpcstruct when using openmp.
+
+openmp_lib_list='libgomp libiomp libomp libxlsmp'
+
+src="conftest.$$.cpp"
+obj="conftest.$$.bin"
+
+rm -f "$src" "$obj"
+
+cat <<EOF >"$src"
+#include <iostream>
+#include <omp.h>
+int main(int argc, char **argv)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < argc; i++) {
+    std::cout << i << "\n";
+  }
+}
+EOF
+
+openmp_lib_name=no
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for openmp library" >&5
+$as_echo_n "checking for openmp library... " >&6; }
+
+$CXX -g $CXXFLAGS $openmp_flag "$src" -o "$obj" >/dev/null 2>&1
+
+if test $? -eq 0 && test -f "$obj" ; then
+  for lib in $openmp_lib_list ; do
+    base=`ldd "$obj" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib"`
+    if test "x$base" != x ; then
+      openmp_lib_name="$base"
+      break
+    fi
+  done
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to compile openmp with $openmp_flag" >&5
+$as_echo "$as_me: WARNING: unable to compile openmp with $openmp_flag" >&2;}
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $openmp_lib_name" >&5
+$as_echo "$openmp_lib_name" >&6; }
+
+if test "$openmp_lib_name" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find openmp library" >&5
+$as_echo "$as_me: WARNING: unable to find openmp library" >&2;}
+fi
+
+openmp_lib_dir=
+
+if test "$openmp_lib_name" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for openmp library directory" >&5
+$as_echo_n "checking for openmp library directory... " >&6; }
+
+  name=`$CXX -print-file-name="$openmp_lib_name" 2>/dev/null`
+  if test ! -f "$name" ; then
+    name=`ldd "$obj" 2>/dev/null | grep -e "$openmp_lib_name" | $AWK '{print $3}'`
+  fi
+
+  if test -f "$name" ; then
+    dir=`dirname "$name"`
+    if test -d "$dir" ; then
+      openmp_lib_dir="$dir"
+    fi
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $openmp_lib_dir" >&5
+$as_echo "$openmp_lib_dir" >&6; }
+
+  if test ! -d "$openmp_lib_dir" ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find openmp library directory" >&5
+$as_echo "$as_me: WARNING: unable to find openmp library directory" >&2;}
+  fi
+fi
+
+rm -f "$src" "$obj"
 
 
 #-------------------------------------------------
@@ -19198,8 +19424,6 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
-warn_no_externals=no
-
 
 # Check whether --with-dummy-blank-line was given.
 if test "${with_dummy_blank_line+set}" = set; then :
@@ -19220,8 +19444,6 @@ if test "${with_externals}" != "no"; then
   if test ! -f "$ext_file" ; then
     as_fn_error $? "missing externals file: $ext_file" "$LINENO" 5
   fi
-  { $as_echo "$as_me:${as_lineno-$LINENO}: using externals tree: $with_externals" >&5
-$as_echo "$as_me: using externals tree: $with_externals" >&6;}
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
@@ -19231,10 +19453,187 @@ $as_echo "$as_me: externals version: $ext_version" >&6;}
     ext_version=
   fi
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using --with-externals" >&5
-$as_echo "$as_me: WARNING: not using --with-externals" >&2;}
   use_externals=no
-  warn_no_externals=yes
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: externals directory: $with_externals" >&5
+$as_echo "$as_me: externals directory: $with_externals" >&6;}
+
+
+#-------------------------------------------------
+# Option: --with-spack=PATH
+#-------------------------------------------------
+
+# If specified, then use PATH as the directory containing the spack
+# packages.  This is not spack's install_tree prefix, but rather the
+# arch/compiler subdir that contains the spack packages, something
+# like:  .../linux-fedora26-x86_64/gcc-7.3.1/
+#
+# May be absolute or relative path.
+
+
+# Check whether --with-spack was given.
+if test "${with_spack+set}" = set; then :
+  withval=$with_spack;
+else
+  with_spack=no
+fi
+
+
+if test "x$with_spack" != xno ; then
+  dir=`(cd "$with_spack" 2>/dev/null && /bin/pwd)`
+  if test ! -d "$dir" ; then
+    as_fn_error $? "bad spack install directory: $with_spack" "$LINENO" 5
+  fi
+  with_spack="$dir"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: spack directory: $with_spack" >&5
+$as_echo "$as_me: spack directory: $with_spack" >&6;}
+
+
+#-------------------------------------------------
+# Default package prefixes from externals and spack.
+#-------------------------------------------------
+
+# The order of precedence is:
+#  1. --with-package  (highest)
+#  2. --with-spack
+#  3. --with-externals
+
+default_binutils_prefix=no
+default_boost_prefix=no
+default_bzip_prefix=no
+default_dyninst_prefix=no
+default_elfutils_prefix=no
+default_libdwarf_prefix=no
+default_libiberty_prefix=no
+default_libmonitor_prefix=no
+default_libunwind_prefix=no
+default_lzma_prefix=no
+default_papi_prefix=no
+default_perfmon_prefix=no
+default_tbb_prefix=no
+default_xed_prefix=no
+default_xerces_prefix=no
+default_zlib_prefix=no
+
+if test "$use_externals" = yes ; then
+  default_binutils_prefix="$ext_binutils_prefix"
+  default_boost_prefix="$ext_boost_prefix"
+  default_dyninst_prefix="$ext_symtabAPI_prefix"
+  default_elfutils_prefix="$ext_libelf_prefix"
+  default_libdwarf_prefix="$ext_libdwarf_prefix"
+  default_libmonitor_prefix="$ext_libmonitor_prefix"
+  default_libunwind_prefix="$ext_libunwind_prefix"
+  if test "x$ext_lzma_prefix" != x ; then
+    default_lzma_prefix="$ext_lzma_prefix"
+  fi
+  if test "x$ext_perfmon_prefix" != x ; then
+    default_perfmon_prefix="$ext_perfmon_prefix"
+  fi
+  default_xed_prefix="$ext_xed2_prefix"
+  default_xerces_prefix="$ext_xerces_prefix"
+  default_zlib_prefix="$ext_zlib_prefix"
+fi
+
+# Return: success (0) and set 'spack_ans' to install prefix for given
+# package name ($1).  Warn if there are multiple dirs with same pkg
+# name and return the most recent one.  (Be careful not to spawn a
+# subshell.)
+
+mult_spack_pkgs=
+
+find_spack_pkg()
+{
+  base="$1"
+  spack_ans=no
+  mult=no
+
+  # allow symlink, if set
+  if test -d "${with_spack}/$base" ; then
+    spack_ans="${with_spack}/$base"
+    return 0
+  fi
+
+  for dir in "${with_spack}/${base}"-* ; do
+    if test -d "$dir" ; then
+      if test "$spack_ans" = no ; then
+        spack_ans="$dir"
+      else
+        mult=yes
+        if test "$dir" -nt "$spack_ans" ; then
+          spack_ans="$dir"
+        fi
+      fi
+    fi
+  done
+
+  if test "$mult" = yes ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: multiple spack packages for: $base" >&5
+$as_echo "$as_me: WARNING: multiple spack packages for: $base" >&2;}
+    mult_spack_pkgs="$mult_spack_pkgs $base"
+  fi
+
+  if test "$spack_ans" != no ; then
+    return 0
+  fi
+  return 1
+}
+
+if test "$with_spack" != no
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking spack packages ..." >&5
+$as_echo "$as_me: checking spack packages ..." >&6;}
+
+  if find_spack_pkg binutils ; then
+    default_binutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg boost ; then
+    default_boost_prefix="$spack_ans"
+  fi
+  if find_spack_pkg bzip2 ; then
+    default_bzip_prefix="$spack_ans"
+  fi
+  if find_spack_pkg dyninst ; then
+    default_dyninst_prefix="$spack_ans"
+  fi
+  if find_spack_pkg elfutils ; then
+    default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libdwarf ; then
+    default_libdwarf_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libiberty ; then
+    default_libiberty_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libmonitor ; then
+    default_libmonitor_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libunwind ; then
+    default_libunwind_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xz ; then
+    default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg papi ; then
+    default_papi_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libpfm4 ; then
+    default_perfmon_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-tbb ; then
+    default_tbb_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-xed ; then
+    default_xed_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xerces-c ; then
+    default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg zlib ; then
+    default_zlib_prefix="$spack_ans"
+  fi
 fi
 
 
@@ -19426,41 +19825,76 @@ esac
 
 
 #-------------------------------------------------
-# Check for GNU's binutils (binary interface)
+# Option: --with-binutils=PATH
 #-------------------------------------------------
 
-GNUBINUTILS=no
-GNUBINUTILS_IFLAGS=
-GNUBINUTILS_LDFLAGS=
-GNUBINUTILS_LDLIBS=
+num_pkgs=0
 
-if test "$use_externals" = yes ; then
-  GNUBINUTILS="$ext_binutils_prefix"
-fi
+# Binutils uses four main libraries: libbfd.a, libopcodes.a,
+# libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
+# The first two must be in the binutils package, but the last two may
+# be in binutils or separate (libiberty and zlib).
+#
+# Note: we no longer use binutils to crack instructions, so we don't
+# need libopcodes anymore, not on any platform.
+
+BINUTILS="$default_binutils_prefix"
 
 
 # Check whether --with-binutils was given.
 if test "${with_binutils+set}" = set; then :
-  withval=$with_binutils; GNUBINUTILS="$withval"
+  withval=$with_binutils; BINUTILS="$withval"
 fi
 
+
+BINUTILS_IFLAGS=
+BINUTILS_LIBS=
+binutils_has_libiberty=no
+binutils_has_libz=no
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for binutils" >&5
 $as_echo_n "checking for binutils... " >&6; }
 
-case "$GNUBINUTILS" in
+case "$BINUTILS" in
   /* )
-    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
-      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-      for dir in lib32 lib64 ; do
-        if test -d "${GNUBINUTILS}/$dir" ; then
-	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
-	fi
-      done
+    # bfd.h must exist
+    if test -f "${BINUTILS}/include/bfd.h" ; then
+      BINUTILS_IFLAGS="-I${BINUTILS}/include"
     else
-      as_fn_error $? "invalid binutils directory: $GNUBINUTILS" "$LINENO" 5
+      as_fn_error $? "unable to find bfd.h in: $BINUTILS" "$LINENO" 5
     fi
+
+    # libbfd.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libbfd.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        as_fn_error $? "unable to find libbfd.a in: $BINUTILS" "$LINENO" 5
+      fi
+    done
+
+    # libiberty.a may be here or may be in libiberty
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libiberty.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libiberty=yes
+	break
+      fi
+    done
+
+    # libz.a may be here or may be in zlib
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libz.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libz=yes
+	break
+      fi
+    done
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -19469,187 +19903,23 @@ case "$GNUBINUTILS" in
     ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GNUBINUTILS" >&5
-$as_echo "$GNUBINUTILS" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BINUTILS" >&5
+$as_echo "$BINUTILS" >&6; }
 
-# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
-test_binutils_libs()
-{
-  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+binlibs=
+for lib in $BINUTILS_LIBS ; do
+  binlibs="$binlibs `basename $lib`"
+done
 
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+{ $as_echo "$as_me:${as_lineno-$LINENO}: binutils libs: $binlibs" >&5
+$as_echo "$as_me: binutils libs: $binlibs" >&6;}
 
+# FIXME: libbfd requires -ldl unless plugins are disabled (default is
+# enabled).  But we could test for this.
 
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  long size = bfd_get_symtab_upper_bound(abfd);
-  std::cout << size;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  ans=0
-else
-  ans=1
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-  return $ans
-}
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-ORIG_LIBS="$LIBS"
-CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
-
-# Test for binutils libs.  We always use bfd, opcodes and libiberty,
-# and newer binutils also use libdl and libz.
-
-case "$GNUBINUTILS" in
-  /* )
-    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
-    if test_binutils_libs ; then :
-    else
-      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
-      if test_binutils_libs ; then :
-      else
-        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find link flags for binutils" >&5
-$as_echo "$as_me: WARNING: unable to find link flags for binutils" >&2;}
-      fi
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: binutils libraries: $GNUBINUTILS_LDLIBS" >&5
-$as_echo "$as_me: binutils libraries: $GNUBINUTILS_LDLIBS" >&6;}
-    ;;
-esac
-
-
-
-
-
-# Test for special, hpctoolkit-patched binutils.
-
-hpc_binutils=no
-LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
-
-case "$GNUBINUTILS" in
-  /* )
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for hpctoolkit patched binutils" >&5
-$as_echo_n "checking for hpctoolkit patched binutils... " >&6; }
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  bfd_vma vma = bfd_get_first_addr(abfd);
-  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
-  std::cout << vma << ret;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  hpc_binutils=yes
-else
-  hpc_binutils=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $hpc_binutils" >&5
-$as_echo "$hpc_binutils" >&6; }
-    ;;
-esac
-
-if test "$hpc_binutils" = yes ; then
-
-$as_echo "#define HAVE_HPC_GNUBINUTILS 1" >>confdefs.h
-
-fi
-
-# Test if binutils has support for IA64 (Itanium).
-
-binutils_ia64=no
-
-case "$GNUBINUTILS" in
-  /* )
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if binutils supports ia64" >&5
-$as_echo_n "checking if binutils supports ia64... " >&6; }
-
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-#include <dis-asm.h>
-int main(int argc, char **argv)
-{
-  disassemble_info myinfo;
-  bfd_init();
-  int ret = print_insn_ia64(0x400400, &myinfo);
-  std::cout << ret;
-  return 0;
-}
-
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  binutils_ia64=yes
-else
-  binutils_ia64=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $binutils_ia64" >&5
-$as_echo "$binutils_ia64" >&6; }
-    ;;
-esac
-
-if test "$binutils_ia64" = yes ; then
-
-$as_echo "#define ENABLE_BINUTILS_IA64 1" >>confdefs.h
-
-fi
-
- if test "$binutils_ia64" = yes; then
-  OPT_HAVE_BINUTILS_IA64_TRUE=
-  OPT_HAVE_BINUTILS_IA64_FALSE='#'
-else
-  OPT_HAVE_BINUTILS_IA64_TRUE='#'
-  OPT_HAVE_BINUTILS_IA64_FALSE=
-fi
-
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-LIBS="$ORIG_LIBS"
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
 
@@ -19657,10 +19927,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # Option: --with-boost=PATH
 #-------------------------------------------------
 
-BOOST=no
-if test "$use_externals" = yes ; then
-  BOOST="$ext_boost_prefix"
-fi
+BOOST="$default_boost_prefix"
 
 
 # Check whether --with-boost was given.
@@ -19668,6 +19935,17 @@ if test "${with_boost+set}" = set; then :
   withval=$with_boost; BOOST="$withval"
 fi
 
+
+BOOST_IFLAGS=
+BOOST_LFLAGS=
+BOOST_LIB_DIR=
+BOOST_COPY=no
+
+# The copy list should include all libraries that any version of
+# dyninst would use (but no more).  But copy-libs won't fail on a
+# missing library, so it doesn't have to be exact.
+
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
 $as_echo_n "checking for boost... " >&6; }
@@ -19677,6 +19955,22 @@ case "$BOOST" in
     if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
       as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
     fi
+    BOOST_IFLAGS="-I${BOOST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${BOOST}/$lib"
+      for f in "$dir"/libboost*system*.so* ; do
+        if test -f "$f" ; then
+	  BOOST_LIB_DIR="$dir"
+	  BOOST_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$BOOST_COPY" != yes ; then
+      as_fn_error $? "invalid boost directory: $BOOST" "$LINENO" 5
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -19688,48 +19982,30 @@ esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST" >&5
 $as_echo "$BOOST" >&6; }
 
-BOOST_INC="${BOOST}/include"
+# Toolkit doesn't use a boost library directly, but something from a
+# dyninst header pulls in libboost_system (not sure how).  So, we just
+# add everything from the copy list to the link line.  (They're pulled
+# in indirectly anyway).
 
-# Test for libboost_thread-mt.so and libboost_system-mt.so.
-# If exist, then copy to ext-libs.  Recent dyninst uses these.
+if test "x$BOOST_LIB_DIR" != x ; then
+  boost_lib_list=
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to copy boost libraries" >&5
-$as_echo_n "checking whether to copy boost libraries... " >&6; }
-
-BOOST_LIB=
-BOOST_LIB_LIST=
-BOOST_COPY=no
-
-for lib in $multilib_path ; do
-  boost_libdir="${BOOST}/$lib"
-  for f in "$boost_libdir"/libboost_thread* ; do
-    if test -f "$f" ; then
-      BOOST_LIB="$boost_libdir"
-      BOOST_COPY=yes
-      break 2
+  for lib in $BOOST_COPY_LIST ; do
+    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+      boost_lib_list="${boost_lib_list} -lboost_$lib"
     fi
   done
-done
 
-if test "$BOOST_COPY" = yes ; then
-  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lib_list"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: boost libs: $boost_lib_list" >&5
+$as_echo "$as_me: boost libs: $boost_lib_list" >&6;}
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $BOOST_COPY" >&5
-$as_echo "$BOOST_COPY" >&6; }
 
 
 
 
-
-
- if test "$BOOST_COPY" = yes; then
-  USE_BOOST_LIBS_TRUE=
-  USE_BOOST_LIBS_FALSE='#'
-else
-  USE_BOOST_LIBS_TRUE='#'
-  USE_BOOST_LIBS_FALSE=
-fi
 
 
 
@@ -19741,9 +20017,10 @@ fi
 # prereq.  Toolkit doesn't directly call bzip, so we don't need an
 # include path here.  Note: this package is not built in externals.
 
-BZIP=no
 BZIP_COPY=no
 BZIP_LIB=no
+
+BZIP="$default_bzip_prefix"
 
 
 # Check whether --with-bzip was given.
@@ -19768,6 +20045,7 @@ case "$BZIP" in
       as_fn_error $? "unable to find libbz2.so in: $BZIP" "$LINENO" 5
     fi
     BZIP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -19784,13 +20062,417 @@ $as_echo "$BZIP" >&6; }
 
 
 #-------------------------------------------------
+# Option: --with-dyninst=PATH
+#-------------------------------------------------
+
+# Now require full ParseAPI with CFG loop support or nothing.
+
+DYNINST="$default_dyninst_prefix"
+
+
+# Check whether --with-dyninst was given.
+if test "${with_dyninst+set}" = set; then :
+  withval=$with_dyninst; DYNINST="$withval"
+fi
+
+
+DYNINST_IFLAGS=
+DYNINST_LFLAGS=
+DYNINST_LIB_DIR=
+DYNINST_COPY=no
+dyninst_features=
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for dyninst" >&5
+$as_echo_n "checking for dyninst... " >&6; }
+
+case "${DYNINST}" in
+  /* )
+    if test -f "${DYNINST}/include/Symtab.h"  \
+       && test -f "${DYNINST}/include/CFG.h"
+    then : ; else
+      as_fn_error $? "invalid dyninst directory: $DYNINST" "$LINENO" 5
+    fi
+    DYNINST_IFLAGS="-I${DYNINST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${DYNINST}/$lib"
+      if test -f "${dir}/libparseAPI.so" ; then
+        DYNINST_LIB_DIR="$dir"
+	DYNINST_COPY=yes
+	break
+      fi
+    done
+    if test "$DYNINST_COPY" != yes ; then
+      as_fn_error $? "invalid dyninst directory: $DYNINST" "$LINENO" 5
+    fi
+    DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
+    DYNINST_LFLAGS="${DYNINST_LFLAGS} -ldynDwarf -ldynElf -lcommon"
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "dyninst directory must be absolute path: $DYNINST" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $DYNINST" >&5
+$as_echo "$DYNINST" >&6; }
+
+
+
+
+
+
+#-------------------------------------------------
+
+# Check that ParseAPI includes CFG loop support.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} ${DYNINST_IFLAGS}"
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for parseapi CFG loop support" >&5
+$as_echo_n "checking for parseapi CFG loop support... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  return (long) bvec.size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  cfg_loop_support=yes ; dyninst_features="$dyninst_features cfg"
+else
+  cfg_loop_support=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cfg_loop_support" >&5
+$as_echo "$cfg_loop_support" >&6; }
+
+  if test "$cfg_loop_support" != yes ; then
+    as_fn_error $? "parseAPI does not include CFG loop support" "$LINENO" 5
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if Block::getInsns() uses Instruction::Ptr or Instruction.
+# 9.3 uses Instruction::Ptr, new-par-par and 10.x use Instruction.
+
+use_instn_ptr=yes
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if parseapi uses Instruction::Ptr" >&5
+$as_echo_n "checking if parseapi uses Instruction::Ptr... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long instruction_size(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.begin()->second->size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_instn_ptr=yes
+else
+  use_instn_ptr=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_instn_ptr" >&5
+$as_echo "$use_instn_ptr" >&6; }
+fi
+
+if test "$use_instn_ptr" = yes ; then
+
+$as_echo "#define DYNINST_INSTRUCTION_PTR 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There is not a good compile or link test for this, so we fall back
+# on ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+
+use_libdw=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with libdw.so" >&5
+$as_echo_n "checking if dyninst built with libdw.so... " >&6; }
+
+  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_libdw" >&5
+$as_echo "$use_libdw" >&6; }
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  if test "$use_libdw" = yes
+  then dyninst_features="$dyninst_features libdw"
+  else dyninst_features="$dyninst_features libdwarf"
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst supports cuda.
+
+use_cuda=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports cuda" >&5
+$as_echo_n "checking if dyninst supports cuda... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_cuda=yes ; dyninst_features="$dyninst_features cuda"
+else
+  use_cuda=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_cuda" >&5
+$as_echo "$use_cuda" >&6; }
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with openmp support.
+# Again, not really a good test.
+
+dyninst_openmp=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with openmp" >&5
+$as_echo_n "checking if dyninst built with openmp... " >&6; }
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$parseapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        dyninst_openmp=yes
+	dyninst_features="$dyninst_features openmp"
+	break
+      fi
+    done
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_openmp" >&5
+$as_echo "$dyninst_openmp" >&6; }
+fi
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=unset
+
+
+# Check whether --with-dyninst-type was given.
+if test "${with_dyninst_type+set}" = set; then :
+  withval=$with_dyninst_type; dyninst_type="$withval"
+fi
+
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&5
+$as_echo "$as_me: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&6;}
+fi
+
+ if test "$use_libdw" = no; then
+  OPT_DYNINST_LIBDWARF_TRUE=
+  OPT_DYNINST_LIBDWARF_FALSE='#'
+else
+  OPT_DYNINST_LIBDWARF_TRUE='#'
+  OPT_DYNINST_LIBDWARF_FALSE=
+fi
+
+ if test "$use_libdw" = yes; then
+  OPT_DYNINST_LIBDW_TRUE=
+  OPT_DYNINST_LIBDW_FALSE='#'
+else
+  OPT_DYNINST_LIBDW_TRUE='#'
+  OPT_DYNINST_LIBDW_FALSE=
+fi
+
+
+if test "$use_libdw" = yes ; then
+
+$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
+
+fi
+
+if test "$use_cuda" = yes ; then
+
+$as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
+
+fi
+
+
+#-------------------------------------------------
+# Option: --with-elfutils=PATH
+#-------------------------------------------------
+
+LIBELF="$default_elfutils_prefix"
+
+
+# Check whether --with-elfutils was given.
+if test "${with_elfutils+set}" = set; then :
+  withval=$with_elfutils; LIBELF="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for elfutils" >&5
+$as_echo_n "checking for elfutils... " >&6; }
+
+LIBELF_INC=no
+LIBELF_LIB=no
+LIBELF_COPY=no
+have_libdw=no
+
+case "$LIBELF" in
+  /* )
+    if test ! -f "${LIBELF}/include/libelf.h" \
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+    then
+      as_fn_error $? "unable to find libelf.h in: $LIBELF" "$LINENO" 5
+    fi
+    LIBELF_INC="${LIBELF}/include"
+    for lib in $multilib_path ; do
+      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+        LIBELF_LIB="${LIBELF}/${lib}"
+	break
+      fi
+    done
+    if test "$LIBELF_LIB" = no ; then
+      as_fn_error $? "unable to find libelf.so in: $LIBELF" "$LINENO" 5
+    fi
+    LIBELF_COPY=yes
+
+    if test -f "${LIBELF_LIB}/libdw.so" ; then
+      have_libdw=yes
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "libelf directory must be absolute path: $LIBELF" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
+$as_echo "$LIBELF" >&6; }
+
+if test "$use_libdw" = yes && test "$have_libdw" != yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst uses libdw but elfutils is missing libdw" >&5
+$as_echo "$as_me: WARNING: dyninst uses libdw but elfutils is missing libdw" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst:  $DYNINST" >&5
+$as_echo "$as_me: WARNING: dyninst:  $DYNINST" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: elfutils: $LIBELF" >&5
+$as_echo "$as_me: WARNING: elfutils: $LIBELF" >&2;}
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
-LIBDWARF=no
-if test "$use_externals" = yes ; then
-    LIBDWARF="$ext_libdwarf_prefix"
-fi
+LIBDWARF="$default_libdwarf_prefix"
 
 
 # Check whether --with-libdwarf was given.
@@ -19809,6 +20491,7 @@ case "${LIBDWARF}" in
         as_fn_error $? "invalid libdwarf directory: $LIBDWARF" "$LINENO" 5
     fi
     LIBDWARF_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBDWARF_COPY=no
@@ -19830,72 +20513,61 @@ $as_echo "$LIBDWARF" >&6; }
 
 
 #-------------------------------------------------
-# Option: --with-libelf=PATH
+# Option: --with-libiberty=PATH
 #-------------------------------------------------
 
-LIBELF=no
-if test "$use_externals" = yes ; then
-  LIBELF="$ext_libelf_prefix"
+# This is only used if binutils doesn't have libiberty.a.
+
+LIBIBERTY="$default_libiberty_prefix"
+
+
+# Check whether --with-libiberty was given.
+if test "${with_libiberty+set}" = set; then :
+  withval=$with_libiberty; LIBIBERTY="$withval"
 fi
 
 
-# Check whether --with-libelf was given.
-if test "${with_libelf+set}" = set; then :
-  withval=$with_libelf; LIBELF="$withval"
+if test "$BINUTILS" = no || test "$binutils_has_libiberty" = yes
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping libiberty for binutils" >&5
+$as_echo "$as_me: skipping libiberty for binutils" >&6;}
+  LIBIBERTY=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libiberty.a for binutils" >&5
+$as_echo_n "checking for libiberty.a for binutils... " >&6; }
+
+  found_libiberty=no
+  case "$LIBIBERTY" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${LIBIBERTY}/${lib}/libiberty.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libiberty=yes
+	  break
+	fi
+      done
+      num_pkgs=`expr 1 + $num_pkgs`
+      ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $found_libiberty" >&5
+$as_echo "$found_libiberty" >&6; }
+
+  if test "$found_libiberty" != yes ; then
+    as_fn_error $? "unable to find libiberty.a in binutils or libiberty" "$LINENO" 5
+  fi
 fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for libelf" >&5
-$as_echo_n "checking for libelf... " >&6; }
-
-LIBELF_INC=no
-LIBELF_LIB=no
-LIBELF_COPY=no
-
-case "$LIBELF" in
-  /* )
-    if test ! -f "${LIBELF}/include/libelf.h" \
-        && test ! -f "${LIBELF}/include/libelf/libelf.h"
-    then
-      as_fn_error $? "unable to find libelf.h in: $LIBELF" "$LINENO" 5
-    fi
-    LIBELF_INC="${LIBELF}/include"
-    for lib in $multilib_path ; do
-      if test -f "${LIBELF}/${lib}/libelf.so" ; then
-        LIBELF_LIB="${LIBELF}/${lib}"
-	break
-      fi
-    done
-    if test "$LIBELF_LIB" = no ; then
-      as_fn_error $? "unable to find libelf.so in: $LIBELF" "$LINENO" 5
-    fi
-    LIBELF_COPY=yes
-    ;;
-  no )
-    ;;
-  * )
-    as_fn_error $? "libelf directory must be absolute path: $LIBELF" "$LINENO" 5
-    ;;
-esac
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
-$as_echo "$LIBELF" >&6; }
-
-
-
-
 
 
 #-------------------------------------------------
 # Option: --with-libmonitor=PATH
 #-------------------------------------------------
 
-LIBMONITOR=no
 OPT_LIBMONITOR_DYNAMIC=no
 OPT_LIBMONITOR_STATIC=no
-if test "$use_externals" = yes ; then
-  LIBMONITOR="$ext_libmonitor_prefix"
-fi
+
+LIBMONITOR="$default_libmonitor_prefix"
 
 
 # Check whether --with-libmonitor was given.
@@ -19928,6 +20600,7 @@ case "${LIBMONITOR}" in
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBMONITOR_COPY=no
@@ -19960,7 +20633,6 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 # and dynamic versions separately.  But if libunwind is the primary
 # unwinder, then can't build hpcrun or hpclink without it.
 
-LIBUNWIND=no
 LIBUNWIND_STAT=no
 
 LIBUNWIND_IFLAGS=
@@ -19972,9 +20644,7 @@ LIBUNWIND_LDFLAGS_STAT=
 LIBUNWIND_COPY=no
 LIBUNWIND_LIB=
 
-if test "$use_externals" = yes ; then
-  LIBUNWIND="$ext_libunwind_prefix"
-fi
+LIBUNWIND="$default_libunwind_prefix"
 
 
 # Check whether --with-libunwind was given.
@@ -20021,6 +20691,7 @@ case "$LIBUNWIND" in
     if test "x$LIBUNWIND_LIB" = x ; then
       as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20140,7 +20811,6 @@ fi
 # Dynamically, add -llzma to libhpcrun.so and copy libs.
 # Statically, link liblzma.a into libhpcrun.o at build time.
 
-LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
@@ -20149,10 +20819,7 @@ LZMA_COPY=no
 LZMA_LIB=
 LZMA_PROF_MPI_LIBS=
 
-# allow for older externals which doesn't define ext_lzma_prefix
-if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
-  LZMA="$ext_lzma_prefix"
-fi
+LZMA="$default_lzma_prefix"
 
 
 # Check whether --with-lzma was given.
@@ -20186,14 +20853,14 @@ case "$LZMA" in
       #
       # hpcprof-mpi: same as hpclink if fully static, else default
       #
-      echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
       if test $? = 0 ; then
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
       else
         LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
       fi
-
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20216,106 +20883,16 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 
 
 #-------------------------------------------------
-# with-monitor
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for monitor" >&5
-$as_echo_n "checking for monitor... " >&6; }
-
-OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
-MONITOR=
-MONITOR_LIBS=
-HPC_MONITOR=
-
-# By default, disable old-monitor and hpcrun-flat in a cross compile.
-# It can be reenabled with an explicit --with-monitor option.
-
-if test "$use_externals" = yes && test -z "$is_cross_compile"
-then
-  MONITOR="$ext_old_monitor_prefix"
-  case "$MONITOR" in
-    /* )  OPT_WITH_MONITOR=yes
-	  OPT_INSTALL_MONITOR=yes
-	  ;;
-  esac
-fi
-
-
-# Check whether --with-monitor was given.
-if test "${with_monitor+set}" = set; then :
-  withval=$with_monitor; if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=yes
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi
-fi
-
-
-for lib in ${LIB_SEARCH_PATH} ; do
-  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
-    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
-  fi
-done
-MONITOR_LIBS=`echo ${MONITOR_LIBS}`
-
-MONITOR_IFLAGS="-I${MONITOR}/include"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
-  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
-else
-  HPC_MONITOR="${MONITOR}"
-fi
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-
-$as_echo "#define HAVE_MONITOR 1" >>confdefs.h
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${MONITOR_LIBS})" >&5
-$as_echo "yes (${MONITOR_LIBS})" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no (not needed)" >&5
-$as_echo "no (not needed)" >&6; }
-fi
-
-
-
-
-
-
-#-------------------------------------------------
-# Check for Open Analysis (CFG builder, etc.)
-#-------------------------------------------------
-
-# Open Analysis is no longer used.  Now, it's ParseAPI or nothing.
-# For the transition, keep the option and issue a warning if used.
-
-OA=no
-
-
-# Check whether --with-open-analysis was given.
-if test "${with_open_analysis+set}" = set; then :
-  withval=$with_open_analysis; OA="$withval"
-fi
-
-
-if test "x$OA" != xno ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: open analysis is deprecated and no longer used" >&5
-$as_echo "$as_me: WARNING: open analysis is deprecated and no longer used" >&2;}
-fi
-
-
-#-------------------------------------------------
 # Option: --with-papi=PATH
 #-------------------------------------------------
 
-OPT_PAPI=no
 OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
+
+OPT_PAPI="$default_papi_prefix"
 
 
 # Check whether --with-papi was given.
@@ -20361,6 +20938,7 @@ case "$OPT_PAPI" in
     if test "x$OPT_PAPI_LIBPATH" = x ; then
       as_fn_error $? "unable to find libpapi in: $OPT_PAPI" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -20605,12 +21183,12 @@ then
   PERFMON="$perfmon_withval"
   perfmon_mesg="$perfmon_withval"
 
-elif test "$use_externals" = yes && test "x$ext_perfmon_prefix" != x  \
-     && valid_perfmon_dir "$ext_perfmon_prefix"
+elif test "$default_perfmon_prefix" != no  \
+     && valid_perfmon_dir "$default_perfmon_prefix"
 then
-  # if value from externals works, use that
-  PERFMON="$ext_perfmon_prefix"
-  perfmon_mesg="$ext_perfmon_prefix"
+  # if value from externals/spack works, use that
+  PERFMON="$default_perfmon_prefix"
+  perfmon_mesg="$default_perfmon_prefix"
 
 else
   # give up, nothing works
@@ -20648,6 +21226,7 @@ case "$PERFMON" in
     if test "x$PERFMON_LIB" = x ; then
       as_fn_error $? "unable to find libpfm in: $PERFMON" "$LINENO" 5
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
 esac
 
@@ -20890,305 +21469,92 @@ fi
 
 
 #-------------------------------------------------
-# Option: --with-symtabAPI=PATH
+# Option: --with-tbb=PATH
 #-------------------------------------------------
 
-# Now require full ParseAPI with CFG loop support or nothing.
+# Dyninst 10.x with parallel parsing uses Intel TBB, but older
+# versions do not, so this must be optional.  Also, we selectively add
+# proxy malloc to hpcstruct, so keep that separate.
 
-SYMTABAPI=no
-if test "$use_externals" = yes ; then
-  SYMTABAPI="$ext_symtabAPI_prefix"
+TBB="$default_tbb_prefix"
+
+
+# Check whether --with-tbb was given.
+if test "${with_tbb+set}" = set; then :
+  withval=$with_tbb; TBB="$withval"
 fi
 
 
-# Check whether --with-symtabAPI was given.
-if test "${with_symtabAPI+set}" = set; then :
-  withval=$with_symtabAPI; SYMTABAPI="$withval"
-fi
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_PROXY_LIB=
+TBB_LIB_DIR=
+TBB_COPY=no
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for tbb" >&5
+$as_echo_n "checking for tbb... " >&6; }
 
-#
-# Basic test that symtab and parseapi files exist.
-#
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for symtabAPI" >&5
-$as_echo_n "checking for symtabAPI... " >&6; }
-
-SYMTABAPI_COPY=no
-SYMTABAPI_LIB_LIST=
-hpcstruct_mesg=no
-
-case "${SYMTABAPI}" in
+case "$TBB" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h"  \
-       && test -f "${SYMTABAPI}/include/CFG.h"  \
-       && test -f "${SYMTABAPI}/lib/libsymtabAPI.so"  \
-       && test -f "${SYMTABAPI}/lib/libparseAPI.so"
-    then :
-    else
-       as_fn_error $? "invalid symtabAPI directory: $SYMTABAPI" "$LINENO" 5
+    if test ! -f "${TBB}/include/tbb/concurrent_hash_map.h" ; then
+      as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
     fi
-    SYMTABAPI_COPY=yes
-    SYMTABAPI_LIB_LIST='-lparseAPI -linstructionAPI -lsymtabAPI -lcommon'
-    SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
-    hpcstruct_mesg=parseapi
+    TBB_IFLAGS="-I${TBB}/include"
+
+    for lib in $multilib_path ; do
+      dir="${TBB}/$lib"
+      for f in "$dir"/libtbb*.so* ; do
+        if test -f "$f" ; then
+	  TBB_LIB_DIR="$dir"
+	  TBB_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$TBB_COPY" != yes ; then
+      as_fn_error $? "invalid tbb directory: $TBB" "$LINENO" 5
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
   * )
-    as_fn_error $? "symtabAPI directory must be absolute path: $SYMTABAPI" "$LINENO" 5
+    as_fn_error $? "tbb directory must be absolute path: $TBB" "$LINENO" 5
     ;;
 esac
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $SYMTABAPI" >&5
-$as_echo "$SYMTABAPI" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $TBB" >&5
+$as_echo "$TBB" >&6; }
 
-SYMTABAPI_INC="${SYMTABAPI}/include"
-SYMTABAPI_LIB="${SYMTABAPI}/lib"
+if test "x$TBB_LIB_DIR" != x ; then
+  tbb_lib_list=
 
-
-
-
-
-
-#-------------------------------------------------
-
-#
-# Chcek that ParseAPI includes CFG loop support.
-#
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-if test "$SYMTABAPI" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for parseAPI CFG loop support" >&5
-$as_echo_n "checking for parseAPI CFG loop support... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <iostream>
-#include <vector>
-#include <Symtab.h>
-#include <Function.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace std;
-void get_blocks(LoopTreeNode * node)
-{
-  Loop * loop = node->loop;
-  vector <Block *> bvec;
-  loop->getLoopBasicBlocks(bvec);
-  std::cout << bvec.size();
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  cfg_loop_support=yes
-else
-  cfg_loop_support=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cfg_loop_support" >&5
-$as_echo "$cfg_loop_support" >&6; }
-
-  if test "$cfg_loop_support" != yes ; then
-    as_fn_error $? "parseAPI does not include CFG loop support" "$LINENO" 5
-  fi
-fi
-
-#
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There's not a good compile or link test for this, so we fall back on
-# ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-#
-use_libdw=no
-
-if test "$SYMTABAPI" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with libdw.so" >&5
-$as_echo_n "checking if dyninst built with libdw.so... " >&6; }
-
-  dyn_dwarf="${SYMTABAPI_LIB}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
+  for lib in tbb tbbmalloc ; do
+    if test -f "${TBB_LIB_DIR}/lib${lib}.so" ; then
+      tbb_lib_list="${tbb_lib_list} -l$lib"
     fi
+  done
+
+  TBB_LFLAGS="-L${TBB_LIB_DIR} $tbb_lib_list"
+
+  # Keep proxy malloc separate.
+  if test -f "${TBB_LIB_DIR}/libtbbmalloc_proxy.so" ; then
+    TBB_PROXY_LIB='-ltbbmalloc_proxy'
   fi
 
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_libdw" >&5
-$as_echo "$use_libdw" >&6; }
-fi
-
-#
-# Test if dyninst supports cuda.
-#
-use_cuda=no
-
-if test "$SYMTABAPI" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports cuda" >&5
-$as_echo_n "checking if dyninst supports cuda... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <Symtab.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-long cuda_type()
-{
-  return (long) Dyninst::Arch_cuda;
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  use_cuda=yes
-else
-  use_cuda=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_cuda" >&5
-$as_echo "$use_cuda" >&6; }
-fi
-
-#
-# Test if ParseAPI uses Instruction or Instruction::Ptr.
-#
-use_instn_ptr=yes
-
-if test "$SYMTABAPI" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if parseapi uses Instruction::Ptr" >&5
-$as_echo_n "checking if parseapi uses Instruction::Ptr... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <map>
-#include <Symtab.h>
-#include <Function.h>
-#include <Instruction.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace InstructionAPI;
-using namespace ParseAPI;
-using namespace std;
-long num_instructions(Block * block)
-{
-  map <Offset, Instruction::Ptr> imap;
-  block->getInsns(imap);
-  return (long) imap.size();
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  use_instn_ptr=yes
-else
-  use_instn_ptr=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_instn_ptr" >&5
-$as_echo "$use_instn_ptr" >&6; }
-fi
-
-if test "$use_instn_ptr" = yes ; then
-
-$as_echo "#define DYNINST_INSTRUCTION_PTR 1" >>confdefs.h
-
-fi
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#
-# Temporary option to identify version of dyninst, only necessary if
-# the above tests produce the wrong answer.
-#
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
-#  cuda = uses libdw and supports cuda
-#
-dyninst_type=unset
-
-
-# Check whether --with-dyninst-type was given.
-if test "${with_dyninst_type+set}" = set; then :
-  withval=$with_dyninst_type; dyninst_type="$withval"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: tbb libs: $tbb_lib_list $TBB_PROXY_LIB" >&5
+$as_echo "$as_me: tbb libs: $tbb_lib_list $TBB_PROXY_LIB" >&6;}
 fi
 
 
-if test "$dyninst_type" != unset ; then
-  case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
-    libdw ) use_libdw=yes ; use_cuda=no ;;
-    cuda )  use_libdw=yes ; use_cuda=yes ;;
-    * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
-  esac
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&5
-$as_echo "$as_me: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&6;}
-fi
-
- if test "$use_libdw" = no; then
-  OPT_DYNINST_LIBDWARF_TRUE=
-  OPT_DYNINST_LIBDWARF_FALSE='#'
-else
-  OPT_DYNINST_LIBDWARF_TRUE='#'
-  OPT_DYNINST_LIBDWARF_FALSE=
-fi
-
- if test "$use_libdw" = yes; then
-  OPT_DYNINST_LIBDW_TRUE=
-  OPT_DYNINST_LIBDW_FALSE='#'
-else
-  OPT_DYNINST_LIBDW_TRUE='#'
-  OPT_DYNINST_LIBDW_FALSE=
-fi
 
 
-if test "$use_libdw" = yes ; then
 
-$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
-
-fi
-
-if test "$use_cuda" = yes ; then
-
-$as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
-
-fi
-
-LIBDW_COPY="$use_libdw"
 
 
 
 #-------------------------------------------------
-# Option: --with-xed2=PATH
+# Option: --with-xed=PATH
 #-------------------------------------------------
 
 # Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
@@ -21199,7 +21565,6 @@ LIBDW_COPY="$use_libdw"
 # XED with separate .so and .a without fPIC, so we test if .a can link
 # into a shared library.
 
-XED2=no
 XED2_INC=
 XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
@@ -21210,14 +21575,12 @@ XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
-if test "$use_externals" = yes ; then
-  XED2="$ext_xed2_prefix"
-fi
+XED2="$default_xed_prefix"
 
 
-# Check whether --with-xed2 was given.
-if test "${with_xed2+set}" = set; then :
-  withval=$with_xed2; XED2="$withval"
+# Check whether --with-xed was given.
+if test "${with_xed+set}" = set; then :
+  withval=$with_xed; XED2="$withval"
 fi
 
 
@@ -21239,6 +21602,7 @@ case "$XED2" in
     XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
     xed2_avail=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -21341,7 +21705,7 @@ $as_echo "$as_me: WARNING: unable to build hpclink: no static libxed.a" >&2;}
   #
   # hpcprof-mpi: same as hpclink if fully static, else default
   #
-  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
   if test $? = 0 ; then
     XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
   else
@@ -21377,13 +21741,10 @@ fi
 # installations to optionally be given on configure line or in the
 # environment.
 
+XERCES="$default_xerces_prefix"
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for XercesC" >&5
 $as_echo_n "checking for XercesC... " >&6; }
-
-XERCES=no
-if test "$use_externals" = yes ; then
-  XERCES="$ext_xerces_prefix"
-fi
 
 
 # Check whether --with-xerces was given.
@@ -21412,6 +21773,7 @@ if test "$XERCES" = no ; then
 else
   XERCES_COPY=yes
   XERCES_LIB="${XERCES}/lib"
+  num_pkgs=`expr 1 + $num_pkgs`
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${XERCES}" >&5
@@ -21428,10 +21790,9 @@ $as_echo "${XERCES}" >&6; }
 # Option: --with-zlib=PATH
 #-------------------------------------------------
 
-ZLIB=no
-if test "$use_externals" = yes ; then
-  ZLIB="$ext_zlib_prefix"
-fi
+# Zlib is used both independently and for binutils.
+
+ZLIB="$default_zlib_prefix"
 
 
 # Check whether --with-zlib was given.
@@ -21465,6 +21826,7 @@ case "$ZLIB" in
       as_fn_error $? "unable to find zlib.so or zlib.a in: $ZLIB" "$LINENO" 5
     fi
     ZLIB_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -21475,6 +21837,37 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ZLIB" >&5
 $as_echo "$ZLIB" >&6; }
+
+# If binutils doesn't include libz.a, then try here.
+if test "$BINUTILS" = no || test "$binutils_has_libz" = yes
+then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping libz for binutils" >&5
+$as_echo "$as_me: skipping libz for binutils" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libz.a for binutils" >&5
+$as_echo_n "checking for libz.a for binutils... " >&6; }
+
+  found_libz=no
+  case "$ZLIB" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${ZLIB}/${lib}/libz.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libz=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $found_libz" >&5
+$as_echo "$found_libz" >&6; }
+
+  if test "$found_libz" != yes ; then
+    as_fn_error $? "unable to find libz.a in binutils or zlib" "$LINENO" 5
+  fi
+fi
 
  if test "$ZLIB" != no; then
   OPT_USE_ZLIB_TRUE=
@@ -21530,7 +21923,6 @@ back_end_label=
 BACK_END_LABEL=
 
 if test "$enable_back_end" = yes ; then
-  OPT_INSTALL_MONITOR=no
   XERCES_COPY=no
 fi
 
@@ -21572,43 +21964,6 @@ fi
 
 
 #-------------------------------------------------
-# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
-#-------------------------------------------------
-
-# Check whether --enable-hpcrun-flat was given.
-if test "${enable_hpcrun_flat+set}" = set; then :
-  enableval=$enable_hpcrun_flat;
-else
-  enable_hpcrun_flat=yes
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build hpcrun-flat" >&5
-$as_echo_n "checking whether to build hpcrun-flat... " >&6; }
-
-OPT_ENABLE_HPCRUN_FLAT="no"
-
-if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes \
-   && test "${OPT_WITH_MONITOR}" = yes \
-   && test "${HOST_OS}" = "Linux"
-then
-  OPT_ENABLE_HPCRUN_FLAT="yes"
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_ENABLE_HPCRUN_FLAT" >&5
-$as_echo "$OPT_ENABLE_HPCRUN_FLAT" >&6; }
- if test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes"; then
-  OPT_ENABLE_HPCRUN_FLAT_TRUE=
-  OPT_ENABLE_HPCRUN_FLAT_FALSE='#'
-else
-  OPT_ENABLE_HPCRUN_FLAT_TRUE='#'
-  OPT_ENABLE_HPCRUN_FLAT_FALSE=
-fi
-
-
-
-#-------------------------------------------------
 # enable-hpcrun:
 #-------------------------------------------------
 
@@ -21629,7 +21984,7 @@ if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
-     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
+     test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
@@ -21651,55 +22006,6 @@ else
   OPT_ENABLE_HPCRUN_TRUE='#'
   OPT_ENABLE_HPCRUN_FALSE=
 fi
-
-
-
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
-#
-# FIXME (tallent): This is completely broken for cross-compiling
-# (there is no reason for the paths to be persistent).  Moreover, we
-# should not be responsible for configuring runtime paths for
-# libstdc++.
-#
-# Try --print-file-name first.  If that doesn't work, then try ldd.
-# If --print-file-name works, then its answer is more reliable because
-# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
-# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
-#
-# Of course, --print-file-name and libstdc++.so are GNU-specific.
-# (Intel icc seems to support both, but computes an answer based on
-# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
-# here?
-
-libcxx_file=`${CXX} -print-file-name=libstdc++.so`
-
-case "$libcxx_file" in
-  /* ) ;;
-  * )
-    src="hpc_hello.$$.cc"
-    obj="hpc_hello.$$.out"
-    rm -f "$src" "$obj"
-    cat <<"EOF" >"$src"
-main(){}
-EOF
-    ${CXX} -o "$obj" "$src"
-    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
-    rm -f "$src" "$obj"
-    ;;
-esac
-
-libcxx_dir=`dirname $libcxx_file`
-libcxx_base=`basename $libcxx_file`
-HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
-
-case "$HPCRUN_LIBCXX_PATH" in
-  /* ) { $as_echo "$as_me:${as_lineno-$LINENO}: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&5
-$as_echo "$as_me: found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}" >&6;} ;;
-  * )  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find libstdc++.so" >&5
-$as_echo "$as_me: WARNING: unable to find libstdc++.so" >&2;} ;;
-esac
-
 
 
 
@@ -21805,6 +22111,59 @@ esac
 else
   OPT_ENABLE_HPCSERVER_TRUE='#'
   OPT_ENABLE_HPCSERVER_FALSE=
+fi
+
+
+
+#-------------------------------------------------
+# enable-openmp
+#-------------------------------------------------
+
+# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
+# does.
+
+# Check whether --enable-openmp was given.
+if test "${enable_openmp+set}" = set; then :
+  enableval=$enable_openmp;
+else
+  enable_openmp="$dyninst_openmp"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable openmp in hpcstruct" >&5
+$as_echo_n "checking whether to enable openmp in hpcstruct... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openmp" >&5
+$as_echo "$enable_openmp" >&6; }
+
+case "$enable_openmp" in
+  yes | no ) ;;
+  * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: bad value for enable-openmp: $enable_openmp" >&5
+$as_echo "$as_me: WARNING: bad value for enable-openmp: $enable_openmp" >&2;}
+    enable_openmp="$dyninst_openmp"
+    ;;
+esac
+
+if test "$enable_openmp" = yes ; then
+
+$as_echo "#define ENABLE_OPENMP 1" >>confdefs.h
+
+  hpcstruct_mesg=openmp
+else
+  OPENMP_FLAG=
+  hpcstruct_mesg=serial
+fi
+
+if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
+then
+  hpcstruct_mesg=no
+fi
+
+ if test "$enable_openmp" = yes; then
+  OPT_ENABLE_OPENMP_TRUE=
+  OPT_ENABLE_OPENMP_FALSE='#'
+else
+  OPT_ENABLE_OPENMP_TRUE='#'
+  OPT_ENABLE_OPENMP_FALSE=
 fi
 
 
@@ -22659,6 +23018,8 @@ ac_config_files="$ac_config_files src/tool/hpcproftt/hpcproftt"
 
 ac_config_files="$ac_config_files src/tool/hpcstruct/hpcstruct"
 
+ac_config_files="$ac_config_files src/tool/hpcstruct/dotgraph"
+
 
 
 copyright_hash="${srcdir}/config/copyright-hash"
@@ -22870,12 +23231,12 @@ if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_HAVE_BINUTILS_IA64_TRUE}" && test -z "${OPT_HAVE_BINUTILS_IA64_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_HAVE_BINUTILS_IA64\" was never defined.
+if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${USE_BOOST_LIBS_TRUE}" && test -z "${USE_BOOST_LIBS_FALSE}"; then
-  as_fn_error $? "conditional \"USE_BOOST_LIBS\" was never defined.
+if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
@@ -22922,14 +23283,6 @@ if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22950,10 +23303,6 @@ if test -z "${OPT_BUILD_TOOL_ALL_TRUE}" && test -z "${OPT_BUILD_TOOL_ALL_FALSE}"
   as_fn_error $? "conditional \"OPT_BUILD_TOOL_ALL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_ENABLE_HPCRUN_FLAT_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FLAT_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_HPCRUN_FLAT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_HPCRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -22968,6 +23317,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_HPCSERVER_TRUE}" && test -z "${OPT_ENABLE_HPCSERVER_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_HPCSERVER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_OPENMP_TRUE}" && test -z "${OPT_ENABLE_OPENMP_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_OPENMP\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
@@ -24024,6 +24377,7 @@ do
     "src/tool/hpcprof-flat/hpcprof-flat") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/hpcprof-flat" ;;
     "src/tool/hpcproftt/hpcproftt") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/hpcproftt" ;;
     "src/tool/hpcstruct/hpcstruct") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/hpcstruct" ;;
+    "src/tool/hpcstruct/dotgraph") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/dotgraph" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
@@ -25470,6 +25824,7 @@ _LT_EOF
     "src/tool/hpcprof-flat/hpcprof-flat":F) chmod +x src/tool/hpcprof-flat/hpcprof-flat ;;
     "src/tool/hpcproftt/hpcproftt":F) chmod +x src/tool/hpcproftt/hpcproftt ;;
     "src/tool/hpcstruct/hpcstruct":F) chmod +x src/tool/hpcstruct/hpcstruct ;;
+    "src/tool/hpcstruct/dotgraph":F) chmod +x src/tool/hpcstruct/dotgraph ;;
 
   esac
 done # for ac_tag
@@ -25515,6 +25870,8 @@ fi
 # Summary of the config options.
 #-------------------------------------------------
 
+dyninst_features=`echo $dyninst_features`
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: -------------------" >&5
 $as_echo "$as_me: -------------------" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: HPCToolkit summary" >&5
@@ -25545,8 +25902,6 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&5
 $as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&5
-$as_echo "$as_me:   hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   unwinder:     ${unwinder_mesg}" >&5
 $as_echo "$as_me:   unwinder:     ${unwinder_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
@@ -25559,8 +25914,8 @@ $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
 $as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcserver?:   ${enable_hpcserver}" >&5
 $as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcstruct:    $hpcstruct_mesg" >&5
-$as_echo "$as_me:   hpcstruct:    $hpcstruct_mesg" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcstruct:    ${hpcstruct_mesg}" >&5
+$as_echo "$as_me:   hpcstruct:    ${hpcstruct_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perf-events:  ${perf_event_mesg}" >&5
 $as_echo "$as_me:   perf-events:  ${perf_event_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
@@ -25583,6 +25938,8 @@ $as_echo "$as_me:   CXX:       '${CXX}'" >&6;}
 $as_echo "$as_me:   CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C++11:     '${cxx_c11_flag}'" >&5
 $as_echo "$as_me:   C++11:     '${cxx_c11_flag}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   OpenMP:    '${OPENMP_FLAG}'" >&5
+$as_echo "$as_me:   OpenMP:    '${OPENMP_FLAG}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCAS:      '${CCAS}'" >&5
 $as_echo "$as_me:   CCAS:      '${CCAS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   CCASFLAGS: '${CCASFLAGS}'" >&5
@@ -25595,50 +25952,55 @@ $as_echo "$as_me:   MPICC:     '${MPICC}'" >&6;}
 $as_echo "$as_me:   MPICXX:    '${MPICXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   MPIF77:    '${MPIF77}'" >&5
 $as_echo "$as_me:   MPIF77:    '${MPIF77}'" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&5
-$as_echo "$as_me:   HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&5
 $as_echo "$as_me:   HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${GNUBINUTILS}" >&5
-$as_echo "$as_me:   binutils:     ${GNUBINUTILS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   binutils:     ${BINUTILS}" >&5
+$as_echo "$as_me:   binutils:     ${BINUTILS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   boost:        ${BOOST}" >&5
 $as_echo "$as_me:   boost:        ${BOOST}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   bzip:         ${BZIP}" >&5
 $as_echo "$as_me:   bzip:         ${BZIP}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   dyninst:      ${DYNINST}" >&5
+$as_echo "$as_me:   dyninst:      ${DYNINST}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   dyninst:      ${dyninst_features}" >&5
+$as_echo "$as_me:   dyninst:      ${dyninst_features}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   elfutils:     ${LIBELF}" >&5
+$as_echo "$as_me:   elfutils:     ${LIBELF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   libelf:       ${LIBELF}" >&5
-$as_echo "$as_me:   libelf:       ${LIBELF}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
+$as_echo "$as_me:   libiberty:    ${LIBIBERTY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libmonitor:   ${LIBMONITOR}" >&5
 $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   monitor/old:  ${MONITOR}" >&5
-$as_echo "$as_me:   monitor/old:  ${MONITOR}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libunwind:    ${LIBUNWIND}" >&5
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   lzma:         ${LZMA}" >&5
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
+$as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perfmon:      ${perfmon_mesg}" >&5
 $as_echo "$as_me:   perfmon:      ${perfmon_mesg}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   symtabAPI:    ${SYMTABAPI}" >&5
-$as_echo "$as_me:   symtabAPI:    ${SYMTABAPI}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   xed2:         ${XED2}" >&5
-$as_echo "$as_me:   xed2:         ${XED2}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   tbb:          ${TBB}" >&5
+$as_echo "$as_me:   tbb:          ${TBB}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   xed:          ${XED2}" >&5
+$as_echo "$as_me:   xed:          ${XED2}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   xerces:       ${XERCES}" >&5
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   zlib:         ${ZLIB}" >&5
 $as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
-$as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
 $as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 
-if test "x$OA" != xno ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: open analysis is deprecated and no longer used" >&5
-$as_echo "$as_me: WARNING: open analysis is deprecated and no longer used" >&2;}
+if test "x$mult_spack_pkgs" != x ; then
+  mult_spack_pkgs=`echo $mult_spack_pkgs`
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: multiple spack packages for: $mult_spack_pkgs" >&5
+$as_echo "$as_me: WARNING: multiple spack packages for: $mult_spack_pkgs" >&2;}
 fi
 
 if test "$warn_config_site" = yes ; then
@@ -25695,11 +26057,13 @@ $as_echo "$as_me: WARNING: Perf events is enabled, but perfmon is not available.
 $as_echo "$as_me: WARNING: Mnemonic names will not be available for perf events." >&2;}
 fi
 
-if test "$warn_no_externals" = yes ; then
+if test "x$with_externals" = xno && test "x$with_spack" = xno  \
+   && test "$num_pkgs" -lt 8
+then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit-externals." >&5
-$as_echo "$as_me: WARNING: Not using hpctoolkit-externals." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit externals or spack." >&5
+$as_echo "$as_me: WARNING: Not using hpctoolkit externals or spack." >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&5
 $as_echo "$as_me: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: this is probably an error.  First, checkout, configure and" >&5

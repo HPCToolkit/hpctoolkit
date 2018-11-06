@@ -93,8 +93,6 @@ using std::vector;
 
 #include <lib/trace-analysis-mpi/TraceAnalysis.hpp>
 
-#include <lib/banal/Struct.hpp>
-
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/prof/FileError.hpp>
 

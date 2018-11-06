@@ -190,3 +190,9 @@ build_intervals(char  *ins, unsigned int len, unwinder_t uw)
 {
   return libunw_build_intervals(ins, len);
 }
+
+void
+uw_recipe_tostr(void *uwr, char str[], unwinder_t uw)
+{
+  return libunw_uw_recipe_tostr(uwr, str);
+}
