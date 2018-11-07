@@ -305,7 +305,7 @@ Args::getCmd() const
 }
 
 
-static bool is_directory(const std::string &path) {
+static inline bool is_directory(const std::string &path) {
   struct stat statbuf;
   if (stat(path.c_str(), &statbuf) != 0)
     return 0;
@@ -454,7 +454,7 @@ Args::parse(int argc, const char* const argv[])
             }
           }
         }
-        closedir (dir);
+        closedir(dir);
       }
     } else {
       in_filenm.push_back(std::string(input_name));
