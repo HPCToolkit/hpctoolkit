@@ -431,16 +431,20 @@ Args::parse(int argc, const char* const argv[])
     std::string input_name = parser.getArg(0);
 
     if (is_directory(input_name)) {
+      // parse cubins
+      auto structs_dir = input_name + "/structs";
+      auto cubins_dir = input_name + "/cubins";
       DIR *dir;
       struct dirent *ent;
-      if ((dir = opendir(input_name.c_str())) != NULL) {
+      if ((dir = opendir(cubins_dir.c_str())) != NULL) {
+        mkdir(structs_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
         /* append files within the directory */
         while ((ent = readdir(dir)) != NULL) {
           std::string file_name = std::string(ent->d_name);
-          if (!is_directory(input_name + "/" + file_name)) {
-            in_filenm.push_back(input_name + "/" + file_name);
+          if (!is_directory(cubins_dir + "/" + file_name)) {
+            in_filenm.push_back(cubins_dir + "/" + file_name);
             if (output_name.size() == 0) {
-              out_filenm.push_back(file_name + ".hpcstruct");
+              out_filenm.push_back(structs_dir + "/" + file_name + ".hpcstruct");
             } else {
               if (output_name == "-") {
                 out_filenm.push_back("-");
