@@ -1784,7 +1784,7 @@ BOOST_COPY=no
 # dyninst would use (but no more).  But copy-libs won't fail on a
 # missing library, so it doesn't have to be exact.
 
-BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer serialization'
 
 AC_MSG_CHECKING([for boost])
 
