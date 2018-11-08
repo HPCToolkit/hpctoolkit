@@ -119,7 +119,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = src/lib/binutils
+subdir = src/lib/trace-analysis
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
@@ -138,24 +138,32 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbinutils_la-Demangler.lo libHPCbinutils_la-LM.lo \
-	libHPCbinutils_la-Seg.lo libHPCbinutils_la-Proc.lo \
-	libHPCbinutils_la-Insn.lo \
-	libHPCbinutils_la-LinuxKernelSymbols.lo \
-	libHPCbinutils_la-SimpleSymbols.lo \
-	libHPCbinutils_la-SimpleSymbolsFactories.lo \
-	libHPCbinutils_la-Dbg-LM.lo libHPCbinutils_la-Dbg-Proc.lo \
-	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo
-am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
-libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
+libHPCtrace_analysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__dirstamp = $(am__leading_dot)dirstamp
+am__objects_1 = data/libHPCtrace_analysis_la-TCT-Time.lo \
+	data/libHPCtrace_analysis_la-TCT-Node.lo \
+	data/libHPCtrace_analysis_la-TCT-Cluster.lo \
+	data/libHPCtrace_analysis_la-TCT-Metrics.lo \
+	data/libHPCtrace_analysis_la-TCT-Serialization.lo \
+	data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo \
+	libHPCtrace_analysis_la-TraceAnalysis.lo \
+	libHPCtrace_analysis_la-TraceAnalysisCommon.lo \
+	libHPCtrace_analysis_la-BinaryAnalyzer.lo \
+	libHPCtrace_analysis_la-CCTVisitor.lo \
+	libHPCtrace_analysis_la-LocalTraceAnalyzer.lo \
+	libHPCtrace_analysis_la-TraceFileReader.lo \
+	libHPCtrace_analysis_la-DifferenceQuantifier.lo \
+	libHPCtrace_analysis_la-PerformanceDiagnoser.lo
+am_libHPCtrace_analysis_la_OBJECTS = $(am__objects_1)
+libHPCtrace_analysis_la_OBJECTS =  \
+	$(am_libHPCtrace_analysis_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libHPCbinutils_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+libHPCtrace_analysis_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -209,8 +217,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libHPCbinutils_la_SOURCES)
-DIST_SOURCES = $(libHPCbinutils_la_SOURCES)
+SOURCES = $(libHPCtrace_analysis_la_SOURCES)
+DIST_SOURCES = $(libHPCtrace_analysis_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -314,6 +322,8 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
+
+# GNU binutils flags are needed for HPCLIB_ISA.
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
@@ -479,7 +489,7 @@ top_srcdir = @top_srcdir@
 wordsize_cflag = @wordsize_cflag@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = subdir-objects foreign
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
 ############################################################
@@ -519,26 +529,30 @@ HPCLIB_TraceAnalysisMPI = $(top_builddir)/src/lib/trace-analysis-mpi/libHPCtrace
 # Local settings
 #############################################################################
 MYSOURCES = \
-        Demangler.hpp Demangler.cpp \
-	LM.hpp LM.cpp \
-	Seg.hpp Seg.cpp \
-	Proc.hpp Proc.cpp \
-	Insn.hpp Insn.cpp \
-	\
-	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp\
-	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
-	\
-	Dbg-LM.hpp Dbg-LM.cpp \
-	Dbg-Proc.hpp Dbg-Proc.cpp \
-	\
-	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp 
+	data/TCT-CFG.hpp \
+	data/TCT-Time.hpp data/TCT-Time-Internal.hpp data/TCT-Time.cpp \
+	data/TCT-Node.hpp data/TCT-Node.cpp \
+	data/TCT-Cluster.hpp data/TCT-Cluster.cpp \
+	data/TCT-Metrics.hpp data/TCT-Metrics.cpp \
+	data/TCT-Serialization.hpp data/TCT-Serialization.cpp \
+	data/TCT-Semantic-Label.hpp data/TCT-Semantic-Label.cpp \
+	TraceAnalysis.hpp TraceAnalysis.cpp \
+	TraceAnalysisCommon.hpp TraceAnalysisCommon.cpp \
+	BinaryAnalyzer.hpp BinaryAnalyzer.cpp \
+	CCTVisitor.hpp CCTVisitor.cpp \
+	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
+	TraceFileReader.hpp TraceFileReader.cpp \
+	DifferenceQuantifier.hpp DifferenceQuantifier.cpp \
+	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp
 
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@BINUTILS_IFLAGS@  \
+	@BOOST_IFLAGS@  \
+    @DYNINST_IFLAGS@ \
+	-I$(LIBDWARF_INC)
 
-#############################################################################
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -547,12 +561,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LTLIBRARIES = libHPCbinutils.la
-libHPCbinutils_la_SOURCES = $(MYSOURCES)
-libHPCbinutils_la_CFLAGS = $(MYCFLAGS)
-libHPCbinutils_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbinutils_la_AR = $(MYAR)
-libHPCbinutils_la_LIBADD = $(MYLIBADD)
+noinst_LTLIBRARIES = libHPCtrace-analysis.la
+libHPCtrace_analysis_la_SOURCES = $(MYSOURCES)
+libHPCtrace_analysis_la_CFLAGS = $(MYCFLAGS)
+libHPCtrace_analysis_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCtrace_analysis_la_AR = $(MYAR)
+libHPCtrace_analysis_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -575,9 +589,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/binutils/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/trace-analysis/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/lib/binutils/Makefile
+	  $(AUTOMAKE) --foreign src/lib/trace-analysis/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -607,139 +621,179 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+data/$(am__dirstamp):
+	@$(MKDIR_P) data
+	@: > data/$(am__dirstamp)
+data/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) data/$(DEPDIR)
+	@: > data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Time.lo: data/$(am__dirstamp) \
+	data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Node.lo: data/$(am__dirstamp) \
+	data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Cluster.lo: data/$(am__dirstamp) \
+	data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Metrics.lo: data/$(am__dirstamp) \
+	data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Serialization.lo:  \
+	data/$(am__dirstamp) data/$(DEPDIR)/$(am__dirstamp)
+data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo:  \
+	data/$(am__dirstamp) data/$(DEPDIR)/$(am__dirstamp)
 
-libHPCbinutils.la: $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_DEPENDENCIES) $(EXTRA_libHPCbinutils_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libHPCbinutils_la_LINK)  $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_LIBADD) $(LIBS)
+libHPCtrace-analysis.la: $(libHPCtrace_analysis_la_OBJECTS) $(libHPCtrace_analysis_la_DEPENDENCIES) $(EXTRA_libHPCtrace_analysis_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libHPCtrace_analysis_la_LINK)  $(libHPCtrace_analysis_la_OBJECTS) $(libHPCtrace_analysis_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f data/*.$(OBJEXT)
+	-rm -f data/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Demangler.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Insn.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LM.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-BinaryAnalyzer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-CCTVisitor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-DifferenceQuantifier.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-LocalTraceAnalyzer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-PerformanceDiagnoser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysis.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysisCommon.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-TraceFileReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Cluster.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Metrics.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Node.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Semantic-Label.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Serialization.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Time.Plo@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCbinutils_la-Demangler.lo: Demangler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Demangler.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Demangler.Tpo -c -o libHPCbinutils_la-Demangler.lo `test -f 'Demangler.cpp' || echo '$(srcdir)/'`Demangler.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Demangler.Tpo $(DEPDIR)/libHPCbinutils_la-Demangler.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Demangler.cpp' object='libHPCbinutils_la-Demangler.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Time.lo: data/TCT-Time.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Time.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Time.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Time.lo `test -f 'data/TCT-Time.cpp' || echo '$(srcdir)/'`data/TCT-Time.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Time.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Time.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Time.cpp' object='data/libHPCtrace_analysis_la-TCT-Time.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Demangler.lo `test -f 'Demangler.cpp' || echo '$(srcdir)/'`Demangler.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Time.lo `test -f 'data/TCT-Time.cpp' || echo '$(srcdir)/'`data/TCT-Time.cpp
 
-libHPCbinutils_la-LM.lo: LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LM.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LM.Tpo -c -o libHPCbinutils_la-LM.lo `test -f 'LM.cpp' || echo '$(srcdir)/'`LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-LM.Tpo $(DEPDIR)/libHPCbinutils_la-LM.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='LM.cpp' object='libHPCbinutils_la-LM.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Node.lo: data/TCT-Node.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Node.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Node.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Node.lo `test -f 'data/TCT-Node.cpp' || echo '$(srcdir)/'`data/TCT-Node.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Node.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Node.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Node.cpp' object='data/libHPCtrace_analysis_la-TCT-Node.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LM.lo `test -f 'LM.cpp' || echo '$(srcdir)/'`LM.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Node.lo `test -f 'data/TCT-Node.cpp' || echo '$(srcdir)/'`data/TCT-Node.cpp
 
-libHPCbinutils_la-Seg.lo: Seg.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Seg.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Seg.Tpo -c -o libHPCbinutils_la-Seg.lo `test -f 'Seg.cpp' || echo '$(srcdir)/'`Seg.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Seg.Tpo $(DEPDIR)/libHPCbinutils_la-Seg.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Seg.cpp' object='libHPCbinutils_la-Seg.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Cluster.lo: data/TCT-Cluster.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Cluster.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Cluster.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Cluster.lo `test -f 'data/TCT-Cluster.cpp' || echo '$(srcdir)/'`data/TCT-Cluster.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Cluster.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Cluster.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Cluster.cpp' object='data/libHPCtrace_analysis_la-TCT-Cluster.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Seg.lo `test -f 'Seg.cpp' || echo '$(srcdir)/'`Seg.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Cluster.lo `test -f 'data/TCT-Cluster.cpp' || echo '$(srcdir)/'`data/TCT-Cluster.cpp
 
-libHPCbinutils_la-Proc.lo: Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Proc.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Proc.Tpo -c -o libHPCbinutils_la-Proc.lo `test -f 'Proc.cpp' || echo '$(srcdir)/'`Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Proc.Tpo $(DEPDIR)/libHPCbinutils_la-Proc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Proc.cpp' object='libHPCbinutils_la-Proc.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Metrics.lo: data/TCT-Metrics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Metrics.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Metrics.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Metrics.lo `test -f 'data/TCT-Metrics.cpp' || echo '$(srcdir)/'`data/TCT-Metrics.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Metrics.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Metrics.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Metrics.cpp' object='data/libHPCtrace_analysis_la-TCT-Metrics.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Proc.lo `test -f 'Proc.cpp' || echo '$(srcdir)/'`Proc.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Metrics.lo `test -f 'data/TCT-Metrics.cpp' || echo '$(srcdir)/'`data/TCT-Metrics.cpp
 
-libHPCbinutils_la-Insn.lo: Insn.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Insn.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Insn.Tpo -c -o libHPCbinutils_la-Insn.lo `test -f 'Insn.cpp' || echo '$(srcdir)/'`Insn.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Insn.Tpo $(DEPDIR)/libHPCbinutils_la-Insn.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Insn.cpp' object='libHPCbinutils_la-Insn.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Serialization.lo: data/TCT-Serialization.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Serialization.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Serialization.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Serialization.lo `test -f 'data/TCT-Serialization.cpp' || echo '$(srcdir)/'`data/TCT-Serialization.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Serialization.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Serialization.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Serialization.cpp' object='data/libHPCtrace_analysis_la-TCT-Serialization.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Insn.lo `test -f 'Insn.cpp' || echo '$(srcdir)/'`Insn.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Serialization.lo `test -f 'data/TCT-Serialization.cpp' || echo '$(srcdir)/'`data/TCT-Serialization.cpp
 
-libHPCbinutils_la-LinuxKernelSymbols.lo: LinuxKernelSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LinuxKernelSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Tpo -c -o libHPCbinutils_la-LinuxKernelSymbols.lo `test -f 'LinuxKernelSymbols.cpp' || echo '$(srcdir)/'`LinuxKernelSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='LinuxKernelSymbols.cpp' object='libHPCbinutils_la-LinuxKernelSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo: data/TCT-Semantic-Label.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo -MD -MP -MF data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Semantic-Label.Tpo -c -o data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo `test -f 'data/TCT-Semantic-Label.cpp' || echo '$(srcdir)/'`data/TCT-Semantic-Label.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Semantic-Label.Tpo data/$(DEPDIR)/libHPCtrace_analysis_la-TCT-Semantic-Label.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='data/TCT-Semantic-Label.cpp' object='data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LinuxKernelSymbols.lo `test -f 'LinuxKernelSymbols.cpp' || echo '$(srcdir)/'`LinuxKernelSymbols.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o data/libHPCtrace_analysis_la-TCT-Semantic-Label.lo `test -f 'data/TCT-Semantic-Label.cpp' || echo '$(srcdir)/'`data/TCT-Semantic-Label.cpp
 
-libHPCbinutils_la-SimpleSymbols.lo: SimpleSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-SimpleSymbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Tpo -c -o libHPCbinutils_la-SimpleSymbols.lo `test -f 'SimpleSymbols.cpp' || echo '$(srcdir)/'`SimpleSymbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Tpo $(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SimpleSymbols.cpp' object='libHPCbinutils_la-SimpleSymbols.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-TraceAnalysis.lo: TraceAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-TraceAnalysis.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysis.Tpo -c -o libHPCtrace_analysis_la-TraceAnalysis.lo `test -f 'TraceAnalysis.cpp' || echo '$(srcdir)/'`TraceAnalysis.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysis.Tpo $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysis.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='TraceAnalysis.cpp' object='libHPCtrace_analysis_la-TraceAnalysis.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-SimpleSymbols.lo `test -f 'SimpleSymbols.cpp' || echo '$(srcdir)/'`SimpleSymbols.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-TraceAnalysis.lo `test -f 'TraceAnalysis.cpp' || echo '$(srcdir)/'`TraceAnalysis.cpp
 
-libHPCbinutils_la-SimpleSymbolsFactories.lo: SimpleSymbolsFactories.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-SimpleSymbolsFactories.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Tpo -c -o libHPCbinutils_la-SimpleSymbolsFactories.lo `test -f 'SimpleSymbolsFactories.cpp' || echo '$(srcdir)/'`SimpleSymbolsFactories.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Tpo $(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='SimpleSymbolsFactories.cpp' object='libHPCbinutils_la-SimpleSymbolsFactories.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-TraceAnalysisCommon.lo: TraceAnalysisCommon.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-TraceAnalysisCommon.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysisCommon.Tpo -c -o libHPCtrace_analysis_la-TraceAnalysisCommon.lo `test -f 'TraceAnalysisCommon.cpp' || echo '$(srcdir)/'`TraceAnalysisCommon.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysisCommon.Tpo $(DEPDIR)/libHPCtrace_analysis_la-TraceAnalysisCommon.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='TraceAnalysisCommon.cpp' object='libHPCtrace_analysis_la-TraceAnalysisCommon.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-SimpleSymbolsFactories.lo `test -f 'SimpleSymbolsFactories.cpp' || echo '$(srcdir)/'`SimpleSymbolsFactories.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-TraceAnalysisCommon.lo `test -f 'TraceAnalysisCommon.cpp' || echo '$(srcdir)/'`TraceAnalysisCommon.cpp
 
-libHPCbinutils_la-Dbg-LM.lo: Dbg-LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Dbg-LM.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Tpo -c -o libHPCbinutils_la-Dbg-LM.lo `test -f 'Dbg-LM.cpp' || echo '$(srcdir)/'`Dbg-LM.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Tpo $(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Dbg-LM.cpp' object='libHPCbinutils_la-Dbg-LM.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-BinaryAnalyzer.lo: BinaryAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-BinaryAnalyzer.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-BinaryAnalyzer.Tpo -c -o libHPCtrace_analysis_la-BinaryAnalyzer.lo `test -f 'BinaryAnalyzer.cpp' || echo '$(srcdir)/'`BinaryAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-BinaryAnalyzer.Tpo $(DEPDIR)/libHPCtrace_analysis_la-BinaryAnalyzer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='BinaryAnalyzer.cpp' object='libHPCtrace_analysis_la-BinaryAnalyzer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Dbg-LM.lo `test -f 'Dbg-LM.cpp' || echo '$(srcdir)/'`Dbg-LM.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-BinaryAnalyzer.lo `test -f 'BinaryAnalyzer.cpp' || echo '$(srcdir)/'`BinaryAnalyzer.cpp
 
-libHPCbinutils_la-Dbg-Proc.lo: Dbg-Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Dbg-Proc.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Tpo -c -o libHPCbinutils_la-Dbg-Proc.lo `test -f 'Dbg-Proc.cpp' || echo '$(srcdir)/'`Dbg-Proc.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Tpo $(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Dbg-Proc.cpp' object='libHPCbinutils_la-Dbg-Proc.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-CCTVisitor.lo: CCTVisitor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-CCTVisitor.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-CCTVisitor.Tpo -c -o libHPCtrace_analysis_la-CCTVisitor.lo `test -f 'CCTVisitor.cpp' || echo '$(srcdir)/'`CCTVisitor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-CCTVisitor.Tpo $(DEPDIR)/libHPCtrace_analysis_la-CCTVisitor.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CCTVisitor.cpp' object='libHPCtrace_analysis_la-CCTVisitor.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Dbg-Proc.lo `test -f 'Dbg-Proc.cpp' || echo '$(srcdir)/'`Dbg-Proc.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-CCTVisitor.lo `test -f 'CCTVisitor.cpp' || echo '$(srcdir)/'`CCTVisitor.cpp
 
-libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-BinUtils.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo $(DEPDIR)/libHPCbinutils_la-BinUtils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='BinUtils.cpp' object='libHPCbinutils_la-BinUtils.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-LocalTraceAnalyzer.lo: LocalTraceAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-LocalTraceAnalyzer.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-LocalTraceAnalyzer.Tpo -c -o libHPCtrace_analysis_la-LocalTraceAnalyzer.lo `test -f 'LocalTraceAnalyzer.cpp' || echo '$(srcdir)/'`LocalTraceAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-LocalTraceAnalyzer.Tpo $(DEPDIR)/libHPCtrace_analysis_la-LocalTraceAnalyzer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='LocalTraceAnalyzer.cpp' object='libHPCtrace_analysis_la-LocalTraceAnalyzer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-LocalTraceAnalyzer.lo `test -f 'LocalTraceAnalyzer.cpp' || echo '$(srcdir)/'`LocalTraceAnalyzer.cpp
 
-libHPCbinutils_la-VMAInterval.lo: VMAInterval.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-VMAInterval.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo $(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='VMAInterval.cpp' object='libHPCbinutils_la-VMAInterval.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCtrace_analysis_la-TraceFileReader.lo: TraceFileReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-TraceFileReader.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-TraceFileReader.Tpo -c -o libHPCtrace_analysis_la-TraceFileReader.lo `test -f 'TraceFileReader.cpp' || echo '$(srcdir)/'`TraceFileReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-TraceFileReader.Tpo $(DEPDIR)/libHPCtrace_analysis_la-TraceFileReader.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='TraceFileReader.cpp' object='libHPCtrace_analysis_la-TraceFileReader.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-TraceFileReader.lo `test -f 'TraceFileReader.cpp' || echo '$(srcdir)/'`TraceFileReader.cpp
+
+libHPCtrace_analysis_la-DifferenceQuantifier.lo: DifferenceQuantifier.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-DifferenceQuantifier.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-DifferenceQuantifier.Tpo -c -o libHPCtrace_analysis_la-DifferenceQuantifier.lo `test -f 'DifferenceQuantifier.cpp' || echo '$(srcdir)/'`DifferenceQuantifier.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-DifferenceQuantifier.Tpo $(DEPDIR)/libHPCtrace_analysis_la-DifferenceQuantifier.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='DifferenceQuantifier.cpp' object='libHPCtrace_analysis_la-DifferenceQuantifier.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-DifferenceQuantifier.lo `test -f 'DifferenceQuantifier.cpp' || echo '$(srcdir)/'`DifferenceQuantifier.cpp
+
+libHPCtrace_analysis_la-PerformanceDiagnoser.lo: PerformanceDiagnoser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-PerformanceDiagnoser.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-PerformanceDiagnoser.Tpo -c -o libHPCtrace_analysis_la-PerformanceDiagnoser.lo `test -f 'PerformanceDiagnoser.cpp' || echo '$(srcdir)/'`PerformanceDiagnoser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-PerformanceDiagnoser.Tpo $(DEPDIR)/libHPCtrace_analysis_la-PerformanceDiagnoser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='PerformanceDiagnoser.cpp' object='libHPCtrace_analysis_la-PerformanceDiagnoser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-PerformanceDiagnoser.lo `test -f 'PerformanceDiagnoser.cpp' || echo '$(srcdir)/'`PerformanceDiagnoser.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf data/.libs data/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -854,6 +908,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f data/$(DEPDIR)/$(am__dirstamp)
+	-rm -f data/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -864,7 +920,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) data/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -910,7 +966,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) data/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
