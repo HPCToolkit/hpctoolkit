@@ -106,12 +106,6 @@ hpcrun_cleanup_partial_unwind(void)
 
   hpcrun_up_pmsg_count();
 
-#if 0
-  if (TD_GET(splay_lock)) {
-    hpcrun_release_splay_lock(); // splay tree lock is no longer used.
-  }
-#endif
-
   if (TD_GET(fnbounds_lock)) {
     fnbounds_release_lock();
   }
@@ -208,8 +202,11 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  sigjmp_buf_t* it = &(td->bad_unwind);
+  thread_data_t* td   = hpcrun_get_thread_data();
+  sigjmp_buf_t* it    = &(td->bad_unwind);
+  sigjmp_buf_t* old   = td->current_jmp_buf;
+  td->current_jmp_buf = it;
+
   cct_node_t* node = NULL;
   epoch_t* epoch = td->core_profile_trace_data.epoch;
 
@@ -249,6 +246,8 @@ hpcrun_sample_callpath(void* context, int metricId,
         metricId, metricIncr, skipInner, NULL);
     hpcrun_cleanup_partial_unwind();
   }
+  td->current_jmp_buf = old;
+
   // --------------------------------------
   // end of handling sample
   // --------------------------------------
@@ -344,10 +343,13 @@ hpcrun_gen_thread_ctxt(void* context)
   while (! hpcrun_dlopen_read_lock()) ;
 #endif
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  sigjmp_buf_t* it = &(td->bad_unwind);
-  cct_node_t* node = NULL;
-  epoch_t* epoch = td->core_profile_trace_data.epoch;
+  thread_data_t* td   = hpcrun_get_thread_data();
+  sigjmp_buf_t* it    = &(td->bad_unwind);
+  sigjmp_buf_t* old   = td->current_jmp_buf;
+  td->current_jmp_buf = it;
+
+  cct_node_t* node  = NULL;
+  epoch_t* epoch    = td->core_profile_trace_data.epoch;
 
   hpcrun_set_handling_sample(td);
 
@@ -357,10 +359,10 @@ hpcrun_gen_thread_ctxt(void* context)
   if (ljmp == 0) {
     if (epoch != NULL) {
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,
-						    PTHREAD_CTXT_SKIP_INNER)) {
-	hpcrun_clear_handling_sample(td); // restore state
-	EMSG("Internal error: unable to obtain backtrace for pthread context");
-	return NULL;
+          PTHREAD_CTXT_SKIP_INNER)) {
+        hpcrun_clear_handling_sample(td); // restore state
+        EMSG("Internal error: unable to obtain backtrace for pthread context");
+        return NULL;
       }
     }
     //
@@ -372,9 +374,11 @@ hpcrun_gen_thread_ctxt(void* context)
       bt.last--;
     }
     node = hpcrun_cct_record_backtrace(&(epoch->csdata), false, &bt,
-//				       bt.fence == FENCE_THREAD, bt.begin, bt.last,
-				       bt.has_tramp);
+        bt.has_tramp);
   }
+  // restore back the sigjmp
+  td->current_jmp_buf = old;
+
   // FIXME: What to do when thread context is partial ?
 #if 0
   else {

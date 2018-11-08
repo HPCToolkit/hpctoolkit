@@ -72,7 +72,7 @@ pathfind(const char* pathList,
 	 const char* name,
 	 const char* mode)
 {
-  static char* result = NULL;
+  static __thread char* result = NULL;
   int   accessFlags = 0;
   const char* path;
   const char* sep;

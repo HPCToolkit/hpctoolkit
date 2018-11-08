@@ -203,39 +203,40 @@ bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address)
 
 #define MAX_UWI_STR MAX_INTERVAL_STR+MAX_RECIPE_STR+4
 static void
-uwi_t_tostr(void* uwip, char str[])
+uwi_t_any_tostr(void* uwip, char str[], unwinder_t uw)
 {
   uwi_t *uwi = uwip;
   char intervalstr[MAX_INTERVAL_STR];
   interval_t_tostr(&uwi->interval, intervalstr);
   char recipestr[MAX_RECIPE_STR];
-  uw_recipe_tostr(uwi->recipe, recipestr);
+  uw_recipe_tostr(uwi->recipe, recipestr, uw);
   sprintf(str, "(%s %s)", intervalstr, recipestr);
 }
 
-// compute a string representing the binary tree printed vertically and
-// return result in the treestr parameter.
-// caller should provide the appropriate length for treestr.
-void
-bitree_uwi_tostring(bitree_uwi_t *tree, char treestr[])
+static void
+uwi_t_dwarf_tostr(void* uwip, char str[])
 {
-  char uwibuff[MAX_UWI_STR];
-  binarytree_tostring((binarytree_t*)tree,
-	  uwi_t_tostr, uwibuff, treestr);
+  uwi_t_any_tostr(uwip, str, DWARF_UNWINDER);
 }
 
-void
-bitree_uwi_print(bitree_uwi_t *tree) {
-  char treestr[MAX_TREE_STR];
-  bitree_uwi_tostring(tree, treestr);
-  printf("%s\n\n", treestr);
+static void
+uwi_t_native_tostr(void* uwip, char str[])
+{
+  uwi_t_any_tostr(uwip, str, NATIVE_UNWINDER);
 }
+
+static void
+(*uwi_t_tostr[NUM_UNWINDERS])(void *uwip, char str[]) =
+{
+  [DWARF_UNWINDER] = uwi_t_dwarf_tostr,
+  [NATIVE_UNWINDER] = uwi_t_native_tostr
+};
 
 void
 bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents,
-	char treestr[])
+			   char treestr[], unwinder_t uw)
 {
   char uwibuff[MAX_UWI_STR];
   binarytree_tostring_indent((binarytree_t*)tree,
-	  uwi_t_tostr, uwibuff, indents, treestr);
+	  uwi_t_tostr[uw], uwibuff, indents, treestr);
 }

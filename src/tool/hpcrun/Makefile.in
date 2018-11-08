@@ -122,35 +122,42 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 pkglibexec_PROGRAMS =
-@OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary
-@OPT_BUILD_FRONT_END_TRUE@am__append_2 = scripts/hpclog
-@OPT_BUILD_FRONT_END_TRUE@am__append_3 = hpctoolkit.h
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun.la \
+@OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary \
+@OPT_BUILD_FRONT_END_TRUE@	scripts/hpclog
+@OPT_BUILD_FRONT_END_TRUE@am__append_2 = hpctoolkit.h
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_3 = libhpcrun.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_pthread.la
-@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_5 = libhpcrun_gpu.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_6 = libhpctoolkit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_7 = scripts/hpcrun
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun_gpu.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_5 = libhpctoolkit.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_6 = scripts/hpcrun
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@noinst_PROGRAMS = libhpcrun.o$(EXEEXT)
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpcrun_wrap.a \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_7 = libhpcrun_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_io_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_pthread_wrap.a
-@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libhpcrun_gpu_wrap.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = libhpctoolkit.a
-@HOST_CPU_PPC_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_11 = libibm_xlomp_wrappers.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_12 = scripts/hpclink
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_13 = libhpcrun_mpi.la
-@HOST_CPU_PPC_TRUE@am__append_14 = ibm-xlomp
-@OPT_ENABLE_PERF_EVENT_TRUE@am__append_15 = \
+@OPT_ENABLE_CUDA_TRUE@@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = libhpcrun_gpu_wrap.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_9 = libhpctoolkit.a
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_10 = scripts/hpclink
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_11 = libhpcrun_mpi.la
+@HOST_CPU_PPC_TRUE@am__append_12 = \
+@HOST_CPU_PPC_TRUE@        trampoline/common/trampoline_eager.c
+
+@HOST_CPU_PPC_FALSE@am__append_13 = \
+@HOST_CPU_PPC_FALSE@        trampoline/common/trampoline_lazy.c
+
+@OPT_ENABLE_PERF_EVENT_TRUE@am__append_14 = \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/event_custom.c  \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/linux_perf.c    \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_event_open.c     \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf-util.c     \
-@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_mmap.c
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_mmap.c     \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_skid.c
 
+@OPT_ENABLE_PERF_EVENT_TRUE@am__append_15 = -DHPCRUN_SS_LINUX_PERF
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__append_16 = sample-sources/perf/perfmon-util.c
 @OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__append_17 = sample-sources/perf/perfmon-util-dummy.c
 @OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_18 = sample-sources/perf/kernel_blocking.c
@@ -261,28 +268,31 @@ pkglibexec_PROGRAMS =
 @OPT_PAPI_DYNAMIC_TRUE@am__append_107 = $(MY_PAPI_FILES)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_108 = $(PAPI_INC_FLGS)
 @OPT_PAPI_DYNAMIC_TRUE@am__append_109 = $(PAPI_LD_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_110 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_111 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_112 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_113 = $(PAPI_LD_FLGS)
-@OPT_ENABLE_UPC_TRUE@am__append_114 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_115 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_116 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_117 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_118 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_119 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_120 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_122 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(OPT_CUDA_IFLAGS) -g
+@OPT_PAPI_DYNAMIC_TRUE@am__append_110 = -DHPCRUN_SS_PAPI
+@OPT_PAPI_CUPTI_TRUE@am__append_111 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_112 = -DHPCRUN_SS_PAPI_C_CUPTI
+@OPT_PAPI_STATIC_TRUE@am__append_113 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_114 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_115 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_116 = -DHPCRUN_SS_PAPI
+@OPT_ENABLE_UPC_TRUE@am__append_117 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_118 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_119 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_120 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_121 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_122 = -DLUSH_PTHREADS
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_123 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_125 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_126 = $(OPT_CUDA_IFLAGS) -g
 #  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_124 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_125 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_126 = $(OPT_CUDA_LDFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_127 = -DENABLE_CUDA
 @OPT_ENABLE_CUDA_TRUE@am__append_128 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_129 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_130 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_129 = $(OPT_CUDA_LDFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_130 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_131 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_132 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_133 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -374,12 +384,6 @@ libhpctoolkit_a_AR = $(AR) $(ARFLAGS)
 libhpctoolkit_a_LIBADD =
 am_libhpctoolkit_a_OBJECTS = libhpctoolkit_a-hpctoolkit.$(OBJEXT)
 libhpctoolkit_a_OBJECTS = $(am_libhpctoolkit_a_OBJECTS)
-libibm_xlomp_wrappers_a_AR = $(AR) $(ARFLAGS)
-libibm_xlomp_wrappers_a_LIBADD =
-am_libibm_xlomp_wrappers_a_OBJECTS =  \
-	plugins/ibm-xlomp-wrappers.$(OBJEXT)
-libibm_xlomp_wrappers_a_OBJECTS =  \
-	$(am_libibm_xlomp_wrappers_a_OBJECTS)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 libagent_cilk_la_LIBADD =
 am__libagent_cilk_la_SOURCES_DIST = lush-agents/agent-cilk.h \
@@ -448,10 +452,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
+	cct2metrics.c lush/lush-backtrace.h lush/lush-backtrace.c \
+	lush/lush.h lush/lush.c lush/lush-pthread.h \
+	lush/lush-pthread.i lush/lush-pthread.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
@@ -460,10 +463,14 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
+	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
+	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
 	sample-sources/perf/perf_mmap.c \
+	sample-sources/perf/perf_skid.c \
 	sample-sources/perf/perfmon-util.c \
 	sample-sources/perf/perfmon-util-dummy.c \
 	sample-sources/perf/kernel_blocking.c \
@@ -506,17 +513,22 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
+	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_7 = sample-sources/perf/libhpcrun_la-event_custom.lo \
+@HOST_CPU_PPC_TRUE@am__objects_7 = trampoline/common/libhpcrun_la-trampoline_eager.lo
+@HOST_CPU_PPC_FALSE@am__objects_8 = trampoline/common/libhpcrun_la-trampoline_lazy.lo
+@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_9 = sample-sources/perf/libhpcrun_la-event_custom.lo \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-linux_perf.lo \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-perf_event_open.lo \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-perf-util.lo \
-@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-perf_mmap.lo
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_8 = sample-sources/perf/libhpcrun_la-perfmon-util.lo
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_9 = sample-sources/perf/libhpcrun_la-perfmon-util-dummy.lo
-@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_10 = sample-sources/perf/libhpcrun_la-kernel_blocking.lo
-@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_11 = sample-sources/perf/libhpcrun_la-kernel_blocking_stub.lo
-am__objects_12 = utilities/libhpcrun_la-first_func.lo \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-perf_mmap.lo \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_la-perf_skid.lo
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_10 = sample-sources/perf/libhpcrun_la-perfmon-util.lo
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_11 = sample-sources/perf/libhpcrun_la-perfmon-util-dummy.lo
+@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_12 = sample-sources/perf/libhpcrun_la-kernel_blocking.lo
+@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_13 = sample-sources/perf/libhpcrun_la-kernel_blocking_stub.lo
+am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-main.lo libhpcrun_la-disabled.lo \
 	libhpcrun_la-cct_insert_backtrace.lo \
 	libhpcrun_la-cct_backtrace_finalize.lo libhpcrun_la-env.lo \
@@ -547,7 +559,6 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-write_data.lo cct/libhpcrun_la-cct_bundle.lo \
 	cct/libhpcrun_la-cct_ctxt.lo cct/libhpcrun_la-cct.lo \
 	libhpcrun_la-cct2metrics.lo \
-	trampoline/common/libhpcrun_la-trampoline.lo \
 	lush/libhpcrun_la-lush-backtrace.lo lush/libhpcrun_la-lush.lo \
 	lush/libhpcrun_la-lush-pthread.lo \
 	lush/libhpcrun_la-lush-support-rt.lo \
@@ -564,61 +575,61 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	utilities/libhpcrun_la-tokenize.lo \
 	utilities/libhpcrun_la-unlink.lo $(am__objects_7) \
 	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
-	$(am__objects_11)
-am__objects_13 = fnbounds/libhpcrun_la-fnbounds_client.lo \
+	$(am__objects_11) $(am__objects_12) $(am__objects_13)
+am__objects_15 = fnbounds/libhpcrun_la-fnbounds_client.lo \
 	fnbounds/libhpcrun_la-fnbounds_dynamic.lo \
 	monitor-exts/libhpcrun_la-openmp.lo \
 	libhpcrun_la-hpcrun_dlfns.lo \
 	libhpcrun_la-custom-init-dynamic.lo
-am__objects_14 = os/linux/libhpcrun_la-dylib.lo
-@HOST_OS_LINUX_TRUE@am__objects_15 = $(am__objects_14)
-am__objects_16 =  \
+am__objects_16 = os/linux/libhpcrun_la-dylib.lo
+@HOST_OS_LINUX_TRUE@am__objects_17 = $(am__objects_16)
+am__objects_18 =  \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-@HOST_CPU_MIPS_TRUE@am__objects_17 = $(am__objects_16)
-am__objects_18 = trampoline/ppc64/libhpcrun_la-ppc64-tramp.lo \
+@HOST_CPU_MIPS_TRUE@am__objects_19 = $(am__objects_18)
+am__objects_20 = trampoline/ppc64/libhpcrun_la-ppc64-tramp.lo \
 	utilities/arch/ppc64/libhpcrun_la-ppc64-context-pc.lo
-@HOST_CPU_PPC_TRUE@am__objects_19 = $(am__objects_18)
-am__objects_20 = trampoline/x86-family/libhpcrun_la-x86-tramp.lo \
+@HOST_CPU_PPC_TRUE@am__objects_21 = $(am__objects_20)
+am__objects_22 = trampoline/x86-family/libhpcrun_la-x86-tramp.lo \
 	utilities/arch/x86-family/libhpcrun_la-x86-context-pc.lo
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_21 = $(am__objects_20)
-am__objects_22 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_23 = $(am__objects_22)
+am__objects_24 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
 	utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo
-@HOST_CPU_IA64_TRUE@am__objects_23 = $(am__objects_22)
-am__objects_24 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
+@HOST_CPU_IA64_TRUE@am__objects_25 = $(am__objects_24)
+am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 	utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo
-@HOST_CPU_AARCH64_TRUE@am__objects_25 = $(am__objects_24)
-@OPT_PAPI_CUPTI_TRUE@am__objects_26 = sample-sources/libhpcrun_la-papi-c-cupti.lo
-@OPT_PAPI_COMPONENT_FALSE@am__objects_27 =  \
+@HOST_CPU_AARCH64_TRUE@am__objects_27 = $(am__objects_26)
+@OPT_PAPI_CUPTI_TRUE@am__objects_28 = sample-sources/libhpcrun_la-papi-c-cupti.lo
+@OPT_PAPI_COMPONENT_FALSE@am__objects_29 =  \
 @OPT_PAPI_COMPONENT_FALSE@	sample-sources/libhpcrun_la-papi.lo \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_26)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_27 = sample-sources/libhpcrun_la-papi-c.lo \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_28)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_29 = sample-sources/libhpcrun_la-papi-c.lo \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_la-papi-c-extended-info.lo \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_26)
-@OPT_PAPI_DYNAMIC_TRUE@am__objects_28 = $(am__objects_27)
-am__objects_29 = sample-sources/libhpcrun_la-upc.lo
-@OPT_ENABLE_UPC_TRUE@am__objects_30 = $(am__objects_29)
-am__objects_31 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_28)
+@OPT_PAPI_DYNAMIC_TRUE@am__objects_30 = $(am__objects_29)
+am__objects_31 = sample-sources/libhpcrun_la-upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_32 = $(am__objects_31)
+am__objects_33 = libhpcrun_la-gpu_blame-cuda-driver-table.lo \
 	libhpcrun_la-gpu_blame-cuda-runtime-table.lo
-am__objects_32 = sample-sources/libhpcrun_la-gpu_blame.lo \
+am__objects_34 = sample-sources/libhpcrun_la-gpu_blame.lo \
 	sample-sources/libhpcrun_la-gpu_ctxt_actions.lo \
-	$(am__objects_31)
-@OPT_ENABLE_CUDA_TRUE@am__objects_33 = $(am__objects_32)
-am__objects_34 = unwind/common/libhpcrun_la-backtrace.lo \
+	$(am__objects_33)
+@OPT_ENABLE_CUDA_TRUE@am__objects_35 = $(am__objects_34)
+am__objects_36 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
-am__objects_35 = $(am__objects_34) \
+am__objects_37 = $(am__objects_36) \
 	unwind/common/libhpcrun_la-binarytree_uwi.lo \
 	unwind/common/libhpcrun_la-interval_t.lo \
 	unwind/common/libhpcrun_la-libunw_intervals.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
-am__objects_36 = $(am__objects_35) \
+am__objects_38 = $(am__objects_37) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_37 = $(am__objects_35) \
+am__objects_39 = $(am__objects_37) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_38 = $(am__objects_35) \
+am__objects_40 = $(am__objects_37) \
 	unwind/x86-family/libhpcrun_la-x86-all.lo \
 	unwind/x86-family/libhpcrun_la-amd-xop.lo \
 	unwind/x86-family/libhpcrun_la-x86-cold-path.lo \
@@ -635,15 +646,16 @@ am__objects_38 = $(am__objects_35) \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-intel-composer2013-mic.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-main.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
+	unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_39 = $(am__objects_38)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_39 = $(am__objects_37)
-@UNW_LIBUNW_TRUE@am__objects_39 = $(am__objects_36)
-am_libhpcrun_la_OBJECTS = $(am__objects_12) $(am__objects_13) \
-	$(am__objects_15) $(am__objects_17) $(am__objects_19) \
-	$(am__objects_21) $(am__objects_23) $(am__objects_25) \
-	$(am__objects_28) $(am__objects_30) $(am__objects_33) \
-	$(am__objects_39) utilities/libhpcrun_la-last_func.lo
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_41 = $(am__objects_40)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_41 = $(am__objects_39)
+@UNW_LIBUNW_TRUE@am__objects_41 = $(am__objects_38)
+am_libhpcrun_la_OBJECTS = $(am__objects_14) $(am__objects_15) \
+	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
+	$(am__objects_23) $(am__objects_25) $(am__objects_27) \
+	$(am__objects_30) $(am__objects_32) $(am__objects_35) \
+	$(am__objects_41) utilities/libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_la_CFLAGS) \
@@ -732,10 +744,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
+	cct2metrics.c lush/lush-backtrace.h lush/lush-backtrace.c \
+	lush/lush.h lush/lush.c lush/lush-pthread.h \
+	lush/lush-pthread.i lush/lush-pthread.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
@@ -744,10 +755,14 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
+	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
+	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
 	sample-sources/perf/perf_mmap.c \
+	sample-sources/perf/perf_skid.c \
 	sample-sources/perf/perfmon-util.c \
 	sample-sources/perf/perfmon-util-dummy.c \
 	sample-sources/perf/kernel_blocking.c \
@@ -786,17 +801,22 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
+	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_40 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_42 = trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT)
+@HOST_CPU_PPC_FALSE@am__objects_43 = trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_44 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_event_open.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT) \
-@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_41 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_42 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_43 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_44 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
-am__objects_45 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT) \
+@OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_skid.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_45 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_46 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_47 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_48 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
+am__objects_49 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
 	libhpcrun_o-cct_backtrace_finalize.$(OBJEXT) \
@@ -835,7 +855,6 @@ am__objects_45 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	cct/libhpcrun_o-cct_ctxt.$(OBJEXT) \
 	cct/libhpcrun_o-cct.$(OBJEXT) \
 	libhpcrun_o-cct2metrics.$(OBJEXT) \
-	trampoline/common/libhpcrun_o-trampoline.$(OBJEXT) \
 	lush/libhpcrun_o-lush-backtrace.$(OBJEXT) \
 	lush/libhpcrun_o-lush.$(OBJEXT) \
 	lush/libhpcrun_o-lush-pthread.$(OBJEXT) \
@@ -852,52 +871,52 @@ am__objects_45 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
-	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_40) \
-	$(am__objects_41) $(am__objects_42) $(am__objects_43) \
-	$(am__objects_44)
-am__objects_46 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
+	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_42) \
+	$(am__objects_43) $(am__objects_44) $(am__objects_45) \
+	$(am__objects_46) $(am__objects_47) $(am__objects_48)
+am__objects_50 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_47 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_48 = $(am__objects_47)
-am__objects_49 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
+am__objects_51 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_52 = $(am__objects_51)
+am__objects_53 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	utilities/arch/ppc64/libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_50 = $(am__objects_49)
-am__objects_51 =  \
+@HOST_CPU_PPC_TRUE@am__objects_54 = $(am__objects_53)
+am__objects_55 =  \
 	trampoline/x86-family/libhpcrun_o-x86-tramp.$(OBJEXT) \
 	utilities/arch/x86-family/libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_52 = $(am__objects_51)
-am__objects_53 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_56 = $(am__objects_55)
+am__objects_57 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_54 = $(am__objects_53)
-am__objects_55 =  \
+@HOST_CPU_IA64_TRUE@am__objects_58 = $(am__objects_57)
+am__objects_59 =  \
 	trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT) \
 	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
-@HOST_CPU_AARCH64_TRUE@am__objects_56 = $(am__objects_55)
-@OPT_PAPI_CUPTI_TRUE@am__objects_57 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_58 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_57)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_58 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
+@HOST_CPU_AARCH64_TRUE@am__objects_60 = $(am__objects_59)
+@OPT_PAPI_CUPTI_TRUE@am__objects_61 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_62 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_61)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_62 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_57)
-@OPT_PAPI_STATIC_TRUE@am__objects_59 = $(am__objects_58)
-am__objects_60 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_61 = $(am__objects_60)
-am__objects_62 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_61)
+@OPT_PAPI_STATIC_TRUE@am__objects_63 = $(am__objects_62)
+am__objects_64 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_65 = $(am__objects_64)
+am__objects_66 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_63 = $(am__objects_62) \
+am__objects_67 = $(am__objects_66) \
 	unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT) \
 	unwind/common/libhpcrun_o-interval_t.$(OBJEXT) \
 	unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
-am__objects_64 = $(am__objects_63) \
+am__objects_68 = $(am__objects_67) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_65 = $(am__objects_63) \
+am__objects_69 = $(am__objects_67) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_66 = $(am__objects_63) \
+am__objects_70 = $(am__objects_67) \
 	unwind/x86-family/libhpcrun_o-x86-all.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-amd-xop.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-cold-path.$(OBJEXT) \
@@ -914,14 +933,15 @@ am__objects_66 = $(am__objects_63) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-intel-composer2013-mic.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-main.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
+	unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_67 = $(am__objects_66)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_67 = $(am__objects_65)
-@UNW_LIBUNW_TRUE@am__objects_67 = $(am__objects_64)
-am_libhpcrun_o_OBJECTS = $(am__objects_45) $(am__objects_46) \
-	$(am__objects_48) $(am__objects_50) $(am__objects_52) \
-	$(am__objects_54) $(am__objects_56) $(am__objects_59) \
-	$(am__objects_61) $(am__objects_67) \
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_71 = $(am__objects_70)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_71 = $(am__objects_69)
+@UNW_LIBUNW_TRUE@am__objects_71 = $(am__objects_68)
+am_libhpcrun_o_OBJECTS = $(am__objects_49) $(am__objects_50) \
+	$(am__objects_52) $(am__objects_54) $(am__objects_56) \
+	$(am__objects_58) $(am__objects_60) $(am__objects_63) \
+	$(am__objects_65) $(am__objects_71) \
 	utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
 libhpcrun_o_DEPENDENCIES = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
@@ -987,19 +1007,17 @@ SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_pthread_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
-	$(libibm_xlomp_wrappers_a_SOURCES) $(libagent_cilk_la_SOURCES) \
-	$(libagent_pthread_la_SOURCES) $(libagent_tbb_la_SOURCES) \
-	$(libhpcrun_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
-	$(libhpcrun_gpu_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
-	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
-	$(libhpcrun_o_SOURCES)
+	$(libagent_cilk_la_SOURCES) $(libagent_pthread_la_SOURCES) \
+	$(libagent_tbb_la_SOURCES) $(libhpcrun_la_SOURCES) \
+	$(libhpcrun_ga_la_SOURCES) $(libhpcrun_gpu_la_SOURCES) \
+	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_pthread_la_SOURCES) \
+	$(libhpctoolkit_la_SOURCES) $(libhpcrun_o_SOURCES)
 DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_gpu_wrap_a_SOURCES) $(libhpcrun_io_wrap_a_SOURCES) \
 	$(libhpcrun_memleak_wrap_a_SOURCES) \
 	$(libhpcrun_pthread_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
-	$(libibm_xlomp_wrappers_a_SOURCES) \
 	$(am__libagent_cilk_la_SOURCES_DIST) \
 	$(am__libagent_pthread_la_SOURCES_DIST) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
@@ -1092,10 +1110,13 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
+BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_COPY_LIST = @BOOST_COPY_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
+BOOST_LIB_DIR = @BOOST_LIB_DIR@
 BZIP_COPY = @BZIP_COPY@
 BZIP_LIB = @BZIP_LIB@
 CC = @CC@
@@ -1119,6 +1140,10 @@ DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
+DYNINST_COPY = @DYNINST_COPY@
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
+DYNINST_LIB_DIR = @DYNINST_LIB_DIR@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
@@ -1126,9 +1151,6 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 F77_SYMBOLS = @F77_SYMBOLS@
 FGREP = @FGREP@
-GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
-GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
-GNUBINUTILS_LDLIBS = @GNUBINUTILS_LDLIBS@
 GREP = @GREP@
 HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
@@ -1145,8 +1167,6 @@ HPCLINK_LD_FLAGS = @HPCLINK_LD_FLAGS@
 HPCPROFMPI_LT_LDFLAGS = @HPCPROFMPI_LT_LDFLAGS@
 HPCRUN_LIBCXX_PATH = @HPCRUN_LIBCXX_PATH@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
-HPC_LT_LDFLAGS = @HPC_LT_LDFLAGS@
-HPC_MONITOR = @HPC_MONITOR@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -1157,7 +1177,6 @@ LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
-LIBDW_COPY = @LIBDW_COPY@
 LIBELF_COPY = @LIBELF_COPY@
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB = @LIBELF_LIB@
@@ -1195,7 +1214,6 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MONITOR = @MONITOR@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
 MPIF77 = @MPIF77@
@@ -1205,13 +1223,13 @@ NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
+OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
 OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
-OPT_INSTALL_MONITOR = @OPT_INSTALL_MONITOR@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -1240,10 +1258,11 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-SYMTABAPI_COPY = @SYMTABAPI_COPY@
-SYMTABAPI_INC = @SYMTABAPI_INC@
-SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+TBB_COPY = @TBB_COPY@
+TBB_IFLAGS = @TBB_IFLAGS@
+TBB_LFLAGS = @TBB_LFLAGS@
+TBB_LIB_DIR = @TBB_LIB_DIR@
+TBB_PROXY_LIB = @TBB_PROXY_LIB@
 VERSION = @VERSION@
 XED2_COPY = @XED2_COPY@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
@@ -1313,6 +1332,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1385,21 +1405,20 @@ PYTHON = python
 @OPT_BGQ_BACKEND_TRUE@SUBDIRS = utilities/bgq-cnk
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
-bin_SCRIPTS = $(am__append_1) $(am__append_7) $(am__append_12)
-pkglibexec_SCRIPTS = $(am__append_2)
-include_HEADERS = $(am__append_3)
-pkglib_LIBRARIES = $(am__append_8) $(am__append_9) $(am__append_10) \
-	$(am__append_11)
-pkglib_LTLIBRARIES = $(am__append_4) $(am__append_5) $(am__append_6) \
-	$(am__append_13) $(am__append_129) $(am__append_130)
+bin_SCRIPTS = $(am__append_6) $(am__append_10)
+pkglibexec_SCRIPTS = $(am__append_1)
+include_HEADERS = $(am__append_2)
+pkglib_LIBRARIES = $(am__append_7) $(am__append_8) $(am__append_9)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_4) $(am__append_5) \
+	$(am__append_11) $(am__append_132) $(am__append_133)
 BUILT_SOURCES = $(am__append_24) $(am__append_26)
 CLEANFILES = $(am__append_25) $(am__append_27)
-PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
+PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
-PLUGIN_CONFIG_FILES = ga io memleak pthread $(am__append_14)
+PLUGIN_CONFIG_FILES = ga io memleak pthread
 UNW_UNIV_FILES = \
 	unwind/common/backtrace.c	\
         unwind/common/unw-throw.c
@@ -1430,6 +1449,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
+	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
 UNW_X86_INCLUDE_DIRS = \
@@ -1471,6 +1491,9 @@ UNW_MIPS_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS = 
+MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_15) \
+	$(am__append_21) $(am__append_110) $(am__append_112) \
+	$(am__append_116)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	cct_insert_backtrace.c cct_backtrace_finalize.c env.c epoch.c \
 	files.c handling_sample.c hpcrun_options.c hpcrun_stats.c \
@@ -1485,10 +1508,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample_sources_registered.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
 	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
+	cct2metrics.c lush/lush-backtrace.h lush/lush-backtrace.c \
+	lush/lush.h lush/lush.c lush/lush-pthread.h \
+	lush/lush-pthread.i lush/lush-pthread.c lush/lush-support-rt.h \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
@@ -1497,8 +1519,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/tokenize.h \
 	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_15) $(am__append_16) $(am__append_17) \
-	$(am__append_18) $(am__append_19)
+	$(am__append_12) $(am__append_13) $(am__append_14) \
+	$(am__append_16) $(am__append_17) $(am__append_18) \
+	$(am__append_19)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1540,7 +1563,6 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_20)
 MY_UPC_FILES = sample-sources/upc.c
-MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_21)
 MY_INCLUDE_DIRS = \
         -I$(top_srcdir)/src/tool        \
 	-I$(srcdir)/messages	        \
@@ -1574,12 +1596,12 @@ MY_AARCH64_INCLUDE_DIRS = \
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_30) $(am__append_31) $(am__append_46) \
 	$(am__append_61) $(am__append_79) $(am__append_92) \
-	$(am__append_107) $(am__append_114) $(am__append_121) \
+	$(am__append_107) $(am__append_117) $(am__append_124) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_32) $(am__append_47) $(am__append_62) \
-	$(am__append_80) $(am__append_93) $(am__append_111) \
-	$(am__append_115) $(UNW_SOURCE_FILES) utilities/last_func.c
+	$(am__append_80) $(am__append_93) $(am__append_113) \
+	$(am__append_118) $(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
 
@@ -1620,9 +1642,6 @@ libhpcrun_gpu_wrap_a_SOURCES = \
 libhpcrun_mpi_la_SOURCES = \
 	./mpi-overrides.c
 
-libibm_xlomp_wrappers_a_SOURCES = \
-        plugins/ibm-xlomp-wrappers.c
-
 libhpctoolkit_la_SOURCES = \
 	hpctoolkit.c
 
@@ -1636,14 +1655,14 @@ libhpctoolkit_a_SOURCES = \
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
 	$(MY_INCLUDE_DIRS) $(am__append_22) $(am__append_33) \
 	$(am__append_48) $(am__append_63) $(am__append_81) \
-	$(am__append_94) $(am__append_108) $(am__append_110) \
-	$(am__append_116) $(am__append_119) $(am__append_122) \
+	$(am__append_94) $(am__append_108) $(am__append_111) \
+	$(am__append_119) $(am__append_122) $(am__append_125) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_23) \
 	$(am__append_34) $(am__append_49) $(am__append_64) \
-	$(am__append_82) $(am__append_95) $(am__append_112) \
-	$(am__append_117) $(am__append_120) $(UNW_INCLUDE_DIRS)
+	$(am__append_82) $(am__append_95) $(am__append_114) \
+	$(am__append_120) $(am__append_123) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -1679,10 +1698,10 @@ libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
 	$(am__append_103) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_43) $(am__append_58) $(am__append_75) \
-	$(am__append_104) $(am__append_124) $(UNW_INCLUDE_DIRS)
+	$(am__append_104) $(am__append_127) $(UNW_INCLUDE_DIRS)
 libhpcrun_gpu_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_44) $(am__append_59) \
-	$(am__append_76) $(am__append_105) $(am__append_127) \
+	$(am__append_76) $(am__append_105) $(am__append_130) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) -I$(MPI_INC) \
 	$(MY_INCLUDE_DIRS) $(am__append_45) $(am__append_60) \
@@ -1710,7 +1729,7 @@ CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_123)
+	$(am__append_126)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1722,9 +1741,9 @@ libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
-	$(am__append_125)
-libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
 	$(am__append_128)
+libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_131)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
@@ -1737,15 +1756,15 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
 	$(PERFMON_LDFLAGS_DYN) $(am__append_65) $(am__append_109) \
-	$(am__append_118) $(UNW_DYNAMIC_LD_FLAGS)
+	$(am__append_121) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_126)
+libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_129)
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
-	$(PERFMON_LDFLAGS_STAT) $(am__append_66) $(am__append_113) \
+	$(PERFMON_LDFLAGS_STAT) $(am__append_66) $(am__append_115) \
 	$(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_78) \
 	$(UNW_INCLUDE_DIRS)
@@ -1946,19 +1965,6 @@ libhpctoolkit.a: $(libhpctoolkit_a_OBJECTS) $(libhpctoolkit_a_DEPENDENCIES) $(EX
 	$(AM_V_at)-rm -f libhpctoolkit.a
 	$(AM_V_AR)$(libhpctoolkit_a_AR) libhpctoolkit.a $(libhpctoolkit_a_OBJECTS) $(libhpctoolkit_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libhpctoolkit.a
-plugins/$(am__dirstamp):
-	@$(MKDIR_P) plugins
-	@: > plugins/$(am__dirstamp)
-plugins/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) plugins/$(DEPDIR)
-	@: > plugins/$(DEPDIR)/$(am__dirstamp)
-plugins/ibm-xlomp-wrappers.$(OBJEXT): plugins/$(am__dirstamp) \
-	plugins/$(DEPDIR)/$(am__dirstamp)
-
-libibm_xlomp_wrappers.a: $(libibm_xlomp_wrappers_a_OBJECTS) $(libibm_xlomp_wrappers_a_DEPENDENCIES) $(EXTRA_libibm_xlomp_wrappers_a_DEPENDENCIES) 
-	$(AM_V_at)-rm -f libibm_xlomp_wrappers.a
-	$(AM_V_AR)$(libibm_xlomp_wrappers_a_AR) libibm_xlomp_wrappers.a $(libibm_xlomp_wrappers_a_OBJECTS) $(libibm_xlomp_wrappers_a_LIBADD)
-	$(AM_V_at)$(RANLIB) libibm_xlomp_wrappers.a
 
 install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -2086,15 +2092,6 @@ cct/libhpcrun_la-cct_ctxt.lo: cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_la-cct.lo: cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
-trampoline/common/$(am__dirstamp):
-	@$(MKDIR_P) trampoline/common
-	@: > trampoline/common/$(am__dirstamp)
-trampoline/common/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) trampoline/common/$(DEPDIR)
-	@: > trampoline/common/$(DEPDIR)/$(am__dirstamp)
-trampoline/common/libhpcrun_la-trampoline.lo:  \
-	trampoline/common/$(am__dirstamp) \
-	trampoline/common/$(DEPDIR)/$(am__dirstamp)
 lush/libhpcrun_la-lush-backtrace.lo: lush/$(am__dirstamp) \
 	lush/$(DEPDIR)/$(am__dirstamp)
 lush/libhpcrun_la-lush.lo: lush/$(am__dirstamp) \
@@ -2147,6 +2144,18 @@ utilities/libhpcrun_la-tokenize.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-unlink.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+trampoline/common/$(am__dirstamp):
+	@$(MKDIR_P) trampoline/common
+	@: > trampoline/common/$(am__dirstamp)
+trampoline/common/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) trampoline/common/$(DEPDIR)
+	@: > trampoline/common/$(DEPDIR)/$(am__dirstamp)
+trampoline/common/libhpcrun_la-trampoline_eager.lo:  \
+	trampoline/common/$(am__dirstamp) \
+	trampoline/common/$(DEPDIR)/$(am__dirstamp)
+trampoline/common/libhpcrun_la-trampoline_lazy.lo:  \
+	trampoline/common/$(am__dirstamp) \
+	trampoline/common/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/$(am__dirstamp):
 	@$(MKDIR_P) sample-sources/perf
 	@: > sample-sources/perf/$(am__dirstamp)
@@ -2159,10 +2168,16 @@ sample-sources/perf/libhpcrun_la-event_custom.lo:  \
 sample-sources/perf/libhpcrun_la-linux_perf.lo:  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_la-perf_event_open.lo:  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_la-perf-util.lo:  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_la-perf_mmap.lo:  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_la-perf_skid.lo:  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_la-perfmon-util.lo:  \
@@ -2392,6 +2407,9 @@ unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-main.lo:  \
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo:  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo:  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
@@ -2549,9 +2567,6 @@ cct/libhpcrun_o-cct_ctxt.$(OBJEXT): cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_o-cct.$(OBJEXT): cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
-trampoline/common/libhpcrun_o-trampoline.$(OBJEXT):  \
-	trampoline/common/$(am__dirstamp) \
-	trampoline/common/$(DEPDIR)/$(am__dirstamp)
 lush/libhpcrun_o-lush-backtrace.$(OBJEXT): lush/$(am__dirstamp) \
 	lush/$(DEPDIR)/$(am__dirstamp)
 lush/libhpcrun_o-lush.$(OBJEXT): lush/$(am__dirstamp) \
@@ -2586,16 +2601,28 @@ utilities/libhpcrun_o-tokenize.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-unlink.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT):  \
+	trampoline/common/$(am__dirstamp) \
+	trampoline/common/$(DEPDIR)/$(am__dirstamp)
+trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT):  \
+	trampoline/common/$(am__dirstamp) \
+	trampoline/common/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_o-perf_event_open.$(OBJEXT):  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT):  \
+	sample-sources/perf/$(am__dirstamp) \
+	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
+sample-sources/perf/libhpcrun_o-perf_skid.$(OBJEXT):  \
 	sample-sources/perf/$(am__dirstamp) \
 	sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT):  \
@@ -2732,6 +2759,9 @@ unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-main.$(OBJEXT):  \
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.$(OBJEXT):  \
+	unwind/x86-family/manual-intervals/$(am__dirstamp) \
+	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT):  \
 	unwind/x86-family/manual-intervals/$(am__dirstamp) \
 	unwind/x86-family/manual-intervals/$(DEPDIR)/$(am__dirstamp)
@@ -2832,7 +2862,6 @@ mostlyclean-compile:
 	-rm -f monitor-exts/*.lo
 	-rm -f os/linux/*.$(OBJEXT)
 	-rm -f os/linux/*.lo
-	-rm -f plugins/*.$(OBJEXT)
 	-rm -f sample-sources/*.$(OBJEXT)
 	-rm -f sample-sources/*.lo
 	-rm -f sample-sources/blame-shift/*.$(OBJEXT)
@@ -2983,7 +3012,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_la-openmp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@monitor-exts/$(DEPDIR)/libhpcrun_wrap_a-openmp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@os/linux/$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/ibm-xlomp-wrappers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_gpu_la-gpu_blame-overrides.Plo@am__quote@
@@ -3037,7 +3065,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking_stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-linux_perf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_event_open.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_mmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_skid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perfmon-util-dummy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-perfmon-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Po@am__quote@
@@ -3045,13 +3075,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-kernel_blocking_stub.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-linux_perf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_mmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util-dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_lazy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/x86-family/$(DEPDIR)/libhpcrun_la-x86-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/x86-family/$(DEPDIR)/libhpcrun_o-x86-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Plo@am__quote@
@@ -3094,6 +3128,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/$(DEPDIR)/libhpcrun_o-x86-validate-retn-addr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-32bit-icc-variant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-32bit-main.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-fail-intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-gcc-main64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-intel-align64.Plo@am__quote@
@@ -3103,6 +3138,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-32bit-icc-variant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-32bit-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-gcc-main64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align32.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-intel-align64.Po@am__quote@
@@ -3685,13 +3721,6 @@ libhpcrun_la-cct2metrics.lo: cct2metrics.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-cct2metrics.lo `test -f 'cct2metrics.c' || echo '$(srcdir)/'`cct2metrics.c
 
-trampoline/common/libhpcrun_la-trampoline.lo: trampoline/common/trampoline.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Tpo -c -o trampoline/common/libhpcrun_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline.c' object='trampoline/common/libhpcrun_la-trampoline.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_la-trampoline.lo `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
-
 lush/libhpcrun_la-lush-backtrace.lo: lush/lush-backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT lush/libhpcrun_la-lush-backtrace.lo -MD -MP -MF lush/$(DEPDIR)/libhpcrun_la-lush-backtrace.Tpo -c -o lush/libhpcrun_la-lush-backtrace.lo `test -f 'lush/lush-backtrace.c' || echo '$(srcdir)/'`lush/lush-backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lush/$(DEPDIR)/libhpcrun_la-lush-backtrace.Tpo lush/$(DEPDIR)/libhpcrun_la-lush-backtrace.Plo
@@ -3811,6 +3840,20 @@ utilities/libhpcrun_la-unlink.lo: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-unlink.lo `test -f 'utilities/unlink.c' || echo '$(srcdir)/'`utilities/unlink.c
 
+trampoline/common/libhpcrun_la-trampoline_eager.lo: trampoline/common/trampoline_eager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline_eager.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_la-trampoline_eager.lo `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_eager.c' object='trampoline/common/libhpcrun_la-trampoline_eager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_la-trampoline_eager.lo `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
+
+trampoline/common/libhpcrun_la-trampoline_lazy.lo: trampoline/common/trampoline_lazy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline_lazy.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_lazy.Tpo -c -o trampoline/common/libhpcrun_la-trampoline_lazy.lo `test -f 'trampoline/common/trampoline_lazy.c' || echo '$(srcdir)/'`trampoline/common/trampoline_lazy.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_lazy.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_lazy.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_lazy.c' object='trampoline/common/libhpcrun_la-trampoline_lazy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_la-trampoline_lazy.lo `test -f 'trampoline/common/trampoline_lazy.c' || echo '$(srcdir)/'`trampoline/common/trampoline_lazy.c
+
 sample-sources/perf/libhpcrun_la-event_custom.lo: sample-sources/perf/event_custom.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-event_custom.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Tpo -c -o sample-sources/perf/libhpcrun_la-event_custom.lo `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo
@@ -3825,6 +3868,13 @@ sample-sources/perf/libhpcrun_la-linux_perf.lo: sample-sources/perf/linux_perf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-linux_perf.lo `test -f 'sample-sources/perf/linux_perf.c' || echo '$(srcdir)/'`sample-sources/perf/linux_perf.c
 
+sample-sources/perf/libhpcrun_la-perf_event_open.lo: sample-sources/perf/perf_event_open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perf_event_open.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_event_open.Tpo -c -o sample-sources/perf/libhpcrun_la-perf_event_open.lo `test -f 'sample-sources/perf/perf_event_open.c' || echo '$(srcdir)/'`sample-sources/perf/perf_event_open.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_event_open.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_event_open.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_event_open.c' object='sample-sources/perf/libhpcrun_la-perf_event_open.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-perf_event_open.lo `test -f 'sample-sources/perf/perf_event_open.c' || echo '$(srcdir)/'`sample-sources/perf/perf_event_open.c
+
 sample-sources/perf/libhpcrun_la-perf-util.lo: sample-sources/perf/perf-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perf-util.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Tpo -c -o sample-sources/perf/libhpcrun_la-perf-util.lo `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf-util.Plo
@@ -3838,6 +3888,13 @@ sample-sources/perf/libhpcrun_la-perf_mmap.lo: sample-sources/perf/perf_mmap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_mmap.c' object='sample-sources/perf/libhpcrun_la-perf_mmap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-perf_mmap.lo `test -f 'sample-sources/perf/perf_mmap.c' || echo '$(srcdir)/'`sample-sources/perf/perf_mmap.c
+
+sample-sources/perf/libhpcrun_la-perf_skid.lo: sample-sources/perf/perf_skid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perf_skid.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_skid.Tpo -c -o sample-sources/perf/libhpcrun_la-perf_skid.lo `test -f 'sample-sources/perf/perf_skid.c' || echo '$(srcdir)/'`sample-sources/perf/perf_skid.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_skid.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_la-perf_skid.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_skid.c' object='sample-sources/perf/libhpcrun_la-perf_skid.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_la-perf_skid.lo `test -f 'sample-sources/perf/perf_skid.c' || echo '$(srcdir)/'`sample-sources/perf/perf_skid.c
 
 sample-sources/perf/libhpcrun_la-perfmon-util.lo: sample-sources/perf/perfmon-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_la-perfmon-util.lo -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_la-perfmon-util.Tpo -c -o sample-sources/perf/libhpcrun_la-perfmon-util.lo `test -f 'sample-sources/perf/perfmon-util.c' || echo '$(srcdir)/'`sample-sources/perf/perfmon-util.c
@@ -4195,6 +4252,13 @@ unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo: unwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo `test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c
+
+unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo: unwind/x86-family/manual-intervals/x86-fail-intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-fail-intervals.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo `test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-fail-intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-fail-intervals.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-fail-intervals.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-fail-intervals.c' object='unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo `test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-fail-intervals.c
 
 unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo: unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_la-x86-pgi-mp_pexit.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo `test -f 'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
@@ -4903,20 +4967,6 @@ libhpcrun_o-cct2metrics.obj: cct2metrics.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-cct2metrics.obj `if test -f 'cct2metrics.c'; then $(CYGPATH_W) 'cct2metrics.c'; else $(CYGPATH_W) '$(srcdir)/cct2metrics.c'; fi`
 
-trampoline/common/libhpcrun_o-trampoline.o: trampoline/common/trampoline.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Tpo -c -o trampoline/common/libhpcrun_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline.c' object='trampoline/common/libhpcrun_o-trampoline.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline.o `test -f 'trampoline/common/trampoline.c' || echo '$(srcdir)/'`trampoline/common/trampoline.c
-
-trampoline/common/libhpcrun_o-trampoline.obj: trampoline/common/trampoline.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline.obj -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Tpo -c -o trampoline/common/libhpcrun_o-trampoline.obj `if test -f 'trampoline/common/trampoline.c'; then $(CYGPATH_W) 'trampoline/common/trampoline.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline.c' object='trampoline/common/libhpcrun_o-trampoline.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline.obj `if test -f 'trampoline/common/trampoline.c'; then $(CYGPATH_W) 'trampoline/common/trampoline.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline.c'; fi`
-
 lush/libhpcrun_o-lush-backtrace.o: lush/lush-backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT lush/libhpcrun_o-lush-backtrace.o -MD -MP -MF lush/$(DEPDIR)/libhpcrun_o-lush-backtrace.Tpo -c -o lush/libhpcrun_o-lush-backtrace.o `test -f 'lush/lush-backtrace.c' || echo '$(srcdir)/'`lush/lush-backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) lush/$(DEPDIR)/libhpcrun_o-lush-backtrace.Tpo lush/$(DEPDIR)/libhpcrun_o-lush-backtrace.Po
@@ -5155,6 +5205,34 @@ utilities/libhpcrun_o-unlink.obj: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-unlink.obj `if test -f 'utilities/unlink.c'; then $(CYGPATH_W) 'utilities/unlink.c'; else $(CYGPATH_W) '$(srcdir)/utilities/unlink.c'; fi`
 
+trampoline/common/libhpcrun_o-trampoline_eager.o: trampoline/common/trampoline_eager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_eager.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_eager.o `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_eager.c' object='trampoline/common/libhpcrun_o-trampoline_eager.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline_eager.o `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
+
+trampoline/common/libhpcrun_o-trampoline_eager.obj: trampoline/common/trampoline_eager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_eager.obj -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_eager.obj `if test -f 'trampoline/common/trampoline_eager.c'; then $(CYGPATH_W) 'trampoline/common/trampoline_eager.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline_eager.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_eager.c' object='trampoline/common/libhpcrun_o-trampoline_eager.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline_eager.obj `if test -f 'trampoline/common/trampoline_eager.c'; then $(CYGPATH_W) 'trampoline/common/trampoline_eager.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline_eager.c'; fi`
+
+trampoline/common/libhpcrun_o-trampoline_lazy.o: trampoline/common/trampoline_lazy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_lazy.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_lazy.o `test -f 'trampoline/common/trampoline_lazy.c' || echo '$(srcdir)/'`trampoline/common/trampoline_lazy.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_lazy.c' object='trampoline/common/libhpcrun_o-trampoline_lazy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline_lazy.o `test -f 'trampoline/common/trampoline_lazy.c' || echo '$(srcdir)/'`trampoline/common/trampoline_lazy.c
+
+trampoline/common/libhpcrun_o-trampoline_lazy.obj: trampoline/common/trampoline_lazy.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_lazy.obj -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_lazy.obj `if test -f 'trampoline/common/trampoline_lazy.c'; then $(CYGPATH_W) 'trampoline/common/trampoline_lazy.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline_lazy.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_lazy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trampoline/common/trampoline_lazy.c' object='trampoline/common/libhpcrun_o-trampoline_lazy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/common/libhpcrun_o-trampoline_lazy.obj `if test -f 'trampoline/common/trampoline_lazy.c'; then $(CYGPATH_W) 'trampoline/common/trampoline_lazy.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/common/trampoline_lazy.c'; fi`
+
 sample-sources/perf/libhpcrun_o-event_custom.o: sample-sources/perf/event_custom.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-event_custom.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo -c -o sample-sources/perf/libhpcrun_o-event_custom.o `test -f 'sample-sources/perf/event_custom.c' || echo '$(srcdir)/'`sample-sources/perf/event_custom.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-event_custom.Po
@@ -5183,6 +5261,20 @@ sample-sources/perf/libhpcrun_o-linux_perf.obj: sample-sources/perf/linux_perf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-linux_perf.obj `if test -f 'sample-sources/perf/linux_perf.c'; then $(CYGPATH_W) 'sample-sources/perf/linux_perf.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/linux_perf.c'; fi`
 
+sample-sources/perf/libhpcrun_o-perf_event_open.o: sample-sources/perf/perf_event_open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf_event_open.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Tpo -c -o sample-sources/perf/libhpcrun_o-perf_event_open.o `test -f 'sample-sources/perf/perf_event_open.c' || echo '$(srcdir)/'`sample-sources/perf/perf_event_open.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_event_open.c' object='sample-sources/perf/libhpcrun_o-perf_event_open.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf_event_open.o `test -f 'sample-sources/perf/perf_event_open.c' || echo '$(srcdir)/'`sample-sources/perf/perf_event_open.c
+
+sample-sources/perf/libhpcrun_o-perf_event_open.obj: sample-sources/perf/perf_event_open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf_event_open.obj -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Tpo -c -o sample-sources/perf/libhpcrun_o-perf_event_open.obj `if test -f 'sample-sources/perf/perf_event_open.c'; then $(CYGPATH_W) 'sample-sources/perf/perf_event_open.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf_event_open.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_event_open.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_event_open.c' object='sample-sources/perf/libhpcrun_o-perf_event_open.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf_event_open.obj `if test -f 'sample-sources/perf/perf_event_open.c'; then $(CYGPATH_W) 'sample-sources/perf/perf_event_open.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf_event_open.c'; fi`
+
 sample-sources/perf/libhpcrun_o-perf-util.o: sample-sources/perf/perf-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf-util.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo -c -o sample-sources/perf/libhpcrun_o-perf-util.o `test -f 'sample-sources/perf/perf-util.c' || echo '$(srcdir)/'`sample-sources/perf/perf-util.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf-util.Po
@@ -5210,6 +5302,20 @@ sample-sources/perf/libhpcrun_o-perf_mmap.obj: sample-sources/perf/perf_mmap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_mmap.c' object='sample-sources/perf/libhpcrun_o-perf_mmap.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf_mmap.obj `if test -f 'sample-sources/perf/perf_mmap.c'; then $(CYGPATH_W) 'sample-sources/perf/perf_mmap.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf_mmap.c'; fi`
+
+sample-sources/perf/libhpcrun_o-perf_skid.o: sample-sources/perf/perf_skid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf_skid.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Tpo -c -o sample-sources/perf/libhpcrun_o-perf_skid.o `test -f 'sample-sources/perf/perf_skid.c' || echo '$(srcdir)/'`sample-sources/perf/perf_skid.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_skid.c' object='sample-sources/perf/libhpcrun_o-perf_skid.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf_skid.o `test -f 'sample-sources/perf/perf_skid.c' || echo '$(srcdir)/'`sample-sources/perf/perf_skid.c
+
+sample-sources/perf/libhpcrun_o-perf_skid.obj: sample-sources/perf/perf_skid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perf_skid.obj -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Tpo -c -o sample-sources/perf/libhpcrun_o-perf_skid.obj `if test -f 'sample-sources/perf/perf_skid.c'; then $(CYGPATH_W) 'sample-sources/perf/perf_skid.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf_skid.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Tpo sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/perf/perf_skid.c' object='sample-sources/perf/libhpcrun_o-perf_skid.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/perf/libhpcrun_o-perf_skid.obj `if test -f 'sample-sources/perf/perf_skid.c'; then $(CYGPATH_W) 'sample-sources/perf/perf_skid.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/perf/perf_skid.c'; fi`
 
 sample-sources/perf/libhpcrun_o-perfmon-util.o: sample-sources/perf/perfmon-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/perf/libhpcrun_o-perfmon-util.o -MD -MP -MF sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util.Tpo -c -o sample-sources/perf/libhpcrun_o-perfmon-util.o `test -f 'sample-sources/perf/perfmon-util.c' || echo '$(srcdir)/'`sample-sources/perf/perfmon-util.c
@@ -5813,6 +5919,20 @@ unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.obj: unwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.obj `if test -f 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c'; fi`
 
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.o: unwind/x86-family/manual-intervals/x86-fail-intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.o `test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-fail-intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-fail-intervals.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.o `test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-fail-intervals.c
+
+unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.obj: unwind/x86-family/manual-intervals/x86-fail-intervals.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.obj -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.obj `if test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-fail-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-fail-intervals.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-fail-intervals.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/x86-family/manual-intervals/x86-fail-intervals.c' object='unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.obj `if test -f 'unwind/x86-family/manual-intervals/x86-fail-intervals.c'; then $(CYGPATH_W) 'unwind/x86-family/manual-intervals/x86-fail-intervals.c'; else $(CYGPATH_W) '$(srcdir)/unwind/x86-family/manual-intervals/x86-fail-intervals.c'; fi`
+
 unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.o: unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.o -MD -MP -MF unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Tpo -c -o unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.o `test -f 'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c' || echo '$(srcdir)/'`unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Tpo unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po
@@ -6130,8 +6250,6 @@ distclean-generic:
 	-rm -f monitor-exts/$(am__dirstamp)
 	-rm -f os/linux/$(DEPDIR)/$(am__dirstamp)
 	-rm -f os/linux/$(am__dirstamp)
-	-rm -f plugins/$(DEPDIR)/$(am__dirstamp)
-	-rm -f plugins/$(am__dirstamp)
 	-rm -f sample-sources/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(DEPDIR)/$(am__dirstamp)
@@ -6182,7 +6300,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -6232,7 +6350,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) plugins/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -6287,7 +6405,7 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 
 # arguments: ($1: from) ($2: to)
 define HPC_moveIfStaticallyLinked
-  if file "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
+  if file -b "$1" 2>&1 | $(GREP) -E -i -e 'static.*link' >/dev/null ; then \
     rm -f "$2" ;  \
     mv -f "$1" "$2" ;  \
   fi
