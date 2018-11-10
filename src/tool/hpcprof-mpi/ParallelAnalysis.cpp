@@ -282,7 +282,8 @@ packMetrics(const Prof::CallPath::Profile& profile,
   for (Prof::CCT::ANodeIterator it(cct.root()); it.Current(); ++it) {
     Prof::CCT::ANode* n = it.current();
     for (uint mId1 = 0; mId1 + mDrvdBeg < mDrvdEnd; ++mId1) {
-      packedMetrics.idx(n->id(), mId1) = n->c_idx(mId1 + mDrvdBeg);
+      double mval = Prof::CCT::ANode::metric_accessor(n->id())->c_idx(mId1 + mDrvdBeg);
+      packedMetrics.idx(n->id(), mId1) = mval;
     }
   }
 }
@@ -304,7 +305,7 @@ unpackMetrics(Prof::CallPath::Profile& profile,
   for (uint nodeId = 1; nodeId < packedMetrics.numNodes(); ++nodeId) {
     for (uint mId1 = 0; mId1 + mBegId < mEndId; ++mId1) {
       Prof::CCT::ANode* n = cct.findNode(nodeId);
-      n->idx(mId1+mBegId) = packedMetrics.idx(nodeId, mId1);
+      Prof::CCT::ANode::metric_accessor(n->id())->idx(mId1+mBegId) = packedMetrics.idx(nodeId, mId1);
     }
   }
 
