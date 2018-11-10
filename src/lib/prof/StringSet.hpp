@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,10 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATA_OVERRIDES_H
-#define __DATA_OVERRIDES_H
+//***************************************************************************
+//
+// File:
+//   $HeadURL$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-cct_node_t *splay_lookup(void *key, void **start, void **end);
+
+#ifndef String_Set_hpp
+#define String_Set_hpp
+
+//***************************************************************************
+// system include files
+//***************************************************************************
+
+#include <set>
+#include <string>
+
+
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
+
+class StringSet: public std::set<std::string> {
+public:
+  void operator+=(const StringSet &rhs) {
+    this->insert(rhs.begin(), rhs.end());
+  };
+
+
+  static int
+  fmt_fread(StringSet* &stringSet, FILE* infs); 
+
+  static int
+  fmt_fwrite(const StringSet& stringSet, FILE* outfs);
+
+  void dump(void);
+};
 
 #endif
-

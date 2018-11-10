@@ -120,16 +120,28 @@ public:
 
 public:
   AExprIncr(uint accumId, uint srcId)
-    : m_accumId(accumId), m_accum2Id(Metric::IData::npos),
-      m_srcId(srcId), m_src2Id(Metric::IData::npos),
-      m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
-  { }
+    : m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
+  {
+    m_accumId[0] = accumId;
+    m_srcId[0] = srcId;
+    for (uint i = 1; i < maxAccums; ++i) {
+      m_accumId[i] = Metric::IData::npos;
+      m_srcId[i] = Metric::IData::npos;
+    }
+  }
 
   AExprIncr(uint accumId, uint accum2Id, uint srcId)
-    : m_accumId(accumId), m_accum2Id(accum2Id),
-      m_srcId(srcId), m_src2Id(Metric::IData::npos),
-      m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
-  { }
+    : m_numSrcFxd(0), m_numSrcVarId(Metric::IData::npos)
+  {
+    m_accumId[0] = accumId;
+    m_srcId[0] = srcId;
+    m_accumId[1] = accum2Id;
+    m_srcId[1] = Metric::IData::npos;
+    for (uint i = 2; i < maxAccums; ++i) {
+      m_accumId[i] = Metric::IData::npos;
+      m_srcId[i] = Metric::IData::npos;
+    }
+  }
 
   virtual ~AExprIncr()
   { }
@@ -181,91 +193,52 @@ public:
 
   // Metric::IDBExpr
   virtual uint
-  accumId() const
-  { return m_accumId; }
+  accumId(int i) const
+  { return m_accumId[i]; }
 
   void
-  accumId(uint x)
-  { m_accumId = x; }
+  accumId(int i, uint x)
+  { m_accumId[i] = x; }
 
   double
-  accumVar(const MetricAccessor& mdata) const
-  { return var(mdata, m_accumId); }
+  accumVar(int i, const MetricAccessor& mdata) const
+  { return var(mdata, m_accumId[i]); }
 
   double&
-  accumVar(MetricAccessor& mdata) const
-  { return var(mdata, m_accumId); }
+  accumVar(int i, MetricAccessor& mdata) const
+  { return var(mdata, m_accumId[i]); }
 
-
-  bool
-  isSetAccum2() const
-  { return (m_accum2Id != Metric::IData::npos); }
-
-  // Metric::IDBExpr
-  virtual bool
-  hasAccum2() const
-  { return false; }
 
   // Metric::IDBExpr
   virtual uint
-  accum2Id() const
-  { return m_accum2Id; }
-
-  void
-  accum2Id(uint x)
-  { m_accum2Id = x; }
-
-  double
-  accum2Var(const MetricAccessor& mdata) const
-  { return var(mdata, m_accum2Id); }
-
-  double&
-  accum2Var(MetricAccessor& mdata) const
-  { return var(mdata, m_accum2Id); }
+  numAccum() const
+  { return 1; }
 
 
   // ------------------------------------------------------------
   // srcId: input source for accumulate()
-  // src2Id: input source for accumulator 2's combine()
   // ------------------------------------------------------------
 
   void
-  srcId(uint x)
-  { m_srcId = x; }
+  srcId(int i, uint x)
+  { m_srcId[i] = x; }
 
   double
-  srcVar(const MetricAccessor& mdata) const
-  { return var(mdata, m_srcId); }
+  srcVar(int i, const MetricAccessor& mdata) const
+  { return var(mdata, m_srcId[i]); }
 
   double&
-  srcVar(MetricAccessor& mdata) const
-  { return var(mdata, m_srcId); }
+  srcVar(int i, MetricAccessor& mdata) const
+  { return var(mdata, m_srcId[i]); }
 
   std::string
-  srcStr() const
-  { return "$"+ StrUtil::toStr(m_srcId); }
+  srcStr(int i) const
+  { return "$"+ StrUtil::toStr(m_srcId[i]); }
 
   
   bool
-  isSetSrc2() const
-  { return (m_src2Id != Metric::IData::npos); }
-
-  void
-  src2Id(uint x)
-  { m_src2Id = x; }
-
-  double
-  src2Var(const MetricAccessor& mdata) const
-  { return var(mdata, m_src2Id); }
-
-  double&
-  src2Var(MetricAccessor& mdata) const
-  { return var(mdata, m_src2Id); }
-
-  std::string
-  src2Str() const
-  { return "$" + StrUtil::toStr(m_src2Id); }
-
+  isSetSrc(int i) const
+  { return (m_srcId[i] != Metric::IData::npos); }
 
   // ------------------------------------------------------------
   // numSrcFix: number of inputs for CCT (fixed)
@@ -340,8 +313,8 @@ public:
   double
   initializeStdDev(MetricAccessor& mdata) const
   {
-    accumVar(mdata) = 0.0;
-    accum2Var(mdata) = 0.0;
+    accumVar(0, mdata) = 0.0;
+    accumVar(1, mdata) = 0.0;
     return 0.0;
   }
 
@@ -349,9 +322,9 @@ public:
   double
   initializeSrcStdDev(MetricAccessor& mdata) const
   {
-    srcVar(mdata) = 0.0;
-    if (isSetSrc2()) {
-      src2Var(mdata) = 0.0;
+    srcVar(0, mdata) = 0.0;
+    if (isSetSrc(1)) {
+      srcVar(1, mdata) = 0.0;
     }
     return 0.0;
   }
@@ -360,11 +333,11 @@ public:
   double
   accumulateStdDev(MetricAccessor& mdata) const
   {
-    double a1 = accumVar(mdata), a2 = accum2Var(mdata), s = srcVar(mdata);
+    double a1 = accumVar(0, mdata), a2 = accumVar(1, mdata), s = srcVar(0, mdata);
     double z1 = a1 + s;       // running sum
     double z2 = a2 + (s * s); // running sum of squares
-    accumVar(mdata)  = z1;
-    accum2Var(mdata) = z2;
+    accumVar(0, mdata)  = z1;
+    accumVar(1, mdata) = z2;
     return z1;
   }
 
@@ -372,12 +345,12 @@ public:
   double
   combineStdDev(MetricAccessor& mdata) const
   {
-    double a1 = accumVar(mdata), a2 = accum2Var(mdata);
-    double s1 = srcVar(mdata), s2 = src2Var(mdata);
+    double a1 = accumVar(0, mdata), a2 = accumVar(1, mdata);
+    double s1 = srcVar(0, mdata), s2 = srcVar(1, mdata);
     double z1 = a1 + s1; // running sum
     double z2 = a2 + s2; // running sum of squares
-    accumVar(mdata)  = z1;
-    accum2Var(mdata) = z2;
+    accumVar(0, mdata)  = z1;
+    accumVar(1, mdata) = z2;
     return z1;
   }
 
@@ -385,8 +358,8 @@ public:
   double
   finalizeStdDev(MetricAccessor& mdata) const
   {
-    double a1 = accumVar(mdata);  // running sum
-    double a2 = accum2Var(mdata); // running sum of squares
+    double a1 = accumVar(0, mdata);  // running sum
+    double a2 = accumVar(1, mdata); // running sum of squares
     double sdev = a1;
     if (numSrc(mdata) > 0) {
       double n = numSrc(mdata);
@@ -395,8 +368,8 @@ public:
       double z2 = a2 / n;        // (sum of squares)/n
       sdev = sqrt(z2 - z1);      // stddev
 
-      accumVar(mdata) = sdev;
-      accum2Var(mdata) = mean;
+      accumVar(0, mdata) = sdev;
+      accumVar(1, mdata) = mean;
     }
     return sdev;
   }
@@ -423,12 +396,8 @@ public:
   // Metric::IDBExpr::ddump()  
 
 protected:
-  uint m_accumId;  // accumulator 1
-  uint m_accum2Id; // accumulator 2 (if needed)
-
-  uint m_srcId;  // input source for accumulate()
-  uint m_src2Id; // input source for accumulator 2's combine()
-
+  uint m_accumId[maxAccums];  // accumulators
+  uint m_srcId[maxAccums];  // input source for accumulate()
   uint m_numSrcFxd;   // number of inputs (fixed)
   uint m_numSrcVarId; // number of inputs, which can be variable
 };
@@ -474,22 +443,22 @@ public:
 
   virtual double
   initialize(MetricAccessor& mdata) const
-  { return (accumVar(mdata) = DBL_MIN /* sic; see above */); }
+  { return (accumVar(0, mdata) = DBL_MIN /* sic; see above */); }
 
   virtual double
   initializeSrc(MetricAccessor& mdata) const
-  { return (srcVar(mdata) = DBL_MIN /* sic; see above */); }
+  { return (srcVar(0, mdata) = DBL_MIN /* sic; see above */); }
 
   virtual double
   accumulate(MetricAccessor& mdata) const
   {
-    double a = accumVar(mdata), s = srcVar(mdata);
+    double a = accumVar(0, mdata), s = srcVar(0, mdata);
     double z = a;
 
     // See comments above
     if (s != DBL_MIN && s != 0.0) {
       z = (a == DBL_MIN) ? s : std::min(a, s);
-      accumVar(mdata) = z;
+      accumVar(0, mdata) = z;
     }
     DIAG_MsgIf(0, "MinIncr: min("<< a << ", " << s << ") = " << z);
 
@@ -502,7 +471,7 @@ public:
 
   virtual double
   finalize(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
 
   // ------------------------------------------------------------
@@ -551,19 +520,19 @@ public:
 
   virtual double
   initialize(MetricAccessor& mdata) const
-  { return (accumVar(mdata) = 0.0); }
+  { return (accumVar(0, mdata) = 0.0); }
 
   virtual double
   initializeSrc(MetricAccessor& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return (srcVar(0, mdata) = 0.0); }
 
   virtual double
   accumulate(MetricAccessor& mdata) const
   {
-    double a = accumVar(mdata), s = srcVar(mdata);
+    double a = accumVar(0, mdata), s = srcVar(0, mdata);
     double z = std::max(a, s);
     DIAG_MsgIf(0, "MaxIncr: max("<< a << ", " << s << ") = " << z);
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -573,7 +542,7 @@ public:
 
   virtual double
   finalize(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
 
   // ------------------------------------------------------------
@@ -622,19 +591,19 @@ public:
 
   virtual double
   initialize(MetricAccessor& mdata) const
-  { return (accumVar(mdata) = 0.0); }
+  { return (accumVar(0, mdata) = 0.0); }
 
   virtual double
   initializeSrc(MetricAccessor& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return (srcVar(0, mdata) = 0.0); }
 
   virtual double
   accumulate(MetricAccessor& mdata) const
   {
-    double a = accumVar(mdata), s = srcVar(mdata);
+    double a = accumVar(0, mdata), s = srcVar(0, mdata);
     double z = a + s;
     DIAG_MsgIf(0, "SumIncr: +("<< a << ", " << s << ") = " << z);
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -644,7 +613,7 @@ public:
 
   virtual double
   finalize(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
 
   // ------------------------------------------------------------
@@ -693,19 +662,19 @@ public:
 
   virtual double
   initialize(MetricAccessor& mdata) const
-  { return (accumVar(mdata) = 0.0); }
+  { return (accumVar(0, mdata) = 0.0); }
 
   virtual double
   initializeSrc(MetricAccessor& mdata) const
-  { return (srcVar(mdata) = 0.0); }
+  { return (srcVar(0, mdata) = 0.0); }
 
   virtual double
   accumulate(MetricAccessor& mdata) const
   {
-    double a = accumVar(mdata), s = srcVar(mdata);
+    double a = accumVar(0, mdata), s = srcVar(0, mdata);
     double z = a + s;
     DIAG_MsgIf(0, "MeanIncr: +("<< a << ", " << s << ") = " << z);
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -716,12 +685,12 @@ public:
   virtual double
   finalize(MetricAccessor& mdata) const
   {
-    double a = accumVar(mdata);
+    double a = accumVar(0, mdata);
     double z = a;
     if (numSrc(mdata) > 0) {
       double n = numSrc(mdata);
       z = a / n;
-      accumVar(mdata) = z;
+      accumVar(0, mdata) = z;
     }
     return z;
   }
@@ -800,9 +769,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual uint
+  numAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const
@@ -872,12 +841,12 @@ public:
   finalize(MetricAccessor& mdata) const
   {
     double sdev = finalizeStdDev(mdata);
-    double mean = accum2Var(mdata);
+    double mean = accumVar(1, mdata);
     double z = 0.0;
     if (mean > epsilon) {
       z = sdev / mean;
     }
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -886,9 +855,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual int
+  hasAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const
@@ -958,12 +927,12 @@ public:
   finalize(MetricAccessor& mdata) const
   {
     double sdev = finalizeStdDev(mdata);
-    double mean = accum2Var(mdata);
+    double mean = accumVar(1, mdata);
     double z = 0.0;
     if (mean > epsilon) {
       z = (sdev / mean) * 100;
     }
-    accumVar(mdata) = z;
+    accumVar(0, mdata) = z;
     return z;
   }
 
@@ -972,9 +941,9 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual bool
-  hasAccum2() const
-  { return true; }
+  virtual uint
+  numAccum() const
+  { return 2; }
 
   virtual bool
   hasNumSrcVar() const
@@ -1028,7 +997,7 @@ public:
   virtual double
   initialize(MetricAccessor& mdata) const
   {
-    double z = accumVar(mdata) = numSrcFxd();
+    double z = accumVar(0, mdata) = numSrcFxd();
     return z;
   }
 
@@ -1038,15 +1007,15 @@ public:
 
   virtual double
   accumulate(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
   virtual double
   combine(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
   virtual double
   finalize(MetricAccessor& mdata) const
-  { return accumVar(mdata); }
+  { return accumVar(0, mdata); }
 
 
   // ------------------------------------------------------------

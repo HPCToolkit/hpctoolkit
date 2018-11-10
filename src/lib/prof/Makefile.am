@@ -80,6 +80,8 @@ MYSOURCES = \
 	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
 	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
 	\
+	FileError.hpp FileError.cpp \
+	\
 	LoadMap.hpp LoadMap.cpp \
 	\
 	Struct-Tree.hpp Struct-Tree.cpp \
@@ -92,12 +94,14 @@ MYSOURCES = \
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
+	\
+	StringSet.hpp StringSet.cpp \
 	NameMappings.hpp NameMappings.cpp 
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

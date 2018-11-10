@@ -58,8 +58,10 @@ void libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
 btuwi_status_t libunw_build_intervals(char *beg_insn, unsigned int len);
 
-step_state libunw_find_step(hpcrun_unw_cursor_t* cursor);
+bool libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor);
 
 step_state libunw_take_step(hpcrun_unw_cursor_t* cursor);
 
 step_state libunw_unw_step(hpcrun_unw_cursor_t* cursor);
+
+void libunw_uw_recipe_tostr(void* uwr, char str[]);

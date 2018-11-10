@@ -114,7 +114,7 @@ BUILT_SOURCES =
 CLEANFILES =
 
 if OPT_BUILD_FRONT_END
-  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpcsummary
   pkglibexec_SCRIPTS += scripts/hpclog
   include_HEADERS += hpctoolkit.h
 endif
@@ -143,9 +143,6 @@ if OPT_ENABLE_CUDA
   pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
 endif
   pkglib_LIBRARIES += libhpctoolkit.a
-if HOST_CPU_PPC
-  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
-endif
   bin_SCRIPTS += scripts/hpclink
 endif
 
@@ -160,7 +157,7 @@ endif
 
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
-PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@
+PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@ 
 PAPI_LD_FLGS =   @OPT_PAPI_LDFLAGS@
 XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
@@ -181,8 +178,12 @@ HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 
-if HOST_CPU_PPC
+# Disable the ibm-xlomp plugin in favor of the new openmp tools
+# interface.
+if FALSE
   PLUGIN_CONFIG_FILES += ibm-xlomp
+  pkglib_LIBRARIES += libibm_xlomp_wrappers.a
+  libibm_xlomp_wrappers_a_SOURCES = plugins/ibm-xlomp-wrappers.c
 endif
 
 UNW_UNIV_FILES = \
@@ -215,6 +216,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-intel-composer2013-mic.c \
 	unwind/x86-family/manual-intervals/x86-32bit-main.c \
 	unwind/x86-family/manual-intervals/x86-32bit-icc-variant.c \
+	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
 
@@ -259,6 +261,10 @@ UNW_MIPS_INCLUDE_DIRS = \
         -I$(srcdir)/unwind/mips
 
 UNW_MIPS_LD_FLAGS =
+
+MY_CPP_DEFINES =			\
+	-D_GNU_SOURCE			\
+	-DINLINE_FN=1
 
 MY_BASE_FILES =				\
 	utilities/first_func.c		\
@@ -340,8 +346,12 @@ if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  \
 	sample-sources/perf/event_custom.c  \
 	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf_event_open.c     \
 	sample-sources/perf/perf-util.c     \
-	sample-sources/perf/perf_mmap.c
+	sample-sources/perf/perf_mmap.c     \
+	sample-sources/perf/perf_skid.c
+
+MY_CPP_DEFINES  += -DHPCRUN_SS_LINUX_PERF
 
 if OPT_PERFMON
 MY_BASE_FILES += sample-sources/perf/perfmon-util.c
@@ -411,9 +421,6 @@ endif
 
 MY_UPC_FILES = sample-sources/upc.c
 
-MY_CPP_DEFINES =			\
-	-D_GNU_SOURCE			\
-	-DINLINE_FN=1
 
 #
 # BG/Q backend requires special treatment to avoid deadlocks
@@ -500,9 +507,6 @@ libhpcrun_gpu_wrap_a_SOURCES = 	\
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
-
-libibm_xlomp_wrappers_a_SOURCES =              \
-        plugins/ibm-xlomp-wrappers.c
 
 libhpctoolkit_la_SOURCES = 		\
 	hpctoolkit.c
@@ -826,16 +830,21 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_SOURCES  += $(MY_PAPI_FILES)
   libhpcrun_la_CPPFLAGS += $(PAPI_INC_FLGS)
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
 if OPT_PAPI_CUPTI
 libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_CUPTI
 endif
 
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
   libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 
 if OPT_ENABLE_UPC

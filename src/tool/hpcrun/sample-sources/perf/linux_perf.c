@@ -88,7 +88,8 @@
 #include "sample-sources/simple_oo.h"
 #include "sample-sources/sample_source_obj.h"
 #include "sample-sources/common.h"
-
+#include "sample-sources/ss-errno.h"
+ 
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -113,6 +114,9 @@
 
 #include "perf-util.h"        // u64, u32 and perf_mmap_data_t
 #include "perf_mmap.h"        // api for parsing mmapped buffer
+#include "perf_skid.h"
+#include "perf_event_open.h"
+
 #include "event_custom.h"     // api for pre-defined events
 
 #include "sample-sources/display.h" // api to display available events
@@ -135,7 +139,7 @@
 // will adjust the threshold to less than 100.
 //
 // 300 samples per sec with hpctoolkit has a similar overhead as perf
-#define DEFAULT_THRESHOLD  300
+#define DEFAULT_THRESHOLD  HPCRUN_DEFAULT_SAMPLE_RATE
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -163,6 +167,7 @@
 #define DEFAULT_COMPRESSION 5
 
 #define PERF_FD_FINALIZED (-2)
+
 
 //******************************************************************************
 // type declarations
@@ -219,6 +224,7 @@ extern __thread bool hpcrun_thread_suppress_sample;
 //******************************************************************************
 // private operations 
 //******************************************************************************
+
 
 /* 
  * determine whether the perf sample source has been finalized for this thread
@@ -384,7 +390,7 @@ perf_thread_init(event_info_t *event, event_thread_t *et)
   et->event = event;
   // ask sys to "create" the event
   // it returns -1 if it fails.
-  et->fd = perf_util_event_open(&event->attr,
+  et->fd = perf_event_open(&event->attr,
             THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
   TMSG(LINUX_PERF, "event fd: %d, skid: %d, code: %d, type: %d, period: %d, freq: %d",
         et->fd, event->attr.precise_ip, event->attr.config,
@@ -553,6 +559,9 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   *sv = hpcrun_sample_callpath(context, current->event->metric,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
+
+  blame_shift_apply(current->event->metric, sv->sample_node, 
+                    counter /*metricIncr*/);
 
   return sv;
 }
@@ -759,15 +768,23 @@ METHOD_FN(supports_event, const char *ev_str)
 
   // extract the event name and the threshold (unneeded in this phase)
   long thresh;
-  char ev_tmp[1024];
-  hpcrun_extract_ev_thresh(ev_str, sizeof(ev_tmp), ev_tmp, &thresh, 0) ;
+  char *ev_tmp;
+
+  // check if the user specifies explicitly precise event
+  perf_skid_parse_event(ev_str, &ev_tmp);
+
+  hpcrun_extract_ev_thresh(ev_tmp, strlen(ev_tmp), ev_tmp, &thresh, 0) ;
 
   // check if the event is a predefined event
-  if (event_custom_find(ev_tmp) != NULL)
+  if (event_custom_find(ev_tmp) != NULL) {
+    free(ev_tmp);
     return true;
+  }
 
   // this is not a predefined event, we need to consult to perfmon (if enabled)
-  return pfmu_isSupported(ev_tmp) >= 0;
+  bool retval = pfmu_isSupported(ev_tmp) >= 0;
+  free(ev_tmp);
+  return retval;
 }
 
 
@@ -811,12 +828,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   // during thread initialization for perf event creation
   // ----------------------------------------------------------------------
   for (event = start_tok(evlist); more_tok(); event = next_tok(), i++) {
-    char name[1024];
+    char *name;
     long threshold = 1;
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &threshold,
+    perf_skid_parse_event(event, &name);
+    int period_type = hpcrun_extract_ev_thresh(name, strlen(name), name, &threshold,
         default_threshold.threshold_val);
 
     // ------------------------------------------------------------
@@ -848,7 +866,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // initialize the generic perf event attributes for this event
     // all threads and file descriptor will reuse the same attributes.
     // ------------------------------------------------------------
-    perf_util_attr_init(event_attr, is_period, threshold, 0);
+    perf_util_attr_init(event, event_attr, is_period, threshold, 0);
 
     // ------------------------------------------------------------
     // initialize the property of the metric
@@ -856,7 +874,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
-    prop = (strcasestr(name, "CYCLES") != NULL) ? metric_property_cycles : metric_property_none;
+    if (strcasestr(name, "CYCLES") != NULL) {
+      prop = metric_property_cycles;
+      blame_shift_source_register(bs_type_cycles);
+    } else {
+      prop = metric_property_none;
+    }
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
@@ -882,6 +905,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
     event_desc[i].metric_desc = m;
     METHOD_CALL(self, store_event, event_attr->config, threshold);
+    free(name);
   }
 
   if (num_events > 0)
@@ -921,7 +945,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   {
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize %s", event_desc[i].metric_desc->name);
+      EEMSG("Failed to initialize the %s event.", event_desc[i].metric_desc->name);
     }
   }
 
@@ -971,7 +995,7 @@ read_fd(int fd)
 
 #define ss_name linux_perf
 #define ss_cls SS_HARDWARE
-#define ss_sort_order  70
+#define ss_sort_order  60
 
 #include "sample-sources/ss_obj.h"
 
@@ -986,6 +1010,8 @@ perf_event_handler(
   void* context
 )
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   // ----------------------------------------------------------------------------
   // check #0:
   // if the interrupt came while inside our code, then drop the sample
@@ -997,7 +1023,9 @@ perf_event_handler(
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
 
-    return 0; // tell monitor the signal has been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1011,7 +1039,9 @@ perf_event_handler(
 
   // if finalized already, refuse to handle any more samples
   if (perf_was_finalized(nevents, event_thread)) {
-    return 0;
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   perf_stop_all(nevents, event_thread);
@@ -1025,7 +1055,9 @@ perf_event_handler(
          siginfo->si_code);
     perf_start_all(nevents, event_thread);
 
-    return 1; // tell monitor the signal has not been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 1; // tell monitor the signal has not been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1033,7 +1065,9 @@ perf_event_handler(
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
   if (hpcrun_thread_suppress_sample) {
-    return 0;
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   int fd = siginfo->si_fd;
@@ -1050,6 +1084,8 @@ perf_event_handler(
 
     restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor the signal has not been handled.
   }
@@ -1072,7 +1108,9 @@ perf_event_handler(
 
     perf_start_all(nevents, event_thread);
 
-    return 1; // tell monitor the signal has not been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 1; // tell monitor the signal has not been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1101,6 +1139,8 @@ perf_event_handler(
 
   hpcrun_safe_exit();
 
-  return 0; // tell monitor the signal has been handled.
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 
