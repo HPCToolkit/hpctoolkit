@@ -169,15 +169,15 @@ public:
 
 
   double
-  demandMetric(size_t mId, size_t size = 0) const
+  c_idx(size_t mId, size_t size = 0) const
   {
-    size_t sz = std::max(size, mId+1);
-    ensureMetricsSize(sz);
+    if (mId >= m_metrics.size())
+      return 0.;
     return metric(mId);
   }
 
   double&
-  demandMetric(size_t mId, size_t size = 0)
+  idx(size_t mId, size_t size = 0)
   {
     size_t sz = std::max(size, mId+1);
     ensureMetricsSize(sz);

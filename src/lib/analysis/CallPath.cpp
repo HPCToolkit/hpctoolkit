@@ -545,7 +545,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
 					unkProcNm);
       
       n->structure(strct);
-      //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      //strct->idx(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
       if (0 && Analysis::CallPath::dbgOs) {
@@ -556,7 +556,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       Struct::ANode* scope_strct = strct->ancestor(Struct::ANode::TyLoop,
 						   Struct::ANode::TyAlien,
 						   Struct::ANode::TyProc);
-      //scope_strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      //scope_strct->idx(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       Prof::CCT::ANode* scope_frame =
 	demandScopeInFrame(n_dyn, scope_strct, *strctToCCTMap);
@@ -943,7 +943,7 @@ noteStaticStructure(Prof::CallPath::Profile& prof)
 
     Prof::Struct::ACodeNode* strct = x->structure();
     if (strct) {
-      strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
+      strct->idx(CallPath::Profile::StructMetricIdFlg) += 1.0;
     }
   }
 }

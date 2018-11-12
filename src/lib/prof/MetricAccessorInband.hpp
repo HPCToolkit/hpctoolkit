@@ -8,10 +8,10 @@ class MetricAccessorInband : public MetricAccessor {
 public:
   MetricAccessorInband(Prof::Metric::IData &_mdata) : mdata(_mdata) {}
   virtual double &idx(int mId, int size = 0) {
-    return mdata.demandMetric(mId, size);
+    return mdata.idx(mId, size);
   }
   virtual double c_idx(int mId) const {
-    return mdata.metric(mId);
+    return mdata.c_idx(mId);
   }
   virtual int idx_ge(int mId) const {
     return mId;

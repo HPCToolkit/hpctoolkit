@@ -702,8 +702,8 @@ ANode::aggregateMetrics(uint mBegId, uint mEndId)
     ANode* n_parent = n->parent();
     if (n != root) {
       for (uint mId = mBegId; mId < mEndId; ++mId) {
-	double mVal = n->demandMetric(mId, mEndId/*size*/);
-	n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+	double mVal = n->c_idx(mId, mEndId/*size*/);
+	n_parent->idx(mId, mEndId/*size*/) += mVal;
       }
     }
   }
