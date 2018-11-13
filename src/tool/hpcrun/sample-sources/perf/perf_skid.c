@@ -59,7 +59,6 @@
 #include <sys/syscall.h>   /* For SYS_xxx definitions */
 
 #include <linux/perf_event.h>
-#include <linux/hw_breakpoint.h>
 
 #include "perf_constants.h"
 #include "perf_skid.h"

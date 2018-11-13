@@ -72,6 +72,7 @@
 
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/StringTable.hpp>
 
@@ -342,11 +343,11 @@ public:
 Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
 
-bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
+bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
 
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line);
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
+	      VMA vma, int len, string & filenm, SrcFile::ln line);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);
