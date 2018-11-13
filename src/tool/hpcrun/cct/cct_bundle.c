@@ -66,6 +66,19 @@ GPU_IDLE(void)
 {
 }
 
+void
+DATACENTRIC()
+{}
+
+//
+// "Special" routine to serve as a placeholder for "datacentric" resource
+//
+
+void
+DATACENTRIC_ANNEX(void)
+{}
+
+
 
 
 //
@@ -99,7 +112,9 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
+  bundle->special_datacentric_node = hpcrun_cct_new_special(DATACENTRIC_ANNEX);
 }
+
 //
 // Write to file for cct bundle: 
 //
@@ -151,4 +166,14 @@ hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
     hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
 
   return cct->special_idle_node;
+}
+
+
+cct_node_t*
+hpcrun_cct_bundle_get_datacentric_node(cct_bundle_t *cct)
+{
+  if (!hpcrun_cct_parent(cct->special_datacentric_node)) {
+    hpcrun_cct_insert_node(cct->top, cct->special_datacentric_node);
+  }
+  return cct->special_datacentric_node;
 }

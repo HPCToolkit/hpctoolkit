@@ -86,6 +86,7 @@
 #include "Struct-Tree.hpp"
 
 #include "LoadMap.hpp"
+#include "Metric-Mgr.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -220,16 +221,22 @@ public:
   // -------------------------------------------------------
   std::ostream&
   writeXML(std::ostream& os,
+      const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0) const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
+  dump(const Metric::Mgr *metricMgr, std::ostream& os = std::cerr, uint oFlags = 0) const;
   
   void
-  ddump() const;
+  ddump(const Metric::Mgr *metricMgr) const;
 
+  int getNumNodeId() {
+    if (m_nodeidMap)
+      return m_nodeidMap->size();
+    return 0;
+  }
 
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
@@ -615,13 +622,14 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toString(uint oFlags = 0, const char* pfx = "") const;
+  toString(const Metric::Mgr *metricMgr, uint oFlags = 0, const char* pfx = "") const;
 
   virtual std::string
   toStringMe(uint oFlags = 0) const;
 
   std::ostream&
   writeXML(std::ostream& os,
+     const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
@@ -629,18 +637,20 @@ public:
 
   std::ostream&
   writeXML_path(std::ostream& os,
+     const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
+  dump(const Metric::Mgr *metricMgr,
+      std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
 
   void
-  adump() const;
+  adump(const Metric::Mgr *metricMgr) const;
 
   void
-  ddump() const;
+  ddump(const Metric::Mgr *metricMgr) const;
 
   void
   ddumpMe() const;
@@ -651,7 +661,7 @@ public:
 protected:
 
   bool
-  writeXML_pre(std::ostream& os,
+  writeXML_pre(std::ostream& os, const Metric::Mgr *metricMgr,
 	       uint metricBeg = Metric::IData::npos,
 	       uint metricEnd = Metric::IData::npos,
 	       uint oFlags = 0,

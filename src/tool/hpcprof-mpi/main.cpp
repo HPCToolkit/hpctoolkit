@@ -362,25 +362,26 @@ realmain(int argc, char* const* argv)
                                                  printProgress);
 
   // N.B.: Dense ids are assigned w.r.t. Prof::CCT::...::cmpByStructureInfo()
-  if (DBG_PROF_MPI)
-    std::cout << "numcct before: " << profGbl->cct()->maxDenseId() << std::endl;
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". numcct before: " << profGbl->cct()->maxDenseId() << std::endl);
 
   profGbl->cct()->makeDensePreorderIds();
 
-  if (DBG_PROF_MPI)
-    std::cout << "numcct after: " << profGbl->cct()->maxDenseId() << std::endl;
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". numcct after: " << profGbl->cct()->maxDenseId() << std::endl);
 
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT
   //
   // Post-INVARIANT: rank 0's 'profGbl' contains summary metrics
   // -------------------------------------------------------
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 2a: makeSummaryMetrics" << std::endl);
+
   makeSummaryMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		     myRank, numRanks);
 
   // -------------------------------------------------------
   // 2b. Prune and normalize canonical CCT
   // -------------------------------------------------------
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 2b: pruneBySummaryMetrics" << std::endl);
 
   uint prunedNodesSz = profGbl->cct()->maxDenseId() + 1;
   uint8_t* prunedNodes = new uint8_t[prunedNodesSz];
@@ -395,12 +396,16 @@ realmain(int argc, char* const* argv)
     }
   }
   
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 2b1: broadcast prunedNodes" << std::endl);
+
   MPI_Bcast(prunedNodes, prunedNodesSz, MPI_BYTE, 0, MPI_COMM_WORLD);
 
   if (myRank != 0) {
     profGbl->cct()->pruneCCTByNodeId(prunedNodes);
   }
   delete[] prunedNodes;
+
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 2b2: normalize" << std::endl);
 
   Analysis::CallPath::normalize(*profGbl, args.agent, args.doNormalizeTy);
 
@@ -415,6 +420,8 @@ realmain(int argc, char* const* argv)
   // -------------------------------------------------------
   // 2c. Create thread-level metric DB // Normalize trace files
   // -------------------------------------------------------
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 2c: makeThreadMetrics" << std::endl);
+
   makeThreadMetrics(*profGbl, args, nArgs, groupIdToGroupSizeMap,
 		    myRank, numRanks);
   
@@ -422,6 +429,7 @@ realmain(int argc, char* const* argv)
   // 3. Generate Experiment database
   //    INVARIANT: database dir already exists
   // ------------------------------------------------------------
+  DIAG_MsgIf(DBG_PROF_MPI, myRank << ". stage 3: pruneStructTree" << std::endl);
 
   Analysis::CallPath::pruneStructTree(*profGbl);
 

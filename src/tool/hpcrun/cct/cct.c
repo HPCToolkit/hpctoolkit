@@ -92,12 +92,6 @@
 
 //***************************** concrete data structure definition **********
 
-typedef struct cct_data_s {
-
-  cct_node_t *allocation_node;  // dynamic allocation
-  uint64_t   start_address;     // static allocation
-
-} cct_data_t;
 
 struct cct_node_t {
 
@@ -111,7 +105,7 @@ struct cct_node_t {
   int32_t persistent_id;
   
   uint16_t node_type;
-  
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -124,13 +118,7 @@ struct cct_node_t {
   struct cct_node_t* left;
   struct cct_node_t* right;
 
-  // ---------------------------------------------------------
-  // datacentric association with memory address
-  // ---------------------------------------------------------
-  union {
-    cct_data_t var;
-    cct_addr_t addr; // bundle abstract address components into a data type
-  };
+  cct_addr_t addr; // bundle abstract address components into a data type
 
 };
 
@@ -179,9 +167,6 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
     node->addr.as_info = addr->as_info; // LUSH
     node->addr.ip_norm = addr->ip_norm;
     node->addr.lip     = addr->lip;     // LUSH
-  } else {
-    node->var.allocation_node = NULL;
-    node->var.start_address   = 0;
   }
 
   node->persistent_id = new_persistent_id();
@@ -316,31 +301,6 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->node_type = node->node_type;
 
   // -------------------------
-  // datacentric
-  // -------------------------
-  tmp->id_node_alloc = 0;
-  tmp->start_address = 0;
-
-  if (hpcrun_fmt_is_allocation_type(node->node_type)) {
-
-    // for node allocation, we add the allocation information
-    // if the node is dynamic allocation, then we point to the node
-    //   where the malloc is located
-    //
-    // if the node is stataic allocation, then we mark with DATA_STATIC_CONTEXT
-    //   since there is no information of location of the node
-
-    tmp->start_address = node->var.start_address;
-
-    uint32_t id_alloc = 0;
-
-    if (!hpcrun_cct_var_static(node)) {
-      id_alloc = node->var.allocation_node->persistent_id;
-    }
-    tmp->id_node_alloc = id_alloc;
-  }
-
-  // -------------------------
   // metrics
   // -------------------------
   tmp->num_metrics = my_arg->num_metrics;
@@ -410,11 +370,6 @@ hpcrun_cct_addr(cct_node_t* node)
   return node ? &(node->addr) : NULL;
 }
 
-bool
-hpcrun_cct_is_leaf(cct_node_t* node)
-{
-  return node ? (!(node->children)) : false;
-}
 
 //
 // NOTE: having no children is not exactly the same as being a leaf
@@ -493,6 +448,29 @@ void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
   node->node_type |= NODE_TYPE_LEAF;
+}
+
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_ALLOCATION;
+  hpcrun_cct_retain(node);
+}
+
+bool
+hpcrun_cct_is_leaf(cct_node_t *node)
+{
+  if (node) {
+    bool leaf_type = (node->node_type & NODE_TYPE_LEAF) == NODE_TYPE_LEAF;
+    return leaf_type || (!node->children);
+  }
+  return false;
+}
+
+bool
+hpcrun_cct_is_node_allocation(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
 }
 
 //
@@ -868,48 +846,5 @@ hpcrun_cct_get_root(cct_node_t *node)
       current = hpcrun_cct_parent(current);
   }
   return current;
-}
-
-
-// ------------------------------------------------------------------------------
-// data-centric to manage list of variable addresses
-//  accessed by a node
-// ------------------------------------------------------------------------------
-
-bool
-hpcrun_cct_var_static(cct_node_t *node)
-{
-  uint64_t node_ip = (uint64_t) node->var.allocation_node;
-  return node_ip == DATA_STATIC_CONTEXT;
-}
-
-void
-hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target)
-{
-  if (node_source == NULL) return;
-
-  cct_node_t *node = cct_node_create(NULL, node_source);
-
-  node->node_type           = NODE_TYPE_ALLOCATION;
-  node->var.start_address   = (uint64_t)start;
-  node->var.allocation_node = node_target;
-
-  if (!hpcrun_cct_var_static(node)) {
-    TMSG(DATACENTRIC, "add var into %d alloc from %d == %d", node_source->persistent_id,
-        node_target->persistent_id, node->var.allocation_node->persistent_id);
-  }
-
-  // if the parent has no children, we add the new node to the parent.
-  // otherwise we add a new sibling on its child.
-
-  cct_node_t *child = node_source->children;
-  if (child != NULL) {
-    for(cct_node_t *sibling = child; sibling;
-        child = sibling, sibling = sibling->left);
-
-    child->left = node;
-  } else {
-    node_source->children = node;
-  }
 }
 

@@ -258,7 +258,7 @@ show_info(char *event )
   pfm_pmu_info_t pinfo;
   pfm_event_info_t info;
   int i, j, ret, match = 0, pname;
-  int profilable;
+  int profilable = 0;
 
   memset(&pinfo, 0, sizeof(pinfo));
   memset(&info, 0, sizeof(info));

@@ -1166,7 +1166,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecCallPathProfileData>\n";
-  prof.cct()->writeXML(os, metricBegId, metricEndId, oFlags);
+  prof.cct()->writeXML(os, prof.metricMgr(), metricBegId, metricEndId, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";

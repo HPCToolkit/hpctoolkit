@@ -138,7 +138,7 @@
 // will adjust the threshold to less than 100.
 //
 // 300 samples per sec with hpctoolkit has a similar overhead as perf
-#define DEFAULT_THRESHOLD  300
+#define DEFAULT_THRESHOLD  HPCRUN_DEFAULT_SAMPLE_RATE
 
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id  _sigev_un._tid
@@ -488,12 +488,12 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
  * return 1 node of the sample if successful
  * return 0 if fails
  */
-static int
+static void
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, int metric, int freq, sample_val_t *sv)
 {
   if (current == NULL)
-    return 0;
+    return ;
 
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
@@ -563,8 +563,6 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 
   blame_shift_apply(metric, sv->sample_node, 
                     counter /*metricIncr*/);
-
-  return sv;
 }
 
 /**
@@ -928,7 +926,8 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init(et, attr) ) {
-      TMSG(LINUX_PERF, "FAIL to initialize fd=%d", event_thread[i].fd);
+      metric_desc_t *mdesc = hpcrun_id2metric(i);
+      EEMSG("Failed to initialize event %d (%s)", i, mdesc->name);
     }
   }
 

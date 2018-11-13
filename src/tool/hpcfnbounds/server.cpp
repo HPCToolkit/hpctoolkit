@@ -333,7 +333,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     code_ranges_reinit();
     function_entries_reinit();
 
-    dump_file_info(inbuf, fn_discovery);
+    dump_file_info(inbuf, fn_discovery, SYSERV_QUERY);
     jmpbuf_ok = 0;
 
     // pad list of addrs in case there are fewer function addrs than
@@ -417,7 +417,7 @@ do_query_var(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     code_ranges_reinit();
     variable_entries_reinit();
 
-    dump_file_info(inbuf, fn_discovery);
+    dump_file_info(inbuf, fn_discovery, SYSERV_QUERY_VAR);
     jmpbuf_ok = 0;
 
     // pad list of addrs in case there are fewer function addrs than

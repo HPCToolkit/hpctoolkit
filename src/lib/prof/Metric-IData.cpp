@@ -72,9 +72,11 @@ using std::string;
 #include <include/uint.h>
 
 #include "Metric-IData.hpp"
+#include "Metric-Mgr.hpp"       // for Prof::Metric::Mgr
 
 #include <lib/xml/xml.hpp>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
@@ -100,8 +102,10 @@ IData::toStringMetrics(int oFlags, const char* pfx) const
 
 
 std::ostream&
-IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
-		       int GCC_ATTR_UNUSED oFlags, const char* pfx) const
+IData::writeMetricsXML(std::ostream& os,
+    const Mgr *metricMgr,
+    uint mBegId, uint mEndId,
+		int GCC_ATTR_UNUSED oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 
@@ -112,10 +116,25 @@ IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
 
   for (uint i = mBegId; i < mEndId; i++) {
     if (hasMetric(i)) {
-      double m = metric(i);
+      hpcrun_metricVal_t val = m_metrics[i];
+      std::string mval;
+
+      // specific case for address-base type:
+      // use the integer format to print to the xml to make it easy the xml parser
+      // to parse the number.
+
+      uint desc_id = i-mBegId;
+      const Metric::ADesc* adesc = metricMgr->metric(desc_id);
+      const Metric::SampledDesc* mdesc = dynamic_cast<const Metric::SampledDesc*>(adesc);
+      if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
+        mval = xml::MakeAttrNum(val.i);
+      } else{
+        mval = xml::MakeAttrNum(val.r);
+      }
+
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << xml::MakeAttrNum(m) << "/>";
+	 << " v" << mval << "/>";
       wasMetricWritten = true;
     }
   }

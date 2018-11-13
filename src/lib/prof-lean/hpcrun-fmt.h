@@ -250,6 +250,7 @@ typedef enum {
   MetricFlags_ValFmt_NULL = 0,
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
+  MetricFlags_ValFmt_Address
 
 } MetricFlags_ValFmt_t;
 
@@ -516,8 +517,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_ALLOCATION   2
 #define NODE_TYPE_MEMACCESS    4
 
-#define DATA_STATIC_CONTEXT 0x1
-
 
 #define HPCRUN_FMT_LMId_NULL (0)
 
@@ -526,6 +525,11 @@ hpcrun_fmt_doRetainId(uint32_t id)
 
 // Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
+
+
+// -------------------------
+// data-centric fields
+// -------------------------
 
 
 typedef struct hpcrun_fmt_cct_node_t {
@@ -552,12 +556,6 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   hpcfmt_uint_t num_metrics;
   hpcrun_metricVal_t* metrics;
-
-  // -------------------------
-  // data-centric fields
-  // -------------------------
-  uint32_t id_node_alloc;
-  uint64_t start_address;
 
 } hpcrun_fmt_cct_node_t;
 
@@ -761,6 +759,7 @@ hpcrun_fmt_is_allocation_type(uint16_t node_type)
 {
   return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
 }
+
 
 // return true of the node type is an allocation node
 // used by data-centric code

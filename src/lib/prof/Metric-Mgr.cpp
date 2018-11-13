@@ -322,8 +322,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
-		    doDispPercent, isPercent);
+    new DerivedDesc(mNmFmt, mDesc, expr, mSrc->isVisible(), true/*isSortKey*/,
+		    mSrc->doDispPercent(), mSrc->isPercent());
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
@@ -374,9 +374,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
-  bool doDispPercent = true;
+  bool doDispPercent = mSrc->doDispPercent();
+  bool isVisible = mSrc->isVisible();
   bool isPercent = false;
-  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
