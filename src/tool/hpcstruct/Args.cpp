@@ -62,7 +62,10 @@
 #include <iostream>
 using std::cerr;
 using std::endl;
+#include <dirent.h>
+#include <sys/stat.h>
 
+#include <vector>
 #include <string>
 using std::string;
 
@@ -302,6 +305,14 @@ Args::getCmd() const
 }
 
 
+static inline bool is_directory(const std::string &path) {
+  struct stat statbuf;
+  if (stat(path.c_str(), &statbuf) != 0)
+    return 0;
+  return S_ISDIR(statbuf.st_mode);
+}
+
+
 void
 Args::parse(int argc, const char* const argv[])
 {
@@ -403,9 +414,10 @@ Args::parse(int argc, const char* const argv[])
       demangle_function = parser.getOptArg("demangle-function");
     }
 
+    std::string output_name;
     // Check for other options: Output options
     if (parser.isOpt("output")) {
-      out_filenm = parser.getOptArg("output");
+      output_name = parser.getOptArg("output");
     }
     if (parser.isOpt("compact")) {
       prettyPrintOutput = false;
@@ -415,11 +427,43 @@ Args::parse(int argc, const char* const argv[])
     if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
     }
-    in_filenm = parser.getArg(0);
 
-    if (out_filenm.empty()) {
-      string base_filenm = FileUtil::basename(in_filenm);
-      out_filenm = base_filenm + ".hpcstruct";
+    std::string input_name = parser.getArg(0);
+
+    if (is_directory(input_name)) {
+      // parse cubins
+      auto structs_dir = input_name + "/structs";
+      auto cubins_dir = input_name + "/cubins";
+      DIR *dir;
+      struct dirent *ent;
+      if ((dir = opendir(cubins_dir.c_str())) != NULL) {
+        mkdir(structs_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+        /* append files within the directory */
+        while ((ent = readdir(dir)) != NULL) {
+          std::string file_name = std::string(ent->d_name);
+          if (!is_directory(cubins_dir + "/" + file_name)) {
+            in_filenm.push_back(cubins_dir + "/" + file_name);
+            if (output_name.size() == 0) {
+              out_filenm.push_back(structs_dir + "/" + file_name + ".hpcstruct");
+            } else {
+              if (output_name == "-") {
+                out_filenm.push_back("-");
+              } else {
+                out_filenm.push_back(output_name + "/" + file_name + ".hpcstruct");
+              }
+            }
+          }
+        }
+        closedir(dir);
+      }
+    } else {
+      in_filenm.push_back(std::string(input_name));
+      if (output_name.size() == 0) {
+        string base_filenm = FileUtil::basename(input_name);
+        out_filenm.push_back(base_filenm + ".hpcstruct");
+      } else {
+        out_filenm.push_back(output_name);
+      }
     }
   }
   catch (const CmdLineParser::ParseError& x) {
@@ -436,7 +480,9 @@ void
 Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl;
-  os << "Args.in_filenm= " << in_filenm << endl;
+  for (auto &input_name : in_filenm) {
+    os << "Args.in_filenm= " << input_name << endl;
+  }
 }
 
 
