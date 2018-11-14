@@ -425,7 +425,7 @@ MPIBlameShiftIdlenessFact::makeMetrics(Prof::CCT::ANode* node,
   bool isComp = (!isFrame ||
 		 (/*isFrame &&*/
 		  !isMPIFrame(static_cast<Prof::CCT::ProcFrm*>(node))));
-  bool isBalanced = (node_mdata.idx(mId_bal) <= balancedThreshold);
+  bool isBalanced = (node_mdata.c_idx(mId_bal) <= balancedThreshold);
 
   CCT::ANode* balancedFrmNxt = ((isFrame && isBalanced && isComp) ?
 				node : balancedFrm);
