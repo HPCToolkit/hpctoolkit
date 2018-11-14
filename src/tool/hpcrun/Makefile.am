@@ -114,7 +114,7 @@ BUILT_SOURCES =
 CLEANFILES =
 
 if OPT_BUILD_FRONT_END
-  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpcsummary
   pkglibexec_SCRIPTS += scripts/hpclog
   include_HEADERS += hpctoolkit.h
 endif
@@ -366,8 +366,10 @@ if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  \
 	sample-sources/perf/event_custom.c  \
 	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf_event_open.c     \
 	sample-sources/perf/perf-util.c     \
-	sample-sources/perf/perf_mmap.c
+	sample-sources/perf/perf_mmap.c     \
+	sample-sources/perf/perf_skid.c
 
 MY_CPP_DEFINES  += -DHPCRUN_SS_LINUX_PERF
 

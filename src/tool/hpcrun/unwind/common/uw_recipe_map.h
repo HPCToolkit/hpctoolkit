@@ -68,8 +68,4 @@ uw_recipe_map_init(void);
 bool
 uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
 
-
-void
-uw_recipe_map_print(void);
-
 #endif  /* !_UW_RECIPE_MAP_H_ */
