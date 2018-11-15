@@ -157,8 +157,18 @@ ompt_parallel_end_internal(
     // check if there is any thread registered that should be notified that region call path is available
     ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
     if(to_notify){
-      region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
-                                   ++levels_to_skip, invoker == ompt_invoker_program);
+      if(region_data->call_path == NULL){
+        // need to provide call path, because master did not take a sample inside region
+        ompt_region_context(region_data->region_id, ompt_context_end,
+                                     ++levels_to_skip, invoker == ompt_invoker_program);
+        // I think that is enough to call previous function, which call hpcrun_sample_callpath
+        // FIXME: consider this
+        printf("This is the region data: %p\n", region_data->call_path);
+      }
+
+      //region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
+      //                             ++levels_to_skip, invoker == ompt_invoker_program);
+
       // notify next thread
       wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
     }else{
@@ -183,6 +193,11 @@ ompt_parallel_end_internal(
   }
 
 
+//  // FIXME: vi3 check if this is fine, this should make more sense in implicit task end
+//  ompt_notification_t* top = top_region_stack();
+//  if(top->region_data == region_data){
+//    top_index--;
+//  }
   hpcrun_get_thread_data()->region_id = 0;
   hpcrun_safe_exit();
 
@@ -311,6 +326,12 @@ ompt_implicit_task_internal_end(
   //thread_data_t* td = hpcrun_get_thread_data();
 //  printf("Implicit task end...\n");
 
+  ompt_region_data_t *region_data = (parallel_data) ? (ompt_region_data_t*) parallel_data->ptr : NULL;
+  // FIXME: vi3 check if this is fine
+  ompt_notification_t* top = top_region_stack();
+  if(top && top->region_data == region_data){
+    top_index--;
+  }
 }
 
 

@@ -5,6 +5,7 @@
 //#include <ompt.h>
 
 #include <hpcrun/thread_data.h>
+#include <unwind/common/backtrace_info.h>
 #include "ompt.h"
 
 // support for deferred callstack resolution
@@ -34,7 +35,12 @@ void register_thread_to_all_regions();
 void register_to_all_regions();
 void try_resolve_context();
 
+int try_resolve_one_region_context();
+
 void resolve_one_region_context(ompt_region_data_t* region_data);
 void resolving_all_remaining_context();
 
+
+// function which provides call path for regions where thread is the master
+void provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct);
 #endif

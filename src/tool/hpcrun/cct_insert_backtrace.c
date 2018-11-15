@@ -65,6 +65,7 @@
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
+#include <ompt/ompt-defer.h>
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
 #include "lush/lush-backtrace.h"
@@ -107,6 +108,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   }
 #endif
 
+  // FIXME: POGLEDAJ KOLIKO ON PUTA KROZ OVO PRODJE
+
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
     if ( (! retain_recursion) &&
@@ -126,6 +129,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     parent_routine = path_beg->the_function;
   }
   hpcrun_cct_terminate_path(cct);
+  // FIXME: vi3 consider this function
   return cct;
 }
 
@@ -402,7 +406,12 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
-  cct_backtrace_finalize(&bt, isSync); 
+  // TODO: posle ovoga se uradi elide-ovanje
+  uint64_t before_vlada = (uint64_t)bt.last - (uint64_t)bt.begin;
+  cct_backtrace_finalize(&bt, isSync);
+  uint64_t after_vlada = (uint64_t)bt.last - (uint64_t)bt.begin;
+
+//  printf("Before: %lu\tAfter: %lu\n", before_vlada, after_vlada);
 
   if (bt.partial_unwind) {
     if (ENABLED(NO_PARTIAL_UNW)){
@@ -418,6 +427,8 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
 					 metricId, metricIncr, data);
+  // TODO: verovatno ovde treba da sredimo cct-eve
+  provide_callpath_for_regions_if_needed(&bt, n);
 
   // *trace_pc = bt.trace_pc;  // JMC
 

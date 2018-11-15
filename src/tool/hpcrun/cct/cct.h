@@ -296,6 +296,10 @@ typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t 
 extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
 
 
+// copy cct node
+cct_node_t* hpcrun_cct_copy_just_addr(cct_node_t *cct);
+void hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children);
+void hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent);
 
 
 #endif // cct_h

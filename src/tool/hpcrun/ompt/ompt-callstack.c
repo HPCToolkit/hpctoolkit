@@ -57,6 +57,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
+#include <unwind/common/backtrace_info.h>
 
 #include "../hpcrun-initializers.h"
 
@@ -701,33 +702,97 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     //        without help of get_idle_frame
 
     // Memoization process vi3:
-    ompt_region_data_t* region_data = not_master_region;
-    if (region_data && bt->bottom_frame_elided) {
-
-    //      cct_node_t *prefix = lookup_region_id(region_id);
-
-      cct_node_t* prefix = region_data->call_path;
-
-      if (prefix) {
-	      // full context is available now. use it.
-	      cct_cursor = prefix;
-      } else {
-        // full context is not available. if the there is a node for region_id in
-        // the unresolved tree, use it as the cursor to anchor the sample for now.
-        // it will be resolved later. otherwise, use the default cursor.
-
-        prefix =
-          hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
 
 
-        if (prefix) {
-          cct_cursor = prefix;
-        }else{
-          prefix = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
-          cct_cursor = prefix;
+    if(not_master_region && bt->bottom_frame_elided){
+      // it should be enough just to set cursor to unresolved node
+      // which corresponds to not_master_region
+
+      if(cct_not_master_region == hpcrun_get_thread_epoch()->csdata.thread_root){
+        printf("*************SHOULD THIS EVER HAPPEN!\n");
+      } else if (cct_not_master_region == NULL) {
+        if (top_index >= 0) {
+            printf("************MISSING CCT FOR REGION: %lx, TOP_STACK_INDEX: %d, NOTIFICATION_REGION: %lx, THREAD: %p\n",
+                   not_master_region->region_id, top_index, region_stack[top_index]->region_data->region_id, &threads_queue);
+        } else {
+            printf("************MISSING CCT FOR REGION: %lx, TOP_STACK_INDEX: %d, THREAD: %p\n", not_master_region->region_id, top_index, &threads_queue);
         }
+        // I need to somehow provide cct_not_master_region
+        if (cct_cursor == hpcrun_get_thread_epoch()->csdata.thread_root) {
+          printf("************** This possibly makes problem\n");
+        }
+
+      } else {
+        // everything is ok with cursos
+        cct_cursor = cct_not_master_region;
+
+
+        // I guess partial call path happened becaue we set nil to be cct_cursos
       }
+    } else {
+        // FIXME: consider this case
+      if (not_master_region == NULL) {
+        printf("**********Is it even possible that not_master_region is: %p\n", not_master_region);
+      }
+
+      if (cct_cursor == hpcrun_get_thread_epoch()->csdata.thread_root) {
+        printf("Why is this happening???\n");
+      }
+
+//        printf("KURSOR: %p, THEAD: %d, PARTIAL: %d, UNRESOLVED: %d TREE: %d\n", cct_cursor,
+//               cct_cursor == hpcrun_get_thread_epoch()->csdata.thread_root,
+//               cct_cursor == hpcrun_get_thread_epoch()->csdata.partial_unw_root,
+//               cct_cursor == hpcrun_get_thread_epoch()->csdata.unresolved_root,
+//               cct_cursor == hpcrun_get_thread_epoch()->csdata.tree_root);
+//        cct_cursor = cct_not_master_region;
+
+//        if(cct_cursor == hpcrun_get_thread_epoch()->csdata.thread_root) {
+//            cct_cursor = cct_not_master_region;
+//        }
+
+        // cct_cursor is both partial and thread root
     }
+
+//    ompt_region_data_t* region_data = not_master_region;
+//    if (region_data && bt->bottom_frame_elided) {
+//
+//    //      cct_node_t *prefix = lookup_region_id(region_id);
+//
+//      cct_node_t* prefix = region_data->call_path;
+//
+//      if (prefix) {
+//	      // full context is available now. use it.
+//	      cct_cursor = prefix;
+//      } else {
+//        // full context is not available. if the there is a node for region_id in
+//        // the unresolved tree, use it as the cursor to anchor the sample for now.
+//        // it will be resolved later. otherwise, use the default cursor.
+//
+//        prefix =
+//          hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+//        // FIXME: I think that we always memoized the cct_not_master_region
+//        // so the beyond if is not neccessary
+//
+//        // FIXME: mozda sam ovde nesto zajebao
+//        prefix = cct_not_master_region;
+//
+//
+//
+//        cct_cursor = prefix;
+//
+//        if (prefix) {
+//          cct_cursor = prefix;
+//        }else{
+//          prefix = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
+//          cct_cursor = prefix;
+//        }
+//
+//
+//      }
+//    }
+
+
+
   }
 
   return cct_cursor;

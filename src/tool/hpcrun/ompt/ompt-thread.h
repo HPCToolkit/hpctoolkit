@@ -91,18 +91,20 @@ extern __thread ompt_region_data_t* private_region_freelist_head;
 
 // stack that contais all nested parallel region
 // FIXME vi3: 128 levels are supported
-extern __thread uint64_t region_stack[];
+extern __thread ompt_notification_t* region_stack[];
 extern  __thread int top_index;
 
-uint64_t top_region_stack();
-uint64_t pop_region_stack();
-void push_region_stack(uint64_t region_id);
+ompt_notification_t* top_region_stack();
+ompt_notification_t* pop_region_stack();
+void push_region_stack(ompt_notification_t* notification);
 void clear_region_stack();
 int is_empty_region_stack();
 
 
 // Memoization process vi3:
 extern __thread ompt_region_data_t* not_master_region;
+extern __thread cct_node_t* cct_not_master_region;
 
-
+// number of unresolved regions
+extern __thread int unresolved_cnt;
 #endif

@@ -344,6 +344,7 @@ ompt_thread_begin(ompt_thread_type_t thread_type,
   wfq_init(&public_region_freelist);
 
   registered_regions = NULL;
+  unresolved_cnt = 0;
 //  printf("Tree root begin: %p\n", td->core_profile_trace_data.epoch->csdata.tree_root);
 }
 
@@ -352,6 +353,7 @@ static void
 ompt_thread_end(ompt_data_t *thread_data)
 {
   undirected_blame_thread_end(&omp_idle_blame_info);
+//  printf("DEBUG: number of unresolved regions: %d\n", unresolved_cnt);
 }
 
 
@@ -364,8 +366,7 @@ static void
 ompt_idle_begin()
 {
   undirected_blame_idle_begin(&omp_idle_blame_info);
-//  printf("Trying to resolve from idle: \n");
-  try_resolve_context();
+  while(try_resolve_one_region_context());
 }
 
 

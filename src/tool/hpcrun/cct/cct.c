@@ -953,3 +953,28 @@ hpcrun_cct_node_free(cct_node_t *cct){
 
 
 // FIXME vi3: disccuss about hpcrun_merge
+
+
+
+cct_node_t*
+hpcrun_cct_copy_just_addr(cct_node_t *cct)
+{
+  return cct ? cct_node_create(&cct->addr, NULL): NULL;
+}
+
+void
+hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children)
+{
+  if(!cct)
+    return;
+  cct->children = children;
+}
+
+void
+hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent)
+{
+  if(!cct)
+    return;
+  cct->parent = parent;
+}
+

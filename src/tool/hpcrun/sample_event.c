@@ -209,6 +209,13 @@ hpcrun_sample_callpath(void* context, int metricId,
     return ret;
   }
 #endif
+  // FIXME: check if it is ok to leave this check here
+  if(!isSync && !ompt_eager_context){
+//    if(!TD_GET(master)){
+//      register_thread_to_all_regions();
+    register_to_all_regions();
+//    }
+  }
 
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
@@ -320,12 +327,12 @@ hpcrun_sample_callpath(void* context, int metricId,
   TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
 
-  if(!isSync && !ompt_eager_context){
-//    if(!TD_GET(master)){
-//      register_thread_to_all_regions();
-      register_to_all_regions();
-//    }
-  }
+//  if(!isSync && !ompt_eager_context){
+////    if(!TD_GET(master)){
+////      register_thread_to_all_regions();
+//      register_to_all_regions();
+////    }
+//  }
 
   return ret;
 }
