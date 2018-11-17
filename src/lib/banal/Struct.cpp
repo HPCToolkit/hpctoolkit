@@ -239,6 +239,9 @@ static void
 debugStmt(VMA, int, string &, SrcFile::ln, RealPathMgr *);
 
 static void
+debugEdges(Block * block);
+
+static void
 debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
 	  vector <Edge *> &, HeaderList &, RealPathMgr *);
 
@@ -1679,6 +1682,10 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 
     addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line);
   }
+
+#if DEBUG_CFG_SOURCE
+  debugEdges(block);
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -2341,6 +2348,51 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
 	 << "  f='" << nit->getFileName()
 	 << "'  p='" << debugPrettyName(nit->getPrettyName()) << "'\n";
   }
+}
+
+//----------------------------------------------------------------------
+
+static string
+edgeType(int type)
+{
+  if (type == ParseAPI::CALL)           { return "call"; }
+  if (type == ParseAPI::COND_TAKEN)     { return "cond-take"; }
+  if (type == ParseAPI::COND_NOT_TAKEN) { return "cond-not"; }
+  if (type == ParseAPI::INDIRECT)       { return "indirect"; }
+  if (type == ParseAPI::DIRECT)         { return "direct"; }
+  if (type == ParseAPI::FALLTHROUGH)    { return "fallthr"; }
+  if (type == ParseAPI::CATCH)          { return "catch"; }
+  if (type == ParseAPI::CALL_FT)        { return "call-ft"; }
+  if (type == ParseAPI::RET)            { return "return"; }
+  return "unknown";
+}
+
+static void
+debugEdges(Block * block)
+{
+  const Block::edgelist & outEdges = block->targets();
+  vector <Edge *> edgeVec;
+
+  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+    edgeVec.push_back(*eit);
+  }
+  std::sort(edgeVec.begin(), edgeVec.end(), EdgeLessThan);
+
+  cout << "out edges:" << hex;
+
+  for (auto eit = edgeVec.begin(); eit != edgeVec.end(); ++eit) {
+    Edge * edge = *eit;
+
+    cout << "  0x" << edge->trg()->start()
+	 << " (" << edgeType(edge->type());
+
+    if (edge->interproc()) {
+      cout << ", interproc";
+    }
+    cout << ")";
+  }
+
+  cout << dec << "\n";
 }
 
 //----------------------------------------------------------------------
