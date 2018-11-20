@@ -41,10 +41,6 @@ extern ompt_idle_t ompt_idle_placeholder_fn;
 #define task_map_lookup(id) 0 // FIXME
 #endif
 
-// lm_id(uint16_t): denote a device operation node
-// TODO(keren) replace this module id with dummy id
-#define OMPT_DEVICE_OPERATION 0xFFFF
-
 enum {
   ompt_op_none,
   ompt_op_alloc,

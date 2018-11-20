@@ -327,7 +327,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   bool all_children_dummy;
   if (!HPCRUN_CCT_KEEP_DUMMY) {
     all_children_dummy = true;
-    hpcrun_cct_walk_node_1st(node->children, l_dummy, &all_children_dummy);
+    hpcrun_cct_walk_node_1st(node, l_dummy, &all_children_dummy);
   } else {
     all_children_dummy = false;
   }

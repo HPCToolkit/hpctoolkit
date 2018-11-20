@@ -737,19 +737,10 @@ ompt_idle_blame_shift_request()
 }
 
 
-//--------------------------------------------------------------------------
-// Adds an (opid, cct_node_t *) entry to the concurrent map by finding
-// the cct_node_t * associated with target_id from the thread_local variable.
-// ompt_host_op_seq_id is useful, because when a pc that invokes a target region
-// is recorded multiple times (e.g. in a for or while loop), we accumulate different
-// op nodes together.
-//--------------------------------------------------------------------------
 static void
-hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,
-                             ip_normalized_t ip)
+hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
 {
-  cct_addr_t frm = { .ip_norm = ip };
-  cct_node_t *cct_child = hpcrun_cct_insert_addr(target_node, &frm);
+  cct_node_t *cct_child = hpcrun_cct_insert_dummy(target_node, ip);
   cupti_worker_notification_apply(host_op_id, cct_child);
 }
 
@@ -942,7 +933,7 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  uint64_t op = 0;
+  uint16_t op = 0;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
@@ -955,8 +946,7 @@ ompt_data_op_callback(ompt_id_t target_id,
     default:
       break;
   }
-  ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = op};
-  hpcrun_ompt_op_id_notify(host_op_id, ip);
+  hpcrun_ompt_op_id_notify(host_op_id, op);
 }
 
 
@@ -965,8 +955,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   PRINT("ompt_submit_callback enter\n");
-  ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
-  hpcrun_ompt_op_id_notify(host_op_id, ip);
+  hpcrun_ompt_op_id_notify(host_op_id, ompt_op_kernel_submit);
   PRINT("ompt_submit_callback exit\n");
 }
 
