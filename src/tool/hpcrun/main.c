@@ -188,6 +188,7 @@ int lush_metrics = 0; // FIXME: global variable for now
  * (public declaration) thread-local variables
  *****************************************************************************/
  __thread bool hpcrun_thread_suppress_sample = true;
+ __thread bool hpcrun_dlopen_success = false;
 
 
 //***************************************************************************
@@ -1550,11 +1551,14 @@ void
 monitor_pre_dlopen(const char* path, int flags)
 {
   if (! hpcrun_is_initialized()) {
+    hpcrun_dlopen_success = false;
     return;
   }
   if (! hpcrun_safe_enter()) {
+    hpcrun_dlopen_success = false;
     return;
   }
+  hpcrun_dlopen_success = true;
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1563,14 +1567,21 @@ monitor_pre_dlopen(const char* path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void* handle)
 {
+  if (!hpcrun_dlopen_success) {
+    hpcrun_dlopen_success = false;
+    return;
+  }
   if (! hpcrun_is_initialized()) {
+    hpcrun_dlopen_success = false;
     return;
   }
   if (! hpcrun_safe_enter()) {
+    hpcrun_dlopen_success = false;
     return;
   }
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
+  hpcrun_dlopen_success = false;
 }
 
 
