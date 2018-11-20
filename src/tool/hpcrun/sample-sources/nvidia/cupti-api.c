@@ -217,7 +217,7 @@ cupti_write_cubin
 }
 
 
-static void
+void
 cupti_load_callback_cuda
 (
  int module_id, 
@@ -275,7 +275,7 @@ cupti_load_callback_cuda
 }
 
 
-static void
+void
 cupti_unload_callback_cuda
 (
  int module_id, 

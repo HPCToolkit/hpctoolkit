@@ -169,6 +169,24 @@ cupti_metrics_init
 (
 );
 
+
+extern void
+cupti_load_callback_cuda
+(
+ int module_id, 
+ const void *cubin, 
+ size_t cubin_size
+);
+
+
+extern void
+cupti_unload_callback_cuda
+(
+ int module_id, 
+ const void *cubin, 
+ size_t cubin_size
+);
+
 //******************************************************************************
 // finalizer
 //******************************************************************************

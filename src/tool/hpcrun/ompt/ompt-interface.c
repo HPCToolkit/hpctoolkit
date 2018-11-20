@@ -104,7 +104,13 @@
  * macros
  *****************************************************************************/
 
+#define OMPT_ACTIVITY_DEBUG 0
+
+#if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
@@ -574,10 +580,7 @@ ompt_initialize(ompt_function_lookup_t ompt_fn_lookup,
 {
   ompt_initialized = 1;
 
-#if 0
-  fprintf(stderr, "ompt_fn_lookup = %p\n", ompt_fn_lookup);
-  fflush(NULL);
-#endif
+  PRINT("ompt_initialize->ompt_fn_lookup = %p\n", ompt_fn_lookup);
 
   ompt_init_inquiry_fn_ptrs(ompt_fn_lookup);
 
@@ -854,6 +857,8 @@ ompt_device_initialize(uint64_t device_num,
                        ompt_function_lookup_t lookup,
                        const char *documentation)
 {
+  PRINT("ompt_device_initialize->%s, %d", type, device_num);
+
   ompt_bind_names(lookup);
 
   ompt_trace_configure(device);
@@ -878,15 +883,8 @@ ompt_device_load(uint64_t device_num,
                  const void *device_addr,
                  uint64_t module_id)
 {
-  char device_file[MAXPATHLEN]; 
-  assert(filename);
-  sprintf(device_file, "%s@0x%lx", filename, (unsigned long) file_addr);
-  uint64_t hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-  cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
-  if (entry == NULL) {
-    Elf_SymbolVector *vector = computeCubinFunctionOffsets(host_addr, bytes);
-    cubin_id_map_insert(module_id, hpctoolkit_module_id, vector);
-  }
+  PRINT("ompt_device_load->%s, %d", filename, device_num);
+  cupti_load_callback_cuda(module_id, host_addr, bytes);
 }
 
 
@@ -906,7 +904,7 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
-  PRINT("target_id %d callback\n", target_id);
+  PRINT("ompt_target_callback->target_id %d callback\n", target_id);
   // If a thread creates a target region, we init records
   // and it must be flushed in the finalizer
   cupti_record_init();
@@ -966,8 +964,10 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
+  PRINT("ompt_submit_callback enter\n");
   ip_normalized_t ip = {.lm_id = OMPT_DEVICE_OPERATION, .lm_ip = ompt_op_kernel_submit};
   hpcrun_ompt_op_id_notify(host_op_id, ip);
+  PRINT("ompt_submit_callback exit\n");
 }
 
 
@@ -987,6 +987,8 @@ ompt_map_callback(ompt_id_t target_id,
 void
 prepare_device()
 {
+  PRINT("ompt_initialize->prepare_device enter\n");
+
   device_finalizer.fn = cupti_device_flush;
   device_finalizer_register(device_finalizer_type_flush, &device_finalizer);
 
@@ -1006,4 +1008,6 @@ prepare_device()
   ompt_set_callback(ompt_callback_target_data_op, ompt_data_op_callback);
   ompt_set_callback(ompt_callback_target_submit, ompt_submit_callback);
   ompt_set_callback(ompt_callback_target_map, ompt_map_callback);
+
+  PRINT("ompt_initialize->prepare_device exit\n");
 }
