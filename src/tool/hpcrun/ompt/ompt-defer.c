@@ -408,16 +408,15 @@ add_pseudo_cct (ompt_region_data_t* region_data) {
 void
 register_to_region(ompt_notification_t* notification){
   ompt_region_data_t* region_data = notification->region_data;
-  // create notification and enqueu to region's queue
-  OMPT_BASE_T_GET_NEXT(notification) = NULL;
-  // register thread to region's wait free queue
-  wfq_enqueue(OMPT_BASE_T_STAR(notification), &region_data->queue);
-  // store region data to thread's queue
-  //add_to_list(region_data);
   // increment the number of unresolved regions
   unresolved_cnt++;
   // add unresolved cct to notification
   notification->unresolved_cct = add_pseudo_cct(region_data);
+
+  // create notification and enqueu to region's queue
+  OMPT_BASE_T_GET_NEXT(notification) = NULL;
+  // register thread to region's wait free queue
+  wfq_enqueue(OMPT_BASE_T_STAR(notification), &region_data->queue);
 
 }
 
@@ -440,13 +439,6 @@ register_if_not_master(ompt_notification_t *notification)
     cct_not_master_region = notification->unresolved_cct;
   }
 }
-
-// previous solution
-//if(not_master_region == current_region){
-//  register_to_region(notification);
-//  // should memoize the cct for not_master_region
-//  cct_not_master_region = notification->unresolved_cct;
-//}
 
 
 void
@@ -536,12 +528,6 @@ is_already_registered(ompt_region_data_t* region_data){
     return 0;
 }
 
-//if(not_master_region == current_region) {
-//  register_to_region(notification);
-//  // should memoize the cct for not_master_region
-//  cct_not_master_region = notification->unresolved_cct;
-//}
-
 
 void
 register_to_all_regions(){
@@ -597,59 +583,16 @@ register_to_all_regions(){
 
 }
 
-
-
-void try_resolve_context(){
-  // We should use wfq_dequeue_private, because removing and adding are happenig
-  // at the same time. Different than resolving_all_remaining_context.
-
-  ompt_notification_t *old_head = NULL;
-  while ((old_head = (ompt_notification_t*) wfq_dequeue_private(&threads_queue,
-                                                                OMPT_BASE_T_STAR_STAR(private_threads_queue))) ){
-
-    ompt_region_data_t* region_data = old_head->region_data;
-    // printf("\n\n\nResolving one region from idle!\n\n");
-    resolve_one_region_context(region_data);
-
-    hpcrun_ompt_notification_free(old_head);
-
-    // any thread should be notify
-    ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
-    if(to_notify){
-      wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
-    }else{
-      // notify creator of region that region_data can be put in region's freelist
-      hpcrun_ompt_region_free(region_data);
+// insert a path to the root and return the path in the root
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf_tmp(cct_node_t *root, cct_node_t *path)
+{
+    if(!path) return root;
+    cct_node_t *parent = hpcrun_cct_parent(path);
+    if (parent) {
+      root = hpcrun_cct_insert_path_return_leaf_tmp(root, parent);
     }
-
-    remove_from_list(region_data);
-
-  }
-}
-
-void resolve_one_region_context(ompt_region_data_t* region_data){
-
-  // FIXME: move this to the end
-  unresolved_cnt--;
-
-  cct_node_t* call_path = region_data->call_path;
-
-  cct_node_t* root = region_root(call_path);
-  cct_node_t* prefix =  hpcrun_cct_insert_path_return_leaf(root, call_path);
-  cct_node_t* unr_root = hpcrun_get_thread_data()->core_profile_trace_data.epoch->csdata.unresolved_root;
-  cct_node_t* to_move = hpcrun_cct_find_addr(unr_root, &(ADDR2(UNRESOLVED, region_data->region_id)));
-
-  // FIXME: possible point of losing metrics (just skip this region, cause it is resolved already)
-  if(!to_move){
-    return;
-  }
-  hpcrun_cct_merge(prefix, to_move, merge_metrics, NULL);
-
-
-  return_label: {
-    hpcrun_cct_delete_self(to_move);
-  };
-
+    return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path));
 }
 
 // return one if successful
@@ -664,16 +607,29 @@ try_resolve_one_region_context()
   ompt_region_data_t *region_data = old_head->region_data;
 
   // ================================== resolving part
-
   cct_node_t *unresolved_cct = old_head->unresolved_cct;
   cct_node_t *parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
 
   if(region_data->call_path == NULL) {
-    printf("Ne bi smeo ti ovo da uradis nikako!\n");
+    printf("*******************This is very bad!\n");
   }
 
   // prefix should be put between unresolved_cct and parent_unresolved_cct
-  cct_node_t *prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_data->call_path);
+  cct_node_t *prefix = NULL;
+  cct_node_t *region_call_path = region_data->call_path;
+
+  // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
+//  if (region_data->region_id == 0x1000000000001) {
+  // when had this condtion, once infinity happen
+  if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
+    // from initial region, we should remove the first one
+    prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_call_path);
+  } else {
+    // for resolving inner region, we should consider all cct nodes from prefix
+    prefix = hpcrun_cct_insert_path_return_leaf_tmp(parent_unresolved_cct, region_call_path);
+  }
+
+
 
 //  printf("THREAD: %p, RESOLVING: %lx, UNR_CCT: %lx, IS_PARENT_THREAD_ROOT: %d, PARENT_CCT: %lx, PREFIX: %lx\n",
 //         &threads_queue,
@@ -684,11 +640,14 @@ try_resolve_one_region_context()
 //         hpcrun_cct_addr(prefix)->ip_norm.lm_ip
 //         );
 
+  if (prefix == NULL) {
+    printf("**************SOMETHING IS BAD WHILE RESOLVING\n");
+  }
+
   // prefix node should change the unresolved_cct
   hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
   // delete unresolved_cct from parent
   hpcrun_cct_delete_self(unresolved_cct);
-
   // ==================================
 
 
@@ -718,24 +677,7 @@ void resolving_all_remaining_context(){
     try_resolve_one_region_context();
   }
 
-
-
-  // old implementation
-//  return;
-//
-//  ompt_trl_el_t* current = registered_regions;
-//  ompt_trl_el_t* previous;
-//
-//  while(current){
-//    // FIXME: be sure that current->region_data is not NULL
-//    resolve_one_region_context(current->region_data);
-//    previous = current;
-//    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
-//    // FIXME: call for now this function
-//    remove_from_list(previous->region_data);
-//  }
-//
-//  // FIXME: find all memory leaks
+  // FIXME: find all memory leaks
 
 }
 
@@ -924,593 +866,238 @@ this_thread_cannot_resolve_region(ompt_notification_t *current_notification)
          || current_notification->region_data->call_path != NULL;
 }
 
-void
-provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct)
+int
+prefix_length(cct_node_t *bottom_prefix, cct_node_t *top_prefix)
 {
-   // return;
-  if(bt->partial_unwind) {
-    printf("---------------------Ovde nesto vode ne pije\n");
+  int len = 0;
+  cct_node_t *current = bottom_prefix;
+  while (current) {
+    len++;
+    if (current == top_prefix) {
+          break;
+    }
+    current = hpcrun_cct_parent(current);
   }
+
+  return len;
+}
+
+void
+provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
+    // return;
+    if (bt->partial_unwind) {
+        printf("---------------------Ovde nesto vode ne pije\n");
+    }
 
 //  if(!TD_GET(master))
 //    return;
-  // not regions on the stack, should mean that we are not inside parallel region
-  if(is_empty_region_stack())
-    return;
+    // not regions on the stack, should mean that we are not inside parallel region
+    if (is_empty_region_stack())
+        return;
 
-  // if thread is not the master of the region, or the region is resolved, then just return
-  ompt_notification_t* current_notification = top_region_stack();
-  if(this_thread_cannot_resolve_region(current_notification)){
-    // this happened
-    //printf("I am not responsible for this region\n");
-    return;
-  }
+    // if thread is not the master of the region, or the region is resolved, then just return
+    ompt_notification_t *current_notification = top_region_stack();
+    if (this_thread_cannot_resolve_region(current_notification)) {
+        // this happened
+        //printf("I am not responsible for this region\n");
+        return;
+    }
 
-  int index = 0;
-  ompt_frame_t* current_frame = hpcrun_ompt_get_task_frame(0);
-  if(!current_frame){
-    return;
-  }
-  frame_t *bt_inner = bt->begin;
-  frame_t *bt_outer = bt->last;
-  // frame iterator
-  frame_t *it = bt_inner;
+    int index = 0;
+    ompt_frame_t *current_frame = hpcrun_ompt_get_task_frame(0);
+    if (!current_frame) {
+        return;
+    }
+    frame_t *bt_inner = bt->begin;
+    frame_t *bt_outer = bt->last;
+    // frame iterator
+    frame_t *it = bt_inner;
 
     //printf("Inner has smaller address: %d\n", UINT64_T(bt_inner->cursor.sp) < UINT64_T(bt_outer->cursor.sp));
 
 
-  if(UINT64_T(current_frame->reenter_runtime_frame) == 0
-     && UINT64_T(current_frame->exit_runtime_frame) != 0){
-    // thread take a sample inside user code of the parallel region
-    // this region is the the innermost
+    if (UINT64_T(current_frame->reenter_runtime_frame) == 0
+        && UINT64_T(current_frame->exit_runtime_frame) != 0) {
+        // thread take a sample inside user code of the parallel region
+        // this region is the the innermost
 
-    // this has happened
-    //printf("First time in user code of the parallel region\n");
+        // this has happened
+        //printf("First time in user code of the parallel region\n");
 
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
-    if(it == NULL){
+        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+        if (it == NULL) {
 
-      return;
+            return;
+        }
+        // this happened
+        //printf("One above exit\n");
+
+    } else if (UINT64_T(current_frame->reenter_runtime_frame) <= UINT64_T(bt_inner->cursor.sp)
+               && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_runtime_frame)) { // FIXME should put =
+        // thread take a simple in the region which is not the innermost
+        // all innermost regions have been finished
+
+        // this happened
+        //printf("Second time in user code of the parallel region\n");
+
+        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+        if (it == NULL) {
+            // this happened once for the thread da it is not TD_GET(master)
+
+            return;
+        }
+        // this happened
+        //printf("One above exit...\n");
+
+    } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->reenter_runtime_frame)) {
+        // take a sample inside the runtime
+        // this happened
+        //printf("Sample has been taken inside runtime frame\n");
+
+        return;
+
+    } else if (UINT64_T(current_frame->reenter_runtime_frame) == 0
+               && UINT64_T(current_frame->exit_runtime_frame) == 0) {
+        // FIXME: check what this means
+        // this happened
+        //printf("Both reenter and exit are zero\n");
+
+        // this happened a couple of time for not TD_GET(master) threads
+
+        return;
+
+    } else if (UINT64_T(current_frame->exit_runtime_frame) == 0
+               && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+        //ompt_frame_t* parent = hpcrun_ompt_get_task_frame(1);
+        //printf("I did not cover. BT_INNNER: %lu\tEXIT: %lu\tREENTER: %lu\tREGIONS: %d\tMASTER: %d\tPARENT FRAME: %p\n",
+        //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_runtime_frame),
+        //       UINT64_T(current_frame->reenter_runtime_frame), top_index+1, TD_GET(master), parent);
+
+        // FIXME: the master thread is probably inside implicit task
+        // this happened
+        //printf("Master thread is inside implicit task\n");
+
+
+        return;
+
+    } else {
+        printf("Something that has not been cover\n");
+
+        return;
     }
-    // this happened
-    //printf("One above exit\n");
-
-  } else if(UINT64_T(current_frame->reenter_runtime_frame) <= UINT64_T(bt_inner->cursor.sp)
-            && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_runtime_frame)) { // FIXME should put =
-    // thread take a simple in the region which is not the innermost
-    // all innermost regions have been finished
-
-    // this happened
-    //printf("Second time in user code of the parallel region\n");
-
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
-    if(it == NULL){
-      // this happened once for the thread da it is not TD_GET(master)
-
-      return;
-    }
-    // this happened
-    //printf("One above exit...\n");
-
-  } else if ( UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->reenter_runtime_frame)) {
-    // take a sample inside the runtime
-    // this happened
-    //printf("Sample has been taken inside runtime frame\n");
-
-      return;
-
-  } else if (UINT64_T(current_frame->reenter_runtime_frame) == 0
-             && UINT64_T(current_frame->exit_runtime_frame) == 0) {
-    // FIXME: check what this means
-    // this happened
-    //printf("Both reenter and exit are zero\n");
-
-      // this happened a couple of time for not TD_GET(master) threads
-
-    return;
-
-  } else if(UINT64_T(current_frame->exit_runtime_frame) == 0
-            && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
-    //ompt_frame_t* parent = hpcrun_ompt_get_task_frame(1);
-    //printf("I did not cover. BT_INNNER: %lu\tEXIT: %lu\tREENTER: %lu\tREGIONS: %d\tMASTER: %d\tPARENT FRAME: %p\n",
-    //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_runtime_frame),
-    //       UINT64_T(current_frame->reenter_runtime_frame), top_index+1, TD_GET(master), parent);
-
-    // FIXME: the master thread is probably inside implicit task
-    // this happened
-    //printf("Master thread is inside implicit task\n");
 
 
-    return;
+    int frame_level = 0;
+    int stack_index = top_index;
 
-  } else {
-    printf("Something that has not been cover\n");
-
-    return;
-  }
-
-
-  int frame_level = 0;
-  int stack_index = top_index;
-
-  cct_node_t* bottom_prefix = NULL;
-  cct_node_t* top_prefix = NULL;
-  cct_node_t* prefix = NULL;
+    cct_node_t *bottom_prefix = NULL;
+    cct_node_t *top_prefix = NULL;
+    cct_node_t *prefix = NULL;
 
     // at the beginning of the loop we should be one frame above the end_frame
-  // which means that we are inside user code of the parent region or the initial implicit task
-  // if the current thread is the initial master
-  // while loop
-  for(;;) {
-    frame_level++;
-    current_frame = hpcrun_ompt_get_task_frame(frame_level);
-    if(!current_frame) {
-      printf("************************This makes problem\n");
-      return;
+    // which means that we are inside user code of the parent region or the initial implicit task
+    // if the current thread is the initial master
+    // while loop
+    for (;;) {
+        frame_level++;
+        current_frame = hpcrun_ompt_get_task_frame(frame_level);
+        if (!current_frame) {
+            printf("************************This makes problem\n");
+            return;
+        }
+
+        // we should be inside the user code of the parent parallel region
+        // but let's check that
+        if (UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+            // this happened
+
+            // printf("Inside user code\n");
+        } else {
+            // do nothing for now
+            printf("*********************************Inside runtime\n");
+            return;
+            // TODO: if this would happen, then go up until
+            // UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)
+        }
+
+        bottom_prefix = get_cct_from_prefix(cct, index);
+        if (!bottom_prefix) {
+            printf("Should this ever happened\n");
+            return;
+        }
+
+        // we found the end of the parent, next thing is to find the beginning of the parent
+        // if this is the last region on the stack, then all remaining cct should be in the prefix
+        if (TD_GET(master) && stack_index == 0) {
+            top_prefix = top_cct(bottom_prefix);
+            // FIXME: should we copy prefix, or is enough just to set region callpath
+            prefix = copy_prefix(top_prefix, bottom_prefix);
+            if (!prefix) {
+                printf("Should this ever happen?\n");
+                return;
+            }
+            current_notification->region_data->call_path = prefix;
+
+            print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
+
+            // vi3: debug
+//      int len = prefix_length(bottom_prefix, top_prefix);
+//      printf("LAST LENGTH: %d, REGION: %lx, TOP_LM_IP: %lx, BOTTOM_LM_IP: %lx\n",
+//               len, region_stack[stack_index]->region_data->region_id,
+//               hpcrun_cct_addr(top_prefix)->ip_norm.lm_ip,
+//               hpcrun_cct_addr(bottom_prefix)->ip_norm.lm_ip);
+
+
+            return;
+        }
+
+        // we are inside user code of outside region
+        // should find one frame below exit_runtime_frame
+        it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+        // FIXME: vi3 What is this commented?
+        //top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
+
+
+        top_prefix = get_cct_from_prefix(cct, index);
+        // FIXME: unresolved should not be top_prefix, get its child
+        if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
+            // index - 1 is the index of child of the top_prefix
+            top_prefix = get_cct_from_prefix(cct, index - 1);
+        }
+
+
+        prefix = copy_prefix(top_prefix, bottom_prefix);
+        if (!prefix) {
+            printf("What to do now?\n");
+            return;
+        }
+        // vi3: debug
+//    int len = prefix_length(bottom_prefix, top_prefix);
+//    printf("LENGTH: %d, REGION: %lx, TOP_LM_IP: %lx, BOTTOM_LM_IP: %lx\n",
+//           len, region_stack[stack_index]->region_data->region_id,
+//            hpcrun_cct_addr(top_prefix)->ip_norm.lm_ip,
+//            hpcrun_cct_addr(bottom_prefix)->ip_norm.lm_ip);
+
+
+        current_notification->region_data->call_path = prefix;
+        print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
+
+        // next thing to do is to get parent region notification from stack
+        stack_index--;
+        if (stack_index < 0) {
+            printf("***********Something bad is hapenning\n");
+            return;
+        }
+        current_notification = region_stack[stack_index];
+        if (this_thread_cannot_resolve_region(current_notification)) {
+            // this happened
+            //printf("THREAD FINISHED EVERYTHING\n");
+            return;
+        }
+        // go to parent region frame and do everything again
+        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+
+
     }
 
-    // we should be inside the user code of the parent parallel region
-    // but let's check that
-    if(UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)){
-      // this happened
-
-      // printf("Inside user code\n");
-    } else {
-      // do nothing for now
-      printf("*********************************Inside runtime\n");
-      return;
-      // TODO: if this would happen, then go up until
-      // UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)
-    }
-
-    bottom_prefix = get_cct_from_prefix(cct, index);
-    if(!bottom_prefix){
-      printf("Should this ever happened\n");
-      return;
-    }
-
-    // we found the end of the parent, next thing is to find the beginning of the parent
-    // if this is the last region on the stack, then all remaining cct should be in the prefix
-    if(TD_GET(master) && stack_index == 0) {
-      top_prefix = top_cct(bottom_prefix);
-      // FIXME: should we copy prefix, or is enough just to set region callpath
-      prefix = copy_prefix(top_prefix, bottom_prefix);
-      if (!prefix) {
-        printf("Should this ever happen?\n");
-        return;
-      }
-      current_notification->region_data->call_path = prefix;
-
-      print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
-
-      return;
-    }
-
-    // we are inside user code of outside region
-    // should find one frame below exit_runtime_frame
-    it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
-
-    top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
-    prefix = copy_prefix(top_prefix, bottom_prefix);
-    if(!prefix) {
-        printf("What to do now?\n");
-        return;
-    }
-    current_notification->region_data->call_path = prefix;
-    print_prefix_info("", prefix, current_notification->region_data, stack_index, bt, cct);
-
-    // next thing to do is to get parent region notification from stack
-    stack_index--;
-    if(stack_index < 0) {
-      printf("***********Something bad is hapenning\n");
-      return;
-    }
-    current_notification = region_stack[stack_index];
-    if(this_thread_cannot_resolve_region(current_notification)) {
-      // this happened
-      //printf("THREAD FINISHED EVERYTHING\n");
-      return;
-    }
-    // go to parent region frame and do everything again
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
-
-
-  }
-
-
-    // FIXME: vi3 for now, consider only cases when sample is taken inside parallel region's user code
-// // we are now one frame above the current_frame->exit_runtime frame
-
-//  // we need to go one level upper in runtime frame
-//  current_frame = hpcrun_ompt_get_task_frame(1);
-//
-//  if(!current_frame) {
-//    printf("************************This makes problem\n");
-//    return;
-//  }
-
-
-//  // we should be inside the user code of the parent parallel region
-//  // but let's check that
-//  if(UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)){
-//    // this happened
-//
-//    // printf("Inside user code\n");
-//  } else {
-//    // do nothing for now
-//    printf("*********************************Inside runtime\n");
-//    return;
-//    // TODO: if this would happen, then go up until
-//    // UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)
-//  }
-
-
-
-//  // FIXME: ovaj deo koda kurcu ne valja
-//  // we should be at the bottom of the parent region
-//  cct_node_t* bottom_prefix = NULL;
-//  cct_node_t* top_prefix = NULL;
-//  cct_node_t* prefix = NULL;
-
-//  return;
-
-//  bottom_prefix = get_cct_from_prefix(cct, index);
-//  if(!bottom_prefix){
-//    printf("Should this ever happened\n");
-//    return;
-//  }
-
-//  // we found the end of the parent, next thing is to find the beginning of the parent
-//  // if this is the only region of the stack, then all remaining cct should be in the prefix
-//  if(TD_GET(master) && top_index == 0){
-//    top_prefix = top_cct(bottom_prefix);
-//    // FIXME: should we copy prefix, or is enough just to set region callpath
-//    prefix = copy_prefix(top_prefix, bottom_prefix);
-//    if(!prefix){
-//      printf("Should this ever happen?\n");
-//      return;
-//    }
-//    current_notification->region_data->call_path = prefix;
-//
-//    print_prefix_info("OUTERMOST ", prefix);
-//    return;
-//  }
-
-  // check what to do when you are not master, and have one enclosing region
-
-
-//  // we are inside user code of outside region
-//  // should find one frame below exit_runtime_frame
-//  it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
-
-//  if(!it) {
-//    // this happend for not TD_GET(master) thread
-//    printf("outer: %lu, exit: %lu\n", UINT64_T(bt_outer->cursor.sp), UINT64_T(current_frame->exit_runtime_frame));
-//    return;
-//  }
-
-//  top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
-//  prefix = copy_prefix(top_prefix, bottom_prefix);
-//  if(!prefix) {
-//    printf("What to do now?\n");
-//    return;
-//  }
-//  current_notification->region_data->call_path = prefix;
-//  print_prefix_info("INNERRMOST", prefix);
-
-//  printf("INNERMOST: EQUALS: %d, %d\n",
-//         UINT64_T(hpcrun_ompt_get_task_frame(0)->exit_runtime_frame) ==
-//         UINT64_T(hpcrun_ompt_get_task_frame(1)->reenter_runtime_frame),
-//         UINT64_T(hpcrun_ompt_get_task_frame(1)->exit_runtime_frame) ==
-//         UINT64_T(hpcrun_ompt_get_task_frame(2)->reenter_runtime_frame));
-  return;
-  // TODO: consider this after see what is wrong with previous
-
-  // ancestor region that is one level above me
-  int nested_level_ancestor = top_index - 1;
-  current_notification = region_stack[nested_level_ancestor];
-  // it is possible that I am not the master of this region
-  if(current_notification->region_data == not_master_region) {
-    printf("I am not the master of the ancestor\n");
-    return;
-  }
-  // it is possible that I have already resolve this region
-  // because I took a sample before nested region is created
-  if(current_notification->region_data->call_path != NULL) {
-    printf("Ancestor level: %d is resolved.\n", nested_level_ancestor);
-    return;
-  }
-
-  printf("Mozda bi mogao nesto prikupiti i ovde?\n");
-
-
-//  printf("===================== <Start %d> ===============\n", top_index+1);
-//  ompt_frame_t* current_frame;
-//  ompt_frame_t* ancestor_frame;
-//
-//  int i;
-//  int level;
-//  for(i = top_index; i>=0; i--) {
-//    level = top_index - i;
-//    current_frame = hpcrun_ompt_get_task_frame(top_index - i);
-//
-//    indent_helper(level);
-//    printf("current reenter: %lu, current exit: %lu\t", (uint64_t)current_frame->reenter_runtime_frame,
-//           (uint64_t)current_frame->exit_runtime_frame);
-//    if(i == 0) {
-//      ancestor_frame = hpcrun_ompt_get_task_frame(top_index - i + 1);
-//
-//    }
-//    printf("\n");
-//
-//  }
-//  printf("BT Inner: %lu, BT Outer: %lu\n", (uint64_t)bt->begin->cursor.sp, (uint64_t)bt->last->cursor.sp);
-//  printf("===================== <End %d> ===============\n\n\n", top_index+1);
-
-
-//  int cnt_bt = 0;
-//  int cnt_cct = 0;
-//  frame_t **bt_outer = &bt->last;
-//  frame_t **bt_inner = &bt->begin;
-//  cct_node_t *current = cct;
-//  frame_t *it = NULL;
-//
-//  for(it = *bt_inner; it <= *bt_outer; it++) {
-//    cnt_bt++;
-//  }
-//
-//  while(current) {
-//    cnt_cct++;
-//    current = hpcrun_cct_parent(current);
-//  }
-//
-//  printf("BT: %d\tCCT: %d\n", cnt_bt, cnt_cct);
-
-
-
-
-
-//  // FIXME: check if you set everything fine with this previous thing
-//  cct_node_t* current_cct = cct;
-//  cct_node_t* previous = current_cct;
-//  cct_node_t* end_cct = NULL;
-//  cct_node_t* begin_cct = NULL;
-//
-//  frame_t **bt_outer = &bt->last;
-//  frame_t **bt_inner = &bt->begin;
-//  frame_t *it = NULL;
-//  int i = 0;
-//  // the stack is empty, nothing needs to be done
-//  if(is_empty_region_stack()){
-//    // this happened
-//    //printf("Stack is empty\n");
-//    return;
-//  }
-//
-//  // maybe the first region is not_master_region or resolved
-//  ompt_notification_t* current_notification = top_region_stack();
-//  if(current_notification->region_data == not_master_region
-//     || current_notification->region_data->call_path != NULL){
-//    // this happened
-//    //printf("The first region has alredy been resolved\n");
-//    return;
-//  }
-//
-//  ompt_frame_t *frame0 = hpcrun_ompt_get_task_frame(i);
-//  // FIXME: check if you implement right corner cases
-//  // no innermost frame has ben set
-//  if(!frame0){
-//    printf("No first frame");
-//    return;
-//  }
-//
-//  // frame has been set, but not filled in
-//  if((frame0->reenter_runtime_frame == 0) && (frame0->exit_runtime_frame == 0)){
-//    // this happened
-//    //printf("Both reenter and exit runtime frames are zero\n");
-//    return;
-//  }
-//
-//  if (frame0->exit_runtime_frame &&
-//        (((uint64_t) frame0->exit_runtime_frame) < ((uint64_t) (*bt_inner)->cursor.sp))) {
-//    // however, exit_runtime_frame points beyond the top of stack. the final call
-//    // to user code hasn't been made yet. ignore this frame.
-//    printf("The final call to the user code has not been set\n");
-//    return;
-//  }
-//  int current_region_frame_found = 0;
-//  if(frame0->reenter_runtime_frame) {
-//    // this happened
-//    //printf("Sample was taken inside runtime code\n");
-//    for(it = *bt_inner; it <= *bt_outer && current_cct; it++, current_cct = hpcrun_cct_parent(current_cct)){
-//      if((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame){
-//        // this has happened
-//        //printf("Found the frame of the first region\n");
-//        current_region_frame_found = 1;
-//        break;
-//      }
-//      previous = current_cct;
-//    }
-//    if(!current_region_frame_found){
-//      printf("The first region could not be found\n");
-//      return;
-//    }
-//  }
-//
-//  // FIXME: probably we need to check if the exit runtime frame has been set
-//
-//  // we found the top frame of the region which correspond to the end cct of region callpath
-//  if(current_region_frame_found) {
-//    // this happened
-//    //printf("Provide frame for the parent\n");
-//    end_cct = current_cct;
-//
-//    if(top_index <= 0){
-//      // happened
-//      //printf("Only one region, and I need to provide parent\n");
-//      begin_cct = top_cct(current_cct);
-//      //printf("BEGIN: %p\tEND: %p\n", begin_cct, end_cct);
-//      // TODO: copy prefix
-//      return;
-//    }
-//    // we need to find the parent frame
-//    int parent_found = 0;
-//    if(!frame0 ->exit_runtime_frame){
-//      printf("We cannot find the parent, because not have previous exit from runtime\n");
-//      return;
-//    }
-//
-//    for(it; it <=*bt_outer && current_cct; it++, current_cct = hpcrun_cct_parent(current_cct)) {
-//      if((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->exit_runtime_frame){
-//        // this has happened
-//        //printf("Found the frame of the first region\n");
-//        parent_found = 1;
-//        // one beyond the runtime frame is user code
-//        it--;
-//        // this should be fine
-//        current_cct = previous;
-//        break;
-//      }
-//      previous = current_cct;
-//    }
-//    if(parent_found){
-//      // set parent beginning frame
-//      begin_cct = current_cct;
-//      // this happened
-//      // printf("Find the parent of the first region\n");
-//      // TODO: copy prefix
-//    }else {
-//      // FIXME: Why this happens???
-//      //printf("This should not happen. You need to find parent frame %lu %lu\n", (uint64_t)frame0->exit_runtime_frame, (uint64_t)(it->cursor.sp));
-//      return;
-//    }
-//
-//    // go one frame upper inside runtime frames
-//    it++;
-//    previous = current_cct;
-//    current_cct = hpcrun_cct_parent(current_cct);
-//  } else {
-//    // sample has been taken inside user code, which means that we should
-//    // skip all user frames
-//
-//    if(!frame0->exit_runtime_frame){
-//      printf("Sample is caught inside user code, but no exit runtime frame\n");
-//      return;
-//    }
-//
-//    for(it = *bt_inner; it <=*bt_outer && current_cct; it++, current_cct = hpcrun_cct_parent(current_cct)) {
-//      // go up through stack frames until foes into runtime frames
-//      if((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->exit_runtime_frame){
-//        // this happened
-//        //printf("Found the frame of the first region\n");
-//        break;
-//      }
-//      previous = current_cct;
-//    }
-//  }
-//  // should we go from the innermost region, or one above it
-//  int ancestor_level = (current_region_frame_found) ? 1 : 0;
-//  ompt_region_data_t* current_region = NULL;
-//  ompt_frame_t* frame_current;
-//  ompt_frame_t* frame_ancestor;
-//  for(i = top_index - ancestor_level; i >= 0; i--, ancestor_level++) {
-//    current_notification = region_stack[i];
-//    current_region = current_notification->region_data;
-//    if(current_region == not_master_region || current_region->call_path != NULL){
-//      // this happened
-//      //printf("Everything is resolved fine\n");
-//      return;
-//    }
-//
-//    frame_current = hpcrun_ompt_get_task_frame(ancestor_level);
-//    for(; it <=*bt_outer && current_cct; it++, current_cct = hpcrun_cct_parent(current_cct)) {
-//      // go up through stack frames until foes into runtime frames
-//      if((uint64_t)(it->cursor.sp) >= (uint64_t)frame_current->reenter_runtime_frame){
-//        // this happened
-//        //printf("I shoould somehow find something here\n");
-//        break;
-//      }
-//      previous = current_cct;
-//    }
-//    // end_cct is just above reenter runtime frame
-//    end_cct = current_cct;
-//
-//    // if we are at the bottom of the stack, all remainit cct-a are path
-//    if(i == 0) {
-//      begin_cct = top_cct(current_cct);
-//      // this happened
-//      //printf("I am the top\n");
-//      // TODO: copy the prefix
-//      return;
-//    }
-//
-//    frame_ancestor = hpcrun_ompt_get_task_frame(ancestor_level+1);
-//    int found_ancestor = 0;
-//    for(; it <=*bt_outer && current_cct; it++, current_cct = hpcrun_cct_parent(current_cct)) {
-//      // go up through stack frames until foes into runtime frames
-//      if((uint64_t)(it->cursor.sp) >= (uint64_t)frame_ancestor->exit_runtime_frame){
-//        found_ancestor = 1;
-//        break;
-//      }
-//      previous = current_cct;
-//    }
-//    if(found_ancestor){
-//      begin_cct = previous;
-//      it++;
-//      // this happened
-//      //printf("I also find and the ancestor\n");
-//      // TODO: copy prefix
-//    } else {
-//      // FIXME: Why this happened?
-//      //printf("I don't understand this\n");
-//      return;
-//    }
-//  }
 }
-
-
-
-// DONE: deallocation when there is no one register to region
-
-
-
-
-
-// DONE: use stack for checking, and pop anything that is not parent of current regions (example below)
-/*
- *            1
- *          2    3
- *        4  5  6  7
- * */
-
-
-
-
-/*
- * void insert_chain(item_type *first, item_type *last) {
-   // this loop is finite; even if the CAS fails because the worker is popping elements out of the queue,
-   // it can only fail a bounded number of times because
-   //   (1) the queue is of finite length at any time, and
-   //   (2) this thread is the only one inserting into the queue
-   do {
-        item_type *old_head = _head->load();
-        last->_next.store(old_head);
-   } while (! _head->compare_and_swap(old_head, first));
-  };
-
-  item_type *next() {
-     LFQ_DEBUG(assert(validate == this));
-     item_type *succ = _next.load();
-     return succ;
-};
- *
- *
- * */
-
-
-
-// FIXME: \(ompt_\w+_t\s*\*\)
-
-
-
-
