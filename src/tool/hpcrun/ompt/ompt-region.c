@@ -114,6 +114,7 @@ ompt_parallel_begin_internal(
 {
   hpcrun_safe_enter();
 
+
   ompt_region_data_t* region_data = ompt_region_data_new(hpcrun_ompt_get_unique_id(), NULL);
   parallel_data->ptr = region_data;
 
@@ -198,6 +199,7 @@ ompt_parallel_end_internal(
 //  if(top->region_data == region_data){
 //    top_index--;
 //  }
+  // FIXME: vi3 do we really need to keep this line
   hpcrun_get_thread_data()->region_id = 0;
   hpcrun_safe_exit();
 
@@ -323,15 +325,20 @@ ompt_implicit_task_internal_end(
   unsigned int thread_num
 )
 {
-  //thread_data_t* td = hpcrun_get_thread_data();
-//  printf("Implicit task end...\n");
 
-  ompt_region_data_t *region_data = (parallel_data) ? (ompt_region_data_t*) parallel_data->ptr : NULL;
+
+  // FIXME: vi3 why is parallel data always nil
+
   // FIXME: vi3 check if this is fine
-  ompt_notification_t* top = top_region_stack();
-  if(top && top->region_data == region_data){
-    top_index--;
-  }
+//  ompt_notification_t* top = top_region_stack();
+//  ompt_region_data_t *region_data = hpcrun_ompt_get_current_region_data();
+//
+//  if(top && top->region_data == region_data){
+//    top_index--;
+//  }
+
+  // vi3: I think is enough just to pop region from stack
+//  top_index--;
 }
 
 
@@ -343,6 +350,7 @@ ompt_implicit_task(
   unsigned int team_size,
   unsigned int thread_num)
 {
+//    printf("---%p, %d\n", parallel_data, endpoint == ompt_scope_end);
  if(endpoint == ompt_scope_begin)
    ompt_implicit_task_internal_begin(parallel_data,task_data,team_size,thread_num);
  else if (endpoint == ompt_scope_end)
