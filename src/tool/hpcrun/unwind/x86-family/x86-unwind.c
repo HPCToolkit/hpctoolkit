@@ -415,6 +415,20 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+
+    // invariant: the stack pointer should always increase.
+    // if it doesn't this must be a bad step
+    if (sp <= cursor->sp) {
+      // how could this occur? if a previous unwind with the
+      // binary analyzer left the wrong value in the base pointer,
+      // then a libunwind unwind relying on a bad base pointer 
+      // could yield such a bad outcome.
+      TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack."
+           " New sp = %p, old sp = %p", cursor->pc_unnorm, sp,
+           cursor->sp);
+      unw_res = STEP_ERROR;
+    }
+
     save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
 
     if (unw_res == STEP_OK) {
@@ -482,6 +496,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
   void*  ra_loc  = (void*) next_sp;
   void*  next_pc  = *next_sp++;
 
+#if 0
   if ((RA_BP_FRAME == xr->ra_status) ||
       (RA_STD_FRAME == xr->ra_status)) { // Makes sense to sanity check BP, do it
     //-----------------------------------------------------------
@@ -505,6 +520,7 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
 	   " Resetting next_bp to current bp = %p", next_bp);
     }
   }
+#endif
 
   if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
     return STEP_OK;
