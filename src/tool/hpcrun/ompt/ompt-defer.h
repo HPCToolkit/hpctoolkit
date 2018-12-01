@@ -43,4 +43,5 @@ void resolving_all_remaining_context();
 
 // function which provides call path for regions where thread is the master
 void provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct);
+void provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct);
 #endif

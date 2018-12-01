@@ -641,6 +641,12 @@ try_resolve_one_region_context()
   cct_node_t *unresolved_cct = old_head->unresolved_cct;
   cct_node_t *parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
 
+  if (parent_unresolved_cct == NULL) {
+      printf("*******************PARENT UNRESOLVED CCT IS MISSING!\n");
+      //unresolved_cnt--;
+      return 0;
+  }
+
   if(region_data->call_path == NULL) {
     printf("*******************This is very bad!\n");
     return 0;
@@ -921,7 +927,7 @@ prefix_length(cct_node_t *bottom_prefix, cct_node_t *top_prefix)
 }
 
 void
-provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
+provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
   if (bt->partial_unwind) {
     printf("---------------------Something is not good here\n");
   }
@@ -950,6 +956,10 @@ provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
 
   //printf("Inner has smaller address: %d\n", UINT64_T(bt_inner->cursor.sp) < UINT64_T(bt_outer->cursor.sp));
 
+
+  cct_node_t *bottom_prefix = NULL;
+  cct_node_t *top_prefix = NULL;
+  cct_node_t *prefix = NULL;
 
   if (UINT64_T(current_frame->reenter_runtime_frame) == 0
     && UINT64_T(current_frame->exit_runtime_frame) != 0) {
@@ -1008,7 +1018,21 @@ provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
 
     // FIXME: the master thread is probably inside implicit task
     // this happened
-    //printf("Master thread is inside implicit task\n");
+//    printf("Master thread is inside implicit task\n");
+
+
+
+    // FIXME vi3: this happened in the first region when master not took sample
+
+    bottom_prefix = get_cct_from_prefix(cct, index);
+    top_prefix = top_cct(cct);
+
+    prefix = copy_prefix(top_prefix, bottom_prefix);
+    if (!prefix) {
+      printf("Should this ever happen?\n");
+      return;
+    }
+    current_notification->region_data->call_path = prefix;
 
     return;
   } else {
@@ -1021,9 +1045,6 @@ provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
   int frame_level = 0;
   int stack_index = top_index;
 
-  cct_node_t *bottom_prefix = NULL;
-  cct_node_t *top_prefix = NULL;
-  cct_node_t *prefix = NULL;
 
   // at the beginning of the loop we should be one frame above the end_frame
   // which means that we are inside user code of the parent region or the initial implicit task
@@ -1130,5 +1151,144 @@ provide_callpath_for_regions_if_needed(backtrace_info_t* bt, cct_node_t* cct) {
 
 
   }
+
+}
+
+void
+provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
+    if (bt->partial_unwind) {
+        printf("---------------------Something is not good here\n");
+    }
+
+    int index = 0;
+    ompt_frame_t *current_frame = hpcrun_ompt_get_task_frame(0);
+    if (!current_frame) {
+      return;
+    }
+    frame_t *bt_inner = bt->begin;
+    frame_t *bt_outer = bt->last;
+    // frame iterator
+    frame_t *it = bt_inner;
+
+
+    cct_node_t *bottom_prefix = NULL;
+    cct_node_t *top_prefix = NULL;
+    cct_node_t *prefix = NULL;
+
+    if (UINT64_T(current_frame->reenter_runtime_frame) == 0
+        && UINT64_T(current_frame->exit_runtime_frame) != 0) {
+        // thread take a sample inside user code of the parallel region
+        // this region is the the innermost
+
+        // this has happened
+        //printf("First time in user code of the parallel region\n");
+
+//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+//        if (it == NULL) {
+//
+//            return;
+//        }
+        // this happened
+        //printf("One above exit\n");
+
+
+        printf("MASTER: %d, FIRST\n", TD_GET(master));
+    } else if (UINT64_T(current_frame->reenter_runtime_frame) <= UINT64_T(bt_inner->cursor.sp)
+               && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_runtime_frame)) { // FIXME should put =
+        // thread take a simple in the region which is not the innermost
+        // all innermost regions have been finished
+
+        // this happened
+        //printf("Second time in user code of the parallel region\n");
+
+//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+//        if (it == NULL) {
+//            // this happened once for the thread da it is not TD_GET(master)
+//
+//            return;
+//        }
+        // this happened
+        //printf("One above exit...\n");
+
+
+
+
+        bottom_prefix = get_cct_from_prefix(cct, index);
+        it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+        top_prefix = get_cct_from_prefix(cct, index);
+
+        // FIXME: unresolved should not be top_prefix, get its child,
+        // I think that this happens when the thread is not initial master
+        if (hpcrun_cct_addr(top_prefix)->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
+            // index - 1 is the index of child of the top_prefix
+            top_prefix = get_cct_from_prefix(cct, index - 1);
+        }
+
+        prefix = copy_prefix(top_prefix, bottom_prefix);
+        if (!prefix) {
+            printf("-----------------Something is wrong\n");
+            return;
+        }
+        ending_region->call_path = prefix;
+
+
+    } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->reenter_runtime_frame)) {
+        // take a sample inside the runtime
+        // this happened
+        //printf("Sample has been taken inside runtime frame\n");
+
+        printf("MASTER: %d, THIRD\n", TD_GET(master));
+
+//        return;
+    } else if (UINT64_T(current_frame->reenter_runtime_frame) == 0
+               && UINT64_T(current_frame->exit_runtime_frame) == 0) {
+        // FIXME: check what this means
+        // this happened
+        //printf("Both reenter and exit are zero\n");
+
+        // this happened a couple of time for not TD_GET(master) threads
+
+        printf("MASTER: %d, FOURTH\n", TD_GET(master));
+
+
+//        return;
+    } else if (UINT64_T(current_frame->exit_runtime_frame) == 0
+               && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+        //ompt_frame_t* parent = hpcrun_ompt_get_task_frame(1);
+        //printf("I did not cover. BT_INNNER: %lu\tEXIT: %lu\tREENTER: %lu\tREGIONS: %d\tMASTER: %d\tPARENT FRAME: %p\n",
+        //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_runtime_frame),
+        //       UINT64_T(current_frame->reenter_runtime_frame), top_index+1, TD_GET(master), parent);
+
+        // FIXME: the master thread is probably inside implicit task
+        // this happened
+        //printf("Master thread is inside implicit task\n");
+
+
+
+        // FIXME vi3: this happened in the first region when master not took sample
+
+        bottom_prefix = get_cct_from_prefix(cct, index);
+        top_prefix = top_cct(cct);
+
+        // copy prefix
+        prefix = copy_prefix(top_prefix, bottom_prefix);
+        if (!prefix) {
+          printf("Should this ever happen?\n");
+          return;
+        }
+
+        ending_region->call_path = prefix;
+
+        return;
+
+    } else {
+//        printf("Something that has not been cover\n");
+
+//        return;
+
+        printf("MASTER: %d, SIXTH\n", TD_GET(master));
+
+    }
+
 
 }

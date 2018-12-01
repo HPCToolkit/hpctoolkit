@@ -625,6 +625,63 @@ ompt_region_context(uint64_t region_id,
   return node;
 }
 
+
+// ===========================
+void
+ompt_region_context_end_region_not_eager(uint64_t region_id,
+                    ompt_context_type_t ctype,
+                    int levels_to_skip,
+                    int adjust_callsite)
+{
+  cct_node_t *node;
+  ucontext_t uc;
+  getcontext(&uc);
+
+  // levels to skip will be broken if inlining occurs.
+  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath
+  // vi3 old version
+  // node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
+  // vi3 new version
+  hpcrun_metricVal_t blame_metricVal;
+  blame_metricVal.i = 0;
+  node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 33, NULL).sample_node;
+
+  TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
+
+//  if (node && adjust_callsite) {
+//    // extract the load module and offset of the leaf CCT node at the
+//    // end of a call path representing a parallel region
+//    cct_addr_t *n = hpcrun_cct_addr(node);
+//    cct_node_t *n_parent = hpcrun_cct_parent(node);
+//    uint16_t lm_id = n->ip_norm.lm_id;
+//    uintptr_t lm_ip = n->ip_norm.lm_ip;
+//    uintptr_t master_outlined_fn_return_addr;
+//
+//    // adjust the address to point to return address of the call to
+//    // the outlined function in the master
+//    if (ctype == ompt_context_begin) {
+//      void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
+//      uint64_t offset = offset_to_pc_after_next_call(ip);
+//      master_outlined_fn_return_addr = lm_ip + offset;
+//    } else {
+//      uint64_t offset = length_of_call_instruction();
+//      master_outlined_fn_return_addr = lm_ip - offset;
+//    }
+//    // ensure that there is a leaf CCT node with the proper return address
+//    // to use as the context. when using the GNU API for OpenMP, it will
+//    // be a sibling to one returned by sample_callpath.
+//    cct_node_t *sibling = hpcrun_cct_insert_addr
+//            (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
+//    node = sibling;
+//  }
+
+//  return node;
+}
+
+// ===========================
+
+
+
 cct_node_t *
 ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip, 
                             int adjust_callsite)

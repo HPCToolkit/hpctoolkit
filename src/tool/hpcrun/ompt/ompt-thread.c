@@ -107,6 +107,12 @@ __thread int top_index = -1;
 // number of unresolved regions
 __thread int unresolved_cnt = 0;
 
+// FIXME vi3: just a temp solution
+__thread ompt_region_data_t *ending_region = NULL;
+
+
+
+
 ompt_notification_t*
 top_region_stack(){
   // FIXME: is invalid value for region ID

@@ -105,6 +105,11 @@ int is_empty_region_stack();
 extern __thread ompt_region_data_t* not_master_region;
 extern __thread cct_node_t* cct_not_master_region;
 
+
+// FIXME vi3: just a temp solution
+extern __thread ompt_region_data_t *ending_region;
+
+
 // number of unresolved regions
 extern __thread int unresolved_cnt;
 #endif

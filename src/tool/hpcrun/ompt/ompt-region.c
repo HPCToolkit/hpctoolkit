@@ -159,12 +159,16 @@ ompt_parallel_end_internal(
     ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
     if(to_notify){
       if(region_data->call_path == NULL){
+
+        // FIXME vi3: this is one big hack
+        ending_region = region_data;
         // need to provide call path, because master did not take a sample inside region
-        ompt_region_context(region_data->region_id, ompt_context_end,
+        ompt_region_context_end_region_not_eager(region_data->region_id, ompt_context_end,
                                      ++levels_to_skip, invoker == ompt_invoker_program);
         // I think that is enough to call previous function, which call hpcrun_sample_callpath
         // FIXME: consider this
-        printf("This is the region data: %p\n", region_data->call_path);
+        //printf("This is the region data: %p\n", region_data->call_path);
+        ending_region = NULL;
       }
 
       //region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
@@ -316,6 +320,9 @@ ompt_implicit_task_internal_begin(
 
 
 }
+
+
+
 
 void
 ompt_implicit_task_internal_end(
