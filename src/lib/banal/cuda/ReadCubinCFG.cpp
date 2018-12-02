@@ -1,4 +1,3 @@
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -28,7 +27,6 @@ using namespace Dyninst;
 using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
-using namespace std;
 
 
 static bool
@@ -37,7 +35,7 @@ test_nvdisasm()
   // check whether nvdisasm works
   int retval = system("nvdisasm > /dev/null") == 0;
   if (!retval) {
-     cout << "WARNING: nvdisasm is not available on your path to analyze control flow in NVIDIA CUBINs" << endl;
+    std::cout << "WARNING: nvdisasm is not available on your path to analyze control flow in NVIDIA CUBINs" << std::endl;
   }
   return retval;
 }
@@ -69,15 +67,6 @@ dumpDot
 ) 
 {
   std::string cmd = "nvdisasm -cfg -poff " + cubin + " > " + dot;
-#if 0
-  FILE *output = popen(cmd.c_str(), "r");
-  if (!output) {
-    cout << "Dump " << dot << " to disk failed" << endl; 
-    return false;
-  }
-  pclose(output);
-  return true;
-#endif
   return system(cmd.c_str()) == 0; 
 }
 
@@ -109,12 +98,14 @@ relocateFunctions
   for (auto *symbol : symbols) {
     for (auto *function : functions) {
       if (function->name == symbol->getMangledName()) {
-        auto begin_offset = function->begin_offset;
+        auto begin_offset = function->blocks[0]->begin_offset;
         for (auto *block : function->blocks) {
           for (auto *inst : block->insts) {
             inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
           }
+          block->address = block->insts[0]->offset;
         }
+        function->blocks[0]->address = symbol->getOffset();
         function->address = symbol->getOffset();
       }
     }
@@ -142,11 +133,11 @@ readCubinCFG
 
     dump_cubin_success = dumpCubin(cubin, elfFile) ? true : false;
     if (!dump_cubin_success) {
-      cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << endl; 
+      std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
       dump_dot_success = dumpDot(cubin, dot) ? true : false;
       if (!dump_dot_success) {
-        cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << endl; 
+        std::cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << std::endl; 
       } else {
         // Parse dot cfg
         // relocate instructions according to the 
@@ -166,13 +157,6 @@ readCubinCFG
 
   *code_src = new SymtabCodeSource(the_symtab);
   *code_obj = new CodeObject(*code_src);
-//#if 1
-//  for (auto *function : functions) {
-//    cout << "cuda function: " << function->name << " " << 
-//      std::hex << (void *) function << std::dec << endl;
-//    delete function;
-//  }
-//#endif
 
   return false;
 }

@@ -79,9 +79,10 @@ struct Inst {
                   opcode.find("BREAK") != std::string::npos ||
                   opcode.find("JMXU") != std::string::npos) {
                   this->is_jump = true;
-                } else if (opcode.find("SYNC") != std::string::npos ||
-                  opcode.find("SSY") != std::string::npos ||
-                  opcode.find("BSSY") != std::string::npos) {
+                } else if (opcode.find("SYNC") != std::string::npos) {
+                  // avoid Barrier Set Convergence Synchronization Point
+                  //opcode.find("SSY") != std::string::npos ||
+                  //opcode.find("BSSY") != std::string::npos) {
                   // TODO(Keren): add more sync instructions
                   this->is_sync = true;
                 }
@@ -131,6 +132,8 @@ struct Target {
 
 
 struct Block {
+  int begin_offset;
+  int address;
   std::vector<Inst *> insts;
   std::vector<Target *> targets;
   size_t id;
@@ -163,11 +166,10 @@ struct Function {
   std::vector<Block *> blocks;
   size_t id;
   std::string name;
-  int begin_offset;
   int address;
 
   Function(size_t id, const std::string &name) : id(id), name(name),
-    begin_offset(0), address(0) {}
+    address(0) {}
 
   ~Function() {
     for (auto *block : blocks) {

@@ -218,6 +218,11 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   }
 
   // Link fallthrough edges at the end of blocks
+#ifdef DEBUG_CUDA_CFGPARSER
+  std::cout << "Before linking" << std::endl;
+  debug_blocks(blocks);
+#endif
+
   link_fallthrough_edges(graph, blocks, block_id_map);
 
 #ifdef DEBUG_CUDA_CFGPARSER
@@ -273,12 +278,12 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
         }
       }
       std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
-      int begin_offset = function->blocks[0]->insts[0]->offset;
       // For sm_30 <= cuda arch < sm_70, the first 8 byte of outter functions are control codes.
       // For sm_70, byte 0-16 will be the first instruction
       // Inner (local) functions will not start with a control code
       // So when we find a block starts with 8, just enforce the begin offset to be 0
-      function->begin_offset = begin_offset == 8 ? 0 : begin_offset;
+      int first_inst_offset = function->blocks[0]->insts[0]->offset;
+      function->blocks[0]->begin_offset = first_inst_offset == 8 ? 0 : first_inst_offset;
       functions.push_back(function);
     }
   }

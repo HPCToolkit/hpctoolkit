@@ -30,7 +30,7 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
           for (auto *inst : block->insts) {
             inst_offsets.push_back(inst->offset);
           }
-          ret_block = new CudaBlock(obj, region, block->insts[0]->offset, inst_offsets);
+          ret_block = new CudaBlock(obj, region, block->address, inst_offsets);
           _block_filter[block->id] = ret_block;
           blocks_.add(*ret_block);
           ret_func->add_block(ret_block);
@@ -50,7 +50,7 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
             for (auto *inst : target->block->insts) {
               inst_offsets.push_back(inst->offset);
             }
-            ret_target_block = new CudaBlock(obj, region, target->block->insts[0]->offset, inst_offsets);
+            ret_target_block = new CudaBlock(obj, region, target->block->address, inst_offsets);
             _block_filter[target->block->id] = ret_target_block;
             blocks_.add(*ret_target_block);
             ret_func->add_block(ret_target_block);

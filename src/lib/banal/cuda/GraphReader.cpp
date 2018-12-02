@@ -31,8 +31,12 @@ void GraphReader::read_vertices(
   size_t vertex_id = 0;
   for (auto node : result.nodes) {
     std::string vertex_name = node.first;
-    const std::string &vertex_label = (node.second)["label"];
+    // vertex name in dot graph is different with the function name in
+    // call instructions. For example, a vertex name may start with symbols
+    // like .weak or .text, which a callee function name does not have
+    vertex_name_to_id[vertex_name] = vertex_id;
 
+    const std::string &vertex_label = (node.second)["label"];
     // handle nvdisasm bug: sometimes block name is a label like .L_105 
     // if the block contains a .weak name indicating it represents a function
     // use the .weak name instead
@@ -63,7 +67,6 @@ void GraphReader::read_vertices(
     }
 
     graph.vertices.push_back(new Vertex(vertex_id, vertex_name, vertex_label));
-    vertex_name_to_id[vertex_name] = vertex_id;
     ++vertex_id;
   }
 }
