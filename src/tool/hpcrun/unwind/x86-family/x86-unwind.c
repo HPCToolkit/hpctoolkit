@@ -411,13 +411,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   if (cursor->libunw_status == LIBUNW_READY) {
     unw_res = libunw_take_step(cursor);
 
-    void *pc, **bp, *sp;
+    void *pc, **bp, **sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
 
     // invariant: the stack pointer should always increase.
-    // if it doesn't this must be a bad step
+    // if the stack pointer didn't increase, this must be a bad step.
     if (sp <= cursor->sp) {
       // how could this occur? if a previous unwind with the
       // binary analyzer left the wrong value in the base pointer,
@@ -426,10 +426,26 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack."
            " New sp = %p, old sp = %p", cursor->pc_unnorm, sp,
            cursor->sp);
-      unw_res = STEP_ERROR;
-    }
 
-    save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
+      unw_res = STEP_ERROR;
+
+      // DWARF unwinder failed. 
+      // see if native unwinder believes it can step.
+      unwindr_info_t unwr_info;
+      bool found = uw_recipe_map_lookup(((char *)cursor->pc_unnorm) - 1, 
+                                        NATIVE_UNWINDER, &unwr_info);
+
+      if (!found) {
+	// native unwinder can't make this step either
+        return unw_res; 
+      }
+     
+      // native unwinder thinks it can make this step. 
+      // switch mode to native unwinder.
+      cursor->unwr_info = unwr_info;
+    } else {
+      save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
+    }
 
     if (unw_res == STEP_OK) {
       libunw_finalize_cursor(cursor);
