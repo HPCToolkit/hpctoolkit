@@ -354,6 +354,104 @@ hpcrun_region_lookup(uint64_t id)
 
 // added by vi3
 
+
+
+// FIXME: move this function at better place
+
+int get_stack_index(ompt_region_data_t *region_data) {
+  int i;
+  for (i = top_index; i>=0; i--) {
+    if(region_stack[i].notification->region_data->region_id == region_data->region_id) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/*
+ * r0
+ *   r1
+ *     r2 -> r3 (thread 123) -> r4 -> r5
+ *        -> r6 -> r7 -> r8
+ *     r9 (thread 123) -> r10
+ * */
+
+
+ompt_notification_t*
+help_notification_alloc(ompt_region_data_t *region_data)
+{
+  ompt_notification_t *notification = hpcrun_malloc(sizeof(ompt_notification_t));
+  notification->region_data = region_data;
+  notification->threads_queue = &threads_queue;
+  return notification;
+}
+
+void
+add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_master)
+{
+
+  if (!region_data) {
+    printf("*******************This is also possible");
+    return;
+  }
+
+  // find the ancestor on the stack
+
+  ompt_region_data_t *ancestors[MAX_NESTING_LEVELS];
+
+  int ancestor_level = 0;
+
+  ompt_region_data_t *current_ancestor = region_data;
+  int asi = -1;
+  while (current_ancestor) {
+    // FIXME: maybe this check is not neccessary, should discuss about this
+    // discuss above example
+    // check if ancestor is already at the stack
+    asi = get_stack_index(current_ancestor);
+    if (asi != -1) {
+      // set this ancestor as current top of the stack
+      top_index = asi;
+      break;
+    }
+    // store ancestor
+    ancestors[ancestor_level] = current_ancestor;
+    // one level above
+    ancestor_level++;
+    current_ancestor = hpcrun_ompt_get_region_data(ancestor_level);
+  }
+
+  // if none region from ancestor path hasn't been found, then it is possible
+  // that some old region stays at the stack, so it would be good to clean them
+  if (asi == -1) {
+    clear_region_stack();
+  }
+
+
+  // at current ancestor level:
+  // 1) there is not region at all
+  // 2) it is ancestor which is places on the stack
+  ancestor_level--;
+
+  // push all ancestor at the stack
+  ompt_notification_t *notification;
+  while (ancestor_level > 0) {
+    notification = help_notification_alloc(ancestors[ancestor_level]);
+    push_region_stack(notification, 0, 0);
+    ancestor_level--;
+  }
+
+  // push current region at the stack
+  notification = help_notification_alloc(region_data);
+  push_region_stack(notification, 0, team_master);
+
+  // register all descendants of found ancestor, if found
+}
+
+
+
+
+
+
 void add_to_list(ompt_region_data_t* region_data){
   ompt_trl_el_t* new_region = hpcrun_ompt_trl_el_alloc();
   new_region->region_data = region_data;
@@ -398,7 +496,7 @@ add_pseudo_cct (ompt_region_data_t* region_data) {
 //           hpcrun_cct_parent(new), (hpcrun_get_thread_epoch()->csdata).thread_root);
   } else {
     // add cct as a child of a previous pseudo cct
-    new = hpcrun_cct_insert_addr(region_stack[top_index - 1]->unresolved_cct,
+    new = hpcrun_cct_insert_addr(region_stack[top_index - 1].notification->unresolved_cct,
                                  &(ADDR2(UNRESOLVED, region_data->region_id)));
   }
 
@@ -436,16 +534,14 @@ int print_list() {
 void
 register_to_region(ompt_notification_t* notification){
  ompt_region_data_t* region_data = notification->region_data;
- // increment the number of unresolved regions
- unresolved_cnt++;
- // add unresolved cct to notification
- notification->unresolved_cct = add_pseudo_cct(region_data);
 
  // create notification and enqueu to region's queue
  OMPT_BASE_T_GET_NEXT(notification) = NULL;
  // register thread to region's wait free queue
  wfq_enqueue(OMPT_BASE_T_STAR(notification), &region_data->queue);
 
+  // increment the number of unresolved regions
+  unresolved_cnt++;
 
 //  printf("THREAD: %p, REGION_ID: %lx\n", &threads_queue, region_data->region_id);
 }
@@ -456,7 +552,7 @@ add_notification_to_stack(ompt_region_data_t* region_data) {
     notification->region_data = region_data;
     notification->threads_queue = &threads_queue;
     // push to stack
-    push_region_stack(notification);
+    push_region_stack(notification, 0, 0);
     return notification;
 }
 
@@ -470,147 +566,60 @@ register_if_not_master(ompt_notification_t *notification)
   }
 }
 
-
-void
-register_to_all_existing_regions(ompt_region_data_t* current_region, ompt_region_data_t* parent_region){
-  clear_region_stack();
-  // if only one parallel region, then is enough just to register thread to it
-  if(!parent_region){
-    // add notification to the stack
-    ompt_notification_t* notification = add_notification_to_stack(current_region);
-    // if this region is not_master_region, then thread should register itself
-    register_if_not_master(notification);
-    return;
-  }
-
-  // temporary array that contains all regions from nested regions subtree
-  // where thread belongs to
-  ompt_region_data_t* temp_regions[MAX_NESTING_LEVELS];
-  // add current and parent region
-  temp_regions[0] = current_region;
-  temp_regions[1] = parent_region;
-
-  // start from grandparent
-  int ancestor_level = 2;
-  ompt_region_data_t* current_ancestor = hpcrun_ompt_get_region_data(ancestor_level);
-  // while we have ancestor
-  while(current_ancestor){
-    // add ancestor region id to temporary array
-    temp_regions[ancestor_level] = current_ancestor;
-    // go one level upper in regions subtree
-    current_ancestor = hpcrun_ompt_get_region_data(++ancestor_level);
-  }
-
-  // on the ancestor_level we don't have any regions,
-  // so we are going one step deeper where is the top most region's of subtree
-  ancestor_level--;
-
-  // reversed temporary array is proper content of  stack
-
-  // boolean which tells if not_master_region has been found during iteration
-  // it indicates that all remaining regions in temp_regions array are nested inside
-  // not_master_regions, which means that thread is the master of all of them.
-  int found_not_master = 0;
-  ompt_region_data_t* temp;
-  ompt_notification_t* notification;
-  // go from the end of array, and push region's id to stack
-  while (ancestor_level >= 0){
-    // add notification to stack
-    temp = temp_regions[ancestor_level--];
-    notification = add_notification_to_stack(temp);
-    // if we haven't found memoized not master region and if the not_master is not null
-    if(!found_not_master && not_master_region) {
-      // that means that thread needs to register itself in region's queue
-      register_to_region(notification);
-      // check if we found not_master_region
-      if(temp == not_master_region){
-        found_not_master = 1;
-        // should memoize the cct for not_master_region
-        cct_not_master_region = notification->unresolved_cct;
-      }
-    }
-  }
-
-//  if (!found_not_master) {
-//      printf("----------------Something is really bad here, THREAD: %p, MASTER: %d\n", &threads_queue, TD_GET(master));
-//  }
-
-}
-
-//
 int
-is_already_registered(ompt_region_data_t* region_data){
-  // FIXME: I think that is ok just to check the top of the stack
-  // only if we remove the top of the region inside parallel end callback
+get_took_sample_parent_index()
+{
   int i;
-  for(i = top_index; i >= 0; i--) {
-    if(region_stack[i]->region_data->region_id == region_data->region_id) {
-      // FIXME: should we change the top of the stack
-      if (top_index != i) {
-        // FIXME vi3: it woul be better if we could remove the regions from the stack
-        // at the end of the region
-
-        //printf("TOP_INDEX: %d, I: %d\n", top_index, i);
-        top_index = i;
-      }
-      return 1;
+  for (i = top_index; i >= 0; i--) {
+    if (region_stack[i].took_sample) {
+      return i;
     }
   }
-  return 0;
+  return -1;
 }
 
 
 void
 register_to_all_regions(){
-  // FIXME vi3: maybe we should add thread local variable to store current region data
-  ompt_region_data_t* current_region = hpcrun_ompt_get_current_region_data();
-  // no parallel region
-  if(!current_region) {
-    // empty stack
-    clear_region_stack();
-    return;
-  }
-  // stack is empty, register thread to all existing regions
-  if(is_empty_region_stack()){
-    // we wil provide parent region data by calling helper function inlined
-    // with function for registration
-    register_to_all_existing_regions(current_region, hpcrun_ompt_get_parent_region_data());
-    return;
-  }
 
-  // is thread already register to region that is on the top of the stack
-  // if that is the case, nothing has to be done
-  if(is_already_registered(current_region))
-    return;
 
-  // Thread is not register to current region.
+  // find ancestor on the stack in which we took a sample
+  // a go until the top of the stack
+  int start_register_index = get_took_sample_parent_index() + 1;
 
-  // If there is not parent region and stack is not clear, then regions
-  // from the stack should be removed. After that, all we need to do is to
-  // register thread to the current region, so that stack will only contain it.
-  ompt_region_data_t* parent_region = hpcrun_ompt_get_parent_region_data();
-  if (!parent_region){
-    register_to_all_existing_regions(current_region, NULL);
-    return;
-  }
+  // mark that all descendants of previously mentioned ancestor took a sample
+  // for all descendants where thread is not the master in, register for descendant callpath
+  int i;
+  region_stack_el_t *current_el;
+  cct_node_t *parent_cct;
+  cct_node_t *new_cct;
+  for (i = start_register_index; i <=top_index; i++) {
+    current_el = &region_stack[i];
+    // mark that we took sample
+    current_el->took_sample = true;
+    if (!current_el->team_master) {
+      // register for region's call path if not the master
+      register_to_region(current_el->notification);
+      // add unresolved cct at some place underneath thread root
+      // find parent of new_cct
+      parent_cct = (i == 0) ? hpcrun_get_thread_epoch()->csdata.thread_root
+              : region_stack[i-1].notification->unresolved_cct;
 
-  ompt_notification_t* top = top_region_stack();
-  // if parent region is at the top of the stack
-  // all we have to do is register thread to current region
-  if(top && top->region_data->region_id == parent_region->region_id){
-    // add notification to the stack
-    ompt_notification_t* notification = add_notification_to_stack(current_region);
-    // if the thread is in the not_master_region, it should register for region's callpath
-    // FIXME: check if this condition is right
-    register_if_not_master(notification);
-    return;
+      if (current_el->notification->region_data->region_id == 0) {
+        printf("*************You have made big mistake\n");
+      }
+      // insert cct as child of the parent_cct
+      new_cct =
+              hpcrun_cct_insert_addr(parent_cct,
+                                     &(ADDR2(UNRESOLVED, current_el->notification->region_data->region_id)));
+      // remebmer cct
+      current_el->notification->unresolved_cct = new_cct;
+
+      cct_not_master_region = current_el->notification->unresolved_cct;
+
+    }
   }
 
-
-  // Thread is not registered to the current region and parent region is
-  // not on the stack, which means that thread change nested regions subtree (change the team).
-  // All regions from stack should be removed and regions from current subtree should be added.
-  register_to_all_existing_regions(current_region, parent_region);
 
 }
 
@@ -708,10 +717,6 @@ try_resolve_one_region_context()
   }
 
   unresolved_cnt--;
-
-
-  remove_from_list(region_data);
-
   //printf("SUCCESSFULLY RESOLVED REGION_ID: %lx, THREAD: %p\n", region_data->region_id, &threads_queue);
   return 1;
 }
@@ -854,7 +859,7 @@ is_outermost_region_thread_is_master(int stack_index)
     return 1;
 
   // thread is not the master, and region that is upper on the stack is not_master_region
-  if(!TD_GET(master) && stack_index && region_stack[stack_index - 1]->region_data == not_master_region){
+  if(!TD_GET(master) && stack_index && region_stack[stack_index - 1].notification->region_data == not_master_region){
     return 1;
   }
 
@@ -937,7 +942,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
     return;
 
   // if thread is not the master of the region, or the region is resolved, then just return
-  ompt_notification_t *current_notification = top_region_stack();
+  ompt_notification_t *current_notification = top_region_stack()->notification;
   if (this_thread_cannot_resolve_region(current_notification)) {
     // this happened
     //printf("I am not responsible for this region\n");
@@ -1074,6 +1079,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
 
     bottom_prefix = get_cct_from_prefix(cct, index);
     if (!bottom_prefix) {
+      // FIXME vi3: Why this happened at morenested.c example
       printf("Should this ever happened\n");
       return;
     }
@@ -1140,7 +1146,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
         printf("***********Something bad is hapenning\n");
         return;
     }
-    current_notification = region_stack[stack_index];
+    current_notification = region_stack[stack_index].notification;
     if (this_thread_cannot_resolve_region(current_notification)) {
       // this happened
       //printf("THREAD FINISHED EVERYTHING\n");

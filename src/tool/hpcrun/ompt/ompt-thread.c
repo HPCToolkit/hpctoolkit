@@ -100,7 +100,7 @@ __thread ompt_region_data_t* private_region_freelist_head = NULL;
 
 
 // stack for regions
-__thread ompt_notification_t* region_stack[MAX_NESTING_LEVELS];
+__thread region_stack_el_t region_stack[MAX_NESTING_LEVELS];
 // index of the last element
 __thread int top_index = -1;
 
@@ -113,21 +113,24 @@ __thread ompt_region_data_t *ending_region = NULL;
 
 
 
-ompt_notification_t*
+region_stack_el_t*
 top_region_stack(){
   // FIXME: is invalid value for region ID
-  return (top_index) > -1 ? region_stack[top_index] : NULL;
+  return (top_index) > -1 ? &region_stack[top_index] : NULL;
 }
 
-ompt_notification_t*
+region_stack_el_t*
 pop_region_stack(){
-  return (top_index) > -1 ? region_stack[top_index--] : NULL;
+  return (top_index) > -1 ? &region_stack[top_index--] : NULL;
 }
 
 void
-push_region_stack(ompt_notification_t* notification){
+push_region_stack(ompt_notification_t* notification, bool took_sample, bool team_master){
   // FIXME: potential place of segfault, when stack is full
-  region_stack[++top_index] = notification;
+  top_index++;
+  region_stack[top_index].notification = notification;
+  region_stack[top_index].took_sample = took_sample;
+  region_stack[top_index].team_master = team_master;
 }
 
 void

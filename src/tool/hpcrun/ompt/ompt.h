@@ -675,6 +675,16 @@ typedef struct ompt_trl_el_s{
 
 extern int ompt_eager_context;
 
+// region stack element which points to the corresponding
+// notification, and says if thread took sample and if the
+// thread is the master in team
+typedef struct region_stack_el_s {
+  ompt_notification_t *notification;
+  bool took_sample;
+  bool team_master;
+} region_stack_el_t;
+
+
 #endif
 
 // FIXME vi3: ompt_data_t freelist manipulation

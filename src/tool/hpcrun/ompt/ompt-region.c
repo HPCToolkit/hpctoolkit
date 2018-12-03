@@ -298,6 +298,11 @@ ompt_parallel_end(
 
 #endif
 
+
+
+
+
+
 void
 ompt_implicit_task_internal_begin(
   ompt_data_t *parallel_data,
@@ -313,6 +318,13 @@ ompt_implicit_task_internal_begin(
   cct_node_t *prefix = region_data->call_path;
 
   task_data->ptr = prefix;
+
+  // FIXME vi3: check if this is fine
+  // add current region
+  add_region_and_ancestors_to_stack(region_data, thread_num==0);
+  //printf("______%p->%p=%p\n", hpcrun_ompt_get_parent_region_data(), hpcrun_ompt_get_current_region_data(), region_data);
+
+  // FIXME vi3: move this to add_region_and_ancestors_to_stack
   // Memoization process vi3:
   if(thread_num != 0){
     not_master_region = region_data;
@@ -333,19 +345,12 @@ ompt_implicit_task_internal_end(
 )
 {
 
+  // the only thing we could do (certainly) here is to pop element from the stack
+  // pop element from the stack
+  pop_region_stack();
 
-  // FIXME: vi3 why is parallel data always nil
+  //printf("---------%p->%p\n", hpcrun_ompt_get_parent_region_data(), hpcrun_ompt_get_current_region_data());
 
-  // FIXME: vi3 check if this is fine
-//  ompt_notification_t* top = top_region_stack();
-//  ompt_region_data_t *region_data = hpcrun_ompt_get_current_region_data();
-//
-//  if(top && top->region_data == region_data){
-//    top_index--;
-//  }
-
-  // vi3: I think is enough just to pop region from stack
-//  top_index--;
 }
 
 
