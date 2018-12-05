@@ -268,6 +268,8 @@ ompt_elide_runtime_frame_internal(
 
     case omp_state_idle:
 //    if (!TD_GET(master)) {
+      // FIXME vi3: I think we should delete task context when thread is idle-ing
+      TD_GET(omp_task_context) = 0;
       collapse_callstack(bt, &ompt_placeholders.ompt_idle);
       goto return_label;
 //    }

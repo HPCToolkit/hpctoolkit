@@ -366,7 +366,9 @@ static void
 ompt_idle_begin()
 {
   undirected_blame_idle_begin(&omp_idle_blame_info);
-  while(try_resolve_one_region_context());
+  if (!ompt_eager_context) {
+    while(try_resolve_one_region_context());
+  }
 }
 
 

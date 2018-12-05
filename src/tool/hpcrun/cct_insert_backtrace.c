@@ -334,7 +334,7 @@ hpcrun_cct_record_backtrace(
 }
 
 cct_node_t*
-hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
+hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
                                      backtrace_info_t *bt, bool tramp_found,
 	                             int metricId, hpcrun_metricVal_t metricIncr,
 				     void *data)
@@ -406,7 +406,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
-  // TODO: posle ovoga se uradi elide-ovanje
   cct_backtrace_finalize(&bt, isSync);
 
   if (bt.partial_unwind) {
@@ -423,12 +422,14 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
 					 tramp_found,
 					 metricId, metricIncr, data);
-  // TODO: verovatno ovde treba da sredimo cct-eve
-  // FIXME vi3: a big hack
-  if (isSync == 33) {
+
+  if (!ompt_eager_context) {
+    // FIXME vi3: a big hack
+    if (isSync == 33) {
       provide_callpath_for_end_of_the_region(&bt, n);
-  } else {
+    } else {
       provide_callpath_for_regions_if_needed(&bt, n);
+    }
   }
 
   // *trace_pc = bt.trace_pc;  // JMC
