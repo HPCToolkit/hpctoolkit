@@ -63,3 +63,5 @@ bool libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor);
 step_state libunw_take_step(hpcrun_unw_cursor_t* cursor);
 
 step_state libunw_unw_step(hpcrun_unw_cursor_t* cursor);
+
+void libunw_uw_recipe_tostr(void* uwr, char str[]);

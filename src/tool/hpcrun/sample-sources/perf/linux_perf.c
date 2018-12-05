@@ -88,7 +88,8 @@
 #include "sample-sources/simple_oo.h"
 #include "sample-sources/sample_source_obj.h"
 #include "sample-sources/common.h"
-
+#include "sample-sources/ss-errno.h"
+ 
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -1018,6 +1019,8 @@ perf_event_handler(
   void* context
 )
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   // ----------------------------------------------------------------------------
   // check #0:
   // if the interrupt came while inside our code, then drop the sample
@@ -1029,7 +1032,9 @@ perf_event_handler(
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
 
-    return 0; // tell monitor the signal has been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1043,7 +1048,9 @@ perf_event_handler(
 
   // if finalized already, refuse to handle any more samples
   if (perf_was_finalized(nevents, event_thread)) {
-    return 0;
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   perf_stop_all(nevents, event_thread);
@@ -1057,7 +1064,9 @@ perf_event_handler(
          siginfo->si_code);
     perf_start_all(nevents, event_thread);
 
-    return 1; // tell monitor the signal has not been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 1; // tell monitor the signal has not been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1065,7 +1074,9 @@ perf_event_handler(
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
   if (hpcrun_thread_suppress_sample) {
-    return 0;
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   int fd = siginfo->si_fd;
@@ -1082,6 +1093,8 @@ perf_event_handler(
 
     restart_perf_event(fd);
     perf_start_all(nevents, event_thread);
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor the signal has not been handled.
   }
@@ -1104,7 +1117,9 @@ perf_event_handler(
 
     perf_start_all(nevents, event_thread);
 
-    return 1; // tell monitor the signal has not been handled.
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 1; // tell monitor the signal has not been handled
   }
 
   // ----------------------------------------------------------------------------
@@ -1133,6 +1148,8 @@ perf_event_handler(
 
   hpcrun_safe_exit();
 
-  return 0; // tell monitor the signal has been handled.
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 

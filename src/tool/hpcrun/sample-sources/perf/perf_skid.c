@@ -59,7 +59,6 @@
 #include <sys/syscall.h>   /* For SYS_xxx definitions */
 
 #include <linux/perf_event.h>
-#include <linux/hw_breakpoint.h>
 
 #include "perf_constants.h"
 #include "perf_skid.h"
@@ -173,7 +172,7 @@ find_precise_suffix(const char *s, const char *suffix, char allowed)
  * TODO: this method only works on some platforms, and not
  *       general enough on all the platforms.
  */
-void
+int
 perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 {
   // start with the most restrict skid (3) then 2, 1 and 0
@@ -191,9 +190,10 @@ perf_skid_set_max_precise_ip(struct perf_event_attr *attr)
 	if (ret >= 0) {
 	  close(ret);
 	  // just quit when the returned value is correct
-	  return;
+	  return attr->precise_ip;
 	}
   }
+  return 0;
 }
 
 
@@ -246,8 +246,13 @@ perf_skid_parse_event(const char *event_string, char **event_string_without_skid
   int len_evt = strlen(event_string);
   int precise = 0;
 
-  if (len_evt <= len_suf) 
-    return PERF_EVENT_SKID_ERROR;
+  if (len_evt <= len_suf) {
+    // some events consist only of two letters (e.g,: cs)
+    // Using this event (which has two letters) is not an error,
+    // we just doesn't need to parse it.
+    *event_string_without_skidmarks = strdup(event_string);
+    return PERF_EVENT_SKID_ARBITRARY;
+  }
 
   const char *ptr_att = find_precise_suffix(event_string, PRECISE_IP_MAX_SUFFIX, 0);
   if (ptr_att) {
