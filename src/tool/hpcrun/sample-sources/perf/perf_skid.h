@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,36 +41,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
 
-#include <stdio.h>  // for FILENAME_MAX
+#ifndef __PERF_SKID_H__
+#define __PERF_SKID_H__
 
-#define __USE_XOPEN_EXTENDED // realpath()
-#include <stdlib.h>
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_AUTODETECT_SKID       4
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
+#define PERF_EVENT_SKID_ERROR           -1
 
-/**************************** User Include Files ****************************/
 
-#include "realpath.h"
+// parse the event into event_name and the type of precise_ip
+//  the name of the event excludes the precise ip suffix
+// returns:
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_NONE    
+//  PERF_EVENT_SKID_ERROR        
+int
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 
-/**************************** Forward Declarations **************************/
+int
+perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
 
-/****************************************************************************/
-
-/*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
- * This is a C wrapper for the standard routine so that it can be available
- * for C++ programs.
- *
- */
-const char*
-RealPath(const char* nm)
-{
-  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
-
-  if (realpath(nm, _RealPathBuf) == NULL) {
-    return nm; /* error; return orig string */
-  }
-  else {
-    return _RealPathBuf; /* resolved name has been copied here */
-  }
-}
+u64
+perf_skid_get_precise_ip(struct perf_event_attr *attr);
+#endif

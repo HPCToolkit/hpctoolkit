@@ -34,46 +34,46 @@
 // express or implied warranties, including, but not limited to, the
 // implied warranties of merchantability and fitness for a particular
 // purpose are disclaimed. In no event shall RICE or contributors be
-// liable for any direct, indirect, incidental, special, exemplary, or
-// consequential damages (including, but not limited to, procurement of
-// substitute goods or services; loss of use, data, or profits; or
-// business interruption) however caused and on any theory of liability,
-// whether in contract, strict liability, or tort (including negligence
-// or otherwise) arising in any way out of the use of this software, even
-// if advised of the possibility of such damage.
-//
-// ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
+#ifndef __PERF_CONSTANTS_H__
+#define __PERF_CONSTANTS_H__
 
-#include <stdio.h>  // for FILENAME_MAX
+#include <unistd.h>
+#include <sys/types.h>
 
-#define __USE_XOPEN_EXTENDED // realpath()
-#include <stdlib.h>
+#include <linux/types.h>
+#include <linux/perf_event.h>
 
-/**************************** User Include Files ****************************/
 
-#include "realpath.h"
+/******************************************************************************
+ * macros
+ *****************************************************************************/
 
-/**************************** Forward Declarations **************************/
+#define THREAD_SELF     0
+#define CPU_ANY        -1
+#define GROUP_FD       -1
+#define PERF_FLAGS      0
+#define PERF_REQUEST_0_SKID      2
+#define PERF_WAKEUP_EACH_SAMPLE  1
 
-/****************************************************************************/
+#define EXCLUDE    1
+#define INCLUDE    0
 
-/*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
- * This is a C wrapper for the standard routine so that it can be available
- * for C++ programs.
- *
- */
-const char*
-RealPath(const char* nm)
-{
-  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+#define EXCLUDE_CALLCHAIN EXCLUDE
+#define INCLUDE_CALLCHAIN INCLUDE
 
-  if (realpath(nm, _RealPathBuf) == NULL) {
-    return nm; /* error; return orig string */
-  }
-  else {
-    return _RealPathBuf; /* resolved name has been copied here */
-  }
-}
+#ifndef HPCRUN_DEFAULT_SAMPLE_RATE
+#define HPCRUN_DEFAULT_SAMPLE_RATE	  300
+#endif
+
+#ifndef u32
+typedef __u32 u32;
+#endif
+
+
+#ifndef u64
+typedef __u64 u64;
+#endif
+
+
+#endif

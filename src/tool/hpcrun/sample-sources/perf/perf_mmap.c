@@ -113,16 +113,6 @@ static size_t tail_mask  = 0;
  * local methods
  *****************************************************************************/
 
-/*
- * Not the data we need? Skip the data.
- */
-/*static void skip_perf_data(pe_mmap_t *hdr, size_t sz)
-{
-  if ((hdr->data_tail + sz) > hdr->data_head)
-    sz = hdr->data_head - hdr->data_tail;
-
-  hdr->data_tail += sz;
-} */
 
 
 static u64
@@ -151,8 +141,6 @@ has_more_perf_data(pe_mmap_t *hdr)
 {
   return (num_of_more_perf_data(hdr) > 0);
 }
-
-
 
 
 //----------------------------------------------------------
@@ -304,7 +292,7 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
   return mmap_data->nr;
 }
 
-#if 0
+#if 1
 //----------------------------------------------------------
 // part of the buffer to be skipped
 //----------------------------------------------------------
@@ -494,7 +482,7 @@ read_perf_buffer(pe_mmap_t *current_perf_mmap,
       if (hdr.size <= 0) {
         return 0;
       }
-      //skip_perf_data(current_perf_mmap, hdr.size);
+      skip_perf_data(current_perf_mmap, hdr.size);
       TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
     		  attr->config,
     		  hdr.type, hdr.misc, hdr.size);

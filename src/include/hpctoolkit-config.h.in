@@ -12,14 +12,14 @@
 /* dyninst built with libdw */
 #undef DYNINST_USE_LIBDW
 
-/* Binutils has support for ia64 */
-#undef ENABLE_BINUTILS_IA64
-
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
 
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
+
+/* Build with openmp support */
+#undef ENABLE_OPENMP
 
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
@@ -30,17 +30,11 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* HPCToolkit patched binutils */
-#undef HAVE_HPC_GNUBINUTILS
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Monitor library */
-#undef HAVE_MONITOR
 
 /* HOST OS: 32 and 64 bit OS libraries */
 #undef HAVE_OS_MULTILIB

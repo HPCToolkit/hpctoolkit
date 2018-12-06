@@ -49,6 +49,7 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
+#include "perf_constants.h"
 
 /******************************************************************************
  * macros
@@ -57,31 +58,6 @@
 #define KERNEL_SAMPLING_ENABLED (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 
 
-#define THREAD_SELF     0
-#define CPU_ANY        -1
-#define GROUP_FD       -1
-#define PERF_FLAGS      0
-#define PERF_REQUEST_0_SKID      2
-#define PERF_WAKEUP_EACH_SAMPLE  1
-
-#define EXCLUDE    1
-#define INCLUDE    0
-
-#define EXCLUDE_CALLCHAIN EXCLUDE
-#define INCLUDE_CALLCHAIN INCLUDE
-
-#ifndef HPCRUN_DEFAULT_SAMPLE_RATE
-#define HPCRUN_DEFAULT_SAMPLE_RATE	  300
-#endif
-
-#ifndef u32
-typedef __u32 u32;
-#endif
-
-
-#ifndef u64
-typedef __u64 u64;
-#endif
 
 // the number of maximum frames (call chains) 
 // For kernel only call chain, I think 32 is a good number.
@@ -99,9 +75,10 @@ struct event_threshold_s {
   enum threshold_e threshold_type;
 };
 
-// --------------------------------------------------------------------
-// perf event mmap data
-// --------------------------------------------------------------------
+
+/******************************************************************************
+ * Data types
+ *****************************************************************************/
 
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
@@ -180,27 +157,20 @@ typedef struct event_thread_s {
 
 
 
-// --------------------------------------------------------------------
-// API
-// --------------------------------------------------------------------
 
-
-// returns the id of kernel load module
-uint16_t get_perf_kernel_lm_id();
-
-// calling perf event open system call
-long
-perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags);
-
+/******************************************************************************
+ * Interfaces
+ *****************************************************************************/
 
 void
 perf_util_init();
 
 int
 perf_util_attr_init(
+  char *event_name,
   struct perf_event_attr *attr,
-  bool usePeriod, u64 threshold,
+  bool usePeriod, 
+  u64 threshold,
   u64  sampletype
 );
 
@@ -218,7 +188,7 @@ perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
 void
 perf_util_get_default_threshold(struct event_threshold_s *threshold);
 
-u64
-perf_util_set_max_precise_ip(struct perf_event_attr *attr);
+int
+perf_util_check_precise_ip_suffix(char *event);
 
 #endif

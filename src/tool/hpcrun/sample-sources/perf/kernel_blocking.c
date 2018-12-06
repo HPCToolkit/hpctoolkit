@@ -275,7 +275,7 @@ register_blocking(sample_source_t *self,
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
 
-  perf_util_attr_init( attr,
+  perf_util_attr_init( EVNAME_KERNEL_BLOCK, attr,
       true        /* use_period*/,
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */

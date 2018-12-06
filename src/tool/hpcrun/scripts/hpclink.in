@@ -121,7 +121,6 @@ unable_to_link()
     die "unable to link"
 }
 
-
 #------------------------------------------------------------
 # The darshan I/O characterization library
 # (http://www.mcs.anl.gov/research/projects/darshan) is linked into
@@ -132,16 +131,18 @@ unable_to_link()
 #------------------------------------------------------------
 check_darshan()
 {
-    darshan_msg="darshan is incompatible with HPCToolkit. Unload darshan from your environment before using hpclink."
-    if test "${PE_PKGCONFIG_LIBS/darshan//}" != "${PE_PKGCONFIG_LIBS}" ; then
-        if test "$1" == "die" ; then
-           die $darshan_msg
+    darshan_msg='Darshan is incompatible with HPCToolkit.
+Unload darshan from your environment before using hpclink.'
+
+    echo "x$PE_PKGCONFIG_LIBS" | grep -i darshan >/dev/null 2>&1
+    if test $? -eq 0 ; then
+        if test "$1" = "die" ; then
+           die "$darshan_msg"
         else
-           echo -e "\nwarning:" $darshan_msg
+           echo ; echo "warning: $darshan_msg"
         fi
     fi
 }
-
 
 #------------------------------------------------------------
 # Usage Message

@@ -359,3 +359,9 @@ libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 
   return result;
 }
+
+void
+libunw_uw_recipe_tostr(void *uwr, char str[])
+{
+  snprintf(str, MAX_RECIPE_STR, "*");
+}

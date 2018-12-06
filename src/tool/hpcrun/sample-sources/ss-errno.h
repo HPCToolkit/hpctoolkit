@@ -44,36 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*************************** System Include Files ***************************/
 
-#include <stdio.h>  // for FILENAME_MAX
+//******************************************************************************
+// File: ss-errno.h
+//
+// Purpose: 
+//   hpctoolkit sample sources MUST not disturb the application's value of 
+//   errno. define two macros to save and restore the application's errno
+//   at entry and exit of signal handlers.
+//
+//******************************************************************************
 
-#define __USE_XOPEN_EXTENDED // realpath()
-#include <stdlib.h>
+#ifndef __hpctoolkit_ss_errno_h__
+#define __hpctoolkit_ss_errno_h__
 
-/**************************** User Include Files ****************************/
+#include <errno.h>
 
-#include "realpath.h"
+#define HPCTOOLKIT_APPLICATION_ERRNO_SAVE() int application_errno = errno
+#define HPCTOOLKIT_APPLICATION_ERRNO_RESTORE() errno = application_errno
 
-/**************************** Forward Declarations **************************/
-
-/****************************************************************************/
-
-/*
- * 'realpath' is a UNIX standard, but it is not standard in ANSI/ISO C++. 
- * This is a C wrapper for the standard routine so that it can be available
- * for C++ programs.
- *
- */
-const char*
-RealPath(const char* nm)
-{
-  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
-
-  if (realpath(nm, _RealPathBuf) == NULL) {
-    return nm; /* error; return orig string */
-  }
-  else {
-    return _RealPathBuf; /* resolved name has been copied here */
-  }
-}
+#endif
