@@ -130,7 +130,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
-#define NUM_GPU_ENTRY_INSTRUCTIONS 16
+#define CUDA_PROC_SEARCH_LEN 800
 
 //******************************************************************************
 // variables
@@ -144,6 +144,7 @@ static const string & unknown_link = "_unknown_proc_";
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
+static size_t cubin_size = 0;
 
 
 //----------------------------------------------------------------------
@@ -346,7 +347,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     Module * mod = sym_func->getModule();
 
     if (mod != NULL) {
-      mod->getSourceLines(svec, vma);
+      mod->getSourceLines(svec, vma + cubin_size);
     }
   }
 
@@ -356,7 +357,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     the_symtab->findModuleByOffset(modSet, vma);
 
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma);
+      (*mit)->getSourceLines(svec, vma + cubin_size);
       if (! svec.empty()) {
         break;
       }
@@ -432,8 +433,10 @@ makeStructure(InputFile & inputFile,
       code_obj = new CodeObject(code_src);
       code_obj->parse();
       cuda_arch = 0;
+      cubin_size = 0;
     } else {
       cuda_arch = elfFile->getArch();
+      cubin_size = elfFile->getLength();
       parsable = readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
     }
 
@@ -581,14 +584,17 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
       len = 16;
     }
 
-    Module * mod = sym_func->getModule();
-    mod->getSourceLines(svec, vma);
+    getStatement(svec, vma, sym_func);
+    StatementVector tmp;
 
-    for (size_t i = vma + len; i < end && i < vma + len * NUM_GPU_ENTRY_INSTRUCTIONS; i += len) {
-      StatementVector tmp;
-      mod->getSourceLines(tmp, i);
-      if (!tmp.empty() && !svec.empty()) {
-        if (tmp[0]->getFile() == svec[0]->getFile() && tmp[0]->getLine() < svec[0]->getLine()) {
+    // iterating the whole function is too slow
+    for (size_t i = vma + len; i < end && i < vma + CUDA_PROC_SEARCH_LEN; i += len) {
+      getStatement(tmp, i, sym_func);
+      if (!tmp.empty()) {
+        if (svec.empty()) {
+          svec.push_back(tmp[0]);
+        } else if (tmp[0]->getFile() == svec[0]->getFile() &&
+          tmp[0]->getLine() < svec[0]->getLine()) {
           svec[0] = tmp[0];
         }
       }
@@ -627,7 +633,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
       break;
     }
 
-    mod->getSourceLines(svec, next);
+    mod->getSourceLines(svec, next + cubin_size);
     num_tries++;
 
     if (! svec.empty()) {

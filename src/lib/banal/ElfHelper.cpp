@@ -110,7 +110,7 @@ ElfFile::open
     return false;
   }
   GElf_Ehdr ehdr_v; 
-  GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
+  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
     return false;
   }
@@ -121,7 +121,7 @@ ElfFile::open
 #ifdef DYNINST_USE_CUDA
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
-    relocateCubin(memPtr, elf);
+    relocateCubin(memPtr, memLen, elf);
 #else
     elf_end(elf);
     return false;
