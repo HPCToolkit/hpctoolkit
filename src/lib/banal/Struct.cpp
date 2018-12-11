@@ -164,7 +164,7 @@ static FileMap *
 makeSkeleton(CodeObject *, ProcNameMgr *, const string &, bool);
 
 static void
-doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
+doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool, std::set<VMA> &parsable);
 
 static LoopList *
 doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
@@ -193,9 +193,6 @@ deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
 
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
-
-static void 
-doUnparsableFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &); 
  
 static void 
 doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root, HPC::StringTable & strTab); 
@@ -402,7 +399,7 @@ makeStructure(InputFile & inputFile,
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
-    bool parsable = true;
+    std::set<VMA> parsable;
     ElfFile *elfFile = (*elfFileVector)[i];
 
 #if DEBUG_ANY_ON
@@ -437,7 +434,7 @@ makeStructure(InputFile & inputFile,
     } else {
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
-      parsable = readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
+      readCubinCFG(elfFile, the_symtab, &code_src, &code_obj, parsable);
     }
 
     string basename = FileUtil::basename(cfilename);
@@ -455,12 +452,8 @@ makeStructure(InputFile & inputFile,
       for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
 	GroupInfo * ginfo = git->second;
 
-	// make the inline tree for all funcs in one group
-    if (parsable) {
-      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-    } else {
-      doUnparsableFunctionList(symtab, finfo, ginfo, strTab);
-    }
+  // make the inline tree for all funcs in one group
+      doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL, parsable);
 
 	for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
 	  ProcInfo * pinfo = pit->second;
@@ -1000,7 +993,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 //
 static void
 doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	       HPC::StringTable & strTab, bool fullGaps)
+	       HPC::StringTable & strTab, bool fullGaps, std::set<VMA> &parsable)
 {
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
@@ -1014,13 +1007,15 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
   if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-      ParseAPI::Function * func = pit->second->func;
-      const ParseAPI::Function::edgelist & elist = func->callEdges();
+      if (parsable.find(ginfo->start) != parsable.end()) {
+        ParseAPI::Function * func = pit->second->func;
+        const ParseAPI::Function::edgelist & elist = func->callEdges();
 
-      for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
-        VMA src = (*eit)->src()->last();
-        VMA targ = (*eit)->trg()->start();
-        callMap[targ] = src;
+        for (auto eit = elist.begin(); eit != elist.end(); ++eit) {
+          VMA src = (*eit)->src()->last();
+          VMA targ = (*eit)->trg()->start();
+          callMap[targ] = src;
+        }
       }
     }
   }
@@ -1033,145 +1028,151 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     Address entry_addr = func->addr();
     num++;
 
-    // only used for cuda functions
-    pinfo->symbol_index = 0;
+    if (parsable.find(ginfo->start) == parsable.end()) {
+      TreeNode * root = new TreeNode;
+      doUnparsableFunction(ginfo, func, root, strTab); 
+      pinfo->root = root; 
+    } else {
+      // only used for cuda functions
+      pinfo->symbol_index = 0;
 
-    // compute the inline seqn for the call site for this func, if
-    // there is one.
-    Inline::InlineSeqn prefix;
-    auto call_it = callMap.find(entry_addr);
+      // compute the inline seqn for the call site for this func, if
+      // there is one.
+      Inline::InlineSeqn prefix;
+      auto call_it = callMap.find(entry_addr);
 
-    if (call_it != callMap.end()) {
-      Inline::analyzeAddr(prefix, call_it->second);
-    }
+      if (call_it != callMap.end()) {
+        Inline::analyzeAddr(prefix, call_it->second);
+      }
 
 #if DEBUG_CFG_SOURCE
-    debugFuncHeader(finfo, pinfo, num, num_funcs);
+      debugFuncHeader(finfo, pinfo, num, num_funcs);
 
-    if (call_it != callMap.end()) {
-      cout << "\ncall site prefix:  0x" << hex << call_it->second
-        << " -> 0x" << call_it->first << dec << "\n";
-      for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
-        cout << "inline:  l=" << pit->getLineNum()
-          << "  f='" << pit->getFileName()
-          << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
-      }
-    }
-#endif
-
-    // see if this function is entirely contained within another
-    // function (as determined by its entry block).  if yes, then we
-    // don't parse the func.  but we still use its blocks for gaps,
-    // unless we've already added the containing func.
-    //
-    int num_contain = func->entry()->containingFuncs();
-    bool add_blocks = true;
-
-    if (num_contain > 1) {
-      vector <ParseAPI::Function *> funcVec;
-      func->entry()->getFuncs(funcVec);
-
-      // see if we've already added the containing func
-      for (auto fit = funcVec.begin(); fit != funcVec.end(); ++fit) {
-        Address entry = (*fit)->addr();
-
-        if (coveredFuncs.find(entry) != coveredFuncs.end()) {
-          add_blocks = false;
-          break;
+      if (call_it != callMap.end()) {
+        cout << "\ncall site prefix:  0x" << hex << call_it->second
+          << " -> 0x" << call_it->first << dec << "\n";
+        for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
+          cout << "inline:  l=" << pit->getLineNum()
+            << "  f='" << pit->getFileName()
+            << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
         }
       }
-    }
+#endif
 
-    // skip duplicated function, blocks already added
-    if (! add_blocks) {
-      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
-      continue;
-    }
+      // see if this function is entirely contained within another
+      // function (as determined by its entry block).  if yes, then we
+      // don't parse the func.  but we still use its blocks for gaps,
+      // unless we've already added the containing func.
+      //
+      int num_contain = func->entry()->containingFuncs();
+      bool add_blocks = true;
 
-    // basic blocks for this function
-    const ParseAPI::Function::blocklist & blist = func->blocks();
-    BlockSet visited;
+      if (num_contain > 1) {
+        vector <ParseAPI::Function *> funcVec;
+        func->entry()->getFuncs(funcVec);
 
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      visited[block] = false;
-    }
+        // see if we've already added the containing func
+        for (auto fit = funcVec.begin(); fit != funcVec.end(); ++fit) {
+          Address entry = (*fit)->addr();
 
-    // add to the group's set of covered blocks
-    if (! ginfo->alt_file) {
+          if (coveredFuncs.find(entry) != coveredFuncs.end()) {
+            add_blocks = false;
+            break;
+          }
+        }
+      }
+
+      // skip duplicated function, blocks already added
+      if (! add_blocks) {
+        DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
+        continue;
+      }
+
+      // basic blocks for this function
+      const ParseAPI::Function::blocklist & blist = func->blocks();
+      BlockSet visited;
+
       for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
         Block * block = *bit;
-        covered.insert(block->start(), block->end());
+        visited[block] = false;
       }
-      coveredFuncs.insert(entry_addr);
-    }
 
-    // skip duplicated function, blocks added just now
-    if (num_contain > 1) {
-      DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
-      continue;
-    }
-
-    // if the outline func file name does not match the enclosing
-    // symtab func, then do the full parse in the outline file
-    // (alt-file) and use the symtab file for gaps only.
-    if (pinfo->gap_only) {
-      DEBUG_CFG("\nskipping full parse (gap only) for function:  '"
-        << func->name() << "'\n");
-      continue;
-    }
-
-    TreeNode * root = new TreeNode;
-
-    // traverse the loop (Tarjan) tree
-    LoopList *llist =
-      doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
-
-    DEBUG_CFG("\nnon-loop blocks:\n");
-
-    // process any blocks not in a loop
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
-      Block * block = *bit;
-      if (! visited[block]) {
-        doBlock(ginfo, func, visited, block, root, strTab);
+      // add to the group's set of covered blocks
+      if (! ginfo->alt_file) {
+        for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+          Block * block = *bit;
+          covered.insert(block->start(), block->end());
+        }
+        coveredFuncs.insert(entry_addr);
       }
-    }
 
-    // merge the loops into the proc's inline tree
-    FLPSeqn empty;
+      // skip duplicated function, blocks added just now
+      if (num_contain > 1) {
+        DEBUG_CFG("\nskipping duplicated function:  '" << func->name() << "'\n");
+        continue;
+      }
 
-    for (auto it = llist->begin(); it != llist->end(); ++it) {
-      mergeInlineLoop(root, empty, *it);
-    }
+      // if the outline func file name does not match the enclosing
+      // symtab func, then do the full parse in the outline file
+      // (alt-file) and use the symtab file for gaps only.
+      if (pinfo->gap_only) {
+        DEBUG_CFG("\nskipping full parse (gap only) for function:  '"
+          << func->name() << "'\n");
+        continue;
+      }
 
-    // delete the inline prefix from this func, if non-empty
-    if (! prefix.empty()) {
-      root = deleteInlinePrefix(root, prefix, strTab);
-    }
+      TreeNode * root = new TreeNode;
 
-    // add inline tree to proc info
-    pinfo->root = root;
+      // traverse the loop (Tarjan) tree
+      LoopList *llist =
+        doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
+
+      DEBUG_CFG("\nnon-loop blocks:\n");
+
+      // process any blocks not in a loop
+      for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+        Block * block = *bit;
+        if (! visited[block]) {
+          doBlock(ginfo, func, visited, block, root, strTab);
+        }
+      }
+
+      // merge the loops into the proc's inline tree
+      FLPSeqn empty;
+
+      for (auto it = llist->begin(); it != llist->end(); ++it) {
+        mergeInlineLoop(root, empty, *it);
+      }
+
+      // delete the inline prefix from this func, if non-empty
+      if (! prefix.empty()) {
+        root = deleteInlinePrefix(root, prefix, strTab);
+      }
+
+      // add inline tree to proc info
+      pinfo->root = root;
 
 #if DEBUG_CFG_SOURCE
-    cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
-      << "  link='" << pinfo->linkName << "'\n"
-      << "parse:  '" << func->name() << "'\n";
+      cout << "\nfinal inline tree:  (" << num << "/" << num_funcs << ")"
+        << "  link='" << pinfo->linkName << "'\n"
+        << "parse:  '" << func->name() << "'\n";
 
-    if (call_it != callMap.end()) {
-      cout << "\ncall site prefix:  0x" << hex << call_it->second
-        << " -> 0x" << call_it->first << dec << "\n";
-      for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
-        cout << "inline:  l=" << pit->getLineNum()
-	     << "  f='" << pit->getFileName()
-	     << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
+      if (call_it != callMap.end()) {
+        cout << "\ncall site prefix:  0x" << hex << call_it->second
+          << " -> 0x" << call_it->first << dec << "\n";
+        for (auto pit = prefix.begin(); pit != prefix.end(); ++pit) {
+          cout << "inline:  l=" << pit->getLineNum()
+            << "  f='" << pit->getFileName()
+            << "'  p='" << debugPrettyName(pit->getPrettyName()) << "'\n";
+        }
       }
-    }
-    cout << "\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
-    cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
-      << "  link='" << pinfo->linkName << "'\n"
-      << "parse:  '" << func->name() << "'\n";
+      cout << "\n";
+      debugInlineTree(root, NULL, strTab, 0, true);
+      cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
+        << "  link='" << pinfo->linkName << "'\n"
+        << "parse:  '" << func->name() << "'\n";
 #endif
+    }
   }
 
   // add unclaimed regions (gaps) to the group leader, but skip groups
@@ -1393,32 +1394,32 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 }
 
  
-//---------------------------------------------------------------------- 
-// Unparsable functions 
+////---------------------------------------------------------------------- 
+//// Unparsable functions 
+//// 
+//static void 
+//doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab) 
+//{ 
+//  // not sure if cuda generates multiple functions, but we'll handle 
+//  // this case until proven otherwise. 
+//  long num = 0; 
 // 
-static void 
-doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab) 
-{ 
-  // not sure if cuda generates multiple functions, but we'll handle 
-  // this case until proven otherwise. 
-  long num = 0; 
- 
-  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) { 
-    ProcInfo * pinfo = pit->second; 
-    ParseAPI::Function * func = pinfo->func; 
-    num++; 
- 
-#if DEBUG_CFG_SOURCE 
-    long num_funcs = ginfo->procMap.size(); 
-    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda"); 
-#endif 
- 
-    TreeNode * root = new TreeNode; 
- 
-    doUnparsableFunction(ginfo, func, root, strTab); 
-    pinfo->root = root; 
-  } 
-} 
+//  for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) { 
+//    ProcInfo * pinfo = pit->second; 
+//    ParseAPI::Function * func = pinfo->func; 
+//    num++; 
+// 
+//#if DEBUG_CFG_SOURCE 
+//    long num_funcs = ginfo->procMap.size(); 
+//    debugFuncHeader(finfo, pinfo, num, num_funcs, "cuda"); 
+//#endif 
+// 
+//    TreeNode * root = new TreeNode; 
+// 
+//    doUnparsableFunction(ginfo, func, root, strTab); 
+//    pinfo->root = root; 
+//  } 
+//} 
 
 
 static void 
