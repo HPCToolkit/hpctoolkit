@@ -6,12 +6,11 @@
 
 #include <lib/binutils/VMAInterval.hpp>
 
-void
+bool
 readCubinCFG
 (
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj,
- std::set<VMA> &parsable
+ Dyninst::ParseAPI::CodeObject **code_obj
 );

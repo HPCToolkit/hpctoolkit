@@ -68,8 +68,7 @@ dumpDot
 (
  const std::string &cubin, 
  const std::string &dot,
- Dyninst::SymtabAPI::Symtab *the_symtab,
- std::vector<size_t> &valid_function_index
+ Dyninst::SymtabAPI::Symtab *the_symtab
 ) 
 {
   std::string cmd = "/sw/summitdev/cuda/9.2.148/bin/nvdisasm -cfg -poff " + cubin + " > " + dot;
@@ -77,6 +76,7 @@ dumpDot
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
   if (system(cmd.c_str()) != 0) {  // failed, maybe caused by some functions
+    std::vector<size_t> valid_function_index;
     // test valid symbols
     for (auto *symbol : symbols) {
       if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
@@ -98,13 +98,6 @@ dumpDot
       return system(cmd.c_str()) == 0;
     }
     return false;
-  } else {
-    for (auto *symbol : symbols) {
-      if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-        auto index = symbol->getIndex();
-        valid_function_index.push_back(index);
-      }
-    }
   }
   return true;
 }
@@ -129,8 +122,7 @@ static void
 relocateFunctions
 (
  Dyninst::SymtabAPI::Symtab *the_symtab, 
- std::vector<CudaParse::Function *> &functions,
- std::set<VMA> &parsable
+ std::vector<CudaParse::Function *> &functions
 ) 
 {
   std::vector<Symbol *> symbols;
@@ -147,21 +139,19 @@ relocateFunctions
         }
         function->blocks[0]->address = symbol->getOffset();
         function->address = symbol->getOffset();
-        parsable.insert(function->address);
       }
     }
   }
 }
 
 
-void
+bool
 readCubinCFG
 (
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj,
- std::set<VMA> &parsable
+ Dyninst::ParseAPI::CodeObject **code_obj
 ) 
 {
   static bool nvdisasm_usable = test_nvdisasm();
@@ -177,8 +167,7 @@ readCubinCFG
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
-      std::vector<size_t> valid_function_index;
-      dump_dot_success = dumpDot(cubin, dot, the_symtab, valid_function_index);
+      dump_dot_success = dumpDot(cubin, dot, the_symtab);
       if (!dump_dot_success) {
         std::cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << std::endl; 
       } else {
@@ -187,13 +176,13 @@ readCubinCFG
         // relocated symbols in the_symtab
         std::vector<CudaParse::Function *> functions;
         parseDotCFG(dot, functions);
-        relocateFunctions(the_symtab, functions, parsable);
+        relocateFunctions(the_symtab, functions);
 
         CFGFactory *cfg_fact = new CudaCFGFactory(functions);
         *code_src = new CudaCodeSource(functions, the_symtab); 
         *code_obj = new CodeObject(*code_src, cfg_fact);
         (*code_obj)->parse();
-        return;
+        return true;
       }
     }
   }
@@ -201,5 +190,5 @@ readCubinCFG
   *code_src = new SymtabCodeSource(the_symtab);
   *code_obj = new CodeObject(*code_src);
 
-  return;
+  return false;
 }
