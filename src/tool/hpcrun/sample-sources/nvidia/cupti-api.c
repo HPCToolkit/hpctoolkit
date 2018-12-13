@@ -840,13 +840,14 @@ cupti_sample_process
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
   PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
-   "samples %u, latencySamples %u",
+   "samples %u, latencySamples %u, stallReason %u\n",
    sample->sourceLocatorId,
    sample->functionId,
    sample->pcOffset,
    sample->correlationId,
    sample->samples,
-   sample->latencySamples);
+   sample->latencySamples,
+   sample->stallReason);
 
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
@@ -867,7 +868,6 @@ cupti_sample_process
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
           cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
-          PRINT("cupti_sample_process %d\n", sample->stallReason);
           cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
         }
       }
