@@ -151,7 +151,7 @@ static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step
 //************************************************
 
 static void
-save_registers(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
+save_registers(hpcrun_unw_cursor_t* cursor, void **pc, void **bp, void *sp,
 	       void **ra_loc)
 {
   cursor->pc_unnorm = pc;
@@ -238,7 +238,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
 
-  void *pc, **bp, *sp;
+  void *pc, **bp, **sp;
   unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
   unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
@@ -411,11 +411,17 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
   if (cursor->libunw_status == LIBUNW_READY) {
     unw_res = libunw_take_step(cursor);
 
-    void *pc, **bp, *sp;
+    void *pc, **bp, **sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    save_registers(cursor, pc, bp, sp, (void *)(sp - 1));
+    // sanity check to avoid infinite unwind loop
+    if (sp <= cursor->sp) {
+      cursor->libunw_status = LIBUNW_UNAVAIL;
+      unw_res = STEP_ERROR;
+    }
+    else
+      save_registers(cursor, pc, bp, sp, (void **)(sp - 1));
 
     if (unw_res == STEP_OK) {
       libunw_finalize_cursor(cursor);
@@ -424,6 +430,14 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     if (unw_res == STEP_STOP || unw_res == STEP_OK) {
       return unw_res;
     }
+    bool found = uw_recipe_map_lookup(((char *)pc) - 1, NATIVE_UNWINDER, &cursor->unwr_info);
+
+    if (!found) {
+      EMSG("hpcrun_unw_step: cursor could NOT build an interval for last libunwind pc = %p",
+	   cursor->pc_unnorm);
+      return unw_res;
+    }
+    compute_normalized_ips(cursor);
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){
