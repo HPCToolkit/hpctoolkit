@@ -895,11 +895,11 @@ ompt_target_callback(ompt_target_type_t kind,
                      ompt_id_t target_id,
                      const void *codeptr_ra)
 {
-  PRINT("ompt_target_callback->target_id %d callback\n", target_id);
+  PRINT("ompt_target_callback->target_id %d\n", target_id);
   // If a thread creates a target region, we init records
   // and it must be flushed in the finalizer
-  cupti_record_init();
   cupti_stop_flag_set();
+  cupti_record_init();
 
   // process cupti records
   cupti_worker_activity_apply(cupti_activity_handle);
@@ -954,9 +954,9 @@ void
 ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
-  PRINT("ompt_submit_callback enter\n");
+  PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
   hpcrun_ompt_op_id_notify(host_op_id, ompt_op_kernel_submit);
-  PRINT("ompt_submit_callback exit\n");
+  PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
 }
 
 
