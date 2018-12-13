@@ -106,7 +106,7 @@ using std::string;
 #include <iostream>
 
 
-#define DEBUG_CALLPATH_CUDACFG 1
+#define DEBUG_CALLPATH_CUDACFG 0
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -119,7 +119,7 @@ typedef std::map<VMA, std::vector<Prof::Struct::ANode *> > StructCallMap;
 
 typedef std::map<VMA, std::vector<Prof::CCT::ANode *> > ProfCallMap;
 
-typedef std::map<Prof::Struct::ANode *, Prof::CCT::ANode *> StructCCTMap;
+typedef std::map<Prof::Struct::ANode *, Prof::CCT::ANode *> StructProfMap;
 
 typedef std::map<VMA, Prof::CCT::ANode *> ProfProcMap;
 
@@ -130,8 +130,8 @@ static int gpu_num_samples = 0;
 
 // Static functions
 static void
-constructFrame(Prof::CCT::ANode *frame_node, Prof::Struct::ANode *struct_node, Prof::Struct::ANode * proc,
-  StructCCTMap &struct_cct_map);
+constructFrame(Prof::CCT::ANode *frame_node, Prof::Struct::ANode *struct_node, Prof::CCT::ANode *proc,
+  StructProfMap &struct_cct_map);
 
 static void
 constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root, CCTGraph &cct_graph);
@@ -231,7 +231,7 @@ debugCallGraph(CCTGraph &cct_graph) {
 
 static void
 constructFrame(Prof::CCT::ANode *frame_node, Prof::Struct::ANode *struct_node, Prof::CCT::ANode *proc,
-  StructCCTMap &struct_cct_map) {
+  StructProfMap &struct_cct_map) {
   for (Prof::Struct::ANodeChildIterator it(struct_node); it.Current(); ++it) {
     Prof::Struct::ANode* strct = it.current();
 
@@ -321,10 +321,8 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
 static void
 constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root, CCTGraph &cct_graph) {
-  StructCallMap struct_call_map;
+  StructCallMap struct_call_map;  // <target_vma, [Struct::Stmt]>
   // Step1: Find call nodes where device = nvidia
-  // if a calls b, c calls b
-  // it records b<-a, c
   {
     Prof::Struct::ANodeIterator it(struct_root, NULL/*filter*/, false/*leavesOnly*/,
       IteratorStack::PreOrder);
@@ -337,9 +335,10 @@ constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root
   }
 
   // Step2: Iterate over all proc nodes in the prof
-  StructCCTMap struct_prof_map;  // Initially (before call graph spliting, a struct node corresponds to one prof node
-  ProfCallMap prof_call_map;
-  ProfProcMap prof_proc_map;
+  // Initially, before the call graph split, a struct node corresponds to one prof node
+  StructProfMap struct_prof_map;  // <Struct, CCT>
+  ProfCallMap prof_call_map;  // <target_vma, [CCT::Call]>
+  ProfProcMap prof_proc_map;  // <proc_vma, CCT::ProcFrm>
   {
     Prof::CCT::ANodeIterator it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
       IteratorStack::PreOrder);
@@ -361,7 +360,6 @@ constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root
   // Step3: Add call->proc
   for (auto &entry : prof_proc_map) {
     auto vma = entry.first;
-    auto *proc = entry.second; 
     for (auto *strct : struct_call_map[vma]) {
       bool find_call_node = false;
       for (auto *proc : prof_call_map[vma]) {
@@ -395,7 +393,7 @@ constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root
     // prof_call_map has been filled out
     auto call_nodes = prof_call_map[vma];
     for (auto *call_node : call_nodes) {
-      cct_graph.addEdge(call_node, proc);
+      cct_graph.addEdge(call_node, entry.second);
     }
   }
 
@@ -403,8 +401,16 @@ constructCallGraph(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root
   for (auto &entry : prof_call_map) {
     auto &vec = entry.second;
     for (auto *call_node : vec) {
+      // Prune call nodes that has been sampled but maps to a function that does not contain samples
+      // TODO(Keren): discuss
       auto *parent = call_node->ancestorProcFrm();
-      cct_graph.addEdge(parent, call_node);
+      auto *stmt = getProcStmt(parent);
+      auto vma = stmt->vmaSet().begin()->beg();
+      if (prof_proc_map.find(vma) != prof_proc_map.end()) {
+        cct_graph.addEdge(parent, call_node);
+      } else {
+        call_node->unlink();
+      }
     }
   }
 }
@@ -590,20 +596,28 @@ copyPath(IncomingSamplesMap &incoming_samples,
   Prof::CCT::ANode *cur, Prof::CCT::ANode *prev,
   double adjust_factor) {
   bool isSCC = isSCCNode(cur);
+  bool isCall = getCudaCallStmt(cur) == NULL ? false : true;
   // Copy node
   Prof::CCT::ANode *new_node;
   if (isSCC && SIMULATE_SCC_WITH_LOOP) {
     new_node = new Prof::CCT::Loop(prev);
+  } else if (isCall) {
+    new_node = new Prof::CCT::Call(prev, 0);
+    new_node->structure(cur->structure());
+    // A call node itself has metrics
+    for (size_t i = 0; i < cur->numMetrics(); ++i) {
+      new_node->demandMetric(i) = cur->demandMetric(i);
+    }
   } else {
     new_node = cur->clone();
     new_node->link(prev);
   }
+  
   // Adjust metrics
   for (size_t i = 0; i < new_node->numMetrics(); ++i) {
-    new_node->demandMetric(i) *= adjust_factor;
+    new_node->metric(i) *= adjust_factor;
   }
 
-  bool isCall = getCudaCallStmt(cur) == NULL ? false : true;
   if (isCall) {
     // Case 1: Call node, skip to the procedure
     auto edge_iterator = cct_graph.outgoing_nodes(cur);
@@ -643,6 +657,10 @@ copyPath(IncomingSamplesMap &incoming_samples,
     Prof::CCT::ANodeChildIterator it(cur, NULL/*filter*/);
     for (Prof::CCT::ANode *n = NULL; (n = it.current()); ++it) {
       copyPath(incoming_samples, cct_graph, n, new_node, adjust_factor);
+    }
+  } else {
+    if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << "Leaf node" << std::endl;
     }
   }
 }
