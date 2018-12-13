@@ -93,7 +93,7 @@
 #define CASESTR(n) case n: return #n
 #define section_index(n) (n-1)
 
-#define DEBUG_CUBIN_RELOCATION 1
+#define DEBUG_CUBIN_RELOCATION 0
 
 
 //---------------------------------------------------------

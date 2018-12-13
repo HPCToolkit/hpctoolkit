@@ -2,7 +2,7 @@
 #include <cctype>
 #include <iostream>
 
-#define DEBUG_CUDA_CFGPARSER 1
+#define DEBUG_CUDA_CFGPARSER 0
 
 
 namespace CudaParse {

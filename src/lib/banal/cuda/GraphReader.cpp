@@ -48,14 +48,11 @@ void GraphReader::read_vertices(
         tmp = tmp.substr(weak+strlen(WEAK_NAME));
         auto endweak = tmp.find("\\");
         if (endweak != std::string::npos) {
-          // std::cerr << "replacing name \n\t" << vertex_name << " with \n\t";
           vertex_name = tmp.substr(0, endweak);
-          // std::cerr << vertex_name << std::endl;
         }
       } else if (label != std::string::npos) {
         auto type = tmp.find(TYPE_LABEL);
         vertex_name = tmp.substr(type+strlen(TYPE_LABEL), label - type - strlen(TYPE_LABEL));
-        //std::cout << tmp << std::endl;
         // trim
         vertex_name.erase(0, vertex_name.find_first_not_of("\t"));
         vertex_name.erase(vertex_name.find_last_not_of("\t") + 1);

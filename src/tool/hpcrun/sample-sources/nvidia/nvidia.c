@@ -247,7 +247,7 @@ static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_time_metric_id;
 
-static int pc_sampling_frequency = 1;
+static long pc_sampling_frequency = 1;
 
 //******************************************************************************
 // constants
@@ -408,7 +408,7 @@ METHOD_FN(thread_fini_action)
 static void
 METHOD_FN(stop)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
+  hpcrun_get_thread_data();
 
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
