@@ -130,7 +130,7 @@ using namespace std;
 #define DEBUG_ANY_ON  0
 #endif
 
-#define CUDA_PROC_SEARCH_LEN 800
+#define CUDA_PROC_SEARCH_LEN 32
 
 //******************************************************************************
 // variables
@@ -584,11 +584,10 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
       len = 16;
     }
 
-    getStatement(svec, vma, sym_func);
     StatementVector tmp;
 
-    // iterating the whole function is too slow but necessary
-    for (size_t i = vma + len; i < end; i += len) {
+    // find the minimal line only for the first few instructions
+    for (size_t i = vma; i < end && i < vma + len * CUDA_PROC_SEARCH_LEN; i += len) {
       getStatement(tmp, i, sym_func);
       if (!tmp.empty()) {
         if (svec.empty()) {
@@ -599,6 +598,22 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
         }
       }
     }
+
+    if (!svec.empty()) {
+      return;
+    }
+
+    // if no line mapping information found, iterating the whole function until find one
+    for (size_t i = vma + len * CUDA_PROC_SEARCH_LEN; i < end; i += len) {
+      getStatement(tmp, i, sym_func);
+      if (!tmp.empty()) {
+        if (svec.empty()) {
+          svec.push_back(tmp[0]);
+          return;
+        }
+      }
+    }
+
     return;
   }
 
