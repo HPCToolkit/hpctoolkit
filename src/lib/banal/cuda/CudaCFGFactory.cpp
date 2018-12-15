@@ -16,13 +16,13 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
       CudaFunction *ret_func = new CudaFunction(addr, name, obj, region, isrc);
 
       bool first_entry = true;
-#ifdef DEBUG_CUDA_CFGFACTORY
-      std::cout << "function: " << function->name << std::endl;
-#endif
+      if (DEBUG_CUDA_CFGFACTORY) {
+        std::cout << "function: " << function->name << std::endl;
+      }
       for (auto *block : function->blocks) {
-#ifdef DEBUG_CUDA_CFGFACTORY
-        std::cout << "block: " << block->name << std::endl;
-#endif
+        if (DEBUG_CUDA_CFGFACTORY) {
+          std::cout << "block: " << block->name << std::endl;
+        }
           
         CudaBlock *ret_block = NULL;
         if (_block_filter.find(block->id) == _block_filter.end()) {
@@ -59,9 +59,9 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
           }
 
           Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);
-#ifdef DEBUG_CUDA_CFGFACTORY
-          std::cout << "edge: "<< " -> " << target->block->name << std::endl;
-#endif
+          if (DEBUG_CUDA_CFGFACTORY) {
+            std::cout << "edge: "<< " -> " << target->block->name << std::endl;
+          }
           ret_edge->install();
           edges_.add(*ret_edge);
         }

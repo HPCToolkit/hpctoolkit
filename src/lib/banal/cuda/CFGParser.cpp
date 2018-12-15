@@ -218,26 +218,26 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   }
 
   // Link fallthrough edges at the end of blocks
-#ifdef DEBUG_CUDA_CFGPARSER
-  std::cout << "Before linking" << std::endl;
-  debug_blocks(blocks);
-#endif
+  if (DEBUG_CUDA_CFGPARSER) {
+    std::cout << "Before linking" << std::endl;
+    debug_blocks(blocks);
+  }
 
   link_fallthrough_edges(graph, blocks, block_id_map);
 
-#ifdef DEBUG_CUDA_CFGPARSER
-  std::cout << "Before split" << std::endl;
-  debug_blocks(blocks);
-#endif
+  if (DEBUG_CUDA_CFGPARSER) {
+    std::cout << "Before split" << std::endl;
+    debug_blocks(blocks);
+  }
 
   // Split blocks for loop analysis ans CALL instructions
   // TODO(keren): identify RET edges?
   split_blocks(blocks, block_id_map);
 
-#ifdef DEBUG_CUDA_CFGPARSER
-  std::cout << "After split" << std::endl;
-  debug_blocks(blocks);
-#endif
+  if (DEBUG_CUDA_CFGPARSER) {
+    std::cout << "After split" << std::endl;
+    debug_blocks(blocks);
+  }
 
   // Find toppest block
   _block_parent.resize(blocks.size());
@@ -266,9 +266,9 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
       ++function_id;
       for (auto *bb : blocks) {
         if (_block_parent[bb->id] == block->id) {
-#ifdef DEBUG_CUDA_CFGPARSER
-          std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
-#endif
+          if (DEBUG_CUDA_CFGPARSER) {
+            std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
+          }
           function->blocks.push_back(bb);
 
           auto iter = dangling_blocks.find(bb);
@@ -348,14 +348,14 @@ void CFGParser::split_blocks(
       }
     }
 
-#ifdef DEBUG_CUDA_CFGPARSER
-    std::cout << "Split index:" << std::endl;
-    for (size_t i = 0; i < split_inst_index.size(); ++i) {
-      std::cout << "Block: " << block->name <<
-        ", offset: " << block->insts[split_inst_index[i]]->offset <<
-        " " << block->insts[split_inst_index[i]]->opcode << std::endl;
+    if (DEBUG_CUDA_CFGPARSER) {
+      std::cout << "Split index:" << std::endl;
+      for (size_t i = 0; i < split_inst_index.size(); ++i) {
+        std::cout << "Block: " << block->name <<
+          ", offset: " << block->insts[split_inst_index[i]]->offset <<
+          " " << block->insts[split_inst_index[i]]->opcode << std::endl;
+      }
     }
-#endif
 
     if (split_inst_index.size() != 0) {
       size_t cur_block_id = 1;
@@ -372,12 +372,12 @@ void CFGParser::split_blocks(
       if (prev_inst_index < insts.size()) {
         intervals.push_back(std::pair<size_t, size_t>(prev_inst_index, insts.size() - 1));
       }
-#ifdef DEBUG_CUDA_CFGPARSER
-      std::cout << "Intervals:" << std::endl;
-      for (size_t i = 0; i < intervals.size(); ++i) {
-        std::cout << "[" << intervals[i].first << ", " << intervals[i].second << "]" << std::endl;
+      if (DEBUG_CUDA_CFGPARSER) {
+        std::cout << "Intervals:" << std::endl;
+        for (size_t i = 0; i < intervals.size(); ++i) {
+          std::cout << "[" << intervals[i].first << ", " << intervals[i].second << "]" << std::endl;
+        }
       }
-#endif
       // Step 3: update block instructions
       block->insts.clear();
       std::vector<Block *> new_blocks;
