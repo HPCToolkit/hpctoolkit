@@ -76,7 +76,6 @@ dnl           produce code (rarely needed). Defaults to host.
 dnl--------------------------------------------------------------------------
 
 m4_include(config/hpc-cxxutils.m4)
-m4_include(config/hpc-mpiutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
@@ -93,11 +92,11 @@ AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
-AC_MSG_NOTICE([*** INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: from user: CC='${CC}'  CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: from user: MPIF77='${MPIF77}'])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.69)
@@ -108,10 +107,6 @@ AM_MAINTAINER_MODE()
 
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
-
-MPICC_ORIG=${MPICC}
-MPICXX_ORIG=${MPICXX}
-MPIF77_ORIG=${MPIF77}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -312,15 +307,13 @@ AC_ARG_VAR([LD],
     [ld program for binaries produced by CC, only needed if
      autoconf fails to find a suitable program])
 
-HPC_PROG_MPICXX(HPC_MPICXX_LIST)
-
 AC_PROG_INSTALL()
 
-AC_MSG_NOTICE([*** INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'  ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPIF77='${MPIF77}'])
 
 
 #-------------------------------------------------
@@ -868,6 +861,82 @@ fi
 
 
 #-------------------------------------------------
+# Utilities for compiler versions and paths
+#-------------------------------------------------
+
+# These tests only use GNU syntax.  Intel, Clang, etc use a different
+# format, but we don't really build with those.
+
+find_version()
+{
+  ans='unknown non-gnu'
+
+  # strip any compiler flags, 'gcc -m64'
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo "$version" | grep -i copyright >/dev/null
+  if test $? -eq 0 ; then
+    ans=`echo "$version" | head -1`
+  fi
+
+  echo "$ans"
+}
+
+find_path()
+{
+  ans=
+  base=`echo $1 | awk '{ print $1 }'`
+  case "$base" in
+    /* ) ans="$base" ;;
+    * )  AC_PATH_PROG([ans], [$base]) ;;
+  esac
+  if test "x$ans" = x ; then
+    ans=unknown
+  fi
+
+  echo "$ans"
+}
+
+test_is_gnu()
+{
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+
+  return $?
+}
+
+
+#-------------------------------------------------
+# C, C++ compiler versions and paths
+#-------------------------------------------------
+
+warn_non_gcc=no
+
+CC_VERSION=`find_version "$CC"`
+CC_PATH=`find_path "$CC"`
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([C path: $CC_PATH])
+
+if test_is_gnu "$CC" ; then : ; else
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C compiler.])
+fi
+
+CXX_VERSION=`find_version "$CXX"`
+CXX_PATH=`find_path "$CXX"`
+
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+AC_MSG_NOTICE([C++ path: $CXX_PATH])
+
+if test_is_gnu "$CXX" ; then : ; else
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C++ compiler.])
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
@@ -1176,6 +1245,103 @@ fi
 
 
 #-------------------------------------------------
+# MPICXX compiler for hpcprof-mpi
+#-------------------------------------------------
+
+# The Cray MPI C++ wrapper is CC, but spack puts CC on PATH ahead of
+# the Cray wrapper.  This changes CC from an MPI compiler to a plain
+# gcc compiler.
+#
+# The --enable-cray-mpi option finds the Cray CC wrapper and uses it
+# for MPICXX.  This is only needed when building with spack.  Outside
+# of spack, just use MPICXX=CC.
+
+AC_ARG_VAR([MPICXX], [MPI C++ compiler for hpcprof-mpi])
+
+AC_ARG_ENABLE([cray-mpi],
+  [AS_HELP_STRING([--enable-cray-mpi],
+      [use Cray CC wrapper for MPICXX (for spack build)])],
+  [],
+  [enable_cray_mpi=no])
+
+AC_MSG_NOTICE([supplied MPICXX compiler: $MPICXX])
+
+if test "x$enable_cray_mpi" = xyes ; then
+  MPICXX=no
+
+  # Spack wrapper:  /path/to/spack/lib/spack/env/case-insensitive/CC
+  # Cray MPI wrapper:  /opt/cray/pe/craype/2.5.15/bin/CC
+  for item in `type -a CC`
+  do
+    case "$item" in
+      /* )
+        echo "$item" | grep -E -i -e 'spack.*env.*case' >/dev/null
+        if test $? -ne 0 ; then
+          echo "$item" | grep -E -i -e 'cray.*pe.*cc' >/dev/null
+          if test $? -eq 0 ; then
+            MPICXX="$item"
+            break
+          fi
+        fi
+        ;;
+    esac
+  done
+
+  if test "$MPICXX" = no ; then
+    AC_MSG_WARN([unable to find the Cray MPI C++ wrapper (CC) on your path])
+    AC_MSG_ERROR([check that this system is Cray and CC is the MPI wrapper])
+  else
+    AC_MSG_NOTICE([Cray MPI wrapper: $MPICXX])
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if MPICXX is a valid MPI C++ compiler and report version.
+
+if test "x$MPICXX" != x ; then
+  MPICXX_VERSION=`find_version "$MPICXX"`
+  MPICXX_PATH=`find_path "$MPICXX"`
+
+  AC_MSG_NOTICE([MPICXX compiler: $MPICXX_VERSION])
+  AC_MSG_NOTICE([MPICXX path: $MPICXX_PATH])
+
+  if test_is_gnu "$MPICXX" ; then : ; else
+    warn_non_gcc=yes
+    AC_MSG_WARN([Not using the GNU MPICXX compiler.])
+  fi
+
+  AC_MSG_CHECKING([if MPICXX is a valid MPI C++ compiler])
+
+  ORIG_CXX="$CXX"
+  CXX="$MPICXX"
+  AC_LANG_PUSH([C++])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <mpi.h>
+#include <iostream>
+int myRank(void)
+{
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::cout << "yes";
+  return rank;
+}
+]])], [mpicxx_avail=yes], [mpicxx_avail=no])
+
+  AC_MSG_RESULT([$mpicxx_avail])
+
+  if test "$mpicxx_avail" = no ; then
+    AC_MSG_ERROR([MPICXX is not a valid compiler: $MPICXX])
+  fi
+
+  AC_LANG_POP
+  CXX="$ORIG_CXX"
+fi
+
+
+#-------------------------------------------------
 # Test if CXX and MPICXX are compatible
 #-------------------------------------------------
 
@@ -1192,16 +1358,24 @@ hello_bin="$base".bin
 hello_out="$base".out
 ACTUAL_CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS"
 
+prof_mpi_avail=no
+
 if test -n "$MPICXX" ; then
-  AC_MSG_CHECKING([whether CXX and MPICXX are compatible])
+  AC_MSG_CHECKING([if CXX and MPICXX are compatible])
 
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
   cat <<EOF >"$hello_src"
 #include <iostream>
 #include <string>
-int main()
+#include <vector>
+using namespace std;
+int main(int argc, char **argv)
 {
-  std::cout << "hello, world\n";
+  vector <string> foo;
+  for (int i = 0; i < argc; i++) {
+    foo.push_back(argv[[i]]);
+  }
+  cout << foo.size();
   return 0;
 }
 EOF
@@ -1210,14 +1384,13 @@ EOF
 
   if test $? -eq 0 && test -f "$hello_bin" ; then
     AC_MSG_RESULT([yes])
+    prof_mpi_avail=yes
   else
     AC_MSG_RESULT([no])
-    AC_MSG_WARN([MPICXX does not link with CXX (see config.log for details)])
-    AC_MSG_WARN([probably MPICXX does match CXX for compiler family or version])
     cat <<EOF >&AS_MESSAGE_LOG_FD
 ------------------------------------------------------------
-CXX:     $CXX $ACTUAL_CXXFLAGS
-MPICXX:  $MPICXX
+CXX:     $CXX -c $ACTUAL_CXXFLAGS -o $hello_o $hello_src
+MPICXX:  $MPICXX -o $hello_bin $hello_o
 
 EOF
     cat "$hello_src" >&AS_MESSAGE_LOG_FD
@@ -1226,14 +1399,17 @@ EOF
     cat <<EOF >&AS_MESSAGE_LOG_FD
 ------------------------------------------------------------
 EOF
-  MPICXX=
+    AC_MSG_WARN([CXX:     $CXX_VERSION])
+    AC_MSG_WARN([MPICXX:  $MPICXX_VERSION])
+    AC_MSG_WARN([MPICXX does not link with CXX (see config.log for details)])
+    AC_MSG_ERROR([probably MPICXX does match CXX for compiler family or version])
   fi
-
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
-
-else
-  AC_MSG_NOTICE([skipping MPICXX compatibility check (MPICXX not set)])
 fi
+
+AC_MSG_NOTICE([build hpcprof-mpi: $prof_mpi_avail])
+
+AM_CONDITIONAL(OPT_ENABLE_MPI, [test "$prof_mpi_avail" = yes])
 
 
 #-------------------------------------------------
@@ -1254,11 +1430,11 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
-AC_MSG_NOTICE([*** INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}'  CFLAGS='${CFLAGS}'  HOST_CFLAGS='${HOST_CFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'  HOST_CXXFLAGS='${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPIF77='${MPIF77}'])
 
 
 #-------------------------------------------------
@@ -1572,60 +1748,11 @@ fi
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
-# Verify that toolkit and externals use the same C and C++ compilers
-# and that they produce the same wordsize.  This is especially
-# important for C++ and libstdc++.  For now, give a pass if externals
-# isn't new enough to export these variables.
-
-CC_VERSION='unknown non-gnu'
-version=`$CC --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CC_VERSION=`echo "$version" | head -1`
-fi
-
-CC_PATH=
-base=`echo $CC | awk '{ print $1 }'`
-case "$base" in
-  /* ) CC_PATH="$base" ;;
-  * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
-esac
-if test "x$CC_PATH" = x ; then
-  CC_PATH=unknown
-fi
-
-warn_non_gcc=no
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  AC_MSG_WARN([Not using the GNU C compiler.])
-fi
-
-CXX_VERSION='unknown non-gnu'
-version=`$CXX --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CXX_VERSION=`echo "$version" | head -1`
-fi
-
-CXX_PATH=
-base=`echo $CXX | awk '{ print $1 }'`
-case "$base" in
-  /* ) CXX_PATH="$base" ;;
-  * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
-esac
-if test "x$CXX_PATH" = x ; then
-  CXX_PATH=unknown
-fi
-
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  AC_MSG_WARN([Not using the GNU C++ compiler.])
-fi
-
-AC_MSG_NOTICE([C compiler: $CC_VERSION])
-AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+# If still using externals, verify that toolkit and externals use the
+# same C and C++ compilers.  Spack does things differently.
 
 warn_compiler_mismatch=no
+
 if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
 then
   warn_compiler_mismatch=yes
@@ -1639,6 +1766,9 @@ then
 hpctoolkit-externals.])
 fi
 
+# Continue to set multilib_path for package tests below, but we really
+# only support 64-bit now.
+
 host_wordsize=unknown
 wordsize_cflag=
 case "$host_sizeof_voidp" in
@@ -1647,25 +1777,11 @@ case "$host_sizeof_voidp" in
   * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
 esac
 
-if test "$ext_wordsize" != unknown && test "$host_wordsize" != "$ext_wordsize"
-then
-  AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
-${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
-fi
-
-# On ia64, -m64 is an unrecognized option (and unnecessary).
-if test "$HOST_CPU_IA64" = yes ; then
-  wordsize_cflag=
-fi
-
-# multilib path based on wordsize of host machine
 multilib_path=lib
 case "$host_wordsize" in
   32 ) multilib_path='lib32 lib' ;;
   64 ) multilib_path='lib64 lib' ;;
 esac
-
-AC_SUBST([wordsize_cflag])
 
 
 #-------------------------------------------------
@@ -3615,41 +3731,6 @@ AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
 
 
 #-------------------------------------------------
-# enable-mpi:
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to build MPI-based analysis tools (e.g., hpcprof-mpi)])
-
-OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
-
-AC_ARG_ENABLE([mpi],
-  AS_HELP_STRING([--enable-mpi],
-                 [Enable MPI support (uses MPICXX variable)]),
-  [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI="no" ;;
-     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi]) ;;
-   esac],
-  [if test -n "${MPICXX_ORIG}" ; then
-     OPT_REQ_ENABLE_MPI=yes
-   fi])
-
-OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" != "no" ; then
-  OPT_ENABLE_MPI=yes
-fi
-
-AC_MSG_RESULT([${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})])
-
-
-if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
-  AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
-fi
-
-AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
-
-
-#-------------------------------------------------
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
@@ -4324,8 +4405,8 @@ AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
+AC_MSG_NOTICE([  hpcprof-mpi:  ${prof_mpi_avail}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
-AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
@@ -4423,7 +4504,7 @@ fi
 
 if test "$warn_non_gcc" = yes ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+  AC_MSG_WARN([Not using the GNU C or C++ or MPICXX compiler.])
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
