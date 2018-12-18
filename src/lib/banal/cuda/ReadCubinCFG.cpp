@@ -37,7 +37,7 @@ static bool
 test_nvdisasm() 
 {
   // check whether nvdisasm works
-  int retval = system("/sw/summitdev/cuda/9.2.148/bin/nvdisasm > /dev/null") == 0;
+  int retval = system("nvdisasm > /dev/null") == 0;
   if (!retval) {
     std::cout << "WARNING: nvdisasm is not available on your path to analyze control flow in NVIDIA CUBINs" << std::endl;
   }
@@ -71,7 +71,7 @@ dumpDot
  Dyninst::SymtabAPI::Symtab *the_symtab
 ) 
 {
-  std::string cmd = "/sw/summitdev/cuda/9.2.148/bin/nvdisasm -cfg -poff " + cubin + " > " + dot;
+  std::string cmd = "nvdisasm -cfg -poff " + cubin + " > " + dot;
   // for all symbols
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
@@ -81,7 +81,7 @@ dumpDot
     for (auto *symbol : symbols) {
       if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
         auto index = symbol->getIndex();
-        cmd = "/sw/summitdev/cuda/9.2.148/bin/nvdisasm -fun " +
+        cmd = "nvdisasm -fun " +
           std::to_string(index) + " -cfg -poff " + cubin + " > /dev/null";
         if (system(cmd.c_str()) == 0) {
           valid_function_index.push_back(index);
@@ -90,7 +90,7 @@ dumpDot
     }
     // only parse valid symbols
     if (!valid_function_index.empty()) {
-      cmd = "/sw/summitdev/cuda/9.2.148/bin/nvdisasm -fun ";
+      cmd = "nvdisasm -fun ";
       for (auto index : valid_function_index) {
         cmd += std::to_string(index) + ",";
       }
