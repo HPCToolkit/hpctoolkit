@@ -487,16 +487,16 @@ METHOD_FN(process_event_list, int lush_metrics)
   char name[128];
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
 
+  // Register ignore thread functions
+  module_ignore.fn = cupti_modules_ignore;
+  module_ignore_map_register(&module_ignore);
+
   if (hpcrun_ev_is(name, CUDA_NVIDIA)) {
     // Register device finailzers
     device_finalizer_flush.fn = cupti_device_flush;
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-    // Register ignore thread functions
-    module_ignore.fn = cupti_modules_ignore;
-    module_ignore_map_register(&module_ignore);
 
     // Specify desired monitoring
     cupti_monitoring_set(kernel_invocation_activities, true);
