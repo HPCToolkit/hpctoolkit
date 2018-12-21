@@ -26,6 +26,10 @@ struct Inst {
   std::string target;
   std::vector<std::string> operands;
 
+  // constructor for dummy inst
+  explicit Inst(int offset) : offset(offset), dual_first(false), dual_second(false),
+    is_call(false), is_jump(false), is_sync(false) {}
+
   Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
@@ -139,7 +143,7 @@ struct Block {
   size_t id;
   std::string name;
 
-  Block(size_t id, std::string &name) : id(id), name(name) {}
+  Block(size_t id, const std::string &name) : id(id), name(name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {

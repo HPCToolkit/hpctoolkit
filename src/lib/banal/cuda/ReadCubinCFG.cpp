@@ -68,7 +68,8 @@ dumpDot
 (
  const std::string &cubin, 
  const std::string &dot,
- Dyninst::SymtabAPI::Symtab *the_symtab
+ Dyninst::SymtabAPI::Symtab *the_symtab,
+ std::vector<size_t> valid_function_index
 ) 
 {
   std::string cmd = "nvdisasm -cfg -poff " + cubin + " > " + dot;
@@ -76,7 +77,6 @@ dumpDot
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
   if (system(cmd.c_str()) != 0) {  // failed, maybe caused by some functions
-    std::vector<size_t> valid_function_index;
     // test valid symbols
     for (auto *symbol : symbols) {
       if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
@@ -106,25 +106,18 @@ dumpDot
 static void
 parseDotCFG
 (
- const std::string &filename, 
- std::vector<CudaParse::Function *> &functions
-) 
-{
-  CudaParse::GraphReader graph_reader(filename);
-  CudaParse::Graph graph;
-  graph_reader.read(graph);
-  CudaParse::CFGParser cfg_parser;
-  cfg_parser.parse(graph, functions);
-}
-
-
-static void
-relocateFunctions
-(
+ const std::string &dot_filename, 
+ CudaParse::CFGParser &cfg_parser,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  std::vector<CudaParse::Function *> &functions
 ) 
 {
+  CudaParse::GraphReader graph_reader(dot_filename);
+  CudaParse::Graph graph;
+  graph_reader.read(graph);
+  cfg_parser.parse(graph, functions);
+
+  // relocate functions
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
   for (auto *symbol : symbols) {
@@ -142,6 +135,53 @@ relocateFunctions
       }
     }
   }
+}
+
+
+static void
+addUnparsedFunctions
+(
+  CudaParse::CFGParser &cfg_parser,
+  Dyninst::SymtabAPI::Symtab *the_symtab, 
+  std::vector<size_t> &valid_function_index,
+  int cuda_arch,
+  std::vector<CudaParse::Function *> &functions
+)
+{
+  // find max function id and max block id
+  size_t max_block_id = 0;
+  size_t max_function_id = 0;
+  for (auto *function : functions) {
+    max_function_id = std::max(function->id, max_function_id);
+    for (auto *block : function->blocks) {
+      max_block_id = std::max(block->id, max_block_id);
+    }
+  }
+  // for functions that cannot be parsed
+  std::vector<Symbol *> symbols;
+  the_symtab->getAllSymbols(symbols);
+  for (auto *symbol : symbols) {
+    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION &&
+      std::find(valid_function_index.begin(), valid_function_index.end(), symbol->getIndex()) ==
+      valid_function_index.end()) {
+      auto function_name = symbol->getMangledName();
+      auto *function = new CudaParse::Function(max_function_id, std::move(function_name));
+      ++max_function_id;
+      auto block_name = symbol->getMangledName() + "_block0";
+      auto *block = new CudaParse::Block(max_block_id, std::move(block_name));
+      ++max_block_id;
+      block->begin_offset = 0;
+      block->address = symbol->getOffset();
+      int len = cuda_arch >= 70 ? 16 : 8;
+      // add dummy insts
+      for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
+        block->insts.push_back(new CudaParse::Inst(i));
+      }
+      function->blocks.push_back(block);
+      functions.push_back(function);
+    }
+  }
+  cfg_parser.parse_calls(functions);
 }
 
 
@@ -167,7 +207,8 @@ readCubinCFG
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
-      dump_dot_success = dumpDot(cubin, dot, the_symtab);
+      std::vector<size_t> valid_function_index;
+      dump_dot_success = dumpDot(cubin, dot, the_symtab, valid_function_index);
       if (!dump_dot_success) {
         std::cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << std::endl; 
       } else {
@@ -175,8 +216,9 @@ readCubinCFG
         // relocate instructions according to the 
         // relocated symbols in the_symtab
         std::vector<CudaParse::Function *> functions;
-        parseDotCFG(dot, functions);
-        relocateFunctions(the_symtab, functions);
+        CudaParse::CFGParser cfg_parser;
+        parseDotCFG(dot, cfg_parser, the_symtab, functions);
+        addUnparsedFunctions(cfg_parser, the_symtab, valid_function_index, elfFile->getArch(), functions);
 
         CFGFactory *cfg_fact = new CudaCFGFactory(functions);
         *code_src = new CudaCodeSource(functions, the_symtab); 

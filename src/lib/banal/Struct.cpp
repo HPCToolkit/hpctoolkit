@@ -577,12 +577,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   svec.clear();
 
   if (cuda_arch > 0) {
-    int len;
-    if (cuda_arch < 70) {
-      len = 8;
-    } else {
-      len = 16;
-    }
+    int len = cuda_arch >= 70 ? 16 : 8;
 
     StatementVector tmp;
 
@@ -1361,11 +1356,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
 
   if (cuda_arch > 0) {
     device= "NVIDIA sm_" + std::to_string(cuda_arch);
-    if (cuda_arch < 70) {
-      len = 8;
-    } else {
-      len = 16;
-    }
+    len = cuda_arch >= 70 ? 16 : 8;
   }
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {

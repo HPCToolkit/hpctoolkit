@@ -13,13 +13,14 @@ namespace CudaParse {
 class CFGParser {
  public:
   CFGParser() : _block_parent(0) {}
+
   void parse(const Graph &graph, std::vector<Function *> &functions);
+
+  void parse_calls(std::vector<Function *> &functions);
 
   ~CFGParser() {}
 
  private:
-  void parse_calls(std::vector<Function *> &functions);
-
   void parse_inst_strings(const std::string &label, std::deque<std::string> &inst_strings);
 
   void link_fallthrough_edges(

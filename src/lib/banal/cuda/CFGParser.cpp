@@ -130,9 +130,19 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
               break;
             }
           }
-          if (callee_function != 0) 
-            block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
-          else {
+          if (callee_function != 0) {
+            bool find_target = false;
+            for (auto *target : block->targets) {
+              if (target->inst == inst) {
+                // If a target already exists, an inst cannot point to multiple targets
+                find_target = true;
+                break;
+              }
+            }
+            if (!find_target) {
+              block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
+            }
+          } else {
             std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
           }
         }
