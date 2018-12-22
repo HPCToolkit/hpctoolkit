@@ -2,7 +2,7 @@
 #include <cctype>
 #include <iostream>
 
-#define DEBUG_CUDA_CFGPARSER 0
+#define DEBUG_CUDA_CFGPARSER 1
 
 
 namespace CudaParse {
@@ -132,15 +132,24 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
           }
           if (callee_function != 0) {
             bool find_target = false;
+            Target *t = NULL;
             for (auto *target : block->targets) {
-              if (target->inst == inst) {
+              if (target->inst == inst && target->type == TargetType::CALL) {
                 // If a target already exists, an inst cannot point to multiple targets
                 find_target = true;
+                t = target;
                 break;
               }
             }
             if (!find_target) {
+              if (DEBUG_CUDA_CFGPARSER) {
+                std::cout << "Function (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << std::endl;
+              }
               block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
+            } else {
+              if (DEBUG_CUDA_CFGPARSER) {
+                std::cout << "Call link exists (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << " " << t->type << std::endl;
+              }
             }
           } else {
             std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 

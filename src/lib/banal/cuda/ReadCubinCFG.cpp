@@ -85,6 +85,8 @@ dumpDot
           std::to_string(index) + " -cfg -poff " + cubin + " > /dev/null";
         if (system(cmd.c_str()) == 0) {
           valid_function_index.push_back(index);
+        } else {
+          std::cout << "WARNING: unable to parse function: " << symbol->getMangledName() << std::endl;
         }
       }
     }
@@ -141,11 +143,11 @@ parseDotCFG
 static void
 addUnparsedFunctions
 (
-  CudaParse::CFGParser &cfg_parser,
-  Dyninst::SymtabAPI::Symtab *the_symtab, 
-  std::vector<size_t> &valid_function_index,
-  int cuda_arch,
-  std::vector<CudaParse::Function *> &functions
+ CudaParse::CFGParser &cfg_parser,
+ Dyninst::SymtabAPI::Symtab *the_symtab, 
+ std::vector<size_t> &valid_function_index,
+ int cuda_arch,
+ std::vector<CudaParse::Function *> &functions
 )
 {
   // find max function id and max block id
@@ -157,6 +159,8 @@ addUnparsedFunctions
       max_block_id = std::max(block->id, max_block_id);
     }
   }
+  ++max_function_id;
+  ++max_block_id;
   // for functions that cannot be parsed
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
@@ -166,8 +170,9 @@ addUnparsedFunctions
       valid_function_index.end()) {
       auto function_name = symbol->getMangledName();
       auto *function = new CudaParse::Function(max_function_id, std::move(function_name));
+      function->address = symbol->getOffset();
       ++max_function_id;
-      auto block_name = symbol->getMangledName() + "_block0";
+      auto block_name = symbol->getMangledName();
       auto *block = new CudaParse::Block(max_block_id, std::move(block_name));
       ++max_block_id;
       block->begin_offset = 0;
@@ -210,7 +215,7 @@ readCubinCFG
       std::vector<size_t> valid_function_index;
       dump_dot_success = dumpDot(cubin, dot, the_symtab, valid_function_index);
       if (!dump_dot_success) {
-        std::cout << "WARNING: unable to use nvdisasm to produce a CFG for a cubin" << std::endl; 
+        std::cout << "WARNING: unable to use nvdisasm to produce the whole CFG of a cubin" << std::endl; 
       } else {
         // Parse dot cfg
         // relocate instructions according to the 

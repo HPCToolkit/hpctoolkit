@@ -488,15 +488,18 @@ relocateSymbolsHelper
     }
 
     // Update symbol size
-    // We assume that local function sizes are always correct,
-    // only need to update global functions
+    // Update functions that can find a corresponding entry in the section table
     for (int i = 0; i < nsymbols; i++) {
       GElf_Sym sym;
       GElf_Sym *symp = gelf_getsym(datap, i, &sym);
       if (symp) { // symbol properly read
-        // sort functions that are in the same section
-        int sym_bind = GELF_ST_BIND(sym.st_info);
-        if (sym_bind == STB_GLOBAL) {
+        int symtype = GELF_ST_TYPE(sym.st_info);
+        if (symtype != STT_FUNC) {
+          continue;
+        }
+        int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
+        if (s_offset != 0) {
+          // sort functions that are in the same section
           std::vector<int64_t> offsets;
           for (int j = 0; j < nsymbols; ++j) {
             GElf_Sym nsym;

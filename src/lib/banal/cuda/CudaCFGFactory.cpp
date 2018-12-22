@@ -2,7 +2,7 @@
 #include "CudaFunction.hpp"
 #include <iostream>
 
-#define DEBUG_CUDA_CFGFACTORY 0
+#define DEBUG_CUDA_CFGFACTORY 1
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -13,15 +13,15 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
   // find function by name
   for (auto *function : _functions) {
     if (function->name == name) {
-      CudaFunction *ret_func = new CudaFunction(addr, name, obj, region, isrc);
+      CudaFunction *ret_func = new CudaFunction(function->address, name, obj, region, isrc);
 
       bool first_entry = true;
       if (DEBUG_CUDA_CFGFACTORY) {
-        std::cout << "function: " << function->name << std::endl;
+        std::cout << "function: " << function->name << " addr: " << addr << std::endl;
       }
       for (auto *block : function->blocks) {
         if (DEBUG_CUDA_CFGFACTORY) {
-          std::cout << "block: " << block->name << std::endl;
+          std::cout << "block: " << block->name << " id: " << block->id << std::endl;
         }
           
         CudaBlock *ret_block = NULL;

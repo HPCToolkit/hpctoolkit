@@ -106,7 +106,7 @@ using std::string;
 #include <iostream>
 
 
-#define DEBUG_CALLPATH_CUDACFG 0
+#define DEBUG_CALLPATH_CUDACFG 1
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -229,6 +229,20 @@ debugCallGraph(CCTGraph &cct_graph) {
 }
 
 
+static inline void
+debugFileNames(Prof::CCT::ANode *prof_root) {
+  std::cout << "File names: " << std::endl;
+  Prof::CCT::ANodeIterator it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
+    IteratorStack::PreOrder);
+  for (Prof::CCT::ANode *n = NULL; (n = it.current()); ++it) {
+    if (getProcStmt(n)) {
+      auto *stmt = getProcStmt(n); 
+      std::cout << stmt->ancestorFile()->name() << " : " << stmt->vmaSet().begin()->beg() << std::endl;
+    }
+  }
+}
+
+
 static void
 constructFrame(Prof::CCT::ANode *frame_node, Prof::Struct::ANode *struct_node, Prof::CCT::ANode *proc,
   StructProfMap &struct_cct_map) {
@@ -279,6 +293,10 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   Prof::Struct::ANode *struct_root = prof.structure()->root();
   CCTGraph *cct_graph = new CCTGraph();
   constructCallGraph(prof_root, struct_root, *cct_graph);
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    debugFileNames(prof_root);
+  }
 
   if (DEBUG_CALLPATH_CUDACFG) {
     debugCallGraph(*cct_graph);
