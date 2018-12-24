@@ -2,7 +2,7 @@
 #include <cctype>
 #include <iostream>
 
-#define DEBUG_CUDA_CFGPARSER 1
+#define DEBUG_CUDA_CFGPARSER 0
 
 
 namespace CudaParse {
@@ -109,14 +109,12 @@ void CFGParser::link_dangling_blocks(
           auto prev_offset2 = block->insts.front()->offset - 16;
           if (dangling_block->insts.front()->offset == next_offset1 ||
             dangling_block->insts.front()->offset == next_offset2) {
-            std::cout << "Link function " << function->name << " offset " << std::hex << next_offset2 << std::dec << std::endl;
             // block->dangling_block
             find = true;
             block->targets.push_back(
               new Target(block->insts.back(), dangling_block, TargetType::FALLTHROUGH));
           } else if (dangling_block->insts.back()->offset == prev_offset1 ||
             dangling_block->insts.back()->offset == prev_offset2) {
-            std::cout << "Link function " << function->name << " offset " << std::hex << prev_offset2 << std::dec << std::endl;
             // dangling_block->block
             find = true;
             dangling_block->targets.push_back(

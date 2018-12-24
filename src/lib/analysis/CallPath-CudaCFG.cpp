@@ -106,7 +106,7 @@ using std::string;
 #include <iostream>
 
 
-#define DEBUG_CALLPATH_CUDACFG 1
+#define DEBUG_CALLPATH_CUDACFG 0
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 

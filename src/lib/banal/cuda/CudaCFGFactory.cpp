@@ -2,7 +2,7 @@
 #include "CudaFunction.hpp"
 #include <iostream>
 
-#define DEBUG_CUDA_CFGFACTORY 1
+#define DEBUG_CUDA_CFGFACTORY 0
 
 namespace Dyninst {
 namespace ParseAPI {
