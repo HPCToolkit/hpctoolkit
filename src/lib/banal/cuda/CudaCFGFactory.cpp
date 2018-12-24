@@ -20,12 +20,11 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
         std::cout << "function: " << function->name << " addr: " << addr << std::endl;
       }
       for (auto *block : function->blocks) {
-        if (DEBUG_CUDA_CFGFACTORY) {
-          std::cout << "block: " << block->name << " id: " << block->id << std::endl;
-        }
-          
         CudaBlock *ret_block = NULL;
         if (_block_filter.find(block->id) == _block_filter.end()) {
+          if (DEBUG_CUDA_CFGFACTORY) {
+            std::cout << "new block: " << block->name << " id: " << block->id << std::endl;
+          }
           std::vector<Offset> inst_offsets;
           for (auto *inst : block->insts) {
             inst_offsets.push_back(inst->offset);
@@ -35,6 +34,9 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
           blocks_.add(*ret_block);
           ret_func->add_block(ret_block);
         } else {
+          if (DEBUG_CUDA_CFGFACTORY) {
+            std::cout << "old block: " << block->name << " id: " << block->id << std::endl;
+          }
           ret_block = _block_filter[block->id];
         }
 
@@ -46,6 +48,9 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
         for (auto *target : block->targets) {
           CudaBlock *ret_target_block = NULL;
           if (_block_filter.find(target->block->id) == _block_filter.end()) {
+            if (DEBUG_CUDA_CFGFACTORY) {
+              std::cout << "new block: " << target->block->name << " id: " << target->block->id << std::endl;
+            }
             std::vector<Offset> inst_offsets;
             for (auto *inst : target->block->insts) {
               inst_offsets.push_back(inst->offset);
@@ -55,6 +60,9 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
             blocks_.add(*ret_target_block);
             ret_func->add_block(ret_target_block);
           } else {
+            if (DEBUG_CUDA_CFGFACTORY) {
+              std::cout << "old block: " << target->block->name << " id: " << target->block->id << std::endl;
+            }
             ret_target_block = _block_filter[target->block->id];
           }
 

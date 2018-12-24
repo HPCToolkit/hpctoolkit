@@ -119,10 +119,10 @@ using namespace std;
 #define SYMTAB_ARCH_CUDA(symtab) 0
 #endif
 
-#define DEBUG_CFG_SOURCE  0
-#define DEBUG_MAKE_SKEL   0
+#define DEBUG_CFG_SOURCE  1
+#define DEBUG_MAKE_SKEL   1
 #define DEBUG_SHOW_GAPS   0
-#define DEBUG_SKEL_SUMMARY  0
+#define DEBUG_SKEL_SUMMARY  1
 
 #if DEBUG_CFG_SOURCE || DEBUG_MAKE_SKEL || DEBUG_SHOW_GAPS
 #define DEBUG_ANY_ON  1
@@ -1184,13 +1184,15 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 #endif
   }
 
-  // add unclaimed regions (gaps) to the group leader, but skip groups
-  // in an alternate file (handled in orig file).
-  if (! ginfo->alt_file) {
-    computeGaps(covered, ginfo->gapSet, ginfo->start, ginfo->end);
+  if (cuda_arch == 0) {
+    // add unclaimed regions (gaps) to the group leader, but skip groups
+    // in an alternate file (handled in orig file).
+    if (! ginfo->alt_file) {
+      computeGaps(covered, ginfo->gapSet, ginfo->start, ginfo->end);
 
-    if (! fullGaps) {
-      addGaps(finfo, ginfo, strTab);
+      if (! fullGaps) {
+        addGaps(finfo, ginfo, strTab);
+      }
     }
   }
 
@@ -1358,7 +1360,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     device= "NVIDIA sm_" + std::to_string(cuda_arch);
     len = cuda_arch >= 70 ? 16 : 8;
   }
-
+  
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;

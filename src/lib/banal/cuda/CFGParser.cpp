@@ -96,21 +96,38 @@ void CFGParser::link_dangling_blocks(
   std::set<Block *> &dangling_blocks,
   std::vector<Function *> &functions) {
   for (auto *function : functions) {
-    auto *last_block = function->blocks.back();
-
-    auto next_offset1 = last_block->insts.back()->offset + 8;
-    auto next_offset2 = last_block->insts.back()->offset + 16;
-
-    for (auto iter = dangling_blocks.begin(); iter != dangling_blocks.end(); ++iter) {
-      auto *block = *iter;
-      if (block->insts.front()->offset == next_offset1 ||
-        block->insts.front()->offset == next_offset2) {
-        dangling_blocks.erase(iter);
-        auto *last_block = function->blocks.back();
-        last_block->targets.push_back(
-          new Target(last_block->insts.back(), block, TargetType::FALLTHROUGH));
-        function->blocks.push_back(block);
-        break;
+    bool find = true;
+    // Find a matched dangling_block and insert it
+    while (find) {
+      find = false;
+      for (auto iter = dangling_blocks.begin(); iter != dangling_blocks.end(); ++iter) {
+        auto *dangling_block = *iter;
+        for (auto *block : function->blocks) {
+          auto next_offset1 = block->insts.back()->offset + 8;
+          auto next_offset2 = block->insts.back()->offset + 16;
+          auto prev_offset1 = block->insts.front()->offset - 8;
+          auto prev_offset2 = block->insts.front()->offset - 16;
+          if (dangling_block->insts.front()->offset == next_offset1 ||
+            dangling_block->insts.front()->offset == next_offset2) {
+            std::cout << "Link function " << function->name << " offset " << std::hex << next_offset2 << std::dec << std::endl;
+            // block->dangling_block
+            find = true;
+            block->targets.push_back(
+              new Target(block->insts.back(), dangling_block, TargetType::FALLTHROUGH));
+          } else if (dangling_block->insts.back()->offset == prev_offset1 ||
+            dangling_block->insts.back()->offset == prev_offset2) {
+            std::cout << "Link function " << function->name << " offset " << std::hex << prev_offset2 << std::dec << std::endl;
+            // dangling_block->block
+            find = true;
+            dangling_block->targets.push_back(
+              new Target(dangling_block->insts.back(), block, TargetType::FALLTHROUGH));
+          }
+        }
+        if (find) {
+          function->blocks.push_back(dangling_block);
+          dangling_blocks.erase(iter);
+          break;
+        }
       }
     }
   }
@@ -259,6 +276,7 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   }
 
   // Find toppest block
+  _block_parent.clear();
   _block_parent.resize(blocks.size());
   for (size_t i = 0; i < _block_parent.size(); ++i) {
     _block_parent[i] = i;
@@ -308,6 +326,14 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   }
 
   link_dangling_blocks(dangling_blocks, functions);
+  
+  // Sort blocks after linking dangling blocks
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      std::sort(block->targets.begin(), block->targets.end(), compare_target_ptr);
+    }
+    std::sort(function->blocks.begin(), function->blocks.end(), compare_block_ptr);
+  }
 
   parse_calls(functions);
 }
