@@ -986,7 +986,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_endian
-enable_cray_mpi
+enable_mpi_search
 enable_bgq
 with_dummy_blank_line
 with_externals
@@ -1694,7 +1694,9 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-endian         host endianness (big, little), only needed if
                           autoconf fails to detect correctly
-  --enable-cray-mpi       use Cray CC wrapper for MPICXX (for spack build)
+  --enable-mpi-search=(cray,bgq)
+                          search for MPI C++ compiler on given system (for
+                          spack build)
   --enable-bgq            configure for blue gene/q back end, disable posix
                           timers and perf events (default auto-detect)
   --enable-libunwind-primary
@@ -18760,6 +18762,7 @@ done
   done
 IFS=$as_save_IFS
 
+  test -z "$ac_cv_path_ans" && ac_cv_path_ans="no"
   ;;
 esac
 fi
@@ -18774,7 +18777,7 @@ fi
 
  ;;
   esac
-  if test "x$ans" = x ; then
+  if test "x$ans" = xno ; then
     ans=unknown
   fi
 
@@ -19193,57 +19196,102 @@ fi
 # MPICXX compiler for hpcprof-mpi
 #-------------------------------------------------
 
-# The Cray MPI C++ wrapper is CC, but spack puts CC on PATH ahead of
-# the Cray wrapper.  This changes CC from an MPI compiler to a plain
-# gcc compiler.
+# Search for MPI C++ compiler that is on PATH but not from a module
+# and is not a spack wrapper.  This is mainly for a spack build on
+# Cray or Blue Gene where mpicxx is not from a module that we can put
+# in packages.yaml.
 #
-# The --enable-cray-mpi option finds the Cray CC wrapper and uses it
-# for MPICXX.  This is only needed when building with spack.  Outside
-# of spack, just use MPICXX=CC.
+# On Cray, we must avoid the spack wrapper.  The Cray MPI C++ compiler
+# is CC, but the spack CC wrapper is only a C++ compiler, not MPI.
+#
+#  $1, $2, ... is a list of compiler names (per platform).
+#
+# Returns: full path of compiler, or else 'no'.
+#
+search_for_mpi()
+{
+  ans=no
 
+  for name in "$@" ; do
+    for item in `type -a $name 2>/dev/null` ; do
+      case "$item" in
+        /* )
+          # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
+          echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+          if test $? -ne 0 ; then
+            ans="$item"
+            break 2
+          fi
+          ;;
+      esac
+    done
+  done
 
+  echo "$ans"
+}
 
-# Check whether --enable-cray-mpi was given.
-if test "${enable_cray_mpi+set}" = set; then :
-  enableval=$enable_cray_mpi;
-else
-  enable_cray_mpi=no
-fi
+#-------------------------------------------------
+
+# Find MPICXX, the MPI C++ compiler for hpcprof-mpi.
+#
+# --enable-mpi-search=(cray, bgq) is mainly for a spack build on Cray
+# or Blue Gene that doesn't have a module for MPI.  Outside of spack,
+# set MPICXX and use --enable-all-static for Cray and Blue Gene that
+# build a static hpcprof-mpi.
+
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: supplied MPICXX compiler: $MPICXX" >&5
 $as_echo "$as_me: supplied MPICXX compiler: $MPICXX" >&6;}
 
-if test "x$enable_cray_mpi" = xyes ; then
-  MPICXX=no
+# Check whether --enable-mpi-search was given.
+if test "${enable_mpi_search+set}" = set; then :
+  enableval=$enable_mpi_search;
+else
+  enable_mpi_search=no
+fi
 
-  # Spack wrapper:  /path/to/spack/lib/spack/env/case-insensitive/CC
-  # Cray MPI wrapper:  /opt/cray/pe/craype/2.5.15/bin/CC
-  for item in `type -a CC`
-  do
-    case "$item" in
+
+case "$enable_mpi_search" in
+  cray )
+    MPICXX=`search_for_mpi CC`
+    case "$MPICXX" in
       /* )
-        echo "$item" | grep -E -i -e 'spack.*env.*case' >/dev/null
-        if test $? -ne 0 ; then
-          echo "$item" | grep -E -i -e 'cray.*pe.*cc' >/dev/null
-          if test $? -eq 0 ; then
-            MPICXX="$item"
-            break
-          fi
-        fi
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Cray MPI wrapper: $MPICXX" >&5
+$as_echo "$as_me: Cray MPI wrapper: $MPICXX" >&6;}
+	;;
+      * )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&5
+$as_echo "$as_me: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&2;}
+        as_fn_error $? "check that this system is Cray and CC is the MPI wrapper" "$LINENO" 5
         ;;
     esac
-  done
+    ;;
 
-  if test "$MPICXX" = no ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your path" >&5
-$as_echo "$as_me: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your path" >&2;}
-    as_fn_error $? "check that this system is Cray and CC is the MPI wrapper" "$LINENO" 5
-  else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Cray MPI wrapper: $MPICXX" >&5
-$as_echo "$as_me: Cray MPI wrapper: $MPICXX" >&6;}
-  fi
-fi
+  bgq )
+    MPICXX=`search_for_mpi mpicxx mpic++`
+    case "$MPICXX" in
+      /* )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Blue Gene MPI wrapper: $MPICXX" >&5
+$as_echo "$as_me: Blue Gene MPI wrapper: $MPICXX" >&6;}
+	;;
+      * )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&5
+$as_echo "$as_me: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&2;}
+        as_fn_error $? "check that this system is Blue Gene and mpicxx is the MPI wrapper" "$LINENO" 5
+        ;;
+    esac
+    ;;
+
+  no )
+    ;;
+
+  * )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-mpi-search is for Spack builds on Cray and Blue Gene" >&5
+$as_echo "$as_me: WARNING: --enable-mpi-search is for Spack builds on Cray and Blue Gene" >&2;}
+    as_fn_error $? "unknown platform: $enable_mpi_search" "$LINENO" 5
+    ;;
+esac
 
 #-------------------------------------------------
 
@@ -19252,6 +19300,7 @@ fi
 if test "x$MPICXX" != x ; then
   MPICXX_VERSION=`find_version "$MPICXX"`
   MPICXX_PATH=`find_path "$MPICXX"`
+  MPICXX="$MPICXX_PATH"
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: MPICXX compiler: $MPICXX_VERSION" >&5
 $as_echo "$as_me: MPICXX compiler: $MPICXX_VERSION" >&6;}
