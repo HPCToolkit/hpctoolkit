@@ -176,7 +176,9 @@ isCudaCallStmt(Prof::Struct::ANode *strct) {
   if (strct != NULL && strct->type() == Prof::Struct::ANode::TyStmt) {
     auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(strct);
     if (stmt->stmtType() == Prof::Struct::Stmt::STMT_CALL) {
-      if (stmt->device().find("NVIDIA") != std::string::npos) {
+      if (stmt->device().find("NVIDIA") != std::string::npos &&
+        stmt->target() != 0) {
+        // some library functions, e.g. free & malloc, might be included in a cubin but without an address
         return true;
       }
     }
