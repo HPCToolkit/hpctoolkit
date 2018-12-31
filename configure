@@ -668,8 +668,6 @@ MPI_PROTO_FILE
 MPI_INC
 MPIF77
 MPICC
-OPT_ENABLE_MPI_FALSE
-OPT_ENABLE_MPI_TRUE
 OPT_ENABLE_OPENMP_FALSE
 OPT_ENABLE_OPENMP_TRUE
 OPT_ENABLE_HPCSERVER_FALSE
@@ -796,9 +794,6 @@ BOOST_LFLAGS
 BOOST_IFLAGS
 BINUTILS_LIBS
 BINUTILS_IFLAGS
-wordsize_cflag
-CXX_PATH
-CC_PATH
 hpc_ext_libs_dir
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
@@ -819,10 +814,14 @@ HOST_LIBTREPOSITORY
 HOST_AR
 HOST_CXXFLAGS
 HOST_CFLAGS
+OPT_ENABLE_MPI_FALSE
+OPT_ENABLE_MPI_TRUE
+MPICXX
 OPENMP_FLAG
 HPCRUN_LIBCXX_PATH
 cxx_c11_flag
 CXX11_FLAG
+ans
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
 HOST_CPU_IA64_FALSE
@@ -841,7 +840,6 @@ HOST_CPU_K1OM_FALSE
 HOST_CPU_K1OM_TRUE
 HOST_OS_LINUX_FALSE
 HOST_OS_LINUX_TRUE
-MPICXX
 am__fastdepCCAS_FALSE
 am__fastdepCCAS_TRUE
 CCASDEPMODE
@@ -996,6 +994,7 @@ with_gnu_ld
 with_sysroot
 enable_libtool_lock
 enable_endian
+enable_mpi_search
 enable_bgq
 with_dummy_blank_line
 with_externals
@@ -1028,7 +1027,6 @@ enable_hpcrun
 enable_hpcrun_static
 enable_hpcserver
 enable_openmp
-enable_mpi
 enable_mpi_wrapper
 enable_lush
 with_cilk
@@ -1060,8 +1058,8 @@ CXXCPP
 CCAS
 CCASFLAGS
 LD
-MPICXX
 CXX11_FLAG
+MPICXX
 MPICC
 MPIF77
 MPI_INC'
@@ -1704,6 +1702,9 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-endian         host endianness (big, little), only needed if
                           autoconf fails to detect correctly
+  --enable-mpi-search=(cray,bgq)
+                          search for MPI C++ compiler on given system (for
+                          spack build)
   --enable-bgq            configure for blue gene/q back end, disable posix
                           timers and perf events (default auto-detect)
   --enable-libunwind-primary
@@ -1729,7 +1730,6 @@ Optional Features:
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
   --enable-openmp         enable openmp support in hpcstruct (default is to
                           test dyninst)
-  --enable-mpi            Enable MPI support (uses MPICXX variable)
   --enable-mpi-wrapper    enable MPI wrapper support, requires MPICC, MPIF77
                           and MPI_INC (default no)
   --enable-lush           use lush backtrace in hpcrun
@@ -1810,9 +1810,9 @@ Some influential environment variables:
   CCASFLAGS   assembler compiler flags (defaults to CFLAGS)
   LD          ld program for binaries produced by CC, only needed if autoconf
               fails to find a suitable program
-  MPICXX      MPI C++ compiler
   CXX11_FLAG  CXX flag for C++11 standard, normally only needed for non-GNU
               CXX
+  MPICXX      MPI C++ compiler for hpcprof-mpi
   MPICC       MPI C compiler for MPI wrapper support
   MPIF77      MPI Fortran compiler for MPI wrapper support
   MPI_INC     MPI include directory for MPI wrapper support
@@ -3366,16 +3366,16 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' ***" >&5
-$as_echo "$as_me: *** INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}' ***" >&5
-$as_echo "$as_me: *** INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: from user: MPICC='${MPICC}' ***" >&5
-$as_echo "$as_me: *** INFO: from user: MPICC='${MPICC}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: from user: MPICXX='${MPICXX}' ***" >&5
-$as_echo "$as_me: *** INFO: from user: MPICXX='${MPICXX}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: from user: MPIF77='${MPIF77}' ***" >&5
-$as_echo "$as_me: *** INFO: from user: MPIF77='${MPIF77}' ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: CC='${CC}'  CFLAGS='${CFLAGS}'" >&5
+$as_echo "$as_me: INFO: from user: CC='${CC}'  CFLAGS='${CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'" >&5
+$as_echo "$as_me: INFO: from user: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: from user: MPICC='${MPICC}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: MPICXX='${MPICXX}'" >&5
+$as_echo "$as_me: INFO: from user: MPICXX='${MPICXX}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: from user: MPIF77='${MPIF77}'" >&5
+$as_echo "$as_me: INFO: from user: MPIF77='${MPIF77}'" >&6;}
 
 # NOTE: please update config/README.version
 
@@ -4055,10 +4055,6 @@ IFS=$ac_save_IFS
 case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
-
-MPICC_ORIG=${MPICC}
-MPICXX_ORIG=${MPICXX}
-MPIF77_ORIG=${MPIF77}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -17404,135 +17400,18 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-my_compiler_list="mpicxx   \
-                           mpiCC \
-                          "
-   HPC_check_mpicxx()
-   {
-     my_mpicxx="$1"
-
-     ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-     CXX_ORIG=${CXX}
-     CXX=${my_mpicxx}
-
-     # NOTE: do not cache (AC_CACHE_CHECK) b/c this may be called
-     # multiple times!
-     CAN_MPICXX_LINK="no"
-     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether MPI C++ compiler ${CXX} works correctly" >&5
-$as_echo_n "checking whether MPI C++ compiler ${CXX} works correctly... " >&6; }
-     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <mpi.h>
-#include <iostream>
-#include <string>
-
-int
-main ()
-{
-std::string hpctoolkit = "hpctoolkit;"
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  CAN_MPICXX_LINK="yes"
-else
-  CAN_MPICXX_LINK="no"
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-     { $as_echo "$as_me:${as_lineno-$LINENO}: result: ${CAN_MPICXX_LINK}" >&5
-$as_echo "${CAN_MPICXX_LINK}" >&6; }
-
-     CXX="${CXX_ORIG}"
-     ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-     if test "$CAN_MPICXX_LINK" = "yes" ; then
-       return 0
-     else
-       return 1
-     fi
-   }
-   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for MPI C++ compiler" >&5
-$as_echo_n "checking for MPI C++ compiler... " >&6; }
-if ${ac_cv_path_MPICXX+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -z "$MPICXX"; then
-  ac_path_MPICXX_found=false
-  # Loop through the user's path and test for each of PROGNAME-LIST
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in ${my_compiler_list}; do
-    for ac_exec_ext in '' $ac_executable_extensions; do
-      ac_path_MPICXX="$as_dir/$ac_prog$ac_exec_ext"
-      as_fn_executable_p "$ac_path_MPICXX" || continue
-if HPC_check_mpicxx ${ac_path_MPICXX} ; then
-           ac_cv_path_MPICXX=$ac_path_MPICXX
-           ac_path_MPICXX_found=:
-         fi
-      $ac_path_MPICXX_found && break 3
-    done
-  done
-  done
-IFS=$as_save_IFS
-  if test -z "$ac_cv_path_MPICXX"; then
-    ac_cv_path_MPICXX=no
-  fi
-else
-  ac_cv_path_MPICXX=$MPICXX
-fi
-
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_path_MPICXX" >&5
-$as_echo "$ac_cv_path_MPICXX" >&6; }
-
-   # AC_PATH_PROGS_FEATURE_CHECK does not call HPC_check_mpicxx if
-   # MPICXX was set in the environment.
-   if test "${ac_path_MPICXX_found}" != ":" -a "${ac_cv_path_MPICXX}" != "no" ; then
-     if ! HPC_check_mpicxx ${ac_cv_path_MPICXX} ; then
-       ac_cv_path_MPICXX=no;
-     fi
-   fi
-
-   # Determine final value of MPICXX
-   if test "${ac_cv_path_MPICXX}" != "no" ; then
-     MPICXX=${ac_cv_path_MPICXX}
-   else
-     MPICXX=
-   fi
-
-
-
-
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'  ***" >&5
-$as_echo "$as_me: *** INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'  ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}' ***" >&5
-$as_echo "$as_me: *** INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post autoconf tests: MPICC='${MPICC}' ***" >&5
-$as_echo "$as_me: *** INFO: post autoconf tests: MPICC='${MPICC}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post autoconf tests: MPICXX='${MPICXX}' ***" >&5
-$as_echo "$as_me: *** INFO: post autoconf tests: MPICXX='${MPICXX}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post autoconf tests: MPIF77='${MPIF77}' ***" >&5
-$as_echo "$as_me: *** INFO: post autoconf tests: MPIF77='${MPIF77}' ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: MPICC='${MPICC}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPICXX='${MPICXX}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: MPICXX='${MPICXX}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPIF77='${MPIF77}'" >&5
+$as_echo "$as_me: INFO: post autoconf tests: MPIF77='${MPIF77}'" >&6;}
 
 
 #-------------------------------------------------
@@ -18837,6 +18716,128 @@ fi
 
 
 #-------------------------------------------------
+# Utilities for compiler versions and paths
+#-------------------------------------------------
+
+# These tests only use GNU syntax.  Intel, Clang, etc use a different
+# format, but we don't really build with those.
+
+find_version()
+{
+  ans='unknown non-gnu'
+
+  # strip any compiler flags, 'gcc -m64'
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo "$version" | grep -i copyright >/dev/null
+  if test $? -eq 0 ; then
+    ans=`echo "$version" | head -1`
+  fi
+
+  echo "$ans"
+}
+
+find_path()
+{
+  ans=
+  base=`echo $1 | awk '{ print $1 }'`
+  case "$base" in
+    /* ) ans="$base" ;;
+    * )  # Extract the first word of "$base", so it can be a program name with args.
+set dummy $base; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_ans+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $ans in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ans="$ans" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_ans="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_ans" && ac_cv_path_ans="no"
+  ;;
+esac
+fi
+ans=$ac_cv_path_ans
+if test -n "$ans"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+ ;;
+  esac
+  if test "x$ans" = xno ; then
+    ans=unknown
+  fi
+
+  echo "$ans"
+}
+
+test_is_gnu()
+{
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+
+  return $?
+}
+
+
+#-------------------------------------------------
+# C, C++ compiler versions and paths
+#-------------------------------------------------
+
+warn_non_gcc=no
+
+CC_VERSION=`find_version "$CC"`
+CC_PATH=`find_path "$CC"`
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C compiler: $CC_VERSION" >&5
+$as_echo "$as_me: C compiler: $CC_VERSION" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C path: $CC_PATH" >&5
+$as_echo "$as_me: C path: $CC_PATH" >&6;}
+
+if test_is_gnu "$CC" ; then : ; else
+  warn_non_gcc=yes
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C compiler." >&5
+$as_echo "$as_me: WARNING: Not using the GNU C compiler." >&2;}
+fi
+
+CXX_VERSION=`find_version "$CXX"`
+CXX_PATH=`find_path "$CXX"`
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler: $CXX_VERSION" >&5
+$as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: C++ path: $CXX_PATH" >&5
+$as_echo "$as_me: C++ path: $CXX_PATH" >&6;}
+
+if test_is_gnu "$CXX" ; then : ; else
+  warn_non_gcc=yes
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
+$as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
@@ -19200,6 +19201,178 @@ fi
 
 
 #-------------------------------------------------
+# MPICXX compiler for hpcprof-mpi
+#-------------------------------------------------
+
+# Search for MPI C++ compiler that is on PATH but not from a module
+# and is not a spack wrapper.  This is mainly for a spack build on
+# Cray or Blue Gene where mpicxx is not from a module that we can put
+# in packages.yaml.
+#
+# On Cray, we must avoid the spack wrapper.  The Cray MPI C++ compiler
+# is CC, but the spack CC wrapper is only a C++ compiler, not MPI.
+#
+#  $1, $2, ... is a list of compiler names (per platform).
+#
+# Returns: full path of compiler, or else 'no'.
+#
+search_for_mpi()
+{
+  ans=no
+
+  for name in "$@" ; do
+    for item in `type -a $name 2>/dev/null` ; do
+      case "$item" in
+        /* )
+          # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
+          echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+          if test $? -ne 0 ; then
+            ans="$item"
+            break 2
+          fi
+          ;;
+      esac
+    done
+  done
+
+  echo "$ans"
+}
+
+#-------------------------------------------------
+
+# Find MPICXX, the MPI C++ compiler for hpcprof-mpi.
+#
+# --enable-mpi-search=(cray, bgq) is mainly for a spack build on Cray
+# or Blue Gene that doesn't have a module for MPI.  Outside of spack,
+# set MPICXX and use --enable-all-static for Cray and Blue Gene that
+# build a static hpcprof-mpi.
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: supplied MPICXX compiler: $MPICXX" >&5
+$as_echo "$as_me: supplied MPICXX compiler: $MPICXX" >&6;}
+
+# Check whether --enable-mpi-search was given.
+if test "${enable_mpi_search+set}" = set; then :
+  enableval=$enable_mpi_search;
+else
+  enable_mpi_search=no
+fi
+
+
+case "$enable_mpi_search" in
+  cray )
+    MPICXX=`search_for_mpi CC`
+    case "$MPICXX" in
+      /* )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Cray MPI wrapper: $MPICXX" >&5
+$as_echo "$as_me: Cray MPI wrapper: $MPICXX" >&6;}
+	;;
+      * )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&5
+$as_echo "$as_me: WARNING: unable to find the Cray MPI C++ wrapper (CC) on your PATH" >&2;}
+        as_fn_error $? "check that this system is Cray and CC is the MPI wrapper" "$LINENO" 5
+        ;;
+    esac
+    ;;
+
+  bgq )
+    MPICXX=`search_for_mpi mpicxx mpic++`
+    case "$MPICXX" in
+      /* )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: Blue Gene MPI wrapper: $MPICXX" >&5
+$as_echo "$as_me: Blue Gene MPI wrapper: $MPICXX" >&6;}
+	;;
+      * )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&5
+$as_echo "$as_me: WARNING: unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH" >&2;}
+        as_fn_error $? "check that this system is Blue Gene and mpicxx is the MPI wrapper" "$LINENO" 5
+        ;;
+    esac
+    ;;
+
+  no )
+    ;;
+
+  * )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --enable-mpi-search is for Spack builds on Cray and Blue Gene" >&5
+$as_echo "$as_me: WARNING: --enable-mpi-search is for Spack builds on Cray and Blue Gene" >&2;}
+    as_fn_error $? "unknown platform: $enable_mpi_search" "$LINENO" 5
+    ;;
+esac
+
+#-------------------------------------------------
+
+# Test if MPICXX is a valid MPI C++ compiler and report version.
+
+if test "x$MPICXX" != x ; then
+  MPICXX_VERSION=`find_version "$MPICXX"`
+  MPICXX_PATH=`find_path "$MPICXX"`
+  MPICXX="$MPICXX_PATH"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MPICXX compiler: $MPICXX_VERSION" >&5
+$as_echo "$as_me: MPICXX compiler: $MPICXX_VERSION" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MPICXX path: $MPICXX_PATH" >&5
+$as_echo "$as_me: MPICXX path: $MPICXX_PATH" >&6;}
+
+  if test_is_gnu "$MPICXX" ; then : ; else
+    warn_non_gcc=yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU MPICXX compiler." >&5
+$as_echo "$as_me: WARNING: Not using the GNU MPICXX compiler." >&2;}
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if MPICXX is a valid MPI C++ compiler" >&5
+$as_echo_n "checking if MPICXX is a valid MPI C++ compiler... " >&6; }
+
+  ORIG_CXX="$CXX"
+  CXX="$MPICXX"
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <mpi.h>
+#include <iostream>
+int myRank(void)
+{
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::cout << "yes";
+  return rank;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  mpicxx_avail=yes
+else
+  mpicxx_avail=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mpicxx_avail" >&5
+$as_echo "$mpicxx_avail" >&6; }
+
+  if test "$mpicxx_avail" = no ; then
+    as_fn_error $? "MPICXX is not a valid compiler: $MPICXX" "$LINENO" 5
+  fi
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CXX="$ORIG_CXX"
+fi
+
+
+#-------------------------------------------------
 # Test if CXX and MPICXX are compatible
 #-------------------------------------------------
 
@@ -19216,17 +19389,25 @@ hello_bin="$base".bin
 hello_out="$base".out
 ACTUAL_CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS"
 
+prof_mpi_avail=no
+
 if test -n "$MPICXX" ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether CXX and MPICXX are compatible" >&5
-$as_echo_n "checking whether CXX and MPICXX are compatible... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if CXX and MPICXX are compatible" >&5
+$as_echo_n "checking if CXX and MPICXX are compatible... " >&6; }
 
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
   cat <<EOF >"$hello_src"
 #include <iostream>
 #include <string>
-int main()
+#include <vector>
+using namespace std;
+int main(int argc, char **argv)
 {
-  std::cout << "hello, world\n";
+  vector <string> foo;
+  for (int i = 0; i < argc; i++) {
+    foo.push_back(argv[i]);
+  }
+  cout << foo.size();
   return 0;
 }
 EOF
@@ -19236,17 +19417,14 @@ EOF
   if test $? -eq 0 && test -f "$hello_bin" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
+    prof_mpi_avail=yes
   else
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MPICXX does not link with CXX (see config.log for details)" >&5
-$as_echo "$as_me: WARNING: MPICXX does not link with CXX (see config.log for details)" >&2;}
-    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: probably MPICXX does match CXX for compiler family or version" >&5
-$as_echo "$as_me: WARNING: probably MPICXX does match CXX for compiler family or version" >&2;}
     cat <<EOF >&5
 ------------------------------------------------------------
-CXX:     $CXX $ACTUAL_CXXFLAGS
-MPICXX:  $MPICXX
+CXX:     $CXX -c $ACTUAL_CXXFLAGS -o $hello_o $hello_src
+MPICXX:  $MPICXX -o $hello_bin $hello_o
 
 EOF
     cat "$hello_src" >&5
@@ -19255,15 +19433,28 @@ EOF
     cat <<EOF >&5
 ------------------------------------------------------------
 EOF
-  MPICXX=
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CXX:     $CXX_VERSION" >&5
+$as_echo "$as_me: WARNING: CXX:     $CXX_VERSION" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MPICXX:  $MPICXX_VERSION" >&5
+$as_echo "$as_me: WARNING: MPICXX:  $MPICXX_VERSION" >&2;}
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: MPICXX does not link with CXX (see config.log for details)" >&5
+$as_echo "$as_me: WARNING: MPICXX does not link with CXX (see config.log for details)" >&2;}
+    as_fn_error $? "probably MPICXX does match CXX for compiler family or version" "$LINENO" 5
   fi
-
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: skipping MPICXX compatibility check (MPICXX not set)" >&5
-$as_echo "$as_me: skipping MPICXX compatibility check (MPICXX not set)" >&6;}
 fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: build hpcprof-mpi: $prof_mpi_avail" >&5
+$as_echo "$as_me: build hpcprof-mpi: $prof_mpi_avail" >&6;}
+
+ if test "$prof_mpi_avail" = yes; then
+  OPT_ENABLE_MPI_TRUE=
+  OPT_ENABLE_MPI_FALSE='#'
+else
+  OPT_ENABLE_MPI_TRUE='#'
+  OPT_ENABLE_MPI_FALSE=
+fi
+
 
 
 #-------------------------------------------------
@@ -19291,16 +19482,16 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}' ***" >&5
-$as_echo "$as_me: *** INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}' ***" >&5
-$as_echo "$as_me: *** INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: MPICC='${MPICC}' ***" >&5
-$as_echo "$as_me: *** INFO: post hpc tests: MPICC='${MPICC}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: MPICXX='${MPICXX}' ***" >&5
-$as_echo "$as_me: *** INFO: post hpc tests: MPICXX='${MPICXX}' ***" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: *** INFO: post hpc tests: MPIF77='${MPIF77}' ***" >&5
-$as_echo "$as_me: *** INFO: post hpc tests: MPIF77='${MPIF77}' ***" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: CC='${CC}'  CFLAGS='${CFLAGS}'  HOST_CFLAGS='${HOST_CFLAGS}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: CC='${CC}'  CFLAGS='${CFLAGS}'  HOST_CFLAGS='${HOST_CFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'  HOST_CXXFLAGS='${HOST_CXXFLAGS}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'  HOST_CXXFLAGS='${HOST_CXXFLAGS}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: MPICC='${MPICC}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: MPICC='${MPICC}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: MPICXX='${MPICXX}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: MPICXX='${MPICXX}'" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post hpc tests: MPIF77='${MPIF77}'" >&5
+$as_echo "$as_me: INFO: post hpc tests: MPIF77='${MPIF77}'" >&6;}
 
 
 #-------------------------------------------------
@@ -19649,142 +19840,11 @@ fi
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
-# Verify that toolkit and externals use the same C and C++ compilers
-# and that they produce the same wordsize.  This is especially
-# important for C++ and libstdc++.  For now, give a pass if externals
-# isn't new enough to export these variables.
-
-CC_VERSION='unknown non-gnu'
-version=`$CC --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CC_VERSION=`echo "$version" | head -1`
-fi
-
-CC_PATH=
-base=`echo $CC | awk '{ print $1 }'`
-case "$base" in
-  /* ) CC_PATH="$base" ;;
-  * )  # Extract the first word of "$base", so it can be a program name with args.
-set dummy $base; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_CC_PATH+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $CC_PATH in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_CC_PATH="$CC_PATH" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_CC_PATH="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-CC_PATH=$ac_cv_path_CC_PATH
-if test -n "$CC_PATH"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CC_PATH" >&5
-$as_echo "$CC_PATH" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
- ;;
-esac
-if test "x$CC_PATH" = x ; then
-  CC_PATH=unknown
-fi
-
-warn_non_gcc=no
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C compiler." >&5
-$as_echo "$as_me: WARNING: Not using the GNU C compiler." >&2;}
-fi
-
-CXX_VERSION='unknown non-gnu'
-version=`$CXX --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CXX_VERSION=`echo "$version" | head -1`
-fi
-
-CXX_PATH=
-base=`echo $CXX | awk '{ print $1 }'`
-case "$base" in
-  /* ) CXX_PATH="$base" ;;
-  * )  # Extract the first word of "$base", so it can be a program name with args.
-set dummy $base; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_CXX_PATH+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $CXX_PATH in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_CXX_PATH="$CXX_PATH" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_path_CXX_PATH="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-CXX_PATH=$ac_cv_path_CXX_PATH
-if test -n "$CXX_PATH"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $CXX_PATH" >&5
-$as_echo "$CXX_PATH" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
- ;;
-esac
-if test "x$CXX_PATH" = x ; then
-  CXX_PATH=unknown
-fi
-
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
-$as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: C compiler: $CC_VERSION" >&5
-$as_echo "$as_me: C compiler: $CC_VERSION" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler: $CXX_VERSION" >&5
-$as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
+# If still using externals, verify that toolkit and externals use the
+# same C and C++ compilers.  Spack does things differently.
 
 warn_compiler_mismatch=no
+
 if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
 then
   warn_compiler_mismatch=yes
@@ -19802,6 +19862,9 @@ $as_echo "$as_me: WARNING: The C++ compiler does not match the one used to build
 hpctoolkit-externals." >&2;}
 fi
 
+# Continue to set multilib_path for package tests below, but we really
+# only support 64-bit now.
+
 host_wordsize=unknown
 wordsize_cflag=
 case "$host_sizeof_voidp" in
@@ -19811,25 +19874,11 @@ case "$host_sizeof_voidp" in
 $as_echo "$as_me: WARNING: unable to determine host wordsize" >&2;} ;;
 esac
 
-if test "$ext_wordsize" != unknown && test "$host_wordsize" != "$ext_wordsize"
-then
-  as_fn_error $? "mismatched wordsize: hpctoolkit is configured for \
-${host_wordsize}-bit but externals is ${ext_wordsize}-bit" "$LINENO" 5
-fi
-
-# On ia64, -m64 is an unrecognized option (and unnecessary).
-if test "$HOST_CPU_IA64" = yes ; then
-  wordsize_cflag=
-fi
-
-# multilib path based on wordsize of host machine
 multilib_path=lib
 case "$host_wordsize" in
   32 ) multilib_path='lib32 lib' ;;
   64 ) multilib_path='lib64 lib' ;;
 esac
-
-
 
 
 #-------------------------------------------------
@@ -22309,52 +22358,6 @@ fi
 
 
 #-------------------------------------------------
-# enable-mpi:
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)" >&5
-$as_echo_n "checking whether to build MPI-based analysis tools (e.g., hpcprof-mpi)... " >&6; }
-
-OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
-
-# Check whether --enable-mpi was given.
-if test "${enable_mpi+set}" = set; then :
-  enableval=$enable_mpi; case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI="no" ;;
-     *)   as_fn_error $? "bad value ${enableval} for --enable-mpi" "$LINENO" 5 ;;
-   esac
-else
-  if test -n "${MPICXX_ORIG}" ; then
-     OPT_REQ_ENABLE_MPI=yes
-   fi
-fi
-
-
-OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" != "no" ; then
-  OPT_ENABLE_MPI=yes
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})" >&5
-$as_echo "${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})" >&6; }
-
-
-if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
-  as_fn_error $? "MPI support requested but MPI compiler is invalid!" "$LINENO" 5
-fi
-
- if test "${OPT_ENABLE_MPI}" = "yes"; then
-  OPT_ENABLE_MPI_TRUE=
-  OPT_ENABLE_MPI_FALSE='#'
-else
-  OPT_ENABLE_MPI_TRUE='#'
-  OPT_ENABLE_MPI_FALSE=
-fi
-
-
-
-#-------------------------------------------------
 # enable-mpi-wrapper: check MPI compiler
 #-------------------------------------------------
 
@@ -23359,6 +23362,10 @@ if test -z "${HOST_CPU_AARCH64_TRUE}" && test -z "${HOST_CPU_AARCH64_FALSE}"; th
   as_fn_error $? "conditional \"HOST_CPU_AARCH64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_MPI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
   as_fn_error $? "conditional \"IS_HOST_AR\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23477,10 +23484,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_OPENMP_TRUE}" && test -z "${OPT_ENABLE_OPENMP_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_OPENMP\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_MPI_TRUE}" && test -z "${OPT_ENABLE_MPI_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_MPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_WRAP_TRUE}" && test -z "${OPT_ENABLE_MPI_WRAP_FALSE}"; then
@@ -26058,10 +26061,10 @@ $as_echo "$as_me: " >&6;}
 $as_echo "$as_me:   hpcrun?:      ${enable_hpcrun_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&5
 $as_echo "$as_me:   hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   hpcprof-mpi:  ${prof_mpi_avail}" >&5
+$as_echo "$as_me:   hpcprof-mpi:  ${prof_mpi_avail}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   unwinder:     ${unwinder_mesg}" >&5
 $as_echo "$as_me:   unwinder:     ${unwinder_mesg}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   mpi support?: ${OPT_ENABLE_MPI}" >&5
-$as_echo "$as_me:   mpi support?: ${OPT_ENABLE_MPI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mpi wrapper?: ${enable_mpi_wrapper}" >&5
 $as_echo "$as_me:   mpi wrapper?: ${enable_mpi_wrapper}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
@@ -26233,8 +26236,8 @@ fi
 if test "$warn_non_gcc" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C or C++ compiler." >&5
-$as_echo "$as_me: WARNING: Not using the GNU C or C++ compiler." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C or C++ or MPICXX compiler." >&5
+$as_echo "$as_me: WARNING: Not using the GNU C or C++ or MPICXX compiler." >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This is not necessarily an error, but some parts of hpctoolkit" >&5
 $as_echo "$as_me: WARNING: This is not necessarily an error, but some parts of hpctoolkit" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&5
