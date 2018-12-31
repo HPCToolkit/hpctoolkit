@@ -888,9 +888,9 @@ find_path()
   base=`echo $1 | awk '{ print $1 }'`
   case "$base" in
     /* ) ans="$base" ;;
-    * )  AC_PATH_PROG([ans], [$base]) ;;
+    * )  AC_PATH_PROG([ans], [$base], [no]) ;;
   esac
-  if test "x$ans" = x ; then
+  if test "x$ans" = xno ; then
     ans=unknown
   fi
 
@@ -1248,52 +1248,94 @@ fi
 # MPICXX compiler for hpcprof-mpi
 #-------------------------------------------------
 
-# The Cray MPI C++ wrapper is CC, but spack puts CC on PATH ahead of
-# the Cray wrapper.  This changes CC from an MPI compiler to a plain
-# gcc compiler.
+# Search for MPI C++ compiler that is on PATH but not from a module
+# and is not a spack wrapper.  This is mainly for a spack build on
+# Cray or Blue Gene where mpicxx is not from a module that we can put
+# in packages.yaml.
 #
-# The --enable-cray-mpi option finds the Cray CC wrapper and uses it
-# for MPICXX.  This is only needed when building with spack.  Outside
-# of spack, just use MPICXX=CC.
+# On Cray, we must avoid the spack wrapper.  The Cray MPI C++ compiler
+# is CC, but the spack CC wrapper is only a C++ compiler, not MPI.
+#
+#  $1, $2, ... is a list of compiler names (per platform).
+#
+# Returns: full path of compiler, or else 'no'.
+#
+search_for_mpi()
+{
+  ans=no
+
+  for name in "$@" ; do
+    for item in `type -a $name 2>/dev/null` ; do
+      case "$item" in
+        /* )
+          # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
+          echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+          if test $? -ne 0 ; then
+            ans="$item"
+            break 2
+          fi
+          ;;
+      esac
+    done
+  done
+
+  echo "$ans"
+}
+
+#-------------------------------------------------
+
+# Find MPICXX, the MPI C++ compiler for hpcprof-mpi.
+#
+# --enable-mpi-search=(cray, bgq) is mainly for a spack build on Cray
+# or Blue Gene that doesn't have a module for MPI.  Outside of spack,
+# set MPICXX and use --enable-all-static for Cray and Blue Gene that
+# build a static hpcprof-mpi.
 
 AC_ARG_VAR([MPICXX], [MPI C++ compiler for hpcprof-mpi])
 
-AC_ARG_ENABLE([cray-mpi],
-  [AS_HELP_STRING([--enable-cray-mpi],
-      [use Cray CC wrapper for MPICXX (for spack build)])],
-  [],
-  [enable_cray_mpi=no])
-
 AC_MSG_NOTICE([supplied MPICXX compiler: $MPICXX])
 
-if test "x$enable_cray_mpi" = xyes ; then
-  MPICXX=no
+AC_ARG_ENABLE([mpi-search],
+  [AS_HELP_STRING([--enable-mpi-search=(cray,bgq)],
+      [search for MPI C++ compiler on given system (for spack build)])],
+  [],
+  [enable_mpi_search=no])
 
-  # Spack wrapper:  /path/to/spack/lib/spack/env/case-insensitive/CC
-  # Cray MPI wrapper:  /opt/cray/pe/craype/2.5.15/bin/CC
-  for item in `type -a CC`
-  do
-    case "$item" in
+case "$enable_mpi_search" in
+  cray )
+    MPICXX=`search_for_mpi CC`
+    case "$MPICXX" in
       /* )
-        echo "$item" | grep -E -i -e 'spack.*env.*case' >/dev/null
-        if test $? -ne 0 ; then
-          echo "$item" | grep -E -i -e 'cray.*pe.*cc' >/dev/null
-          if test $? -eq 0 ; then
-            MPICXX="$item"
-            break
-          fi
-        fi
+        AC_MSG_NOTICE([Cray MPI wrapper: $MPICXX])
+	;;
+      * )
+        AC_MSG_WARN([unable to find the Cray MPI C++ wrapper (CC) on your PATH])
+        AC_MSG_ERROR([check that this system is Cray and CC is the MPI wrapper])
         ;;
     esac
-  done
+    ;;
 
-  if test "$MPICXX" = no ; then
-    AC_MSG_WARN([unable to find the Cray MPI C++ wrapper (CC) on your path])
-    AC_MSG_ERROR([check that this system is Cray and CC is the MPI wrapper])
-  else
-    AC_MSG_NOTICE([Cray MPI wrapper: $MPICXX])
-  fi
-fi
+  bgq )
+    MPICXX=`search_for_mpi mpicxx mpic++`
+    case "$MPICXX" in
+      /* )
+        AC_MSG_NOTICE([Blue Gene MPI wrapper: $MPICXX])
+	;;
+      * )
+        AC_MSG_WARN([unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH])
+        AC_MSG_ERROR([check that this system is Blue Gene and mpicxx is the MPI wrapper])
+        ;;
+    esac
+    ;;
+
+  no )
+    ;;
+
+  * )
+    AC_MSG_WARN([--enable-mpi-search is for Spack builds on Cray and Blue Gene])
+    AC_MSG_ERROR([unknown platform: $enable_mpi_search])
+    ;;
+esac
 
 #-------------------------------------------------
 
@@ -1302,6 +1344,7 @@ fi
 if test "x$MPICXX" != x ; then
   MPICXX_VERSION=`find_version "$MPICXX"`
   MPICXX_PATH=`find_path "$MPICXX"`
+  MPICXX="$MPICXX_PATH"
 
   AC_MSG_NOTICE([MPICXX compiler: $MPICXX_VERSION])
   AC_MSG_NOTICE([MPICXX path: $MPICXX_PATH])
