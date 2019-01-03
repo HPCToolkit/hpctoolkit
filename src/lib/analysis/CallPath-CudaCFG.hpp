@@ -145,6 +145,14 @@ class CCTGraph {
     return _outgoing_nodes[node].size();
   }
 
+  size_t incoming_nodes_size(Prof::CCT::ANode *node) {
+    auto iter = _incoming_nodes.find(node); 
+    if (iter == _incoming_nodes.end()) {
+      return 0;
+    }
+    return _incoming_nodes[node].size();
+  }
+
   NeighborNodeMap::iterator outgoing_nodes(Prof::CCT::ANode *node) {
     return _outgoing_nodes.find(node);
   }
