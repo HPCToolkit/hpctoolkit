@@ -440,7 +440,7 @@ MY_IA64_FILES = \
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
     \
-	utilities/arch/libunwind/cpuid.c   \
+	utilities/arch/aarch64/cpuid.c   \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT

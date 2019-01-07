@@ -517,7 +517,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s utilities/arch/ia64/cpuid.c \
 	utilities/arch/ia64/ia64-context-pc.c \
 	trampoline/aarch64/aarch64-tramp.c \
-	utilities/arch/libunwind/cpuid.c \
+	utilities/arch/aarch64/cpuid.c \
 	utilities/arch/libunwind/libunwind-context-pc.c \
 	sample-sources/papi.c sample-sources/papi-c-cupti.c \
 	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
@@ -639,7 +639,7 @@ am__objects_27 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
 	utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo
 @HOST_CPU_IA64_TRUE@am__objects_28 = $(am__objects_27)
 am__objects_29 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
-	utilities/arch/libunwind/libhpcrun_la-cpuid.lo \
+	utilities/arch/aarch64/libhpcrun_la-cpuid.lo \
 	utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo
 @HOST_CPU_AARCH64_TRUE@am__objects_30 = $(am__objects_29)
 @OPT_PAPI_CUPTI_TRUE@am__objects_31 = sample-sources/libhpcrun_la-papi-c-cupti.lo
@@ -836,7 +836,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/ia64/ia64-tramp.s utilities/arch/ia64/cpuid.c \
 	utilities/arch/ia64/ia64-context-pc.c \
 	trampoline/aarch64/aarch64-tramp.c \
-	utilities/arch/libunwind/cpuid.c \
+	utilities/arch/aarch64/cpuid.c \
 	utilities/arch/libunwind/libunwind-context-pc.c \
 	sample-sources/papi.c sample-sources/papi-c-cupti.c \
 	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
@@ -962,7 +962,7 @@ am__objects_63 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
 @HOST_CPU_IA64_TRUE@am__objects_64 = $(am__objects_63)
 am__objects_65 =  \
 	trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT) \
-	utilities/arch/libunwind/libhpcrun_o-cpuid.$(OBJEXT) \
+	utilities/arch/aarch64/libhpcrun_o-cpuid.$(OBJEXT) \
 	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
 @HOST_CPU_AARCH64_TRUE@am__objects_66 = $(am__objects_65)
 @OPT_PAPI_CUPTI_TRUE@am__objects_67 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
@@ -1636,7 +1636,7 @@ MY_IA64_FILES = \
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
     \
-	utilities/arch/libunwind/cpuid.c   \
+	utilities/arch/aarch64/cpuid.c   \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
@@ -2417,15 +2417,21 @@ trampoline/aarch64/$(DEPDIR)/$(am__dirstamp):
 trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo:  \
 	trampoline/aarch64/$(am__dirstamp) \
 	trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/aarch64/$(am__dirstamp):
+	@$(MKDIR_P) utilities/arch/aarch64
+	@: > utilities/arch/aarch64/$(am__dirstamp)
+utilities/arch/aarch64/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) utilities/arch/aarch64/$(DEPDIR)
+	@: > utilities/arch/aarch64/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/aarch64/libhpcrun_la-cpuid.lo:  \
+	utilities/arch/aarch64/$(am__dirstamp) \
+	utilities/arch/aarch64/$(DEPDIR)/$(am__dirstamp)
 utilities/arch/libunwind/$(am__dirstamp):
 	@$(MKDIR_P) utilities/arch/libunwind
 	@: > utilities/arch/libunwind/$(am__dirstamp)
 utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) utilities/arch/libunwind/$(DEPDIR)
 	@: > utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
-utilities/arch/libunwind/libhpcrun_la-cpuid.lo:  \
-	utilities/arch/libunwind/$(am__dirstamp) \
-	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
 utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo:  \
 	utilities/arch/libunwind/$(am__dirstamp) \
 	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
@@ -2837,9 +2843,9 @@ utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT):  \
 trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT):  \
 	trampoline/aarch64/$(am__dirstamp) \
 	trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
-utilities/arch/libunwind/libhpcrun_o-cpuid.$(OBJEXT):  \
-	utilities/arch/libunwind/$(am__dirstamp) \
-	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
+utilities/arch/aarch64/libhpcrun_o-cpuid.$(OBJEXT):  \
+	utilities/arch/aarch64/$(am__dirstamp) \
+	utilities/arch/aarch64/$(DEPDIR)/$(am__dirstamp)
 utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT):  \
 	utilities/arch/libunwind/$(am__dirstamp) \
 	utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
@@ -3069,6 +3075,8 @@ mostlyclean-compile:
 	-rm -f unwind/x86-family/manual-intervals/*.lo
 	-rm -f utilities/*.$(OBJEXT)
 	-rm -f utilities/*.lo
+	-rm -f utilities/arch/aarch64/*.$(OBJEXT)
+	-rm -f utilities/arch/aarch64/*.lo
 	-rm -f utilities/arch/ia64/*.$(OBJEXT)
 	-rm -f utilities/arch/ia64/*.lo
 	-rm -f utilities/arch/libunwind/*.$(OBJEXT)
@@ -3355,13 +3363,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-line_wrapping.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-unlink.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/aarch64/$(DEPDIR)/libhpcrun_la-cpuid.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_la-cpuid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_la-ia64-context-pc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_o-cpuid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_o-ia64-context-pc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-cpuid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ppc64/$(DEPDIR)/libhpcrun_la-cpuid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ppc64/$(DEPDIR)/libhpcrun_la-ppc64-context-pc.Plo@am__quote@
@@ -4288,12 +4296,12 @@ trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo: trampoline/aarch64/aarch64-tra
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo `test -f 'trampoline/aarch64/aarch64-tramp.c' || echo '$(srcdir)/'`trampoline/aarch64/aarch64-tramp.c
 
-utilities/arch/libunwind/libhpcrun_la-cpuid.lo: utilities/arch/libunwind/cpuid.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_la-cpuid.lo -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-cpuid.Tpo -c -o utilities/arch/libunwind/libhpcrun_la-cpuid.lo `test -f 'utilities/arch/libunwind/cpuid.c' || echo '$(srcdir)/'`utilities/arch/libunwind/cpuid.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-cpuid.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-cpuid.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/cpuid.c' object='utilities/arch/libunwind/libhpcrun_la-cpuid.lo' libtool=yes @AMDEPBACKSLASH@
+utilities/arch/aarch64/libhpcrun_la-cpuid.lo: utilities/arch/aarch64/cpuid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/arch/aarch64/libhpcrun_la-cpuid.lo -MD -MP -MF utilities/arch/aarch64/$(DEPDIR)/libhpcrun_la-cpuid.Tpo -c -o utilities/arch/aarch64/libhpcrun_la-cpuid.lo `test -f 'utilities/arch/aarch64/cpuid.c' || echo '$(srcdir)/'`utilities/arch/aarch64/cpuid.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/aarch64/$(DEPDIR)/libhpcrun_la-cpuid.Tpo utilities/arch/aarch64/$(DEPDIR)/libhpcrun_la-cpuid.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/aarch64/cpuid.c' object='utilities/arch/aarch64/libhpcrun_la-cpuid.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_la-cpuid.lo `test -f 'utilities/arch/libunwind/cpuid.c' || echo '$(srcdir)/'`utilities/arch/libunwind/cpuid.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/arch/aarch64/libhpcrun_la-cpuid.lo `test -f 'utilities/arch/aarch64/cpuid.c' || echo '$(srcdir)/'`utilities/arch/aarch64/cpuid.c
 
 utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo: utilities/arch/libunwind/libunwind-context-pc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_la-libunwind-context-pc.Tpo -c -o utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
@@ -5912,19 +5920,19 @@ trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj: trampoline/aarch64/aarch64-tra
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o trampoline/aarch64/libhpcrun_o-aarch64-tramp.obj `if test -f 'trampoline/aarch64/aarch64-tramp.c'; then $(CYGPATH_W) 'trampoline/aarch64/aarch64-tramp.c'; else $(CYGPATH_W) '$(srcdir)/trampoline/aarch64/aarch64-tramp.c'; fi`
 
-utilities/arch/libunwind/libhpcrun_o-cpuid.o: utilities/arch/libunwind/cpuid.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_o-cpuid.o -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Tpo -c -o utilities/arch/libunwind/libhpcrun_o-cpuid.o `test -f 'utilities/arch/libunwind/cpuid.c' || echo '$(srcdir)/'`utilities/arch/libunwind/cpuid.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/cpuid.c' object='utilities/arch/libunwind/libhpcrun_o-cpuid.o' libtool=no @AMDEPBACKSLASH@
+utilities/arch/aarch64/libhpcrun_o-cpuid.o: utilities/arch/aarch64/cpuid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/aarch64/libhpcrun_o-cpuid.o -MD -MP -MF utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Tpo -c -o utilities/arch/aarch64/libhpcrun_o-cpuid.o `test -f 'utilities/arch/aarch64/cpuid.c' || echo '$(srcdir)/'`utilities/arch/aarch64/cpuid.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Tpo utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/aarch64/cpuid.c' object='utilities/arch/aarch64/libhpcrun_o-cpuid.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_o-cpuid.o `test -f 'utilities/arch/libunwind/cpuid.c' || echo '$(srcdir)/'`utilities/arch/libunwind/cpuid.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/aarch64/libhpcrun_o-cpuid.o `test -f 'utilities/arch/aarch64/cpuid.c' || echo '$(srcdir)/'`utilities/arch/aarch64/cpuid.c
 
-utilities/arch/libunwind/libhpcrun_o-cpuid.obj: utilities/arch/libunwind/cpuid.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_o-cpuid.obj -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Tpo -c -o utilities/arch/libunwind/libhpcrun_o-cpuid.obj `if test -f 'utilities/arch/libunwind/cpuid.c'; then $(CYGPATH_W) 'utilities/arch/libunwind/cpuid.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/libunwind/cpuid.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Tpo utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-cpuid.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/libunwind/cpuid.c' object='utilities/arch/libunwind/libhpcrun_o-cpuid.obj' libtool=no @AMDEPBACKSLASH@
+utilities/arch/aarch64/libhpcrun_o-cpuid.obj: utilities/arch/aarch64/cpuid.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/aarch64/libhpcrun_o-cpuid.obj -MD -MP -MF utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Tpo -c -o utilities/arch/aarch64/libhpcrun_o-cpuid.obj `if test -f 'utilities/arch/aarch64/cpuid.c'; then $(CYGPATH_W) 'utilities/arch/aarch64/cpuid.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/aarch64/cpuid.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Tpo utilities/arch/aarch64/$(DEPDIR)/libhpcrun_o-cpuid.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/arch/aarch64/cpuid.c' object='utilities/arch/aarch64/libhpcrun_o-cpuid.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/libunwind/libhpcrun_o-cpuid.obj `if test -f 'utilities/arch/libunwind/cpuid.c'; then $(CYGPATH_W) 'utilities/arch/libunwind/cpuid.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/libunwind/cpuid.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/arch/aarch64/libhpcrun_o-cpuid.obj `if test -f 'utilities/arch/aarch64/cpuid.c'; then $(CYGPATH_W) 'utilities/arch/aarch64/cpuid.c'; else $(CYGPATH_W) '$(srcdir)/utilities/arch/aarch64/cpuid.c'; fi`
 
 utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o: utilities/arch/libunwind/libunwind-context-pc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o -MD -MP -MF utilities/arch/libunwind/$(DEPDIR)/libhpcrun_o-libunwind-context-pc.Tpo -c -o utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.o `test -f 'utilities/arch/libunwind/libunwind-context-pc.c' || echo '$(srcdir)/'`utilities/arch/libunwind/libunwind-context-pc.c
@@ -6471,6 +6479,7 @@ clean-libtool:
 	-rm -rf unwind/x86-family/.libs unwind/x86-family/_libs
 	-rm -rf unwind/x86-family/manual-intervals/.libs unwind/x86-family/manual-intervals/_libs
 	-rm -rf utilities/.libs utilities/_libs
+	-rm -rf utilities/arch/aarch64/.libs utilities/arch/aarch64/_libs
 	-rm -rf utilities/arch/ia64/.libs utilities/arch/ia64/_libs
 	-rm -rf utilities/arch/libunwind/.libs utilities/arch/libunwind/_libs
 	-rm -rf utilities/arch/ppc64/.libs utilities/arch/ppc64/_libs
@@ -6736,6 +6745,8 @@ distclean-generic:
 	-rm -f unwind/x86-family/manual-intervals/$(am__dirstamp)
 	-rm -f utilities/$(DEPDIR)/$(am__dirstamp)
 	-rm -f utilities/$(am__dirstamp)
+	-rm -f utilities/arch/aarch64/$(DEPDIR)/$(am__dirstamp)
+	-rm -f utilities/arch/aarch64/$(am__dirstamp)
 	-rm -f utilities/arch/ia64/$(DEPDIR)/$(am__dirstamp)
 	-rm -f utilities/arch/ia64/$(am__dirstamp)
 	-rm -f utilities/arch/libunwind/$(DEPDIR)/$(am__dirstamp)
@@ -6758,7 +6769,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/datacentric/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/datacentric/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/aarch64/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -6808,7 +6819,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/datacentric/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/datacentric/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/aarch64/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
