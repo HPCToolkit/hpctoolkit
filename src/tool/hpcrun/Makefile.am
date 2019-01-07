@@ -422,19 +422,25 @@ MY_MIPS_FILES = \
 MY_PPC_FILES = \
         trampoline/ppc64/ppc64-tramp.s \
         \
+        utilities/arch/ppc64/cpuid.c   \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
         trampoline/x86-family/x86-tramp.S \
         \
+        utilities/arch/x86-family/cpuid.c \
         utilities/arch/x86-family/x86-context-pc.c
 
 MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
+        \
+        utilities/arch/ia64/cpuid.c  \
         utilities/arch/ia64/ia64-context-pc.c
 
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
+    \
+	utilities/arch/libunwind/cpuid.c   \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT
