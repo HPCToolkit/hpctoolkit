@@ -47,7 +47,9 @@
 #include <linux/version.h>
 
 #include <hpcrun/messages/messages.h>
+#include "sample-sources/perf/perf_event_open.h"
 #include "sample-sources/perf/perf-util.h"
+#include "sample-sources/perf/perf_skid.h"
 #include "sample-sources/perf/perfmon-util.h"
 #include "sample-sources/perf/event_custom.h"
 
@@ -61,7 +63,7 @@
 
 
 /**
- * attention: the order of the array is very important.
+ * attention: the order of the array is very important. 
  * It has to start from event from the latest architecture
  * to the old one, since sometimes newer architecture still keep
  * compatibility with the old ones.
@@ -97,11 +99,11 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
 
     //set_default_perf_event_attr(event_attr, period);
     bool is_period = period->threshold_type == PERIOD;
-    perf_util_attr_init(&event_attr, is_period, period->threshold_num, sample_type);
-    perf_util_set_max_precise_ip(&event_attr);
+    perf_util_attr_init(evnames[i], &event_attr, is_period, period->threshold_num, sample_type);
+    perf_skid_set_max_precise_ip(&event_attr);
 
     // testing the feasibility;
-    int ret = perf_util_event_open(&event_attr,
+    int ret = perf_event_open(&event_attr,
 			THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
 
     if (ret >= 0) {
