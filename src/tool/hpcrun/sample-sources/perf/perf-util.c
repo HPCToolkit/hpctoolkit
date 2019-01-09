@@ -401,7 +401,7 @@ perf_util_add_kernel_callchain(
 //----------------------------------------------------------
 int
 perf_util_attr_init(
-  char *event_name,
+  const char *event_name,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
