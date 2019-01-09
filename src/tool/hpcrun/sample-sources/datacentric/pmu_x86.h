@@ -45,40 +45,25 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_
-#define SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_
+#ifndef __PMU_X86_H__
+#define __PMU_X86_H__
 
+#include <utilities/arch/cpuid.h>
 
-#define VENDOR_INTEL   "GenuineIntel"
-#define VENDOR_AMD     "AuthenticAMD"
-
-struct cpuid_type_s {
-  char vendor[13];
-  int  family;
-  int  model;
-  int  step;
+struct pmu_config_s {
+  cpu_type_t cpu;
+  const char *event;
 };
 
-typedef enum {
-  CPU_UNSUP = 0,
+/**
+ * attention: the order of the array can be important.
+ */
+struct pmu_config_s pmu_events[] = {
+    {INTEL_SNB, "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"},
+    {INTEL_SNB, "snb::MEM_TRANS_RETIRED:PRECISE_STORE"},
 
-  INTEL_WSM_EX,
-  INTEL_SNB,
-  INTEL_SNB_EP,
-  INTEL_NHM_EX,
-  INTEL_NHM_EP,
-  INTEL_WSM_EP,
-  INTEL_IVB_EX,
-  INTEL_HSX,
-  INTEL_BDX,
-  INTEL_SKX,
-  INTEL_KNL,
+    {INTEL_KNL, "knl::OFFCORE_RESPONSE_0"},
+    {INTEL_KNL, "knl::MEM_UOPS_RETIRED:LD_L2_HIT"}
+};
 
-  AMD_MGN_CRS
-} cpu_type_t;
-
-
-cpu_type_t get_cpuid(void);
-
-
-#endif /* SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_ */
+#endif // __PMU_X86_H__

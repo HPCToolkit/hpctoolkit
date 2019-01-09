@@ -44,14 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// Note:
+// Some of the code is adapted from Linux Perf source code:
+// https://github.com/torvalds/linux/blob/master/tools/perf/arch/x86/util/header.c
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <utilities/arch/cpuid.h>
-
-#define VENDOR_INTEL   "GenuineIntel"
-#define VENDOR_AMD     "AuthenticAMD"
 
 
 static inline void
@@ -69,6 +70,8 @@ asm_cpuid(unsigned int op, unsigned int *a, unsigned int *b, unsigned int *c,
 			: "a" (op));
 }
 
+/* return cpu type based on the cpu model        */
+/* see https://en.wikichip.org/wiki/intel/cpuid  */
 static cpu_type_t
 get_intel_cpu_type(struct cpuid_type_s *cpuid)
 {
@@ -106,7 +109,11 @@ get_intel_cpu_type(struct cpuid_type_s *cpuid)
             break;
     case 85:
             type = INTEL_SKX;
-            break;    }
+            break;
+    case 87:
+            type = INTEL_KNL;
+            break;
+    }
   }
   return type;
 }

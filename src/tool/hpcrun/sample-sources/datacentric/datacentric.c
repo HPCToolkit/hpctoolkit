@@ -448,10 +448,10 @@ datacentric_register(sample_source_t *self,
   hpcrun_set_metric_info(metric.memstore, "MEM-Store");
 
   metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-l1hit");
+  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
 
   metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-l1miss");
+  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
 
   // ------------------------------------------
   // Memory load miss metric
