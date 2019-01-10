@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,7 +47,7 @@
 /*
  *  Splay Tree Macros for regular and interval trees.
  *
- *  Copyright (c) 2002-2018, Rice University.
+ *  Copyright (c) 2002-2019, Rice University.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
