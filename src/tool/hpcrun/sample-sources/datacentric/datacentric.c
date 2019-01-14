@@ -80,15 +80,16 @@
 
 #include <messages/messages.h>
 
+#include <cct/cct_bundle.h>
+#include <cct/cct.h>
+#include <cct/cct_addr.h>   // struct var_addr_s
+
 #include "include/queue.h"  // linked-list
 
-#include "cct_addr.h"       // struct var_addr_s
 #include "datacentric.h"
 #include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
-
-#include <cct/cct_bundle.h>
 
 #include "sample-sources/perf/event_custom.h"
 
@@ -365,25 +366,39 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
         // variable address is store in the database
         // record the interval of this access
 
-        hpcrun_metricVal_t value;
-        value.p = (void *)mmap_data->addr;
+        hpcrun_metricVal_t val_addr;
+        val_addr.p = (void *)mmap_data->addr;
 
         // check if this is the minimum value. if this is the case, record it in the metric
         int metric_id = datacentric_get_metric_addr_start();
-        hpcrun_metric_std_min(metric_id, mset, value);
+        hpcrun_metric_std_min(metric_id, mset, val_addr);
 
         // check if this is the maximum value. if this is the case, record it in the metric
         metric_id = datacentric_get_metric_addr_end();
-        hpcrun_metric_std_max(metric_id, mset, value);
+        hpcrun_metric_std_max(metric_id, mset, val_addr);
 
         cct_node_t *context = info->context;
         if (info->magic == DATA_STATIC_MAGIC) {
+          // static allocation
           context = datacentric_create_static_node(info);
         }
 
-        // record the node allocation id
-        value.i = hpcrun_cct_persistent_id(context);
-        hpcrun_metric_std_set(metric.node_alloc, mset, value);
+        cct_node_t *parent_ctx = hpcrun_cct_parent(context);
+        cct_addr_t *addr       = hpcrun_cct_addr(parent_ctx);
+        cct_node_t *node_alloc = hpcrun_cct_find_addr(node, addr);
+        if (node_alloc == NULL) {
+          node_alloc = hpcrun_cct_insert_addr(node, addr);
+
+          // record the node allocation id
+          hpcrun_metricVal_t val_id;
+          val_id.i = hpcrun_cct_persistent_id(context);
+          hpcrun_metric_std_set(metric.node_alloc, mset, val_id);
+        }
+        cct_metric_data_increment(metric.node_alloc, node_alloc, (hpcrun_metricVal_t) {.i = 1});
+
+        metric_set_t* set = hpcrun_get_metric_set(node_alloc);
+        hpcrun_metric_std_min(datacentric_get_metric_addr_start(), set, val_addr);
+        hpcrun_metric_std_max(datacentric_get_metric_addr_end(),   set, val_addr);
       }
     }
     hpcrun_cct_set_node_memaccess(node);
@@ -469,7 +484,7 @@ datacentric_register(sample_source_t *self,
   // node allocation id
   // ------------------------------------------
   metric.node_alloc = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.node_alloc, "Alloc-id",
+  hpcrun_set_metric_and_attributes(metric.node_alloc, DATACENTRIC_METRIC_PREFIX "Alloc-id",
       MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
 
   return 1;

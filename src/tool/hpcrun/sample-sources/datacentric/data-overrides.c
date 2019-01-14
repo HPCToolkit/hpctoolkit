@@ -247,9 +247,9 @@ metric_initialize()
   addr_start_metric_id = hpcrun_new_metric();
   addr_end_metric_id   = hpcrun_new_metric();
 
-  hpcrun_set_metric_and_attributes(addr_start_metric_id,  "Start",
+  hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
-  hpcrun_set_metric_and_attributes(addr_end_metric_id,  "End",
+  hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
   size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
