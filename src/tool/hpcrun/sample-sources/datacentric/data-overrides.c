@@ -187,9 +187,14 @@ static int datainfo_size = sizeof(struct datatree_info_s);
 static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
 
+static cct_node_t* root_dyn_node = NULL;
+
 /******************************************************************************
  * private operations
  *****************************************************************************/
+static void
+dynamic_allocation() {
+}
 
 // Accept 0.ddd as floating point or x/y as fraction.
 static float
@@ -387,6 +392,23 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   return DATACENTRIC_LOC_NONE;
 }
 
+static cct_node_t *
+datacentric_update_before_bt_insertion(cct_bundle_t *bundle,
+                      cct_node_t *path, void *data_aux)
+{
+  // update the number of metric counter
+  thread_data_t *td = hpcrun_get_thread_data();
+
+  // create root node for dynamic allocation
+  if (root_dyn_node == NULL) {
+    thread_data_t* td    = hpcrun_get_thread_data();
+    cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
+    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_node(bundle);
+
+    root_dyn_node = hpcrun_insert_special_node(node, dynamic_allocation);
+  }
+  return root_dyn_node;
+}
 
 // Fill in the leakinfo struct, add metric to CCT, add to splay tree
 // (if footer) and print TMSG.
@@ -418,6 +440,8 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     memset(&info, 0, sizeof(sampling_info_t));
 
     info.flags = SAMPLING_IN_MALLOC;
+    info.sample_custom_cct.update_before_fn = datacentric_update_before_bt_insertion;
+
     int metric_start_addr = datacentric_get_metric_addr_start();
 
     // record the call path to this allocation, and the address
@@ -427,6 +451,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 
     // update the number of metric counter
     thread_data_t *td = hpcrun_get_thread_data();
+
     metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);
     info_aux->num_samples++;
 
