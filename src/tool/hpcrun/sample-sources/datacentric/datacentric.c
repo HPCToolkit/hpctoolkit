@@ -360,10 +360,15 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     datatree_info_t *info  = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
     if (info) {
+      cct_node_t *context = info->context;
+      if (info->magic == DATA_STATIC_MAGIC) {
+        // static allocation
+        context = datacentric_create_static_node(info);
+      }
       // copy the callpath of the "node" to data centric root context
-      cct_node_t *context = hpcrun_cct_insert_path_return_leaf(node, info->context);
+      node = hpcrun_cct_insert_path_return_leaf(node, context);
 
-      metric_set_t *mset = hpcrun_reify_metric_set(context);
+      metric_set_t *mset = hpcrun_reify_metric_set(node);
 
       // variable address is store in the database
       // record the interval of this access
@@ -378,11 +383,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       // check if this is the maximum value. if this is the case, record it in the metric
       metric_id = datacentric_get_metric_addr_end();
       hpcrun_metric_std_max(metric_id, mset, val_addr);
-
-      if (info->magic == DATA_STATIC_MAGIC) {
-        // static allocation
-        context = datacentric_create_static_node(info);
-      }
       cct_metric_data_increment(metric.node_alloc, context, (hpcrun_metricVal_t) {.i = 1});
     }
     hpcrun_cct_set_node_memaccess(node);
