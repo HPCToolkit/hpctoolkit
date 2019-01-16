@@ -104,7 +104,7 @@
  * macros
  *****************************************************************************/
 
-#define OMPT_ACTIVITY_DEBUG 0
+#define OMPT_ACTIVITY_DEBUG 1
 
 #if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -848,7 +848,7 @@ ompt_device_initialize(uint64_t device_num,
                        ompt_function_lookup_t lookup,
                        const char *documentation)
 {
-  PRINT("ompt_device_initialize->%s, %d", type, device_num);
+  PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
 
   ompt_bind_names(lookup);
 
@@ -874,7 +874,7 @@ ompt_device_load(uint64_t device_num,
                  const void *device_addr,
                  uint64_t module_id)
 {
-  PRINT("ompt_device_load->%s, %d", filename, device_num);
+  PRINT("ompt_device_load->%s, %d\n", filename, device_num);
   cupti_load_callback_cuda(module_id, host_addr, bytes);
 }
 
