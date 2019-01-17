@@ -79,6 +79,7 @@ ompt_region_data_new(uint64_t region_id, cct_node_t *call_path)
   // parts for freelist
   OMPT_BASE_T_GET_NEXT(e) = NULL;
   e->thread_freelist = &public_region_freelist;
+  e->depth = 0;
   return e;
 }
 
@@ -121,14 +122,28 @@ ompt_parallel_begin_internal(
   uint64_t region_id = region_data->region_id;
   thread_data_t *td = hpcrun_get_thread_data();
 
-  ompt_data_t *parent_region_info = NULL;
-  int team_size = 0;
-  // FIXED: if we put 0 as previous, it would return the current parallel_data which is inside this function always different than NULL
-  hpcrun_ompt_get_parallel_info(1, &parent_region_info, &team_size);
-  if (parent_region_info == NULL) {
+  // old version
+//  ompt_data_t *parent_region_info = NULL;
+//  int team_size = 0;
+//  // FIXED: if we put 0 as previous, it would return the current parallel_data which is inside this function always different than NULL
+//  hpcrun_ompt_get_parallel_info(1, &parent_region_info, &team_size);
+//  if (parent_region_info == NULL) {
+//    // mark the master thread in the outermost region
+//    // (the one that unwinds to FENCE_MAIN)
+//    td->master = 1;
+//  }
+
+  // FIXME vi3: check if this is right
+  // the region has not been changed yet
+  // that's why we say that the parent region is hpcrun_ompt_get_current_region_data
+  ompt_region_data_t *parent_region = hpcrun_ompt_get_current_region_data();
+  if (!parent_region) {
     // mark the master thread in the outermost region
     // (the one that unwinds to FENCE_MAIN)
     td->master = 1;
+    region_data->depth = 0;
+  } else {
+    region_data->depth = parent_region->depth + 1;
   }
 
   if(ompt_eager_context){

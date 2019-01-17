@@ -391,65 +391,43 @@ add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_mas
 {
 
   if (!region_data) {
-    printf("*******************This is also possible");
+    printf("*******************This is also possible. ompt-defer.c:394");
     return;
   }
 
-  // find the ancestor on the stack
-
-  ompt_region_data_t *ancestors[MAX_NESTING_LEVELS];
-
-  int ancestor_level = 0;
-
-  ompt_region_data_t *current_ancestor = region_data;
-  int asi = -1;
-  while (current_ancestor) {
-    // FIXME: maybe this check is not neccessary, should discuss about this
-    // discuss above example
-    // check if ancestor is already at the stack
-    asi = get_stack_index(current_ancestor);
-    if (asi != -1) {
-      // set this ancestor as current top of the stack
-      top_index = asi;
+  ompt_region_data_t *current = region_data;
+  int level = 0;
+  int depth;
+  ompt_notification_t *notification;
+  // up through region stack until first region which is on the stack
+  // if none of region is on the stack, then stack will be completle changed
+  while (current) {
+    depth = current->depth;
+    // found region which is on the stack
+    if (depth <= top_index &&
+        region_stack[depth].notification->region_data->region_id == current->region_id) {
       break;
     }
-    // store ancestor
-    ancestors[ancestor_level] = current_ancestor;
-    // one level above
-    ancestor_level++;
-    current_ancestor = hpcrun_ompt_get_region_data(ancestor_level);
+    // add place on the stack for the region
+    notification = help_notification_alloc(current);
+    region_stack[depth].notification = notification;
+    // thread could be master only for region_data, see explanation
+    // given in comment below
+    region_stack[depth].team_master = 0;
+    region_stack[depth].took_sample = 0;
+    // get the parent
+    current = hpcrun_ompt_get_region_data(++level);
   }
 
-  // if none region from ancestor path hasn't been found, then it is possible
-  // that some old region stays at the stack, so it would be good to clean them
-  if (asi == -1) {
-    clear_region_stack();
-  }
+  // region_data is the new top of the stack
+  top_index = region_data->depth;
+  // FIXME vi3: should check if this is right
+  // If the stack content does not corresponds to ancestors of the region_data,
+  // then thread could only be master of the region_data, but not to its ancestors.
+  // Values of argument team_master says if the thread is the master of region_data
+  region_stack[top_index].team_master = team_master;
 
-
-  // at current ancestor level:
-  // 1) there is not region at all
-  // 2) it is ancestor which is places on the stack
-  ancestor_level--;
-
-  // push all ancestor at the stack
-  ompt_notification_t *notification;
-  while (ancestor_level > 0) {
-    notification = help_notification_alloc(ancestors[ancestor_level]);
-    push_region_stack(notification, 0, 0);
-    ancestor_level--;
-  }
-
-  // push current region at the stack
-  notification = help_notification_alloc(region_data);
-  push_region_stack(notification, 0, team_master);
-
-  // register all descendants of found ancestor, if found
 }
-
-
-
-
 
 
 void add_to_list(ompt_region_data_t* region_data){

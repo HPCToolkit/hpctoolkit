@@ -650,6 +650,8 @@ typedef struct ompt_region_data_s {
   uint64_t region_id;
   // call_path to the region
   cct_node_t *call_path;
+  // depth of the region, starts from zero
+  int depth;
 } ompt_region_data_t;
 
 typedef struct ompt_notification_s{
