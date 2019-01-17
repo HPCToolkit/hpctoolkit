@@ -252,9 +252,9 @@ metric_initialize()
   addr_start_metric_id = hpcrun_new_metric();
   addr_end_metric_id   = hpcrun_new_metric();
 
-  hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
+  hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "$<Start",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
-  hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
+  hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "$>End",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
   size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
@@ -436,6 +436,13 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right     = NULL;
 
   if (is_active()) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    if (!td || !td->core_profile_trace_data.epoch) {
+      // if we are called too early and epoch is not set,
+      // we return immediately, and no need to get malloc information
+      // this mostly happens inside a library initialization
+      return;
+    }
     sampling_info_t info;
     memset(&info, 0, sizeof(sampling_info_t));
 
@@ -450,8 +457,6 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
                                                0, 1, &info);
 
     // update the number of metric counter
-    thread_data_t *td = hpcrun_get_thread_data();
-
     metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);
     info_aux->num_samples++;
 
