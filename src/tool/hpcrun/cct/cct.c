@@ -829,12 +829,30 @@ hpcrun_insert_special_node(cct_node_t *root, void *addr)
   return hpcrun_cct_insert_addr(root, &tmp);
 }
 
+
 cct_node_t*
 hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
 {
   if(!path || ! path->parent) return root;
   root = hpcrun_cct_insert_path_return_leaf(path->parent, root);
+
   return hpcrun_cct_insert_addr(root, &(path->addr));
+}
+
+static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
+
+// thread-safety version of hpcrun_cct_insert_path_return_leaf
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf_ts(cct_node_t *path, cct_node_t *root)
+{
+  if(!path || ! path->parent) return root;
+  root = hpcrun_cct_insert_path_return_leaf_ts(path->parent, root);
+
+  spinlock_lock(&datatree_lock);
+  cct_node_t *node =  hpcrun_cct_insert_addr(root, &(path->addr));
+  spinlock_unlock(&datatree_lock);
+
+  return node;
 }
 
 

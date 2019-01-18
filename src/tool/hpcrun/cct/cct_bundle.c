@@ -61,30 +61,39 @@
 // "Special" routine to serve as a placeholder for "idle" resource
 //
 
-void
+static void
 GPU_IDLE(void)
 {
 }
 
-void
+// special routine for datacentric resource
+static void
 DATACENTRIC()
 {}
 
 //
-// "Special" routine to serve as a placeholder for "datacentric" resource
+// "Special" routine to serve as a placeholder for "dynamic" allocatopm
 //
 
-void
-DATACENTRIC_ANNEX(void)
+static void
+DATACENTRIC_Dynamic(void)
 {}
 
+
+//
+// "Special" routine to serve as a placeholder for "static" allocatopm
+//
+
+static void
+DATACENTRIC_Static(void)
+{}
 
 
 
 //
 // Interface procedures
 //
-
+#define CREATE_SPECIAL(FUNC) cct_node_create(&(ADDR(FUNC)), NULL)
 
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
@@ -112,7 +121,10 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
-  bundle->special_datacentric_node = hpcrun_cct_new_special(DATACENTRIC_ANNEX);
+
+  bundle->special_datacentric_node    = NULL;
+  bundle->special_datacentric_dynamic = NULL;
+  bundle->special_datacentric_static  = NULL;
 }
 
 //
@@ -172,8 +184,30 @@ hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
 cct_node_t*
 hpcrun_cct_bundle_get_datacentric_node(cct_bundle_t *cct)
 {
-  if (!hpcrun_cct_parent(cct->special_datacentric_node)) {
-    hpcrun_cct_insert_node(cct->top, cct->special_datacentric_node);
+  if (!cct->special_datacentric_node) {
+    cct->special_datacentric_node = hpcrun_insert_special_node(cct->top, DATACENTRIC);
   }
   return cct->special_datacentric_node;
 }
+
+cct_node_t*
+hpcrun_cct_bundle_get_datacentric_dynamic_node(cct_bundle_t *cct)
+{
+  if (!cct->special_datacentric_dynamic) {
+    cct_node_t *datacentric_root     = hpcrun_cct_bundle_get_datacentric_node(cct);
+    cct->special_datacentric_dynamic = hpcrun_insert_special_node(cct->special_datacentric_node, DATACENTRIC_Dynamic);
+  }
+  return cct->special_datacentric_dynamic;
+}
+
+
+cct_node_t*
+hpcrun_cct_bundle_get_datacentric_static_node(cct_bundle_t *cct)
+{
+  if (!cct->special_datacentric_static) {
+    cct_node_t *datacentric_root    = hpcrun_cct_bundle_get_datacentric_node(cct);
+    cct->special_datacentric_static = hpcrun_insert_special_node(cct->special_datacentric_node, DATACENTRIC_Static);
+  }
+  return cct->special_datacentric_static;
+}
+

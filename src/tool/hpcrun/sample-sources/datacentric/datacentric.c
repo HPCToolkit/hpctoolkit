@@ -160,6 +160,7 @@ struct perf_mem_metric {
 
 static struct perf_mem_metric metric;
 
+
 /******************************************************************************
  * PRIVATE Function implementation
  *****************************************************************************/
@@ -304,7 +305,7 @@ datacentric_create_static_node(datatree_info_t *info)
 
     thread_data_t* td    = hpcrun_get_thread_data();
     cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
-    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_node(bundle);
+    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_static_node(bundle);
 
     info->context = hpcrun_cct_insert_addr(node, &addr);
     hpcrun_cct_set_node_allocation(info->context);
@@ -366,7 +367,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
         context = datacentric_create_static_node(info);
       }
       // copy the callpath of the "node" to data centric root context
-      node = hpcrun_cct_insert_path_return_leaf(node, context);
+      node = hpcrun_cct_insert_path_return_leaf_ts(node, context);
 
       metric_set_t *mset = hpcrun_reify_metric_set(node);
 
@@ -383,7 +384,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       // check if this is the maximum value. if this is the case, record it in the metric
       metric_id = datacentric_get_metric_addr_end();
       hpcrun_metric_std_max(metric_id, mset, val_addr);
-      cct_metric_data_increment(metric.memaccess, context, (hpcrun_metricVal_t) {.i = 1});
+      cct_metric_data_increment(metric.memaccess, node, (hpcrun_metricVal_t) {.i = 1});
     }
     hpcrun_cct_set_node_memaccess(node);
   }
@@ -408,6 +409,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   //TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
+
 
 
 /****
@@ -470,6 +472,7 @@ datacentric_register(sample_source_t *self,
   metric.memaccess = hpcrun_new_metric();
   hpcrun_set_metric_and_attributes(metric.memaccess, DATACENTRIC_METRIC_PREFIX "Access",
       MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
+
 
   return 1;
 }

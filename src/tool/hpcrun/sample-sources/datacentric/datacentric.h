@@ -74,5 +74,6 @@ void datacentric_init();
 int datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period);
 
+
 #endif // sample_source_memleak_h
 

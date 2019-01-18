@@ -187,14 +187,10 @@ static int datainfo_size = sizeof(struct datatree_info_s);
 static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
 
-static cct_node_t* root_dyn_node = NULL;
 
 /******************************************************************************
  * private operations
  *****************************************************************************/
-static void
-dynamic_allocation() {
-}
 
 // Accept 0.ddd as floating point or x/y as fraction.
 static float
@@ -396,18 +392,7 @@ static cct_node_t *
 datacentric_update_before_bt_insertion(cct_bundle_t *bundle,
                       cct_node_t *path, void *data_aux)
 {
-  // update the number of metric counter
-  thread_data_t *td = hpcrun_get_thread_data();
-
-  // create root node for dynamic allocation
-  if (root_dyn_node == NULL) {
-    thread_data_t* td    = hpcrun_get_thread_data();
-    cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
-    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_node(bundle);
-
-    root_dyn_node = hpcrun_insert_special_node(node, dynamic_allocation);
-  }
-  return root_dyn_node;
+  return hpcrun_cct_bundle_get_datacentric_dynamic_node(bundle);
 }
 
 // Fill in the leakinfo struct, add metric to CCT, add to splay tree
