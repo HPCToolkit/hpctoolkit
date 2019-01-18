@@ -380,10 +380,47 @@ int get_stack_index(ompt_region_data_t *region_data) {
 ompt_notification_t*
 help_notification_alloc(ompt_region_data_t *region_data)
 {
-  ompt_notification_t *notification = hpcrun_malloc(sizeof(ompt_notification_t));
+  ompt_notification_t *notification = hpcrun_ompt_notification_alloc();
   notification->region_data = region_data;
   notification->threads_queue = &threads_queue;
   return notification;
+}
+
+void
+swap_and_free(ompt_region_data_t* region_data)
+{
+
+  int depth = region_data->depth;
+  ompt_notification_t *notification;
+  region_stack_el_t *stack_element;
+
+  // If notification at depth index of the stack
+  // does not have initialize next pointer, that means
+  // that is not enqueue anywhere and is not in the freelist,
+  // which means we can free it here.
+  stack_element = &region_stack[depth];
+  notification = stack_element->notification;
+  // we can free notification either if the thread is the master of the region
+  // or the thread did not take a sample inside region
+  if (notification && (stack_element->team_master || !stack_element->took_sample)) {
+    hpcrun_ompt_notification_free(notification);
+  }
+
+  // add place on the stack for the region
+  notification = help_notification_alloc(region_data);
+  region_stack[depth].notification = notification;
+  // thread could be master only for region_data, see explanation
+  // given in comment below
+  region_stack[depth].team_master = 0;
+  region_stack[depth].took_sample = 0;
+
+  // I previosly use this as a condition to free notification,
+  // which is bad and the explanation is below
+  // Notification can be at the end of the queue
+  // and this condition does not check thath
+  //    if (OMPT_BASE_T_GET_NEXT(notification) == NULL
+  //        && wfq_get_next(OMPT_BASE_T_STAR(notification)) == NULL) {
+
 }
 
 void
@@ -408,13 +445,7 @@ add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_mas
         region_stack[depth].notification->region_data->region_id == current->region_id) {
       break;
     }
-    // add place on the stack for the region
-    notification = help_notification_alloc(current);
-    region_stack[depth].notification = notification;
-    // thread could be master only for region_data, see explanation
-    // given in comment below
-    region_stack[depth].team_master = 0;
-    region_stack[depth].took_sample = 0;
+    swap_and_free(current);
     // get the parent
     current = hpcrun_ompt_get_region_data(++level);
   }
@@ -629,7 +660,7 @@ try_resolve_one_region_context()
   cct_node_t *parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
 
   if (parent_unresolved_cct == NULL) {
-      printf("*******************PARENT UNRESOLVED CCT IS MISSING!\n");
+      printf("*******************PARENT UNRESOLVED CCT IS MISSING! OLD_HEAD_NOTIFICATION: %p\n", old_head);
       //unresolved_cnt--;
       return 0;
   }
@@ -644,7 +675,6 @@ try_resolve_one_region_context()
   cct_node_t *region_call_path = region_data->call_path;
 
   // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
-//  if (region_data->region_id == 0x1000000000001) {
   // when had this condtion, once infinity happen
   if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
     // from initial region, we should remove the first one
@@ -680,7 +710,6 @@ try_resolve_one_region_context()
   // ==================================
 
 
-    // FIXME: add unresolved_cct to freelist if needed
   // free notification
   hpcrun_ompt_notification_free(old_head);
 
