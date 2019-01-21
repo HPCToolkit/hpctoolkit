@@ -74,7 +74,7 @@ typedef struct cct_bundle_t {
 
   cct_node_t* special_datacentric_node; // root for datacentric dynamic variables
   cct_node_t* special_datacentric_dynamic;
-  cct_node_t* special_datacentric_static;
+  cct_node_t* special_datacentric_static ;
 
   cct_ctxt_t* ctxt;               // creation context for bundle
 
@@ -99,7 +99,7 @@ extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
 
 
 cct_node_t*
-hpcrun_cct_bundle_get_datacentric_node(cct_bundle_t *cct);
+hpcrun_cct_bundle_init_datacentric_node(cct_bundle_t *cct);
 
 cct_node_t*
 hpcrun_cct_bundle_get_datacentric_dynamic_node(cct_bundle_t *cct);
