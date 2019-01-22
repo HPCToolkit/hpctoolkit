@@ -345,6 +345,10 @@ ompt_implicit_task_internal_begin(
     if(thread_num != 0){
       not_master_region = region_data;
     }
+
+#if 1
+    region_stack[top_index].parent_frame = hpcrun_ompt_get_task_frame(1);
+#endif
   }
 
 
@@ -363,6 +367,7 @@ ompt_implicit_task_internal_end(
 {
 
   if (!ompt_eager_context) {
+    printf("IMPLICIT END REGION_ID: %lx\n", region_stack[top_index].notification->region_data->region_id);
     // the only thing we could do (certainly) here is to pop element from the stack
     // pop element from the stack
     pop_region_stack();

@@ -406,7 +406,17 @@ ompt_elide_runtime_frame_internal(
     if (!frame1) break;
 
     bool reenter1_flag = 
-      interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame); 
+      interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame);
+
+#if 1
+    ompt_frame_t *help_frame = region_stack[top_index-i+1].parent_frame;
+    if (!ompt_eager_context && !reenter1_flag && help_frame) {
+      frame1 = help_frame;
+      reenter1_flag = interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame);
+      // printf("THIS ONLY HAPPENS IN MASTER: %d\n", TD_GET(master));
+    }
+#endif
+
     if(reenter1_flag) {
       for (; it <= *bt_outer; it++) {
         if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->reenter_runtime_frame)) {
@@ -416,6 +426,8 @@ ompt_elide_runtime_frame_internal(
         }
       }
     }
+
+
 
     // FIXME vi3: This makes trouble with master thread when defering
     if (exit0 && reenter1) {

@@ -684,6 +684,7 @@ typedef struct region_stack_el_s {
   ompt_notification_t *notification;
   bool took_sample;
   bool team_master;
+  ompt_frame_t *parent_frame;
 } region_stack_el_t;
 
 

@@ -108,7 +108,7 @@ extern __thread cct_node_t* cct_not_master_region;
 
 // FIXME vi3: just a temp solution
 extern __thread ompt_region_data_t *ending_region;
-
+extern __thread ompt_frame_t *top_ancestor_frame;
 
 // number of unresolved regions
 extern __thread int unresolved_cnt;

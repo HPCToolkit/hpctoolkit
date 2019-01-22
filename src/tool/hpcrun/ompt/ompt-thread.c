@@ -109,6 +109,7 @@ __thread int unresolved_cnt = 0;
 
 // FIXME vi3: just a temp solution
 __thread ompt_region_data_t *ending_region = NULL;
+__thread ompt_frame_t *top_ancestor_frame = NULL;
 
 
 
