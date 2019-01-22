@@ -52,6 +52,15 @@ cupti_activity_node_set
       entry->activity.data.kernel.end = activity_kernel->end;
       break;
     }
+    case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
+    {
+      CUpti_ActivitySynchronization *activity_sync = (CUpti_ActivitySynchronization *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_SYNCHRONIZATION;
+      entry->activity.data.synchronization.syncKind = activity_sync->type;
+      entry->activity.data.synchronization.start = activity_sync->start;
+      entry->activity.data.synchronization.end = activity_sync->end;
+      break;
+    }
     default:
       break;
   }

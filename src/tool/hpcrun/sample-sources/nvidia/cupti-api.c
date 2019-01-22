@@ -375,6 +375,12 @@ cupti_subscriber_callback
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     switch (cb_id) {
+      case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
+      case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
+      case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize:
+      case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
+      case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
@@ -481,6 +487,10 @@ cupti_subscriber_callback
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
     switch (cb_id) {
+      case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020: 
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
@@ -1055,6 +1065,28 @@ cupti_kernel_process
   PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
 }
 
+
+static void
+cupti_synchronization_process
+(
+ CUpti_ActivitySynchronization *activity
+)
+{
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
+      cupti_host_op_map_delete(external_id);
+    }
+    cupti_correlation_id_map_delete(activity->correlationId);
+  }
+  PRINT("Synchronization CorrelationId %u\n", activity->correlationId);
+}
+
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1106,6 +1138,10 @@ cupti_activity_process
 
   case CUPTI_ACTIVITY_KIND_KERNEL:
     cupti_kernel_process((CUpti_ActivityKernel4 *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
+    cupti_synchronization_process((CUpti_ActivitySynchronization *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_EVENT:

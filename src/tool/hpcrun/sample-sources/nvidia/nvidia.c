@@ -130,8 +130,11 @@
   macro("EM_HTOH_BYTES",    9)	\
   macro("EM_PTOP_BYTES",   10) 
 
-#define FORALL_EM_TIME(macro)  \
+#define FORALL_EM_TIME(macro)   \
   macro("EM_TIME (us)",    11)  
+
+#define FORALL_SYNC(macro)      \
+  macro("SYNC_TIME (us)",   0)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
@@ -155,8 +158,8 @@
   macro("IM_CPU_PF",        3)	\
   macro("IM_GPU_PF",        4)
 
-#define FORALL_IM_TIME(macro)  \
-  macro("IM_TIME (us)",     5)  
+#define FORALL_IM_TIME(macro)   \
+  macro("IM_TIME (us)",     5)
 #endif
 
 #if CUPTI_API_VERSION >= 10
@@ -229,6 +232,7 @@ static module_ignore_fn_entry_t module_ignore;
 static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
+static kind_info_t* sync_kind;
 
 
 static int stall_metric_id[NUM_CLAUSES(FORALL_STL)+2];
@@ -246,6 +250,9 @@ static int ke_static_shared_metric_id;
 static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_time_metric_id;
+
+static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
+static int sync_time_metric_id;
 
 static long pc_sampling_frequency = 1;
 
@@ -278,6 +285,7 @@ data_motion_implicit_activities[] = {
 CUpti_ActivityKind
 kernel_invocation_activities[] = { 
   CUPTI_ACTIVITY_KIND_KERNEL,
+  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -358,6 +366,15 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
       hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.end - activity->data.kernel.start});
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
+    {
+      if (activity->data.synchronization.syncKind != 0x7fffffff) {
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
+        hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){
+          .i = activity->data.synchronization.end - activity->data.synchronization.start});
+      }
       break;
     }
     default:
@@ -479,6 +496,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_local_metric_id = ke_metric_id[2];
   ke_time_metric_id = ke_metric_id[3];
   hpcrun_close_kind(ke_kind);
+
+#define declare_sync_metric(name, index) \
+  sync_metric_id[index] = hpcrun_set_new_metric_info(sync_kind, name);
+
+  sync_kind = hpcrun_metrics_new_kind();
+  FORALL_SYNC(declare_sync_metric);	
+  sync_time_metric_id = sync_metric_id[0];
+  hpcrun_close_kind(sync_kind);
 
   // Fetch the event string for the sample source
   // only one event is allowed

@@ -41,6 +41,13 @@ typedef struct cupti_kernel {
   int32_t localMemoryTotal;
 } cupti_kernel_t;
 
+// synchronization
+typedef struct cupti_synchronization {
+  uint64_t start;
+  uint64_t end;
+  uint8_t syncKind;
+} cupti_synchronization_t;
+
 // generic activity entry
 typedef struct cupti_activity {
   CUpti_ActivityKind kind;
@@ -48,6 +55,7 @@ typedef struct cupti_activity {
     cupti_pc_sampling_t pc_sampling;
     cupti_memcpy_t memcpy;
     cupti_kernel_t kernel;
+    cupti_synchronization_t synchronization;
   } data;
 } cupti_activity_t;
 
