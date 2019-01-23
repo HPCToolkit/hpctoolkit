@@ -267,8 +267,9 @@ MY_BASE_FILES =				\
 	\
 	main.h main.c			\
 	disabled.c			\
-	cct_insert_backtrace.c          \
-	cct_backtrace_finalize.c        \
+        closure-registry.c              \
+        cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
@@ -283,9 +284,11 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c          \
-	sample-sources/blame-shift/blame-map.c            \
-	sample-sources/common.c         \
+        sample-sources/blame-shift/blame-shift.c \
+        sample-sources/blame-shift/blame-map.c   \
+        sample-sources/blame-shift/directed.c    \
+        sample-sources/blame-shift/undirected.c    \
+        sample-sources/common.c         \
 	sample-sources/display.c		\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
@@ -294,9 +297,10 @@ MY_BASE_FILES =				\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-	sample-sources/retcnt.c         \
-	sample-sources/sync.c           \
+        sample-sources/retcnt.c         \
+        sample-sources/sync.c           \
 	sample_sources_registered.c	\
+	sample-sources/sample-filters.c \
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
