@@ -1986,7 +1986,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       }
       metricData.metric(i_dst) = mval * (double)mdesc->period();
     }
-    hasMetrics = !hpcrun_metricVal_isZero(m);
+    if (!hpcrun_metricVal_isZero(m)) {
+      hasMetrics = true;
+    }
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||

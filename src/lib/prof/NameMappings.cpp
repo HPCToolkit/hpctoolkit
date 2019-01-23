@@ -28,13 +28,18 @@
 
 const char *PROGRAM_ROOT     = "<program root>";
 const char *THREAD_ROOT      = "<thread root>";
-const char *OMP_IDLE	     = "<omp idle>";
+
+const char *OMP_IDLE	       = "<omp idle>";
 const char *OMP_OVERHEAD     = "<omp overhead>";
 const char *OMP_BARRIER_WAIT = "<omp barrier wait>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
 
 const char *MONITOR_DATA_FIRST_TOUCH = "<first touch>";
+
+const char *DATACENTRIC_ROOT    = "<datacentric>";
+const char *DATACENTRIC_DYNAMIC = "<heap allocation>";
+const char *DATACENTRIC_STATIC  = "<static variable>";
 
 //******************************************************************************
 // types
@@ -89,11 +94,16 @@ static NameMapping renamingTable[] = {
   { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	    },
   { "ompt_mutex_wait",         OMP_MUTEX_WAIT     },
 
-  { "monitor_data_first_touch", MONITOR_DATA_FIRST_TOUCH }
+  { "monitor_data_first_touch", MONITOR_DATA_FIRST_TOUCH },
+
+  { "DATACENTRIC"             , DATACENTRIC_ROOT },
+  { "DATACENTRIC_Dynamic"     , DATACENTRIC_DYNAMIC },
+  { "DATACENTRIC_Static"      , DATACENTRIC_STATIC }
 };
 
 static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>"
+  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>",
+  DATACENTRIC_ROOT, DATACENTRIC_DYNAMIC, DATACENTRIC_STATIC
 };
 
 static NameMappings_t renamingMap;
