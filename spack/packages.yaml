@@ -30,10 +30,13 @@ packages:
   # Note: the following packages have variants that may need changing
   # for your local system.
   #
-  #   1. intel-tbb -- add '~tm' for AMD or very old Intel systems that
+  #   1. dyninst -- use version 9.3.2 for Blue Gene with the default
+  #   gcc 4.4 compilers.
+  #
+  #   2. intel-tbb -- add '~tm' for AMD or very old Intel systems that
   #   don't support transactional memory.
   #
-  #   2. libmonitor -- add '+bgq' on Blue Gene/Q.
+  #   3. libmonitor -- add '+bgq' on Blue Gene/Q.
   #
   #------------------------------------------------------------
 
@@ -66,7 +69,10 @@ packages:
 
   # boost -- used by dyninst and now in hpcstruct cuda support.
   #
-  # Dyninst requires >= 1.61 but any recent version is good.
+  # Dyninst requires >= 1.61 but most any recent version is good.
+  #
+  # Note: dyninst fails with boost 1.69 (maybe later) over usage of
+  # tribool.
   #
   # +atomic, +chrono, etc are for dyninst.
   # +graph, +regex, etc are for toolkit proper.
@@ -95,8 +101,8 @@ packages:
   # dyninst -- used in hpcstruct for line map info, inline sequences
   # and loop analysis.
   #
-  # Need >= 10.0 or develop for best parseapi and CFG support.
-  #
+  # Need >= 10.0 or develop for best parseapi and CFG support.  On
+  # Blue Gene, with the default gcc 4.4 compilers, use version 9.3.2.
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
@@ -113,13 +119,16 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.174]
+    version:  [0.175]
     variants: +bzip2 +xz ~nls
 
 
   # intel-tbb -- used by dyninst as part of parallel parsing.
   #
-  # Dyninst requires >= 2018.6, anything after that is good.
+  # Dyninst requires >= 2018.6, most anything after that is good.
+  #
+  # Note: version 2019.2 doesn't build because a patch doesn't apply
+  # cleanly.
   #
   # Note: add ~tm for very old x86 or AMD systems that don't support
   # transactional memory (no-op on non-x86).
