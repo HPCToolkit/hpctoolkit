@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2018, Rice University
+dnl Copyright ((c)) 2002-2019, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ AC_INIT([hpctoolkit], [2018.09],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2018, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2019, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
@@ -1560,6 +1560,30 @@ OPT_UPC_LDFLAGS=
 
 AC_SUBST([OPT_UPC_IFLAGS])
 AC_SUBST([OPT_UPC_LDFLAGS])
+
+
+#-------------------------------------------------
+# Hash value for launch scripts
+#-------------------------------------------------
+
+# Make a hash value to verify that a launch script has the correct
+# install directory.  It doesn't have to be secure, just unique.
+
+AC_PATH_PROGS([hash_fcn], [md5sum sha256sum sha384sum sha512sum], [no])
+
+plain_text=`echo $$ ; date ; pwd`
+
+hash_value=`echo $plain_text | $hash_fcn | $AWK '{ print $1 }'`
+
+if test "x$hash_value" = x ; then
+  hash_value=`echo $plain_text | tr -d ' '`
+fi
+
+hash_value=`echo $hash_value | head -c 30`
+
+AC_MSG_NOTICE([launch script hash: $hash_value])
+
+AC_SUBST([hash_value])
 
 
 #----------------------------------------------------------------------------
@@ -4334,6 +4358,43 @@ BACK_END_LABEL=
 AC_SUBST([my_pkglibdir])
 AC_SUBST([my_pkglibexecdir])
 AC_SUBST([BACK_END_LABEL])
+
+
+#----------------------------------------------------------------------------
+# Launch script variables
+#----------------------------------------------------------------------------
+
+# Variables to insert into every launch script.  We write this
+# manually to guarantee that it exists before configure runs file
+# substitution from AC-OUTPUT.
+
+launch_script_file='config/launch-script-vars'
+
+mkdir -p config
+rm -f "$launch_script_file"
+
+cat <<EOF >"$launch_script_file"
+# If this script can't find its install directory, then set 'prefix'
+# here.  This should only be necessary if you've moved both the script
+# and the install directory.
+#
+# Set 'hash_value' to empty to disable matching the hash with the
+# install directory.  Note: re-running configure creates a new hash.
+# If you copy this script out of its install directory and rerun
+# configure, then the hashes won't match.
+
+prefix='$prefix'
+hash_value='$hash_value'
+
+VERSION='$PACKAGE_VERSION'
+git_version='$git_version'
+EOF
+
+AC_SUBST_FILE([launch_script_vars])
+launch_script_vars="$launch_script_file"
+
+AC_SUBST_FILE([launch_early_options])
+launch_early_options="${srcdir}/config/launch-options"
 
 
 #----------------------------------------------------------------------------

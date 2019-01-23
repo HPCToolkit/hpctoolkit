@@ -11,7 +11,7 @@
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 #
-# Copyright (c) 2002-2018, Rice University.
+# Copyright (c) 2002-2019, Rice University.
 # See the file README.License for details.
 ## -------------------- ##
 ## M4sh Initialization. ##
@@ -787,6 +787,8 @@ BOOST_IFLAGS
 BINUTILS_LIBS
 BINUTILS_IFLAGS
 hpc_ext_libs_dir
+hash_value
+hash_fcn
 OPT_UPC_LDFLAGS
 OPT_UPC_IFLAGS
 OPT_ENABLE_UPC_FALSE
@@ -967,7 +969,9 @@ PACKAGE_TARNAME
 PACKAGE_NAME
 PATH_SEPARATOR
 SHELL'
-ac_subst_files='copyright_hash
+ac_subst_files='launch_script_vars
+launch_early_options
+copyright_hash
 export_hpctoolkit'
 ac_user_opts='
 enable_option_checking
@@ -1883,7 +1887,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This configure script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it.
 
-Copyright (c) 2002-2018, Rice University.
+Copyright (c) 2002-2019, Rice University.
 See the file README.License for details.
 _ACEOF
   exit
@@ -19587,6 +19591,76 @@ OPT_UPC_LDFLAGS=
 
 
 
+#-------------------------------------------------
+# Hash value for launch scripts
+#-------------------------------------------------
+
+# Make a hash value to verify that a launch script has the correct
+# install directory.  It doesn't have to be secure, just unique.
+
+for ac_prog in md5sum sha256sum sha384sum sha512sum
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_hash_fcn+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $hash_fcn in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_hash_fcn="$hash_fcn" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_hash_fcn="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+hash_fcn=$ac_cv_path_hash_fcn
+if test -n "$hash_fcn"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $hash_fcn" >&5
+$as_echo "$hash_fcn" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$hash_fcn" && break
+done
+test -n "$hash_fcn" || hash_fcn="no"
+
+
+plain_text=`echo $$ ; date ; pwd`
+
+hash_value=`echo $plain_text | $hash_fcn | $AWK '{ print $1 }'`
+
+if test "x$hash_value" = x ; then
+  hash_value=`echo $plain_text | tr -d ' '`
+fi
+
+hash_value=`echo $hash_value | head -c 30`
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: launch script hash: $hash_value" >&5
+$as_echo "$as_me: launch script hash: $hash_value" >&6;}
+
+
+
+
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
 #----------------------------------------------------------------------------
@@ -22990,6 +23064,43 @@ BACK_END_LABEL=
 
 
 
+
+
+#----------------------------------------------------------------------------
+# Launch script variables
+#----------------------------------------------------------------------------
+
+# Variables to insert into every launch script.  We write this
+# manually to guarantee that it exists before configure runs file
+# substitution from AC-OUTPUT.
+
+launch_script_file='config/launch-script-vars'
+
+mkdir -p config
+rm -f "$launch_script_file"
+
+cat <<EOF >"$launch_script_file"
+# If this script can't find its install directory, then set 'prefix'
+# here.  This should only be necessary if you've moved both the script
+# and the install directory.
+#
+# Set 'hash_value' to empty to disable matching the hash with the
+# install directory.  Note: re-running configure creates a new hash.
+# If you copy this script out of its install directory and rerun
+# configure, then the hashes won't match.
+
+prefix='$prefix'
+hash_value='$hash_value'
+
+VERSION='$PACKAGE_VERSION'
+git_version='$git_version'
+EOF
+
+
+launch_script_vars="$launch_script_file"
+
+
+launch_early_options="${srcdir}/config/launch-options"
 
 
 #----------------------------------------------------------------------------
