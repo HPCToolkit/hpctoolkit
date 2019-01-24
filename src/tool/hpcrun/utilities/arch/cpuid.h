@@ -48,6 +48,10 @@
 #ifndef SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_
 #define SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_
 
+
+#define VENDOR_INTEL   "GenuineIntel"
+#define VENDOR_AMD     "AuthenticAMD"
+
 struct cpuid_type_s {
   char vendor[13];
   int  family;
@@ -68,12 +72,13 @@ typedef enum {
   INTEL_HSX,
   INTEL_BDX,
   INTEL_SKX,
+  INTEL_KNL,
 
   AMD_MGN_CRS
 } cpu_type_t;
 
 
-enum cpu_type_t cpu_type_get(void);
+cpu_type_t get_cpuid(void);
 
 
 #endif /* SRC_TOOL_HPCRUN_UTILITIES_CPUID_H_ */

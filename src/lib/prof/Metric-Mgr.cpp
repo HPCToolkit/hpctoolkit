@@ -278,10 +278,6 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
-  bool doDispPercent = true;
-  bool isPercent = false;
-  bool isVisible = true;
-
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
@@ -291,27 +287,21 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
-    isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
-    doDispPercent = false;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);

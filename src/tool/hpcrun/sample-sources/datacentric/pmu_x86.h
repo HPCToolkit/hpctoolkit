@@ -45,35 +45,25 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef sample_source_datacentric_h
-#define sample_source_datacentric_h
+#ifndef __PMU_X86_H__
+#define __PMU_X86_H__
 
-/******************************************************************************
- * local includes 
- ******************************************************************************/
+#include <utilities/arch/cpuid.h>
 
-#include <cct/cct.h>                       // cct_node_t
-#include "sample-sources/perf/perf-util.h" // event_info_t
-#include "sample-sources/perf/event_custom.h" // event_custom_t
+struct pmu_config_s {
+  cpu_type_t cpu;
+  const char *event;
+};
 
+/**
+ * attention: the order of the array can be important.
+ */
+struct pmu_config_s pmu_events[] = {
+    {INTEL_SNB, "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"},
+    {INTEL_SNB, "snb::MEM_TRANS_RETIRED:PRECISE_STORE"},
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
+    {INTEL_KNL, "knl::OFFCORE_RESPONSE_0"},
+    {INTEL_KNL, "knl::MEM_UOPS_RETIRED:LD_L2_HIT"}
+};
 
-#define DATACENTRIC_METRIC_PREFIX  "$D"
-
-
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
-
-void datacentric_init();
-
-// to be implemented by specific hardware
-int datacentric_hw_register(sample_source_t *self, event_custom_t *event,
-                        struct event_threshold_s *period);
-
-
-#endif // sample_source_memleak_h
-
+#endif // __PMU_X86_H__

@@ -187,6 +187,7 @@ static int datainfo_size = sizeof(struct datatree_info_s);
 static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
 
+
 /******************************************************************************
  * private operations
  *****************************************************************************/
@@ -247,9 +248,9 @@ metric_initialize()
   addr_start_metric_id = hpcrun_new_metric();
   addr_end_metric_id   = hpcrun_new_metric();
 
-  hpcrun_set_metric_and_attributes(addr_start_metric_id,  "Start",
+  hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "$<Start",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
-  hpcrun_set_metric_and_attributes(addr_end_metric_id,  "End",
+  hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "$>End",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
   size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
@@ -387,6 +388,12 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   return DATACENTRIC_LOC_NONE;
 }
 
+static cct_node_t *
+datacentric_update_before_bt_insertion(cct_bundle_t *bundle,
+                      cct_node_t *path, void *data_aux)
+{
+  return hpcrun_cct_bundle_get_datacentric_dynamic_node(bundle);
+}
 
 // Fill in the leakinfo struct, add metric to CCT, add to splay tree
 // (if footer) and print TMSG.
@@ -414,10 +421,19 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right     = NULL;
 
   if (is_active()) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    if (!td || !td->core_profile_trace_data.epoch) {
+      // if we are called too early and epoch is not set,
+      // we return immediately, and no need to get malloc information
+      // this mostly happens inside a library initialization
+      return;
+    }
     sampling_info_t info;
     memset(&info, 0, sizeof(sampling_info_t));
 
     info.flags = SAMPLING_IN_MALLOC;
+    info.sample_custom_cct.update_before_fn = datacentric_update_before_bt_insertion;
+
     int metric_start_addr = datacentric_get_metric_addr_start();
 
     // record the call path to this allocation, and the address
@@ -426,7 +442,6 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
                                                0, 1, &info);
 
     // update the number of metric counter
-    thread_data_t *td = hpcrun_get_thread_data();
     metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);
     info_aux->num_samples++;
 

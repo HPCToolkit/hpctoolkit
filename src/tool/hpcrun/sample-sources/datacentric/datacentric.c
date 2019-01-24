@@ -80,15 +80,16 @@
 
 #include <messages/messages.h>
 
+#include <cct/cct_bundle.h>
+#include <cct/cct.h>
+#include <cct/cct_addr.h>   // struct var_addr_s
+
 #include "include/queue.h"  // linked-list
 
-#include "cct_addr.h"       // struct var_addr_s
 #include "datacentric.h"
 #include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
-
-#include <cct/cct_bundle.h>
 
 #include "sample-sources/perf/event_custom.h"
 
@@ -149,7 +150,7 @@ struct perf_mem_metric {
 
   int memllc_miss;
 
-  int node_alloc;
+  int memaccess;
 };
 
 /******************************************************************************
@@ -158,6 +159,7 @@ struct perf_mem_metric {
 
 
 static struct perf_mem_metric metric;
+
 
 /******************************************************************************
  * PRIVATE Function implementation
@@ -303,7 +305,7 @@ datacentric_create_static_node(datatree_info_t *info)
 
     thread_data_t* td    = hpcrun_get_thread_data();
     cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
-    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_node(bundle);
+    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_static_node(bundle);
 
     info->context = hpcrun_cct_insert_addr(node, &addr);
     hpcrun_cct_set_node_allocation(info->context);
@@ -347,44 +349,42 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   // ---------------------------------------------------------
   if (mmap_data->addr) {
 
-    metric_set_t *mset = hpcrun_reify_metric_set(node);
-    if (mset) {
+    // --------------------------------------------------------------
+    // store the memory address reported by the hardware counter to the metric
+    // even if the address is outside the range of recognized variable (see
+    //    datatree_splay_lookup() function which returns if the address is recognized)
+    // we may need to keep the information (?).
+    // another solution is to create a sibling node to avoid to step over the
+    //  recognized metric.
+    // --------------------------------------------------------------
 
-      // --------------------------------------------------------------
-      // store the memory address reported by the hardware counter to the metric
-      // even if the address is outside the range of recognized variable (see
-      //    datatree_splay_lookup() function which returns if the address is recognized)
-      // we may need to keep the information (?).
-      // another solution is to create a sibling node to avoid to step over the
-      //  recognized metric.
-      // --------------------------------------------------------------
+    datatree_info_t *info  = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
-      datatree_info_t *info  = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
-
-      if (info) {
-        // variable address is store in the database
-        // record the interval of this access
-
-        hpcrun_metricVal_t value;
-        value.p = (void *)mmap_data->addr;
-
-        // check if this is the minimum value. if this is the case, record it in the metric
-        int metric_id = datacentric_get_metric_addr_start();
-        hpcrun_metric_std_min(metric_id, mset, value);
-
-        // check if this is the maximum value. if this is the case, record it in the metric
-        metric_id = datacentric_get_metric_addr_end();
-        hpcrun_metric_std_max(metric_id, mset, value);
-
-        cct_node_t *context = info->context;
-        if (info->magic == DATA_STATIC_MAGIC) {
-          context = datacentric_create_static_node(info);
-        }
-
-        // record the node allocation id
-        value.i = hpcrun_cct_persistent_id(context);
-        hpcrun_metric_std_set(metric.node_alloc, mset, value);
+    if (info) {
+      cct_node_t *context = info->context;
+      if (info->magic == DATA_STATIC_MAGIC) {
+        // static allocation
+        context = datacentric_create_static_node(info);
       }
+      // copy the callpath of the "node" to data centric root context
+      node = hpcrun_cct_insert_path_return_leaf_ts(node, context);
+
+      metric_set_t *mset = hpcrun_reify_metric_set(node);
+
+      // variable address is store in the database
+      // record the interval of this access
+
+      hpcrun_metricVal_t val_addr;
+      val_addr.p = (void *)mmap_data->addr;
+
+      // check if this is the minimum value. if this is the case, record it in the metric
+      int metric_id = datacentric_get_metric_addr_start();
+      hpcrun_metric_std_min(metric_id, mset, val_addr);
+
+      // check if this is the maximum value. if this is the case, record it in the metric
+      metric_id = datacentric_get_metric_addr_end();
+      hpcrun_metric_std_max(metric_id, mset, val_addr);
+      cct_metric_data_increment(metric.memaccess, node, (hpcrun_metricVal_t) {.i = 1});
     }
     hpcrun_cct_set_node_memaccess(node);
   }
@@ -409,6 +409,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   //TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
+
 
 
 /****
@@ -448,10 +449,10 @@ datacentric_register(sample_source_t *self,
   hpcrun_set_metric_info(metric.memstore, "MEM-Store");
 
   metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-l1hit");
+  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
 
   metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-l1miss");
+  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
 
   // ------------------------------------------
   // Memory load miss metric
@@ -468,9 +469,10 @@ datacentric_register(sample_source_t *self,
   // ------------------------------------------
   // node allocation id
   // ------------------------------------------
-  metric.node_alloc = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.node_alloc, "Alloc-id",
+  metric.memaccess = hpcrun_new_metric();
+  hpcrun_set_metric_and_attributes(metric.memaccess, DATACENTRIC_METRIC_PREFIX "Access",
       MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
+
 
   return 1;
 }
@@ -492,4 +494,3 @@ datacentric_init()
 
   event_custom_register(event_datacentric);
 }
-
