@@ -138,7 +138,35 @@ is_compact_thread()
   return hpcrun_threadMgr_compact_thread() == OPTION_COMPACT_THREAD;
 }
 
+static thread_data_t *
+allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt)
+{
+  thread_data_t *data = hpcrun_allocate_thread_data(id);
 
+  // we need to immediately set the thread data here since the following statements
+  // under the hood, will call get_thread_data()
+
+  hpcrun_set_thread_data(data);
+
+  // ----------------------------------------
+  // need to initialize thread_data here. before calling hpcrun_thread_data_init,
+  // make sure we already call hpcrun_set_thread_data to set the variable.
+  // ----------------------------------------
+  hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
+
+  // ----------------------------------------
+  // set up initial 'epoch'
+  // ----------------------------------------
+  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+  hpcrun_epoch_init(thr_ctxt);
+
+  // ----------------------------------------
+  // opening trace file
+  // ----------------------------------------
+  hpcrun_trace_open(&(data->core_profile_trace_data));
+
+  return data;
+}
 
 static void
 finalize_thread_data(core_profile_trace_data_t *current_data)
@@ -167,7 +195,7 @@ grab_thread_data()
 
 
 static void*
-thread_finalize_data(void *arg)
+finalize_all_thread_data(void *arg)
 {
   thread_list_t *data = (thread_list_t *) arg;
 
@@ -251,7 +279,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   // -----------------------------------------------------------------
 
   if (!is_compact_thread()) {
-    *data = hpcrun_allocate_thread_data(id);
+    *data = allocate_and_init_thread_data(id, thr_ctxt);
     return true;
   }
 
@@ -267,29 +295,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   if (need_to_allocate) {
 
     adjust_num_logical_threads(1);
-    *data = hpcrun_allocate_thread_data(id);
-
-    // we need to immediately set the thread data here since the following statements
-    // under the hood, will call get_thread_data()
-
-    hpcrun_set_thread_data(*data);
-
-    // ----------------------------------------
-    // need to initialize thread_data here. before calling hpcrun_thread_data_init,
-    // make sure we already call hpcrun_set_thread_data to set the variable.
-    // ----------------------------------------
-    hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
-
-    // ----------------------------------------
-    // set up initial 'epoch'
-    // ----------------------------------------
-    TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-    hpcrun_epoch_init(thr_ctxt);
-
-    // ----------------------------------------
-    // opening trace file
-    // ----------------------------------------
-    hpcrun_trace_open(&((*data)->core_profile_trace_data));
+    *data = allocate_and_init_thread_data(id, thr_ctxt);
   }
 
 #if HPCRUN_THREADS_DEBUG
@@ -376,7 +382,7 @@ hpcrun_threadMgr_data_fini(thread_data_t *td)
   {
     thread_list_t * item = grab_thread_data();
 
-    int rc = pthread_create( &threads[i], &attr, thread_finalize_data,
+    int rc = pthread_create( &threads[i], &attr, finalize_all_thread_data,
                              (void*) item);
     if (rc) {
       EMSG("Error cannot create thread %d with return code: %d",
