@@ -172,22 +172,38 @@ ompt_parallel_end_internal(
   if(!ompt_eager_context){
     // check if there is any thread registered that should be notified that region call path is available
     ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+
+    region_stack_el_t *stack_el = &region_stack[top_index + 1];
+    ompt_notification_t *notification = stack_el->notification;
+    if (notification->unresolved_cct) {
+      // FIXME vi3: consider to combine this if with next
+      // calling hpcrun_sample_callpath (by calling ompt_region_context and
+      // ompt_region_context_end_region_not_eager) twice is obviously overhead
+      ending_region = region_data;
+      cct_node_t *prefix = ompt_region_context(region_data->region_id, ompt_context_end,
+                                               ++levels_to_skip, invoker == ompt_invoker_program);
+      // if combined this if branch with branch of next if
+      // we will remove this line
+      --levels_to_skip;
+      tmp_end_region_resolve(notification, prefix);
+      ending_region = NULL;
+    }
+
     if(to_notify){
       if(region_data->call_path == NULL){
-
         // FIXME vi3: this is one big hack
+        // different function is call for providing callpaths
+        // FIXME vi3: also check if this add some ccts somewhere
+        // probably does because it call hpcrun_sample_callpath
+        // these ccts should not be added underneath thread root
+        // we must create them and send them as a region path,
+        // but do not insert them in any tree
         ending_region = region_data;
         // need to provide call path, because master did not take a sample inside region
         ompt_region_context_end_region_not_eager(region_data->region_id, ompt_context_end,
                                      ++levels_to_skip, invoker == ompt_invoker_program);
-        // I think that is enough to call previous function, which call hpcrun_sample_callpath
-        // FIXME: consider this
-        //printf("This is the region data: %p\n", region_data->call_path);
         ending_region = NULL;
       }
-
-      //region_data->call_path = ompt_region_context(region_data->region_id, ompt_context_end,
-      //                             ++levels_to_skip, invoker == ompt_invoker_program);
 
       // notify next thread
       wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
@@ -212,12 +228,6 @@ ompt_parallel_end_internal(
     TD_GET(team_master) = 0;
   }
 
-
-//  // FIXME: vi3 check if this is fine, this should make more sense in implicit task end
-//  ompt_notification_t* top = top_region_stack();
-//  if(top->region_data == region_data){
-//    top_index--;
-//  }
   // FIXME: vi3 do we really need to keep this line
   hpcrun_get_thread_data()->region_id = 0;
   hpcrun_safe_exit();
@@ -338,7 +348,6 @@ ompt_implicit_task_internal_begin(
     // FIXME vi3: check if this is fine
     // add current region
     add_region_and_ancestors_to_stack(region_data, thread_num==0);
-    //printf("______%p->%p=%p\n", hpcrun_ompt_get_parent_region_data(), hpcrun_ompt_get_current_region_data(), region_data);
 
     // FIXME vi3: move this to add_region_and_ancestors_to_stack
     // Memoization process vi3:
@@ -346,7 +355,7 @@ ompt_implicit_task_internal_begin(
       not_master_region = region_data;
     }
 
-#if 1
+#if 0
     region_stack[top_index].parent_frame = hpcrun_ompt_get_task_frame(1);
 #endif
   }
@@ -367,13 +376,10 @@ ompt_implicit_task_internal_end(
 {
 
   if (!ompt_eager_context) {
-    printf("IMPLICIT END REGION_ID: %lx\n", region_stack[top_index].notification->region_data->region_id);
     // the only thing we could do (certainly) here is to pop element from the stack
     // pop element from the stack
     pop_region_stack();
   }
-
-  //printf("---------%p->%p\n", hpcrun_ompt_get_parent_region_data(), hpcrun_ompt_get_current_region_data());
 
 }
 

@@ -1305,3 +1305,28 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
 
 
 }
+
+void
+tmp_end_region_resolve(ompt_notification_t *notification, cct_node_t* prefix)
+{
+
+#if 1
+  // ================================== resolving part
+  cct_node_t *unresolved_cct = notification->unresolved_cct;
+
+  if (prefix == NULL) {
+    printf("*******************PREFIX CCT IS MISSING! OLD_HEAD_NOTIFICATION: %p\n", notification);
+    //unresolved_cnt--;
+    return;
+  }
+
+  // prefix node should change the unresolved_cct
+  hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
+  // delete unresolved_cct from parent
+  hpcrun_cct_delete_self(unresolved_cct);
+  // ==================================
+#endif
+
+  // free notification
+  //hpcrun_ompt_notification_free(old_head);
+}
