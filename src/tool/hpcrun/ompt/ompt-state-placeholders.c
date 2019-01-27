@@ -11,6 +11,8 @@
 //***************************************************************************
 
 #include "ompt-state-placeholders.h"
+#include "ompt-types.h"
+
 #include "../fnbounds/fnbounds_interface.h"
 #include "../../../lib/prof-lean/placeholders.h"
 #include "../safe-sampling.h"

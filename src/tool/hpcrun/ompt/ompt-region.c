@@ -110,7 +110,7 @@ static void
 ompt_parallel_begin_internal(
   ompt_data_t *parallel_data,
   int levels_to_skip,
-  ompt_invoker_t invoker
+  int flags
 ) 
 {
   hpcrun_safe_enter();
@@ -149,7 +149,7 @@ ompt_parallel_begin_internal(
   if(ompt_eager_context){
      region_data->call_path =
      ompt_parallel_begin_context(region_id, ++levels_to_skip,
-                                 invoker == ompt_invoker_program);
+                                 flags & ompt_parallel_invoker_program);
   }
 
   hpcrun_safe_exit();
@@ -161,7 +161,7 @@ static void
 ompt_parallel_end_internal(
     ompt_data_t *parallel_data,    /* data of parallel region       */
     int levels_to_skip,
-    ompt_invoker_t invoker
+    int flags
 )
 {
   // printf("Passed to internal. \n");
@@ -179,7 +179,7 @@ ompt_parallel_end_internal(
         ending_region = region_data;
         // need to provide call path, because master did not take a sample inside region
         ompt_region_context_end_region_not_eager(region_data->region_id, ompt_context_end,
-                                     ++levels_to_skip, invoker == ompt_invoker_program);
+                                     ++levels_to_skip, flags & ompt_parallel_invoker_program);
         // I think that is enough to call previous function, which call hpcrun_sample_callpath
         // FIXME: consider this
         //printf("This is the region data: %p\n", region_data->call_path);
@@ -236,7 +236,7 @@ void
 ompt_parallel_begin(
   ompt_data_t  *parent_task_data,   /* tool data for parent task   */
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
-  ompt_parallel_id_t parallel_id    /* id of parallel region       */
+  ompt_id_t parallel_id    /* id of parallel region       */
 )
 {
   int levels_to_skip = LEVELS_TO_SKIP;
@@ -250,7 +250,7 @@ ompt_parallel_begin(
   const ompt_frame_t *parent_frame,
   ompt_data_t *parallel_data,
   unsigned int requested_team_size,
-  ompt_invoker_t invoker,
+  int flags,
   const void *codeptr_ra
 )
 {
@@ -262,7 +262,7 @@ ompt_parallel_begin(
   hpcrun_safe_exit();
 #endif
   int levels_to_skip = LEVELS_TO_SKIP;
-  ompt_parallel_begin_internal(parallel_data, ++levels_to_skip, invoker);
+  ompt_parallel_begin_internal(parallel_data, ++levels_to_skip, flags);
 }
 
 #endif
@@ -272,7 +272,7 @@ void
 ompt_parallel_end(
   ompt_data_t  *parent_task_data,   /* tool data for parent task   */
   ompt_frame_t *parent_task_frame,  /* frame data of parent task   */
-  ompt_parallel_id_t parallel_id    /* id of parallel region       */
+  ompt_id_t parallel_id    /* id of parallel region       */
   )
 {
   int levels_to_skip = LEVELS_TO_SKIP;
@@ -287,7 +287,7 @@ void
 ompt_parallel_end(
   ompt_data_t *parallel_data,
   ompt_data_t *task_data,
-  ompt_invoker_t invoker,
+  int flag,
   const void *codeptr_ra
 )
 {
@@ -307,7 +307,7 @@ ompt_parallel_end(
        parent_region_id);
   hpcrun_safe_exit();
   int levels_to_skip = LEVELS_TO_SKIP;
-  ompt_parallel_end_internal(parallel_data, ++levels_to_skip, invoker);
+  ompt_parallel_end_internal(parallel_data, ++levels_to_skip, flag);
 }
 
 

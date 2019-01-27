@@ -88,7 +88,7 @@
  *****************************************************************************/
 
 #define ompt_event_may_occur(r) \
-  ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
+  ((r ==  ompt_set_sometimes) | (r ==  ompt_set_always))
 
 
 
@@ -97,7 +97,7 @@
  *****************************************************************************/
 
 // struct that contains pointers for initializing and finalizing
-static ompt_fns_t init;
+static ompt_start_tool_result_t init;
 static const char* ompt_runtime_version;
 
 static int ompt_elide = 0;
@@ -161,14 +161,14 @@ ompt_mutex_blame_target()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    omp_state_t state = hpcrun_ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
-    case omp_state_wait_critical:
-    case omp_state_wait_lock:
-//    case omp_state_wait_nest_lock:
-    case omp_state_wait_atomic:
-    case omp_state_wait_ordered:
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+//    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
       return wait_id;
     default: break;
     }
@@ -182,12 +182,12 @@ ompt_serial_only(void *arg)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    omp_state_t state = hpcrun_ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
-    ompt_thread_type_t ttype = ompt_thread_type_get();
+    ompt_thread_t ttype = ompt_thread_type_get();
     if (ttype != ompt_thread_initial) return 1;
 
-    if (state == omp_state_work_serial) return 0;
+    if (state == ompt_state_work_serial) return 0;
     return 1;
   }
   return 0;
@@ -226,14 +226,14 @@ ompt_thread_needs_blame(void)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    omp_state_t state = hpcrun_ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
     switch(state) {
-    case omp_state_idle:
-    case omp_state_wait_barrier:
-    case omp_state_wait_barrier_implicit:
-    case omp_state_wait_barrier_explicit:
-    case omp_state_wait_taskwait:
-    case omp_state_wait_taskgroup:
+    case ompt_state_idle:
+    case ompt_state_wait_barrier:
+    case ompt_state_wait_barrier_implicit:
+    case ompt_state_wait_barrier_explicit:
+    case ompt_state_wait_taskwait:
+    case ompt_state_wait_taskgroup:
        return false;
     default:
       return true;
@@ -333,7 +333,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 
 static void
-ompt_thread_begin(ompt_thread_type_t thread_type,
+ompt_thread_begin(ompt_thread_t thread_type,
                   ompt_data_t *thread_data)
 {
   //printf("Thread begin... %d\n", thread_data->value);
@@ -390,7 +390,7 @@ ompt_idle(ompt_scope_endpoint_t endpoint)
 
 static void
 ompt_sync(
-  ompt_sync_region_kind_t kind,
+  ompt_sync_region_t kind,
   ompt_scope_endpoint_t endpoint,
   ompt_data_t *parallel_data,
   ompt_data_t *task_data,
@@ -460,33 +460,7 @@ init_mutex_blame_shift(const char *version)
 
   ompt_mutex_blame_shift_request();
 
-  // becaues ompt_mutex_blame_requested is set to 0 and never changed
-//  if (!ompt_mutex_blame_requested) return;
-
-
-  //ompt_mutex_blame_shift_enable();
-
-
-//  retval = ompt_set_callback_fn(ompt_event_release_lock,
-//                                (ompt_callback_t) ompt_mutex_blame_accept);
-//  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_release_nest_lock_last,
-//                                (ompt_callback_t) ompt_mutex_blame_accept);
-//  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_release_critical,
-//                                (ompt_callback_t) ompt_mutex_blame_accept);
-//  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_release_atomic,
-//                                (ompt_callback_t) ompt_mutex_blame_accept);
-//  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_release_ordered,
-//                                (ompt_callback_t) ompt_mutex_blame_accept);
-//  mutex_blame_shift_avail |= ompt_event_may_occur(retval);
-
+  if (!ompt_mutex_blame_requested) return;
 
   retval = ompt_set_callback_fn(ompt_callback_mutex_released,
                                 (ompt_callback_t) ompt_mutex_blame_accept);
@@ -518,29 +492,15 @@ init_idle_blame_shift(const char *version)
   int idle_blame_shift_avail = 0;
   int retval = 0;
 
+  if (!ompt_idle_blame_requested) return;
 
   ompt_idle_blame_shift_request();
-  //if (!ompt_idle_blame_requested) return;
 
-//  retval = ompt_set_callback_fn(ompt_event_idle_begin,
-//                                (ompt_callback_t)ompt_idle_begin);
-//  idle_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_idle_end,
-//                                (ompt_callback_t)ompt_idle_end);
-//  idle_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_wait_barrier_begin,
-//                                (ompt_callback_t)ompt_idle_begin);
-//  idle_blame_shift_avail |= ompt_event_may_occur(retval);
-//
-//  retval = ompt_set_callback_fn(ompt_event_wait_barrier_end,
-//                                (ompt_callback_t)ompt_idle_end);
-//  idle_blame_shift_avail |= ompt_event_may_occur(retval);
-
+#if 0
   retval = ompt_set_callback_fn(ompt_callback_idle,
                                 (ompt_callback_t)ompt_idle);
   idle_blame_shift_avail |= ompt_event_may_occur(retval);
+#endif
 
   retval = ompt_set_callback_fn(ompt_callback_sync_region_wait,
                                 (ompt_callback_t)ompt_sync);
@@ -571,7 +531,8 @@ init_idle_blame_shift(const char *version)
 
 int
 ompt_initialize(ompt_function_lookup_t lookup,
-                  ompt_fns_t *fns)
+                int initial_device_num,
+                ompt_data_t *tool_data)
 {
   printf("Initializing...\n");
 
@@ -617,13 +578,13 @@ ompt_initialize(ompt_function_lookup_t lookup,
 }
 
 void
-ompt_finalize(ompt_fns_t *fns)
+ompt_finalize(ompt_data_t *tool_data)
 {
   printf("Finalizing...\n");
 }
 
 
-ompt_fns_t*
+ompt_start_tool_result_t *
 ompt_start_tool(unsigned int omp_version,
 		const char *runtime_version)
 {
@@ -640,16 +601,16 @@ hpcrun_omp_state_is_overhead()
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
-    omp_state_t state = hpcrun_ompt_get_state(&wait_id);
+    ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
   
-    case omp_state_overhead:
-    case omp_state_wait_critical:
-    case omp_state_wait_lock:
-//    case omp_state_wait_nest_lock:
-    case omp_state_wait_atomic:
-    case omp_state_wait_ordered:
+    case ompt_state_overhead:
+    case ompt_state_wait_critical:
+    case ompt_state_wait_lock:
+//    case ompt_state_wait_nest_lock:
+    case ompt_state_wait_atomic:
+    case ompt_state_wait_ordered:
       return 1;
   
     default: break;
@@ -677,11 +638,11 @@ hpcrun_ompt_elide_frames()
 //----------------------------------------------------------------------------
 
 
-omp_state_t
+ompt_state_t
 hpcrun_ompt_get_state(uint64_t *wait_id)
 {
   if (ompt_initialized) return ompt_get_state_fn(wait_id);
-  return omp_state_undefined;
+  return ompt_state_undefined;
 }
 
 
@@ -689,13 +650,13 @@ ompt_frame_t *
 hpcrun_ompt_get_task_frame(int level)
 {
   if (ompt_initialized) {
-    ompt_task_type_t type;
+    int task_type_flags;
     ompt_data_t *task_data = NULL;
     ompt_data_t *parallel_data = NULL;
     ompt_frame_t *task_frame = NULL;
     int thread_num = 0;
 
-    ompt_get_task_info_fn(level, &type, &task_data, &task_frame, &parallel_data, &thread_num);
+    ompt_get_task_info_fn(level, &task_type_flags, &task_data, &task_frame, &parallel_data, &thread_num);
     //printf("Task frame pointer = %p\n", task_frame);
     return task_frame;
   }
@@ -708,17 +669,17 @@ hpcrun_ompt_get_task_data(int level)
 {
 #ifndef OMPT_V2013_07
   if (ompt_initialized){
-    ompt_task_type_t type;
+    int task_type_flags;
     ompt_data_t *task_data = NULL;
     ompt_data_t *parallel_data = NULL;
     ompt_frame_t *task_frame = NULL;
     int thread_num = 0;
 
-    ompt_get_task_info_fn(level, &type, &task_data, &task_frame, &parallel_data, &thread_num);
+    ompt_get_task_info_fn(level, &task_type_flags, &task_data, &task_frame, &parallel_data, &thread_num);
     return task_data;
   }
 #endif
-  return (ompt_data_t*)&ompt_data_none;
+  return (ompt_data_t*) ompt_data_none;
 }
 
 
@@ -803,11 +764,11 @@ void hpcrun_ompt_get_parallel_info_id_pointer(int ancestor_level, uint64_t *regi
 uint64_t
 hpcrun_ompt_outermost_parallel_id()
 { 
-  ompt_parallel_id_t outer_id = 0; 
+  ompt_id_t outer_id = 0; 
   if (ompt_initialized) { 
     int i = 0;
     for (;;) {
-      ompt_parallel_id_t next_id = hpcrun_ompt_get_parallel_info_id(i++);
+      ompt_id_t next_id = hpcrun_ompt_get_parallel_info_id(i++);
       if (next_id == 0) break;
       outer_id = next_id;
     }
@@ -1001,13 +962,13 @@ int
 hpcrun_ompt_get_thread_num(int level)
 {
     if (ompt_initialized) {
-        ompt_task_type_t type;
+        int task_type_flags;
         ompt_data_t *task_data = NULL;
         ompt_data_t *parallel_data = NULL;
         ompt_frame_t *task_frame = NULL;
         int thread_num = 0;
 
-        ompt_get_task_info_fn(level, &type, &task_data, &task_frame, &parallel_data, &thread_num);
+        ompt_get_task_info_fn(level, &task_type_flags, &task_data, &task_frame, &parallel_data, &thread_num);
         //printf("Task frame pointer = %p\n", task_frame);
         return thread_num;
     }

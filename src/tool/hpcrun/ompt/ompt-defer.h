@@ -2,11 +2,10 @@
 #ifndef defer_cntxt_h
 #define defer_cntxt_h
 
-//#include <ompt.h>
-
 #include <hpcrun/thread_data.h>
 #include <unwind/common/backtrace_info.h>
 #include "ompt.h"
+#include "ompt-types.h"
 
 // support for deferred callstack resolution
 

@@ -24,6 +24,7 @@
 #include "ompt-callstack.h"
 
 #include "ompt-thread.h"
+#include "ompt-types.h"
 
 #include "ompt-interface.h"
 #include "ompt-region-map.h"
@@ -759,7 +760,7 @@ first_frame_above(frame_t *start, frame_t *end, uint64_t frame_address, int *ind
 {
   frame_t *it;
   for(it = start; it <= end; it++, (*index)++) {
-    // FIXME: exit frame of current should be the same as reenter of previous frane
+    // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frane
     if(UINT64_T(it->cursor.sp) >= frame_address){
       return it;
     }
@@ -973,15 +974,15 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
   cct_node_t *top_prefix = NULL;
   cct_node_t *prefix = NULL;
 
-  if (UINT64_T(current_frame->reenter_runtime_frame) == 0
-    && UINT64_T(current_frame->exit_runtime_frame) != 0) {
+  if (UINT64_T(current_frame->enter_frame.ptr) == 0
+    && UINT64_T(current_frame->exit_frame.ptr) != 0) {
     // thread take a sample inside user code of the parallel region
     // this region is the the innermost
 
     // this has happened
     //printf("First time in user code of the parallel region\n");
 
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
     if (it == NULL) {
 
         return;
@@ -989,15 +990,15 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
     // this happened
     //printf("One above exit\n");
 
-  } else if (UINT64_T(current_frame->reenter_runtime_frame) <= UINT64_T(bt_inner->cursor.sp)
-             && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_runtime_frame)) { // FIXME should put =
+  } else if (UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
+             && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_frame.ptr)) { // FIXME should put =
     // thread take a simple in the region which is not the innermost
     // all innermost regions have been finished
 
     // this happened
     //printf("Second time in user code of the parallel region\n");
 
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
     if (it == NULL) {
         // this happened once for the thread da it is not TD_GET(master)
 
@@ -1006,27 +1007,27 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
     // this happened
     //printf("One above exit...\n");
 
-  } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->reenter_runtime_frame)) {
+  } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->enter_frame.ptr)) {
     // take a sample inside the runtime
     // this happened
     //printf("Sample has been taken inside runtime frame\n");
 
     return;
-  } else if (UINT64_T(current_frame->reenter_runtime_frame) == 0
-             && UINT64_T(current_frame->exit_runtime_frame) == 0) {
+  } else if (UINT64_T(current_frame->enter_frame.ptr) == 0
+             && UINT64_T(current_frame->exit_frame.ptr) == 0) {
     // FIXME: check what this means
     // this happened
-    //printf("Both reenter and exit are zero\n");
+    //printf("Both enter_frame.ptr and exit are zero\n");
 
     // this happened a couple of time for not TD_GET(master) threads
 
     return;
-  } else if (UINT64_T(current_frame->exit_runtime_frame) == 0
-             && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+  } else if (UINT64_T(current_frame->exit_frame.ptr) == 0
+             && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
     //ompt_frame_t* parent = hpcrun_ompt_get_task_frame(1);
     //printf("I did not cover. BT_INNNER: %lu\tEXIT: %lu\tREENTER: %lu\tREGIONS: %d\tMASTER: %d\tPARENT FRAME: %p\n",
-    //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_runtime_frame),
-    //       UINT64_T(current_frame->reenter_runtime_frame), top_index+1, TD_GET(master), parent);
+    //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_frame.ptr),
+    //       UINT64_T(current_frame->enter_frame.ptr), top_index+1, TD_GET(master), parent);
 
     // FIXME: the master thread is probably inside implicit task
     // this happened
@@ -1072,7 +1073,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
 
     // we should be inside the user code of the parent parallel region
     // but let's check that
-    if (UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+    if (UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
       // this happened
 
       // printf("Inside user code\n");
@@ -1081,7 +1082,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
       printf("*********************************Inside runtime\n");
       return;
       // TODO: if this would happen, then go up until
-      // UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)
+      // UINT64_T(it->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)
     }
 
     bottom_prefix = get_cct_from_prefix(cct, index);
@@ -1116,8 +1117,8 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
     }
 
     // we are inside user code of outside region
-    // should find one frame below exit_runtime_frame
-    it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+    // should find one frame below exit_frame.ptr
+    it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
     // FIXME: vi3 What is this commented?
     //top_prefix = get_cct_from_prefix(cct, TD_GET(master) ? index + 1 : index);
 
@@ -1160,7 +1161,7 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
       return;
     }
     // go to parent region frame and do everything again
-    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+    it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
 
 
   }
@@ -1188,15 +1189,15 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
     cct_node_t *top_prefix = NULL;
     cct_node_t *prefix = NULL;
 
-    if (UINT64_T(current_frame->reenter_runtime_frame) == 0
-        && UINT64_T(current_frame->exit_runtime_frame) != 0) {
+    if (UINT64_T(current_frame->enter_frame.ptr) == 0
+        && UINT64_T(current_frame->exit_frame.ptr) != 0) {
         // thread take a sample inside user code of the parallel region
         // this region is the the innermost
 
         // this has happened
         //printf("First time in user code of the parallel region\n");
 
-//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
 //        if (it == NULL) {
 //
 //            return;
@@ -1206,15 +1207,15 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
 
 
         printf("MASTER: %d, FIRST\n", TD_GET(master));
-    } else if (UINT64_T(current_frame->reenter_runtime_frame) <= UINT64_T(bt_inner->cursor.sp)
-               && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_runtime_frame)) { // FIXME should put =
+    } else if (UINT64_T(current_frame->enter_frame.ptr) <= UINT64_T(bt_inner->cursor.sp)
+               && UINT64_T(bt_inner->cursor.sp) <= UINT64_T(current_frame->exit_frame.ptr)) { // FIXME should put =
         // thread take a simple in the region which is not the innermost
         // all innermost regions have been finished
 
         // this happened
         //printf("Second time in user code of the parallel region\n");
 
-//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+//        it = first_frame_above(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
 //        if (it == NULL) {
 //            // this happened once for the thread da it is not TD_GET(master)
 //
@@ -1227,7 +1228,7 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
 
 
         bottom_prefix = get_cct_from_prefix(cct, index);
-        it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_runtime_frame), &index);
+        it = first_frame_below(it, bt_outer, UINT64_T(current_frame->exit_frame.ptr), &index);
         top_prefix = get_cct_from_prefix(cct, index);
 
         // FIXME: unresolved should not be top_prefix, get its child,
@@ -1245,7 +1246,7 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
         ending_region->call_path = prefix;
 
 
-    } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->reenter_runtime_frame)) {
+    } else if (UINT64_T(bt_inner->cursor.sp) < UINT64_T(current_frame->enter_frame.ptr)) {
         // take a sample inside the runtime
         // this happened
         //printf("Sample has been taken inside runtime frame\n");
@@ -1253,11 +1254,11 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
         printf("MASTER: %d, THIRD\n", TD_GET(master));
 
 //        return;
-    } else if (UINT64_T(current_frame->reenter_runtime_frame) == 0
-               && UINT64_T(current_frame->exit_runtime_frame) == 0) {
+    } else if (UINT64_T(current_frame->enter_frame.ptr) == 0
+               && UINT64_T(current_frame->exit_frame.ptr) == 0) {
         // FIXME: check what this means
         // this happened
-        //printf("Both reenter and exit are zero\n");
+        //printf("Both enter_frame.ptr and exit are zero\n");
 
         // this happened a couple of time for not TD_GET(master) threads
 
@@ -1265,12 +1266,12 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
 
 
 //        return;
-    } else if (UINT64_T(current_frame->exit_runtime_frame) == 0
-               && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->reenter_runtime_frame)) {
+    } else if (UINT64_T(current_frame->exit_frame.ptr) == 0
+               && UINT64_T(bt_inner->cursor.sp) >= UINT64_T(current_frame->enter_frame.ptr)) {
         //ompt_frame_t* parent = hpcrun_ompt_get_task_frame(1);
         //printf("I did not cover. BT_INNNER: %lu\tEXIT: %lu\tREENTER: %lu\tREGIONS: %d\tMASTER: %d\tPARENT FRAME: %p\n",
-        //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_runtime_frame),
-        //       UINT64_T(current_frame->reenter_runtime_frame), top_index+1, TD_GET(master), parent);
+        //       UINT64_T(bt_inner->cursor.sp), UINT64_T(current_frame->exit_frame.ptr),
+        //       UINT64_T(current_frame->enter_frame.ptr), top_index+1, TD_GET(master), parent);
 
         // FIXME: the master thread is probably inside implicit task
         // this happened

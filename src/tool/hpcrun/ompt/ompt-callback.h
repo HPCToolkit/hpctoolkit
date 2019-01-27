@@ -3,4 +3,4 @@
  *   *****************************************************************************/
 
 #define ompt_event_may_occur(r) \
-  ((r ==  ompt_has_event_may_callback) | (r ==  ompt_has_event_must_callback))
+  ((r == ompt_set_sometimes) | (r ==  ompt_set_sometimes_paired) || (r ==  ompt_set_always))

@@ -148,8 +148,8 @@ frame_dump()
     ompt_frame_t *frame = hpcrun_ompt_get_task_frame(i);
     if (frame == NULL) break;
 
-    void *r = frame->reenter_runtime_frame;
-    void *e = frame->exit_runtime_frame;
+    void *r = frame->enter_frame.ptr;
+    void *e = frame->exit_frame.ptr;
     EMSG("frame %d: (r=%p, e=%p)", i, r, e);
   }
   EMSG("-----frame end"); 
@@ -171,7 +171,7 @@ interval_contains(
 }
 
 
-static omp_state_t
+static ompt_state_t
 check_state()
 {
   uint64_t wait_id;
@@ -256,9 +256,9 @@ ompt_elide_runtime_frame_internal(
 
   // collapse callstack if a thread is idle or waiting in a barrier
   switch(check_state()) {
-    case omp_state_wait_barrier:
-    case omp_state_wait_barrier_implicit:
-    case omp_state_wait_barrier_explicit:
+    case ompt_state_wait_barrier:
+    case ompt_state_wait_barrier_implicit:
+    case ompt_state_wait_barrier_explicit:
       break; // FIXME: skip barrier collapsing until the kinks are worked out.
 //    if(!TD_GET(master)){
 //
@@ -266,7 +266,7 @@ ompt_elide_runtime_frame_internal(
 //      goto return_label;
 //    }
 
-    case omp_state_idle:
+    case ompt_state_idle:
 //    if (!TD_GET(master)) {
       // FIXME vi3: I think we should delete task context when thread is idle-ing
       TD_GET(omp_task_context) = 0;
@@ -300,8 +300,8 @@ ompt_elide_runtime_frame_internal(
 
 
 
-  while ((frame0->reenter_runtime_frame == 0) && 
-         (frame0->exit_runtime_frame == 0)) {
+  while ((frame0->enter_frame.ptr == 0) && 
+         (frame0->exit_frame.ptr == 0)) {
     // corner case: the top frame has been set up, 
     // but not filled in. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
@@ -312,12 +312,12 @@ ompt_elide_runtime_frame_internal(
     }
   }
 
-  if (frame0->exit_runtime_frame &&
-      (((uint64_t) frame0->exit_runtime_frame) <
+  if (frame0->exit_frame.ptr &&
+      (((uint64_t) frame0->exit_frame.ptr) <
       //  ((uint64_t) (*bt_inner)->cursor.bp))) {
         ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
-    // however, exit_runtime_frame points beyond the top of stack. the final call 
+    // however, exit_frame.ptr points beyond the top of stack. the final call 
     // to user code hasn't been made yet. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
   }
@@ -327,14 +327,14 @@ ompt_elide_runtime_frame_internal(
     goto clip_base_frames;
   }
 
-  if (frame0->reenter_runtime_frame) { 
+  if (frame0->enter_frame.ptr) { 
     // the sample was received inside the runtime; 
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
         // FIXME: different from ompt branch which used >
-      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->reenter_runtime_frame) {
-//      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->reenter_runtime_frame) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->enter_frame.ptr) {
+//      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->enter_frame.ptr) {
 	      if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
@@ -345,7 +345,7 @@ ompt_elide_runtime_frame_internal(
     }
 
     if (found == 0) {
-      // reenter_runtime_frame not found on stack. all frames are runtime frames
+      // enter_frame not found on stack. all frames are runtime frames
       goto clip_base_frames;
     }
     // frames at top of stack elided. continue with the rest
@@ -375,7 +375,7 @@ ompt_elide_runtime_frame_internal(
 
     // if a frame marker is inside the call stack, set its flag to true
     bool exit0_flag = 
-      interval_contains(low_sp, high_sp, frame0->exit_runtime_frame);
+      interval_contains(low_sp, high_sp, frame0->exit_frame.ptr);
 
     /* start from the top of the stack (innermost frame). 
        find the matching frame in the callstack for each of the markers in the
@@ -388,8 +388,8 @@ ompt_elide_runtime_frame_internal(
     it = *bt_inner; 
     if(exit0_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_runtime_frame)) {
-//        if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
+        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_frame.ptr)) {
+//        if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
           exit0 = it - 1;
           break;
         }
@@ -406,21 +406,21 @@ ompt_elide_runtime_frame_internal(
     if (!frame1) break;
 
     bool reenter1_flag = 
-      interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame);
+      interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
 
 #if 1
     ompt_frame_t *help_frame = region_stack[top_index-i+1].parent_frame;
     if (!ompt_eager_context && !reenter1_flag && help_frame) {
       frame1 = help_frame;
-      reenter1_flag = interval_contains(low_sp, high_sp, frame1->reenter_runtime_frame);
+      reenter1_flag = interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
       // printf("THIS ONLY HAPPENS IN MASTER: %d\n", TD_GET(master));
     }
 #endif
 
     if(reenter1_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->reenter_runtime_frame)) {
-       // if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_runtime_frame)) {
+        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->enter_frame.ptr)) {
+       // if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
           reenter1 = it - 1;
           break;
         }
@@ -697,7 +697,7 @@ ompt_region_context_end_region_not_eager(uint64_t region_id,
 
 
 cct_node_t *
-ompt_parallel_begin_context(ompt_parallel_id_t region_id, int levels_to_skip, 
+ompt_parallel_begin_context(ompt_id_t region_id, int levels_to_skip, 
                             int adjust_callsite)
 {
 //  return ompt_region_context(region_id, ompt_context_begin,
