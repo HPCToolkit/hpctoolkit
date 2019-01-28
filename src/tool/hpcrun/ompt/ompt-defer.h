@@ -48,4 +48,6 @@ void provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cc
 // vi3: stack reorganization
 void add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_master);
 
+void tmp_end_region_resolve(ompt_notification_t *notification, cct_node_t* prefix);
+
 #endif

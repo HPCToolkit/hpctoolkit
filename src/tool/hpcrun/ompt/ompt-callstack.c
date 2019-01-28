@@ -408,7 +408,7 @@ ompt_elide_runtime_frame_internal(
     bool reenter1_flag = 
       interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
 
-#if 1
+#if 0
     ompt_frame_t *help_frame = region_stack[top_index-i+1].parent_frame;
     if (!ompt_eager_context && !reenter1_flag && help_frame) {
       frame1 = help_frame;
@@ -743,12 +743,17 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
                            cct_node_t *cct_cursor)
 {
 
+  // when providing a path for the region in which we had a task
+  if (!ompt_eager_context && ending_region) {
+    return TD_GET(master) ? cct_cursor : cct_not_master_region;
+  }
+
   cct_node_t *omp_task_context = TD_GET(omp_task_context);
 
   // FIXME: should memoize the resulting task context in a thread-local variable
   //        I think we can just return omp_task_context here. it is already
   //        relative to one root or another.
-  if (omp_task_context) {
+  if (omp_task_context && omp_task_context != task_data_invalid) {
     cct_node_t *root;
 #if 1
     root = region_root(omp_task_context);
@@ -762,6 +767,17 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     // FIXME: vi3 why is this called here??? Makes troubles for worker thread when !ompt_eager_context
     if(ompt_eager_context || TD_GET(master))
       return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
+  } else if (omp_task_context && omp_task_context == task_data_invalid) {
+    region_stack_el_t *stack_el = &region_stack[top_index];
+    ompt_notification_t *notification = stack_el->notification;
+    // if no unresolved cct placeholder for the region, create it
+    if (!notification->unresolved_cct) {
+      cct_node_t *new_cct =
+              hpcrun_cct_insert_addr(cct->thread_root, &ADDR2(UNRESOLVED, notification->region_data->region_id));
+      notification->unresolved_cct = new_cct;
+    }
+    // return a placeholder for the sample taken inside tasks
+    return notification->unresolved_cct;
   }
 
   // FIXME: vi3 consider this when tracing, for now everything works fine

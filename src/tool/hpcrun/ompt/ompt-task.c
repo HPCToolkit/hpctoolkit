@@ -136,6 +136,14 @@ ompt_task_begin_internal(
 
   task_data->ptr = cct_node;
 
+  if (task_data->ptr == NULL) {
+    // this says that we have explicit task but not it's path
+    // we use this in elider (clip frames above the frame of the explicit task) and ompt_cursor_finalize
+    // only possible when ompt_eager_context == false,
+    // because we don't collect call path for the innermost region eagerly
+    task_data->ptr = task_data_invalid;
+  }
+
   td->overhead --;
 
 }
