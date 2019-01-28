@@ -289,12 +289,16 @@ hpcrun_cct_get_root(cct_node_t *node);
 // variable address
 // --------------------------------------------------------------
 
-
 void
 hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target);
 
 bool
 hpcrun_cct_var_static(cct_node_t *node);
+
+
+// --------------------------------------------------------------
+// Node types get and set
+// --------------------------------------------------------------
 
 void
 hpcrun_cct_set_node_allocation(cct_node_t *node);
@@ -307,5 +311,11 @@ hpcrun_cct_set_node_memaccess(cct_node_t *node);
 
 bool
 hpcrun_cct_is_node_memaccess(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_root(cct_node_t *root);
+
+bool
+hpcrun_cct_is_node_root(cct_node_t *node);
 
 #endif // cct_h

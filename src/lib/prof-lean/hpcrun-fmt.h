@@ -516,6 +516,7 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_LEAF         1
 #define NODE_TYPE_ALLOCATION   2
 #define NODE_TYPE_MEMACCESS    4
+#define NODE_TYPE_ROOT         8
 
 
 #define HPCRUN_FMT_LMId_NULL (0)

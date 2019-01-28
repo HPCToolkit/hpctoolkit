@@ -106,6 +106,8 @@ struct cct_node_t {
   
   uint16_t node_type;
 
+  cct_addr_t addr; // bundle abstract address components into a data type
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -117,9 +119,6 @@ struct cct_node_t {
   // left and right pointers for splay tree of siblings
   struct cct_node_t* left;
   struct cct_node_t* right;
-
-  cct_addr_t addr; // bundle abstract address components into a data type
-
 };
 
 //
@@ -491,6 +490,18 @@ hpcrun_cct_is_node_memaccess(cct_node_t *node)
   return (node->node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
+void
+hpcrun_cct_set_node_root(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_ROOT;
+}
+
+bool
+hpcrun_cct_is_node_root(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+}
+
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -846,10 +857,11 @@ cct_node_t*
 hpcrun_cct_insert_path_return_leaf_ts(cct_node_t *path, cct_node_t *root)
 {
   if(!path || ! path->parent) return root;
-  root = hpcrun_cct_insert_path_return_leaf_ts(path->parent, root);
+  cct_node_t *newroot = hpcrun_cct_insert_path_return_leaf_ts(path->parent, root);
+  hpcrun_cct_set_node_root(newroot);
 
   spinlock_lock(&datatree_lock);
-  cct_node_t *node =  hpcrun_cct_insert_addr(root, &(path->addr));
+  cct_node_t *node =  hpcrun_cct_insert_addr(newroot, &(path->addr));
   spinlock_unlock(&datatree_lock);
 
   return node;

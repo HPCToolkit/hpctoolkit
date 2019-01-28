@@ -149,8 +149,6 @@ struct perf_mem_metric {
   int memstore_l1_miss;
 
   int memllc_miss;
-
-  int memaccess;
 };
 
 /******************************************************************************
@@ -384,7 +382,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       // check if this is the maximum value. if this is the case, record it in the metric
       metric_id = datacentric_get_metric_addr_end();
       hpcrun_metric_std_max(metric_id, mset, val_addr);
-      cct_metric_data_increment(metric.memaccess, node, (hpcrun_metricVal_t) {.i = 1});
     }
     hpcrun_cct_set_node_memaccess(node);
   }
@@ -465,14 +462,6 @@ datacentric_register(sample_source_t *self,
   // ------------------------------------------
   metric.memllc_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
-
-  // ------------------------------------------
-  // node allocation id
-  // ------------------------------------------
-  metric.memaccess = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memaccess, DATACENTRIC_METRIC_PREFIX "Access",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
-
 
   return 1;
 }
