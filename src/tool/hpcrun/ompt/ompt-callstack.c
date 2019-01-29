@@ -608,7 +608,7 @@ ompt_region_context(uint64_t region_id,
   node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 1, NULL).sample_node;
 
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
-
+#if 0
   if (node && adjust_callsite) {
     // extract the load module and offset of the leaf CCT node at the 
     // end of a call path representing a parallel region
@@ -635,7 +635,7 @@ ompt_region_context(uint64_t region_id,
       (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
     node = sibling;
   }
-
+#endif
   return node;
 }
 
