@@ -33,8 +33,8 @@ packages:
   #   1. dyninst -- use version 9.3.2 for Blue Gene with the default
   #   gcc 4.4 compilers.
   #
-  #   2. intel-tbb -- add '~tm' for AMD or very old Intel systems that
-  #   don't support transactional memory.
+  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   old Intel systems that don't support transactional memory.
   #
   #   3. libmonitor -- add '+bgq' on Blue Gene/Q.
   #
@@ -71,9 +71,6 @@ packages:
   #
   # Dyninst requires >= 1.61 but most any recent version is good.
   #
-  # Note: dyninst fails with boost 1.69 (maybe later) over usage of
-  # tribool.
-  #
   # +atomic, +chrono, etc are for dyninst.
   # +graph, +regex, etc are for toolkit proper.
   # ~mpi, ~python, etc are to reduce prereqs.
@@ -103,6 +100,7 @@ packages:
   #
   # Need >= 10.0 or develop for best parseapi and CFG support.  On
   # Blue Gene, with the default gcc 4.4 compilers, use version 9.3.2.
+  #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
@@ -127,11 +125,8 @@ packages:
   #
   # Dyninst requires >= 2018.6, most anything after that is good.
   #
-  # Note: version 2019.2 doesn't build because a patch doesn't apply
-  # cleanly.
-  #
-  # Note: add ~tm for very old x86 or AMD systems that don't support
-  # transactional memory (no-op on non-x86).
+  # Note: add ~tm for very old x86 or AMD or KNL systems that don't
+  # support transactional memory (no-op on non-x86).
   #
   intel-tbb:
     version:  [2018.6]
