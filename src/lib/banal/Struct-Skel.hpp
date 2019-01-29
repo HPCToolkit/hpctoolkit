@@ -168,6 +168,14 @@ public:
   }
 };
 
+class VariableInfo {
+public:
+  string prettyName;
+  VMA    entry_vma;
+  long   num_bytes;
+  long   line_num;
+};
+
 } // namespace Struct
 } // namespace BAnal
 

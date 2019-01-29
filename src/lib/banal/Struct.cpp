@@ -181,6 +181,9 @@ static void
 makeWorkList(FileMap *, WorkList &, WorkList &);
 
 static void
+makeVariables(ostream * outFile);
+
+static void
 printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
 
 static void
@@ -647,6 +650,8 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
+    makeVariables(outFile);
+
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
@@ -1031,6 +1036,28 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
        << "group:   0x" << hex << ginfo->start << "--0x" << ginfo->end << dec << "\n";
 #endif
 }
+
+
+static void
+makeVariables(ostream * outFile)
+{
+  std::vector<Symbol*> symvec;
+
+  the_symtab->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
+  for (auto i=0; i<symvec.size(); i++) {
+    Symbol *s = symvec[i];
+    if (s->getOffset() == 0 || s->getSize()<1)
+      continue;
+
+    VariableInfo vinfo;
+    vinfo.line_num   = 0;
+    vinfo.prettyName = s->getPrettyName();
+    vinfo.entry_vma  = s->getOffset();
+    vinfo.num_bytes  = s->getSize();
+    Output::printVariable(outFile, NULL, vinfo);
+  }
+}
+
 
 // makeSkeleton -- the new buildLMSkeleton
 //

@@ -260,6 +260,19 @@ printFileEnd(ostream * os, FileInfo * finfo)
 }
 
 //----------------------------------------------------------------------
+void
+printVariable(ostream * os, FileInfo * finfo, VariableInfo vinfo)
+{
+  doIndent(os, 1);
+  *os << "<V"
+      << INDEX
+      << STRING("n", vinfo.prettyName)
+      << VRANGE(vinfo.entry_vma, vinfo.num_bytes)
+      << "/>\n";
+}
+
+
+//----------------------------------------------------------------------
 
 // Entry point for <P> proc tag and its subtree.
 void

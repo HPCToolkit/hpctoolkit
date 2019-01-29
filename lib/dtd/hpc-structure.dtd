@@ -13,11 +13,19 @@
   <!--   (n)ame -->
   <!--   (l)ine range: "beg-end" (inclusive range) -->
   <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
-  <!ELEMENT LM (F|P)*>
+  <!ELEMENT LM (F|P|V)*>
   <!ATTLIST LM
 	i CDATA #REQUIRED
 	n CDATA #REQUIRED
 	v CDATA #IMPLIED>
+  <!-- Variable: -->
+  <!ELEMENT V EMPTY>
+  <!ATTLIST V
+	i CDATA #REQUIRED
+	v CDATA #REQUIRED
+	n CDATA #REQUIRED
+	f CDATA #IMPLIED
+	ln CDATA #IMPLIED>
   <!-- File: -->
   <!ELEMENT F (P|L|S)*>
   <!ATTLIST F
