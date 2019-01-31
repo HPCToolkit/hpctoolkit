@@ -92,6 +92,7 @@
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
+#include "hpcrun_dlopen_flags.h"
 #include "name.h"
 #include "start-stop.h"
 #include "custom-init.h"
@@ -188,7 +189,6 @@ int lush_metrics = 0; // FIXME: global variable for now
  * (public declaration) thread-local variables
  *****************************************************************************/
  __thread bool hpcrun_thread_suppress_sample = true;
- __thread bool hpcrun_dlopen_success = false;
 
 
 //***************************************************************************
@@ -1099,6 +1099,7 @@ monitor_init_thread(int tid, void* data)
       hpcrun_thread_suppress_sample = true;
     }
   }
+  printf("exit monitor_init_thread\n");
 
   return thread_data;
 }
@@ -1551,14 +1552,14 @@ void
 monitor_pre_dlopen(const char* path, int flags)
 {
   if (! hpcrun_is_initialized()) {
-    hpcrun_dlopen_success = false;
+    hpcrun_dlopen_flags_push(false);
     return;
   }
   if (! hpcrun_safe_enter()) {
-    hpcrun_dlopen_success = false;
+    hpcrun_dlopen_flags_push(false);
     return;
   }
-  hpcrun_dlopen_success = true;
+  hpcrun_dlopen_flags_push(true);
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1567,21 +1568,17 @@ monitor_pre_dlopen(const char* path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void* handle)
 {
-  if (!hpcrun_dlopen_success) {
-    hpcrun_dlopen_success = false;
+  if (!hpcrun_dlopen_flags_pop()) {
     return;
   }
   if (! hpcrun_is_initialized()) {
-    hpcrun_dlopen_success = false;
     return;
   }
   if (! hpcrun_safe_enter()) {
-    hpcrun_dlopen_success = false;
     return;
   }
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
-  hpcrun_dlopen_success = false;
 }
 
 

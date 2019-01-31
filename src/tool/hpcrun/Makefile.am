@@ -310,6 +310,7 @@ MY_BASE_FILES =				\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	hpcrun_dlopen_flags.c \
 	device-finalizers.c \
 	addr_to_module.c \
 	module-ignore-map.c \
