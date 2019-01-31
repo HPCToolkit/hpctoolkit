@@ -682,13 +682,19 @@ cupti_monitoring_set
     bool succ = action(activity_kind) == CUPTI_SUCCESS;
     if (succ) {
       if (enable) {
-        PRINT("activity %d enabled\n", activity_kind);
+        PRINT("activity %d enable succeeded\n", activity_kind);
       } else {
-        PRINT("activity %d disabled\n", activity_kind);
+        PRINT("activity %d disable succeeded\n", activity_kind);
       }
       succeeded++;
+    } else {
+      if (enable) {
+        PRINT("activity %d enable failed\n", activity_kind);
+      } else {
+        PRINT("activity %d disable failed\n", activity_kind);
+      }
+      failed++;
     }
-    else failed++;
   }
   if (succeeded > 0) {
     if (failed == 0) return cupti_set_all;
@@ -1251,6 +1257,9 @@ cupti_lm_contains_fn(const char *lm, const char *fn)
 bool
 cupti_modules_ignore(load_module_t *module)
 {
+  if (module == NULL) {
+    return true;
+  }
   if (cupti_lm_contains_fn(module->name, "cudaLaunchKernel") ||
       cupti_lm_contains_fn(module->name, "cuLaunchKernel") ||
       cupti_lm_contains_fn(module->name, "cuptiActivityEnable")) {
