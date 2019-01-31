@@ -318,4 +318,10 @@ hpcrun_cct_set_node_root(cct_node_t *root);
 bool
 hpcrun_cct_is_node_root(cct_node_t *node);
 
+void
+hpcrun_cct_set_node_variable(cct_node_t *node);
+
+bool
+hpcrun_cct_is_node_variable(cct_node_t *node);
+
 #endif // cct_h

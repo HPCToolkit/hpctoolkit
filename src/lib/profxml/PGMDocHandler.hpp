@@ -245,6 +245,7 @@ private:
   // element names
   const XMLCh *const elemStructure;
   const XMLCh *const elemLM;
+  const XMLCh *const elemVariable;
   const XMLCh *const elemFile;
   const XMLCh *const elemProc;
   const XMLCh *const elemAlien;

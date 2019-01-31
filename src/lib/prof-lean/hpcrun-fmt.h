@@ -512,11 +512,12 @@ hpcrun_fmt_doRetainId(uint32_t id)
 //
 // hpcrun node types
 //
-#define NODE_TYPE_REGULAR      0
-#define NODE_TYPE_LEAF         1
-#define NODE_TYPE_ALLOCATION   2
-#define NODE_TYPE_MEMACCESS    4
-#define NODE_TYPE_ROOT         8
+#define NODE_TYPE_REGULAR           0
+#define NODE_TYPE_LEAF              1
+#define NODE_TYPE_ALLOCATION        2
+#define NODE_TYPE_GLOBAL_VARIABLE   4
+#define NODE_TYPE_MEMACCESS         8
+#define NODE_TYPE_ROOT             16
 
 
 #define HPCRUN_FMT_LMId_NULL (0)
@@ -749,26 +750,6 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
-//***************************************************************************
-// node type interface
-//***************************************************************************
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_allocation_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
-}
-
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_memaccess_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS);
-}
 
 //***************************************************************************
 

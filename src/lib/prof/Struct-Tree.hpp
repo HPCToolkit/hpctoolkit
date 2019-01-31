@@ -260,6 +260,7 @@ public:
     TyLoop,
     TyStmt,
     TyRef,
+    TyVariable,
     TyANY,
     TyNUMBER
   };
@@ -853,7 +854,7 @@ public:
 
 //***************************************************************************
 // Root, Group, LM, File, Proc, Loop,
-// Stmt
+// Stmt, Variable
 //***************************************************************************
 
 // --------------------------------------------------------------------------
@@ -980,6 +981,25 @@ private:
 #if 0
   static RealPathMgr& s_realpathMgr;
 #endif
+};
+
+
+
+// --------------------------------------------------------------------------
+// Variable
+// --------------------------------------------------------------------------
+
+class Variable: public ACodeNode {
+public:
+  Variable(std::string nm, ANode* parent,
+      VMA begVMA = 0, VMA endVMA = 0)
+  :ACodeNode(TyVariable, parent, ln_NULL,ln_NULL, begVMA, endVMA)
+ {
+    m_name = nm;
+  }
+
+private:
+  std::string m_name; // the variable name
 };
 
 

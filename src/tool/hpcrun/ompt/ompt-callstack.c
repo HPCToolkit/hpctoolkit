@@ -457,7 +457,7 @@ ompt_region_context(uint64_t region_id,
   ucontext_t uc;
   getcontext(&uc);
 
-  node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1).sample_node;
+  node = hpcrun_sample_callpath(&uc, 0, 0, ++levels_to_skip, 1, NULL).sample_node;
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   if (node && adjust_callsite) {

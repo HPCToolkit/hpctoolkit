@@ -24,15 +24,14 @@
 	i CDATA #REQUIRED
 	v CDATA #REQUIRED
 	n CDATA #REQUIRED
-	f CDATA #IMPLIED
 	ln CDATA #IMPLIED>
   <!-- File: -->
-  <!ELEMENT F (P|L|S)*>
+  <!ELEMENT F (P|L|S|V)*>
   <!ATTLIST F
 	i CDATA #REQUIRED
 	n CDATA #REQUIRED>
   <!-- Procedure: ln=link name (if different than name) -->
-  <!ELEMENT P (P|A|L|S|C)*>
+  <!ELEMENT P (P|A|L|S|C|V)*>
   <!ATTLIST P
 	i  CDATA #REQUIRED
 	n  CDATA #REQUIRED

@@ -439,6 +439,9 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
   return new;
 }
 
+//***************************************************************************
+// node type interface
+//***************************************************************************
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path
@@ -447,13 +450,6 @@ void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
   node->node_type |= NODE_TYPE_LEAF;
-}
-
-void
-hpcrun_cct_set_node_allocation(cct_node_t *node)
-{
-  node->node_type |= NODE_TYPE_ALLOCATION;
-  hpcrun_cct_retain(node);
 }
 
 bool
@@ -466,10 +462,29 @@ hpcrun_cct_is_leaf(cct_node_t *node)
   return false;
 }
 
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_ALLOCATION;
+  hpcrun_cct_retain(node);
+}
+
 bool
 hpcrun_cct_is_node_allocation(cct_node_t *node)
 {
   return (node->node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
+}
+
+void
+hpcrun_cct_set_node_variable(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+bool
+hpcrun_cct_is_node_variable(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
 }
 
 //
@@ -502,6 +517,7 @@ hpcrun_cct_is_node_root(cct_node_t *node)
   return (node->node_type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
 }
 
+//***************************************************************************
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -510,6 +526,7 @@ hpcrun_cct_is_node_root(cct_node_t *node)
 // cct is ASSUMED TO BE DIFFERENT FROM ANY ADDR IN target's
 // child set. [Otherwise something recursive has to happen]
 //
+//***************************************************************************
 //
 cct_node_t*
 hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
@@ -856,8 +873,11 @@ static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
 cct_node_t*
 hpcrun_cct_insert_path_return_leaf_ts(cct_node_t *path, cct_node_t *root)
 {
-  if(!path || ! path->parent) return root;
+  if(!path || ! path->parent) {
+    return root;
+  }
   cct_node_t *newroot = hpcrun_cct_insert_path_return_leaf_ts(path->parent, root);
+
   hpcrun_cct_set_node_root(newroot);
 
   spinlock_lock(&datatree_lock);

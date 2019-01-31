@@ -158,6 +158,7 @@ using SrcFile::ln_NULL;
 // structure file:
 //   PGM
 //     LM
+//       V1
 //       F1
 //         P1
 //         P2
@@ -211,6 +212,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     // element names
     elemStructure(XMLString::transcode("HPCToolkitStructure")),
     elemLM(XMLString::transcode("LM")),
+    elemVariable(XMLString::transcode("V")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
     elemAlien(XMLString::transcode("A")),
@@ -229,6 +231,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 {
   m_version = -1;
 
+  m_curRoot = NULL;
   m_curLM   = NULL;
   m_curFile = NULL;
   m_curProc = NULL;
@@ -242,6 +245,7 @@ PGMDocHandler::~PGMDocHandler()
   // element names
   XMLString::release((XMLCh**)&elemStructure);
   XMLString::release((XMLCh**)&elemLM);
+  XMLString::release((XMLCh**)&elemVariable);
   XMLString::release((XMLCh**)&elemFile);
   XMLString::release((XMLCh**)&elemProc);
   XMLString::release((XMLCh**)&elemAlien);
@@ -299,6 +303,24 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     m_curProc = NULL;
 
     curStrct = m_curLM;
+  }
+
+  // Variable
+  else if (XMLString::equals(name, elemVariable)) {
+    string nm  = getAttr(attributes, attrName);
+    string lnm = getAttr(attributes, attrLnName); // optional
+    string id  = getAttr(attributes, attrId);     // ID: must exist
+    string vma = getAttr(attributes, attrVMA);
+
+    Struct::ACodeNode *parent  = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
+    Struct::Variable *variable = new Struct::Variable(nm, parent, 0,0);
+
+    if (!vma.empty()) {
+      variable->vmaSet().fromString(vma.c_str());
+    }
+    variable->m_origId = atoi(id.c_str());
+
+    curStrct = variable;
   }
 
   // File
