@@ -1099,7 +1099,6 @@ monitor_init_thread(int tid, void* data)
       hpcrun_thread_suppress_sample = true;
     }
   }
-  printf("exit monitor_init_thread\n");
 
   return thread_data;
 }
