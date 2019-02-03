@@ -60,6 +60,10 @@
 #ifndef include_gnu_dis_asm_h
 #define include_gnu_dis_asm_h
 
+// correct for a missing header file in binutils 2.31.1
+
+#include <string.h>
+
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>
