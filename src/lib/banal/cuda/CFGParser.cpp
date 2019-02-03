@@ -52,7 +52,8 @@ void CFGParser::parse_inst_strings(
   const std::string &label,
   std::deque<std::string> &inst_strings) {
   std::regex e("\\\\l([|]*)");
-  std::istringstream ss(std::regex_replace(label, e, "\n"));
+  std::string newline("\n");
+  std::istringstream ss(std::regex_replace(label, e, newline));
   std::string s;
   while (std::getline(ss, s)) {
     inst_strings.push_back(s);

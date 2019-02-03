@@ -65,7 +65,8 @@ struct Inst {
         s.erase(std::remove(s.begin(), s.end(), ')'), s.end());
         s.erase(std::remove(s.begin(), s.end(), '`'), s.end());
         std::regex e("\\\\ ");
-        iss = std::istringstream(std::regex_replace(s, e, "\n"));
+        std::string newline("\n");
+        iss = std::istringstream(std::regex_replace(s, e, newline));
         while (std::getline(iss, s)) {
           if (s != "") {
             if (opcode == "") {
