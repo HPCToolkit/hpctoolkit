@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -114,49 +114,46 @@ endif
 #
 BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
 EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
-MYMONITORDIR = $(DESTDIR)$(pkglibdir)/monitor
 
 define copy-libs
-    @if test "$1" = yes ; then \
+    if test "$1" = yes ; then \
 	( cd "$2" && tar cf - $3 2>/dev/null ) | ( cd "$(EXT_LIBS_DIR)" && tar xvf - ) ; \
 	true ; \
     fi
 endef
 
-install-exec-local: myinstall-monitor
+hash_file = $(BASE_LIBS_DIR)/hash-file
+hash_value = @hash_value@
+
+install-exec-local:
+	@echo "Installing launch script hash ..."
+	rm -f "$(hash_file)"
+	echo "$(hash_value)" > "$(hash_file)"
 	@echo "Copying external package libraries ..."
-	$(mkinstalldirs) "$(EXT_LIBS_DIR)"
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_atomic*)
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_chrono*)
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_date_time*)
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_system*)
-	$(call copy-libs,$(BOOST_COPY),$(BOOST_LIB),libboost_thread*)
-	$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
-	$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*)
-	$(call copy-libs,$(LIBDW_COPY),$(LIBELF_LIB),libdw*)
-	$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*)
-	$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
-	$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libcommon*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libdyn*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libinstruct*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libparse*)
-	$(call copy-libs,$(SYMTABAPI_COPY),$(SYMTABAPI_LIB),libsymtabAPI*)
-	$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
-	$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
-	$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
-	$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
-	$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
+	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
+	@for lib in $(BOOST_COPY_LIST) ; do  \
+	    $(call copy-libs,$(BOOST_COPY),$(BOOST_LIB_DIR),libboost_"$$lib"*so*) ;  \
+	done
+	@$(call copy-libs,$(BZIP_COPY),$(BZIP_LIB),libbz*so*)
+	@for lib in common dynElf dynDwarf instructionAPI parseAPI symtabAPI ; do  \
+	    $(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
+	done
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
+	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
+	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
+	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
+	@$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
+	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)
+	@$(call copy-libs,$(XED2_COPY),$(XED2_LIB_DIR),lib*)
+	@$(call copy-libs,$(XERCES_COPY),$(XERCES_LIB),libxerces*)
+	@$(call copy-libs,$(ZLIB_COPY),$(ZLIB_LIB),libz.a libz.so*)
 
-myinstall-monitor:
-	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
-	  $(mkinstalldirs) $(MYMONITORDIR) ; \
-	  cp -R @MONITOR@/lib*/libmonitor* $(MYMONITORDIR)/ ; \
-	fi
-
-.PHONY: myinstall-monitor
-
+#
 # Strip the debug sections from the libraries (ours and externals)
 # used in hpcrun and hpclink.  This prevents our code from being
 # displayed in the viewer.
@@ -164,9 +161,8 @@ myinstall-monitor:
 #  $1 = directory containing the libraries
 #  $2 = glob pattern for library name
 #
-
 define strip-debug
-    @if cd "$1" 2>/dev/null ; then  \
+    if cd "$1" 2>/dev/null ; then  \
 	for lib in $2 ; do  \
 	    if test -f "$$lib" && test ! -L "$$lib" ; then  \
 		echo "$$lib" ;  \
@@ -180,17 +176,16 @@ endef
 if OPT_STRIP_HPCRUN_LIBS
 install-exec-hook:
 	@echo "Strip debug sections from hpcrun libraries ..."
-	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
-	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
-	$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
-	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
-	$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
-	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
-	$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
-	$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
-	$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
-	$(call strip-debug,$(MYMONITORDIR),libmonitor.so*)
-	$(call strip-debug,$(MYMONITORDIR),libpfm.so*)
+	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*.so*)
+	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun.o)
+	@$(call strip-debug,$(BASE_LIBS_DIR),libhpcrun*wrap*.a)
+	@$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.so*)
+	@$(call strip-debug,$(BASE_LIBS_DIR),libhpctoolkit.a)
+	@$(call strip-debug,$(EXT_LIBS_DIR),libmonitor.so*)
+	@$(call strip-debug,$(EXT_LIBS_DIR),libmonitor_wrap.a)
+	@$(call strip-debug,$(EXT_LIBS_DIR),libunwind*.so*)
+	@$(call strip-debug,$(EXT_LIBS_DIR),liblzma*.so*)
+	@$(call strip-debug,$(EXT_LIBS_DIR),libpfm.so*)
 endif
 
 

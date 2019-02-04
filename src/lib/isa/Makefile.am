@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,88 +44,39 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
+# We no longer use binutils to crack instructions on any platform.
+# All that's left is access to the symbol table for struct simple, and
+# at some point, that will be moved to symtabapi.
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-
-#############################################################################
-# Common settings
-#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
-
-XED2_INC = @XED2_INC@
+#----------------------------------------------------------------------
 
 MYSOURCES = \
 	ISATypes.hpp \
-	ISA.hpp ISA.cpp \
-	PowerISA.hpp PowerISA.cpp \
-	x86ISA.hpp  x86ISA.cpp \
-	x86ISABinutils.hpp  x86ISABinutils.cpp
+	ISA.hpp ISA.cpp
 
-if OPT_HAVE_BINUTILS_IA64
-  MYSOURCES += IA64ISA.hpp IA64ISA.cpp
-endif
-
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-
-if IS_HOST_AR
-  MYAR = @HOST_AR@
-else
-  MYAR = $(AR) cru
-endif
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-## old, unsupported platforms
-##	AlphaISA.hpp AlphaISA.cpp \
-##	MipsISA.hpp MipsISA.cpp \
-##	SparcISA.hpp SparcISA.cpp \
-
-#############################################################################
-# Automake rules
-#############################################################################
+#----------------------------------------------------------------------
 
 noinst_LTLIBRARIES = libHPCisa.la
-
-if HOST_CPU_X86_FAMILY
-  MYSOURCES  +=	x86ISAXed.cpp  x86ISAXed.hpp
-  MYCFLAGS   += -I$(XED2_INC)
-  MYCXXFLAGS += -I$(XED2_INC)
-else
-  MYSOURCES  +=	x86ISAXed_dummy.cpp  x86ISAXed.hpp
-endif
 
 libHPCisa_la_SOURCES  = $(MYSOURCES)
 libHPCisa_la_CFLAGS   = $(MYCFLAGS)
 libHPCisa_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCisa_la_AR       = $(MYAR)
 libHPCisa_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 include $(top_srcdir)/src/Makeinclude.rules
 

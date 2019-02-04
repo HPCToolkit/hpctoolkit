@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,6 +61,7 @@
 
 #include <err.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <map>
@@ -74,10 +75,28 @@
 #include <Function.h>
 #include <Symtab.h>
 
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace ParseAPI;
 using namespace std;
+
+class Options {
+public:
+  char * filename;
+  int  jobs;
+
+  Options()
+  {
+    filename = (char *) "";
+    jobs = 1;
+  }
+};
 
 //----------------------------------------------------------------------
 
@@ -153,18 +172,79 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj)
 
 //----------------------------------------------------------------------
 
-// Usage:  dotgraph  <binary>
+static void
+usage(string mesg)
+{
+  cout << "usage:  dotgraph  [options]...  filename\n\n"
+       << "options:\n"
+       << "  -j num       use num threads for ParseAPI::parse()\n"
+       << "  -h, --help   display usage message and exit\n"
+       << "\n";
+
+  if (! mesg.empty()) {
+    errx(1, "%s", mesg.c_str());
+  }
+  exit(0);
+}
+
+static void
+getOptions(int argc, char **argv, Options & opts)
+{
+  if (argc < 2) {
+    usage("");
+  }
+
+  int n = 1;
+  while (n < argc) {
+    string arg(argv[n]);
+
+    if (arg == "-h" || arg == "-help" || arg == "--help") {
+      usage("");
+    }
+    else if (arg == "-j") {
+      if (n + 1 >= argc) {
+	usage("missing arg for -j");
+      }
+      opts.jobs = atoi(argv[n + 1]);
+      if (opts.jobs <= 0) {
+	errx(1, "bad arg for -j: %s", argv[n + 1]);
+      }
+      n += 2;
+    }
+    else if (arg[0] == '-') {
+      usage("invalid option: " + arg);
+    }
+    else {
+      break;
+    }
+  }
+
+  // filename (required)
+  if (n < argc) {
+    opts.filename = argv[n];
+  }
+  else {
+    usage("missing file name");
+  }
+
+#ifndef ENABLE_OPENMP
+  opts.jobs = 1;
+#endif
+}
+
+//----------------------------------------------------------------------
+
+// Usage:  dotgraph  [-j num]  <binary>
 // output:  <binary>.dot
 int
 main(int argc, char **argv)
 {
-  if (argc < 2) {
-    errx(1, "missing file name");
-  }
-  const char * filename = argv[1];
+  Options opts;
+
+  getOptions(argc, argv, opts);
 
   // open <filename>.dot for output
-  char * base = basename(strdup(filename));
+  char * base = basename(strdup(opts.filename));
   string dotname = string(base) + ".dot";
   ofstream dotFile;
 
@@ -173,14 +253,22 @@ main(int argc, char **argv)
     errx(1, "unable to open for output: %s", dotname.c_str());
   }
 
+#ifdef ENABLE_OPENMP
+  omp_set_num_threads(1);
+#endif
+
   // read input file and parse
   Symtab * symtab = NULL;
 
-  if (! Symtab::openFile(symtab, filename)) {
-    errx(1, "Symtab::openFile failed: %s", filename);
+  if (! Symtab::openFile(symtab, opts.filename)) {
+    errx(1, "Symtab::openFile failed: %s", opts.filename);
   }
   symtab->parseTypesNow();
   symtab->parseFunctionRanges();
+
+#ifdef ENABLE_OPENMP
+  omp_set_num_threads(opts.jobs);
+#endif
 
   SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
   CodeObject * code_obj = new CodeObject(code_src);

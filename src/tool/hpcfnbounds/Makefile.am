@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,9 +70,11 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
 
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
@@ -80,9 +82,7 @@ LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_INC   = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
-SYMTABAPI_INC = @SYMTABAPI_INC@
-SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+TBB_LFLAGS = @TBB_LFLAGS@
 
 XED2_INC = @XED2_INC@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
@@ -97,18 +97,16 @@ MYSOURCES = \
 	sections.cpp \
 	server.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
-	-I$(SYMTABAPI_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	$(DYNINST_IFLAGS)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = libeh_frames.a  \
 	$(HPCLIB_SupportLean) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
-
-if USE_BOOST_LIBS
-  MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-endif
+	$(DYNINST_LFLAGS)  \
+	$(BOOST_LFLAGS) \
+	$(TBB_LFLAGS)
 
 if OPT_DYNINST_LIBDW
   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
@@ -135,7 +133,7 @@ pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
 
 libeh_frames_a_SOURCES = eh-frames.cpp
-libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBDWARF_INC)
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBDWARF_INC)
 libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)

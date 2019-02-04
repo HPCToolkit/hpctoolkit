@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef __HPCRUN_TOKENIZE_H__
+#define __HPCRUN_TOKENIZE_H__
+
 #include <stdbool.h>
+
+// macros:
+// return value of hpcrun_extract_ev_thresh()
+//
+#define THRESH_DEFAULT 0
+#define THRESH_VALUE   1
+#define THRESH_FREQ    2
+
+
 
 extern char *start_tok(char *l);
 extern int   more_tok(void);
@@ -52,3 +64,5 @@ extern char *next_tok(void);
 extern int hpcrun_extract_threshold(const char *in, long *th, long def);
 extern int hpcrun_extract_ev_thresh(const char*, int, char*, long*, long);
 extern bool hpcrun_ev_is(const char* candidate, const char* event_name);
+
+#endif

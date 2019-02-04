@@ -1,42 +1,7 @@
 #!/bin/sh
 # set -x
 #
-#------------------------------------
-# Part of HPCToolkit (hpctoolkit.org)
-#------------------------------------
-#
-# Copyright (c) 2002-2018, Rice University.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-#
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of Rice University (RICE) nor the names of its
-#   contributors may be used to endorse or promote products derived from
-#   this software without specific prior written permission.
-#
-# This software is provided by RICE and contributors "as is" and any
-# express or implied warranties, including, but not limited to, the
-# implied warranties of merchantability and fitness for a particular
-# purpose are disclaimed. In no event shall RICE or contributors be
-# liable for any direct, indirect, incidental, special, exemplary, or
-# consequential damages (including, but not limited to, procurement of
-# substitute goods or services; loss of use, data, or profits; or
-# business interruption) however caused and on any theory of liability,
-# whether in contract, strict liability, or tort (including negligence
-# or otherwise) arising in any way out of the use of this software, even
-# if advised of the possibility of such damage.
-#
-# $HeadURL$
-# $Id$
+@copyright_hash@
 #
 # hpclink -- link application with libhpcrun, libmonitor, PAPI and
 # Xed2 statically by editing the compile line.
@@ -57,11 +22,7 @@
 # Values from configure
 #------------------------------------------------------------
 
-VERSION='@PACKAGE_VERSION@'
-
-# If this script can't find its own install prefix, or if the script
-# is moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT='@prefix@'
+@launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
@@ -91,6 +52,9 @@ undef_names=
 
 # Space-separated list of libs (without -l) not to repeat on command line.
 no_repeat_list='hugetlbfs'
+
+prog_name=hpclink
+
 #------------------------------------------------------------
 
 cleanup()
@@ -121,7 +85,6 @@ unable_to_link()
     die "unable to link"
 }
 
-
 #------------------------------------------------------------
 # The darshan I/O characterization library
 # (http://www.mcs.anl.gov/research/projects/darshan) is linked into
@@ -132,16 +95,18 @@ unable_to_link()
 #------------------------------------------------------------
 check_darshan()
 {
-    darshan_msg="darshan is incompatible with HPCToolkit. Unload darshan from your environment before using hpclink."
-    if test "${PE_PKGCONFIG_LIBS/darshan//}" != "${PE_PKGCONFIG_LIBS}" ; then
-        if test "$1" == "die" ; then
-           die $darshan_msg
+    darshan_msg='Darshan is incompatible with HPCToolkit.
+Unload darshan from your environment before using hpclink.'
+
+    echo "x$PE_PKGCONFIG_LIBS" | grep -i darshan >/dev/null 2>&1
+    if test $? -eq 0 ; then
+        if test "$1" = "die" ; then
+           die "$darshan_msg"
         else
-           echo -e "\nwarning:" $darshan_msg
+           echo ; echo "warning: $darshan_msg"
         fi
     fi
 }
-
 
 #------------------------------------------------------------
 # Usage Message
@@ -232,6 +197,8 @@ export LD_LIBRARY_PATH
 # Step 1 -- Parse linker options, our options first.
 #------------------------------------------------------------
 
+@launch_early_options@
+
 double_wrap=no
 front_end_dir=no
 my_plugin_list=
@@ -296,10 +263,6 @@ do
 	    verbose=yes
 	    verb=mesg
 	    shift
-	    ;;
-	-V | --version )
-	    echo "hpclink: A member of HPCToolkit, version $VERSION"
-	    exit 0
 	    ;;
 	-- )
 	    shift

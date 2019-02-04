@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -170,7 +170,7 @@ hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_p
 
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -179,10 +179,17 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint met
     uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(node);
+
+    int32_t call_path_id = hpcrun_cct_persistent_id(node);
+
     hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, microtime);
   }
-
 }
+
+
 
 void
 hpcrun_trace_close(core_profile_trace_data_t * cptd)

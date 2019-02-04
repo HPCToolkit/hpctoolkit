@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,13 @@ using std::endl;
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
+
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 
 //**************************** Support Functions ****************************
 
@@ -142,94 +149,119 @@ main(int argc, char* argv[])
   }
 }
 
-
 static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  bool ourDemangle = false;
+  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   for (auto &in_filenm : args.in_filenm) {
     RealPathMgr::singleton().realpath(in_filenm);
   }
 
+  // ------------------------------------------------------------
+  // Parameters on how to run hpcstruct
+  // ------------------------------------------------------------
+
+#ifdef ENABLE_OPENMP
+  opts.jobs = args.jobs;
+  opts.jobs_parse = args.jobs_parse;
+  opts.jobs_symtab = args.jobs_symtab;
+
+  // default is to run serial (for correctness), unless --jobs is
+  // specified.
+  if (opts.jobs < 1) {
+    opts.jobs = 1;
+  }
+  if (opts.jobs_parse < 1) {
+    opts.jobs_parse = opts.jobs;
+  }
+
+  // libdw is not yet thread-safe, so run symtab serial unless
+  // specifically requested.
+  if (opts.jobs_symtab < 1) {
+    opts.jobs_symtab = 1;
+  }
+  omp_set_num_threads(1);
+#else
+  opts.jobs = 1;
+  opts.jobs_parse = 1;
+  opts.jobs_symtab = 1;
+#endif
+
+  opts.show_time = args.show_time;
+
+  // ------------------------------------------------------------
+  // Set the demangler before reading the executable 
+  // ------------------------------------------------------------
+  if (!args.demangle_library.empty()) {
+    const char* demangle_library = args.demangle_library.c_str();
+    const char* demangle_function = CXX_DEMANGLER_FN_NAME;
+    if (!args.demangle_function.empty()) {
+      demangle_function = args.demangle_function.c_str();
+    }
+    hpctoolkit_demangler_init(demangle_library, demangle_function);
+    opts.ourDemangle = true;
+  }
+
   for (size_t i = 0; i < args.in_filenm.size(); ++i) {
     auto &in_filenm = args.in_filenm[i];
 
-    // ------------------------------------------------------------
-    // open the specified load module
-    // ------------------------------------------------------------
-    InputFile loadModule;
-    bool loadModuleOpen = loadModule.openFile(in_filenm);
-    if (!loadModuleOpen) {
-      // error already printed by openFile
+
+  // ------------------------------------------------------------
+  // Build and print the program structure tree
+  // ------------------------------------------------------------
+
+  auto &out_filenm = args.out_filenm[i];
+  const char* osnm = (out_filenm == "-") ? NULL : out_filenm.c_str();
+
+  std::ostream* outFile = IOUtil::OpenOStream(osnm);
+  char* outBuf = new char[HPCIO_RWBufferSz];
+
+  std::streambuf* os_buf = outFile->rdbuf();
+  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
+
+  std::string gapsName = "";
+  std::ostream* gapsFile = NULL;
+  char* gapsBuf = NULL;
+  std::streambuf* gaps_rdbuf = NULL;
+
+  if (args.show_gaps) {
+    // fixme: may want to add --gaps-name option
+    if (out_filenm == "-") {
+      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
       exit(1);
     }
 
-    // ------------------------------------------------------------
-    // Set the demangler before reading the executable 
-    // ------------------------------------------------------------
-    if (!args.demangle_library.empty()) {
-      const char* demangle_library = args.demangle_library.c_str();
-      const char* demangle_function = CXX_DEMANGLER_FN_NAME;
-      if (!args.demangle_function.empty()) {
-        demangle_function = args.demangle_function.c_str();
-      }
-      hpctoolkit_demangler_init(demangle_library, demangle_function);
-      ourDemangle = true;
-    }
-
-
-    // ------------------------------------------------------------
-    // Build and print the program structure tree
-    // ------------------------------------------------------------
-    auto &out_filenm = args.out_filenm[i];
-    const char* osnm = (out_filenm == "-") ? NULL : out_filenm.c_str();
-    std::ostream* outFile = IOUtil::OpenOStream(osnm);
-    char* outBuf = new char[HPCIO_RWBufferSz];
-
-    std::streambuf* os_buf = outFile->rdbuf();
-    os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
-
-    std::string gapsName = "";
-    std::ostream* gapsFile = NULL;
-    char* gapsBuf = NULL;
-    std::streambuf* gaps_rdbuf = NULL;
-
-    if (args.show_gaps) {
-      // fixme: may want to add --gaps-name option
-      if (out_filenm == "-") {
-        DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
-        exit(1);
-      }
-
-      gapsName = RealPath(osnm) + std::string(".gaps");
-      gapsFile = IOUtil::OpenOStream(gapsName.c_str());
-      gapsBuf = new char[HPCIO_RWBufferSz];
-      gaps_rdbuf = gapsFile->rdbuf();
-      gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
-    }
-
-    ProcNameMgr* procNameMgr = NULL;
-    if (args.lush_agent == "agent-c++") {
-      procNameMgr = new CppNameMgr;
-    }
-    else if (args.lush_agent == "agent-cilk") {
-      procNameMgr = new CilkNameMgr;
-    }
-
-    BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
-               ourDemangle, procNameMgr);
-
-    IOUtil::CloseStream(outFile);
-    delete[] outBuf;
-
-    if (gapsFile != NULL) {
-      IOUtil::CloseStream(gapsFile);
-      delete[] gapsBuf;
-    }
+    gapsName = RealPath(osnm) + std::string(".gaps");
+    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
+    gapsBuf = new char[HPCIO_RWBufferSz];
+    gaps_rdbuf = gapsFile->rdbuf();
+    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
+
+#if 0
+  ProcNameMgr* procNameMgr = NULL;
+  if (args.lush_agent == "agent-c++") {
+    procNameMgr = new CppNameMgr;
+  }
+  else if (args.lush_agent == "agent-cilk") {
+    procNameMgr = new CilkNameMgr;
+  }
+#endif
+
+  BAnal::Struct::makeStructure(in_filenm, outFile, gapsFile, gapsName,
+			       args.searchPathStr, opts);
+
+  IOUtil::CloseStream(outFile);
+  delete[] outBuf;
+
+  if (gapsFile != NULL) {
+    IOUtil::CloseStream(gapsFile);
+    delete[] gapsBuf;
+  }
+}
 
   return (0);
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -64,13 +64,18 @@
 //***************************************************************************
 
 #include <sys/types.h>
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <stdlib.h>
 #include <string.h>
 #include <include/uint.h>
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
 #include <vector>
+#include <mutex>
 #include <ostream>
 #include <sstream>
 
@@ -93,12 +98,17 @@
 #include <include/hpctoolkit-config.h>
 
 #include "ElfHelper.hpp"
+#include "InputFile.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
 #include "cuda/ReadCubinCFG.hpp"
+
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
 
 using namespace Dyninst;
 using namespace Inline;
@@ -131,6 +141,8 @@ using namespace std;
 #endif
 
 #define CUDA_PROC_SEARCH_LEN 32
+#define WORK_LIST_PCT  0.05
+
 
 //******************************************************************************
 // variables
@@ -146,6 +158,7 @@ static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
 static size_t cubin_size = 0;
 
+static BAnal::Struct::Options opts;
 
 //----------------------------------------------------------------------
 
@@ -153,52 +166,64 @@ namespace BAnal {
 namespace Struct {
 
 class HeaderInfo;
+class WorkEnv;
+class WorkItem;
 class LineMapCache;
 
 typedef map <Block *, bool> BlockSet;
 typedef map <VMA, HeaderInfo> HeaderList;
 typedef map <VMA, Region *> RegionMap;
 typedef vector <Statement::Ptr> StatementVector;
+typedef vector <WorkItem *> WorkList;
 
 static FileMap *
-makeSkeleton(CodeObject *, ProcNameMgr *, const string &, bool);
+makeSkeleton(CodeObject *, const string &);
 
 static void
-doFunctionList(Symtab *, FileInfo *, GroupInfo *, HPC::StringTable &, bool);
+doWorkItem(WorkItem *, string &, bool, bool);
+
+static void
+makeWorkList(FileMap *, WorkList &, WorkList &);
+
+static void
+printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
+
+static void
+doFunctionList(WorkEnv &, FileInfo *, GroupInfo *, bool);
 
 static LoopList *
-doLoopTree(FileInfo *, GroupInfo *, ParseAPI::Function *,
-  BlockSet &, LoopTreeNode *, HPC::StringTable &);
+doLoopTree(WorkEnv &, FileInfo *, GroupInfo *, ParseAPI::Function *,
+	   BlockSet &, LoopTreeNode *);
 
 static TreeNode *
-doLoopLate(GroupInfo *, ParseAPI::Function *, BlockSet &, Loop *,
-  const string &, HPC::StringTable &);
+doLoopLate(WorkEnv &, GroupInfo *, ParseAPI::Function *,
+	   BlockSet &, Loop *, const string &);
 
 static void
-doBlock(GroupInfo *, ParseAPI::Function *, BlockSet &, Block *,
-	TreeNode *, HPC::StringTable &);
+doBlock(WorkEnv &, GroupInfo *, ParseAPI::Function *,
+	BlockSet &, Block *, TreeNode *);
 
 static void
-addGaps(FileInfo *, GroupInfo *, HPC::StringTable &);
+addGaps(WorkEnv & env, FileInfo *, GroupInfo *);
 
 static void
 getStatement(StatementVector &, Offset, SymtabAPI::Function *);
 
 static LoopInfo *
-findLoopHeader(FileInfo *, GroupInfo *, ParseAPI::Function *,
-  TreeNode *, Loop *, const string &, HPC::StringTable &);
+findLoopHeader(WorkEnv & env, FileInfo *, GroupInfo *, ParseAPI::Function *,
+	       TreeNode *, Loop *, const string &);
 
 static TreeNode *
-deleteInlinePrefix(TreeNode *, Inline::InlineSeqn, HPC::StringTable &);
+deleteInlinePrefix(WorkEnv &, TreeNode *, Inline::InlineSeqn);
 
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
 
 static void
-doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab);
+doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo);
  
 static void 
-doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root, HPC::StringTable & strTab); 
+doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root);
 
 //----------------------------------------------------------------------
 
@@ -216,11 +241,14 @@ static void
 debugFuncHeader(FileInfo *, ProcInfo *, long, long, string = "");
 
 static void
-debugStmt(VMA, int, string &, SrcFile::ln);
+debugStmt(VMA, int, string &, SrcFile::ln, RealPathMgr *);
+
+static void
+debugEdges(Block * block);
 
 static void
 debugLoop(GroupInfo *, ParseAPI::Function *, Loop *, const string &,
-  vector <Edge *> &, HeaderList &);
+	  vector <Edge *> &, HeaderList &, RealPathMgr *);
 
 static void
 debugInlineTree(TreeNode *, LoopInfo *, HPC::StringTable &, int, bool);
@@ -276,21 +304,64 @@ public:
 
 //----------------------------------------------------------------------
 
+// The environment for interpreting paths, strings, etc.  We allocate
+// one environ per thread to avoid lock contention.
+//
+class WorkEnv {
+public:
+  HPC::StringTable * strTab;
+  RealPathMgr * realPath;
+
+  WorkEnv()
+  {
+    strTab = NULL;
+    realPath = NULL;
+  }
+};
+
+// One item in the work list for openmp parallel region.
+class WorkItem {
+public:
+  FileInfo * finfo;
+  GroupInfo * ginfo;
+  WorkEnv env;
+  double cost;
+  bool first_proc;
+  bool last_proc;
+  bool is_done;
+  bool promote;
+
+  WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last, double cst)
+  {
+    finfo = fi;
+    ginfo = gi;
+    cost = cst;
+    first_proc = first;
+    last_proc = last;
+    is_done = false;
+    promote = false;
+  }
+};
+
+//----------------------------------------------------------------------
+
 // A simple cache of getStatement() that stores one line range.  This
 // saves extra calls to getSourceLines() if we don't need them.
 //
 class LineMapCache {
 private:
   SymtabAPI::Function * sym_func;
+  RealPathMgr * realPath;
   string  cache_filenm;
   uint    cache_line;
   VMA  start;
   VMA  end;
 
 public:
-  LineMapCache(SymtabAPI::Function * sf)
+  LineMapCache(SymtabAPI::Function * sf, RealPathMgr * rp)
   {
     sym_func = sf;
+    realPath = rp;
     cache_filenm = "";
     cache_line = 0;
     start = 1;
@@ -314,7 +385,7 @@ public:
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
-      RealPathMgr::singleton().realpath(filenm);
+      realPath->realpath(filenm);
 
       cache_filenm = filenm;
       cache_line = line;
@@ -330,6 +401,68 @@ public:
     return false;
   }
 };
+
+//----------------------------------------------------------------------
+
+// Comparison functions to sort blocks, edges, loops for more
+// deterministic output.
+
+// Sort Blocks by start address, low to high.
+static bool
+BlockLessThan(Block * b1, Block * b2)
+{
+  return b1->start() < b2->start();
+}
+
+// Sort Edges first by target address (usually all the same), and then
+// by source address.
+static bool
+EdgeLessThan(Edge * e1, Edge * e2)
+{
+  return (e1->trg()->start() < e2->trg()->start())
+      || (e1->trg()->start() == e2->trg()->start()
+	  && e1->src()->last() < e2->src()->last());
+}
+
+// Sort Work Items by the expected 'cost' of their proc group, largest
+// to smallest.
+static bool
+WorkItemGreaterThan(WorkItem * w1, WorkItem * w2)
+{
+  return w1->cost > w2->cost;
+}
+
+// Returns: the min entry VMA for the loop, or else 0 if the loop is
+// somehow invalid.  Irreducible loops have more than one entry
+// address.
+static VMA
+LoopMinEntryAddr(Loop * loop)
+{
+  if (loop == NULL) {
+    return 0;
+  }
+
+  vector <Block *> entBlocks;
+  int num_ents = loop->getLoopEntries(entBlocks);
+
+  if (num_ents < 1) {
+    return 0;
+  }
+
+  VMA ans = VMA_MAX;
+  for (int i = 0; i < num_ents; i++) {
+    ans = std::min(ans, entBlocks[i]->start());
+  }
+
+  return ans;
+}
+
+// Sort Loops (from their LoopTreeNodes) by min entry VMAs.
+static bool
+LoopTreeLessThan(LoopTreeNode * n1, LoopTreeNode * n2)
+{
+  return LoopMinEntryAddr(n1->loop) < LoopMinEntryAddr(n2->loop);
+}
 
 //----------------------------------------------------------------------
 
@@ -373,20 +506,59 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
 //----------------------------------------------------------------------
 
+//
+// Display time and space usage per phase in makeStructure.
+//
+static void
+printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
+	  struct timeval *tv_now, struct rusage *ru_now)
+{
+  gettimeofday(tv_now, NULL);
+  getrusage(RUSAGE_SELF, ru_now);
+
+  float delta = (float)(tv_now->tv_sec - tv_prev->tv_sec)
+    + ((float)(tv_now->tv_usec - tv_prev->tv_usec))/1000000.0;
+
+  printf("%s  %8.1f sec  %8ld meg  %8ld meg", label, delta,
+	 (ru_now->ru_maxrss - ru_prev->ru_maxrss)/1024,
+	 ru_now->ru_maxrss/1024);
+
+  cout << endl;
+}
+
+//
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
 // Read the binutils load module and the parseapi code object, iterate
 // over functions, loops and blocks, make an internal inline tree and
 // write an hpcstruct file to 'outFile'.
 //
+// Fixme: may want to rethink the split between tool/hpcstruct and
+// lib/banal.
+//
 void
-makeStructure(InputFile & inputFile,
+makeStructure(string filename,
 	      ostream * outFile,
 	      ostream * gapsFile,
 	      string gaps_filenm,
-	      bool ourDemangle,
-	      ProcNameMgr * procNmMgr)
+	      string search_path,
+	      Struct::Options & structOpts)
 {
+  struct timeval tv_init, tv_symtab, tv_parse, tv_fini;
+  struct rusage  ru_init, ru_symtab, ru_parse, ru_fini;
+
+  opts = structOpts;
+
+#ifdef ENABLE_OPENMP
+  omp_set_num_threads(opts.jobs_symtab);
+#endif
+
+  InputFile inputFile;
+  if (! inputFile.openFile(filename)) {
+    // error already printed by openFile
+    exit(1);
+  }
+
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -395,18 +567,26 @@ makeStructure(InputFile & inputFile,
     return;
   }
 
-  // insert empty string "" first
-  HPC::StringTable strTab;
-  strTab.str2index("");
-
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
 
   for (uint i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
 
+    if (opts.show_time) {
+      cout << "file:  " << elfFile->getFileName() << "\n"
+	   << "symtab threads: " << opts.jobs_symtab
+	   << "  parse: " << opts.jobs_parse
+	   << "  struct: " << opts.jobs << "\n\n";
+      printTime("init:  ", &tv_init, &ru_init, &tv_init, &ru_init);
+    }
+
 #if DEBUG_ANY_ON
     debugElfHeader(elfFile);
+#endif
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs_symtab);
 #endif
 
     Symtab * symtab = Inline::openSymtab(elfFile);
@@ -414,18 +594,31 @@ makeStructure(InputFile & inputFile,
       continue;
     }
     the_symtab = symtab;
-    int cuda_file = SYMTAB_ARCH_CUDA(symtab);
+    bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
     // pre-compute line map info
     vector <Module *> modVec;
     the_symtab->getAllModules(modVec);
 
-    for (auto mit = modVec.begin(); mit != modVec.end(); ++mit) {
-      (*mit)->parseLineInformation();
+#pragma omp parallel  shared(modVec)
+    {
+#pragma omp for  schedule(dynamic, 1)
+      for (uint i = 0; i < modVec.size(); i++) {
+	Module * mod = modVec[i];
+	mod->parseLineInformation();
+      }
+    }  // end parallel
+
+    if (opts.show_time) {
+      printTime("symtab:", &tv_init, &ru_init, &tv_symtab, &ru_symtab);
     }
 
     CodeSource *code_src = NULL;
     CodeObject *code_obj = NULL;
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs_parse);
+#endif
 
     // don't run parseapi on cuda binary
     if (! cuda_file) {
@@ -440,54 +633,238 @@ makeStructure(InputFile & inputFile,
       parsable = readCubinCFG(elfFile, the_symtab, &code_src, &code_obj);
     }
 
+    if (opts.show_time) {
+      printTime("parse: ", &tv_symtab, &ru_symtab, &tv_parse, &ru_parse);
+    }
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs);
+#endif
+
     string basename = FileUtil::basename(cfilename);
-    FileMap * fileMap = makeSkeleton(code_obj, procNmMgr, basename, ourDemangle);
+    FileMap * fileMap = makeSkeleton(code_obj, basename);
+
+    //
+    // make two work lists:
+    //  wlPrint -- the output order in the struct file as determined
+    //    by files and procs from makeSkeleton(),
+    //  wlLaunch -- the order we launch doWorkItem(), mostly print
+    //    order but with a few, very large funcs moved to the front of
+    //    the list.
+    //
+    WorkList wlPrint;
+    WorkList wlLaunch;
+    uint num_done = 0;
+    mutex output_mtx;
+
+    makeWorkList(fileMap, wlPrint, wlLaunch);
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
-    // process the files in the skeleton map
-    for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
-      FileInfo * finfo = fit->second;
+#pragma omp parallel  default(none)				\
+    shared(wlPrint, wlLaunch, num_done, output_mtx)		\
+    firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
+    {
+#pragma omp for  schedule(dynamic, 1)
+      for (uint i = 0; i < wlLaunch.size(); i++) {
+	doWorkItem(wlLaunch[i], search_path, parsable, gapsFile != NULL);
 
-      Output::printFileBegin(outFile, finfo);
-
-      // process the groups within one file
-      for (auto git = finfo->groupMap.begin(); git != finfo->groupMap.end(); ++git) {
-        GroupInfo * ginfo = git->second;
-
-        // make the inline tree for all funcs in one group
-        if (parsable) {
-          doFunctionList(symtab, finfo, ginfo, strTab, gapsFile != NULL);
-        } else {
-          doUnparsableFunctionList(symtab, finfo, ginfo, strTab);
-        }
-
-        for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
-          ProcInfo * pinfo = pit->second;
-
-          if (! pinfo->gap_only) {
-            Output::printProc(outFile, gapsFile, gaps_filenm,
-              finfo, ginfo, pinfo, strTab);
-          }
-
-          delete pinfo->root;
-          pinfo->root = NULL;
-        }
+	// the printing must be single threaded
+	if (output_mtx.try_lock()) {
+	  printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+	  output_mtx.unlock();
+	}
       }
-      Output::printFileEnd(outFile, finfo);
-    }
+    }  // end parallel
+
+    // with try_lock(), there are interleavings where not all items
+    // have been printed.
+    printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
 
     Output::printLoadModuleEnd(outFile);
 
-    delete code_obj;
+    if (opts.show_time) {
+      printTime("struct:", &tv_parse, &ru_parse, &tv_fini, &ru_fini);
+      printTime("total: ", &tv_init, &ru_init, &tv_fini, &ru_fini);
+      cout << "\nnum funcs: " << wlPrint.size() << "\n" << endl;
+    }
+
+    // if this is the last (or only) elf file, then don't bother with
+    // piecemeal cleanup.
+    if (i + 1 < elfFileVector->size()) {
+      for (uint i = 0; i < wlPrint.size(); i++) {
+	delete wlPrint[i];
+      }
+
+      delete code_obj;
 #if 0
-    // FIXME: CodeSource::~CodeSource needs to be public
-    delete code_src;
+      // FIXME: CodeSource::~CodeSource needs to be public
+      delete code_src;
 #endif
-    Inline::closeSymtab();
+      Inline::closeSymtab();
+    }
   }
 
   Output::printStructFileEnd(outFile, gapsFile);
+}
+
+//----------------------------------------------------------------------
+
+//
+// Make the inline tree for funcs in one proc group.  This much can
+// run concurrently.
+//
+static void
+doWorkItem(WorkItem * witem, string & search_path, bool parsable,
+	   bool fullGaps)
+{
+  FileInfo * finfo = witem->finfo;
+  GroupInfo * ginfo = witem->ginfo;
+
+  // each work item gets its own string table and path manager to
+  // avoid lock contention.
+  HPC::StringTable * strTab = new HPC::StringTable;
+  strTab->str2index("");
+
+  PathFindMgr * pathFind = new PathFindMgr;
+  PathReplacementMgr * pathReplace = new PathReplacementMgr;
+  RealPathMgr * realPath = new RealPathMgr(pathFind, pathReplace);
+  realPath->searchPaths(search_path);
+
+  witem->env.strTab = strTab;
+  witem->env.realPath = realPath;
+
+  if (parsable) {
+    doFunctionList(witem->env, finfo, ginfo, fullGaps);
+  } else {
+    doUnparsableFunctionList(witem->env, finfo, ginfo);
+  }
+
+  witem->is_done = true;
+}
+
+//----------------------------------------------------------------------
+
+//
+// Make work lists for the print order and parallel launch order from
+// the skeleton file map.  The launch order is mostly the print order
+// with a few, very large funcs moved to the front.
+//
+// There are two extremes to avoid: (1) we don't want the printing to
+// be blocked by one early func that was started late, and (2) we
+// don't want one large func to run at the end when all the other
+// threads are idle.
+//
+static void
+makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
+{
+  double total_cost = 0.0;
+
+  wlPrint.clear();
+  wlLaunch.clear();
+
+  // the print order is determined by the hierarchy of files and
+  // groups in the skeleton.
+  for (auto fit = fileMap->begin(); fit != fileMap->end(); ++fit) {
+    FileInfo * finfo = fit->second;
+    auto group_begin = finfo->groupMap.begin();
+    auto group_end = finfo->groupMap.end();
+
+    for (auto git = group_begin; git != group_end; ++git) {
+      GroupInfo * ginfo = git->second;
+      auto next_git = git;  ++next_git;
+
+      // the estimated time is non-linear in the size of the region
+      double cost = ginfo->end - ginfo->start;
+      cost *= cost;
+      total_cost += cost;
+
+      WorkItem * witem =
+	new WorkItem(finfo, ginfo, (git == group_begin), (next_git == group_end), cost);
+
+      wlPrint.push_back(witem);
+    }
+  }
+
+  // if single-threaded, then order doesn't matter
+  if (opts.jobs == 1) {
+    wlLaunch = wlPrint;
+    return;
+  }
+
+  //
+  // if the expected cost of one function is more than 5% of the ideal
+  // parallel run time, then promote it to start early.
+  //
+  double threshold = WORK_LIST_PCT * total_cost / ((double) opts.jobs);
+
+  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
+    WorkItem * witem = *wit;
+
+    if (witem->cost > threshold) {
+      wlLaunch.push_back(witem);
+      witem->promote = true;
+    }
+  }
+  std::sort(wlLaunch.begin(), wlLaunch.end(), WorkItemGreaterThan);
+
+  // add the small items in print order
+  for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
+    WorkItem * witem = *wit;
+
+    if (! witem->promote) {
+      wlLaunch.push_back(witem);
+    }
+  }
+}
+
+//----------------------------------------------------------------------
+
+//
+// Scan the work list from num_done to end for items that are ready to
+// be printed.  The output order is always work list order, regardless
+// of order finished.
+//
+// Note: the output functions have state (index number), so this must
+// be called locked or else single threaded.
+//
+static void
+printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
+	      ostream * gapsFile, string & gaps_filenm)
+{
+  while (num_done < workList.size() && workList[num_done]->is_done) {
+    WorkItem * witem = workList[num_done];
+    FileInfo * finfo = witem->finfo;
+    GroupInfo * ginfo = witem->ginfo;
+    HPC::StringTable * strTab = witem->env.strTab;
+
+    if (witem->first_proc) {
+      Output::printFileBegin(outFile, finfo);
+    }
+
+    for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
+      ProcInfo * pinfo = pit->second;
+
+      if (! pinfo->gap_only) {
+	Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
+      }
+      delete pinfo->root;
+      pinfo->root = NULL;
+    }
+
+    if (witem->last_proc) {
+      Output::printFileEnd(outFile, finfo);
+    }
+
+    // delete the work environment
+    delete strTab;
+    witem->env.strTab = NULL;
+
+    delete witem->env.realPath;
+    witem->env.realPath = NULL;
+
+    num_done++;
+  }
 }
 
 //----------------------------------------------------------------------
@@ -718,8 +1095,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 // symtab proc, so we make a func list (group).
 //
 static FileMap *
-makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & basename,
-	     bool ourDemangle)
+makeSkeleton(CodeObject * code_obj, const string & basename)
 {
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
@@ -817,7 +1193,7 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
 
-	  if (ourDemangle) {
+	  if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
 	  }
 	  else if (pretty_it != sym_func->pretty_names_end()) {
@@ -1009,18 +1385,17 @@ makeSkeleton(CodeObject * code_obj, ProcNameMgr * procNmMgr, const string & base
 // function.  This often happens with openmp parallel pragmas.
 //
 static void
-doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
-	       HPC::StringTable & strTab, bool fullGaps)
+doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
+  long num_funcs = ginfo->procMap.size();
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
-  long num_funcs = ginfo->procMap.size();
 
   // make a map of internal call edges (from target to source) across
   // all funcs in this group.  we use this to strip the inline seqn at
   // the call source from the target func.
   //
-  std::map <VMA, VMA> callMap;
+  map <VMA, VMA> callMap;
 
   if (ginfo->sym_func != NULL && !ginfo->alt_file && num_funcs > 1) {
     for (auto pit = ginfo->procMap.begin(); pit != ginfo->procMap.end(); ++pit) {
@@ -1052,7 +1427,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
     auto call_it = callMap.find(entry_addr);
 
     if (call_it != callMap.end()) {
-      Inline::analyzeAddr(prefix, call_it->second);
+      analyzeAddr(prefix, call_it->second, env.realPath);
     }
 
 #if DEBUG_CFG_SOURCE
@@ -1098,20 +1473,26 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       continue;
     }
 
-    // basic blocks for this function
-    const ParseAPI::Function::blocklist & blist = func->blocks();
+    // basic blocks for this function.  put into a vector and sort by
+    // start VMA for deterministic output.
+    vector <Block *> bvec;
     BlockSet visited;
+
+    const ParseAPI::Function::blocklist & blist = func->blocks();
 
     for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
       Block * block = *bit;
+      bvec.push_back(block);
       visited[block] = false;
     }
 
+    std::sort(bvec.begin(), bvec.end(), BlockLessThan);
+
     // add to the group's set of covered blocks
     if (! ginfo->alt_file) {
-      for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+      for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
         Block * block = *bit;
-        covered.insert(block->start(), block->end());
+	covered.insert(block->start(), block->end());
       }
       coveredFuncs.insert(entry_addr);
     }
@@ -1135,15 +1516,15 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // traverse the loop (Tarjan) tree
     LoopList *llist =
-      doLoopTree(finfo, ginfo, func, visited, func->getLoopTree(), strTab);
+      doLoopTree(env, finfo, ginfo, func, visited, func->getLoopTree());
 
     DEBUG_CFG("\nnon-loop blocks:\n");
 
     // process any blocks not in a loop
-    for (auto bit = blist.begin(); bit != blist.end(); ++bit) {
+    for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-        doBlock(ginfo, func, visited, block, root, strTab);
+	doBlock(env, ginfo, func, visited, block, root);
       }
     }
 
@@ -1156,7 +1537,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 
     // delete the inline prefix from this func, if non-empty
     if (! prefix.empty()) {
-      root = deleteInlinePrefix(root, prefix, strTab);
+      root = deleteInlinePrefix(env, root, prefix);
     }
 
     // add inline tree to proc info
@@ -1177,7 +1558,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       }
     }
     cout << "\n";
-    debugInlineTree(root, NULL, strTab, 0, true);
+    debugInlineTree(root, NULL, *(env.strTab), 0, true);
     cout << "\nend proc:  (" << num << "/" << num_funcs << ")"
       << "  link='" << pinfo->linkName << "'\n"
       << "parse:  '" << func->name() << "'\n";
@@ -1191,7 +1572,7 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
       computeGaps(covered, ginfo->gapSet, ginfo->start, ginfo->end);
 
       if (! fullGaps) {
-        addGaps(finfo, ginfo, strTab);
+        addGaps(env, finfo, ginfo);
       }
     }
   }
@@ -1228,9 +1609,8 @@ doFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo,
 // then the list contains one element for each subtree.
 //
 static LoopList *
-doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
-	   BlockSet & visited, LoopTreeNode * ltnode,
-	   HPC::StringTable & strTab)
+doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
+	   ParseAPI::Function * func, BlockSet & visited, LoopTreeNode * ltnode)
 {
   LoopList * myList = new LoopList;
 
@@ -1242,9 +1622,11 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   // process the children of the loop tree
   vector <LoopTreeNode *> clist = ltnode->children;
 
+  std::sort(clist.begin(), clist.end(), LoopTreeLessThan);
+
   for (uint i = 0; i < clist.size(); i++) {
     LoopList *subList =
-      doLoopTree(finfo, ginfo, func, visited, clist[i], strTab);
+      doLoopTree(env, finfo, ginfo, func, visited, clist[i]);
 
     for (auto sit = subList->begin(); sit != subList->end(); ++sit) {
       myList->push_back(*sit);
@@ -1264,7 +1646,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   FLPSeqn empty;
 
   TreeNode * myLoop =
-    doLoopLate(ginfo, func, visited, loop, loopName, strTab);
+    doLoopLate(env, ginfo, func, visited, loop, loopName);
 
   for (auto it = myList->begin(); it != myList->end(); ++it) {
     mergeInlineLoop(myLoop, empty, *it);
@@ -1272,7 +1654,7 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   // reparent the tree and put into LoopInfo format
   LoopInfo * myInfo =
-    findLoopHeader(finfo, ginfo, func, myLoop, loop, loopName, strTab);
+    findLoopHeader(env, finfo, ginfo, func, myLoop, loop, loopName);
 
   myList->clear();
   myList->push_back(myInfo);
@@ -1290,21 +1672,22 @@ doLoopTree(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 // Returns: the raw inline tree for this loop.
 //
 static TreeNode *
-doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
-	   BlockSet & visited, Loop * loop, const string & loopName,
-	   HPC::StringTable & strTab)
+doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
+	   BlockSet & visited, Loop * loop, const string & loopName)
 {
   TreeNode * root = new TreeNode;
 
   DEBUG_CFG("\nbegin loop:  " << loopName << "  '" << func->name() << "'\n");
 
   // add the inclusive blocks not contained in a subloop
-  vector <Block *> blist;
-  loop->getLoopBasicBlocks(blist);
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
 
-  for (uint i = 0; i < blist.size(); i++) {
-    if (! visited[blist[i]]) {
-      doBlock(ginfo, func, visited, blist[i], root, strTab);
+  std::sort(bvec.begin(), bvec.end(), BlockLessThan);
+
+  for (uint i = 0; i < bvec.size(); i++) {
+    if (! visited[bvec[i]]) {
+      doBlock(env, ginfo, func, visited, bvec[i], root);
     }
   }
 
@@ -1315,9 +1698,8 @@ doLoopLate(GroupInfo * ginfo, ParseAPI::Function * func,
 // Process one basic block.
 //
 static void
-doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
-	BlockSet & visited, Block * block, TreeNode * root,
-	HPC::StringTable & strTab)
+doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
+	BlockSet & visited, Block * block, TreeNode * root)
 {
   if (block == NULL || visited[block]) {
     return;
@@ -1343,7 +1725,7 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     }
   }
 
-  LineMapCache lmcache (ginfo->sym_func);
+  LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   // iterate through the instructions in this block
 #ifdef DYNINST_INSTRUCTION_PTR
@@ -1378,34 +1760,29 @@ doBlock(GroupInfo * ginfo, ParseAPI::Function * func,
     lmcache.getLineInfo(vma, filenm, line);
 
 #if DEBUG_CFG_SOURCE
-    debugStmt(vma, len, filenm, line);
+    debugStmt(vma, len, filenm, line, env.realPath);
 #endif
 
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
-      addStmtToTree(root, strTab, vma, len, filenm, line, 
-		    device, is_call, is_sink, target);
+      addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device, is_call, is_sink, target);
     }
     else {
-      addStmtToTree(root, strTab, vma, len, filenm, line, device);
+      addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
     }
   }
 
 #if DEBUG_CFG_SOURCE
-  if (is_call) {
-    cout << "call:  0x" << hex << block->last()
-	 << "  targ:  0x" << target << dec
-	 << (is_sink ? "  (sink)" : "") << "\n";
-  }
+  debugEdges(block);
 #endif
 }
 
- 
+
 //---------------------------------------------------------------------- 
 // Unparsable functions 
 // 
 static void 
-doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab) 
+doUnparsableFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 { 
   // not sure if cuda generates multiple functions, but we'll handle 
   // this case until proven otherwise. 
@@ -1423,16 +1800,16 @@ doUnparsableFunctionList(Symtab * symtab, FileInfo * finfo, GroupInfo * ginfo, H
  
     TreeNode * root = new TreeNode; 
  
-    doUnparsableFunction(ginfo, func, root, strTab); 
+    doUnparsableFunction(env, ginfo, func, root); 
     pinfo->root = root; 
   } 
 } 
 
 
 static void 
-doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root,  HPC::StringTable & strTab)
+doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * root)
 { 
-  LineMapCache lmcache (ginfo->sym_func); 
+  LineMapCache lmcache (ginfo->sym_func, env.realPath);
  
   int len = 4; 
   for (Offset vma = ginfo->start; vma < ginfo->end; vma += len) { 
@@ -1441,7 +1818,7 @@ doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * ro
  
     lmcache.getLineInfo(vma, filenm, line); 
     std::string device;
-    addStmtToTree(root, strTab, vma, len, filenm, line, device);
+    addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
   }
 }
 
@@ -1454,7 +1831,7 @@ doUnparsableFunction(GroupInfo * ginfo, ParseAPI::Function * func, TreeNode * ro
 // line of func.  The full version is handled in Struct-Output.cpp.
 //
 static void
-addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
+addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 {
   if (ginfo->procMap.begin() == ginfo->procMap.end()) {
     return;
@@ -1484,7 +1861,7 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
         VMA end = std::min(((VMA) svec[0]->endAddr()), end_gap);
 
         std::string device;
-        addStmtToTree(root, strTab, vma, end - vma, filenm, line, device);
+        addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma, filenm, line, device);
         vma = end;
       }
       else {
@@ -1492,7 +1869,7 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
         VMA end = std::min(vma + 4, end_gap);
 
         std::string device;
-        addStmtToTree(root, strTab, vma, end - vma, finfo->fileName, pinfo->line_num, device);
+        addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma, finfo->fileName, pinfo->line_num, device);
         vma = end;
       }
     }
@@ -1515,10 +1892,13 @@ addGaps(FileInfo * finfo, GroupInfo * ginfo, HPC::StringTable & strTab)
 // Returns: detached LoopInfo object.
 //
 static LoopInfo *
-findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
-  TreeNode * root, Loop * loop, const string & loopName,
-  HPC::StringTable & strTab)
+findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
+	       ParseAPI::Function * func, TreeNode * root, Loop * loop,
+	       const string & loopName)
 {
+  HPC::StringTable * strTab = env.strTab;
+  long empty_index = strTab->str2index("");
+
   //------------------------------------------------------------
   // Step 1 -- build the list of loop exit conditions
   //------------------------------------------------------------
@@ -1526,7 +1906,6 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   vector <Block *> inclBlocks;
   set <Block *> bset;
   HeaderList clist;
-  long empty_index = strTab.str2index("");
 
   loop->getLoopBasicBlocks(inclBlocks);
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
@@ -1535,7 +1914,8 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
 
   // a stmt is a loop exit condition if it has outgoing edges to
   // blocks both inside and outside the loop.  but don't include call
-  // edges.
+  // edges.  (don't need to sort blocks and edges here because the
+  // real answer is clist and clist is a map.)
   //
   for (auto bit = inclBlocks.begin(); bit != inclBlocks.end(); ++bit) {
     Block * block = *bit;
@@ -1564,24 +1944,27 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
       if (! svec.empty()) {
         filenm = svec[0]->getFile();
         line = svec[0]->getLine();
-        RealPathMgr::singleton().realpath(filenm);
+	env.realPath->realpath(filenm);
       }
 
       InlineSeqn seqn;
-      analyzeAddr(seqn, src_vma);
+      analyzeAddr(seqn, src_vma, env.realPath);
 
       clist[src_vma] = HeaderInfo(block);
       clist[src_vma].is_excl = loop->hasBlockExclusive(block);
       clist[src_vma].depth = seqn.size();
-      clist[src_vma].file_index = strTab.str2index(filenm);
-      clist[src_vma].base_index = strTab.str2index(FileUtil::basename(filenm));
+      clist[src_vma].file_index = strTab->str2index(filenm);
+      clist[src_vma].base_index = strTab->str2index(FileUtil::basename(filenm));
       clist[src_vma].line_num = line;
     }
   }
 
-  // see if stmt is also a back edge source
+  // see if stmt is also a back edge source.  (we sort the back edges
+  // only for debug output.)
   vector <Edge *> backEdges;
   loop->getBackEdges(backEdges);
+
+  std::sort(backEdges.begin(), backEdges.end(), EdgeLessThan);
 
   for (auto eit = backEdges.begin(); eit != backEdges.end(); ++eit) {
     VMA src_vma = (*eit)->src()->last();
@@ -1596,8 +1979,8 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
   cout << "\nraw inline tree:  " << loopName
        << "  '" << func->name() << "'\n"
        << "file:  '" << finfo->fileName << "'\n\n";
-  debugInlineTree(root, NULL, strTab, 0, false);
-  debugLoop(ginfo, func, loop, loopName, backEdges, clist);
+  debugInlineTree(root, NULL, *strTab, 0, false);
+  debugLoop(ginfo, func, loop, loopName, backEdges, clist, env.realPath);
   cout << "\nsearching inline tree:\n";
 #endif
 
@@ -1648,8 +2031,8 @@ findLoopHeader(FileInfo * finfo, GroupInfo * ginfo, ParseAPI::Function * func,
     depth_root++;
 
     DEBUG_CFG("inline:  l=" << flp.line_num
-	       << "  f='" << strTab.index2str(flp.file_index)
-	       << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
+	       << "  f='" << strTab->index2str(flp.file_index)
+	       << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
 	       << "'\n");
   }
 found_level:
@@ -1661,9 +2044,9 @@ found_level:
     for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
       FLPIndex flp = nit->first;
       cout << "inline:  l=" << flp.line_num
-        << "  f='" << strTab.index2str(flp.file_index)
-        << "'  p='" << debugPrettyName(strTab.index2str(flp.pretty_index))
-        << "'\n";
+	   << "  f='" << strTab->index2str(flp.file_index)
+	   << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
+	   << "'\n";
     }
   }
 #endif
@@ -1688,8 +2071,8 @@ found_level:
   // exit cond and matches some other anchor: either the enclosing
   // func (if top-level), or else an inline subtree.
 
-  long proc_file = strTab.str2index(finfo->fileName);
-  long proc_base = strTab.str2index(FileUtil::basename(finfo->fileName));
+  long proc_file = strTab->str2index(finfo->fileName);
+  long proc_base = strTab->str2index(FileUtil::basename(finfo->fileName));
   long file_ans = empty_index;
   long base_ans = empty_index;
   long line_ans = 0;
@@ -1813,11 +2196,11 @@ found_file:
   }
 
   DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
-    << strTab.index2str(file_ans) << "'\n");
+	     << strTab->index2str(file_ans) << "'\n");
 
   vector <Block *> entryBlocks;
   loop->getLoopEntries(entryBlocks);
-  VMA entry_vma = (*(entryBlocks.begin()))->start();
+  VMA entry_vma = VMA_MAX;
 
   for (auto bit = entryBlocks.begin(); bit != entryBlocks.end(); ++bit) {
     entry_vma = std::min(entry_vma, (*bit)->start());
@@ -1829,7 +2212,7 @@ found_file:
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
        << "  '" << func->name() << "'\n\n";
-  debugInlineTree(root, info, strTab, 0, false);
+  debugInlineTree(root, info, *strTab, 0, false);
 #endif
 
   return info;
@@ -1845,7 +2228,7 @@ found_file:
 // Returns: the subtree at the end of prefix.
 //
 static TreeNode *
-deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable & strTab)
+deleteInlinePrefix(WorkEnv & env, TreeNode * root, Inline::InlineSeqn prefix)
 {
   StmtMap  stmts;
   LoopList loops;
@@ -1853,7 +2236,7 @@ deleteInlinePrefix(TreeNode * root, Inline::InlineSeqn prefix, HPC::StringTable 
   // walk the prefix and collect any stmts or loops
   for (auto pit = prefix.begin(); pit != prefix.end(); ++pit)
   {
-    FLPIndex flp(strTab, *pit);
+    FLPIndex flp(*(env.strTab), *pit);
     auto nit = root->nodeMap.find(flp);
 
     if (nit != root->nodeMap.end()) {
@@ -2022,13 +2405,15 @@ debugFuncHeader(FileInfo * finfo, ProcInfo * pinfo, long num, long num_funcs,
 //----------------------------------------------------------------------
 
 static void
-debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
+debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line,
+	  RealPathMgr * realPath)
+
 {
   cout << "stmt:  0x" << hex << vma << dec << " (" << len << ")"
        << "  l=" << line << "  f='" << filenm << "'\n";
 
   Inline::InlineSeqn nodeList;
-  Inline::analyzeAddr(nodeList, vma);
+  Inline::analyzeAddr(nodeList, vma, realPath);
 
   // list is outermost to innermost
   for (auto nit = nodeList.begin(); nit != nodeList.end(); ++nit) {
@@ -2040,8 +2425,53 @@ debugStmt(VMA vma, int len, string & filenm, SrcFile::ln line)
 
 //----------------------------------------------------------------------
 
+static string
+edgeType(int type)
+{
+  if (type == ParseAPI::CALL)           { return "call"; }
+  if (type == ParseAPI::COND_TAKEN)     { return "cond-take"; }
+  if (type == ParseAPI::COND_NOT_TAKEN) { return "cond-not"; }
+  if (type == ParseAPI::INDIRECT)       { return "indirect"; }
+  if (type == ParseAPI::DIRECT)         { return "direct"; }
+  if (type == ParseAPI::FALLTHROUGH)    { return "fallthr"; }
+  if (type == ParseAPI::CATCH)          { return "catch"; }
+  if (type == ParseAPI::CALL_FT)        { return "call-ft"; }
+  if (type == ParseAPI::RET)            { return "return"; }
+  return "unknown";
+}
+
 static void
-debugAddr(GroupInfo * ginfo, VMA vma)
+debugEdges(Block * block)
+{
+  const Block::edgelist & outEdges = block->targets();
+  vector <Edge *> edgeVec;
+
+  for (auto eit = outEdges.begin(); eit != outEdges.end(); ++eit) {
+    edgeVec.push_back(*eit);
+  }
+  std::sort(edgeVec.begin(), edgeVec.end(), EdgeLessThan);
+
+  cout << "out edges:" << hex;
+
+  for (auto eit = edgeVec.begin(); eit != edgeVec.end(); ++eit) {
+    Edge * edge = *eit;
+
+    cout << "  0x" << edge->trg()->start()
+	 << " (" << edgeType(edge->type());
+
+    if (edge->interproc()) {
+      cout << ", interproc";
+    }
+    cout << ")";
+  }
+
+  cout << dec << "\n";
+}
+
+//----------------------------------------------------------------------
+
+static void
+debugAddr(GroupInfo * ginfo, VMA vma, RealPathMgr * realPath)
 {
   StatementVector svec;
   string filenm = "";
@@ -2052,7 +2482,7 @@ debugAddr(GroupInfo * ginfo, VMA vma)
   if (! svec.empty()) {
     filenm = svec[0]->getFile();
     line = svec[0]->getLine();
-    RealPathMgr::singleton().realpath(filenm);
+    realPath->realpath(filenm);
   }
 
   cout << "0x" << hex << vma << dec
@@ -2064,17 +2494,20 @@ debugAddr(GroupInfo * ginfo, VMA vma)
 static void
 debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
 	  Loop * loop, const string & loopName,
-	  vector <Edge *> & backEdges, HeaderList & clist)
+	  vector <Edge *> & backEdges, HeaderList & clist,
+	  RealPathMgr * realPath)
 {
   vector <Block *> entBlocks;
   int num_ents = loop->getLoopEntries(entBlocks);
+
+  std::sort(entBlocks.begin(), entBlocks.end(), BlockLessThan);
 
   cout << "\nheader info:  " << loopName
        << ((num_ents == 1) ? "  (reducible)" : "  (irreducible)")
        << "  '" << func->name() << "'\n";
 
   cout << "\nfunc header:\n";
-  debugAddr(ginfo, func->addr());
+  debugAddr(ginfo, func->addr(), realPath);
 
   cout << "\nentry blocks:" << hex;
   for (auto bit = entBlocks.begin(); bit != entBlocks.end(); ++bit) {
@@ -2100,7 +2533,7 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
 
     InlineSeqn seqn;
-    analyzeAddr(seqn, vma);
+    analyzeAddr(seqn, vma, realPath);
 
     StatementVector svec;
     getStatement(svec, vma, ginfo->sym_func);
@@ -2108,7 +2541,7 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     if (! svec.empty()) {
       filenm = svec[0]->getFile();
       line = svec[0]->getLine();
-      RealPathMgr::singleton().realpath(filenm);
+      realPath->realpath(filenm);
     }
 
     cout << "0x" << hex << vma << dec

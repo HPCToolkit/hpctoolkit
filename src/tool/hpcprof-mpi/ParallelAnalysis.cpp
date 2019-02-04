@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -145,7 +145,7 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = new uint8_t[size];
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
@@ -154,7 +154,7 @@ broadcast
     profile = unpackProfile(buf, size);
   }
 
-  delete [] buf;
+  free(buf);
 }
 
 void
@@ -175,7 +175,7 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = new uint8_t[size];
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
@@ -186,7 +186,7 @@ broadcast
     delete rhs;
   }
 
-  delete [] buf;
+  free(buf);
 }
 
 

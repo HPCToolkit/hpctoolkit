@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,6 +47,8 @@
  *****************************************************************************/
 
 #include <linux/version.h>
+#include <ctype.h>
+
 
 /******************************************************************************
  * local includes
@@ -57,27 +59,8 @@
 
 #include <include/linux_info.h>
 #include "perf-util.h"
+#include "perf_skid.h"
 
-// -----------------------------------------------------
-// precise ip / skid options
-// -----------------------------------------------------
-
-// Possible value of precise ip:
-//  0  SAMPLE_IP can have arbitrary skid.
-//  1  SAMPLE_IP must have constant skid.
-//  2  SAMPLE_IP requested to have 0 skid.
-//  3  SAMPLE_IP must have 0 skid.
-//  4  Detect automatically to have the most precise possible (default)
-#define HPCRUN_OPTION_PRECISE_IP "HPCRUN_PRECISE_IP"
-
-// default option for precise_ip: autodetect skid
-#define PERF_EVENT_AUTODETECT_SKID    4
-
-// constants of precise_ip (see the man page)
-#define PERF_EVENT_SKID_ZERO_REQUIRED    3
-#define PERF_EVENT_SKID_ZERO_REQUESTED   2
-#define PERF_EVENT_SKID_CONSTANT         1
-#define PERF_EVENT_SKID_ARBITRARY        0
 
 #define MAX_BUFFER_LINUX_KERNEL 128
 
@@ -86,17 +69,7 @@
 // constants
 //******************************************************************************
 
-// ordered in increasing precision
-const int perf_skid_precision[] = {
-  PERF_EVENT_SKID_ARBITRARY,
-  PERF_EVENT_SKID_CONSTANT,
-  PERF_EVENT_SKID_ZERO_REQUESTED,
-  PERF_EVENT_SKID_ZERO_REQUIRED
-};
-
 const u64 anomalous_ip = 0xffffffffffffff80;
-
-const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 
 
 //******************************************************************************
@@ -109,8 +82,6 @@ const int perf_skid_flavors = sizeof(perf_skid_precision)/sizeof(int);
 //******************************************************************************
 
 static uint16_t perf_kernel_lm_id = 0;
-
-static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
 
 static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
@@ -125,6 +96,9 @@ static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 // implementation
 //******************************************************************************
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+
+static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
 
 /***
  * if the input is a retained (leaf) cct node, return a sibling
@@ -228,8 +202,10 @@ perf_get_kernel_lm_id()
   }
   return perf_kernel_lm_id;
 }
+#endif
 
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 
 //----------------------------------------------------------
 // extend a user-mode callchain with kernel frames (if any)
@@ -271,86 +247,7 @@ perf_add_kernel_callchain(
   return parent;
 }
 
-
-/*
- * get int long value of variable environment.
- * If the variable is not set, return the default value 
- */
-static long
-getEnvLong(const char *env_var, long default_value)
-{
-  const char *str_val= getenv(env_var);
-
-  if (str_val) {
-    char *end_ptr;
-    long val = strtol( str_val, &end_ptr, 10 );
-    if ( end_ptr != env_var && (val < LONG_MAX && val > LONG_MIN) ) {
-      return val;
-    }
-  }
-  // invalid value
-  return default_value;
-}
-
-/**
- * set precise_ip attribute to the max value
- *
- * TODO: this method only works on some platforms, and not
- *       general enough on all the platforms.
- */
-static void
-set_max_precise_ip(struct perf_event_attr *attr)
-{
-  // start with the most restrict skid (3) then 2, 1 and 0
-  // this is specified in perf_event_open man page
-  // if there's a change in the specification, we need to change
-  // this one too (unfortunately)
-  for(int i=perf_skid_flavors-1; i>=0; i--) {
-	attr->precise_ip = perf_skid_precision[i];
-
-	// ask sys to "create" the event
-	// it returns -1 if it fails.
-	int ret = perf_util_event_open(attr,
-			THREAD_SELF, CPU_ANY,
-			GROUP_FD, PERF_FLAGS);
-	if (ret >= 0) {
-	  close(ret);
-	  // just quit when the returned value is correct
-	  return;
-	}
-  }
-}
-
-//----------------------------------------------------------
-// find the best precise ip value in this platform
-// @param current perf event attribute. This attribute can be
-//    updated for the default precise ip.
-// @return the assigned precise ip 
-//----------------------------------------------------------
-static u64
-get_precise_ip(struct perf_event_attr *attr)
-{
-  // check if user wants a specific ip-precision
-  int val = getEnvLong(HPCRUN_OPTION_PRECISE_IP, PERF_EVENT_AUTODETECT_SKID);
-  if (val >= PERF_EVENT_SKID_ARBITRARY && val <= PERF_EVENT_SKID_ZERO_REQUIRED)
-  {
-    attr->precise_ip = val;
-
-    // check the validity of the requested precision
-    // if it returns -1 we need to use our own auto-detect precision
-    int ret = perf_util_event_open(attr,
-            THREAD_SELF, CPU_ANY,
-            GROUP_FD, PERF_FLAGS);
-    if (ret >= 0) {
-      return val;
-    }
-    EMSG("The kernel does not support the requested ip-precision: %d."
-         " hpcrun will use auto-detect ip-precision instead.", val);
-  }
-  set_max_precise_ip(attr);
-
-  return attr->precise_ip;
-}
+#endif
 
 
 //----------------------------------------------------------
@@ -381,7 +278,7 @@ int
 perf_util_get_max_sample_rate()
 {
   static int initialized = 0;
-  static int max_sample_rate  = 300; // unless otherwise limited
+  static int max_sample_rate  = HPCRUN_DEFAULT_SAMPLE_RATE; // unless otherwise limited
   if (!initialized) {
     FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
 
@@ -395,6 +292,7 @@ perf_util_get_max_sample_rate()
 }
 
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 //----------------------------------------------------------
 // testing perf availability
 //----------------------------------------------------------
@@ -414,7 +312,7 @@ perf_util_kernel_syms_avail()
 
   return level;
 }
-
+#endif
 
 
 /*************************************************************
@@ -467,25 +365,13 @@ perf_util_is_ksym_available()
 
 
 //----------------------------------------------------------
-// create a new event
-//----------------------------------------------------------
-long
-perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags)
-{
-   int ret;
-
-   ret = syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
-   return ret;
-}
-
-//----------------------------------------------------------
 // generic default initialization for event attributes
 // return true if the initialization is successful,
 //   false otherwise.
 //----------------------------------------------------------
 int
 perf_util_attr_init(
+  char *event_name,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -511,16 +397,15 @@ perf_util_attr_init(
     attr->sample_period = our_rate;
   }
 
-  attr->disabled      = 1;                 /* the counter will be enabled later  */
-  attr->sample_type   = sample_type;
+  attr->disabled       = 1;                 /* the counter will be enabled later  */
+  attr->sample_type    = sample_type;
+  attr->exclude_kernel = EXCLUDE;
+  attr->exclude_hv     = EXCLUDE;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 #endif
-
-  attr->exclude_kernel = EXCLUDE;
-  attr->exclude_hv     = EXCLUDE;
 
   if (perf_util_is_ksym_available()) {
     /* We have rights to record and interpret kernel callchains */
@@ -530,9 +415,27 @@ perf_util_attr_init(
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
+  
+  char *name;
+  int precise_ip_type = perf_skid_parse_event(event_name, &name);
+  free(name);
 
-  attr->precise_ip    = get_precise_ip(attr);   /* the precision is either detected automatically
-                                              as precise as possible or  on the user's variable.  */
+  u64 precise_ip;
+
+  switch (precise_ip_type) {
+    case PERF_EVENT_AUTODETECT_SKID: 
+            precise_ip = perf_skid_set_max_precise_ip(attr);
+	    break;
+    case PERF_EVENT_SKID_ERROR:
+    case PERF_EVENT_SKID_ARBITRARY:
+	    // check the HPCRUN_PRECISE_IP env variable
+	    precise_ip = perf_skid_get_precise_ip(attr);
+	    break;
+    default:
+            precise_ip = precise_ip_type;
+  }
+
+  attr->precise_ip    = precise_ip;
 
   return true;
 }

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -73,20 +73,18 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	main.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 
 MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
-	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	@GNUBINUTILS_LDLIBS@ 
+	@BINUTILS_LIBS@ 
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -152,8 +152,7 @@ ilmstat_btuwi_pair_inrange(void *itp, void *address)
 static ilmstat_btuwi_pair_t *GF_ilmstat_btuwi = NULL; // global free list of ilmstat_btuwi_pair_t*
 static mcs_lock_t GFL_lock;  // lock for GF_ilmstat_btuwi
 static __thread  ilmstat_btuwi_pair_t *_lf_ilmstat_btuwi = NULL;  // thread local free list of ilmstat_btuwi_pair_t*
-// for storing the current btuwi in case of segv
-static  __thread  ilmstat_btuwi_pair_t *current_btuwi = NULL;
+
 
 //******************************************************************************
 // Constructors
@@ -285,18 +284,27 @@ static mem_alloc my_alloc = hpcrun_malloc;
 #define LDMOD_NAME_LEN 128
 #define MAX_ILDMODSTAT_STR MAX_INTERVAL_STR+LDMOD_NAME_LEN+MAX_STAT_STR
 
-static void
-load_module_tostr(void* lm, char str[])
-{
-  load_module_t* ldmod = (load_module_t*)lm;
-  if (ldmod) {
-	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
-  }
-  else {
-	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
-  }
-}
 
+//---------------------------------------------------------------------
+// private operations
+//---------------------------------------------------------------------
+
+#if UW_RECIPE_MAP_DEBUG
+static void
+uw_recipe_map_report(const char *op, void *start, void *end)
+{
+  fprintf(stderr, "%s [start=%p, end=%p)\n", op, start, end);
+}
+#else
+#define uw_recipe_map_report(op, start, end)
+#endif
+
+//---------------------------------------------------------------------
+// debug operations
+//---------------------------------------------------------------------
+
+
+#if UW_RECIPE_MAP_DEBUG_VERBOSE 
 static void
 treestat_tostr(tree_stat_t stat, char str[])
 {
@@ -306,6 +314,18 @@ treestat_tostr(tree_stat_t stat, char str[])
   case FORTHCOMING: strcpy(str, "FORTHCOMING"); break;
   case READY: strcpy(str, "      READY"); break;
   default: strcpy(str, "STAT_ERROR");
+  }
+}
+
+static void
+load_module_tostr(void* lm, char str[])
+{
+  load_module_t* ldmod = (load_module_t*)lm;
+  if (ldmod) {
+	snprintf(str, LDMOD_NAME_LEN, "%s%s%d", ldmod->name, " ", ldmod->id);
+  }
+  else {
+	snprintf(str, LDMOD_NAME_LEN, "%s", "nil");
   }
 }
 
@@ -322,23 +342,7 @@ ildmod_stat_tostr(void* ilms, char str[])
   sprintf(str, "(%s %s %s)", intervalstr, ldmodstr, statstr);
 }
 
-/*
- * Compute the string representation of ilmstat_btuwi_pair_t with appropriate
- * indentation of the second component which is a binary tree.
- * Return the result in the parameter str.
- */
-static void
-ilmstat_btuwi_pair_tostr_indent(void* itp, char* indents, char str[])
-{
-  ilmstat_btuwi_pair_t* it_pair = (ilmstat_btuwi_pair_t*)itp;
-  bitree_uwi_t *tree = it_pair->btuwi;
-  char firststr[MAX_ILDMODSTAT_STR];
-  char secondstr[MAX_TREE_STR];
-  ildmod_stat_tostr(it_pair, firststr);
-  bitree_uwi_tostring_indent(tree, indents, secondstr);
-  snprintf(str, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
-	  "(", firststr, ",  ", secondstr, ")");
-}
+
 
 static int
 max_ilmstat_btuwi_pair_len()
@@ -359,18 +363,81 @@ ildmod_stat_maxspaces()
   return ILdMod_Stat_MaxSpaces;
 }
 
-//---------------------------------------------------------------------
-// private operations
-//---------------------------------------------------------------------
+/*
+ * Compute a string representation of map and store result in str.
+ */
+/*
+ * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.
+ */
 
-#if UW_RECIPE_MAP_DEBUG
 static void
-uw_recipe_map_report(const char *op, void *start, void *end)
+cskl_ilmstat_btuwi_any_node_tostr(void* nodeval, int node_height, int max_height,
+				  char str[], int max_cskl_str_len, unwinder_t uw)
 {
-  fprintf(stderr, "%s [start=%p, end=%p)\n", op, start, end);
+  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
+
+  // build needed indentation to print the binary tree inside the skiplist:
+  char indents[MAX_CSKIPLIST_STR];
+  snprintf(indents, MAX_CSKIPLIST_STR, "%s%s", str, ildmod_stat_maxspaces());
+
+  // print the binary tree with the proper indentation:
+  char itpairStr[max_ilmstat_btuwi_pair_len()];
+  ilmstat_btuwi_pair_t* it_pair = (ilmstat_btuwi_pair_t*)nodeval;
+  /*
+   * Compute the string representation of ilmstat_btuwi_pair_t with
+   * appropriate indentation of the second component which is a binary
+   * tree.
+   */
+  bitree_uwi_t *tree = it_pair->btuwi;
+  char firststr[MAX_ILDMODSTAT_STR];
+  char secondstr[MAX_TREE_STR];
+  ildmod_stat_tostr(it_pair, firststr);
+  bitree_uwi_tostring_indent(tree, indents, secondstr, uw);
+  snprintf(itpairStr, strlen(firststr) + strlen(secondstr) + 6, "%s%s%s%s%s",
+	  "(", firststr, ",  ", secondstr, ")");
+
+  // add new line:
+  cskl_append_node_str(itpairStr, str, max_cskl_str_len);
 }
-#else
-#define uw_recipe_map_report(op, start, end)
+
+
+static void
+cskl_ilmstat_btuwi_dwarf_node_tostr(void* nodeval, int node_height, int max_height,
+				    char str[], int max_cskl_str_len)
+{
+  cskl_ilmstat_btuwi_any_node_tostr(nodeval, node_height, max_height, str, max_cskl_str_len,
+				    DWARF_UNWINDER);
+}
+
+static void
+cskl_ilmstat_btuwi_native_node_tostr(void* nodeval, int node_height, int max_height,
+				     char str[], int max_cskl_str_len)
+{
+  cskl_ilmstat_btuwi_any_node_tostr(nodeval, node_height, max_height, str, max_cskl_str_len,
+				    NATIVE_UNWINDER);
+}
+
+static void
+(*cskl_ilmstat_btuwi_node_tostr[NUM_UNWINDERS])(void* nodeval, int node_height, int max_height,
+						char str[], int max_cskl_str_len) =
+{
+  [DWARF_UNWINDER] = cskl_ilmstat_btuwi_dwarf_node_tostr,
+  [NATIVE_UNWINDER] = cskl_ilmstat_btuwi_native_node_tostr
+};
+
+static void
+uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
+{
+  uw_recipe_map_report(op, start, end);
+  unwinder_t uw;
+  for (uw = 0; uw < NUM_UNWINDERS; uw++) {
+    char buf[MAX_CSKIPLIST_STR];
+    cskl_tostr(addr2recipe_map[uw], cskl_ilmstat_btuwi_node_tostr[uw], buf, MAX_CSKIPLIST_STR);
+    fprintf(stderr, "%s", buf);
+  }
+}
+#else 
+#define uw_recipe_map_report_and_dump(op, start, end)
 #endif
 
 static void
@@ -484,31 +551,6 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
   uw_recipe_map_poison(start, end, uw);
 }
 
-
-#if UW_RECIPE_MAP_DEBUG_VERBOSE 
-static void
-uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
-{
-  uw_recipe_map_report(op, start, end);
-  uw_recipe_map_print();
-}
-#else 
-#define uw_recipe_map_report_and_dump(op, start, end)
-#endif
-
-
-#if UW_RECIPE_MAP_DEBUG_VERBOSE 
-static void
-uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
-{
-  uw_recipe_map_report(op, start, end);
-  uw_recipe_map_print();
-}
-#else 
-#define uw_recipe_map_report_and_dump(op, start, end)
-#endif
-
-
 static void
 uw_recipe_map_notify_map(void *start, void *end)
 {
@@ -551,15 +593,6 @@ uw_recipe_map_notify_init()
 }
 
 
-/*
- * clean-up the state in case of emergency such as SEGV
- */
-static void
-uw_cleanup(void)
-{
-  if (current_btuwi)
-    atomic_store_explicit(&current_btuwi->stat, NEVER, memory_order_release);
-}
 
 //---------------------------------------------------------------------
 // interface operations
@@ -592,9 +625,6 @@ uw_recipe_map_init(void)
 	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
   uw_recipe_map_notify_init();
-
-  // register to segv signal handler to call this function 
-  hpcrun_segv_register_cb(uw_cleanup);
 
   // initialize the map with a POISONED node ({([0, UINTPTR_MAX), NULL), NEVER}, NULL)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
@@ -671,7 +701,6 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     // potentially crash in this statement. need to save the state 
     // ----------------------------------------------------------
 
-    current_btuwi        = ilm_btui;
     thread_data_t* td    = hpcrun_get_thread_data();
     sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
 
@@ -685,15 +714,16 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
        fcn_start, fcn_end, btuwi_stat.error);
       }
       ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
-      current_btuwi = NULL;
       atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
 
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+
     } else {
+      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
       EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
       atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
       return false;
     }
-    td->current_jmp_buf = oldjmp;   // restore the ouer sigjmp
   }
   else {
     while (FORTHCOMING == oldstat)
@@ -713,49 +743,4 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   unwr_info->interval   = ilm_btui->interval;
 
   return (unwr_info->btuwi != NULL);
-}
-
-//---------------------------------------------------------------------
-// debug operations
-//---------------------------------------------------------------------
-
-/*
- * Compute a string representation of map and store result in str.
- */
-/*
- * pre-condition: *nodeval is an ilmstat_btuwi_pair_t.
- */
-
-static void
-cskl_ilmstat_btuwi_node_tostr(void* nodeval, int node_height, int max_height,
-	char str[], int max_cskl_str_len)
-{
-  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
-
-  // build needed indentation to print the binary tree inside the skiplist:
-  char cskl_itpair_treeIndent[MAX_CSKIPLIST_STR];
-  cskl_itpair_treeIndent[0] = '\0';
-  int indentlen= strlen(cskl_itpair_treeIndent);
-  strncat(cskl_itpair_treeIndent, str, MAX_CSKIPLIST_STR - indentlen -1);
-  indentlen= strlen(cskl_itpair_treeIndent);
-  strncat(cskl_itpair_treeIndent, ildmod_stat_maxspaces(), MAX_CSKIPLIST_STR - indentlen -1);
-
-  // print the binary tree with the proper indentation:
-  char itpairstr[max_ilmstat_btuwi_pair_len()];
-  ilmstat_btuwi_pair_t* node_val = (ilmstat_btuwi_pair_t*)nodeval;
-  ilmstat_btuwi_pair_tostr_indent(node_val, cskl_itpair_treeIndent, itpairstr);
-
-  // add new line:
-  cskl_append_node_str(itpairstr, str, max_cskl_str_len);
-}
-
-void
-uw_recipe_map_print(void)
-{
-  unwinder_t uw;
-  for (uw = 0; uw < NUM_UNWINDERS; uw++) {
-    char buf[MAX_CSKIPLIST_STR];
-    cskl_tostr(addr2recipe_map[uw], cskl_ilmstat_btuwi_node_tostr, buf, MAX_CSKIPLIST_STR);
-    fprintf(stderr, "%s", buf);
-  }
 }

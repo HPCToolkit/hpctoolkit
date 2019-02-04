@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -286,7 +286,7 @@ analyzeDemangle(VMA vma)
 // innermost.
 //
 bool
-analyzeAddr(InlineSeqn &nodelist, VMA addr)
+analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 {
   FunctionBase *func, *parent;
   bool ret = false;
@@ -315,7 +315,7 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
 	pair <string, Offset> callsite = ifunc->getCallsite();
 	string filenm = callsite.first;
-	if (filenm != "") { RealPathMgr::singleton().realpath(filenm); }
+	if (filenm != "") { realPath->realpath(filenm); }
 	long lineno = callsite.second;
 
 	// symtab does not provide mangled and pretty names for
@@ -452,14 +452,14 @@ StmtMap::insert(StmtInfo * sinfo)
 // adjacent stmts if their file and line match.
 //
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line, string & device,
-	      bool is_call, bool is_sink, VMA target)
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
+              VMA vma, int len, string & filenm, SrcFile::ln line, 
+              string & device, bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;
   TreeNode *node;
 
-  analyzeAddr(path, vma);
+  analyzeAddr(path, vma, realPath);
 
   // follow 'path' down the tree and insert any edges that don't exist
   node = root;

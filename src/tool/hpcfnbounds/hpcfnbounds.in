@@ -3,19 +3,13 @@
 #
 @copyright_hash@
 #
-# $Id$
-#
-# Wrapper script for hpcfnbounds-bin.  Other than setting
-# LD_LIBRARY_PATH, all this script does is process the -v option
-# for internal debugging.
+# Launch script for hpcfnbounds-bin.
 #
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
 
-# If this script can't find its own install prefix, or if the script
-# is moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT='@prefix@'
+@launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
@@ -23,6 +17,8 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 
 # Should be absolute path.
 libcxx_path='@HPCRUN_LIBCXX_PATH@'
+
+prog_name=hpcfnbounds
 
 #------------------------------------------------------------
 # Find path to this script
@@ -44,6 +40,8 @@ esac
 #------------------------------------------------------------
 # Process options
 #------------------------------------------------------------
+
+@launch_early_options@
 
 # If -v is one of the options, then print extra info about what files
 # hpcfnbounds is run on, whether it succeeds, etc, to go in hpcrun

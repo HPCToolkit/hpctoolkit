@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -60,11 +60,6 @@
 #define EVENT_DELIMITER '@'
 #define PREFIX_FREQUENCY 'f'
 
-#define THRESH_DEFAULT 0
-#define THRESH_VALUE   1
-#define THRESH_FREQ    2
-
-
 static char *tmp;
 static char *tk;
 static char *last;
@@ -100,9 +95,9 @@ next_tok(void)
  * extract the threshold
  */
 // Returns:
-//   2 if event has explicit frequency
-//   1 if event has explicit threshold,
-//   0 if using default.
+//   THRESH_FREQ     if event has explicit frequency
+//   THRESH_VALUE    if event has explicit threshold,
+//   THRESH_DEFAULT  if using default.
 int
 hpcrun_extract_threshold
 (
@@ -154,15 +149,14 @@ hpcrun_extract_threshold
 //   if the f indicator exist, the number is the frequency, otherwise
 //   it's a period number
 // Returns: 
-//   2 if event has explicit frequency
-//   1 if event has explicit period threshold, 
-//   0 if using default.
+//   THRESH_FREQ     if event has explicit frequency
+//   THRESH_VALUE    if event has explicit threshold,
+//   THRESH_DEFAULT  if using default.
 // 
 int
 hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def)
 {
   unsigned int threshold_pos = 0;
-  int result = 0;
   unsigned int len = strlen(in);
 
   char *dlm = strrchr(in, EVENT_DELIMITER);
@@ -176,8 +170,7 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
       strncpy(ev, in, len);
       ev[len] = '\0';
 
-      result = hpcrun_extract_threshold(dlm+1+threshold_pos, th, def);
-      return result;
+      return hpcrun_extract_threshold(dlm+1+threshold_pos, th, def);
     }
     if (dlm[0] == EVENT_DELIMITER) {
       len = MIN(dlm - in, evlen);
@@ -188,7 +181,7 @@ hpcrun_extract_ev_thresh(const char *in, int evlen, char *ev, long *th, long def
   ev[len] = '\0';
   *th = def;
   
-  return 0;
+  return THRESH_DEFAULT;
 }
 
 //

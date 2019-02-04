@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -73,6 +73,7 @@
 #include <lib/isa/ISA.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/StringTable.hpp>
 
@@ -365,14 +366,13 @@ public:
 Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
 
-bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
+bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
 
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line,
-        std::string & device,
-	      bool is_call = false, bool is_sink = false,
-        VMA target = 0);
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
+              VMA vma, int len, string & filenm, SrcFile::ln line,
+              std::string & device, bool is_call = false, bool is_sink = false,
+              VMA target = 0);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

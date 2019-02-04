@@ -13,7 +13,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -183,7 +183,7 @@ ppc64recipe_print(void* recipe)
  * unwind recipe specified in uw_recipe.h
  */
 void
-uw_recipe_tostr(void* recipe, char str[])
+uw_recipe_tostr(void* recipe, char str[], unwinder_t uw)
 {
   ppc64recipe_tostr(recipe, str);
 }

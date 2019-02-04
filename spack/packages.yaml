@@ -1,0 +1,372 @@
+#
+#  packages.yaml
+#
+#  This file specifies the versions and variants for HPCToolkit's
+#  dependency packages and serves as a common reference point for how
+#  to build them.  It also specifies the paths or modules for system
+#  build tools (cmake, python, etc) to avoid rebuilding them.
+#
+#  Put this file in one of spack's configuration scope directories,
+#  normally either <spack-root>/etc/spack, or else in its own,
+#  separate directory (and then use 'spack -C dir').
+#
+#  There are two main sections: hpctoolkit dependency specs and system
+#  build tools: cmake, perl, python, MPI and GCC.
+#
+#  See also:
+#    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
+#    https://spack.readthedocs.io/en/latest/build_settings.html
+#
+packages:
+
+  #------------------------------------------------------------
+  # 1 -- HPCToolkit Prerequisite Packages
+  #------------------------------------------------------------
+
+  # This section contains hpctoolkit's prerequisites, recommended
+  # versions and necessary variants.  For most packages, the most
+  # recent version will work.
+  #
+  # Note: the following packages have variants that may need changing
+  # for your local system.
+  #
+  #   1. dyninst -- use version 9.3.2 for Blue Gene with the default
+  #   gcc 4.4 compilers.
+  #
+  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   old Intel systems that don't support transactional memory.
+  #
+  #   3. libmonitor -- add '+bgq' on Blue Gene/Q.
+  #
+  #------------------------------------------------------------
+
+
+  # hpctoolkit -- these settings can be specified here or else on the
+  # spack install command line.
+  #
+  # Use version 'develop' for the latest snapshot from master.
+  #
+  # +mpi builds hpcprof-mpi (requires mpi).
+  # +papi uses papi instead of perfmon.
+  #
+  # hpctoolkit:
+  #   version:  [2018.11.05, develop]
+  #   variants: +mpi
+
+
+  # binutils -- used by hpcprof and struct simple (for functions and
+  # line map info) and for VMA types in various places.
+  #
+  # Prefer a fairly recent version.
+  #
+  # +libiberty is needed for xmalloc functions in libbfd.
+  # ~nls is needed to avoid linking with libintl from gettext.
+  #
+  binutils:
+    version:  [2.31.1]
+    variants: +libiberty ~nls
+
+
+  # boost -- used by dyninst and now in hpcstruct cuda support.
+  #
+  # Dyninst requires >= 1.61 but most any recent version is good.
+  #
+  # +atomic, +chrono, etc are for dyninst.
+  # +graph, +regex, etc are for toolkit proper.
+  # ~mpi, ~python, etc are to reduce prereqs.
+  # ~debug is to build release (optimized) variant.
+  #
+  boost:
+    version:  [1.66.0]
+    variants: >
+      +atomic +chrono +date_time +filesystem +system +thread +timer
+      +graph +regex +serialization
+      +shared +multithreaded ~debug
+      ~mpi ~python ~iostreams ~numpy
+
+
+  # bzip2 -- used by elfutils to read compressed sections (and copy
+  # libs).
+  #
+  # Bzip2 has stopped development, but 1.0.6 is good.
+  #
+  bzip2:
+    version:  [1.0.6]
+    variants: +shared
+
+
+  # dyninst -- used in hpcstruct for line map info, inline sequences
+  # and loop analysis.
+  #
+  # Need >= 10.0 or develop for best parseapi and CFG support.  On
+  # Blue Gene, with the default gcc 4.4 compilers, use version 9.3.2.
+  #
+  # +openmp is to support openmp threads in parseapi.
+  #
+  dyninst:
+    version:  [10.0.0]
+    variants: +openmp build_type=RelWithDebInfo
+
+
+  # elfutils -- used by dyninst for reading ELF sections.
+  #
+  # Dyninst requires >= 0.173 and we want a recent version for best
+  # support for output from current compilers.
+  #
+  # +bzip2, +xz are for reading compressed sections.
+  # ~nls is needed to avoid linking with libintl from gettext.
+  #
+  elfutils:
+    version:  [0.175]
+    variants: +bzip2 +xz ~nls
+
+
+  # intel-tbb -- used by dyninst as part of parallel parsing.
+  #
+  # Dyninst requires >= 2018.6, most anything after that is good.
+  #
+  # Note: add ~tm for very old x86 or AMD or KNL systems that don't
+  # support transactional memory (no-op on non-x86).
+  #
+  intel-tbb:
+    version:  [2018.6]
+    variants: +shared +tm
+
+
+  # intel-xed -- used in various places to parse x86 instructions
+  # (used on x86 only).
+  #
+  # Xed does not have releases, only git repo snapshots.  But Xed
+  # changes pretty slowly.
+  #
+  # +debug adds debug symbols (-g).
+  #
+  intel-xed:
+    version:  [2018.02.14]
+    variants: +debug
+
+
+  # libdwarf -- used in fnbounds for access to eh frames (not yet
+  # available from elfutils).
+  #
+  # Normally want a recent version for best support for output from
+  # current compilers.
+  #
+  libdwarf:
+    version:  [20180129]
+
+
+  # libiberty -- needed for dyninst configure (although dyninst 10.x
+  # doesn't actually link with it).
+  #
+  # Any recent version is good.
+  #
+  # +pic is needed to link with dyninst shared library.
+  #
+  libiberty:
+    version:  [2.31.1]
+    variants: +pic
+
+
+  # libmonitor -- used in hpcrun to provide access to an application's
+  # processes and threads.
+  #
+  # Normally want the most recent snapshot.
+  #
+  # +hpctoolkit is needed for features specific to hpctoolkit (client
+  # signals).
+  #
+  # Note: add +bgq on blue gene/q.
+  #
+  libmonitor:
+    version:  [2018.07.18]
+    variants: +hpctoolkit
+
+
+  # libpfm4 (perfmon) -- used in hpcrun for access to the hardware
+  # performance counters.
+  #
+  # If PAPI is available with the perfmon headers, then that
+  # supersedes perfmon.  Otherwise, perfmon provides the perf sample
+  # source but not PAPI.
+  #
+  # Normally want the latest version to support recent CPU types.
+  #
+  libpfm4:
+    version:  [4.10.1]
+
+
+  # libunwind -- used in hpcrun to help with unwinding.
+  #
+  # Normally, we need the most recent snapshot (not the default), or
+  # else develop.
+  #
+  # +xz is for reading compressed symbol tables.
+  #
+  libunwind:
+    version:  [2018.10.12]
+    variants: +xz
+
+
+  # papi -- used in hpcrun for access to the hardware performance
+  # counters.
+  #
+  # If there is a pre-built PAPI for the compute nodes, then it may be
+  # better to use that and replace this with a 'paths:' or 'modules:'
+  # entry (see the section on cmake).  But make sure that the PAPI
+  # include directory contains the perfmon headers, or else you can't
+  # use both PAPI and perfmon.
+  #
+  # If building, then use version >= 5.6.0 for the installed perfmon
+  # headers.
+  #
+  papi:
+    version:  [5.6.0]
+
+
+  # xerces -- used in hpcprof to read XML.
+  #
+  # Any recent version is good.
+  #
+  # transcoder=iconv is needed to avoid linking with libiconv.
+  #
+  xerces-c:
+    version:  [3.2.2]
+    variants: transcoder=iconv
+
+
+  # xz (lzma) -- used by elfutils and libunwind to read compressed
+  # sections (and copy libs).
+  #
+  # Any recent version is good.
+  #
+  xz:
+    version:  [5.2.4]
+
+
+  # zlib -- used by binutils, elfutils and libdwarf to read compressed
+  # sections (and copy libs).
+  #
+  # Zlib development is stagnant and 1.2.9 and 1.2.10 are buggy, so
+  # 1.2.11 is the only recent version.
+  #
+  # +optimize is to add -O2.
+  #
+  zlib:
+    version:  [1.2.11]
+    variants: +optimize +shared
+
+
+  #------------------------------------------------------------
+  # 2 -- System Build Tools
+  #------------------------------------------------------------
+
+  # We require cmake >= 3.0, perl >= 5.x and python 2.7.x or 3.x.
+  # There are three ways to satisfy these requirements: a system
+  # installed version (eg, /usr), a module or build from scratch.
+  #
+  # By default, spack will rebuild these, even if your version is
+  # perfectly fine.  If you already have an installed version and
+  # prefer to use that instead, then uncomment some entry below and
+  # edit to fit your system.
+  #
+  # Note: these three are all build tools.  They are needed to build
+  # hpctoolkit, but we don't need them at run time or link with any
+  # libraries.  (Not counting hpcsummary which is a python script.)
+  #
+  #------------------------------------------------------------
+
+
+  # cmake -- dyninst requires cmake >= 3.x.
+
+  # Example for a system install.  This example says that cmake 3.11.0
+  # is available at /usr/bin/cmake.  Note: the 'paths:' entry is the
+  # parent directory of 'bin', not the bin directory itself (similar
+  # to prefix).
+  # cmake:
+  #   paths:
+  #     cmake@3.11.0:  /usr
+  #   buildable: False
+
+  # Example for a module.  This example says that cmake 3.7.2 is
+  # available from module 'CMake/3.7.2'.
+  # cmake:
+  #   modules:
+  #     cmake@3.7.2:  CMake/3.7.2
+  #   buildable: False
+
+  # Example spec to build cmake from scratch.
+  # +ownlibs, ~qt and ~openssl are to reduce prerequisites.
+  # cmake:
+  #   version:  [3.12.4]
+  #   variants: +ownlibs ~qt ~openssl
+
+  #------------------------------------------------------------
+
+  # perl -- autotools requires perl >= 5.x which most systems have.
+
+  # Example for system perl.
+  # perl:
+  #   paths:
+  #     perl@5.16.3:  /usr
+  #   buildable: False
+
+  # Example spec to build perl.
+  # perl:
+  #   version:  [5.26.2]
+
+  #------------------------------------------------------------
+
+  # python -- spack always requires python >= 2.6 to do anything.
+  # On x86, intel-xed requires python 2.7.x or >= 3.4.
+
+  # Example for system python.
+  # python:
+  #   paths:
+  #     python@2.7.5:  /usr
+  #   buildable: False
+
+  # Example for python module.
+  # python:
+  #   modules:
+  #     python@2.7.15:  Python/2.7.15
+  #   buildable: False
+
+  # Example spec to build python.
+  # ~dbm, ~tk are to reduce prerequisites.
+  # python:
+  #   version:  [2.7.15, 3.6.5]
+  #   variants: ~dbm ~tk
+
+  #------------------------------------------------------------
+
+  # MPI -- hpctoolkit always supports profiling MPI applications.
+  # Adding MPI here is only for building hpcprof-mpi, the MPI version
+  # of hpcprof.
+  #
+  # Normally, you want MPI from a module (mpich, mvapich, openmpi)
+  # that was built for the correct interconnect system for the compute
+  # nodes.  Also, for hpcprof-mpi, MPI should be built with GNU
+  # gcc/g++ and the same version used to build hpctoolkit (to keep the
+  # C++ libraries in sync).
+  #
+  # openmpi:
+  #   modules:
+  #     openmpi@2.1.3:  OpenMPI/2.1.3
+  #   buildable: False
+
+  #------------------------------------------------------------
+
+  # GCC -- hpctoolkit requires building with GNU gcc/g++.  We require
+  # version 4.8 at a minimum and preferably 5.x or later.
+  #
+  # Spack handles compilers specially with the compilers.yaml file.
+  # This example is only for building a more recent compiler.
+  #
+  # Note: spack will select the first version that is compatible with
+  # the rest of the spec and command line.  So, put the version you
+  # want to build first.  4.8.4 is really only for Blue Gene.
+
+  # gcc:
+  #   version:  [7.3.0, 6.4.0, 5.5.0, 4.8.4]
+

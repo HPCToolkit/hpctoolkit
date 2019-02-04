@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,8 +90,6 @@ using std::vector;
 
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
-
-#include <lib/banal/Struct.hpp>
 
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/prof/FileError.hpp>

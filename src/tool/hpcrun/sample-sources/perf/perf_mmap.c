@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,17 @@
 
 #define PERF_MMAP_SIZE(pagesz)    ((pagesz) * (PERF_DATA_PAGES + 1))
 #define PERF_TAIL_MASK(pagesz)    (((pagesz) * PERF_DATA_PAGES) - 1)
+
+
+
+/******************************************************************************
+ * forward declarations
+ *****************************************************************************/
+
+static void
+skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz) 
+__attribute__ ((unused));
+
 
 
 /******************************************************************************

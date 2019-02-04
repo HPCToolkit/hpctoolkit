@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,8 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-
+#include "ss-errno.h"
+ 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -186,13 +187,19 @@ trim_event_desc(char *desc)
 static int
 hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   int64_t counter, threshold;
   int ev, k;
 
   
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_thread_suppress_sample) {
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
+  }
 
   BGP_UPC_Stop();
 
@@ -226,8 +233,9 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     hpcrun_safe_exit();
   }
 
-  // Tell monitor this was our signal.
-  return 0;
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 
 // Note: Must run BGP_UPC_Initialize() in every process,

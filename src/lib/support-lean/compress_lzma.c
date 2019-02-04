@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,19 @@
 #include "compress.h"
 
 
+//***************************************************************************
+// forward declarations
+//***************************************************************************
+
+static const char* 
+get_error_message(lzma_ret ret) __attribute__ ((unused));
+
+
+
+//***************************************************************************
+// private operations
+//***************************************************************************
+
 static lzma_ret 
 init_encoder(lzma_stream *strm, uint32_t preset)
 {
@@ -77,6 +90,7 @@ init_encoder(lzma_stream *strm, uint32_t preset)
 	lzma_ret ret = lzma_easy_encoder(strm, preset, LZMA_CHECK_CRC64);
 	return ret;
 }
+
 
 static const char*
 get_error_message(lzma_ret ret)
@@ -152,6 +166,7 @@ get_error_message(lzma_ret ret)
 	}
 	return msg;
 }
+
 
 static lzma_ret
 compress(lzma_stream *strm, FILE *infile, FILE *outfile)
@@ -263,94 +278,6 @@ compress(lzma_stream *strm, FILE *infile, FILE *outfile)
 	}
 }
 
-/* Compress from file source to file dest until EOF on source.
-It returns:
-     COMPRESS_OK on success,
-     COMPRESS_FAIL if the inflate data is invalid or the version is
-       incorrect,
-     COMPRESS_IO_ERROR is there is an error reading or writing the file
-
-   The compression level must be Z_DEFAULT_COMPRESSION,
-   or between 0 and 9: 1 gives best speed, 9 gives best compression,
-   0 gives no compression at all (the input data is simply copied a
-   block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
-   between speed and compression (currently equivalent to level 6).
-   */
-enum compress_e
-compress_deflate(FILE *source, FILE *dest, int level)
-{
-
-	// Initialize a lzma_stream structure. When it is allocated on stack,
-	// it is simplest to use LZMA_STREAM_INIT macro like below. When it
-	// is allocated on heap, using memset(strmptr, 0, sizeof(*strmptr))
-	// works (as long as NULL pointers are represented with zero bits
-	// as they are on practically all computers today).
-	lzma_stream strm = LZMA_STREAM_INIT;
-
-	// Initialize the encoder. If it succeeds, compress from
-	// source to dest.
-	lzma_ret ret = init_encoder(&strm, (uint32_t)level);
-	if (ret == LZMA_OK)
-		ret = compress(&strm, source, dest);
-
-	// Free the memory allocated for the encoder. If we were encoding
-	// multiple files, this would only need to be done after the last
-	// file. See 02_decompress.c for handling of multiple files.
-	//
-	// It is OK to call lzma_end() multiple times or when it hasn't been
-	// actually used except initialized with LZMA_STREAM_INIT.
-	lzma_end(&strm);
-
-	if (ret == LZMA_OK) 
-		return COMPRESS_OK;
-
-	return COMPRESS_FAIL;
-}
-
-
-
-static lzma_ret
-init_decoder(lzma_stream *strm)
-{
-	// Initialize a .xz decoder. The decoder supports a memory usage limit
-	// and a set of flags.
-	//
-	// The memory usage of the decompressor depends on the settings used
-	// to compress a .xz file. It can vary from less than a megabyte to
-	// a few gigabytes, but in practice (at least for now) it rarely
-	// exceeds 65 MiB because that's how much memory is required to
-	// decompress files created with "xz -9". Settings requiring more
-	// memory take extra effort to use and don't (at least for now)
-	// provide significantly better compression in most cases.
-	//
-	// Memory usage limit is useful if it is important that the
-	// decompressor won't consume gigabytes of memory. The need
-	// for limiting depends on the application. In this example,
-	// no memory usage limiting is used. This is done by setting
-	// the limit to UINT64_MAX.
-	//
-	// The .xz format allows concatenating compressed files as is:
-	//
-	//     echo foo | xz > foobar.xz
-	//     echo bar | xz >> foobar.xz
-	//
-	// When decompressing normal standalone .xz files, LZMA_CONCATENATED
-	// should always be used to support decompression of concatenated
-	// .xz files. If LZMA_CONCATENATED isn't used, the decoder will stop
-	// after the first .xz stream. This can be useful when .xz data has
-	// been embedded inside another file format.
-	//
-	// Flags other than LZMA_CONCATENATED are supported too, and can
-	// be combined with bitwise-or. See lzma/container.h
-	// (src/liblzma/api/lzma/container.h in the source package or e.g.
-	// /usr/include/lzma/container.h depending on the install prefix)
-	// for details.
-	lzma_ret ret = lzma_stream_decoder(
-			strm, UINT64_MAX, LZMA_CONCATENATED);
-
-	return ret;
-}
-
 
 static lzma_ret
 decompress(lzma_stream *strm, FILE *infile, FILE *outfile)
@@ -423,6 +350,99 @@ decompress(lzma_stream *strm, FILE *infile, FILE *outfile)
 			return ret;
 		}
 	}
+}
+
+
+static lzma_ret
+init_decoder(lzma_stream *strm)
+{
+	// Initialize a .xz decoder. The decoder supports a memory usage limit
+	// and a set of flags.
+	//
+	// The memory usage of the decompressor depends on the settings used
+	// to compress a .xz file. It can vary from less than a megabyte to
+	// a few gigabytes, but in practice (at least for now) it rarely
+	// exceeds 65 MiB because that's how much memory is required to
+	// decompress files created with "xz -9". Settings requiring more
+	// memory take extra effort to use and don't (at least for now)
+	// provide significantly better compression in most cases.
+	//
+	// Memory usage limit is useful if it is important that the
+	// decompressor won't consume gigabytes of memory. The need
+	// for limiting depends on the application. In this example,
+	// no memory usage limiting is used. This is done by setting
+	// the limit to UINT64_MAX.
+	//
+	// The .xz format allows concatenating compressed files as is:
+	//
+	//     echo foo | xz > foobar.xz
+	//     echo bar | xz >> foobar.xz
+	//
+	// When decompressing normal standalone .xz files, LZMA_CONCATENATED
+	// should always be used to support decompression of concatenated
+	// .xz files. If LZMA_CONCATENATED isn't used, the decoder will stop
+	// after the first .xz stream. This can be useful when .xz data has
+	// been embedded inside another file format.
+	//
+	// Flags other than LZMA_CONCATENATED are supported too, and can
+	// be combined with bitwise-or. See lzma/container.h
+	// (src/liblzma/api/lzma/container.h in the source package or e.g.
+	// /usr/include/lzma/container.h depending on the install prefix)
+	// for details.
+	lzma_ret ret = lzma_stream_decoder(
+			strm, UINT64_MAX, LZMA_CONCATENATED);
+
+	return ret;
+}
+
+
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
+/* Compress from file source to file dest until EOF on source.
+It returns:
+     COMPRESS_OK on success,
+     COMPRESS_FAIL if the inflate data is invalid or the version is
+       incorrect,
+     COMPRESS_IO_ERROR is there is an error reading or writing the file
+
+   The compression level must be Z_DEFAULT_COMPRESSION,
+   or between 0 and 9: 1 gives best speed, 9 gives best compression,
+   0 gives no compression at all (the input data is simply copied a
+   block at a time). Z_DEFAULT_COMPRESSION requests a default compromise
+   between speed and compression (currently equivalent to level 6).
+   */
+enum compress_e
+compress_deflate(FILE *source, FILE *dest, int level)
+{
+
+	// Initialize a lzma_stream structure. When it is allocated on stack,
+	// it is simplest to use LZMA_STREAM_INIT macro like below. When it
+	// is allocated on heap, using memset(strmptr, 0, sizeof(*strmptr))
+	// works (as long as NULL pointers are represented with zero bits
+	// as they are on practically all computers today).
+	lzma_stream strm = LZMA_STREAM_INIT;
+
+	// Initialize the encoder. If it succeeds, compress from
+	// source to dest.
+	lzma_ret ret = init_encoder(&strm, (uint32_t)level);
+	if (ret == LZMA_OK)
+		ret = compress(&strm, source, dest);
+
+	// Free the memory allocated for the encoder. If we were encoding
+	// multiple files, this would only need to be done after the last
+	// file. See 02_decompress.c for handling of multiple files.
+	//
+	// It is OK to call lzma_end() multiple times or when it hasn't been
+	// actually used except initialized with LZMA_STREAM_INIT.
+	lzma_end(&strm);
+
+	if (ret == LZMA_OK) 
+		return COMPRESS_OK;
+
+	return COMPRESS_FAIL;
 }
 
 
