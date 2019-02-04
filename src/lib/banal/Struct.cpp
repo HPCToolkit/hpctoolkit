@@ -1735,7 +1735,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
   block->getInsns(imap);
 
-  int len;
+  int len = 0; // avoid warning about uninitialized
   std::string device;
 
   if (cuda_arch > 0) {
