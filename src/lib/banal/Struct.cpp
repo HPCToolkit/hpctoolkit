@@ -663,7 +663,7 @@ makeStructure(string filename,
 
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
-    firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
+    firstprivate(outFile, gapsFile, search_path, gaps_filenm, parsable)
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
