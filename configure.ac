@@ -4287,7 +4287,7 @@ if test "$OPT_HAVE_CUPTI" = "yes" ; then
      fi
    ] )
 
-  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -lcupti "
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -Wl,-rpath=${OPT_CUPTI_LIBPATH} -lcupti "
 
 fi
 
