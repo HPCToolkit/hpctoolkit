@@ -29,8 +29,15 @@ typedef struct cupti_memcpy {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint8_t copyKind;
+  uint32_t copyKind;
 } cupti_memcpy_t;
+
+typedef struct cupti_memory {
+  uint64_t start;
+  uint64_t end;
+  uint64_t bytes;
+  uint32_t memKind;
+} cupti_memory_t;
 
 // kernel
 typedef struct cupti_kernel {
@@ -45,7 +52,7 @@ typedef struct cupti_kernel {
 typedef struct cupti_synchronization {
   uint64_t start;
   uint64_t end;
-  uint8_t syncKind;
+  uint32_t syncKind;
 } cupti_synchronization_t;
 
 // generic activity entry
@@ -54,6 +61,7 @@ typedef struct cupti_activity {
   union {
     cupti_pc_sampling_t pc_sampling;
     cupti_memcpy_t memcpy;
+    cupti_memory_t memory;
     cupti_kernel_t kernel;
     cupti_synchronization_t synchronization;
   } data;
@@ -67,7 +75,7 @@ typedef struct cupti_entry_activity {
 
 // notification entry
 typedef struct cupti_entry_notification {
-  int64_t host_op_id;
+  uint64_t host_op_id;
   cct_node_t *cct_node;
   void *record;
 } cupti_entry_notification_t;
@@ -95,7 +103,7 @@ cupti_activity_node_set
 extern cupti_node_t *
 cupti_notification_node_new
 (
- int64_t host_op_id,
+ uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
  cupti_node_t *next
@@ -106,7 +114,7 @@ extern void
 cupti_notification_node_set
 (
  cupti_node_t *cupti_node,
- int64_t host_op_id,
+ uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
  cupti_node_t *next

@@ -133,8 +133,12 @@
 #define FORALL_EM_TIME(macro)   \
   macro("EM_TIME (us)",    11)  
 
-#define FORALL_SYNC(macro)      \
-  macro("SYNC_TIME (us)",   0)
+#define FORALL_SYNC(macro) \
+  macro("SYNC_UNKNWON (us)",     0) \
+  macro("SYNC_EVENT (us)",       1) \
+  macro("SYNC_STREAM (us)",      2) \
+  macro("SYNC_STREAM_WAIT (us)", 3) \
+  macro("SYNC_CONTEXT (us)",     4)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
@@ -232,8 +236,8 @@ static module_ignore_fn_entry_t module_ignore;
 static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
-static kind_info_t* sync_kind;
-
+static kind_info_t* me_kind; // memory allocation and deletion
+static kind_info_t* sync_kind; // stream, context, or event sync
 
 static int stall_metric_id[NUM_CLAUSES(FORALL_STL)+2];
 static int gpu_inst_metric_id;
@@ -244,6 +248,9 @@ static int em_time_metric_id;
 
 static int im_metric_id[NUM_CLAUSES(FORALL_IM)+1];
 static int im_time_metric_id;
+
+static int me_metric_id[NUM_CLAUSES(FORALL_ME)+1];
+static int me_time_metric_id;
 
 static int ke_metric_id[NUM_CLAUSES(FORALL_KE)];
 static int ke_static_shared_metric_id;
@@ -271,6 +278,7 @@ CUpti_ActivityKind
 data_motion_explicit_activities[] = { 
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY, 
+  CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -371,9 +379,22 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     {
       if (activity->data.synchronization.syncKind != 0x7fffffff) {
-        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
+        int index = sync_metric_id[activity->data.synchronization.syncKind];
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){
           .i = activity->data.synchronization.end - activity->data.synchronization.start});
+      }
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_MEMORY:
+    {
+      if (activity->data.memory.memKind != 0x7fffffff) {
+        int index = me_metric_id[activity->data.memory.memKind];
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
+
+        metrics = hpcrun_reify_metric_set(cct_node, me_time_metric_id);
+        hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.memory.end - activity->data.memory.start});
       }
       break;
     }
@@ -486,6 +507,15 @@ METHOD_FN(process_event_list, int lush_metrics)
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   hpcrun_close_kind(em_kind);
 
+#define declare_me_metric(name, index) \
+  me_metric_id[index] = hpcrun_set_new_metric_info(me_kind, name);
+
+  me_kind = hpcrun_metrics_new_kind();
+  FORALL_ME(declare_me_metric);	
+  FORALL_ME_TIME(declare_me_metric);
+  me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
+  hpcrun_close_kind(me_kind);
+
 #define declare_ke_metric(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
 
@@ -502,7 +532,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metric);	
-  sync_time_metric_id = sync_metric_id[0];
   hpcrun_close_kind(sync_kind);
 
   // Fetch the event string for the sample source

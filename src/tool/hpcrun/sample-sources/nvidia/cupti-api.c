@@ -27,7 +27,6 @@
 #include "cupti-record.h"
 
 
-
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -44,7 +43,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 0
+#define CUPTI_ACTIVITY_DEBUG 1
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -287,6 +286,19 @@ cupti_unload_callback_cuda
 }
 
 
+uint32_t
+cupti_context_id_get
+(
+)
+{
+  CUcontext context;
+  uint32_t context_id;
+  cuCtxGetCurrent(&context);
+  cuptiGetContextId(context, &context_id);
+  return context_id;
+}
+
+
 static void
 cupti_correlation_callback_cuda
 (
@@ -381,6 +393,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
@@ -495,6 +513,11 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000:       
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000:          
@@ -1093,6 +1116,16 @@ cupti_synchronization_process
   PRINT("Synchronization CorrelationId %u\n", activity->correlationId);
 }
 
+
+static void
+cupti_memory_process
+(
+ CUpti_ActivityMemory *activity
+)
+{
+  PRINT("Memory process not implemented\n");
+}
+
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1150,7 +1183,8 @@ cupti_activity_process
     cupti_synchronization_process((CUpti_ActivitySynchronization *) activity);
     break;
 
-  case CUPTI_ACTIVITY_KIND_EVENT:
+  case CUPTI_ACTIVITY_KIND_MEMORY:
+    cupti_memory_process((CUpti_ActivityMemory *) activity);
     break;
 
   default:

@@ -61,6 +61,16 @@ cupti_activity_node_set
       entry->activity.data.synchronization.end = activity_sync->end;
       break;
     }
+    case CUPTI_ACTIVITY_KIND_MEMORY:
+    {
+      CUpti_ActivityMemory *activity_mem = (CUpti_ActivityMemory *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_MEMORY;
+      entry->activity.data.memory.memKind = activity_mem->memoryKind;
+      entry->activity.data.memory.bytes = activity_mem->bytes;
+      entry->activity.data.memory.start = activity_mem->start;
+      entry->activity.data.memory.end = activity_mem->end;
+      break;
+    }
     default:
       break;
   }
@@ -86,7 +96,7 @@ void
 cupti_notification_node_set
 (
  cupti_node_t *cupti_node,
- int64_t host_op_id,
+ uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
  cupti_node_t *next
@@ -104,7 +114,7 @@ cupti_notification_node_set
 cupti_node_t *
 cupti_notification_node_new
 (
- int64_t host_op_id,
+ uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
  cupti_node_t *next

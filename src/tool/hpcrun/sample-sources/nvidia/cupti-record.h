@@ -34,7 +34,7 @@ cupti_worker_activity_apply
 extern void
 cupti_worker_notification_apply
 (
- int64_t host_op_id,
+ uint64_t host_op_id,
  cct_node_t *cct_node
 );
 
