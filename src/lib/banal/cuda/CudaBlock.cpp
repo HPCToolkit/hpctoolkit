@@ -1,4 +1,7 @@
 #include "CudaBlock.hpp"
+#include <Instruction.h>
+
+#define DYNINST_INSTRUCTION_PTR 0
 
 
 namespace Dyninst {
@@ -19,8 +22,14 @@ Address CudaBlock::last() const {
 
 void CudaBlock::getInsns(Insns &insns) const {
   for (auto offset : _inst_offsets) {
+#ifdef DYNINST_INSTRUCTION_PTR
     insns.insert(std::pair<long unsigned int, 
-      boost::shared_ptr<Dyninst::InstructionAPI::Instruction>>(offset, NULL));
+      InstructionAPI::InstructionPtr>(offset, NULL));
+#else
+    InstructionAPI::Instruction inst;    
+    insns.insert(std::pair<long unsigned int, 
+      InstructionAPI::Instruction>(offset, std::move(inst)));
+#endif
   }
 }
 
