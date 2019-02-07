@@ -101,7 +101,7 @@ memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
     // copy the call path of the malloc
     cct_node_t *node   = info->context;
-    cursor             = hpcrun_cct_insert_path_return_leaf_ts(node, cursor);
+    cursor             = hpcrun_cct_insert_path_return_leaf(node, cursor);
 
     metric_set_t* mset = hpcrun_reify_metric_set(cursor);
 

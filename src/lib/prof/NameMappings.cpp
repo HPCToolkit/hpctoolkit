@@ -40,6 +40,7 @@ const char *MONITOR_DATA_FIRST_TOUCH = "<first touch>";
 const char *DATACENTRIC_ROOT    = "<datacentric>";
 const char *DATACENTRIC_DYNAMIC = "<heap allocation>";
 const char *DATACENTRIC_STATIC  = "<static variable>";
+const char *DATACENTRIC_UNKNOWN = "<unknown variable>";
 
 //******************************************************************************
 // types
@@ -98,7 +99,8 @@ static NameMapping renamingTable[] = {
 
   { "DATACENTRIC"             , DATACENTRIC_ROOT },
   { "DATACENTRIC_Dynamic"     , DATACENTRIC_DYNAMIC },
-  { "DATACENTRIC_Static"      , DATACENTRIC_STATIC }
+  { "DATACENTRIC_Static"      , DATACENTRIC_STATIC },
+  { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN }
 };
 
 static const char *fakeProcedures[] = {

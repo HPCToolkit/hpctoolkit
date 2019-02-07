@@ -305,24 +305,6 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     curStrct = m_curLM;
   }
 
-  // Variable
-  else if (XMLString::equals(name, elemVariable)) {
-    string nm  = getAttr(attributes, attrName);
-    string lnm = getAttr(attributes, attrLnName); // optional
-    string id  = getAttr(attributes, attrId);     // ID: must exist
-    string vma = getAttr(attributes, attrVMA);
-
-    Struct::ACodeNode *parent  = dynamic_cast<Struct::ACodeNode*>(getCurrentScope());
-    Struct::Variable *variable = new Struct::Variable(nm, parent, 0,0);
-
-    if (!vma.empty()) {
-      variable->vmaSet().fromString(vma.c_str());
-    }
-    variable->m_origId = atoi(id.c_str());
-
-    curStrct = variable;
-  }
-
   // File
   else if (XMLString::equals(name, elemFile)) {
     string nm = getAttr(attributes, attrName);
@@ -335,6 +317,27 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     m_curProc = NULL;
 
     curStrct = m_curFile;
+  }
+
+  // Variable
+  else if (XMLString::equals(name, elemVariable)) {
+    string nm  = getAttr(attributes, attrName);
+    string id  = getAttr(attributes, attrId);     // ID: must exist
+    string vma = getAttr(attributes, attrVMA);
+    string lnm = getAttr(attributes, attrLnName); // optional
+
+    SrcFile::ln begLn, endLn;
+    getLineAttr(begLn, endLn, attributes);
+
+    Prof::Struct::Proc* variable = new Struct::Proc(nm, m_curFile, lnm, false, begLn, endLn);
+    variable->m_origId = atoi(id.c_str());
+
+    if (!vma.empty()) {
+      variable->vmaSet().fromString(vma.c_str());
+    }
+    PGMDocHandler::idToProcMap[id] = (Prof::Struct::Proc*) variable;
+
+    curStrct = variable;
   }
 
   // Proc

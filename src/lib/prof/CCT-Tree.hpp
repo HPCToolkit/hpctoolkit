@@ -712,25 +712,28 @@ public:
     : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
+      m_node_type(NODE_TYPE_REGULAR),
       m_lmId(LoadMap::LMId_NULL), m_lmIP(0), m_opIdx(0), m_lip(NULL)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info,
+	   uint cpId, hpcrun_fmt_cct_node_t node_fmt,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
       m_cpId(cpId),
-      m_as_info(as_info),
+      m_as_info(node_fmt.as_info),
+      m_node_type(node_fmt.node_type),
       m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info,
+	   uint cpId, hpcrun_fmt_cct_node_t node_fmt,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const Metric::IData& metrics)
     : ANode(type, parent, strct, metrics),
       m_cpId(cpId),
-      m_as_info(as_info),
+      m_as_info(node_fmt.as_info),
+      m_node_type(node_fmt.node_type),
       m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
   { }
 
@@ -884,6 +887,15 @@ public:
   isValid_lip() const
   { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
 
+  // -------------------------------------------------------
+  // hpcrun node type
+  // -------------------------------------------------------
+
+  uint16_t
+  hpcrun_node_type() const
+  {
+    return m_node_type;
+  }
 
   // -------------------------------------------------------
   // 
@@ -985,6 +997,7 @@ private:
   uint m_cpId; // dynamic id
 
   lush_assoc_info_t m_as_info;
+  uint16_t m_node_type; // hpcrun's node type: memory access, root, variable declaration, ...
 
   LoadMap::LMId_t m_lmId; // LoadMap::LM id
   VMA    m_lmIP;           // static instruction pointer
@@ -1269,11 +1282,11 @@ public:
   { }
 
   Call(ANode* parent,
-       uint cpId, lush_assoc_info_t as_info,
+       uint cpId, hpcrun_fmt_cct_node_t node_fmt,
        LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyCall, parent, NULL,
-	       cpId, as_info, lmId, ip, opIdx, lip,
+	       cpId, node_fmt, lmId, ip, opIdx, lip,
 	       metrics)
   { }
   
@@ -1320,11 +1333,11 @@ class Stmt
   { }
 
   Stmt(ANode* parent,
-       uint cpId, lush_assoc_info_t as_info,
+       uint cpId, hpcrun_fmt_cct_node_t node_fmt,
        LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyStmt, parent, NULL,
-	       cpId, as_info, lmId, ip, opIdx, lip,
+	       cpId, node_fmt, lmId, ip, opIdx, lip,
 	       metrics), m_id_node_alloc(0), m_node_alloc(NULL), m_start_address(0)
   { }
   

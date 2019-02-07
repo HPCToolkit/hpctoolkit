@@ -263,7 +263,7 @@ printFileEnd(ostream * os, FileInfo * finfo)
 void
 printVariable(ostream * os, FileInfo * finfo, VariableInfo vinfo)
 {
-  doIndent(os, 1);
+  doIndent(os, 2);
   *os << "<V"
       << INDEX
       << STRING("n", vinfo.prettyName)

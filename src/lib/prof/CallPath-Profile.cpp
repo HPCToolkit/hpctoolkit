@@ -2019,7 +2019,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt, lmId, lmIP, opIdx, lip,
           metricData);
   }
 
@@ -2034,11 +2034,11 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId0, nodeFmt, lmId, lmIP, opIdx,
       lipCopy, metricData0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId, nodeFmt, lmId, lmIP, opIdx,
 			lip, metricData);
     }
   }
@@ -2073,6 +2073,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     
     n_fmt.lm_id = (uint16_t) n_dyn.lmId();
     n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
+    n_fmt.node_type = n_dyn_p->hpcrun_node_type();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

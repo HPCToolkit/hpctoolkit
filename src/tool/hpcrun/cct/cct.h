@@ -277,10 +277,6 @@ hpcrun_insert_special_node(cct_node_t *root, void *addr);
 cct_node_t*
 hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
 
-// thread-safety version of hpcrun_cct_insert_path_return_leaf
-cct_node_t*
-hpcrun_cct_insert_path_return_leaf_ts(cct_node_t *path, cct_node_t *root);
-
 cct_node_t *
 hpcrun_cct_get_root(cct_node_t *node);
 

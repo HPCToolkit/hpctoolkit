@@ -140,6 +140,7 @@ using namespace std;
 
 #define WORK_LIST_PCT  0.05
 
+#define MIN_BYTES_GLOBAL_VARIABLE 1024
 
 //******************************************************************************
 // variables
@@ -1041,12 +1042,17 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 static void
 makeVariables(ostream * outFile)
 {
+  FileInfo file(unknown_file);
+
+  Output::printFileBegin(outFile, &file);
+
   std::vector<Symbol*> symvec;
 
   the_symtab->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
+
   for (auto i=0; i<symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (s->getOffset() == 0 || s->getSize()<1)
+    if (s->getOffset() == 0 || s->getSize()<MIN_BYTES_GLOBAL_VARIABLE)
       continue;
 
     VariableInfo vinfo;
@@ -1054,8 +1060,11 @@ makeVariables(ostream * outFile)
     vinfo.prettyName = s->getPrettyName();
     vinfo.entry_vma  = s->getOffset();
     vinfo.num_bytes  = s->getSize();
+
     Output::printVariable(outFile, NULL, vinfo);
   }
+
+  Output::printFileEnd(outFile, &file);
 }
 
 
