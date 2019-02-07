@@ -52,6 +52,54 @@ cupti_activity_node_set
       entry->activity.data.kernel.end = activity_kernel->end;
       break;
     }
+    case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
+    {
+      CUpti_ActivityGlobalAccess3 *activity_global_access = (CUpti_ActivityGlobalAccess3 *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS;
+      entry->activity.data.global_access.l2_transactions = activity_global_access->l2_transactions;
+      entry->activity.data.global_access.theoreticalL2Transactions =
+        activity_global_access->theoreticalL2Transactions;
+      cupti_global_access_type_t type;
+      if (activity_global_access->flags & (1<<8)) {
+        if (activity_global_access->flags & (1<<9)) {
+          type = CUPTI_GLOBAL_ACCESS_LOAD_CACHED;
+        } else {
+          type = CUPTI_GLOBAL_ACCESS_LOAD_UNCACHED;
+        }
+      } else {
+        type = CUPTI_GLOBAL_ACCESS_STORE;
+      }
+      entry->activity.data.global_access.type = type;
+      uint64_t bytes = (activity_global_access->flags & 0xFF) * activity_global_access->threadsExecuted;
+      entry->activity.data.global_access.bytes = bytes;
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
+    {
+      CUpti_ActivitySharedAccess *activity_shared_access = (CUpti_ActivitySharedAccess *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_SHARED_ACCESS;
+      entry->activity.data.shared_access.sharedTransactions = activity_shared_access->sharedTransactions;
+      entry->activity.data.shared_access.theoreticalSharedTransactions =
+        activity_shared_access->theoreticalSharedTransactions;
+      cupti_shared_access_type_t type;
+      if (activity_shared_access->flags & (1<<8)) {
+        type = CUPTI_SHARED_ACCESS_LOAD;
+      } else {
+        type = CUPTI_SHARED_ACCESS_STORE;
+      }
+      entry->activity.data.shared_access.type = type;
+      uint64_t bytes = (activity_shared_access->flags & 0xFF) * activity_shared_access->threadsExecuted;
+      entry->activity.data.shared_access.bytes = bytes;
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_BRANCH:
+    {
+      CUpti_ActivityBranch2 *activity_branch = (CUpti_ActivityBranch2 *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_BRANCH;
+      entry->activity.data.branch.diverged = activity_branch->diverged;
+      entry->activity.data.branch.executed = activity_branch->executed;
+      break;
+    }
     case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     {
       CUpti_ActivitySynchronization *activity_sync = (CUpti_ActivitySynchronization *)activity;

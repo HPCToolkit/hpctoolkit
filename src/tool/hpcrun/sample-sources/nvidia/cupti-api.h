@@ -81,7 +81,18 @@ cupti_correlation_enable
 extern void
 cupti_correlation_disable
 (
- CUcontext context
+);
+
+
+extern void
+cupti_pc_sampling_enable
+(
+);
+
+
+extern void
+cupti_pc_sampling_disable
+(
 );
 
 

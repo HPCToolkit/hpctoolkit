@@ -143,6 +143,9 @@ static device_finalizer_fn_entry_t device_finalizer;
 static int ompt_target_metric_id = -1;
 static int ompt_task_metric_id = -1;
 
+// pc sampling
+static bool ompt_pc_sampling_enabled = false;
+
 //-----------------------------------------
 // declare ompt interface function pointers
 //-----------------------------------------
@@ -816,20 +819,38 @@ ompt_callback_buffer_complete(uint64_t device_id,
 
 
 void
+ompt_pc_sampling_enable()
+{
+  ompt_pc_sampling_enabled = true;
+  cupti_pc_sampling_enable();
+}
+
+
+void
+ompt_pc_sampling_disable()
+{
+  ompt_pc_sampling_enabled = false;
+  cupti_pc_sampling_disable();
+}
+
+
+void
 ompt_trace_configure(ompt_device_t *device)
 {
   int flags = 0;
 
   // specify desired monitoring
-  flags |= ompt_native_kernel_invocation;
-
-  flags |= ompt_native_kernel_execution;
-
   flags |= ompt_native_driver;
 
-  flags |= ompt_native_data_motion_explicit;
-
   flags |= ompt_native_runtime;
+  
+  if (!ompt_pc_sampling_enabled) {
+    flags |= ompt_native_kernel_invocation;
+
+    flags |= ompt_native_kernel_execution;
+
+    flags |= ompt_native_data_motion_explicit;
+  }
 
   // indicate desired monitoring
   ompt_set_trace_native(device, 1, flags);

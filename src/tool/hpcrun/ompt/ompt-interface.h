@@ -23,6 +23,9 @@ extern void ompt_mutex_blame_shift_enable();
 extern void ompt_mutex_blame_shift_request();
 extern void ompt_idle_blame_shift_request();
 
+extern void ompt_pc_sampling_enable();
+extern void ompt_pc_sampling_disable();
+
 //------------------------------------------------------------------------------
 // function: 
 //   hpcrun_ompt_state_is_overhead

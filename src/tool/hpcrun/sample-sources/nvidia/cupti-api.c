@@ -43,7 +43,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 1
+#define CUPTI_ACTIVITY_DEBUG 0
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -124,6 +124,7 @@ cupti_correlation_callback_dummy
 //******************************************************************************
 //
 static bool cupti_correlation_enabled = false;
+static bool cupti_pc_sampling_enabled = false;
 
 static cupti_correlation_callback_t cupti_correlation_callback = 
   cupti_correlation_callback_dummy;
@@ -824,12 +825,35 @@ cupti_correlation_enable
 void
 cupti_correlation_disable
 (
- CUcontext context
 )
 {
   if (cupti_correlation_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisable, (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
     cupti_correlation_enabled = false;
+  }
+}
+
+
+void
+cupti_pc_sampling_enable
+(
+)
+{
+  PRINT("enter cupti_pc_sampling_enable\n");
+  cupti_pc_sampling_enabled = true;
+  HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+  PRINT("exit cupti_pc_sampling_enable\n");
+}
+
+
+void
+cupti_pc_sampling_disable
+(
+)
+{
+  if (cupti_pc_sampling_enabled) {
+    HPCRUN_CUPTI_CALL(cuptiActivityDisable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+    cupti_pc_sampling_enabled = false;
   }
 }
 
@@ -1126,6 +1150,57 @@ cupti_memory_process
   PRINT("Memory process not implemented\n");
 }
 
+
+static void
+cupti_instruction_process
+(
+ CUpti_Activity *activity
+)
+{
+  uint32_t correlation_id = 0;
+  uint32_t function_id = 0;
+  uint32_t pc_offset = 0;
+  if (activity->kind == CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS) {
+    CUpti_ActivityGlobalAccess3 *global_access = (CUpti_ActivityGlobalAccess3 *)activity;
+    correlation_id = global_access->correlationId;
+    function_id = global_access->functionId;
+    pc_offset = global_access->pcOffset;
+  } else if (activity->kind == CUPTI_ACTIVITY_KIND_SHARED_ACCESS) {
+    CUpti_ActivitySharedAccess *shared_access = (CUpti_ActivitySharedAccess *)activity;
+    correlation_id = shared_access->correlationId;
+    function_id = shared_access->functionId;
+    pc_offset = shared_access->pcOffset;
+  } else if (activity->kind == CUPTI_ACTIVITY_KIND_BRANCH) {
+    CUpti_ActivityBranch2 *branch = (CUpti_ActivityBranch2 *)activity;
+    correlation_id = branch->correlationId;
+    function_id = branch->functionId;
+    pc_offset = branch->pcOffset;
+    PRINT("Branch instruction\n");
+  }
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(correlation_id);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    PRINT("external_id %d\n", external_id);
+    cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(function_id);
+    if (entry != NULL) {
+      uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
+      uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
+      ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
+      cct_addr_t frm = { .ip_norm = ip };
+      cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+      if (host_op_entry != NULL) {
+        cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
+          cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+          cupti_cupti_activity_apply(activity, cct_child, record);
+        }
+      }
+    }
+  }
+  PRINT("Instruction CorrelationId %u\n", correlation_id);
+}
+
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1185,6 +1260,12 @@ cupti_activity_process
 
   case CUPTI_ACTIVITY_KIND_MEMORY:
     cupti_memory_process((CUpti_ActivityMemory *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
+  case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
+  case CUPTI_ACTIVITY_KIND_BRANCH:
+    cupti_instruction_process(activity);
     break;
 
   default:

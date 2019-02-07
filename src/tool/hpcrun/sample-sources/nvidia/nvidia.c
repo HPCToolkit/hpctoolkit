@@ -92,6 +92,7 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <ompt/ompt-interface.h>
 
 
 /******************************************************************************
@@ -139,6 +140,29 @@
   macro("SYNC_STREAM (us)",      2) \
   macro("SYNC_STREAM_WAIT (us)", 3) \
   macro("SYNC_CONTEXT (us)",     4)
+
+#define FORALL_GL(macro) \
+  macro("GL_LOAD_CACHED_BYTES",             0) \
+  macro("GL_LOAD_UNCACHED_BYTES",           1) \
+  macro("GL_STORE_BYTES",                   2) \
+  macro("GL_LOAD_CACHED_L2_TRANS",          3) \
+  macro("GL_LOAD_UNCACHED_L2_TRANS",        4) \
+  macro("GL_STORE_L2_TRANS",                5) \
+  macro("GL_LOAD_CACHED_THEORETIC_TRANS",   6) \
+  macro("GL_LOAD_UNCACHED_THEORETIC_TRANS", 7) \
+  macro("GL_STORE_THEORETIC_TRANS",         8)
+
+#define FORALL_SH(macro) \
+  macro("SH_LOAD_BYTES",            0) \
+  macro("SH_STORE_BYTES",           1) \
+  macro("SH_LOAD_TRANS",            2) \
+  macro("SH_STORE_TRANS",           3) \
+  macro("SH_LOAD_THEORETIC_TRANS",  4) \
+  macro("SH_STORE_THEORETIC_TRANS", 5)
+
+#define FORALL_BH(macro) \
+  macro("BH_WARP_DIVERGED", 0) \
+  macro("BH_WARP_EXECUTED", 1)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
@@ -220,7 +244,9 @@
 #endif
 
 #define OMPT_NVIDIA "nvidia-ompt" 
+#define OMPT_PC_SAMPLING "nvidia-ompt-pc-sampling"
 #define CUDA_NVIDIA "nvidia-cuda" 
+#define CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
 
 /******************************************************************************
  * local variables 
@@ -237,6 +263,9 @@ static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
 static kind_info_t* me_kind; // memory allocation and deletion
+static kind_info_t* gl_kind; // global memory accesses
+static kind_info_t* sh_kind; // shared memory accesses
+static kind_info_t* bh_kind; // branches
 static kind_info_t* sync_kind; // stream, context, or event sync
 
 static int stall_metric_id[NUM_CLAUSES(FORALL_STL)+2];
@@ -251,6 +280,14 @@ static int im_time_metric_id;
 
 static int me_metric_id[NUM_CLAUSES(FORALL_ME)+1];
 static int me_time_metric_id;
+
+static int gl_metric_id[NUM_CLAUSES(FORALL_GL)];
+
+static int sh_metric_id[NUM_CLAUSES(FORALL_SH)];
+
+static int bh_metric_id[NUM_CLAUSES(FORALL_BH)];
+static int bh_diverged_metric_id;
+static int bh_executed_metric_id;
 
 static int ke_metric_id[NUM_CLAUSES(FORALL_KE)];
 static int ke_static_shared_metric_id;
@@ -302,7 +339,9 @@ CUpti_ActivityKind
 kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
-  CUPTI_ACTIVITY_KIND_PC_SAMPLING,
+  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
+  CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
+  CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };                                   
 
@@ -398,6 +437,52 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
+    case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
+    {
+      int type = activity->data.global_access.type;
+      int l2_transactions_index = gl_metric_id[type];
+
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, l2_transactions_index);
+      hpcrun_metric_std_inc(l2_transactions_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.l2_transactions});
+
+      int l2_theoretical_transactions_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT + type];
+      metrics = hpcrun_reify_metric_set(cct_node, l2_theoretical_transactions_index);
+      hpcrun_metric_std_inc(l2_theoretical_transactions_index, metrics,
+        (cct_metric_data_t){.i = activity->data.global_access.theoreticalL2Transactions});
+
+      int bytes_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT * 2 + type];
+      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
+      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.bytes});
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
+    {
+      int type = activity->data.shared_access.type;
+      int shared_transactions_index = sh_metric_id[type];
+
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, shared_transactions_index);
+      hpcrun_metric_std_inc(shared_transactions_index, metrics,
+        (cct_metric_data_t){.i = activity->data.shared_access.sharedTransactions});
+
+      int theoretical_shared_transactions_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT + type];
+      metrics = hpcrun_reify_metric_set(cct_node, theoretical_shared_transactions_index);
+      hpcrun_metric_std_inc(theoretical_shared_transactions_index, metrics,
+        (cct_metric_data_t){.i = activity->data.shared_access.theoreticalSharedTransactions});
+
+      int bytes_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT * 2 + type];
+      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
+      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.shared_access.bytes});
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_BRANCH:
+    {
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);
+      hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.diverged});
+
+      metrics = hpcrun_reify_metric_set(cct_node, bh_executed_metric_id);
+      hpcrun_metric_std_inc(bh_executed_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.executed});
+      break;
+    }
     default:
       break;
   }
@@ -461,7 +546,8 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA);
+  return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA) ||
+    hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING);
 
 #if 0
     hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
@@ -532,7 +618,31 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metric);	
+  sync_time_metric_id = sync_metric_id[0];
   hpcrun_close_kind(sync_kind);
+
+#define declare_gl_metric(name, index) \
+  gl_metric_id[index] = hpcrun_set_new_metric_info(gl_kind, name);
+
+  gl_kind = hpcrun_metrics_new_kind();
+  FORALL_GL(declare_gl_metric);	
+  hpcrun_close_kind(gl_kind);
+
+#define declare_sh_metric(name, index) \
+  sh_metric_id[index] = hpcrun_set_new_metric_info(sh_kind, name);
+
+  sh_kind = hpcrun_metrics_new_kind();
+  FORALL_SH(declare_sh_metric);	
+  hpcrun_close_kind(sh_kind);
+
+#define declare_bh_metric(name, index) \
+  bh_metric_id[index] = hpcrun_set_new_metric_info(bh_kind, name);
+
+  bh_kind = hpcrun_metrics_new_kind();
+  FORALL_BH(declare_bh_metric);	
+  bh_diverged_metric_id = bh_metric_id[0];
+  bh_executed_metric_id = bh_metric_id[1];
+  hpcrun_close_kind(bh_kind);
 
   // Fetch the event string for the sample source
   // only one event is allowed
@@ -545,23 +655,27 @@ METHOD_FN(process_event_list, int lush_metrics)
   module_ignore.fn = cupti_modules_ignore;
   module_ignore_map_register(&module_ignore);
 
-  if (hpcrun_ev_is(name, CUDA_NVIDIA)) {
+  if (hpcrun_ev_is(name, CUDA_NVIDIA) || hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
     // Register device finailzers
     device_finalizer_flush.fn = cupti_device_flush;
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    // Specify desired monitoring
-    cupti_monitoring_set(kernel_invocation_activities, true);
-                        
-    cupti_monitoring_set(kernel_execution_activities, true);
-                        
     cupti_monitoring_set(driver_activities, true);
-                        
-    cupti_monitoring_set(data_motion_explicit_activities, true);
-                        
+
     cupti_monitoring_set(runtime_activities, true);
+
+    // Specify desired monitoring
+    if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
+      cupti_pc_sampling_enable();
+    } else {
+      cupti_monitoring_set(kernel_invocation_activities, true);
+
+      cupti_monitoring_set(kernel_execution_activities, true);
+                        
+      cupti_monitoring_set(data_motion_explicit_activities, true);
+    }
 
     cupti_metrics_init();
 
@@ -574,6 +688,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_correlation_enable();
 
     cupti_trace_start();
+  }
+
+  if (hpcrun_ev_is(name, OMPT_PC_SAMPLING)) {
+    ompt_pc_sampling_enable();
   }
 }
 

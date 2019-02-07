@@ -168,7 +168,9 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
               }
             }
           } else {
-            std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
+            if (DEBUG_CUDA_CFGPARSER) {
+              std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
+            }
           }
         }
       }

@@ -48,6 +48,38 @@ typedef struct cupti_kernel {
   int32_t localMemoryTotal;
 } cupti_kernel_t;
 
+typedef enum {
+  CUPTI_GLOBAL_ACCESS_LOAD_CACHED,
+  CUPTI_GLOBAL_ACCESS_LOAD_UNCACHED,
+  CUPTI_GLOBAL_ACCESS_STORE,
+  CUPTI_GLOBAL_ACCESS_COUNT,
+} cupti_global_access_type_t;
+
+typedef struct cupti_global_access {
+  uint64_t l2_transactions;
+  uint64_t theoreticalL2Transactions;
+  uint64_t bytes;
+  cupti_global_access_type_t type;
+} cupti_global_access_t;
+
+typedef enum {
+  CUPTI_SHARED_ACCESS_LOAD,
+  CUPTI_SHARED_ACCESS_STORE,
+  CUPTI_SHARED_ACCESS_COUNT,
+} cupti_shared_access_type_t;
+
+typedef struct cupti_shared_access {
+  uint64_t sharedTransactions;
+  uint64_t theoreticalSharedTransactions;
+  uint64_t bytes;
+  cupti_shared_access_type_t type;
+} cupti_shared_access_t;
+
+typedef struct cupti_branch {
+  uint32_t diverged;
+  uint32_t executed;
+} cupti_branch_t;
+
 // synchronization
 typedef struct cupti_synchronization {
   uint64_t start;
@@ -63,6 +95,9 @@ typedef struct cupti_activity {
     cupti_memcpy_t memcpy;
     cupti_memory_t memory;
     cupti_kernel_t kernel;
+    cupti_global_access_t global_access;
+    cupti_shared_access_t shared_access;
+    cupti_branch_t branch;
     cupti_synchronization_t synchronization;
   } data;
 } cupti_activity_t;
