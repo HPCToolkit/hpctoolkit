@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -689,6 +689,49 @@ t2_dbg_unw_step(hpcrun_unw_cursor_t* cursor)
 //****************************************************************************
 // private operations
 //****************************************************************************
+static bool
+stack_troll_dyninst_frame(hpcrun_unw_cursor_t* cursor, int offset)
+{
+    uint64_t addrWidth = 8; // should query the system config, tmp hard coding now
+    uint64_t magicWord = 0xBEEFDEAD;
+    uint64_t magicWordPos = addrWidth * 2;
+    uint64_t spPosition = addrWidth * 3;
+    void ** framePtr = cursor->bp;
+    void * stackPtr = cursor->sp;
+    uint64_t magicWordAddr = (uint64_t)framePtr + magicWordPos;
+    uint64_t buffer;
+    memcpy((void*)&buffer, (void*)magicWordAddr, 8);
+    if (buffer == magicWord) {
+        uint64_t diff = (uint64_t)(framePtr) - (uint64_t)(stackPtr);
+        if (diff >= 500 * 8) {
+            return false;
+        }
+        uint64_t usrFramePtr;
+        uint64_t usrStackPtr;
+        void ** ra_loc;
+        usrFramePtr = *framePtr;
+        uint64_t stackPointerAddr = (uint64_t)framePtr + spPosition;
+        memcpy((void*)&usrStackPtr, (void*)stackPointerAddr, 8);
+        ra_loc = (void**)usrStackPtr;
+        usrStackPtr += addrWidth;
+        void ** next_pc = (void**)*ra_loc;
+        save_registers(cursor, next_pc, (void**)usrFramePtr, usrStackPtr, ra_loc);
+        compute_normalized_ips(cursor);
+        return true;
+    }
+    // fall through the frame pointer based unwinding 
+    void ** bp = cursor->bp;
+    void *  sp = cursor->sp;
+    void *  pc = cursor->pc_unnorm;
+    void ** next_bp = (void**)*bp;
+    void *  next_sp = ((void*)bp) + addrWidth;
+    void ** ra_loc = (void**)next_sp;
+    void *  next_pc = *ra_loc;
+    next_sp += addrWidth;
+    save_registers(cursor, (void**) next_pc, next_bp, next_sp, ra_loc);
+    compute_normalized_ips(cursor);
+    return true;
+}
 
 static void
 update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
@@ -737,6 +780,8 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     TMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
 	 cursor->pc_unnorm);
     TMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm);
+    if (stack_troll_dyninst_frame(cursor, offset))
+        return; // success! frame pointer based unwinding for dyninst frames
     // fall through for error handling
   }
   // assert(0);
