@@ -493,7 +493,6 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
   // else look for other modules
   if (svec.empty()) {
-    printf("get source lines return empty vector\n");
     set <Module *> modSet;
     the_symtab->findModuleByOffset(modSet, vma);
 
