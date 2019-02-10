@@ -1044,6 +1044,48 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 #endif
 }
 
+//----------------------------------------------------------------------
+
+// getFuncNames -- helper for makeSkeleton() to select the pretty and
+// link (mangled) names for a SymtabAPI::Function.
+//
+// Some functions have multiple symbols with different names for the
+// same addres (global and weak syms).  We sort the symbol names to
+// make the choice deterministic.  We could prefer a global symbol,
+// but global is not always unique.
+//
+// Note: prettynm and linknm are passed in with default (unknown proc)
+// values, so don't overwrite them unless there is at least one valid
+// name.
+//
+static void
+getFuncNames(SymtabAPI::Function * sym_func, string & prettynm,
+	     string & linknm, bool ourDemangle)
+{
+  auto pretty_begin = sym_func->pretty_names_begin();
+  auto pretty_end =   sym_func->pretty_names_end();
+  auto mangled_end =  sym_func->mangled_names_end();
+
+  auto pretty_it =    pretty_begin;
+  auto mangled_it =   sym_func->mangled_names_begin();
+
+  while (pretty_it != pretty_end && mangled_it != mangled_end) {
+    string new_mangled = *mangled_it;
+    string new_pretty =
+      (ourDemangle) ? BinUtil::demangleProcName(new_mangled) : *pretty_it;
+
+    if (pretty_it == pretty_begin || new_pretty.compare(prettynm) < 0) {
+      prettynm = new_pretty;
+      linknm = new_mangled;
+    }
+
+    ++pretty_it;
+    ++mangled_it;
+  }
+}
+
+//----------------------------------------------------------------------
+
 // makeSkeleton -- the new buildLMSkeleton
 //
 // In the ParseAPI version, we iterate over the ParseAPI list of
@@ -1145,19 +1187,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	//
 	DEBUG_SKEL("(case 1)\n");
 
-	auto mangled_it = sym_func->mangled_names_begin();
-	auto pretty_it = sym_func->pretty_names_begin();
-
-	if (mangled_it != sym_func->mangled_names_end()) {
-	  linknm = *mangled_it;
-
-	  if (opts.ourDemangle) {
-	    prettynm = BinUtil::demangleProcName(linknm);
-	  }
-	  else if (pretty_it != sym_func->pretty_names_end()) {
-	    prettynm = *pretty_it;
-	  }
-	}
+	getFuncNames(sym_func, prettynm, linknm, opts.ourDemangle);
 	if (is_shared) {
 	  prettynm += " (" + basename + ")";
 	}
