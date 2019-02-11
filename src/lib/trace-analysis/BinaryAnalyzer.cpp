@@ -334,7 +334,6 @@ namespace TraceAnalysis {
     }
     return ret;
   }
-  
 
   CFGFunc* BinaryAnalyzer::findFunc(VMA vma) {
     if (CFGFuncMap.find(vma) == CFGFuncMap.end()) return NULL;

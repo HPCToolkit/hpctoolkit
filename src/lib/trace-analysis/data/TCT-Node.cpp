@@ -771,4 +771,35 @@ namespace TraceAnalysis {
     minGap = currStartExclusive - lastEndExclusive + 1;
     maxGap = currStartInclusive - lastEndInclusive - 1;
   }
+  
+  Time TCTACFGNode::getExclusiveDuration() const {
+    Time exclusive = getDuration();
+    for (auto it = children.begin(); it != children.end(); it++)
+      if ((*it)->isLoop()) 
+        exclusive -= ((*it)->getDuration() - (*it)->getExclusiveDuration());
+      else
+        exclusive -= (*it)->getDuration();
+    return exclusive;
+  }
+  
+  void TCTACFGNode::getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const {
+    minExclusive = getMinDuration();
+    maxExclusive = getMaxDuration();
+    for (auto it = children.begin(); it != children.end(); it++) {
+      TCTANode* child = *it;
+      minExclusive -= child->getMaxDuration();
+      maxExclusive -= child->getMinDuration();
+    }
+  }
+  
+  void TCTACFGNode::setEdges(vector<Edge*>& edges) {
+    for (int i = 0; i < getNumChild(); i++)
+      outEdges[children[i]->id] = unordered_set<Edge*>();
+    
+    while (!edges.empty()) {
+      Edge* edge = edges.back();
+      outEdges[edge->getSrc()->id].insert(edge);
+      edges.pop_back();
+    }
+  }
 }

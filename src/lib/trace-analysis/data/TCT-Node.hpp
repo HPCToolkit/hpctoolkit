@@ -62,6 +62,12 @@ using std::string;
 #include <vector>
 using std::vector;
 
+#include <unordered_map>
+using std::unordered_map;
+
+#include <unordered_set>
+using std::unordered_set;
+
 #include <map>
 using std::map;
 
@@ -75,16 +81,6 @@ using std::map;
 #include <boost/serialization/split_member.hpp>
 
 namespace TraceAnalysis {
-  // Forward declarations
-  class TCTANode;
-  class TCTATraceNode;
-  class TCTFunctionTraceNode;
-  class TCTIterationTraceNode;
-  class TCTLoopNode;
-  class TCTClusterNode;
-  class TCTProfileNode;
-  class TCTRootNode;
-
   class TCTID {
     friend class boost::serialization::access;
   private:
@@ -116,7 +112,31 @@ namespace TraceAnalysis {
       return "(" + std::to_string(id) + "," + std::to_string(procID) + ")";
     }
   };
-  
+}
+
+namespace std {
+  template <> struct hash<TraceAnalysis::TCTID>
+  {
+    std::size_t operator()(const TraceAnalysis::TCTID& id) const noexcept
+    {
+      std::size_t h1 = hash<int>()(id.id);
+      std::size_t h2 = hash<int>()(id.procID);
+      return h1 ^ (h2 << 1);
+    }
+  };
+}
+
+namespace TraceAnalysis {
+  // Forward declarations
+  class TCTANode;
+  class TCTATraceNode;
+  class TCTFunctionTraceNode;
+  class TCTIterationTraceNode;
+  class TCTLoopNode;
+  class TCTClusterNode;
+  class TCTProfileNode;
+  class TCTRootNode;
+
   // Temporal Context Tree Abstract Node
   class TCTANode {
   public:
@@ -304,6 +324,102 @@ namespace TraceAnalysis {
     TCTPerfLossMetric plm;
     
     virtual void accumulateSemanticDurations(Time* durations) = 0;
+  };
+  
+  // Temporal Context tree Abstract CFG Node
+  class TCTACFGNode : public TCTANode {
+    friend class boost::serialization::access;
+    
+  public:
+    class Edge {
+    public:
+      Edge(TCTANode* src, TCTANode* dst, long weight) : src(src), dst(dst), weight(weight) {}
+      virtual ~Edge() {}
+      
+    private:
+      Edge(const Edge& orig) : src(orig.src), dst(orig.dst), weight(orig.weight) {}
+      
+    public:
+      TCTANode* getSrc() {return src;}
+      TCTANode* getDst() {return dst;}
+      long getWeight() {return weight;}
+      
+      Edge* duplicate() {
+        return new Edge(*this);
+      }
+      
+      void addWeight(long inc) {
+        weight += inc;
+      }
+      
+      void setSrc(TCTANode* src) {
+        this->src = src;
+      }
+      
+      void setDst(TCTANode* dst) {
+        this->dst = dst;
+      }
+      
+    private:
+      TCTANode* src;
+      TCTANode* dst;
+      long weight;
+    };
+    
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+  protected:
+    // Constructor for serialization only.
+    TCTACFGNode(NodeType type) : TCTANode(type) {}
+    
+  public:
+    TCTACFGNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
+    TCTACFGNode(const TCTACFGNode& orig) : TCTANode(orig) {
+      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
+        children.push_back((*it)->duplicate());
+      for (auto it = orig.outEdges.begin(); it != orig.outEdges.end(); it++) {
+        outEdges[it->first] = unordered_set<Edge*>();
+        for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
+          outEdges[it->first].insert((*eit)->duplicate());
+      }
+    }
+    virtual ~TCTACFGNode() {
+      for (auto it = children.begin(); it != children.end(); it++)
+        delete (*it);
+    }
+    
+    virtual int getNumChild() const {
+      return children.size();
+    }
+    
+    virtual const TCTANode* getChild(int idx) const {
+      return children[idx];
+    }
+    
+    virtual TCTANode* getChild(int idx) {
+      return children[idx];
+    }
+    
+    virtual void addChild(TCTANode* child) {
+      children.push_back(child);
+    }
+    
+    virtual const unordered_set<TCTACFGNode::Edge*>& getOutEdges(int idx) const {
+      return outEdges.at(children[idx]->id);
+    }
+    
+    virtual void setEdges(vector<Edge*>& edges);
+    
+    virtual Time getExclusiveDuration() const;
+    
+    virtual void getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const;
+    
+  protected:
+    vector<TCTANode*> children;
+    //          Source ID
+    unordered_map<TCTID, unordered_set<Edge*>> outEdges;
   };
   
   // Temporal Context Tree Abstract Trace Node
