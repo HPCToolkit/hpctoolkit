@@ -505,12 +505,16 @@ hpcrun_cct_is_node_memaccess(cct_node_t *node)
   return (node->node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
+// mark that the node is supposed to be a root
+// theoretically, a root has no parent, but to make it easy
+// we need a fake root and hang it to the invisible parent
 void
 hpcrun_cct_set_node_root(cct_node_t *root)
 {
   root->node_type |= NODE_TYPE_ROOT;
 }
 
+// check if the node is supposed to be a root
 bool
 hpcrun_cct_is_node_root(cct_node_t *node)
 {

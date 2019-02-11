@@ -478,16 +478,21 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
       ANode* n_parent = n->parent();
-      
-      for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
-	   it1 != ivalset.end(); ++it1) {
-	const VMAInterval& ival = *it1;
-	uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+      ADynNode *dyn_n = (ADynNode*) n;
+      if (hpcrun_fmt_root_type_node(dyn_n->hpcrun_node_type())) {
+        std::cerr << "n id " << dyn_n->id() <<": " << dyn_n->hpcrun_node_type()  <<", parent-id: "<< n_parent->id() << ", root-id:" << root->id() << " \n";
+        continue;
+      }
 
-	for (uint mId = mBegId; mId < mEndId; ++mId) {
-	  double mVal = n->demandMetric(mId, mEndId/*size*/);
-	  n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-	}
+      for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
+          it1 != ivalset.end(); ++it1) {
+        const VMAInterval& ival = *it1;
+        uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+
+        for (uint mId = mBegId; mId < mEndId; ++mId) {
+          double mVal = n->demandMetric(mId, mEndId/*size*/);
+          n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+        }
       }
     }
   }

@@ -1566,6 +1566,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+    if (node->hpcrun_node_type() > 20) {
+      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() ;
+    }
 #if DBG_DATA
     //if (node->metricMgr().)
 #endif

@@ -167,6 +167,7 @@ hpcrun_cct_bundle_init_datacentric_node(cct_bundle_t *cct)
 {
   if (!hpcrun_cct_parent(cct->special_datacentric_node)) {
     hpcrun_cct_insert_node(cct->top, cct->special_datacentric_node);
+    hpcrun_cct_set_node_root(cct->special_datacentric_node);
   }
   return cct->special_datacentric_node;
 }

@@ -449,7 +449,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     hpcrun_metric_std_max(metric_id, mset, val_addr);
 
     hpcrun_cct_set_node_memaccess(node);
-    hpcrun_cct_set_node_root(var_context);
   }
 
   if (mmap_data->data_src == 0) {

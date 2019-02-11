@@ -616,6 +616,8 @@ makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 {
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
   frame->link(node->parent());
+  frame->hpcrun_node_type(node->hpcrun_node_type());
+
   strctToCCTMap.insert(std::make_pair(procStrct, frame));
 
   makeFrameStructure(frame, procStrct, strctToCCTMap);

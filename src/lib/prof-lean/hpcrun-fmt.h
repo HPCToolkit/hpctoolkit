@@ -583,6 +583,11 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
 
+static inline bool
+hpcrun_fmt_root_type_node(uint16_t type)
+{
+  return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+}
 
 // --------------------------------------------------------------------------
 // 
