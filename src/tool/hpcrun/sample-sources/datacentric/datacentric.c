@@ -322,7 +322,7 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
   // this node will be translated by hpcprof and name it with
   //  the static variable that matches with the memory address
 
-  npc.lm_ip    = addr_start;
+  npc.lm_ip    = addr_start + 1; // hpcprof sometimes decrements the value of IP.
   npc.lm_id    = lm_id;
   addr.ip_norm = npc;
 
@@ -423,9 +423,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
       cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
       var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
-      /*var_context = datacentric_create_root_node(variable_root,
-                              (uintptr_t)mmap_data->addr, (uintptr_t)mmap_data->addr+1);*/
-
       hpcrun_cct_set_node_variable(var_context);
     }
 
@@ -470,7 +467,6 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     datacentric_record_store_mem( node, &data_src );
     datacentric_record_store_mem( sv.sample_node, &data_src );
   }
-  //TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
 
 

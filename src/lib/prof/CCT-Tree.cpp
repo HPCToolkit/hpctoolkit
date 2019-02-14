@@ -477,13 +477,15 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
 		   IteratorStack::PostOrder);
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
-      ANode* n_parent = n->parent();
-      ADynNode *dyn_n = (ADynNode*) n;
-      if (hpcrun_fmt_root_type_node(dyn_n->hpcrun_node_type())) {
-        std::cerr << "n id " << dyn_n->id() <<": " << dyn_n->hpcrun_node_type()  <<", parent-id: "<< n_parent->id() << ", root-id:" << root->id() << " \n";
+
+      if (hpcrun_fmt_root_type_node(n->hpcrun_node_type())) {
+        // Special treatement for "artificial root":
+        //  we don't aggregate the metrics of "artificial root" into the "invisible root"
+        //  this is because the artificial root will be rendered in a separate view
+        //  by the viewer
         continue;
       }
-
+      ANode* n_parent = n->parent();
       for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
           it1 != ivalset.end(); ++it1) {
         const VMAInterval& ival = *it1;

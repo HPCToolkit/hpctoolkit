@@ -119,6 +119,8 @@ const std::string Tree::UnknownProcNm = "<unknown procedure>";
 
 const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
 
+const std::string Tree::UnknownGlobalVariable = "<unknown variable>";
+
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
 

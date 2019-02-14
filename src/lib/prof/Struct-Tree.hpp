@@ -153,6 +153,8 @@ public:
   static const std::string UnknownLMNm;
   static const std::string UnknownFileNm;
   static const std::string UnknownProcNm;
+  static const std::string UnknownGlobalVariable;
+
   static const SrcFile::ln UnknownLine;
 
   static const std::string PartialUnwindProcNm;
