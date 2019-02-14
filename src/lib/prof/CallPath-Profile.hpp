@@ -391,6 +391,7 @@ private:
   LoadMap* m_loadmap;
 
   CCT::Tree* m_cct;
+  CCT::Tree* m_cct_annex; // additional root (like datacentric, resource-centric, ...etc)
 
   Prof::Struct::Tree* m_structure;
  

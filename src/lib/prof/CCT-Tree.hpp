@@ -423,7 +423,7 @@ public:
   {   m_hpcrun_type = type;  }
 
   uint16_t
-  hpcrun_node_type()
+  hpcrun_node_type() const
   { return m_hpcrun_type;   }
 
 
@@ -897,16 +897,6 @@ public:
   bool
   isValid_lip() const
   { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
-
-  // -------------------------------------------------------
-  // hpcrun node type
-  // -------------------------------------------------------
-
-  uint16_t
-  hpcrun_node_type() const
-  {
-    return m_hpcrun_type;
-  }
 
   // -------------------------------------------------------
   // 
