@@ -1249,6 +1249,7 @@ cupti_lm_contains_fn(const char *lm, const char *fn)
         return strcmp(lm_real, dli_fname) == 0;
       }
     }
+    dlclose(handle);
   }
   return false;
 }
