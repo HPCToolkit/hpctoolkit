@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <lib/support/dictionary.h>
+#include <lib/prof/NameMappings.hpp>
 
 
 //******************************************************************************
@@ -42,6 +43,10 @@ const char *DATACENTRIC_DYNAMIC = "<heap allocation>";
 const char *DATACENTRIC_STATIC  = "<static variable>";
 const char *DATACENTRIC_UNKNOWN = "<unknown variable>";
 
+const int NO_FAKE             = 0;
+const int FAKE_PROCEDURE      = 1;
+const int FAKE_ROOT           = 2;
+
 //******************************************************************************
 // types
 //******************************************************************************
@@ -55,6 +60,7 @@ public:
 
 
 typedef std::map<const char *, const char *, NameMapCompare> NameMappings_t;
+typedef std::map<const char *, int> ProcedureStatusMapping_t;
 
 
 typedef struct {
@@ -62,6 +68,11 @@ typedef struct {
   const char *out;
 } NameMapping;
 
+
+typedef struct {
+  const char *name;
+  const int  status;
+} ProcedureStatusMapping;
 
 //******************************************************************************
 // private data
@@ -103,13 +114,19 @@ static NameMapping renamingTable[] = {
   { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN }
 };
 
-static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>",
-  DATACENTRIC_ROOT, DATACENTRIC_DYNAMIC, DATACENTRIC_STATIC
+
+static ProcedureStatusMapping fakeProcedureTable[] = {
+    {PROGRAM_ROOT,            FAKE_PROCEDURE},
+    {THREAD_ROOT,             FAKE_PROCEDURE},
+    {GUARD_NAME,              FAKE_PROCEDURE},
+    {"<partial call paths>",  FAKE_PROCEDURE},
+    {DATACENTRIC_ROOT,        FAKE_ROOT}, // need to be consider both root and fake
+    {DATACENTRIC_DYNAMIC,     FAKE_PROCEDURE},
+    {DATACENTRIC_STATIC,      FAKE_PROCEDURE},
 };
 
 static NameMappings_t renamingMap;
-static NameMappings_t fakeProcedureMap;
+static ProcedureStatusMapping_t fakeProcedureMap;
 
 
 //******************************************************************************
@@ -127,14 +144,14 @@ normalize_name_load_renamings()
   for (unsigned int i = 0; i < sizeof(renamingTable) / sizeof(NameMapping); i++) {
     renamingMap[renamingTable[i].in] =  renamingTable[i].out;
   }
-  for (unsigned int i = 0; i < sizeof(fakeProcedures) / sizeof(const char*); i++) {
-    fakeProcedureMap[fakeProcedures[i]] = "f";
+  for (unsigned int i = 0; i < sizeof(fakeProcedureTable) / sizeof(const char*); i++) {
+    fakeProcedureMap[fakeProcedureTable[i].name] = fakeProcedureTable[i].status;
   }
 }
 
 
 static const char *
-normalize_name_rename(const char *in, bool &fake_procedure)
+normalize_name_rename(const char *in, int &fake_procedure)
 {
   // check if the name has to be changed or not
   const char *name_new = in;
@@ -145,8 +162,12 @@ normalize_name_rename(const char *in, bool &fake_procedure)
     name_new = it->second;
   }
   // here we want to mark fake procedures if they match with the list from fakeProcedureMap
-  it = fakeProcedureMap.find(name_new);
-  fake_procedure = (it != fakeProcedureMap.end());
+  fake_procedure = NO_FAKE;
+
+  ProcedureStatusMapping_t::iterator itf = fakeProcedureMap.find(name_new);
+  if (itf != fakeProcedureMap.end()) {
+    fake_procedure = itf->second;
+  }
 
   return name_new;
 }
@@ -158,7 +179,7 @@ normalize_name_rename(const char *in, bool &fake_procedure)
 //******************************************************************************
 
 const char *
-normalize_name(const char *in, bool &fake_procedure)
+normalize_name(const char *in, int &fake_procedure)
 {
   normalize_name_load_renamings();
   return normalize_name_rename(in, fake_procedure);

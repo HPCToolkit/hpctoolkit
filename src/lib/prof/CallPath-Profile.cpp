@@ -581,7 +581,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     uint id = strct->id();
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int fake_procedure = 0;
 
     if (type == 1) { // LoadModule
       nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
@@ -709,8 +709,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
+    if (fake_procedure > 0) {
+      os << " f" << MakeAttrNum(fake_procedure);
     } 
 
     os << "/>\n";
@@ -1566,11 +1566,10 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
-    if (node->hpcrun_node_type() > 20) {
-      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() ;
-    }
 #if DBG_DATA
-    //if (node->metricMgr().)
+    if (node->hpcrun_node_type() > 20) {
+      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() << "\n" ;
+    }
 #endif
   }
 
@@ -2060,6 +2059,14 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
   const Prof::CCT::ADynNode* n_dyn_p =
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+
+  n_fmt.node_type = n.hpcrun_node_type();
+#if DBG_DATA
+  if (n_fmt.node_type > 20) {
+    std::cerr << "Error: invalid-node-type: " << n_fmt.node_type <<", id: " << n_fmt.id << "\n";
+  }
+#endif
+
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
@@ -2076,7 +2083,6 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     
     n_fmt.lm_id = (uint16_t) n_dyn.lmId();
     n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
-    n_fmt.node_type = n_dyn_p->hpcrun_node_type();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

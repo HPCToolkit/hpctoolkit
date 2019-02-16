@@ -254,9 +254,9 @@ metric_initialize()
   // the end address metric is the maximum of all accessed memory
 
   metric_desc_t *metric_start = hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
-      MetricFlags_ValFmt_Address, 1, metric_property_none, false, false );
+      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
   metric_desc_t *metric_end   = hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
-      MetricFlags_ValFmt_Address, 1, metric_property_none, false, false );
+      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
   metric_start->formula = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(metric_start->formula, "min($%d)", addr_start_metric_id);
