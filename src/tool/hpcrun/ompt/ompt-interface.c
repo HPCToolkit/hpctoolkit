@@ -804,6 +804,7 @@ ompt_base_t*
 freelist_remove_first(ompt_base_t **head){
   if(*head){
     ompt_base_t* first = *head;
+    // note: this is not thread safe, because of that we introduce private_queue_remove_first
     *head = OMPT_BASE_T_GET_NEXT(first);
     return first;
   }
@@ -818,6 +819,18 @@ void freelist_add_first(ompt_base_t *new, ompt_base_t **head){
   *head = new;
 }
 
+// Remove the head of the private queue. This function is thread safe, see below.
+ompt_base_t*
+private_queue_remove_first(ompt_base_t **head){
+    if(*head){
+        ompt_base_t* first = *head;
+        // Spin wait until the next pointer of the current head is not set to valid value
+        // The valid next pointer is the new head of the private queue
+        *head = wfq_get_next(first);
+        return first;
+    }
+    return ompt_base_nil;
+}
 
 // vi3: wait free queue functions
 // prefix wfq
@@ -878,7 +891,12 @@ wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue){
     ompt_base_t* old_head = atomic_exchange(&public_queue->head, ompt_base_nil);
     *private_queue = old_head;
   }
-  return freelist_remove_first(private_queue);
+
+  // In private_queue_remove_first, thread will spinwait while
+  // the next pointer of the current head is invalid
+  // FIXME vi3: if it would be more elegant, we could spinwait in this function instead
+  // of private_queue_remove_first
+  return private_queue_remove_first(private_queue);
 }
 
 // vi3: Part for allocation
@@ -887,6 +905,8 @@ wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue){
 ompt_region_data_t*
 hpcrun_ompt_region_alloc(){
   // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
+  // FIXME vi3: I think that call to wfq_dequeue_private in this case should be thread safe
+  // but check this one more time
   ompt_region_data_t* first =
           (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
                                                     OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
@@ -904,6 +924,7 @@ hpcrun_ompt_region_free(ompt_region_data_t *region_data){
 // allocating and free notifications
 ompt_notification_t*
 hpcrun_ompt_notification_alloc(){
+  // only the current thread uses notification_freelist_head
   ompt_notification_t* first = (ompt_notification_t*) freelist_remove_first(
           OMPT_BASE_T_STAR_STAR(notification_freelist_head));
   return first ? first : (ompt_notification_t*)hpcrun_malloc(sizeof(ompt_notification_t));
@@ -919,6 +940,7 @@ hpcrun_ompt_notification_free(ompt_notification_t *notification){
 // allocate and free thread's region
 ompt_trl_el_t*
 hpcrun_ompt_trl_el_alloc(){
+  // only the thread that owns thread_region_freelist_head access to it
   ompt_trl_el_t* first = (ompt_trl_el_t*) freelist_remove_first(OMPT_BASE_T_STAR_STAR(thread_region_freelist_head));
   return first ? first : (ompt_trl_el_t*)hpcrun_malloc(sizeof(ompt_trl_el_t));
 }
