@@ -32,6 +32,8 @@ using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
+#define DEBUG_CFG_PARSE  0
+
 
 static bool
 test_nvdisasm() 
@@ -80,24 +82,35 @@ parseDotCFG
   // Step 1: parse all function symbols
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
-  // store functions that are not parsed by nvdisasm
+
+  if (DEBUG_CFG_PARSE) {
+    std::cout << "Debug symbols: " << std::endl;
+    for (auto *symbol : symbols) {
+      if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+        std::cout << "Function: " << symbol->getMangledName() << " offset: " <<
+          symbol->getOffset() << " size: " << symbol->getSize() << std::endl;
+      }
+    }
+  }
+
+  // Store functions that are not parsed by nvdisasm
   std::vector<Symbol *> unparsable_function_symbols;
-  // remove functions that share the same names
+  // Remove functions that share the same names
   std::map<std::string, CudaParse::Function *> function_map;
-  // test valid symbols
+  // Test valid symbols
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
       auto index = symbol->getIndex();
       const std::string cmd = "nvdisasm -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
       if (system(cmd.c_str()) == 0) {
-        // only parse valid symbols
+        // Only parse valid symbols
         CudaParse::GraphReader graph_reader(dot_filename);
         CudaParse::Graph graph;
         std::vector<CudaParse::Function *> funcs;
         graph_reader.read(graph);
         cfg_parser.parse(graph, funcs);
-        // local functions inside a global function cannot be independently parsed
+        // Local functions inside a global function cannot be independently parsed
         for (auto *func : funcs) {
           if (function_map.find(func->name) == function_map.end()) {
             function_map[func->name] = func;
@@ -114,10 +127,11 @@ parseDotCFG
     functions.push_back(iter.second);
   }
 
-  // Step 2: relocate functions
+  // Step 2: Relocate functions
   for (auto *symbol : symbols) {
     for (auto *function : functions) {
-      if (function->name == symbol->getMangledName()) {
+      if (function->name == symbol->getMangledName() &&
+        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
         auto begin_offset = function->blocks[0]->begin_offset;
         for (auto *block : function->blocks) {
           for (auto *inst : block->insts) {
@@ -125,14 +139,26 @@ parseDotCFG
           }
           block->address = block->insts[0]->offset;
         }
-        function->blocks[0]->address = symbol->getOffset();
+        // Allow gaps between a function begining and the first block?
+        //function->blocks[0]->address = symbol->getOffset();
         function->address = symbol->getOffset();
       }
     }
   }
 
+  if (DEBUG_CFG_PARSE) {
+    std::cout << "Debug functions before adding unparsable" << std::endl;
+    for (auto *function : functions) {
+      std::cout << "Function: " << function->name << std::endl;
+      for (auto *block : function->blocks) {
+        std::cout << "Block: " << block->name << " address: 0x" << std::hex << block->address << std::dec << std::endl;;
+      }
+      std::cout << std::endl;
+    }
+  }
+
   // Step 3: add unparsable functions
-  // rename function and block ids
+  // Rename function and block ids
   size_t max_block_id = 0;
   size_t max_function_id = 0;
   for (auto *function : functions) {
@@ -141,17 +167,18 @@ parseDotCFG
       block->id = max_block_id++;
     }
   }
-  // for functions that cannot be parsed
+
+  // For functions that cannot be parsed
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
     auto *function = new CudaParse::Function(max_function_id++, std::move(function_name));
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new CudaParse::Block(max_block_id++, std::move(block_name));
-    block->begin_offset = 0;
-    block->address = symbol->getOffset();
+    block->begin_offset = cuda_arch >= 70 ? 0 : 8;
+    block->address = symbol->getOffset() + block->begin_offset;
     int len = cuda_arch >= 70 ? 16 : 8;
-    // add dummy insts
+    // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
       block->insts.push_back(new CudaParse::Inst(i));
     }
@@ -159,15 +186,22 @@ parseDotCFG
     functions.push_back(function);
   }
 
-  // step4: add compensate blocks that only contains nop instructions
+  // Step4: add compensate blocks that only contains nop instructions
   for (auto *symbol : symbols) {
     for (auto *function : functions) {
-      if (function->name == symbol->getMangledName() && symbol->getSize() > 0) {
+      if (function->name == symbol->getMangledName() && symbol->getSize() > 0 &&
+        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
         int len = cuda_arch >= 70 ? 16 : 8;
         int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
         int symbol_size = symbol->getSize();
         if (function_size < symbol_size) {
+          if (DEBUG_CFG_PARSE) {
+            std::cout << function->name << " append nop instructions" << std::endl;
+            std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
+          }
           auto *block = new CudaParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
+          block->address = function_size + function->address;
+          block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
             block->insts.push_back(new CudaParse::Inst(function_size + function->address));
@@ -176,7 +210,7 @@ parseDotCFG
           if (function->blocks.size() > 0) {
             auto *last_block = function->blocks.back();
             last_block->targets.push_back(
-              new CudaParse::Target(last_block->insts.back(), block, CudaParse::TargetType::FALLTHROUGH));
+              new CudaParse::Target(last_block->insts.back(), block, CudaParse::TargetType::DIRECT));
           }
           function->blocks.push_back(block);
         }
@@ -184,8 +218,20 @@ parseDotCFG
     }
   }
 
-  // parse function calls
+  // Parse function calls
   cfg_parser.parse_calls(functions);
+
+  // Debug final functions and blocks
+  if (DEBUG_CFG_PARSE) {
+    std::cout << "Debug functions after adding unparsable" << std::endl;
+    for (auto *function : functions) {
+      std::cout << "Function: " << function->name << std::endl;
+      for (auto *block : function->blocks) {
+        std::cout << "Block: " << block->name << " address: 0x" << std::hex << block->address << std::dec << std::endl;;
+      }
+      std::cout << std::endl;
+    }
+  }
 }
 
 
