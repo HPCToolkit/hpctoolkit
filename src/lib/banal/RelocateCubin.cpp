@@ -496,7 +496,7 @@ relocateSymbolsHelper
         int symtype = GELF_ST_TYPE(sym.st_info);
         int symbind = GELF_ST_BIND(sym.st_info);
         // Global functions might be overlapped with local functions or weak functions
-        if (symtype != STT_FUNC || symtype != STB_GLOBAL) {
+        if (symtype != STT_FUNC || symbind != STB_GLOBAL) {
           continue;
         }
         int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
