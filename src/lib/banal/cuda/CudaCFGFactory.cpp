@@ -35,7 +35,6 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
           ret_block = new CudaBlock(obj, region, block->address, inst_offsets);
           _block_filter[block->id] = ret_block;
           blocks_.add(ret_block);
-          ret_func->add_block(ret_block);
         } else {
           if (DEBUG_CUDA_CFGFACTORY) {
             std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;

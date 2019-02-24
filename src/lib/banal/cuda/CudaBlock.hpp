@@ -14,12 +14,6 @@ class PARSER_EXPORT CudaBlock : public Block {
 
   virtual void getInsns(Insns &insns) const;
 
-  virtual void getFuncs(std::vector<Function *> & funcs) { return; }
-
-  virtual int containingFuncs() const {
-    return 1;
-  }
-
   virtual Address last() const;
 
  private:
