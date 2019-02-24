@@ -8,16 +8,22 @@ namespace ParseAPI {
 
 class PARSER_EXPORT CudaBlock : public Block {
  public:
-   CudaBlock(CodeObject * o, CodeRegion * r, Address start, std::vector<Offset> &offsets);
+  CudaBlock(CodeObject * o, CodeRegion * r, Address start, std::vector<Offset> &offsets);
 
-   virtual ~CudaBlock() {}
+  virtual ~CudaBlock() {}
 
-   virtual void getInsns(Insns &insns) const;
+  virtual void getInsns(Insns &insns) const;
 
-   virtual Address last() const;
+  virtual void getFuncs(std::vector<Function *> & funcs) { return; }
+
+  virtual int containingFuncs() const {
+    return 1;
+  }
+
+  virtual Address last() const;
 
  private:
-   std::vector<Offset> _inst_offsets;
+  std::vector<Offset> _inst_offsets;
 };
 
 }

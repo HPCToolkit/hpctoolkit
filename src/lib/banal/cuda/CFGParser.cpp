@@ -24,9 +24,7 @@ static void debug_blocks(const std::vector<Block *> &blocks) {
 
 TargetType CFGParser::get_target_type(const Inst *inst) {
   TargetType type;
-  if (inst->predicate.find("!@") != std::string::npos) {
-    type = TargetType::COND_NOT_TAKEN;
-  } else if (inst->predicate.find("@") != std::string::npos) {
+  if (inst->predicate.find("@") != std::string::npos) {
     type = TargetType::COND_TAKEN;
   } else if (inst->is_call) {
     type = TargetType::CALL;
@@ -42,7 +40,7 @@ TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
   if (inst->is_call) {
     type = TargetType::CALL_FT;
   } else {
-    type = TargetType::FALLTHROUGH;
+    type = TargetType::DIRECT;
   }
   return type;
 }
@@ -113,13 +111,13 @@ void CFGParser::link_dangling_blocks(
             // block->dangling_block
             find = true;
             block->targets.push_back(
-              new Target(block->insts.back(), dangling_block, TargetType::FALLTHROUGH));
+              new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
           } else if (dangling_block->insts.back()->offset == prev_offset1 ||
             dangling_block->insts.back()->offset == prev_offset2) {
             // dangling_block->block
             find = true;
             dangling_block->targets.push_back(
-              new Target(dangling_block->insts.back(), block, TargetType::FALLTHROUGH));
+              new Target(dangling_block->insts.back(), block, TargetType::DIRECT));
           }
         }
         if (find) {

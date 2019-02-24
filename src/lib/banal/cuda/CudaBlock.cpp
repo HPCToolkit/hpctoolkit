@@ -1,8 +1,6 @@
 #include "CudaBlock.hpp"
 #include <Instruction.h>
 
-#define DYNINST_INSTRUCTION_PTR 0
-
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -27,8 +25,7 @@ void CudaBlock::getInsns(Insns &insns) const {
       InstructionAPI::InstructionPtr>(offset, NULL));
 #else
     InstructionAPI::Instruction inst;    
-    insns.insert(std::pair<long unsigned int, 
-      InstructionAPI::Instruction>(offset, std::move(inst)));
+    insns[offset] = inst;
 #endif
   }
 }
