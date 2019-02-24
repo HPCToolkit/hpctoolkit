@@ -494,12 +494,14 @@ relocateSymbolsHelper
       GElf_Sym *symp = gelf_getsym(datap, i, &sym);
       if (symp) { // symbol properly read
         int symtype = GELF_ST_TYPE(sym.st_info);
-        if (symtype != STT_FUNC) {
+        int symbind = GELF_ST_BIND(sym.st_info);
+        // Global functions might be overlapped with local functions or weak functions
+        if (symtype != STT_FUNC || symtype != STB_GLOBAL) {
           continue;
         }
         int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
         if (s_offset != 0) {
-          // sort functions that are in the same section
+          // Sort functions in the same section
           std::vector<int64_t> offsets;
           for (int j = 0; j < nsymbols; ++j) {
             GElf_Sym nsym;
