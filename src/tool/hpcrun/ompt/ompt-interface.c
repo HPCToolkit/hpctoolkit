@@ -104,7 +104,7 @@
  * macros
  *****************************************************************************/
 
-#define OMPT_ACTIVITY_DEBUG 1
+#define OMPT_ACTIVITY_DEBUG 0
 
 #if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
