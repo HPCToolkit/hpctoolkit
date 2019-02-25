@@ -117,7 +117,9 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id)
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
   metric_set_t* rv = hpcrun_get_metric_set(cct_id);
   TMSG(CCT2METRICS, " -- Metric set found = %p", rv);
+
   if (rv) return rv;
+
   TMSG(CCT2METRICS, " -- Metric set was null, allocating new metric set");
   cct2metrics_assoc(cct_id, rv = hpcrun_metric_set_new());
   TMSG(CCT2METRICS, "REIFY returns %p", rv);
@@ -126,24 +128,41 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id)
 
 //
 // get metric set for a node (NULL return value means no metrics associated).
+// this function requires map between cct and metrics. If the map is null
+//  it uses the default local map.
+//
+metric_set_t*
+hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id)
+{
+  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, map);
+  if (! current_map) return NULL;
+
+  current_map = splay(current_map, cct_id);
+
+  if (map)
+    *map = current_map;
+  else
+    THREAD_LOCAL_MAP() = current_map;
+
+  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
+
+  if (current_map->node == cct_id) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
+    return current_map->metrics;
+  }
+  TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
+  return NULL;
+}
+
+//
+// get metric set for a node (NULL return value means no metrics associated).
 //
 metric_set_t*
 hpcrun_get_metric_set(cct_node_id_t cct_id)
 {
-  cct2metrics_t* map = THREAD_LOCAL_MAP();
-  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, map);
-  if (! map) return NULL;
-
-  map = splay(map, cct_id);
-  THREAD_LOCAL_MAP() = map;
-  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
-
-  if (map->node == cct_id) {
-    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
-    return map->metrics;
-  }
-  TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
-  return NULL;
+  return hpcrun_get_metric_set_specific(NULL, cct_id);
 }
 
 //

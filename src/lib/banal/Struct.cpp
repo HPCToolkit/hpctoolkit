@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -140,6 +140,8 @@ using namespace std;
 
 #define WORK_LIST_PCT  0.05
 
+static int merge_irred_loops = 1;
+
 
 //******************************************************************************
 // variables
@@ -216,6 +218,9 @@ findLoopHeader(WorkEnv & env, FileInfo *, GroupInfo *, ParseAPI::Function *,
 
 static TreeNode *
 deleteInlinePrefix(WorkEnv &, TreeNode *, Inline::InlineSeqn);
+
+static void
+mergeIrredLoops(WorkEnv &, LoopInfo *);
 
 static void
 computeGaps(VMAIntervalSet &, VMAIntervalSet &, VMA, VMA);
@@ -457,6 +462,13 @@ static bool
 LoopTreeLessThan(LoopTreeNode * n1, LoopTreeNode * n2)
 {
   return LoopMinEntryAddr(n1->loop) < LoopMinEntryAddr(n2->loop);
+}
+
+// Sort LoopInfo objects by min entry VMAs.
+static bool
+LoopInfoLessThan(LoopInfo * l1, LoopInfo * l2)
+{
+  return l1->entry_vma < l2->entry_vma;
 }
 
 //----------------------------------------------------------------------
@@ -1032,6 +1044,48 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 #endif
 }
 
+//----------------------------------------------------------------------
+
+// getFuncNames -- helper for makeSkeleton() to select the pretty and
+// link (mangled) names for a SymtabAPI::Function.
+//
+// Some functions have multiple symbols with different names for the
+// same addres (global and weak syms).  We sort the symbol names to
+// make the choice deterministic.  We could prefer a global symbol,
+// but global is not always unique.
+//
+// Note: prettynm and linknm are passed in with default (unknown proc)
+// values, so don't overwrite them unless there is at least one valid
+// name.
+//
+static void
+getFuncNames(SymtabAPI::Function * sym_func, string & prettynm,
+	     string & linknm, bool ourDemangle)
+{
+  auto pretty_begin = sym_func->pretty_names_begin();
+  auto pretty_end =   sym_func->pretty_names_end();
+  auto mangled_end =  sym_func->mangled_names_end();
+
+  auto pretty_it =    pretty_begin;
+  auto mangled_it =   sym_func->mangled_names_begin();
+
+  while (pretty_it != pretty_end && mangled_it != mangled_end) {
+    string new_mangled = *mangled_it;
+    string new_pretty =
+      (ourDemangle) ? BinUtil::demangleProcName(new_mangled) : *pretty_it;
+
+    if (pretty_it == pretty_begin || new_pretty.compare(prettynm) < 0) {
+      prettynm = new_pretty;
+      linknm = new_mangled;
+    }
+
+    ++pretty_it;
+    ++mangled_it;
+  }
+}
+
+//----------------------------------------------------------------------
+
 // makeSkeleton -- the new buildLMSkeleton
 //
 // In the ParseAPI version, we iterate over the ParseAPI list of
@@ -1133,19 +1187,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	//
 	DEBUG_SKEL("(case 1)\n");
 
-	auto mangled_it = sym_func->mangled_names_begin();
-	auto pretty_it = sym_func->pretty_names_begin();
-
-	if (mangled_it != sym_func->mangled_names_end()) {
-	  linknm = *mangled_it;
-
-	  if (opts.ourDemangle) {
-	    prettynm = BinUtil::demangleProcName(linknm);
-	  }
-	  else if (pretty_it != sym_func->pretty_names_end()) {
-	    prettynm = *pretty_it;
-	  }
-	}
+	getFuncNames(sym_func, prettynm, linknm, opts.ourDemangle);
 	if (is_shared) {
 	  prettynm += " (" + basename + ")";
 	}
@@ -1599,6 +1641,10 @@ doLoopTree(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   // reparent the tree and put into LoopInfo format
   LoopInfo * myInfo =
     findLoopHeader(env, finfo, ginfo, func, myLoop, loop, loopName);
+
+  if (merge_irred_loops) {
+    mergeIrredLoops(env, myInfo);
+  }
 
   myList->clear();
   myList->push_back(myInfo);
@@ -2134,7 +2180,8 @@ found_file:
   }
 
   LoopInfo *info = new LoopInfo(root, path, loopName, entry_vma,
-				file_ans, base_ans, line_ans);
+				file_ans, base_ans, line_ans,
+				entryBlocks.size() > 1);
 
 #if DEBUG_CFG_SOURCE
   cout << "\nreparented inline tree:  " << loopName
@@ -2207,6 +2254,84 @@ deleteInlinePrefix(WorkEnv & env, TreeNode * root, Inline::InlineSeqn prefix)
   loops.clear();
 
   return root;
+}
+
+//----------------------------------------------------------------------
+
+// Merge irreducible loops.  If L1 is an irreducible loop and L2 is an
+// irreducible subloop and L1 and L2 have the same file and line
+// attribution, then it's likely there is really only one loop in the
+// source code, so merge L2 into L1.
+//
+// This only applies to irreducible loops.  Natural (reducible) loops
+// are assumed to be correct.
+//
+static void
+mergeIrredLoops(WorkEnv & env, LoopInfo * L1)
+{
+  // if L1 is reducible, then do nothing
+  if (L1 == NULL || ! L1->irred) {
+    return;
+  }
+
+  TreeNode * node1 = L1->node;
+  LoopList & list1 = node1->loopList;
+
+  // if there are no irreducible subloops, then do nothing
+  bool has_irred = false;
+  for (auto it = list1.begin(); it != list1.end(); ++it) {
+    LoopInfo * L2 = *it;
+    if (L2->irred) { has_irred = true; break; }
+  }
+  if (! has_irred) {
+    return;
+  }
+
+  DEBUG_CFG("\n");
+
+  // iterate through L1's subloops and merge L2 into L1 when they
+  // match.  merging requires moving L2's subloops onto L1's list, the
+  // very list we are iterating through.  to maintain correctness, put
+  // the loops on a new list and copy them back.
+
+  vector <LoopInfo *> newList;
+
+  for (auto it1 = list1.begin(); it1 != list1.end(); ++it1) {
+    LoopInfo * L2 = *it1;
+    TreeNode * node2 = L2->node;
+    LoopList & list2 = node2->loopList;
+
+    if (L2->irred && L1->base_index == L2->base_index && L1->line_num == L2->line_num)
+    {
+      // merge L2 into L1 and put L2's subloops on the new list
+      DEBUG_CFG("merge: " << L2->name << " into " << L1->name << "\n");
+
+      for (auto it2 = list2.begin(); it2 != list2.end(); ++it2) {
+	newList.push_back(*it2);
+      }
+      list2.clear();
+      mergeInlineTree(node1, node2);
+      delete L2;
+    }
+    else {
+      // do not merge, keep entire L2 intact on new list
+      newList.push_back(L2);
+    }
+  }
+
+  std::sort(newList.begin(), newList.end(), LoopInfoLessThan);
+
+  // copy new list back to L1
+  list1.clear();
+  for (auto nit = newList.begin(); nit != newList.end(); ++nit) {
+    list1.push_back(*nit);
+  }
+  newList.clear();
+
+#if DEBUG_CFG_SOURCE
+  cout << "\n";
+  debugInlineTree(node1, L1, *(env.strTab), 0, false);
+#endif
 }
 
 //----------------------------------------------------------------------
@@ -2510,6 +2635,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
       cout << INDENT;
     }
     cout << "loop:  " << info->name
+	 << (info->irred ? "  (irred)" : "")
 	 << "  l=" << info->line_num
 	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
     depth++;
@@ -2551,6 +2677,7 @@ debugInlineTree(TreeNode * node, LoopInfo * info, HPC::StringTable & strTab,
     }
 
     cout << "loop:  " << info->name
+	 << (info->irred ? "  (irred)" : "")
 	 << "  l=" << info->line_num
 	 << "  f='" << strTab.index2str(info->file_index) << "'\n";
 

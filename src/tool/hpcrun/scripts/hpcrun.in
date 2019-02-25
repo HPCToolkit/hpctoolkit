@@ -1,65 +1,17 @@
 #!/bin/sh
 # set -x
 #
-#------------------------------------
-# Part of HPCToolkit (hpctoolkit.org)
-#------------------------------------
-#
-# Copyright (c) 2002-2018, Rice University.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-#
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of Rice University (RICE) nor the names of its
-#   contributors may be used to endorse or promote products derived from
-#   this software without specific prior written permission.
-#
-# This software is provided by RICE and contributors "as is" and any
-# express or implied warranties, including, but not limited to, the
-# implied warranties of merchantability and fitness for a particular
-# purpose are disclaimed. In no event shall RICE or contributors be
-# liable for any direct, indirect, incidental, special, exemplary, or
-# consequential damages (including, but not limited to, procurement of
-# substitute goods or services; loss of use, data, or profits; or
-# business interruption) however caused and on any theory of liability,
-# whether in contract, strict liability, or tort (including negligence
-# or otherwise) arising in any way out of the use of this software, even
-# if advised of the possibility of such damage.
-#
-# $HeadURL$
-# $Id$
+@copyright_hash@
 #
 # hpcrun -- set the environ variables for profiling with HPCToolkit
 # and launch the program.  See 'hpcrun -h' for a list of options.
-
-#------------------------------------------------------------ 
-# The darshan I/O characterization library
-# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
-# applications by default on several DOE supercomputers. Darshan
-# intercepts file operations performed within signal handlers while
-# profiling, which can cause deadlock.  The setting below prevents
-# disables darshan at runtime, avoiding most of the problems.
-# ------------------------------------------------------------
-export DARSHAN_DISABLE=1
+#
 
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
 
-# If this script can't find its own install prefix, or if the script
-# is moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT='@prefix@'
-
-VERSION='@PACKAGE_VERSION@'
+@launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
@@ -68,6 +20,8 @@ libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
+
+prog_name=hpcrun
 
 #------------------------------------------------------------
 # Find path to this script
@@ -188,6 +142,13 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processes.  For each process, enable measurement
                        (of all threads) with probability <frac>; <frac> is a
                        real number (0.10) or a fraction (1/10) between 0 and 1.
+  
+  -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
+                       This option is to reduce the number of generated
+                       profile and trace files as each thread generates its own
+                       profile and trace data. The options are:
+                       0 : do not merge non-overlapped threads
+                       1 : merge non-overlapped threads (default) 
 
   -o <outpath>, --output <outpath>
                        Directory for output data.
@@ -217,6 +178,8 @@ EOF
 #------------------------------------------------------------
 # Command Line Options
 #------------------------------------------------------------
+
+@launch_early_options@
 
 # Return success (0) if $1 is not empty and not the next option.
 arg_ok()
@@ -256,11 +219,6 @@ do
 
 	-h | -help | --help )
 	    usage
-	    ;;
-
-	-V | --version )
-	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
-	    exit 0
 	    ;;
 
 	# --------------------------------------------------
@@ -326,6 +284,14 @@ do
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
+  # --------------------------------------------------
+
+  -m | --merge-threads )
+      arg_ok "$1" || die "missing argument for $arg"
+      export HPCRUN_MERGE_THREADS="$1"
+      shift
+      ;;
+      
 	# --------------------------------------------------
 
 	-lm | --low-memsize )
@@ -452,6 +418,10 @@ fi
 #------------------------------------------------------------
 # Final Environ Settings and Exec the Binary
 #------------------------------------------------------------
+
+# Disable the darshan I/O library.  This intercepts some I/O functions
+# inside signal handlers and can cause deadlock.
+export DARSHAN_DISABLE=1
 
 # Add OMP_SKIP_MSB to HPCRUN_DEBUG_FLAGS if the binary contains
 # _mp_init.

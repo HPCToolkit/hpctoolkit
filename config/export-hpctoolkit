@@ -1,42 +1,98 @@
 #
-# Set and export HPCTOOLKIT to the root dir of the install (prefix).
-# If HPCTOOLKIT already names a valid directory, then use that, else
-# try to find the root directory from $0.
+# Find the root of the install directory (prefix) and set HPCTOOLKIT.
 #
 hpc_path_to_root="${hpc_path_to_root:-..}"
-valid_hpctoolkit_dir()
+hash_file='hash-file'
+
+# Test for valid hash value.
+case "$hash_value" in
+    ????* ) ;;
+    * ) hash_value=no ;;
+esac
+
+if test "x$prog_name" = x ; then
+    prog_name="$0"
+fi
+
+# $1 = candidate directory
+# $2 = hash value from configure
+valid_hpctoolkit_hash()
 {
-    test -d "$1" && test -d "$1/lib/hpctoolkit"
+    hfile="$1/lib/hpctoolkit/${hash_file}"
+    config_hash="$2"
+    ret=1
+
+    if test -f "$hfile" ; then
+	inst_hash=`cat "$hfile"`
+	test "x$config_hash" = "x$inst_hash"
+	ret=$?
+    fi
+    return $ret
 }
 
-# Warn if HPCTOOLKIT is set improperly, set to abs path if ok.
-if test "x$HPCTOOLKIT" != x ; then
-    if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then
-	HPCTOOLKIT=`( cd "$HPCTOOLKIT" 2>/dev/null && pwd )`
-    else
-	echo "Warning: invalid HPCTOOLKIT directory: $HPCTOOLKIT" 1>&2
+valid_hpctoolkit_dir()
+{
+    test -d "$1/lib/hpctoolkit"
+}
+
+# 1 -- install prefix + hash.  If the install prefix is the same, then
+# the script can be anywhere.
+found_dir=no
+
+if test "$hash_value" != no ; then
+    if valid_hpctoolkit_hash "$prefix" "$hash_value" ; then
+	HPCTOOLKIT="$prefix"
+	found_dir=yes
     fi
 fi
 
-# Try dirname of $0, dereference symlink if needed.
-if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then :
-else
-    if test -L "$0" ; then
-	hpc_file=`readlink "$0"`
-    else
-	hpc_file="$0"
+# 2 -- script $0 + hash.  If the launch script is in the bin subdir
+# (or libexec), then the install directory can be anywhere.  We expect
+# the first two cases to cover almost all valid cases.
+
+if test "$found_dir" = no && test "$hash_value" != no ; then
+    script="$0"
+    if test -L "$script" ; then
+	script=`realpath "$script"`
     fi
-    hpc_dir=`dirname "$hpc_file"`
-    HPCTOOLKIT=`( cd "${hpc_dir}/${hpc_path_to_root}" 2>/dev/null && pwd )`
+    dir=`dirname "$script"`
+    dir=`( cd "${dir}/${hpc_path_to_root}" 2>/dev/null && /bin/pwd )`
+
+    if valid_hpctoolkit_hash "$dir" "$hash_value" ; then
+	HPCTOOLKIT="$dir"
+	found_dir=yes
+    fi
 fi
 
-if valid_hpctoolkit_dir "$HPCTOOLKIT" ; then :
-else
+# 3 -- HPCTOOLKIT + hash.  If you've moved both the script and the
+# install directory, then you can set HPCTOOLKIT.
+
+if test "$found_dir" = no && test "$hash_value" != no ; then
+    if valid_hpctoolkit_hash "$HPCTOOLKIT" "$hash_value" ; then
+	found_dir=yes
+    fi
+fi
+
+# 4 -- If can't match the hash value, then try prefix or HPCTOOLKIT.
+# If you've moved the script and rerun configure, then configure will
+# install a new hash which the script won't have.
+
+if test "$found_dir" = no ; then
+    if valid_hpctoolkit_dir "$prefix" ; then
+	HPCTOOLKIT="$prefix"
+	found_dir=yes
+    elif valid_hpctoolkit_dir "$HPCTOOLKIT" ; then
+	found_dir=yes
+    fi
+fi
+
+# Unable to find install prefix.
+
+if test "$found_dir" = no ; then
     cat <<EOF >&2
-
-$0: Unable to find HPCTOOLKIT root directory.
-Please set HPCTOOLKIT to the install prefix, either in this script,
-or in your environment, and try again.
+$prog_name: Unable to find the hpctoolkit install directory.
+Set prefix in this script or else HPCTOOLKIT in the environment
+and try again.
 EOF
     exit 1
 fi

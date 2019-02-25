@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,16 @@
 #ifndef _threadmgr_h_
 #define _threadmgr_h_
 
+#include "thread_data.h"
+
+
+//******************************************************************************
+// constants
+//******************************************************************************
+
+#define OPTION_NO_COMPACT_THREAD  0
+#define OPTION_COMPACT_THREAD     1
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -64,5 +74,17 @@ void hpcrun_threadmgr_thread_new();
 void hpcrun_threadmgr_thread_delete();
 
 int hpcrun_threadmgr_thread_count();
+
+bool
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data);
+
+void
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data );
+
+void
+hpcrun_threadMgr_data_fini(thread_data_t *td);
+
+int
+hpcrun_threadMgr_compact_thread();
 
 #endif
