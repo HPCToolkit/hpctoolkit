@@ -129,7 +129,7 @@ namespace std {
 namespace TraceAnalysis {
   // Forward declarations
   class TCTANode;
-  class TCTATraceNode;
+  class TCTACFGNode;
   class TCTFunctionTraceNode;
   class TCTIterationTraceNode;
   class TCTLoopNode;
@@ -281,6 +281,11 @@ namespace TraceAnalysis {
       return plm;
     }
     
+    virtual void finishInit() {
+      setRetCount(1);
+      plm.initDurationMetric(this, weight);
+    }
+    
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
     virtual TCTANode* duplicate() const = 0;
@@ -332,6 +337,14 @@ namespace TraceAnalysis {
     
   public:
     class Edge {
+      friend class boost::serialization::access;
+      
+    private:
+      template<class Archive>
+      void serialize(Archive & ar, const unsigned int version);
+      // Constructor for serialization only.
+      Edge() {}
+      
     public:
       Edge(TCTANode* src, TCTANode* dst, long weight) : src(src), dst(dst), weight(weight) {}
       virtual ~Edge() {}
@@ -359,6 +372,8 @@ namespace TraceAnalysis {
       void setDst(TCTANode* dst) {
         this->dst = dst;
       }
+      
+      string toString() const;
       
     private:
       TCTANode* src;
@@ -388,6 +403,10 @@ namespace TraceAnalysis {
     virtual ~TCTACFGNode() {
       for (auto it = children.begin(); it != children.end(); it++)
         delete (*it);
+      for (auto it = outEdges.begin(); it != outEdges.end(); it++) {
+        for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
+          delete (*eit);
+      }
     }
     
     virtual int getNumChild() const {
@@ -406,7 +425,19 @@ namespace TraceAnalysis {
       children.push_back(child);
     }
     
+    virtual TCTANode* removeChild(int idx) {
+      TCTANode* ret = getChild(idx);
+      children.erase(children.begin() + idx);
+      return ret;
+    }
+    
+    virtual const unordered_set<TCTACFGNode::Edge*>& getEntryEdges() const;
+    
     virtual const unordered_set<TCTACFGNode::Edge*>& getOutEdges(int idx) const {
+      if (outEdges.find(children[idx]->id) == outEdges.end()) {
+        print_msg(MSG_PRIO_MAX, "ERROR: no set located.");
+        return unordered_set<TCTACFGNode::Edge*>();
+      }
       return outEdges.at(children[idx]->id);
     }
     
@@ -416,83 +447,6 @@ namespace TraceAnalysis {
     
     virtual void getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const;
     
-  protected:
-    vector<TCTANode*> children;
-    //          Source ID
-    unordered_map<TCTID, unordered_set<Edge*>> outEdges;
-  };
-  
-  // Temporal Context Tree Abstract Trace Node
-  class TCTATraceNode : public TCTANode {
-    friend class boost::serialization::access;
-  private:
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-  protected:
-    // Constructor for serialization only.
-    TCTATraceNode(NodeType type) : TCTANode(type) {}
- 
-  public:
-    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
-      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
-    TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
-      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
-        children.push_back((*it)->duplicate());
-    }
-    virtual ~TCTATraceNode() {
-      for (auto it = children.begin(); it != children.end(); it++)
-        delete (*it);
-    }
-     
-    virtual int getNumChild() const {
-      return children.size();
-    }
-    
-    virtual TCTANode* getChild(int idx) {
-      return children[idx];
-    }
-    
-    virtual const TCTANode* getChild(int idx) const {
-      return children[idx];
-    }
-    
-    virtual void addChild(TCTANode* child) {
-      children.push_back(child);
-    }
-    
-    // Replace a child. The old child will be deallocated.
-    virtual void replaceChild(int idx, TCTANode* child) {
-      delete children[idx];
-      children[idx] = child;
-    }
-    
-    virtual TCTANode* removeChild(int idx) {
-      TCTANode* ret = getChild(idx);
-      children.erase(children.begin() + idx);
-      return ret;
-    }
-    
-    virtual void clearChildren() {
-      for (auto it = children.begin(); it != children.end(); it++)
-        delete (*it);
-      children.clear();
-    }
-    
-    // Return the end time of child #(idx-1). 
-    // When idx = 0, return the start time of the node itself.
-    virtual void getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const;
-    
-    // Return the start time of child #(idx). 
-    // When idx = getNumChild(), return the end time of the node itself.
-    virtual void getCurrChildStartTime(int idx, Time& exclusive, Time& inclusive) const;
-    
-    // Return the gap between child #(idx-1) and #(idx).
-    // When idx = 0, return the gap before child #0.
-    // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
-    virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
-    
-    virtual Time getExclusiveDuration() const;
-   
     virtual void shiftTime(Time offset) {
       TCTANode::shiftTime(offset);
       for (int i = 0; i < getNumChild(); i++)
@@ -521,10 +475,14 @@ namespace TraceAnalysis {
         getChild(i)->initPerfLossMetric();
     }
     
+    virtual void finishInit();
+    
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
     vector<TCTANode*> children;
+    //          Source ID
+    unordered_map<TCTID, unordered_set<Edge*>> outEdges;
     
     virtual void accumulateSemanticDurations(Time* durations) {
       for (int i = 0; i < getNumChild(); i++)
@@ -532,19 +490,65 @@ namespace TraceAnalysis {
     }
   };
   
+  /*
+  // Temporal Context Tree Abstract Trace Node
+  class TCTATraceNode : public TCTACFGNode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+  protected:
+    // Constructor for serialization only.
+    TCTATraceNode(NodeType type) : TCTANode(type) {}
+ 
+  public:
+    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
+    TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
+      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
+        children.push_back((*it)->duplicate());
+    }
+    virtual ~TCTATraceNode() {
+      for (auto it = children.begin(); it != children.end(); it++)
+        delete (*it);
+    }
+
+    
+    // Return the end time of child #(idx-1). 
+    // When idx = 0, return the start time of the node itself.
+    virtual void getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const;
+    
+    // Return the start time of child #(idx). 
+    // When idx = getNumChild(), return the end time of the node itself.
+    virtual void getCurrChildStartTime(int idx, Time& exclusive, Time& inclusive) const;
+    
+    // Return the gap between child #(idx-1) and #(idx).
+    // When idx = 0, return the gap before child #0.
+    // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
+    virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
+   
+
+    
+    
+    
+  protected:
+    vector<TCTANode*> children;
+
+  };*/
+  
   // Temporal Context Tree Function Trace Node
-  class TCTFunctionTraceNode : public TCTATraceNode {
+  class TCTFunctionTraceNode : public TCTACFGNode {
     friend class boost::serialization::access;
   private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTFunctionTraceNode() : TCTATraceNode(Func) {}
+    TCTFunctionTraceNode() : TCTACFGNode(Func) {}
     
   public:
     TCTFunctionTraceNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
-      TCTATraceNode(Func, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
-    TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTATraceNode(orig) {}
+      TCTACFGNode(Func, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
+    TCTFunctionTraceNode(const TCTFunctionTraceNode& orig) : TCTACFGNode(orig) {}
     virtual ~TCTFunctionTraceNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -555,19 +559,22 @@ namespace TraceAnalysis {
     }
   };
   
+  extern TCTFunctionTraceNode dummyBeginNode;
+  extern TCTFunctionTraceNode dummyEndNode;
+  
   // Temporal Context Tree Root Node
-  class TCTRootNode : public TCTATraceNode {
+  class TCTRootNode : public TCTACFGNode {
     friend class boost::serialization::access;
   private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTRootNode() : TCTATraceNode(Root) {}
+    TCTRootNode() : TCTACFGNode(Root) {}
     
   public:
     TCTRootNode(int id, int procID, string name, int depth) : 
-            TCTATraceNode(Root, id, procID, name, depth, NULL, 0, SEMANTIC_LABEL_COMPUTATION) {}
-    TCTRootNode(const TCTRootNode& orig) : TCTATraceNode(orig) {}
+            TCTACFGNode(Root, id, procID, name, depth, NULL, 0, SEMANTIC_LABEL_COMPUTATION) {}
+    TCTRootNode(const TCTRootNode& orig) : TCTACFGNode(orig) {}
     virtual ~TCTRootNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -579,20 +586,20 @@ namespace TraceAnalysis {
   };
   
   // Temporal Context Tree Iteration Trace Node
-  class TCTIterationTraceNode : public TCTATraceNode {
+  class TCTIterationTraceNode : public TCTACFGNode {
     friend class boost::serialization::access;
   private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTIterationTraceNode() : TCTATraceNode(Iter) {}
+    TCTIterationTraceNode() : TCTACFGNode(Iter) {}
     
   public:
     TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
-      TCTATraceNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
+      TCTACFGNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
     TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
-      TCTATraceNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
-    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTATraceNode(orig) {}
+      TCTACFGNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
+    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTACFGNode(orig) {}
     virtual ~TCTIterationTraceNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -843,7 +850,7 @@ namespace TraceAnalysis {
         else 
           return new TCTProfileNode(*((TCTLoopNode*)node));
       }
-      return new TCTProfileNode(*((TCTATraceNode*)node));
+      return new TCTProfileNode(*((TCTACFGNode*)node));
     }
     
     virtual ~TCTProfileNode() {
@@ -900,7 +907,7 @@ namespace TraceAnalysis {
     // Map id to child profile node.
     map<TCTID, TCTProfileNode*> childMap;
     
-    TCTProfileNode(const TCTATraceNode& trace);
+    TCTProfileNode(const TCTACFGNode& node);
     TCTProfileNode(const TCTLoopNode& loop);
     TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap);
     

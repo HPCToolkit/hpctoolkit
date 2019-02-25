@@ -110,7 +110,7 @@ namespace TraceAnalysis {
         return mergeLoopNode((TCTLoopNode*)node1, weight1, (TCTLoopNode*)node2, weight2, ifAccumulate, isScoreOnly);
       }
       else 
-        return mergeTraceNode((TCTATraceNode*)node1, weight1, (TCTATraceNode*)node2, weight2, ifAccumulate, isScoreOnly);
+        return mergeACFGNode((TCTACFGNode*)node1, weight1, (TCTACFGNode*)node2, weight2, ifAccumulate, isScoreOnly);
     }
   }
 
@@ -279,10 +279,10 @@ namespace TraceAnalysis {
       
       for (auto mit = pendingEdges.begin(); mit != pendingEdges.end(); mit++) {
         const TCTANode* dst = mit->second.begin()->second->getDst();
-        if (cfg->compareChild(midNode->ra, dst->ra) == -1) { // if there is a control flow from mid -> dst.
+        if (dst->id == dummyEndNode.id || cfg->compareChild(midNode->ra, dst->ra) == -1) { // if there is a control flow from mid -> dst.
           for (auto it = mit->second.begin(); it != mit->second.end();) {
             const TCTANode* src = it->second->getSrc(); 
-            if (cfg->compareChild(midNode->ra, src->ra) == 1) { // if there is a control flow from src -> mid
+            if (src->id == dummyBeginNode.id || cfg->compareChild(midNode->ra, src->ra) == 1) { // if there is a control flow from src -> mid
               // Split the edge into two
               // The first edge is src->mid
               TCTACFGNode::Edge* edge1 = it->second->duplicate();
@@ -325,7 +325,7 @@ namespace TraceAnalysis {
       return completedEdges;
     }
   };
-  
+  //TODO: edges to entry call sites, edges leaving exit call sites.
   TCTANode* DifferenceQuantifier::mergeACFGNode(const TCTACFGNode* node1, long weight1, const TCTACFGNode* node2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTACFGNode* mergedCFG = (TCTACFGNode*) node1->voidDuplicate();
@@ -356,6 +356,16 @@ namespace TraceAnalysis {
     int k1 = 0, k2 = 0;
     
     EdgeManager em;
+    if (!isScoreOnly) {
+      // Process entry edges for node1 and node2
+      if (node1->getNumChild() > 0)
+        for (auto it = node1->getEntryEdges().begin(); it != node1->getEntryEdges().end(); it++)
+          em.insertPendingEdge((*it)->duplicate(), &dummyBeginNode);
+      
+      if (node2->getNumChild() > 0)
+        for (auto it = node2->getEntryEdges().begin(); it != node2->getEntryEdges().end(); it++)
+          em.insertPendingEdge((*it)->duplicate(), &dummyBeginNode);
+    }
     
     while (k1 < node1->getNumChild() || k2 < node2->getNumChild()) {
       // When children of trace1 and trace2 match
@@ -387,11 +397,11 @@ namespace TraceAnalysis {
         if (k1 == node1->getNumChild()) compare = 1;
         if (k2 == node2->getNumChild()) compare = -1;
         
-        if (compare == 0  
-            && (node1->cfgGraph == NULL // When cfgGraph is NULL
-               || !node1->cfgGraph->hasChild(node1->getChild(k1)->ra) // or RA of node1[k1] is not found in cfgGraph
-               || !node1->cfgGraph->hasChild(node2->getChild(k2)->ra) // or RA of node2[k2] is not found in cfgGraph
-               )) { // Return a nonCFG node.
+        if (node1->cfgGraph == NULL // When cfgGraph is NULL 
+            || (compare == 0  
+               && ( !node1->cfgGraph->hasChild(node1->getChild(k1)->ra) // RA of node1[k1] is not found in cfgGraph
+                    || !node1->cfgGraph->hasChild(node2->getChild(k2)->ra) // or RA of node2[k2] is not found in cfgGraph
+               ))) { // Return a nonCFG node.
           delete mergedCFG;
           TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(node1);
           TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(node2);
@@ -467,6 +477,7 @@ namespace TraceAnalysis {
     
     // Add edges
     if (!isScoreOnly) {
+      em.completePendingEdge(&dummyEndNode);
       mergedCFG->setEdges(em.getAllEdges());
     }
     
@@ -523,7 +534,7 @@ namespace TraceAnalysis {
     
     return mergedCFG;
   }
-  
+  /*
   TCTANode* DifferenceQuantifier::mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     TCTATraceNode* mergedTrace = (TCTATraceNode*)trace1->voidDuplicate();
@@ -535,19 +546,6 @@ namespace TraceAnalysis {
       mergedTrace->getPerfLossMetric().setDuratonMetric(trace1->getPerfLossMetric(), trace2->getPerfLossMetric());
     }
     
-    /**
-     * Inclusive difference score of the merged trace node consists of the following components --
-     *  1) the inclusive difference score of all children, which can be divided to:
-     *    1.1) the inclusive difference score of all children in trace1;
-     *    1.2) the inclusive difference score of all children in trace2;
-     *    1.3) the difference score of children between trace1 and trace2;
-     *  2) the difference of gaps, which can be divided to:
-     *    2.1) the difference of gaps among all nodes represented by trace1
-     *    2.2) the difference of gaps among all nodes represented by trace2
-     *    2.3) the difference of gaps between nodes represented by trace1 and trace2
-     *  
-     *  When not accumulating, only 1.3) and 2.3) needs to be added up.
-     */
     double inclusiveDiff = 0;
         
     Time samplingPeriod = mergedTrace->getSamplingPeriod();
@@ -600,9 +598,9 @@ namespace TraceAnalysis {
                || !trace1->cfgGraph->hasChild(trace2->getChild(k2)->ra) // or RA of trace2[k2] is not found in cfgGraph
                )) { // Return a merged profile node.
           delete mergedTrace;
-          TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(trace1);
-          TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(trace2);
-          TCTProfileNode* mergedProf = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
+          TCTNonCFGProfileNode* prof1 = TCTNonCFGProfileNode::newNonCFGProfileNode(trace1);
+          TCTNonCFGProfileNode* prof2 = TCTNonCFGProfileNode::newNonCFGProfileNode(trace2);
+          TCTNonCFGProfileNode* mergedProf = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
           delete prof1;
           delete prof2;
           return mergedProf;
@@ -719,13 +717,6 @@ namespace TraceAnalysis {
     inclusiveDiff += (double)computeRangeDiff(gapDiffMin, gapDiffMax, 0, 0, samplingPeriod)
             * (double) weight1 * (double) weight2; // Add gap diff 2.3)
     
-     /* When accumulating, exclusive difference score of the merged trace node consists of the following components -- 
-     *  1) the difference of inclusive duration among all nodes represented by trace1
-     *  2) the difference of inclusive duration among all nodes represented by trace2
-     *  3) the difference of inclusive duration between nodes represented by trace1 and trace2
-     * 
-     * When not accumulating, only 3) is needed.
-     */
     double exclusiveDiff = (double)computeRangeDiff(trace1->getMinDuration(), trace1->getMaxDuration(), 
                                                     trace2->getMinDuration(), trace2->getMaxDuration(), samplingPeriod)
             * (double) weight1 * (double) weight2; // Add 3)
@@ -745,11 +736,7 @@ namespace TraceAnalysis {
       for (int i = 0; i < trace2->getNumChild(); i++)
         inclusiveDiff -= trace2->getChild(i)->getDiffScore().getInclusive();
     }
-    
-    /* Inclusive diff score should be no less than "exclusive diff score" plus minimum accumulation.
-     * (As we hide noises from sampling, the resulting inclusive diff score could be smaller than 
-     * the minimum threshold)
-     */
+
     double minInclusiveDiff = (double)computeRangeDiff(trace1->getMinDuration(), trace1->getMaxDuration(), 
                                                     trace2->getMinDuration(), trace2->getMaxDuration(), samplingPeriod)
             * (double) weight1 * (double) weight2;
@@ -762,7 +749,7 @@ namespace TraceAnalysis {
     
     return mergedTrace;
   }
-  
+  */
   TCTANode* DifferenceQuantifier::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
           bool ifAccumulate, bool isScoreOnly) {
     // If either loop is not accepted 
@@ -916,7 +903,7 @@ namespace TraceAnalysis {
     else if (dst->type == TCTANode::Loop) 
       addDiffScore((TCTLoopNode*)dst, (TCTLoopNode*)src, ratio);
     else
-      addDiffScore((TCTATraceNode*)dst, (TCTATraceNode*)src, ratio);
+      addDiffScore((TCTACFGNode*)dst, (TCTACFGNode*)src, ratio);
   }
   
   void DifferenceQuantifier::addDiffScore(TCTACFGNode* dst, const TCTACFGNode* src, double ratio) {
@@ -936,7 +923,7 @@ namespace TraceAnalysis {
     if (k2 != src->getNumChild())
       print_msg(MSG_PRIO_NORMAL, "ERROR: failed to add diff scores of all children for trace node %s.\n", src->id.toString().c_str());
   }
-  
+  /*
   void DifferenceQuantifier::addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio) {
     double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;
     double exclusive = dst->getDiffScore().getExclusive() + src->getDiffScore().getExclusive() * ratio;
@@ -953,7 +940,7 @@ namespace TraceAnalysis {
     
     if (k2 != src->getNumChild())
       print_msg(MSG_PRIO_NORMAL, "ERROR: failed to add diff scores of all children for trace node %s.\n", src->id.toString().c_str());
-  }
+  }*/
   
   void DifferenceQuantifier::addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio) {
     double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;

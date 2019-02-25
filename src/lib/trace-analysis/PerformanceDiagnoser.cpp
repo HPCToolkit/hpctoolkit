@@ -277,10 +277,10 @@ namespace TraceAnalysis {
         metrics->addChildMetrics(metricsMap[avgRep]);
       }
       else {
-        const TCTATraceNode* trace = (const TCTATraceNode*) node;
-        for (int i = 0; i < trace->getNumChild(); i++) {
-          computeMetrics(trace->getChild(i), metrics->derivedLabel);
-          metrics->addChildMetrics(metricsMap[trace->getChild(i)]);
+        const TCTACFGNode* cfgNode = (const TCTACFGNode*) node;
+        for (int i = 0; i < cfgNode->getNumChild(); i++) {
+          computeMetrics(cfgNode->getChild(i), metrics->derivedLabel);
+          metrics->addChildMetrics(metricsMap[cfgNode->getChild(i)]);
         }
       }
       
@@ -401,9 +401,9 @@ namespace TraceAnalysis {
           }
         }
         else {
-          const TCTATraceNode* trace = (const TCTATraceNode*) node;
-          for (int i = 0; i < trace->getNumChild(); i++) {
-            const TCTANode* child = trace->getChild(i);
+          const TCTACFGNode* cfgNode = (const TCTACFGNode*) node;
+          for (int i = 0; i < cfgNode->getNumChild(); i++) {
+            const TCTANode* child = cfgNode->getChild(i);
             CallpathMetrics* childMetrics = metricsMap[child];
             
             // Check if the child's imbalance dominates.
@@ -506,10 +506,10 @@ namespace TraceAnalysis {
         delete children;
       }
       else {
-        const TCTATraceNode* trace = (const TCTATraceNode*) node;
+        const TCTACFGNode* cfgNode = (const TCTACFGNode*) node;
 
-        for (int k = 0; k < trace->getNumChild(); k++) {
-          const TCTANode* child = trace->getChild(k);
+        for (int k = 0; k < cfgNode->getNumChild(); k++) {
+          const TCTANode* child = cfgNode->getChild(k);
           CallpathMetrics* childMetrics = metricsMap[child];
           
           bool inspect = false;
@@ -547,7 +547,7 @@ namespace TraceAnalysis {
         diagnoseCommunication(allSegments[k]);
       }
     }
-    
+    /*
     void inspectCallpath(Callpath* callpath, vector<Callpath*>& subCallpaths) {
       const TCTANode* node = callpath->callpath.back();
       CallpathMetrics* metrics = metricsMap[node];
@@ -562,25 +562,25 @@ namespace TraceAnalysis {
           callpath->callpath.pop_back();
         }
         else if (node->type == TCTANode::Prof) {
-          const TCTProfileNode* prof = (const TCTProfileNode*) node;
+          const TCTNonCFGProfileNode* prof = (const TCTNonCFGProfileNode*) node;
 
           // Copy all children into an array
           uint numChildren = prof->getChildMap().size();
-          const TCTProfileNode** children = new const TCTProfileNode*[numChildren];
+          const TCTNonCFGProfileNode** children = new const TCTNonCFGProfileNode*[numChildren];
           uint k = 0;
           for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++)
             children[k++] = it->second;
         }
         else {
-          const TCTATraceNode* trace = (const TCTATraceNode*) node;
-          for (int i = 0; i < trace->getNumChild(); i++) {
+          const TCTACFGNode* cfgNode = (const TCTACFGNode*) node;
+          for (int i = 0; i < cfgNode->getNumChild(); i++) {
             //callpath.push_back(trace->getChild(i));
             //generateDiagnosisReport(callpath); 
             //callpath.pop_back();
           }
         }
       }
-    }
+    }*/
     
     int computeLCADepth(Callpath* callpath1, Callpath* callpath2) {
       int depth = 0;

@@ -55,6 +55,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/unordered_map.hpp>
+#include <boost/serialization/unordered_set.hpp>
 
 #include "TCT-Serialization.hpp"
 
@@ -233,29 +234,38 @@ namespace TraceAnalysis {
     }
   }
   GENERATE_SAVE_LOAD_TEMPLATE_INSTANTIATION(TCTANode)
-          
+  
   template<class Archive>
-  void TCTATraceNode::serialize(Archive& ar, const unsigned int version) {
+  void TCTACFGNode::Edge::serialize(Archive& ar, const unsigned int version) {
+    ar & src;
+    ar & dst;
+    ar & weight;
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTACFGNode::Edge)
+  
+  template<class Archive>
+  void TCTACFGNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & children;
+    ar & outEdges;
   }
-  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTATraceNode)
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTACFGNode)
   
   template<class Archive>
   void TCTFunctionTraceNode::serialize(Archive& ar, const unsigned int version) {
-    ar & boost::serialization::base_object<TCTATraceNode>(*this);
+    ar & boost::serialization::base_object<TCTACFGNode>(*this);
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTFunctionTraceNode)
   
   template<class Archive>
   void TCTRootNode::serialize(Archive& ar, const unsigned int version) {
-    ar & boost::serialization::base_object<TCTATraceNode>(*this);
+    ar & boost::serialization::base_object<TCTACFGNode>(*this);
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTRootNode)
   
   template<class Archive>
   void TCTIterationTraceNode::serialize(Archive& ar, const unsigned int version) {
-    ar & boost::serialization::base_object<TCTATraceNode>(*this);
+    ar & boost::serialization::base_object<TCTACFGNode>(*this);
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTIterationTraceNode)
   

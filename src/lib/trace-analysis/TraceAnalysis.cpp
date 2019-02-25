@@ -83,17 +83,6 @@ namespace TraceAnalysis {
       
       PerformanceDiagnoser diagnoser;
       diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
-      
-      /*
-      const TCTANode* node0 = rootCluster->getClusterRepAt(1);
-      const TCTANode* node1 = rootCluster->getClusterRepAt(2);
-
-      TCTANode* diffNode = localDQ.mergeNode(node0, node0->getWeight(), node1, node1->getWeight(), true, false);
-      diffNode->setName("Diff Root");
-      print_msg(MSG_PRIO_NORMAL, "\n\n\n\n%s", diffNode->toString(10, 4000, 0).c_str());
-
-      delete diffNode;
-      */
     }
     
     delete rootCluster;

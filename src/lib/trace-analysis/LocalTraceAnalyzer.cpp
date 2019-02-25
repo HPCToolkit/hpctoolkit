@@ -115,8 +115,7 @@ namespace TraceAnalysis {
       node->getTime().setNumSamples(endSample - startSample);
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
       
-      node->setRetCount(1);
-      node->getPerfLossMetric().initDurationMetric(node, node->getWeight());
+      node->finishInit();
       
       activeStack.pop_back();
       if (activeStack.size() > 0) activeStack.back()->addChild(node);
@@ -205,7 +204,7 @@ namespace TraceAnalysis {
       }
       // if the parent is a non-loop trace node, detect conflict on all child nodes
       else if (activeStack.back()->type != TCTANode::Prof) {
-        TCTATraceNode* parent = (TCTATraceNode*)activeStack.back();
+        TCTACFGNode* parent = (TCTACFGNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id.id == node->id.id) {
             bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
@@ -489,6 +488,9 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n\n", timeToString(timeDiff).c_str());
     }
 
+    bool debug = false;
+    while (debug) ;
+    
     // Step 4: analyze each trace file
     TCTClusterNode* rootCluster = NULL;
     int begIdx = traceFiles.size() * myRank / numRanks;
@@ -497,7 +499,8 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
       LocalTraceAnalyzerImpl analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
       TCTRootNode* root = analyzer.analyze();
-      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 4000, 0).c_str());
+      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 0, 0).c_str());
+      
       if (rootCluster == NULL) {
         rootCluster = new TCTClusterNode(*root);
         rootCluster->setName("All Roots");

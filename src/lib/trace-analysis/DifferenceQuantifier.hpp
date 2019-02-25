@@ -70,8 +70,8 @@ namespace TraceAnalysis {
             bool ifAccumulate, bool isScoreOnly);
     TCTProfileNode* mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
-    TCTANode* mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly);
+    //TCTANode* mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
+    //        bool ifAccumulate, bool isScoreOnly);
     TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
             bool ifAccumulate, bool isScoreOnly);
     
@@ -80,7 +80,7 @@ namespace TraceAnalysis {
   private:
     void addDiffScore(TCTANode* dst, const TCTANode* src, double ratio);
     void addDiffScore(TCTACFGNode* dst, const TCTACFGNode* src, double ratio);
-    void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
+    //void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
     void addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio);
     void addDiffScore(TCTLoopNode* dst, const TCTLoopNode* src, double ratio);
   };

@@ -98,7 +98,11 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  string TCTATraceNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {
+  string TCTACFGNode::Edge::toString() const {
+    return src->id.toString() + " -> " + dst->id.toString() + ", w = " + std::to_string(weight) + "\n";
+  }
+  
+  string TCTACFGNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {
     string ret = TCTANode::toString(maxDepth, minDuration, minDiffScore);
     
     if (depth >= maxDepth) return ret;
@@ -106,8 +110,15 @@ namespace TraceAnalysis {
     if (diffScore.getInclusive() < minDiffScore) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
     
-    for (auto it = children.begin(); it != children.end(); it++)
-      ret += (*it)->toString(maxDepth, minDuration, minDiffScore);
+    for (auto eit = outEdges.at(dummyBeginNode.id).begin(); eit != outEdges.at(dummyBeginNode.id).end(); eit++)
+      ret += (*eit)->toString();
+    
+    for (TCTANode* child : children)
+      for (auto eit = outEdges.at(child->id).begin(); eit != outEdges.at(child->id).end(); eit++)
+        ret += (*eit)->toString();
+    
+    for (TCTANode* child : children)
+      ret += child->toString(maxDepth, minDuration, minDiffScore);
     return ret;
   }
   
@@ -591,9 +602,9 @@ namespace TraceAnalysis {
     return false;
   }
   
-  TCTProfileNode::TCTProfileNode(const TCTATraceNode& trace) : TCTANode (trace, Prof) {
-    for (int k = 0; k < trace.getNumChild(); k++) {
-      TCTProfileNode* child = TCTProfileNode::newProfileNode(trace.getChild(k));
+  TCTProfileNode::TCTProfileNode(const TCTACFGNode& node) : TCTANode (node, Prof) {
+    for (int k = 0; k < node.getNumChild(); k++) {
+      TCTProfileNode* child = TCTProfileNode::newProfileNode(node.getChild(k));
       child->getTime().toProfileTime();
       if (childMap.find(child->id) == childMap.end())
         childMap[child->id] = child;
@@ -713,16 +724,7 @@ namespace TraceAnalysis {
     setWeight(weight * divider / amplifier);
   }
   
-  Time TCTATraceNode::getExclusiveDuration() const {
-    Time exclusive = getDuration();
-    for (auto it = children.begin(); it != children.end(); it++)
-      if ((*it)->isLoop()) 
-        exclusive -= ((*it)->getDuration() - (*it)->getExclusiveDuration());
-      else
-        exclusive -= (*it)->getDuration();
-    return exclusive;
-  }
-  
+  /*
   void TCTATraceNode::getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const {
     if (idx < 0 || idx > getNumChild()) {
       print_msg(MSG_PRIO_MAX, "ERROR: wrong idx %d for getLastChildEndTime(). 0 <= idx <= %d should hold.\n", 
@@ -771,7 +773,7 @@ namespace TraceAnalysis {
     minGap = currStartExclusive - lastEndExclusive + 1;
     maxGap = currStartInclusive - lastEndInclusive - 1;
   }
-  
+  */
   Time TCTACFGNode::getExclusiveDuration() const {
     Time exclusive = getDuration();
     for (auto it = children.begin(); it != children.end(); it++)
@@ -792,7 +794,34 @@ namespace TraceAnalysis {
     }
   }
   
+  void TCTACFGNode::finishInit() {
+    TCTANode::finishInit();
+    
+    outEdges[dummyBeginNode.id] = unordered_set<Edge*>();
+    if (getNumChild() > 0) {
+      Edge* edge = new Edge(&dummyBeginNode, children[0], 1);
+      outEdges[dummyBeginNode.id].insert(edge);
+    }
+    
+    for (int i = 0; i < getNumChild(); i++) {
+      outEdges[children[i]->id] = unordered_set<Edge*>();
+      if (i+1 < getNumChild()) {
+        Edge* edge = new Edge(children[i], children[i+1], 1);
+        outEdges[children[i]->id].insert(edge);
+      }
+      else {
+        Edge* edge = new Edge(children[i], &dummyEndNode, 1);
+        outEdges[children[i]->id].insert(edge);
+      }
+    }
+  }
+  
+  const unordered_set<TCTACFGNode::Edge*>& TCTACFGNode::getEntryEdges() const {
+    return outEdges.at(dummyBeginNode.id);
+  }
+  
   void TCTACFGNode::setEdges(vector<Edge*>& edges) {
+    outEdges[dummyBeginNode.id] = unordered_set<Edge*>();
     for (int i = 0; i < getNumChild(); i++)
       outEdges[children[i]->id] = unordered_set<Edge*>();
     
@@ -802,4 +831,7 @@ namespace TraceAnalysis {
       edges.pop_back();
     }
   }
+  
+  TCTFunctionTraceNode dummyBeginNode(-1, -1, "dummy begin node", -1, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
+  TCTFunctionTraceNode dummyEndNode(-2, -2, "dummy end node", -2, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
 }
