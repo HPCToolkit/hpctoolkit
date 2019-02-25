@@ -35,6 +35,7 @@ const char *OMP_OVERHEAD     = "<omp overhead>";
 const char *OMP_BARRIER_WAIT = "<omp barrier wait>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
+const char *NO_THREAD_ROOT   = "<no thread>";
 
 const char *MONITOR_DATA_FIRST_TOUCH = "<first touch>";
 
@@ -111,7 +112,9 @@ static NameMapping renamingTable[] = {
   { "DATACENTRIC"             , DATACENTRIC_ROOT },
   { "DATACENTRIC_Dynamic"     , DATACENTRIC_DYNAMIC },
   { "DATACENTRIC_Static"      , DATACENTRIC_STATIC },
-  { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN }
+  { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN },
+
+  { "NO_THREAD",               NO_THREAD_ROOT       }
 };
 
 

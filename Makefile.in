@@ -411,6 +411,8 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+hash_fcn = @hash_fcn@
+hash_value = @hash_value@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -485,6 +487,7 @@ SUBDIRS = src $(am__append_1)
 #
 BASE_LIBS_DIR = $(DESTDIR)$(pkglibdir)
 EXT_LIBS_DIR = $(DESTDIR)$(pkglibdir)/ext-libs
+hash_file = $(BASE_LIBS_DIR)/hash-file
 
 ############################################################
 # Dist
@@ -864,6 +867,9 @@ define copy-libs
 endef
 
 install-exec-local:
+	@echo "Installing launch script hash ..."
+	rm -f "$(hash_file)"
+	echo "$(hash_value)" > "$(hash_file)"
 	@echo "Copying external package libraries ..."
 	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	@for lib in $(BOOST_COPY_LIST) ; do  \

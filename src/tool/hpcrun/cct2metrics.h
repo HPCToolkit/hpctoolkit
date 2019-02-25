@@ -44,6 +44,8 @@ extern metric_set_t* hpcrun_reify_metric_set(cct_node_id_t cct_id);
 //
 extern metric_set_t* hpcrun_get_metric_set(cct_node_id_t cct_id);
 
+extern metric_set_t* hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id);
+
 //
 // check to see if node already has metrics
 //
