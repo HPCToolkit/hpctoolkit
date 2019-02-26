@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,21 +44,6 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
-
-//************************* System Include Files ****************************
-
 #include <iostream>
 #include <string>
 using std::string;
@@ -70,36 +55,12 @@ using std::string;
 
 #include <cxxabi.h>
 
-//*************************** User Include Files ****************************
-
 #include "BinUtils.hpp"
 #include "Demangler.hpp"
-
-
-//****************************************************************************
-
-// Include the system demangle
-#if defined(HOST_OS_SOLARIS)
-# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
-  // the system demangle is GNU's demangle
-#else
-# error "binutils::BinUtils does not recognize your platform."
-#endif
-
-// Include GNU's demangle
-#include <include/gnu_demangle.h> // GNU's demangle
-
-//*************************** Forward Declarations ***************************
 
 //****************************************************************************
 
 namespace BinUtil {
-
-//***************************************************************************
-// 
-//***************************************************************************
 
 // 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
 // to attempt to demangle it.  If there is an error in demangling,

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,10 @@
 
 #include <lib/support/diagnostics.h>
 
+#include <lib/prof-lean/hpcrun-fmt.h>
+
+// do not include Metric-Mgr.hpp. In g++, it will create chaos in compilation
+//#include "Metric-Mgr.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -86,6 +90,7 @@
 
 namespace Prof {
 namespace Metric {
+ class Mgr ;
 
 //***************************************************************************
 // IData
@@ -99,8 +104,7 @@ namespace Metric {
 
 class IData {
 public:
-  
-  typedef std::vector<double> MetricVec;
+  typedef std::vector<hpcrun_metricVal_t> MetricVec;
 
 public:
   // --------------------------------------------------------
@@ -152,7 +156,7 @@ public:
 
   bool
   hasMetric(size_t mId) const
-  { return (m_metrics[mId] != 0.0); }
+  { return (m_metrics[mId].r != 0.0); }
 
   bool
   hasMetricSlow(size_t mId) const
@@ -161,12 +165,18 @@ public:
 
   double
   metric(size_t mId) const
-  { return m_metrics[mId]; }
+  { return m_metrics[mId].r; }
 
   double&
   metric(size_t mId)
-  { return m_metrics[mId]; }
+  { return m_metrics[mId].r; }
 
+
+  hpcrun_metricVal_t&
+  metricObject(size_t mId)
+  {
+    return m_metrics[mId];
+  }
 
   double
   demandMetric(size_t mId, size_t size = 0) const
@@ -206,14 +216,17 @@ public:
   void
   ensureMetricsSize(size_t size) const
   {
-    if (size > m_metrics.size())
-      m_metrics.resize(size, 0.0 /*value*/); // inserts at end
+    if (size > m_metrics.size()) {
+      hpcrun_metricVal_t val = {.r = 0.0};
+      m_metrics.resize(size, val /*value*/); // inserts at end
+    }
   }
 
   void
   insertMetricsBefore(size_t numMetrics) 
   {
-    m_metrics.insert(m_metrics.begin(), numMetrics, 0.0);
+    hpcrun_metricVal_t val = {.r = 0.0};
+    m_metrics.insert(m_metrics.begin(), numMetrics, val);
   }
   
   uint
@@ -232,6 +245,7 @@ public:
   // [mBegId, mEndId)
   std::ostream& 
   writeMetricsXML(std::ostream& os,
+      const Mgr *metricMgr,
 		  uint mBegId = Metric::IData::npos,
 		  uint mEndId = Metric::IData::npos,
 		  int oFlags = 0, const char* pfx = "") const;
@@ -247,6 +261,7 @@ public:
   
 private:
   mutable MetricVec m_metrics;
+
 };
 
 //***************************************************************************

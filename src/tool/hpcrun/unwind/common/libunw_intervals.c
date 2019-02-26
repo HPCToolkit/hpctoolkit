@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,9 +88,105 @@
 #include <utilities/arch/context-pc.h>
 
 
+
+//************************************************
+// macros
+//************************************************
+
+#define DEBUG_LIBUNWIND_INTERFACE 0
+
+
+
+//************************************************
+// local data
+//************************************************
+
+#if DEBUG_LIBUNWIND_INTERFACE
+static int libunwind_debug = 0;
+#endif
+
+
+
+//************************************************
+// debugging public interface
+//************************************************
+
+#if DEBUG_LIBUNWIND_INTERFACE
+int 
+libunw_debug_on()
+{
+  libunwind_debug = 1;
+  return libunwind_debug;
+}
+
+
+int 
+libunwind_debug_off()
+{
+  libunwind_debug = 0;
+  return libunwind_debug;
+}
+#endif
+
+
+
+//************************************************
+// debugging private functions
+//************************************************
+
+#if DEBUG_LIBUNWIND_INTERFACE
+static const char *
+fence_string(hpcrun_unw_cursor_t* cursor)
+{
+  switch(cursor->fence) {
+  case FENCE_MAIN: return "FENCE_MAIN";
+  case FENCE_NONE: return "FENCE_NONE";
+  case FENCE_THREAD: return "FENCE_THREAD";
+  case FENCE_BAD: return "FENCE_BAD";
+  case FENCE_TRAMP: return "FENCE_TRAMP";
+  }
+  return NULL;
+}
+
+static const char *
+step_state_string(step_state state)
+{
+  switch(state) {
+  case STEP_OK: return "STEP_OK";
+  case STEP_ERROR: return "STEP_ERROR";
+  case STEP_STOP: return "STEP_STOP";
+  case STEP_STOP_WEAK: return "STEP_STOP_WEAK";
+  case STEP_TROLL: return "STEP_TROLL";
+  }
+  return NULL;
+}
+
+static const char *
+libunw_state_string(enum libunw_state state)
+{
+  switch(state) {
+  case LIBUNW_READY: return "LIBUNW_READY";
+  case LIBUNW_UNAVAIL: return "LIBUNW_UNAVAIL";
+  }
+  return NULL;
+}
+#endif
+
+
 //************************************************
 // private functions
 //************************************************
+
+static void *
+libunw_cursor_get_pc(hpcrun_unw_cursor_t* cursor)
+{
+  unw_word_t tmp;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
+
+  return (void *) tmp;
+}
 
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
@@ -100,61 +196,65 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 
   cursor->pc_norm = hpcrun_normalize_ip(cursor->pc_unnorm, lm);
   cursor->the_function = hpcrun_normalize_ip(func_start_pc, lm);
+
+#if DEBUG_LIBUNWIND_INTERFACE
+  if (libunwind_debug) {
+	printf("ip = %p (%d, %lx) the_function=%p (%d,%lx) ", 
+	cursor->pc_unnorm, cursor->pc_norm.lm_id, cursor->pc_norm.lm_ip, 
+        func_start_pc, cursor->the_function.lm_id, cursor->the_function.lm_ip);
+  }
+#endif
 }
 
-step_state
-libunw_find_step(hpcrun_unw_cursor_t* cursor)
+bool
+libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
 {
-  // starting pc
-  unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  // update for new pc
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
+  void *pc = libunw_cursor_get_pc(cursor);
   cursor->pc_unnorm = pc;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
   compute_normalized_ips(cursor);
-  if (!found)
-    {
-      TMSG(UNW, "unw_step: error: unw_step failed at: %p\n", pc);
-      cursor->libunw_status = LIBUNW_FAIL;
-      return STEP_ERROR;
-    }
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
-  cursor->libunw_status = LIBUNW_OK;
-  return STEP_OK;
+  cursor->libunw_status = found ? LIBUNW_READY : LIBUNW_UNAVAIL;
+  
+#if DEBUG_LIBUNWIND_INTERFACE
+  if (libunwind_debug) {
+    printf("libunw_status = %s ", libunw_state_string(cursor->libunw_status));
+  }
+#endif
+
+  return found;
 }
 
 step_state
 libunw_take_step(hpcrun_unw_cursor_t* cursor)
 {
-  // starting pc
-  unw_cursor_t *unw_cursor = &(cursor->uc);
-  unw_word_t tmp;
-  void *pc;
-
-  unw_get_reg(unw_cursor, UNW_REG_IP, &tmp);
-  pc = (void *) tmp;
+  void *pc = libunw_cursor_get_pc(cursor); // pc after step
 
   // full unwind: stop at libmonitor fence.  this is where we hope the
   // unwind stops.
   cursor->fence = (monitor_unwind_process_bottom_frame(pc) ? FENCE_MAIN :
 		   monitor_unwind_thread_bottom_frame(pc)? FENCE_THREAD : FENCE_NONE);
-  if (cursor->fence != FENCE_NONE)
-    {
-      TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
-      return STEP_STOP;
-    }
+
+#if DEBUG_LIBUNWIND_INTERFACE
+  if (libunwind_debug) {
+    printf("fence = %s ", fence_string(cursor));
+  }
+#endif
+
+  if (cursor->fence != FENCE_NONE) {
+    TMSG(UNW, "unw_step: stop at monitor fence: %p\n", pc);
+    return STEP_STOP;
+  }
 
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
   if (!uw) {
-      TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
-      return STEP_ERROR;
+    TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+    return STEP_ERROR;
   }
+
   uwi_t *uwi = bitree_uwi_rootval(uw);
-  unw_apply_reg_state(unw_cursor, uwi->recipe);
+  unw_apply_reg_state(&(cursor->uc), uwi->recipe);
+
   return STEP_OK;
 }
 
@@ -169,7 +269,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
 
   if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
-    libunw_find_step(cursor);
+    libunw_finalize_cursor(cursor);
   }
 }
 
@@ -210,7 +310,7 @@ btuwi_status_t
 libunw_build_intervals(char *beg_insn, unsigned int len)
 {
   unw_context_t uc;
-  unw_getcontext(&uc);
+  (void) unw_getcontext(&uc);
   unw_cursor_t c;
   unw_init_local2(&c, &uc, UNW_INIT_SIGNAL_FRAME);
   unw_set_reg(&c, UNW_REG_IP, (intptr_t)beg_insn);
@@ -247,9 +347,21 @@ step_state
 libunw_unw_step(hpcrun_unw_cursor_t* cursor)
 {
   step_state result = libunw_take_step(cursor);
-  if (result != STEP_OK) 
-    return result;
-  if (STEP_OK != libunw_find_step(cursor))
-    return STEP_ERROR;
-  return (STEP_OK);
+  if (result != STEP_ERROR) {
+    libunw_finalize_cursor(cursor);
+  }
+
+#if DEBUG_LIBUNWIND_INTERFACE
+  if (libunwind_debug) {
+    printf("result = %s\n", step_state_string(result));
+  }
+#endif
+
+  return result;
+}
+
+void
+libunw_uw_recipe_tostr(void *uwr, char str[])
+{
+  snprintf(str, MAX_RECIPE_STR, "*");
 }

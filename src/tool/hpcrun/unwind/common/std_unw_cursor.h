@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -76,8 +76,8 @@
 #endif
 
 enum libunw_state {
-  LIBUNW_OK,
-  LIBUNW_FAIL,
+  LIBUNW_UNAVAIL,
+  LIBUNW_READY,
 };
 
 typedef struct hpcrun_unw_cursor_t {

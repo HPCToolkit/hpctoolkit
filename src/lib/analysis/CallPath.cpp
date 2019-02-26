@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -536,6 +536,11 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       const string* unkProcNm = NULL;
       if (n_dyn->isSecondarySynthRoot()) {
 	unkProcNm = &Struct::Tree::PartialUnwindProcNm;
+      } else if (n_dyn->hpcrun_node_type() == NODE_TYPE_GLOBAL_VARIABLE) {
+        // datacentric: case for global variable, if the address of the variable
+        // is not recognized, we need to label it as "<unknown variable> instead of
+        //  <unknown procedure>
+        unkProcNm = &Struct::Tree::UnknownGlobalVariable;
       }
 
       // 1. Add symbolic information to 'n_dyn'
@@ -616,6 +621,23 @@ makeFrame(Prof::CCT::ADynNode* node, Prof::Struct::Proc* procStrct,
 {
   Prof::CCT::ProcFrm* frame = new Prof::CCT::ProcFrm(NULL, procStrct);
   frame->link(node->parent());
+
+  // OK, this is very tricky ... quite a hack
+  // for any artificial "root",  its frame scope becomes the "root", while the
+  // "statement" becomes a regular node
+  // This happens because the viewer will combine the frame procedure and
+  // the statement, with the frame procedure as the outer node.
+  // By switching the root type to the frame procedure, the viewer will know
+  // that it has to separate the root into different view
+  //
+  // Also, in the computation of inclusive metric (in CCT-Tree.cpp)
+  //  we don't aggregate the metrics of "artificial root" into the "invisible root"
+
+  if (hpcrun_fmt_root_type_node(node->hpcrun_node_type())) {
+    frame->hpcrun_node_type(node->hpcrun_node_type());
+    node->hpcrun_node_type(NODE_TYPE_REGULAR);
+  }
+
   strctToCCTMap.insert(std::make_pair(procStrct, frame));
 
   makeFrameStructure(frame, procStrct, strctToCCTMap);
@@ -1166,7 +1188,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   // 
   // ------------------------------------------------------------
   os << "<SecCallPathProfileData>\n";
-  prof.cct()->writeXML(os, metricBegId, metricEndId, oFlags);
+  prof.cct()->writeXML(os, prof.metricMgr(), metricBegId, metricEndId, oFlags);
   os << "</SecCallPathProfileData>\n";
 
   os << "</SecCallPathProfile>\n";

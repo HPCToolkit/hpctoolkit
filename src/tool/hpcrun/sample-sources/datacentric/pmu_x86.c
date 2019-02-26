@@ -47,40 +47,23 @@
 #include <linux/version.h>
 
 #include <hpcrun/messages/messages.h>
+#include <utilities/arch/cpuid.h>
+
+#include "sample-sources/perf/perf_event_open.h"
 #include "sample-sources/perf/perf-util.h"
+#include "sample-sources/perf/perf_skid.h"
 #include "sample-sources/perf/perfmon-util.h"
 #include "sample-sources/perf/event_custom.h"
 
 #include "datacentric.h"
-
-// list of precise events
-
-#define EVNAME_SANDYBRIDGE_LATENCY  "snb::MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"
-#define EVNAME_SANDYBRIDGE_STORE    "snb::MEM_TRANS_RETIRED:PRECISE_STORE"
-
-#define EVNAME_KNL_OFFCORE_RESP_0   "knl::OFFCORE_RESPONSE_0"
-#define EVNAME_KNL_CACHE_L2_HIT     "knl::MEM_UOPS_RETIRED:LD_L2_HIT"
-
-/**
- * attention: the order of the array is very important.
- * It has to start from event from the latest architecture
- * to the old one, since sometimes newer architecture still keep
- * compatibility with the old ones.
- */
-static const char *evnames[] = {
-    EVNAME_KNL_OFFCORE_RESP_0,
-    EVNAME_KNL_CACHE_L2_HIT,
-
-    EVNAME_SANDYBRIDGE_LATENCY,
-    EVNAME_SANDYBRIDGE_STORE
-};
+#include "pmu_x86.h"
 
 
 int
 datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period)
 {
-  int size = sizeof(evnames)/sizeof(const char*);
+  int size = sizeof(pmu_events)/sizeof(struct pmu_config_s);
   u64 sample_type = PERF_SAMPLE_CALLCHAIN
                     | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
@@ -91,48 +74,49 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
            ;
 
   int num_pmu = 0;
+  cpu_type_t cpu_type = get_cpuid();
 
   for(int i=0; i<size ; i++) {
-    struct perf_event_attr event_attr;
 
-    int isPMU = pfmu_getEventAttribute(evnames[i], &event_attr);
-    if (isPMU < 0) continue;
+    if (pmu_events[i].cpu != cpu_type)
+      continue;
+
+    struct perf_event_attr event_attr;
+    memset(&event_attr, 0, sizeof(event_attr));
+
+    if (pfmu_getEventAttribute(pmu_events[i].event, &event_attr) < 0) {
+      EMSG("Cannot initialize event %s", pmu_events[i].event);
+      continue;
+    }
 
     //set_default_perf_event_attr(event_attr, period);
     bool is_period = period->threshold_type == PERIOD;
-    perf_util_attr_init(&event_attr, is_period, period->threshold_num, sample_type);
-    perf_util_set_max_precise_ip(&event_attr);
+    perf_util_attr_init(pmu_events[i].event, &event_attr, is_period, period->threshold_num, sample_type);
+    perf_skid_set_max_precise_ip(&event_attr);
 
-    // testing the feasibility;
-    int ret = perf_util_event_open(&event_attr,
-			THREAD_SELF, CPU_ANY, GROUP_FD, PERF_FLAGS);
+    num_pmu++;
 
-    if (ret >= 0) {
-      close(ret);
-      num_pmu++;
+    // ------------------------------------------
+    // create metric data centric
+    // ------------------------------------------
+    int metric = hpcrun_new_metric();
+    hpcrun_set_metric_info_and_period(
+          metric, pmu_events[i].event,
+          MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-      // ------------------------------------------
-      // create metric data centric
-      // ------------------------------------------
-      int metric = hpcrun_new_metric();
-      hpcrun_set_metric_info_and_period(
-            metric, evnames[i],
-            MetricFlags_ValFmt_Int, 1, metric_property_none);
+    // ------------------------------------------
+    // Register the event to the global list
+    // ------------------------------------------
+    event_info_t *einfo  = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+    einfo->metric_custom = event;
+    memcpy(&einfo->attr, &event_attr, sizeof(struct perf_event_attr));
 
-      // ------------------------------------------
-      // Register the event to the global list
-      // ------------------------------------------
-      event_info_t *einfo  = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
-      einfo->metric_custom = event;
-      memcpy(&einfo->attr, &event_attr, sizeof(struct perf_event_attr));
+    METHOD_CALL(self, store_event_and_info,
+                event_attr.config,     /* event id     */
+                1,              /* threshold    */
+                metric,         /* metric id    */
+                einfo           /* info pointer */ );
 
-      METHOD_CALL(self, store_event_and_info,
-                  event_attr.config,     /* event id     */
-                  1,              /* threshold    */
-                  metric,         /* metric id    */
-                  einfo           /* info pointer */ );
-
-    }
   }
   return num_pmu;
 }

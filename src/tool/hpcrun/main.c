@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -173,6 +173,13 @@ struct hpcrun_aux_cleanup_t {
   struct hpcrun_aux_cleanup_t * prev;
 };
 
+//***************************************************************************
+// forward declarations
+//***************************************************************************
+
+static int
+dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
+__attribute__ ((unused));
 
 //***************************************************************************
 // global variables
@@ -585,6 +592,13 @@ static void hpcrun_process_aux_cleanup_action()
   hpcrun_aux_cleanup_list_head = NULL;
 }
 
+/***
+ * This routine is called at the end of the program to:
+ *   call sample-sources to stop and shutdown 
+ *   clean hpcrun action
+ *   clean thread manager (write profile data and closing resources)
+ *   terminate hpcfnbounds
+ ***/ 
 void
 hpcrun_fini_internal()
 {
@@ -617,8 +631,10 @@ hpcrun_fini_internal()
     // This typically means flushing files that were not done by their creators.
 
     hpcrun_process_aux_cleanup_action();
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+
+    // write all threads' profile data and close trace file
+    hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
+
     fnbounds_fini();
     hpcrun_stats_print_summary();
     messages_fini();
@@ -661,25 +677,28 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
-  thread_data_t* td = hpcrun_allocate_thread_data(id);
+
+  // ----------------------------------------
+  // call thread manager to get a thread data. If there is unused thread data,
+  //  we can recycle it, otherwise we need to allocate a new one.
+  // If we allocate a new one, we need to initialize the data and trace file.
+  // ----------------------------------------
+
+  thread_data_t* td = NULL;
+  hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+  hpcrun_set_thread_data(td);
+
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
-  hpcrun_set_thread_data(td);
   if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
   if (ENABLED(THREAD_CTXT))
     hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
-  //
-  hpcrun_thread_data_init(id, thr_ctxt, 0, hpcrun_get_num_sample_sources());
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
   // handle event sets for sample sources
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
-
-  // set up initial 'epoch'
-  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init(thr_ctxt);
 
   // sample sources take thread specific action prior to start (often is a 'registration' action);
   SAMPLE_SOURCES(thread_init_action);
@@ -693,7 +712,12 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   return (void*) epoch;
 }
 
-
+/**
+ * Routine to handle the end of the thread:
+ *   call sample sources to stop and finish the thread action
+ *   notify thread manager of the end of the thread (so that it can
+ *      either clean-up the data, or reuse the data for another thread)
+ **/ 
 void
 hpcrun_thread_fini(epoch_t *epoch)
 {
@@ -708,18 +732,18 @@ hpcrun_thread_fini(epoch_t *epoch)
     SAMPLE_SOURCES(thread_fini_action);
     lushPthr_thread_fini(&TD_GET(pthr_metrics));
 
-    // FIXME: currently breaks the build.
-#if 0 // defined(HOST_SYSTEM_IBM_BLUEGENE)
-    EMSG("Backtrace for last sample event:\n");
-    dump_backtrace(epoch, epoch->btbuf_cur);
-#endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
-
     if (hpcrun_get_disabled()) {
       return;
     }
 
-    hpcrun_write_profile_data(&(TD_GET(core_profile_trace_data)));
-    hpcrun_trace_close(&(TD_GET(core_profile_trace_data)));
+    // inform thread manager that we are terminating the thread
+    // thread manager may enqueue the thread_data (in compact mode)
+    // or flush the data into hpcrun file
+
+    thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_threadMgr_data_put(epoch, td);
+
+    TMSG(PROCESS, "End of thread");
   }
 }
 
@@ -1057,7 +1081,6 @@ monitor_init_thread(int tid, void* data)
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
-  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   hpcrun_safe_exit();
 

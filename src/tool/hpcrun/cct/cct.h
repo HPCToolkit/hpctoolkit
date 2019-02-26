@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -245,7 +245,14 @@ extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 //
 // Writing operation
 //
-int hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags);
+// cct2metrics_t is defined in cct2metrics.h but we cannot include this header
+//  beceause cct2metrics.h includes this file (cct.h)
+//
+// TODO: need to declare cct2metrics_t here to avoid to cyclic inclusion
+typedef struct cct2metrics_t cct2metrics_t;
+
+int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
+                      cct_node_t* cct, FILE* fs, epoch_flags_t flags);
 //
 // Utilities
 //
@@ -285,17 +292,39 @@ hpcrun_cct_get_root(cct_node_t *node);
 // variable address
 // --------------------------------------------------------------
 
-
 void
 hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target);
 
 bool
 hpcrun_cct_var_static(cct_node_t *node);
 
+
+// --------------------------------------------------------------
+// Node types get and set
+// --------------------------------------------------------------
+
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node);
+
+bool
+hpcrun_cct_is_node_allocation(cct_node_t *node);
+
 void
 hpcrun_cct_set_node_memaccess(cct_node_t *node);
 
 bool
 hpcrun_cct_is_node_memaccess(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_root(cct_node_t *root);
+
+bool
+hpcrun_cct_is_node_root(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_variable(cct_node_t *node);
+
+bool
+hpcrun_cct_is_node_variable(cct_node_t *node);
 
 #endif // cct_h

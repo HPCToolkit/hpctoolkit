@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -278,10 +278,6 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
-  bool doDispPercent = true;
-  bool isPercent = false;
-  bool isVisible = true;
-
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
@@ -291,27 +287,21 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
-    isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
-    doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
-    doDispPercent = false;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -322,8 +312,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
-		    doDispPercent, isPercent);
+    new DerivedDesc(mNmFmt, mDesc, expr, mSrc->isVisible(), true/*isSortKey*/,
+		    mSrc->doDispPercent(), mSrc->isPercent());
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
@@ -374,9 +364,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
-  bool doDispPercent = true;
+  bool doDispPercent = mSrc->doDispPercent();
+  bool isVisible = mSrc->isVisible();
   bool isPercent = false;
-  bool isVisible = true;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.

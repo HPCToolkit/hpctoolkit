@@ -95,6 +95,7 @@
 #include <sample-sources/datacentric/datacentric.h>
 
 #include "data_tree.h"
+#include "data-overrides.h"
 
 
 // FIXME: the inline getcontext macro is broken on 32-bit x86, so
@@ -108,8 +109,8 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define MIN_BYTES 1024
 #define NUM_DATA_METRICS 2
+
 
 /******************************************************************************
  * type definitions
@@ -183,8 +184,9 @@ static char *loc_name[4] = {
 
 static int datainfo_size = sizeof(struct datatree_info_s);
 
-static int alloc_metric_id  = -1;
-static int addr_metric_id   = -1;
+static int addr_end_metric_id  = -1;
+static int addr_start_metric_id   = -1;
+
 
 /******************************************************************************
  * private operations
@@ -221,20 +223,6 @@ is_initialized()
   return (overrides_status == OVERRIDES_INITIALIZED);
 }
 
-/***
- * @return the metric id of allocation
- */
-static int
-get_metric_alloc_id()
-{
-  return alloc_metric_id;
-}
-
-static int
-get_metric_address()
-{
-  return addr_metric_id;
-}
 
 /**
  * @return true if the module was initialized, and active
@@ -242,10 +230,11 @@ get_metric_address()
 static int
 is_active()
 {
-  return get_metric_alloc_id() >= 0;
+  return datacentric_get_metric_addr_end() >= 0;
 }
 
 
+static const unsigned int MAX_CHAR_FORMULA = 32;
 
 /**
  * initialize metrics
@@ -254,22 +243,26 @@ is_active()
 static void
 metric_initialize()
 {
-  if (alloc_metric_id >= 0)
+  if (addr_end_metric_id >= 0)
     return; // been registered
 
-  addr_metric_id = hpcrun_new_metric();
-  alloc_metric_id = hpcrun_new_metric();
+  addr_start_metric_id = hpcrun_new_metric();
+  addr_end_metric_id   = hpcrun_new_metric();
 
-  hpcrun_set_metric_info(addr_metric_id,  "Address");
-  hpcrun_set_metric_info(alloc_metric_id, "Bytes");
+  // set the formula for metric start address and end address
+  // the start address metric is the minimum address
+  // the end address metric is the maximum of all accessed memory
 
-  size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
-  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
-  memset(aux_info, 0, mem_metrics_size);
+  metric_desc_t *metric_start = hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
+      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
+  metric_desc_t *metric_end   = hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
+      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
-  thread_data_t* td = hpcrun_get_thread_data();
+  metric_start->formula = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(metric_start->formula, "min($%d)", addr_start_metric_id);
 
-  td->core_profile_trace_data.perf_event_info = aux_info;
+  metric_end->formula   = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(metric_end->formula, "max($%d)", addr_end_metric_id);
 }
 
 /**
@@ -425,28 +418,45 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right     = NULL;
 
   if (is_active()) {
-    sampling_info_t info;
-    memset(&info, 0, sizeof(sampling_info_t));
-    info.flags = SAMPLING_IN_MALLOC;
-    int metric = get_metric_alloc_id();
+    thread_data_t *td = hpcrun_get_thread_data();
+    if (!td || !td->core_profile_trace_data.epoch) {
+      // if we are called too early and epoch is not set,
+      // we return immediately, and no need to get malloc information
+      // this mostly happens inside a library initialization
+      return;
+    }
 
-    sample_val_t smpl = hpcrun_sample_callpath(uc, metric,
-                                               (hpcrun_metricVal_t) {.i=bytes},
-                                               0, 1, &info);
+    int metric_start_addr = datacentric_get_metric_addr_start();
 
+    // record the call path to this allocation, and the address
+    sample_val_t smpl = hpcrun_sample_callpath(uc, metric_start_addr,
+                                               (hpcrun_metricVal_t) {.p=appl_ptr},
+                                               0, 1, NULL);
+
+    // update the number of metric counter
+    metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);
+    info_aux->num_samples++;
+
+    // record the end address of this allocation
     metric_set_t *mset = hpcrun_reify_metric_set(smpl.sample_node);
     hpcrun_metricVal_t value;
-    value.p = appl_ptr;
+    value.p = appl_ptr + bytes;
+    int metric_end_addr = datacentric_get_metric_addr_end();
 
-    hpcrun_metric_std_set(get_metric_address(), mset, value);
+    hpcrun_metric_std_set(metric_end_addr, mset, value);
+
+    // update the number of metric counter
+    info_aux = &(td->core_profile_trace_data.perf_event_info[metric_end_addr]);
+    info_aux->num_samples++;
 
     info_ptr->context = smpl.sample_node;
-    
-    thread_data_t *td = hpcrun_get_thread_data();
-    metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric]);
-    info_aux->num_samples++;
-    
     loc_str = loc_name[loc];
+    
+    // mark that this node is an allocation node
+    // inside hpcrun file, we'll give a special flag in this node so that
+    // hpcprof will keep its id and link it to the mem_access node
+    hpcrun_cct_set_node_allocation(smpl.sample_node);
+
   } else {
     info_ptr->context = NULL;
     loc_str = "inactive";
@@ -516,7 +526,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 	 name, bytes, sys_ptr);
     return sys_ptr;
   }
-  if (bytes <= MIN_BYTES) return sys_ptr;
+  if (bytes <= DATACENTRIC_MIN_BYTES) return sys_ptr;
 
   TMSG(DATACENTRIC, "%s: bytes: %ld", name, bytes);
 
@@ -774,7 +784,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   } else if (use_datacentric_prob && (random()/(float)RAND_MAX > datacentric_prob)) {
     active = 0;
     inactive_mesg = "not sampled";
-  } else if (bytes <= MIN_BYTES) {
+  } else if (bytes <= DATACENTRIC_MIN_BYTES) {
     active = 0;
     inactive_mesg = "size too small";
   }
@@ -811,3 +821,27 @@ finish:
   }
   return appl_ptr;
 }
+
+
+
+/////////////////////////////////////////////////////////
+// INTERFACES
+//
+// Exported functions
+/////////////////////////////////////////////////////////
+
+/***
+ * @return the metric id of allocation
+ */
+int
+datacentric_get_metric_addr_end()
+{
+  return addr_end_metric_id;
+}
+
+int
+datacentric_get_metric_addr_start()
+{
+  return addr_start_metric_id;
+}
+

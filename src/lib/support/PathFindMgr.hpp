@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -118,6 +118,10 @@ public:
   //     "r" - read access
   //     "w" - write access
   //     "x" - execute access
+  //
+  // FIXME: better not to use a static buffer for the pathfind answer,
+  // but that requires changing the API.  (This is a hack to avoid
+  // dealing with malloc/free issues.)
   //
   // The returned pointer points to an area that will be reused on subsequent
   // calls to this function, and must not be freed by the caller.
@@ -276,6 +280,8 @@ private:
 
   static const uint64_t s_sizeMax = 20 * 1024 * 1024; // default is 20 MB
   uint64_t m_size;
+
+  std::string m_pathfind_ans;
 };
 
 #endif

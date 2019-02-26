@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -108,6 +108,11 @@ public:
 public:
   // Parsed Data: Command
   const std::string& getCmd() const;
+
+  int jobs;
+  int jobs_parse;
+  int jobs_symtab;
+  bool show_time;
 
   // Parsed Data: optional arguments
   std::string lush_agent;

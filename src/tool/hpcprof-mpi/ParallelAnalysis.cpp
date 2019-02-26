@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,7 @@ using std::string;
 //*************************** Forward Declarations **************************
 
 #define DBG_CCT_MERGE 0
+#define DBG_PARALLEL_ANALYSIS 0
 
 //***************************************************************************
 
@@ -145,17 +146,17 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = new uint8_t[size];
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
 
-  DIAG_DevMsgIf(1, "broadcast " << size << " bytes" << std::endl);
+  DIAG_DevMsgIf(DBG_PARALLEL_ANALYSIS, myRank << ": broadcast " << size << " bytes" << std::endl);
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
 
   if (myRank != 0) {
     profile = unpackProfile(buf, size);
   }
 
-  delete [] buf;
+  free(buf);
 }
 
 void
@@ -176,7 +177,7 @@ broadcast
   broadcast_sizet(size, comm);
 
   if (myRank != 0) {
-    buf = new uint8_t[size];
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
 
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
@@ -187,7 +188,7 @@ broadcast
     delete rhs;
   }
 
-  delete [] buf;
+  free(buf);
 }
 
 

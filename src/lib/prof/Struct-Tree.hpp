@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -153,6 +153,8 @@ public:
   static const std::string UnknownLMNm;
   static const std::string UnknownFileNm;
   static const std::string UnknownProcNm;
+  static const std::string UnknownGlobalVariable;
+
   static const SrcFile::ln UnknownLine;
 
   static const std::string PartialUnwindProcNm;
@@ -260,6 +262,7 @@ public:
     TyLoop,
     TyStmt,
     TyRef,
+    TyVariable,
     TyANY,
     TyNUMBER
   };
@@ -853,7 +856,7 @@ public:
 
 //***************************************************************************
 // Root, Group, LM, File, Proc, Loop,
-// Stmt
+// Stmt, Variable
 //***************************************************************************
 
 // --------------------------------------------------------------------------
@@ -980,6 +983,25 @@ private:
 #if 0
   static RealPathMgr& s_realpathMgr;
 #endif
+};
+
+
+
+// --------------------------------------------------------------------------
+// Variable
+// --------------------------------------------------------------------------
+
+class Variable: public ACodeNode {
+public:
+  Variable(std::string nm, ANode* parent,
+      VMA begVMA = 0, VMA endVMA = 0)
+  :ACodeNode(TyVariable, parent, ln_NULL,ln_NULL, begVMA, endVMA)
+ {
+    m_name = nm;
+  }
+
+private:
+  std::string m_name; // the variable name
 };
 
 

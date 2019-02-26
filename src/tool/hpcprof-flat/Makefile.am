@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -77,14 +77,12 @@ MYSOURCES = \
 	Args.hpp Args.cpp \
 	ConfigParser.hpp ConfigParser.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
-	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@XERCES_LDFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -100,7 +98,7 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
+	@BINUTILS_LIBS@ \
 	@HOST_HPCPROF_FLAT_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY

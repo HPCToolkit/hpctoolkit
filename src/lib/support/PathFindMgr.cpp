@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -150,8 +150,7 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // -------------------------------------------------------
   // 1. Resolve 'name' either by pathfind cache or by pathfind_slow
   // -------------------------------------------------------
-  static std::string name_real;
-  name_real = name;
+  std::string name_real = name;
 
   bool found = find(name_real);
  
@@ -172,10 +171,11 @@ PathFindMgr::pathfind(const char* pathList, const char* name, const char* mode)
   // current-working-directory.
   // -------------------------------------------------------
 
-  name_real = RealPath(name_real.c_str());
+  // FIXME: static buffer (per object) for pathfind answer
+  m_pathfind_ans = RealPath(name_real.c_str());
 
-  if (found || name_real[0] == '/') {
-    return name_real.c_str();
+  if (found || m_pathfind_ans[0] == '/') {
+    return m_pathfind_ans.c_str();
   }
   else {
     return NULL; // failure
@@ -198,11 +198,12 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
   char* myPathList  = new char[len];
   char* pathList_nr = new char[len];
   char* pathList_r  = new char[len];
+  char* saveptr = NULL;
   strcpy(myPathList, pathList);
   pathList_nr[0] = '\0';
   pathList_r[0]  = '\0';
   
-  char* aPath = strtok(myPathList, ":");
+  char* aPath = strtok_r(myPathList, ":", &saveptr);
   int first_nr = 1;
   while (aPath != NULL) {
     if (PathFindMgr::isRecursivePath(aPath)) {
@@ -218,7 +219,7 @@ PathFindMgr::pathfind_slow(const char* pathList, const char* name,
       first_nr = 0; // the first copy has been made
     }
 
-    aPath = strtok((char*)NULL, ":");
+    aPath = strtok_r((char*)NULL, ":", &saveptr);
   }
   delete[] myPathList;
 

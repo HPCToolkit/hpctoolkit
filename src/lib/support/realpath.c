@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,8 @@
 const char*
 RealPath(const char* nm)
 {
-  static char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+  static __thread char _RealPathBuf[FILENAME_MAX]; // PATH_MAX
+
   if (realpath(nm, _RealPathBuf) == NULL) {
     return nm; /* error; return orig string */
   }

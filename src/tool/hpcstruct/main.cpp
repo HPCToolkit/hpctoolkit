@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,13 @@ using std::endl;
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
+
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
+
 
 //**************************** Support Functions ****************************
 
@@ -146,20 +153,42 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  bool ourDemangle = false;
+  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // open the specified load module
+  // Parameters on how to run hpcstruct
   // ------------------------------------------------------------
-  InputFile loadModule;
-  bool loadModuleOpen = loadModule.openFile(args.in_filenm);
-  if (!loadModuleOpen) {
-    // error already printed by openFile
-    exit(1);
+
+#ifdef ENABLE_OPENMP
+  opts.jobs = args.jobs;
+  opts.jobs_parse = args.jobs_parse;
+  opts.jobs_symtab = args.jobs_symtab;
+
+  // default is to run serial (for correctness), unless --jobs is
+  // specified.
+  if (opts.jobs < 1) {
+    opts.jobs = 1;
   }
+  if (opts.jobs_parse < 1) {
+    opts.jobs_parse = opts.jobs;
+  }
+
+  // libdw is not yet thread-safe, so run symtab serial unless
+  // specifically requested.
+  if (opts.jobs_symtab < 1) {
+    opts.jobs_symtab = 1;
+  }
+  omp_set_num_threads(1);
+#else
+  opts.jobs = 1;
+  opts.jobs_parse = 1;
+  opts.jobs_symtab = 1;
+#endif
+
+  opts.show_time = args.show_time;
 
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
@@ -171,9 +200,8 @@ realmain(int argc, char* argv[])
       demangle_function = args.demangle_function.c_str();
     }
     hpctoolkit_demangler_init(demangle_library, demangle_function);
-    ourDemangle = true;
+    opts.ourDemangle = true;
   }
-
 
   // ------------------------------------------------------------
   // Build and print the program structure tree
@@ -205,6 +233,7 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
+#if 0
   ProcNameMgr* procNameMgr = NULL;
   if (args.lush_agent == "agent-c++") {
     procNameMgr = new CppNameMgr;
@@ -212,9 +241,10 @@ realmain(int argc, char* argv[])
   else if (args.lush_agent == "agent-cilk") {
     procNameMgr = new CilkNameMgr;
   }
+#endif
 
-  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
-			       ourDemangle, procNameMgr);
+  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
+			       args.searchPathStr, opts);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

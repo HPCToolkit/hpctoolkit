@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -60,9 +60,6 @@
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 
-#############################################################################
-# Local settings
-#############################################################################
 
 #############################################################################
 # Automake rules
@@ -84,11 +81,6 @@ SUBDIRS += hpcserver
 endif
 endif
 
-if OPT_ENABLE_HPCRUN_FLAT
-SUBDIRS += hpcrun-flat \
-	hpcprof-flat
-endif
-
 if OPT_ENABLE_HPCRUN
   SUBDIRS += \
 	hpcrun \
@@ -103,9 +95,6 @@ if OPT_ENABLE_HPCSERVER
 endif
 endif
 
-#if OPT_ENABLE_DEVTOOLS
-#  SUBDIRS += hpclump
-#endif
 
 #############################################################################
 # Other rules

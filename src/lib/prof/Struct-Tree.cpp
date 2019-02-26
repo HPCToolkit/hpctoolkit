@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -118,6 +118,8 @@ const std::string Tree::UnknownFileNm = "<unknown file>";
 const std::string Tree::UnknownProcNm = "<unknown procedure>";
 
 const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
+
+const std::string Tree::UnknownGlobalVariable = "<unknown variable>";
 
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
@@ -1581,7 +1583,7 @@ ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
+    writeMetricsXML(os, NULL, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
     os << "\n";
   }
  

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -115,6 +115,11 @@ Options: General\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
+  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
+                       default is same value for --jobs.\n\
+  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
+  --time               Display stats on time and space usage.\n\
 \n\
 Options: Structure recovery\n\
   -I <path>, --include <path>\n\
@@ -184,6 +189,11 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
+  { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
+
   // Demangler library
   {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
@@ -252,6 +262,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  jobs = -1;
+  jobs_parse = -1;
+  jobs_symtab = -1;
+  show_time = false;
   searchPathStr = ".";
   isIrreducibleIntervalLoop = true;
   isForwardSubstitution = true;
@@ -343,7 +357,24 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("debug-proc")) {
       dbgProcGlob = parser.getOptArg("debug-proc");
     }
-    
+
+    // Number of openmp threads (jobs, jobs-parse)
+    if (parser.isOpt("jobs")) {
+      const string & arg = parser.getOptArg("jobs");
+      jobs = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("jobs-parse")) {
+      const string & arg = parser.getOptArg("jobs-parse");
+      jobs_parse = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("jobs-symtab")) {
+      const string & arg = parser.getOptArg("jobs-symtab");
+      jobs_symtab = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("time")) {
+      show_time = true;
+    }
+
     // Check for LUSH options (TODO)
     if (parser.isOpt("agent-c++")) {
       lush_agent = "agent-c++";

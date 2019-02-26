@@ -75,18 +75,21 @@
 #include <hpcrun/metrics.h>
 #include <sample_event.h>
 #include <main.h>
+#include <loadmap.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
 
+#include <cct/cct_bundle.h>
+#include <cct/cct.h>
+#include <cct/cct_addr.h>   // struct var_addr_s
+
 #include "include/queue.h"  // linked-list
 
-#include "cct_addr.h"       // struct var_addr_s
 #include "datacentric.h"
+#include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
-
-#include "place_folder.h"
 
 #include "sample-sources/perf/event_custom.h"
 
@@ -100,7 +103,6 @@
  * prototypes and forward declaration
  *****************************************************************************/
 
-//FUNCTION_FOLDER(static)
 
 /******************************************************************************
  * data structure
@@ -155,6 +157,32 @@ struct perf_mem_metric {
 
 
 static struct perf_mem_metric metric;
+
+//
+// "Special" routine to serve as a placeholder for "dynamic" allocatopm
+//
+
+
+/******************************************************************************
+ * Place forlder
+ *****************************************************************************/
+
+static void
+DATACENTRIC_Dynamic(void)
+{}
+
+
+//
+// "Special" routine to serve as a placeholder for "static" allocatopm
+//
+
+static void
+DATACENTRIC_Static(void)
+{}
+
+static void
+DATACENTRIC_Unknown(void)
+{}
 
 /******************************************************************************
  * PRIVATE Function implementation
@@ -278,6 +306,45 @@ datacentric_record_store_mem( cct_node_t *node,
 }
 
 
+static cct_node_t*
+datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
+                             uintptr_t addr_start, uintptr_t addr_end)
+{
+  // create a node for this variable
+
+  ip_normalized_t npc;
+  cct_addr_t addr;
+
+  memset(&npc,  0, sizeof(ip_normalized_t));
+  memset(&addr, 0, sizeof(cct_addr_t));
+
+  // create a node with the ip = memory address
+  // this node will be translated by hpcprof and name it with
+  //  the static variable that matches with the memory address
+
+  npc.lm_ip    = addr_start + 1; // hpcprof sometimes decrements the value of IP.
+  npc.lm_id    = lm_id;
+  addr.ip_norm = npc;
+
+  cct_node_t *context = hpcrun_cct_insert_addr(root, &addr);
+
+  // assign the start address and the end address metric
+  // for this node
+  int metric_id      = datacentric_get_metric_addr_start();
+  metric_set_t *mset = hpcrun_reify_metric_set(context);
+
+  hpcrun_metricVal_t value;
+  value.p = (void*)addr_start;
+  hpcrun_metric_std_min(metric_id, mset, value);
+
+  metric_id = datacentric_get_metric_addr_end();
+  value.p   = (void*)addr_end;
+  hpcrun_metric_std_max(metric_id, mset, value);
+
+  return context;
+}
+
+
 
 /***
  * manage signal handler for datacentric event
@@ -289,25 +356,94 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   if ( (current == NULL)      ||  (mmap_data == NULL) ||
        (sv.sample_node == NULL))
     return;
- 
+
   cct_node_t *node = sv.sample_node;
-  void *start = NULL, *end = NULL;
 
   // ---------------------------------------------------------
   // memory information exists:
   // - check if we have this variable address in our database
-  // - if it's in our database, add it to the cct node
+  //   - if it's in our database (either static or dynamic), add it to the cct node
+  //   - otherwise, it must be unknown variable. Not sure what we should do with this
   // ---------------------------------------------------------
   if (mmap_data->addr) {
-    datatree_info_t *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
 
-    if (info == NULL || start == NULL) {
-      // unknown or not in our database
-      return;
+    // --------------------------------------------------------------
+    // store the memory address reported by the hardware counter to the metric
+    // even if the address is outside the range of recognized variable (see
+    //    datatree_splay_lookup() function which returns if the address is recognized)
+    // we may need to keep the information (?).
+    // another solution is to create a sibling node to avoid to step over the
+    //  recognized metric.
+    // --------------------------------------------------------------
+
+    void *start = NULL, *end = NULL;
+
+    datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+    cct_node_t *var_context = NULL;
+    thread_data_t* td       = hpcrun_get_thread_data();
+    cct_bundle_t *bundle    = &(td->core_profile_trace_data.epoch->csdata);
+
+    // --------------------------------------------------------------
+    // try to find the accessed memory address from the database
+    // if the accessed memory is within the range (found in the database), then it must be
+    // either static variable or heap allocation
+    // otherwise, we encounter an unknown variable
+    // --------------------------------------------------------------
+
+    if (info) {
+      var_context = info->context;
+
+      if (info->magic == DATA_STATIC_MAGIC) {
+        // attach this node of static variable to the datacentric root
+
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
+        cct_addr_t *addr             = hpcrun_cct_addr(sv.sample_node);
+
+        var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
+                        (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+
+        // mark that this is a special node for global variable
+        // hpcprof will treat specially to print the name of the variable to xml file
+        // (if hpcstruct provides the information)
+
+        hpcrun_cct_set_node_variable(var_context);
+
+      } else {
+        // dynamic allocation
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
+
+        var_context = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
+
+        hpcrun_cct_set_node_allocation(var_context);
+      }
+    } else {
+      // unknown variable
+      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+      var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
+
+      hpcrun_cct_set_node_variable(var_context);
     }
 
-    // if necessary, add the start of the variable address to the cct node
-    hpcrun_cct_var_add(node, start, info->context);
+    // copy the callpath of the sample to the variable context
+    node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, var_context);
+
+    metric_set_t *mset = hpcrun_reify_metric_set(node);
+
+    // variable address is store in the database
+    // record the interval of this access
+
+    hpcrun_metricVal_t val_addr;
+    val_addr.p = (void *)mmap_data->addr;
+
+    // check if this is the minimum value. if this is the case, record it in the metric
+    int metric_id = datacentric_get_metric_addr_start();
+    hpcrun_metric_std_min(metric_id, mset, val_addr);
+
+    // check if this is the maximum value. if this is the case, record it in the metric
+    metric_id = datacentric_get_metric_addr_end();
+    hpcrun_metric_std_max(metric_id, mset, val_addr);
 
     hpcrun_cct_set_node_memaccess(node);
   }
@@ -325,17 +461,24 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
   if (data_src.mem_op & P(OP, LOAD)) {
     datacentric_record_load_mem( node, &data_src );
+    datacentric_record_load_mem( sv.sample_node, &data_src );
   }
   if (data_src.mem_op & P(OP, STORE)) {
     datacentric_record_store_mem( node, &data_src );
+    datacentric_record_store_mem( sv.sample_node, &data_src );
   }
-
-  TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
 }
+
 
 
 /****
  * register datacentric event
+ * the method is designed to be called by the main thread or at least by one thread,
+ *  during initialization of the process (before creation of OpenMP threads).
+ *
+ *  This method will create metrics for different memory events and then the
+ *  metrics are read-only, it will not modified by others.
+ *  All children threads will use this metrics to record the memory activities.
  */
 static int
 datacentric_register(sample_source_t *self,
@@ -365,10 +508,10 @@ datacentric_register(sample_source_t *self,
   hpcrun_set_metric_info(metric.memstore, "MEM-Store");
 
   metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-l1hit");
+  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
 
   metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-l1miss");
+  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
 
   // ------------------------------------------
   // Memory load miss metric
@@ -381,8 +524,6 @@ datacentric_register(sample_source_t *self,
   // ------------------------------------------
   metric.memllc_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
-
-
 
   return 1;
 }
@@ -404,4 +545,3 @@ datacentric_init()
 
   event_custom_register(event_datacentric);
 }
-

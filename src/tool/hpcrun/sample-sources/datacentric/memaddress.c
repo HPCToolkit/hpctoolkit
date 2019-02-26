@@ -54,10 +54,11 @@
 
 #include "sample-sources/perf/perf-util.h"    // event_info_t, perf_attr_init
 #include "sample-sources/perf/event_custom.h" // event_custom_t
+#include "sample-sources/perf/perf_skid.h"    // precice ip
 
 #include "data_tree.h"
 
-#include <place_folder.h>
+#include "place_folder.h"
 
 /******************************************************************************
  *  MACROs
@@ -161,12 +162,13 @@ memcentric_register(sample_source_t *self, event_custom_t *event, struct event_t
   attr->type   = PERF_TYPE_SOFTWARE;
 
   perf_util_attr_init(
+      EVNAME_MEMORY_CENTRIC,
       attr,
       true                      /* use_period*/,
       threshold.threshold_num   /* use the default */,
       sample_type               /* need additional info to gather memory address */
   );
-  perf_util_set_max_precise_ip(attr);
+  perf_skid_set_max_precise_ip(attr);
 
   event_info->attr.sample_id_all = 1;
 

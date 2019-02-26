@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -134,7 +134,7 @@ prof_abort
 //***************************************************************************
 
 #define DBG               0
-#define DBG_DATA          1
+#define DBG_DATA          0
 #define MAX_PREFIX_CHARS 64
 
 
@@ -581,7 +581,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     uint id = strct->id();
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int fake_procedure = 0;
 
     if (type == 1) { // LoadModule
       nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
@@ -709,8 +709,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
+    if (fake_procedure > 0) {
+      os << " f" << MakeAttrNum(fake_procedure);
     } 
 
     os << "/>\n";
@@ -898,7 +898,7 @@ Profile::dump(std::ostream& os) const
   m_loadmap->dump(os);
 
   if (m_cct) {
-    m_cct->dump(os, CCT::Tree::OFlg_DebugAll);
+    m_cct->dump(m_mMgr, os, CCT::Tree::OFlg_DebugAll);
   }
   return os;
 }
@@ -1308,6 +1308,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN");
 
+    // keep the show status consistent between hpcrun and experiment.xml
+    m->isVisible(mdesc.flags.fields.show == 1);
+    m->doDispPercent(mdesc.flags.fields.showPercent == 1);
+
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
     }
@@ -1347,15 +1351,17 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     if (doMakeInclExcl) {
       Metric::SampledDesc* mSmpl =
-	new Metric::SampledDesc(nm, desc, mdesc.period,
-				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN");
+          new Metric::SampledDesc(nm, desc, mdesc.period,
+              true/*isUnitsEvents*/,
+              profFileName, profRelId, "HPCRUN");
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	mSmpl->nameSfx(m_sfx);
+        mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
-      
+      mSmpl->isVisible(mdesc.flags.fields.show);
+      mSmpl->doDispPercent(mdesc.flags.fields.showPercent);
+
       prof->metricMgr()->insert(mSmpl);
     }
   }
@@ -1469,8 +1475,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     : NULL;
 
   ExprEval eval;
-  std::vector<CCT::Stmt*> listMemAccessNodes;
-  DIAG_DevMsgIf(DBG, ". read nodes: " << numNodes );
+  DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1530,80 +1535,42 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 #endif
 
-    if (hpcrun_fmt_is_allocation_type(nodeFmt.node_type) && node_parent) {
-      // special node for datacentric: this node points to the source of
-      //  variable allocation
-      // there is no need to add a new node since the information is embedded
-      // to the parent
-      if (typeid(*node_parent) == typeid(CCT::Stmt)) {
-        CCT::Stmt *parent_stmt = (CCT::Stmt*) node_parent;
+    // ----------------------------------------------------------
+    // Create node and link to parent
+    // ----------------------------------------------------------
 
-        parent_stmt->id_node_alloc(nodeFmt.data.id_node_alloc);
-        parent_stmt->start_address(nodeFmt.data.start_address);
+    std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
+        cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
+    CCT::ADynNode* node = n2.first;
+    CCT::ADynNode* node_sib = n2.second;
 
-        listMemAccessNodes.push_back(parent_stmt);
-        DIAG_DevMsgIf(0, "add mem access " << nodeFmt.data.id_node_alloc <<
-                         " @ " << nodeFmt.data.start_address);
+    DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
 
+    if (node_parent) {
+      // If 'node' is not the secondary root, perform sanity check
+      if (!node->isSecondarySynthRoot()) {
+        if (node->lmId_real() == LoadMap::LMId_NULL) {
+          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+        }
+      }
+
+      node->link(node_parent);
+      if (node_sib) {
+        node_sib->link(node_parent);
       }
     }
     else {
-      // ----------------------------------------------------------
-      // Create node and link to parent
-      // ----------------------------------------------------------
-
-      std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-          cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
-      CCT::ADynNode* node = n2.first;
-      CCT::ADynNode* node_sib = n2.second;
-
-      DIAG_DevMsgIf(0, "fmt_cct_fread: " << hex << node << " -> " << node_parent << dec);
-
-      if (node_parent) {
-        // If 'node' is not the secondary root, perform sanity check
-        if (!node->isSecondarySynthRoot()) {
-          if (node->lmId_real() == LoadMap::LMId_NULL) {
-            DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-          }
-        }
-
-        node->link(node_parent);
-        if (node_sib) {
-          node_sib->link(node_parent);
-        }
-      }
-      else {
-        DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
-        DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-        cct->root(node);
-      }
-
-      cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+      DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
+      DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
+      cct->root(node);
     }
-  }
 
-  // specific to data-centric to connect with the location of allocation node
-  // theoretically, the allocation occurs in a statement node (leaf node)
-
-  for(CCT::Stmt *stmt : listMemAccessNodes) {
-    // most allocated node is leaf
-    // start with leaf mark (negative id)
-    int id_alloc = - stmt->id_node_alloc();
-
-    CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(id_alloc);
-
-    if (it != cctNodeMap.end()) {
-      stmt->node_alloc(it->second);
-      DIAG_DevMsgIf(0, stmt->id() << " id_alloc " << id_alloc <<" -> " << it->second->id());
-
-    } else {
-      // try with non-leaf nodes
-      it = cctNodeMap.find(-id_alloc);
-      if (it != cctNodeMap.end()) {
-        stmt->node_alloc(it->second);
-        DIAG_DevMsgIf(0, "id_alloc " << -id_alloc <<" -> " << it->second);
-      }
+    cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+#if DBG_DATA
+    if (node->hpcrun_node_type() > 20) {
+      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() << "\n" ;
     }
+#endif
   }
 
   if (outfs) {
@@ -1942,9 +1909,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     cpId = nodeId;
   }
 
-  LoadMap::LMId_t lmId = nodeFmt.lm.lm_id;
+  LoadMap::LMId_t lmId = nodeFmt.lm_id;
 
-  VMA lmIP        = (VMA)nodeFmt.lm.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  VMA lmIP        = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
   ushort opIdx    = 0;
   lush_lip_t* lip = NULL;
 
@@ -2002,18 +1969,25 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
-    double mval = 0;
-    switch (mdesc->flags().fields.valFmt) {
-    case MetricFlags_ValFmt_Int:
-      mval = (double)m.i; break;
-    case MetricFlags_ValFmt_Real:
-      mval = m.r; break;
-    default:
-      DIAG_Die(DIAG_UnexpectedInput);
+    if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
+      // special treatment for address-type metric
+      // we don't want to convert to double and multiply by period
+      metricData.metricObject(i_dst) = m;
+
+    } else {
+
+      double mval = 0;
+      switch (mdesc->flags().fields.valFmt) {
+      case MetricFlags_ValFmt_Int:
+        mval = (double)m.i; break;
+      case MetricFlags_ValFmt_Real:
+        mval = m.r; break;
+
+      default:
+        DIAG_Die(DIAG_UnexpectedInput);
+      }
+      metricData.metric(i_dst) = mval * (double)mdesc->period();
     }
-
-    metricData.metric(i_dst) = mval * (double)mdesc->period();
-
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
     }
@@ -2047,31 +2021,26 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt, lmId, lmIP, opIdx, lip,
           metricData);
   }
 
   if (!isLeaf) {
     if (hasMetrics) {
-      if (hpcrun_fmt_is_memaccess_type(nodeFmt.node_type)) {
-        //DIAG_Msg(0, "node mem access");
-      } else {
+      n_leaf = n;
 
-        n_leaf = n;
+      const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
 
-        const uint cpId0 = HPCRUN_FMT_CCTNodeId_NULL;
+      uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
+      Metric::IData metricData0(mSz);
 
-        uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
-        Metric::IData metricData0(mSz);
+      lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-        lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
-
-        n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
-        lipCopy, metricData0);
-      }
+      n = new CCT::Call(NULL, cpId0, nodeFmt, lmId, lmIP, opIdx,
+      lipCopy, metricData0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId, nodeFmt, lmId, lmIP, opIdx,
 			lip, metricData);
     }
   }
@@ -2090,10 +2059,18 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
   const Prof::CCT::ADynNode* n_dyn_p =
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+
+  n_fmt.node_type = n.hpcrun_node_type();
+#if DBG_DATA
+  if (n_fmt.node_type > 20) {
+    std::cerr << "Error: invalid-node-type: " << n_fmt.node_type <<", id: " << n_fmt.id << "\n";
+  }
+#endif
+
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm.lm_id   = Prof::LoadMap::LMId_NULL;
-    n_fmt.lm.lm_ip   = 0;
+    n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
+    n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));
   }
@@ -2104,8 +2081,8 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
       n_fmt.as_info = n_dyn.assocInfo();
     }
     
-    n_fmt.lm.lm_id = (uint16_t) n_dyn.lmId();
-    n_fmt.lm.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
+    n_fmt.lm_id = (uint16_t) n_dyn.lmId();
+    n_fmt.lm_ip = n_dyn.Prof::CCT::ADynNode::lmIP();
 
     if (flags.fields.isLogicalUnwind) {
       lush_lip_init(&(n_fmt.lip));

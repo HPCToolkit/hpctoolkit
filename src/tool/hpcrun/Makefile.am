@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -114,7 +114,7 @@ BUILT_SOURCES =
 CLEANFILES =
 
 if OPT_BUILD_FRONT_END
-  bin_SCRIPTS += scripts/hpcsummary
+  pkglibexec_SCRIPTS += scripts/hpcsummary
   pkglibexec_SCRIPTS += scripts/hpclog
   include_HEADERS += hpctoolkit.h
 endif
@@ -348,11 +348,13 @@ MY_BASE_FILES =				\
 	utilities/unlink.h utilities/unlink.c
 
 if OPT_ENABLE_PERF_EVENT
-MY_BASE_FILES +=  			\
-	sample-sources/perf/event_custom.c	\
-	sample-sources/perf/linux_perf.c	\
-	sample-sources/perf/perf-util.c	\
-	sample-sources/perf/perf_mmap.c	
+MY_BASE_FILES +=  \
+	sample-sources/perf/event_custom.c  \
+	sample-sources/perf/linux_perf.c    \
+	sample-sources/perf/perf_event_open.c     \
+	sample-sources/perf/perf-util.c     \
+	sample-sources/perf/perf_mmap.c     \
+	sample-sources/perf/perf_skid.c
 
 MY_CPP_DEFINES  += -DHPCRUN_SS_LINUX_PERF
 
@@ -373,6 +375,7 @@ MY_BASE_FILES +=  			\
 else 
 if HOST_CPU_X86_64
 MY_BASE_FILES +=  			\
+    utilities/arch/x86-family/cpuid.c    \
 	sample-sources/datacentric/pmu_x86.c
 else 
 if HOST_CPU_PPC
@@ -420,6 +423,7 @@ MY_MIPS_FILES = \
 MY_PPC_FILES = \
         trampoline/ppc64/ppc64-tramp.s \
         \
+        utilities/arch/ppc64/cpuid.c   \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
@@ -429,10 +433,14 @@ MY_X86_FILES = \
 
 MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
+        \
+        utilities/arch/ia64/cpuid.c  \
         utilities/arch/ia64/ia64-context-pc.c
 
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
+    \
+	utilities/arch/aarch64/cpuid.c   \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT

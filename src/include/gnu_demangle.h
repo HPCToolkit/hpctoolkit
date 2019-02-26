@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,57 +44,34 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/****************************************************************************
- *
- * File:
- *    gnu_demangle.h
- *
- * Purpose:
- *    [The purpose of this file]
- *
- * Description:
- *    [The set of functions, macros, etc. defined in the file]
- *
- ****************************************************************************/
+// This file is a wrapper around libiberty's demangle.h designed to
+// smooth out some quirks in the header file, some real, some
+// historical.
+//
+// Files that want to use <libiberty/demangle.h> should probably
+// include this file instead.
+//
+// Nothing uses this anymore.  We've replaced cplus_demangle() with
+// abi::__cxa_demangle().  But if you do want to use cplus_demangle(),
+// then reactivate this file.
 
-#ifndef gnu_demangle_H 
-#define gnu_demangle_H
+//***************************************************************************
 
-/*****************************************************************************/
+#if 0
 
-#if defined(__cplusplus)
-extern "C" {
+#ifndef gnu_demangle_h
+#define gnu_demangle_h
+
+// libiberty (incorrectly) assumes that HAVE_DECL_BASENAME has been
+// set from config.h
+#ifndef HAVE_DECL_BASENAME
+#define HAVE_DECL_BASENAME  1
 #endif
 
-  /* We need to avoid name conflicts with GNU's 'cplus_demangle' and,
-     e.g., Sun's demangler of the same name.  In order to do so, we
-     rename GNU's demangler to 'gnu_cplus_demangle'.  We rename the
-     prototype here; the object file's symbol is renamed using
-     'objcopy --redefine-sym'.
-
-     Note: GNU_CPLUS_DEMANGLE is the user interface to the GNU
-     'cplus_demangle' function.  */
-
-# if defined(__sun)
-#   define cplus_demangle     gnu_cplus_demangle /* rename in gnu header */
-#   define GNU_CPLUS_DEMANGLE gnu_cplus_demangle /* public handle */
-# else
-#   define GNU_CPLUS_DEMANGLE cplus_demangle
-# endif
-  
-# include <demangle.h>
-
-# if defined(cplus_demangle)
-#   undef cplus_demangle
-# endif  
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif
+#include <libiberty/demangle.h>
 
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
 
-/*****************************************************************************/
-
-#endif 
+#endif
+#endif

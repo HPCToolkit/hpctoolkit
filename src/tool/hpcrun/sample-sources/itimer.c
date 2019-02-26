@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,6 +84,7 @@
 
 #include "sample_source_obj.h"
 #include "common.h"
+#include "ss-errno.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -105,6 +106,8 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
+
+
 
 /******************************************************************************
  * macros
@@ -674,6 +677,8 @@ METHOD_FN(display_events)
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
@@ -681,7 +686,10 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   if (hpcrun_thread_suppress_sample) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
-    return 0;
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
@@ -696,8 +704,10 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     if (! hpcrun_is_sampling_disabled()) {
       hpcrun_restart_timer(self, 0);
     }
-    // tell monitor the signal has been handled.
-    return 0;
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // Ensure metrics are finalized.
@@ -736,5 +746,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   hpcrun_safe_exit();
 
-  return 0; /* tell monitor that the signal has been handled */
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }

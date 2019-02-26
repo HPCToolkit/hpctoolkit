@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -250,6 +250,7 @@ typedef enum {
   MetricFlags_ValFmt_NULL = 0,
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
+  MetricFlags_ValFmt_Address
 
 } MetricFlags_ValFmt_t;
 
@@ -511,12 +512,12 @@ hpcrun_fmt_doRetainId(uint32_t id)
 //
 // hpcrun node types
 //
-#define NODE_TYPE_REGULAR      0
-#define NODE_TYPE_LEAF         1
-#define NODE_TYPE_ALLOCATION   2
-#define NODE_TYPE_MEMACCESS    4
-
-#define DATA_STATIC_CONTEXT 0x1
+#define NODE_TYPE_REGULAR           0
+#define NODE_TYPE_LEAF              1
+#define NODE_TYPE_ALLOCATION        2
+#define NODE_TYPE_GLOBAL_VARIABLE   4
+#define NODE_TYPE_MEMACCESS         8
+#define NODE_TYPE_ROOT             16
 
 
 #define HPCRUN_FMT_LMId_NULL (0)
@@ -527,25 +528,11 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
 
-struct hpcrun_cct_node_lm_s {
-  // load module id. Use HPCRUN_FMT_LMId_NULL as a NULL value.
-  uint32_t lm_id;
-
-  // static instruction pointer: more accurately, this is a static
-  // 'operation pointer'.  The operation in the instruction packet is
-  // represented by adding 0, 1, or 2 to the instruction pointer for
-  // the first, second and third operation, respectively.
-  hpcfmt_vma_t lm_ip;
-};
 
 // -------------------------
 // data-centric fields
 // -------------------------
 
-struct hpcrun_cct_node_data_s {
-  uint32_t id_node_alloc;
-  uint64_t start_address;
-};
 
 typedef struct hpcrun_fmt_cct_node_t {
 
@@ -557,10 +544,14 @@ typedef struct hpcrun_fmt_cct_node_t {
 
   lush_assoc_info_t as_info;
 
-  union {
-    struct hpcrun_cct_node_lm_s lm;
-    struct hpcrun_cct_node_data_s data;
-  };
+  // load module id. Use HPCRUN_FMT_LMId_NULL as a NULL value.
+  uint16_t lm_id;
+
+  // static instruction pointer: more accurately, this is a static
+  // 'operation pointer'.  The operation in the instruction packet is
+  // represented by adding 0, 1, or 2 to the instruction pointer for
+  // the first, second and third operation, respectively.
+  hpcfmt_vma_t lm_ip;
 
   // static logical instruction pointer
   lush_lip_t lip;
@@ -592,6 +583,11 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
 
+static inline bool
+hpcrun_fmt_root_type_node(uint16_t type)
+{
+  return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+}
 
 // --------------------------------------------------------------------------
 // 
@@ -759,25 +755,6 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
-//***************************************************************************
-// node type interface
-//***************************************************************************
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_allocation_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
-}
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_memaccess_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS);
-}
 
 //***************************************************************************
 

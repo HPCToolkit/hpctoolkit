@@ -1,0 +1,517 @@
+1 Building HPCToolkit with Spack
+================================
+
+1.1 Introduction
+----------------
+
+These notes describe how to build HPCToolkit and its prerequisites with
+Spack instead of hpctoolkit-externals.  The transition from externals to
+spack will be gradual in the sense that both will continue to work for
+some time.  However, going forward, we will stop updating externals and
+instead rely on spack for newer versions of packages.
+
+   These notes are written for someone who has built hpctoolkit before
+and now wants to use spack to build hpctoolkit's dependencies.  If you
+are a more experienced spack user, especially if you want to use spack
+to build hpctoolkit plus several other packages, then you will want to
+adapt these directions to your own needs.
+
+   It is possible to use spack to install all of hpctoolkit (except the
+viewers) or build just the prereqs and then build hpctoolkit with the
+traditional 'configure ; make ; make install'.  Developers will probably
+want to clone the hpctoolkit repository and then run 'configure' and
+'make' manually, but both methods are supported.
+
+   Note: building HPCToolkit with spack for Cray or Blue Gene/Q systems
+is now supported, but both the procedure and the directions are still
+somewhat in flux.
+
+   Spack documentation is available at:
+
+     <https://spack.readthedocs.io/en/latest/index.html>
+
+1.2 Clone Spack and HPCToolkit
+------------------------------
+
+Spack is available via git clone from github.  This includes the core
+spack machinery and recipes for building approximately 3,000 packages
+(and growing).  You also need to clone HPCToolkit for the
+'packages.yaml' file which is used to configure the spack build.
+
+     git clone https://github.com/spack/spack.git
+     git clone https://github.com/hpctoolkit/hpctoolkit.git
+
+After cloning, add the 'spack/bin' directory to your PATH, or else
+source the spack 'setup-env' script.
+
+     (bash)   .  /path/to/spack/share/spack/setup-env.sh
+     (csh)    setenv SPACK_ROOT /path/to/spack/root
+              source $SPACK_ROOT/share/spack/setup-env.csh
+
+It suffices to add 'spack/bin' to your PATH (or even symlink the spack
+launch script).  Sourcing the 'setup-env' script adds extra support for
+modules built by spack.
+
+1.3 Config.yaml
+---------------
+
+'config.yaml' is the top-level spack config file.  This specifies the
+directory layout for installed files and the top-level spack parameters.
+There are two or three fields in this file that you should set for your
+local system.
+
+  1. 'install_tree' - by default, spack installs its packages inside the
+     spack repository at 'spack/opt/spack'.  If you want to use another
+     location, then set this.
+
+  2. 'build_jobs' - by default, spack uses all available hardware
+     threads for parallel make.  For machines with many threads, this
+     can sometimes overwhelm the system and you should set this to a
+     smaller number.  (There is precedent.)
+
+There are also parameters for the locations of the module files, the
+build directories, the cache of downloaded tar files, etc, which you may
+wish to set.
+
+   The default 'config.yaml' file is in the spack repository at
+'spack/etc/spack/defaults'.  The simplest solution is to copy this file
+one directory up and then edit the copy (don't edit the default file
+directly).
+
+     cd spack/etc/spack
+     cp defaults/config.yaml .
+     vi config.yaml
+
+Alternatively, you could put this file in a separate directory, outside
+of the spack repository and then use '-C dir' on the spack command line.
+(The '-C' option goes before the spack command name.)
+
+     spack -C dir install ...
+
+Note: if you put 'config.yaml' in 'spack/etc/spack', then it will apply
+to every spack command for that repository (and you won't forget).
+Putting it in a separate directory is more flexible because you can
+support multiple configurations from the same repository.  But then you
+must use '-C dir' with every spack command or else you will get
+inconsistent results.
+
+   You can view the current configuration with 'spack config'.
+
+     spack [-C dir] config get config
+
+See the spack docs on 'Configuration Files' and 'Basic Settings'.
+
+     <https://spack.readthedocs.io/en/latest/configuration.html>
+     <https://spack.readthedocs.io/en/latest/config_yaml.html>
+
+1.4 Packages.yaml
+-----------------
+
+The 'packages.yaml' file specifies the versions and variants for the
+packages that spack installs and serves as a common reference point for
+HPCToolkit's prerequisites.  This file also specifies the paths or
+modules for system build tools (cmake, python, etc) to avoid rebuilding
+them.  Put this file in the same directory as 'config.yaml'.
+
+   There are two main sections to 'packages.yaml'.  The first specifies
+the versions and variants for hpctoolkit's prereqs.  In most cases, the
+default variants for the latest versions (plus any constraints from
+hpctoolkit's 'package.py' file) should work, but this is not guaranteed.
+
+   A technical note: versions and variants specified in hpctoolkit's
+'package.py' file are hard constraints and should not be changed.
+Variants in 'packages.yaml' are preferences that may be modified for
+your local system.  (But don't report a bug until you have first tried
+the versions from 'packages.yaml' that we supply.)
+
+   There are at least two packages with a variant that you may need to
+change depending on your system.  But always check the current
+'packages.yaml' file to see if any more have been added.
+
+  1. 'intel-tbb' - for very old Intel or AMD systems that don't support
+     transactional memory, change '+tm' to '~tm'.  (This option has no
+     effect on non-x86 systems.)
+
+  2. 'libmonitor' - on Blue Gene/Q, add '+bgq'.
+
+The second section in 'packages.yaml' specifies a path or module for
+system build tools.  Building hpctoolkit's prerequisites requires cmake
+3.0 or later, perl 5.x and python 2.7.x or 3.x.  There are three ways to
+satisfy these requirements: a system installed version (eg, /usr), a
+module or build from scratch.
+
+   By default, spack will rebuild these from scratch, even if your
+version is perfectly fine.  If you already have an installed version and
+prefer to use that instead, then you can specify this in
+'packages.yaml'.  Note that these are only build tools.  Hpctoolkit does
+not link with any of their libraries.
+
+   For example, this entry says that cmake 3.7.2 is available from
+module 'CMake/3.7.2' and that spack should use this instead of building
+its own copy.
+
+     cmake:
+       modules:
+         cmake@3.7.2:  CMake/3.7.2
+       buildable: False
+
+This example says that perl v5.16.3 is installed at '/usr/bin/perl'.
+Note that the 'paths:' entry is the parent directory of 'bin', not the
+bin directory itself (similar to prefix).
+
+     perl:
+       paths:
+         perl@5.16.3:  /usr
+       buildable: False
+
+See the spack docs on 'Build Customization' and 'Specs and
+Dependencies'.
+
+     <https://spack.readthedocs.io/en/latest/build_settings.html>
+     <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
+
+1.5 Compilers and compilers.yaml
+--------------------------------
+
+Building HPCToolkit requires GNU gcc/g++ at a minimum version 4.8 and
+preferably 5.x or later.  By default, spack uses the latest available
+version of gcc, but you can specify a different compiler, if one is
+available.
+
+   Spack uses a separate file, 'compilers.yaml' to store information
+about available compilers.  This file is normally in your home directory
+at '~/.spack/platform' where 'platform' is normally 'linux' (or else
+'cray' or 'bgq').
+
+   The first time you use spack, or after adding a new compiler, you
+should run 'spack compiler find' to have spack search your system for
+available compilers.  If a compiler is provided as a module, then you
+should load the module before running 'find'.  Normally, you only need
+to run 'find' once, unless you want to add or delete a compiler.  You
+can also run 'spack compiler list' and 'spack compiler info' to see what
+compilers spack knows about.
+
+   For example, on one power8 system running RedHat 7.3, /usr/bin/gcc is
+version 4.8.5, but gcc 6.4.0 is available as module 'GCC/6.4.0'.
+
+     $ module load GCC/6.4.0
+
+     $ spack compiler find
+     ==> Added 2 new compilers to /home/krentel/.spack/linux/compilers.yaml
+         gcc@6.4.0  gcc@4.8.5
+     ==> Compilers are defined in the following files:
+         /home/krentel/.spack/linux/compilers.yaml
+
+     $ spack compiler list
+     ==> Available compilers
+     -- gcc rhel7-ppc64le --------------------------------------------
+     gcc@6.4.0  gcc@4.8.5
+
+     $ spack compiler info gcc@6.4
+     gcc@6.4.0:
+         paths:
+             cc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gcc
+             cxx = /opt/apps/software/Core/GCCcore/6.4.0/bin/g++
+             f77 = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
+             fc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
+         modules  = ['GCC/6.4.0']
+         operating system  = rhel7
+
+Note: for compilers from modules, spack does not fill in the 'modules:'
+field in the 'compilers.yaml' file.  You need to do this manually.  In
+the above example, after running 'find', I edited 'compilers.yaml' to
+add 'GCC/6.4.0' to the 'modules:' field as below.  This is important to
+how spack manipulates the build environment.
+
+     - compiler:
+         modules: [GCC/6.4.0]
+         operating_system: rhel7
+         spec: gcc@6.4.0
+         ...
+
+Spack uses '%' syntax to specify the build compiler and '@' syntax to
+specify the version.  For example, suppose you had gcc versions 7.3.1,
+6.4.0 and 5.4.0 available and you wanted to use 6.4.0.  You could write
+this as:
+
+     spack install package %gcc@6.4.0
+
+See the spack docs on 'Compiler Configuration'.
+
+     <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
+
+1.6 Spack Install
+-----------------
+
+First, make sure that you have your 'config.yaml', 'packages.yaml' and
+'compilers.yaml' files in place and edited for your system.  You can see
+how spack will build hpctoolkit with 'spack spec' and 'spack graph'.
+
+     spack spec hpctoolkit
+     spack graph hpctoolkit
+
+Then, there are two ways to install hpctoolkit.  The 'one button' method
+uses spack to install everything.
+
+     spack install hpctoolkit
+
+Alternatively, especially for developers, you can use spack to install
+hpctoolkit's dependencies and then build hpctoolkit with the traditional
+'configure ; make ; make install' method.  Of course, if you already
+used the one-button method, then the spack install tree also contains
+all of hpctoolkit's prereqs.
+
+     spack install --only dependencies hpctoolkit
+
+Then, run hpctoolkit configure with '--with-spack' instead of
+'--with-externals'.  The '--with-spack' option passes the prerequisite
+paths to hpctoolkit in place of all of the individual '--with-pkg'
+options (as did externals).
+
+   Spack installs its packages in subdirectories of 'install_tree' named
+by architecture (platform, OS, machine type) and compiler (family,
+version).  The argument to '--with-spack' should be the directory
+containing all of the individual install directories (normally two
+directories down from the install root).  For example, on my Fedora 26
+build machine, I would use:
+
+     configure  \
+        --prefix=/path/to/hpctoolkit/install/prefix  \
+        --with-spack=/path/to/spack/install_tree/linux-fedora26-x86_64/gcc-7.3.1  \
+        ...
+     make -j <num>
+     make install
+
+Note: if your spack install tree has multiple versions or variants for
+the same package, then '--with-spack' will select the most recent one by
+directory time stamp (and issue a warning).  If this is not what you
+want, then you will need to specify the correct version with a
+'--with-pkg' option.
+
+1.7 Advanced Options
+--------------------
+
+1.7.1 MPI
+.........
+
+HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
+the spack variant '+mpi' is for building hpcprof-mpi, the MPI version of
+hpcprof.  If you want to build hpcprof-mpi, then you need to supply an
+installation of MPI.
+
+   Normally, for systems with compute nodes, you should use an existing
+MPI module that was built for the correct interconnect for your system
+and add this to 'packages.yaml'.  The MPI module should be built with
+the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
+C++ libraries in sync).
+
+1.7.2 PAPI vs Perfmon
+.....................
+
+HPCToolkit can access the Hardware Performance Counters with either PAPI
+or Perfmon (libpfm4).  By default, the hpctoolkit package uses perfmon.
+If you want to use PAPI instead, then build hpctoolkit with '+papi'.
+However, you can't use both due to a conflict in their header files.
+
+   PAPI runs on top of the perfmon library, but PAPI uses its own,
+internal copy of perfmon.  Prior to version 5.6.0, PAPI did not install
+the perfmon header files, so it was impossible to access the perfmon
+events through PAPI.
+
+   However, starting with version 5.6.0, PAPI now installs both the
+perfmon library and its header files.  Hpctoolkit will automatically
+detect this, so if you build hpctoolkit with a recent enough version of
+PAPI, then both the PAPI and perfmon interfaces will be available.
+
+1.8 Platform Specific Notes
+---------------------------
+
+1.8.1 Blue Gene
+...............
+
+Blue Gene systems are being phased out, without a next generation
+replacement, but are still supported by hpctoolkit (for now).  Blue Gene
+normally comes with a Red Hat Enterprise Linux (RHEL) 6.x front end and
+the GNU gcc/g++ 4.4 compilers with is too old to support the latest
+version of hpctoolkit.
+
+   Spack supports two architecture types on Blue Gene.  The front-end
+arch is 'bgq-rhel6-ppc64' and the back-end arch is 'bgq-cnk-ppc64'.
+Normally, it would matter whether we built for the front end or back
+end.  But for the GNU compilers on Blue Gene, both compilers are
+/usr/bin/gcc.  So, we just build for the default back end.
+
+   There are two ways to build hpctoolkit for Blue Gene, depending on
+the version of the compiler and Dyninst.  The simple method uses the
+default GCC 4.4 compiler and Dyninst 9.3.2.  Edit these two entries in
+the 'packages.yaml' file.
+
+  1. Set the dyninst version to '9.3.2'.
+
+  2. Add '+bgq' to the libmonitor variants.
+
+Then, build hpctoolkit with '+bgq' turned on.  The '+bgq' variant adds
+MPI and hpcprof-mpi and supersedes the '+mpi' variant.
+
+     spack install hpctoolkit +bgq
+
+The advanced method involves building a new compiler (gcc 4.8 or 4.9)
+but allows using Dyninst 10.x.  This method also requires TCL or Lmod
+modules.  Currently, the vulcan system at LLNL provides modules, but
+mira/cetus/vesta at ANL do not.
+
+   The advanced method also requires an MPI C++ compiler built for a
+later version of g++.  Vulcan at LLNL has a dotkit module for
+bggcc-4.7.2 which seems to work.  Mira and vesta at ANL have softenv
+modules for +mpiwrapper-gcc and +bgqtoolchain-gcc484.
+
+   First, use spack to build a new compiler.  Dyninst 10.x requires
+gcc 4.8 or later, but libmonitor requires the true back-end
+'powerpc64-bgq-linux-gcc' compiler which is version 4.4.  We settle on
+gcc 4.8.5 as a compromise between these two constraints.
+
+   Edit 'config.yaml' to set 'module_roots' to a directory in which to
+install the modules and then build gcc.
+
+     spack install gcc @4.8.5
+
+Assuming you have modules installed, then load the new gcc module and
+rerun 'spack compiler find'.  This should add the new compiler to your
+'compilers.yaml' file (twice, for front and back end).  For example, on
+vulcan at LLNL,
+
+     module use /path/to/modules/bgq-cnk-ppc64
+     module load gcc-4.8.5-gcc-4.4.7-nzvjwva
+     spack compiler find
+     ==> Added 2 new compilers to /g/g21/krentel1/.spack/bgq/compilers.yaml
+         gcc@4.8.5  gcc@4.8.5
+
+Note: after running 'spack compiler find', you still need to add the
+modules field to the compiler entry in 'compilers.yaml' as in the
+section on Compilers.
+
+   Note: in the above example, we used gcc 4.4.7 to build gcc 4.8.5 (so
+the gcc-4.8.5 package is in the gcc-4.4.7 directory).  You could then
+use gcc 4.8.5 to rebuild 4.8.5, if you like, but this is not necessary.
+
+   Finally, use the new compiler to build hpctoolkit with the new
+compiler.  If you have modified the dyninst entry in 'packages.yaml',
+then reset the dyninst version to 10.0.0 (or later).
+
+     spack install hpctoolkit +bgq %gcc@4.8.5
+
+If you don't have modules installed, then use 'spack bootstrap' to build
+the environment-modules package.  Then, source the bash or csh script in
+the 'Modules/init' directory to add the 'module' function to your
+environment.  For example,
+
+     spack bootstrap
+     cd /path/to/environment-modules-3.2.10-dkg2omyae7lhprqyoq5vvras5ifltzj5
+     cd Modules/init
+     (bash)  . ./bash
+     (csh)   source ./csh
+
+Alternatively, you could try adding the module environment variables
+(PATH and LD_LIBRARY_PATH) manually, but then you may have to run spack
+install with '--dirty'.  The '--dirty' option tells spack not to erase
+LD_LIBRARY_PATH while building packages.
+
+     spack install --dirty hpctoolkit +bgq %gcc@4.8.5
+
+For developers, if you are building hpctoolkit directly (outside of
+spack) but using spack prerequisites, then use a configure line similar
+to the following.
+
+     configure  \
+         --prefix=/path/to/install/prefix  \
+         --with-spack=/path/to/bgq-cnk-ppc64/gcc-4.8.5  \
+         --enable-bgq  \
+         --enable-all-static  \
+         MPICXX=mpicxx
+
+1.8.2 Cray
+..........
+
+Cray systems, like Blue Gene, have separate front-end and back-end
+architecture types.  For example, on theta at ANL, the front end arch is
+'cray-sles12-x86_64' (SuSE Linux for x86_64) and the back end is
+'cray-cnl6-mic_knl' (Compute Node Linux for KNL).
+
+   Hpctoolkit needs to be built with the GNU Programming Environment and
+the front-end x86_64 compilers, plus the 'CC' MPI C++ wrapper.  Switch
+to the 'PrgEnv-gnu' module and unload the darshan module.  Darshan is a
+profiling tool that monitors an application's use of I/O, but it
+conflicts with hpctoolkit.
+
+     module swap PrgEnv-intel PrgEnv-gnu
+     module unload darshan
+
+By default, spack probably does not recognize the gcc compiler modules
+as front-end compilers.  You have to tell spack to add them explicitly.
+Check that the latest gcc module is loaded (it probably is from
+'PrgEnv-gnu') and run 'spack compiler find' with the path to the
+compiler (one directory up from 'bin').  For example, on theta at ANL,
+
+     module load gcc/7.3.0
+     spack compiler find /opt/gcc/7.3.0
+     spack compiler list
+     ==> Available compilers
+     -- gcc cnl6-any -------------------------------------------------
+     gcc@7.3.0  gcc@7.2.0  gcc@7.1.0  gcc@6.3.0  gcc@6.1.0  gcc@5.3.0
+     gcc@4.9.3
+
+     -- gcc sles12-x86_64 --------------------------------------------
+     gcc@7.3.0  gcc@4.8
+
+Normally, spack does not fill in the 'modules:' field for the new
+compiler, you have to add that manually.  And although we mostly use the
+front-end environment, we also need the 'CC' wrapper to be the back-end
+MPI compiler.
+
+   Spack does not support using both front-end and back-end compilers in
+the same build.  But there are two workarounds for Cray.  One option is
+to load the 'cray-mpich' module and run 'spack install' with option
+'--dirty'.  A better way is to add 'cray-mpich' to the list of modules
+for gcc in 'compilers.yaml'.  Edit the front-end gcc entry (operating
+system sles12 and target x86_64) to add the following modules (your
+versions may differ).
+
+     - compiler:
+         modules:
+         - PrgEnv-gnu/6.0.4
+         - gcc/7.3.0
+         - cray-mpich/7.7.3
+         operating_system: sles12
+         paths:
+           cc: /opt/gcc/7.3.0/bin/gcc
+           cxx: /opt/gcc/7.3.0/bin/g++
+           f77: /opt/gcc/7.3.0/bin/gfortran
+           fc: /opt/gcc/7.3.0/bin/gfortran
+         spec: gcc@7.3.0
+         target: x86_64
+
+This tells spack to load the above modules when using the gcc 7.3.0
+compiler.  With the cray-mpich module loaded, the 'CC' wrapper becomes
+an MPI C++ compiler, which is what hpctoolkit needs.
+
+   Next, review your 'packages.yaml' file.  On Cray systems with Xeon
+Phi back-end nodes (KNL, KNH, etc), add '~tm' to intel-tbb to disable
+transactional memory.
+
+   Finally, build hpctoolkit with the front-end arch type
+(cray-sles12-x86_64) and option '+cray'.  Normally, you can use OS type
+'fe' (front-end) in place of 'sles12'.  As with Blue Gene, the '+cray'
+option adds MPI and hpcprof-mpi and supersedes the '+mpi' variant.
+
+     spack install hpctoolkit +cray arch=cray-fe-x86_64
+
+For developers, if you are building hpctoolkit directly (outside of
+spack) but using spack prerequisites, then use a configure line similar
+to the following.
+
+     configure  \
+         --prefix=/path/to/install/prefix  \
+         --with-spack=/path/to/cray-sles12-x86_64/gcc-7.3.0  \
+         --enable-all-static  \
+         MPICXX=CC
+

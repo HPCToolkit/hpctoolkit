@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -241,7 +241,7 @@ typedef struct thread_data_t {
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;
 #endif
-
+ 
 } thread_data_t;
 
 

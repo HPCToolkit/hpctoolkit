@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -52,28 +52,49 @@ include $(top_srcdir)/src/Makeinclude.config
 
 # Fixme: new elfutils from spack wants bzip, xz and zlib.
 
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
 
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
+
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
-SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 ZLIB_LIB = @ZLIB_LIB@
+
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
 LZMA_LDFLAGS_DYN  = @LZMA_LDFLAGS_DYN@
+
+TBB_IFLAGS    = @TBB_IFLAGS@
+TBB_LFLAGS    = @TBB_LFLAGS@
+TBB_PROXY_LIB = @TBB_PROXY_LIB@
 
 MYSOURCES = main.cpp Args.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@GNUBINUTILS_IFLAGS@
+	@BINUTILS_IFLAGS@
+
+DOT_CXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)    \
+	$(BOOST_IFLAGS)  \
+	$(DYNINST_IFLAGS) \
+	-I$(LIBELF_INC)  \
+	$(TBB_IFLAGS)
+
+if OPT_DYNINST_LIBDWARF
+DOT_CXXFLAGS += -I$(LIBDWARF_INC)
+endif
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@ \
 	-ldl
 
 MYLDADD = \
@@ -89,19 +110,29 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(LZMA_LDFLAGS_DYN) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@
+	@BINUTILS_LIBS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
+	$(TBB_LFLAGS) $(TBB_PROXY_LIB)
 
-if USE_BOOST_LIBS
-MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
-endif
+DOT_LDADD = \
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
 
 if OPT_DYNINST_LIBDW
 MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 else
 MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+endif
+
+if OPT_ENABLE_OPENMP
+MYCXXFLAGS += $(OPENMP_FLAG)
+DOT_CXXFLAGS += $(OPENMP_FLAG)
 endif
 
 if HOST_CPU_X86_FAMILY
@@ -118,12 +149,17 @@ pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
 bin_SCRIPTS = hpcstruct
-pkglibexec_PROGRAMS = hpcstruct-bin
+pkglibexec_SCRIPTS = dotgraph
+pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
+
+dotgraph_bin_SOURCES  = DotGraph.cpp
+dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
+dotgraph_bin_LDADD    = $(DOT_LDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
