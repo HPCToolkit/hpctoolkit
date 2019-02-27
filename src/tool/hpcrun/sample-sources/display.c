@@ -98,8 +98,12 @@ printw(FILE *output, const char *name, const char *desc)
     }
     fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
   }
-  free (line);
-  free (len);
+  if (lines == 0) {
+    fprintf(output, "%s\n", name);
+  } else {
+    free (line);
+    free (len);
+  }
 }
 
 
