@@ -478,7 +478,7 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
 
-      if (hpcrun_fmt_root_type_node(n->hpcrun_node_type())) {
+      if (hpcrun_fmt_node_type_root(n->hpcrun_node_type())) {
         // Special treatement for "artificial root":
         //  we don't aggregate the metrics of "artificial root" into the "invisible root"
         //  this is because the artificial root will be rendered in a separate view
@@ -1271,6 +1271,10 @@ ProcFrm::toStringMe(uint oFlags) const
 
     if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
       self += " str" + xml::MakeAttrNum(structure()->m_origId);
+    }
+
+    if (m_hpcrun_type > 0) {
+      self += " h" + xml::MakeAttrNum(m_hpcrun_type) ;
     }
   }
 

@@ -96,7 +96,8 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
 
   if (ret >= 0) {
     close(ret);
-    return 0;
+  } else {
+    EMSG("Cannot initialize event %x, type: %d", einfo->attr.config, einfo->attr.type);
   }
 
   einfo->metric_custom = event;

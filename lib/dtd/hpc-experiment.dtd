@@ -117,10 +117,13 @@
     <!-- ProcedureTable assigns a short name to a procedure -->
     <!ELEMENT ProcedureTable (Procedure)*>
 
+    <!-- Info/NV: flexible name-value pairs: (n)ame; (t)ype; (v)alue -->
+    <!-- f:  family of the procedure (fake, root, ...)-->
     <!ELEMENT Procedure (Info?)>
     <!ATTLIST Procedure
 	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED>
+	      n CDATA #REQUIRED
+	      f CDATA #IMPLIED>
 
   <!-- ****************************************************************** -->
   <!-- Section: Call path profile					  -->
