@@ -92,6 +92,7 @@ demangleProcName(const std::string& name)
   //----------------------------------------------------------
   int status;
   if (name.find("dyninst") != string::npos) {
+     printf("found dyninst in link name\n");
      return bestname;
   }
 
