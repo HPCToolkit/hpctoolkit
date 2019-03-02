@@ -115,9 +115,9 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj)
     map <Block *, int>::iterator mit;
     int num;
 
-    *dotFile << "--------------------------------------------------\n"
-	     << "Procedure: '" << func->name() << "'\n\n"
-	     << "digraph " << func->name() << " {\n"
+    *dotFile << "// --------------------------------------------------\n"
+	     << "// Procedure: '" << func->name() << "'\n\n"
+	     << "digraph \"" << func->name() << "\" {\n"
 	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
 
     const ParseAPI::Function::blocklist & blist = func->blocks();
