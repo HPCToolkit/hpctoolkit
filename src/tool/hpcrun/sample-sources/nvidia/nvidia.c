@@ -98,7 +98,13 @@
 /******************************************************************************
  * macros
  *****************************************************************************/
+#define NVIDIA_DEBUG 0
+
+#if NVIDIA_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 #define FORALL_ME(macro)	  \
   macro("ME_UNKNOWN_BYTES",       0) \
@@ -256,9 +262,6 @@
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
-// ignores
-static module_ignore_fn_entry_t module_ignore;
-
 static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
@@ -296,7 +299,6 @@ static int ke_local_metric_id;
 static int ke_time_metric_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
-static int sync_time_metric_id;
 
 static long pc_sampling_frequency = 1;
 
@@ -375,6 +377,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
@@ -390,6 +393,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_MEMCPY\n");
       if (activity->data.memcpy.copyKind != 0x7fffffff) {
         int index = em_metric_id[activity->data.memcpy.copyKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
@@ -402,6 +406,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_KERNEL:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_KERNEL\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
       hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.staticSharedMemory});
 
@@ -417,16 +422,18 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_SYNCHRONIZATION\n");
       if (activity->data.synchronization.syncKind != 0x7fffffff) {
         int index = sync_metric_id[activity->data.synchronization.syncKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){
           .i = activity->data.synchronization.end - activity->data.synchronization.start});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMORY:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_MEMORY\n");
       if (activity->data.memory.memKind != 0x7fffffff) {
         int index = me_metric_id[activity->data.memory.memKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
@@ -439,6 +446,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS\n");
       int type = activity->data.global_access.type;
       int l2_transactions_index = gl_metric_id[type];
 
@@ -457,6 +465,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_SHARED_ACCESS\n");
       int type = activity->data.shared_access.type;
       int shared_transactions_index = sh_metric_id[type];
 
@@ -476,6 +485,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     }
     case CUPTI_ACTIVITY_KIND_BRANCH:
     {
+      PRINT("CUPTI_ACTIVITY_KIND_BRANCH\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);
       hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.diverged});
 
@@ -618,7 +628,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metric);	
-  sync_time_metric_id = sync_metric_id[0];
   hpcrun_close_kind(sync_kind);
 
 #define declare_gl_metric(name, index) \
@@ -650,10 +659,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* event = start_tok(evlist);
   char name[128];
   hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
-
-  // Register ignore thread functions
-  module_ignore.fn = cupti_modules_ignore;
-  module_ignore_map_register(&module_ignore);
 
   if (hpcrun_ev_is(name, CUDA_NVIDIA) || hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
     // Register device finailzers
