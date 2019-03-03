@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -56,8 +56,9 @@ static char gcc_main64_signature[] = {
  0x48, 0x89, 0xe5,              // mov    %rsp,%rbp
 };
 
-static int 
-adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(gcc_main64_signature);
 
@@ -92,13 +93,3 @@ adjust_gcc_main64_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_gcc_main64_intervals);
-}
-
-

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -92,33 +92,6 @@ typedef struct gpu_data_t {
   uint64_t accum_num_samples;
 } gpu_data_t;
 
-// ----------------------------------------
-// datacentric support 
-// ----------------------------------------
-typedef struct memory_data_s {
-  void *ibs_ptr;
-  cct_node_t *data_node;
-  void *pc;
-
-  // for static data
-  uint16_t lm_id;
-  uintptr_t lm_ip;
-
-  int ldst;       // whether it is a load/store instruction;
-  int in_malloc;  // whether it is a malloc unwind
-  void *ea;       //effective address
-
-  // for address-centric analysis
-  void *start;
-  void *end;
-
-  int first_touch;
-  // ----------------------------------------
-  // soft ibs support 
-  // ----------------------------------------
-  long ma_count; // the number of memory accesses collected
-   
-} memory_data_t;
 
 
 /* ******
@@ -269,11 +242,12 @@ typedef struct thread_data_t {
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
+  sigjmp_buf_t     *current_jmp_buf;
+  sigjmp_buf_t     bad_interval;
   sigjmp_buf_t     bad_unwind;
-  sigjmp_buf_t     mem_error;
+
   bool             deadlock_drop;
   int              handling_sample;
-  int              splay_lock;
   int              fnbounds_lock;
 
   // ----------------------------------------
@@ -304,8 +278,6 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
  
-  memory_data_t *mem_data;
-
 } thread_data_t;
 
 

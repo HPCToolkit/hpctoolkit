@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2012/04/19}
+\setDate{ 2018/08/27}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,190 +44,88 @@
 
 \begin{Name}{1}{hpcproftt}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcproftt:\\ Correlation of Flat Profile Metrics for Teletype Output}
 
-\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure or object code and generates textual output suitable for a terminal.
-Alternatively, it also generates textual dumps of profile files.
+
+\Prog{hpcproftt} generates textual dumps of call path profiles recorded by hpcrun.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcproftt} [--source] \oOpt{options} \Arg{profile-file}...
-
-\Prog{hpcproftt} --object \oOpt{options} \Arg{profile-file}...
-
-\Prog{hpcproftt} --dump \Arg{profile-file}...
+\Prog{hpcproftt} \Arg{profile-file} ...\\
+\Prog{hpcproftt} \Arg{-V}\\
+\Prog{hpcproftt} \Arg{-h}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure (the first and default mode) or object code (second mode) and generates textual output suitable for a terminal (hence the tt, for teletype, in its name).
-In both of these modes, \Prog{hpcproftt} expects a list of flat profile files.
-\Prog{hpcproftt} also supports a third mode in which it generates textual dumps of profile files.
-In this mode, the profile list may contain either flat or call path profile files.
+\Prog{hpcproftt} generates textual dumps of call path profiles recorded
+by hpcrun.  The profile list may contain one or more call path profiles.
 
-\Prog{hpcproftt} defaults to source code correlation mode.
-Without any mode switch, it behaves as if passed \Opt{--source=pgm,lm}.
+This tool principally intended for use by HPCToolkit developers rather
+than end users. Under some circumstances, a user might be interested in
+examining the raw measurement data (1) if HPCToolkit's tool chain has a problem processing
+the measurement data, or (2) if he or she is interested in inspecting
+measurements data associated with an individual instruction, which is below the
+line-level attribution reported by HPCToolkit's graphical user interfaces.
 
-\textbf{Source Source Structure Correlation}.
-First, \Prog{hpcproftt} creates raw metrics for every native event with in each profile file.
-Derived summary metrics can be optionally created with the \Opt{--metric} option.
-All metrics are normalized to use the unit 'events' rather than 'samples' since this enables meaningful comparisons and derived metrics.
-Since percents facilitate rapid comprehension (compared to values), all raw metrics display as percents; derived metrics likewise default to percent, if sensible.
+The first section of the output describes the profile header. The profile
+header contains information including the name of the executable, its
+path, and the value of the PATH environment variable when the program was
+run, along with other metadata including the batch scheduler job id, MPI
+rank, thread ID, host ID, process ID on the host, and times when the first
+and last samples were recorded if tracing was enabled during an execution.
 
-Then, \Prog{hpcproftt} correlates metrics to program structure.
-If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure information is available, this is used for correlation; if not, a simple 'File | Procedure | Statement' structure is computed using the load module's line map.
+The second section describes the epoch header. Conceptually, measurement
+of an execution is divided into one or more epochs in time. Measurements
+taken during an epoch are collected and flushed to disk separately. This
+section is mostly of historical interest as now hpcrun typically collects
+measurements in a single epoch.
 
-Finally, \Prog{hpcproftt} generates metric summaries and annotated source files to standard out.
-Each metric summary compares a certain source structure element (such as a procedure) with all other elements of that type across the whole program.
-Structure elements include: Program, Load Module, File, Procedure, Loop (requires \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}), and Statement.
-For example, the procedure summary shows (exclusive) metric values for each procedure in the program.
-(Structure elements are pruned if all corresponding metrics are 0.)
-Summaries are rank ordered by the first metric.
-\Prog{hpcproftt} optionally annotates source files with Statement (line) level metrics.
-Note that it can only annotate files found by combining debug information with \Opt{--include} search paths.
+The third section of the profile reports the metric table.  This lists
+all metrics collected during the execution of an MPI rank or thread.
+Information about a metric includes its name, type, format, and whether
+there is another partner metric.  The show and showPercent fields
+indicate whether the metrics should be displayed by default in hpcviewer.
+The period field is used to scale the number of samples collected, e.g. to
+convert samples collected every 1M cache misses into cache miss counts.
 
-%%% If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
+The next section of the output reports information that HPCToolkit's
+collected about the application's load map during execution.  The load
+map consists of a series of pairs, where an executable or shared
+library is assigned an integer load module ID, known as an lm-id.
+Call path samples consist of a sequence of (load module ID, offset)
+pairs. Each pair represents a location in an application binary or one
+of its associated shared libraries. Load module IDs present in a call
+path profile generally correspond to load module IDs in this table. In
+certain cases, the special dummy load module ID 0 used to represent CCT
+nodes that are not associated with object code. The calling context tree
+root is an example of one of these nodes.
 
-\textbf{Object Correlation}.
-
-\Prog{hpcproftt}'s object correlation mode is intended for inspection of fine-grained correlation.
-In contrast to the source structure correlation mode, true summaries are not computed; rather (like an annotated source file) \Prog{hpcproftt} generates annotated object code, i.e., procedures and instructions.
-Moreover, only raw metrics corresponding to the native events in \textbf{one} profile file may be correlated to the object code touched by those metrics.
-Accordingly, \Prog{hpcproftt} creates raw metrics for every native event in one profile file.
-Metrics use the unit 'samples' rather than 'events' and default to percents, though absolute values may optionally be displayed.
-Procedures are pruned from the output if no associated metric totals to the provided threshold.
-
-Warnings:
-\begin{itemize}
-\item On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.
-In this case, multiple instructions will report counts for the \emph{same} bucket.
-
-\item On some architectures, delays between event triggers, interrupt generation and sampling of the IP means that an event may be associated with a different instruction than one that caused the event.  It is not abnormal for this gap to be 50-70 instructions wide.
-\end{itemize}
+The last component of the file is the Calling Context Tree (CCT). Each
+node in the tree has an ID, the ID of its parent in the tree, an
+(lm-id, lm-ip) pair that represents the load module and a relative
+instruction pointer within that load module that represents a location
+in a call path.  A node in the tree may or may not have non-zero metric
+values associated with it. If a node's ID is negative, that means the
+node is a leaf in the tree. If a node's ID is odd, that means that it
+was recorded in an associated trace file and must be handled carefully
+during post-processing.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{profile-file}...] A list of flat profile files.
+\item[\Arg{profile-file} ...] A list of one or more call path profiles.
 \end{Description}
 
-Default values for an option's optional arguments are shown in \{\}.
-
-\subsection{Options: General}
+\subsection{Options}
 
 \begin{Description}
-\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
 \item[\Opt{-V}, \Opt{--version}] Print version information.
 \item[\Opt{-h}, \Opt{--help}] Print help.
-\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
 \end{Description}
-
-\subsection{Options: Source Structure Correlation}
-
-\begin{Description}
-\item[\OptoArg{--source}{=all,sum,pgm,lm,f,p,l,s,src}]
-\item[\OptoArg{--src}{=all,sum,pgm,lm,f,p,l,s,src}] 
-Correlate metrics to source code structure.
-Use the following flags to control which source code structures appear in the output:
-  \begin{itemize}
-  \item[all] all summaries plus annotated source files
-  \item[sum] all summaries
-  \item[pgm] program summary
-  \item[lm]  load module summary
-  \item[f]   files summary
-  \item[p]   procedure summary
-  \item[l]   loop summary
-  \item[s]   statement summary
-  \item[src] annotate source files with metrics; equivalent to \Opt{--srcannot '*'}
-  \end{itemize}
-Without \Opt{--source}, the default set of flags is \{pgm,lm\}; with \Opt{--source}, the default set is \{sum\}.
-
-\item[\OptArg{--srcannot}{glob}] 
-Annotate source files with path names that match file glob \Arg{glob}.
-(Protect glob characters from shell with single quotes or backslash.)
-May pass multiple times to logically OR additional globs.
-
-\item[\OptArg{-M}{metric}, \OptArg{--metric}{metric}]
-Specify the set of metrics to compute, where \Arg{metric} is one of the following:
-  \begin{itemize}
-  \item[sum] Sum over threads/processes
-  \item[stats] Sum, Mean, StdDev (standard deviation), CoefVar (coefficient of variation), Min, Max over threads/processes
-  \item[thread] per-thread/process metrics
-  \end{itemize}
-Default is 'thread'.
-
-\item[\OptArg{-I}{dir}, \OptArg{--include}{dir}]
-Use \Arg{dir} as a search directory to find source files.
-For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell).
-May pass multiple times.
-
-Note: With multiple search-directory arguments, it may be the case that file \Arg{f} exists within more than one search directory.
-In this case, the ambiguity is resolved in favor of the search directory that appears first on the command line.
-
-\item[\OptArg{-S}{file}, \OptArg{--structure}{file}]
-Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.
-May pass multiple times (e.g., for shared libraries).
-
-\item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
-Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (e.g., a profile's load map and source code) for which \Arg{old-path} is a prefix.
-Use '\Bs'\ to escape instances of '=' within a path. May pass multiple times.
-
-Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
-\end{Description}
-
-\subsection{Options: Object Correlation}
-
-\begin{Description}
-
-\item[\OptoArg{--object}{=s}] 
-\item[\OptoArg{--obj}{=s}] 
-Correlate metrics with object code by annotating object code procedures and instructions. \{\}
-  \begin{itemize}
-  \item s: intermingle source line info with object code
-  \end{itemize}
-
-\item[\OptArg{--objannot}{glob}] 
-Annotate object procedures with (unmangled) names that match glob \Arg{glob}.
-(Protect glob characters from shell with single quotes or backslash.)
-May pass multiple times to logically OR additional globs.
-
-\item[\OptArg{--obj-threshold}{n}] 
-Prune procedures with an event count < \Arg{n} \{1\}
-
-\item[\Opt{--obj-values}] 
-Show raw metrics as values instead of percents
-
-\end{Description}
-
-\subsection{Options: Dump Raw Profile Data}
-
-\begin{Description}
-\item[\Opt{--dump}] Generate textual representation of raw profile data.
-\end{Description}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Examples}
-
-\begin{itemize}
-
-\item Assume we have collected flat profiling information using \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}).
-Let the executable and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
-Assume further that we wish to correlate derived summary metrics (Mean, RStdDev, Min, Max) with source code and generate summary tables.
-To do this, execute:
-\begin{verbatim}
-    hpcproftt --src --metric=sum poissonSolve.hpcrun*
-\end{verbatim}
-
-\item Using the same example as above, assume we wish to correlate the profile with object code.  Execute the following command:
-\begin{verbatim}
-    hpcproftt --obj poissonSolve.hpcrun*
-\end{verbatim}
-
-\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\section{Notes}
@@ -240,13 +138,13 @@ To do this, execute:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
 
-Version: \Version\ of \Date.
+Version: \Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2018, Rice University.
+\item[Copyright] \copyright\ 2002-2019, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

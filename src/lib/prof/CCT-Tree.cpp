@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -340,8 +340,6 @@ uint ANode::s_nextUniqueId = 2;
 //***************************************************************************
 // ANode, etc: constructors/destructors
 //***************************************************************************
-
-uint ANode::s_raToCallsiteOfst = 1;
 
 string AProcNode::BOGUS;
 

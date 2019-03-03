@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -245,6 +245,7 @@ METHOD_FN(display_events)
 
 #define ss_name ga
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  110
 
 #include "ss_obj.h"
 

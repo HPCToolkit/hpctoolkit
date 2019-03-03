@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+#include "ss-errno.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -478,6 +479,8 @@ METHOD_FN(display_events)
 static int
 generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
@@ -510,7 +513,9 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // If sampling is disabled, return immediately
   //
   if (hpcrun_is_sampling_disabled()) {
-    return 0;
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   //
@@ -535,8 +540,9 @@ generic_signal_handler(int sig, siginfo_t* siginfo, void* context)
   //
   monitor_real_sigprocmask(SIG_UNBLOCK, &sigset_generic, NULL);
 
-  // always return 0 to tell monitor that the signal has been handled
-  return 0;
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 
 //

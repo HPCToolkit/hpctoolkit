@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -92,6 +92,16 @@ makeMetrics(Prof::CallPath::Profile& prof,
 
 
 //****************************************************************************
+
+void 
+prof_abort
+(
+  int error_code
+)
+{
+  exit(error_code);
+}
+
 
 int 
 main(int argc, char* const* argv) 
@@ -189,8 +199,11 @@ realmain(int argc, char* const* argv)
   }
   prof->structure(structure);
 
+  bool printProgress = true;
+
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
-						 args.doNormalizeTy);
+						 args.doNormalizeTy,
+                                                 printProgress);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT

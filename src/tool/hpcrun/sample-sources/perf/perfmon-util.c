@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,7 @@
 
 #include <hpcrun/messages/messages.h>
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
+#include "perf_event_open.h"
 #include "sample-sources/display.h"
 
 /******************************************************************************
@@ -156,7 +157,7 @@ create_event(uint64_t code, uint64_t type)
   event_attr.exclude_hv     = 1;
   event_attr.exclude_idle   = 1;
 
-  int fd = perf_util_event_open(&event_attr, 0, -1, -1, 0);
+  int fd = perf_event_open(&event_attr, 0, -1, -1, 0);
   if (fd == -1) {
     return -1;
   }
@@ -258,7 +259,7 @@ show_info(char *event )
   pfm_pmu_info_t pinfo;
   pfm_event_info_t info;
   int i, j, ret, match = 0, pname;
-  int profilable;
+  int profilable = 0;
 
   memset(&pinfo, 0, sizeof(pinfo));
   memset(&info, 0, sizeof(info));

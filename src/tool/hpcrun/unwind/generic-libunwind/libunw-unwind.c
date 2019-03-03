@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -173,11 +173,26 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 {
-  return libunw_unw_step(cursor);
+  step_state state = STEP_ERROR;
+  state = libunw_unw_step(cursor);
+  if (state == STEP_ERROR) {
+    unw_cursor_t *unw_cursor = &(cursor->uc);
+    if (unw_step(unw_cursor)) {
+      state = STEP_OK;
+      libunw_finalize_cursor(cursor);
+    }
+  }
+  return state;
 }
 
 btuwi_status_t
 build_intervals(char  *ins, unsigned int len, unwinder_t uw)
 {
   return libunw_build_intervals(ins, len);
+}
+
+void
+uw_recipe_tostr(void *uwr, char str[], unwinder_t uw)
+{
+  return libunw_uw_recipe_tostr(uwr, str);
 }

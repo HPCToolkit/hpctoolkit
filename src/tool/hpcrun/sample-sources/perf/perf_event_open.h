@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -12,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,10 +41,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __DATA_OVERRIDES_H
-#define __DATA_OVERRIDES_H
+#ifndef __PERF_EVENT_OPEN_H__
+#define __PERF_EVENT_OPEN_H__
 
-cct_node_t *splay_lookup(void *key, void **start, void **end);
+#include <unistd.h>		// pid_t
+#include <linux/perf_event.h>	// perf data structure
+
+long
+perf_event_open(struct perf_event_attr *hw_event, pid_t pid,
+         int cpu, int group_fd, unsigned long flags);
 
 #endif
-

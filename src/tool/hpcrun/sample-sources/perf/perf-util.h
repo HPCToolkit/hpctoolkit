@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,39 +47,24 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
+#include "perf_constants.h"
 #include "event_custom.h"
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
-#define THREAD_SELF     0
-#define CPU_ANY        -1
-#define GROUP_FD       -1
-#define PERF_FLAGS      0
-#define PERF_REQUEST_0_SKID      2
-#define PERF_WAKEUP_EACH_SAMPLE  1
 
-#define EXCLUDE    1
-#define INCLUDE    0
-
-#define EXCLUDE_CALLCHAIN EXCLUDE
-#define INCLUDE_CALLCHAIN INCLUDE
-
-
-#ifndef u32
-typedef __u32 u32;
-#endif
-
-
-#ifndef u64
-typedef __u64 u64;
-#endif
 
 // the number of maximum frames (call chains) 
 // For kernel only call chain, I think 32 is a good number.
 // If we include user call chains, it should be bigger than that.
 #define MAX_CALLCHAIN_FRAMES 32
+
+
+/******************************************************************************
+ * Data types
+ *****************************************************************************/
 
 // data from perf's mmap. See perf_event_open man page
 typedef struct perf_mmap_data_s {
@@ -158,17 +143,17 @@ typedef struct event_thread_s {
 } event_thread_t;
 
 
-// calling perf event open system call
-long
-perf_util_event_open(struct perf_event_attr *hw_event, pid_t pid,
-         int cpu, int group_fd, unsigned long flags);
 
+/******************************************************************************
+ * Interfaces
+ *****************************************************************************/
 
 void
 perf_util_init();
 
 int
 perf_util_attr_init(
+  char *event_name,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -182,4 +167,8 @@ perf_util_get_paranoid_level();
 
 int
 perf_util_get_max_sample_rate();
+
+int
+perf_util_check_precise_ip_suffix(char *event);
+
 #endif

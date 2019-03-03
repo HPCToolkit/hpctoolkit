@@ -1,65 +1,17 @@
 #!/bin/sh
 # set -x
 #
-#------------------------------------
-# Part of HPCToolkit (hpctoolkit.org)
-#------------------------------------
-#
-# Copyright (c) 2002-2018, Rice University.
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are
-# met:
-#
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-#
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-#
-# * Neither the name of Rice University (RICE) nor the names of its
-#   contributors may be used to endorse or promote products derived from
-#   this software without specific prior written permission.
-#
-# This software is provided by RICE and contributors "as is" and any
-# express or implied warranties, including, but not limited to, the
-# implied warranties of merchantability and fitness for a particular
-# purpose are disclaimed. In no event shall RICE or contributors be
-# liable for any direct, indirect, incidental, special, exemplary, or
-# consequential damages (including, but not limited to, procurement of
-# substitute goods or services; loss of use, data, or profits; or
-# business interruption) however caused and on any theory of liability,
-# whether in contract, strict liability, or tort (including negligence
-# or otherwise) arising in any way out of the use of this software, even
-# if advised of the possibility of such damage.
-#
-# $HeadURL$
-# $Id$
+@copyright_hash@
 #
 # hpcrun -- set the environ variables for profiling with HPCToolkit
 # and launch the program.  See 'hpcrun -h' for a list of options.
-
-#------------------------------------------------------------ 
-# The darshan I/O characterization library
-# (http://www.mcs.anl.gov/research/projects/darshan) is linked into
-# applications by default on several DOE supercomputers. Darshan
-# intercepts file operations performed within signal handlers while
-# profiling, which can cause deadlock.  The setting below prevents
-# disables darshan at runtime, avoiding most of the problems.
-# ------------------------------------------------------------
-export DARSHAN_DISABLE=1
+#
 
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
 
-# If this script can't find its own install prefix, or if the script
-# is moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT='@prefix@'
-
-VERSION='@PACKAGE_VERSION@'
+@launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
@@ -68,6 +20,8 @@ libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
+
+prog_name=hpcrun
 
 #------------------------------------------------------------
 # Find path to this script
@@ -141,39 +95,43 @@ and record information about the monitored <command>.
 When <command> terminates, a profile measurement databse will be written to
 the directory:
   hpctoolkit-<command>-measurements[-<jobid>]
-where <jobid> is a PBS or Sun Grid Engine job identifier.
+where <jobid> is a job launcher id that associated with the execution, if any.
 
 hpcrun enables a user to abort a process and write the partial profiling
-data to disk by sending the Interrupt signal (SIGINT or Ctrl-C).  This can
-be extremely useful on long-running or misbehaving applications.
+data to disk by sending a signal such as SIGINT (often bound to Ctrl-C).  
+This can be extremely useful on long-running or misbehaving applications.
 
 Options: Informational
-  -l, -L --list-events List available events. (N.B.: some may not be
-                       profilable)
+  -l, -L --list-events List available events. (N.B.: some may not be profilable)
   -V, --version        Print version information.
   -h, --help           Print help.
 
 Options: Profiling (Defaults shown in curly brackets {})
-  -e <event>[@<period>], --event <event>[@<period>]
-                       An event to profile and its corresponding sample
-                       period. <event> may be either a PAPI, native
-                       processor event or WALLCLOCK (microseconds).  May pass
-                       multiple times as implementations permit.
-                       {WALLCLOCK@5000}.
-                       For perf event's counter, it is possible to specify
-                       the number of frequency as the sample threshold by
-                       prefixing with f before the number. 
-                       For instance, to have 100 samples per second, the period
-                       is: @f100 .
-                       N.B.: WALLCLOCK and hardware events cannot be mixed.
+  -e <event>[@<howoften>], --event <event>[@<howoften>]
+                      event  may  be an architecture-independent hardware or 
+                      software event supported by Linux perf, a native hardware 
+                      counter event, a hardware counter event supported by the 
+                      PAPI library, a Linux  system timer (CPUTIME and REALTIME), 
+                      or the operating system interval timer WALLCLOCK.  This option 
+                      may be given multiple times to profile several events at once.  
+                      If the value for <howoften> is a number, it will be 
+                      interpreted as a sample period. For Linux perf events, one 
+                      may specify a sampling frequency for 'howoften' by writing f 
+                      before a number.  For instance, to sample an event 100 times 
+                      per second,  specify  <howoften>  as '@f100'. For Linux perf 
+                      events, if no value for <howoften> is specified, hpcrun 
+                      will monitor the event using frequency-based sampling at 300 
+                      samples/second.
 
-  -c, --count <number>
-                       Only available for perf event's counter. This option
-                       specifies the event period to sample. It uses the same
-                       format of period as the option -e mentioned above. 
-                       
-  -t, --trace          Generate a call path trace (in addition to a call
-                       path profile).
+  -c, --count <howoften>
+                      Only  available  for  events  managed  by Linux perf. This 
+                      option specifies a default value for how often to sample. The 
+                      value for <howoften> may be a number that will be used as a 
+                      default event period or an f followed by a number, e.g. f100, 
+                      to specify a default sampling frequency in samples/second.
+
+  -t, --trace          Generate a call path trace in addition to a call
+                       path profile.
 
   --omp-serial-only    When profiling using the OMPT interface for OpenMP,
                        suppress all samples not in serial code.
@@ -182,20 +140,18 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
-  -p,  --precise-ip <level>
-                       Specify the precise ip level (used only with perf events):
-                       0: sample ip can have arbitrary skid
-                       1: sample ip must have constant skid
-                       2: sample ip requested to have 0 skid
-                       3: sample ip must have 0 skid
-                       NOTE: Some architectures support a precise IP with 0 skid.
-                             Incorrect level will unable hpcrun to sample the events.
-   
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
                        (of all threads) with probability <frac>; <frac> is a
                        real number (0.10) or a fraction (1/10) between 0 and 1.
+  
+  -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
+                       This option is to reduce the number of generated
+                       profile and trace files as each thread generates its own
+                       profile and trace data. The options are:
+                       0 : do not merge non-overlapped threads
+                       1 : merge non-overlapped threads (default) 
 
   -o <outpath>, --output <outpath>
                        Directory for output data.
@@ -207,8 +163,8 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -r, --retain-recursion
                        Normally, hpcrun will collapse (simple) recursive call chains
-                       to a single node. This option disables that behavior: all
-                       elements of a recursive call chain are recorded
+                       to save space and analysis time. This option disables that 
+                       behavior: all elements of a recursive call chain will be recorded
                        NOTE: If the user employs the RETCNT sample source, then this
                              option is enabled: RETCNT implies *all* elements of
                              call chains, including recursive elements, are recorded.
@@ -225,6 +181,8 @@ EOF
 #------------------------------------------------------------
 # Command Line Options
 #------------------------------------------------------------
+
+@launch_early_options@
 
 # Return success (0) if $1 is not empty and not the next option.
 arg_ok()
@@ -264,11 +222,6 @@ do
 
 	-h | -help | --help )
 	    usage
-	    ;;
-
-	-V | --version )
-	    echo "hpcrun: A member of HPCToolkit, version $VERSION"
-	    exit 0
 	    ;;
 
 	# --------------------------------------------------
@@ -314,11 +267,6 @@ do
 	    shift
 	    ;;
 
-	-p | --precise-ip )
-	    export HPCRUN_PRECISE_IP="$1"
-	    shift
-	    ;;
-
 	# --------------------------------------------------
 
 	-t | --trace )
@@ -346,6 +294,14 @@ do
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
+  # --------------------------------------------------
+
+  -m | --merge-threads )
+      arg_ok "$1" || die "missing argument for $arg"
+      export HPCRUN_MERGE_THREADS="$1"
+      shift
+      ;;
+      
 	# --------------------------------------------------
 
 	-lm | --low-memsize )
@@ -358,12 +314,6 @@ do
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMSIZE="$1"
 	    shift
-	    ;;
-
-	# --------------------------------------------------
-
-	-q | --quiet )
-	    export HPCRUN_QUIET=1
 	    ;;
 
 	# --------------------------------------------------
@@ -478,6 +428,10 @@ fi
 #------------------------------------------------------------
 # Final Environ Settings and Exec the Binary
 #------------------------------------------------------------
+
+# Disable the darshan I/O library.  This intercepts some I/O functions
+# inside signal handlers and can cause deadlock.
+export DARSHAN_DISABLE=1
 
 # Add OMP_SKIP_MSB to HPCRUN_DEBUG_FLAGS if the binary contains
 # _mp_init.

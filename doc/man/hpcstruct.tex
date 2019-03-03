@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{2018/07/05}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -55,27 +55,43 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 
 \Prog{hpcstruct} \oOpt{options} \Arg{binary}
 
-Typical usage:\\
-\SP\SP\SP\Prog{hpcstruct} \Arg{binary}\\
+Typical usage:\\ \\
+\SP\SP\SP\Prog{hpcstruct} \Arg{binary} \\ \\
 which creates \File{basename(}\Arg{binary}\File{).hpcstruct}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary or DSO \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code.
-Program structure is a mapping of a program's static source-level structure to its object code.
-By default, \Prog{hpcstruct} writes its results to the file \File{basename(<binary>).hpcstruct}.
-This file is typically passed to \textbf{HPCToolkit}'s correlation tool, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
+Given an application binary or DSO \Arg{binary},
+\Prog{hpcstruct} recovers the program structure of its object code.
+Program structure is a mapping of a program's static source code structure to its object code.
+By default, \Prog{hpcstruct} writes its results to the file \emph{basename(binary)}\File{.hpcstruct}.
+This file is typically passed to \textbf{HPCToolkit}'s attribution tool \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
 
-\Prog{hpcstruct} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
-Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
+\Prog{hpcstruct} is designed to handle highly optimized binaries created from C, C++ and Fortran source code.
+Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information,
+\Arg{binary} should be compiled with options to produce as much debugging information as possible.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
+%% SKW 7/6/18:
+%% 
+%% The following arguments are implemented in hpcstruct's "Args.cpp" but are deprecated
+%% and so not documented here, per JohnMC
+%% 
+%%    agent-c++
+%%    agent-cilk
+%%    loop-intvl
+%%    loop-fwd-subst
+%%    normalize
+%%    use-binutils
+
 \begin{Description}
-\item[\Arg{binary}] An executable binary or dynamically linked library.
-Note that \Prog{hpcstruct} does not recover program structure for libraries that \Arg{binary} depends on.  To create such information, run hpcstruct on each dynamically linked library (or relink your program with static versions of the libraries).
+\item[\Arg{binary}] File containing a binary executable or dynamically linked library.
+Note that \Prog{hpcstruct} does not recover program structure for libraries that \Arg{binary} depends on.
+To recover that structure, run hpcstruct on each dynamically linked library
+or relink your program with static versions of the libraries.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -93,41 +109,42 @@ Print version information.
 Print help.
 
 \item[\OptoArg{--debug}{n}]
-Debug: use debug level \Arg{n}. \{1\}
+Print debugging messages at debug level \Arg{n}. \{1\}
 
 \item[\OptArg{--debug-proc}{glob}]
-Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
+Print debugging messages for structure recovery of procedures matching the shell glob \Arg{glob}.
 \end{Description}
 
 
 \subsection{Options: Structure recovery}
 
 \begin{Description}
+
+\item[\OptArg{--demangle-library}{libpath}]
+Use a function from the library at \emph{libpath} to demangle C++ names.
+By default the library function used is \Prog{__cxa_demangle}.
+A different function may be specified with the \Prog{--demangle-function} option.
+
+\item[\OptArg{--demangle-function}{funcname}]
+Call the function named \emph{funcname} in the specified demangler library to demangle C++ names.
+This option may only be given if the \Prog{--demangle-library} option is also given.
+
 \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
 Use \Arg{path} when resolving source file names. 
-This option is useful when a compiler records the same filename in \emph{different} ways within the symbolic information.
+This option is useful when a compiler records the same filename in different ways within the symbolic information.
 (Yes, this does happen.)
 For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}. 
-May pass multiple times.
-
-\item[\OptArg{--loop-intvl}{yes|no}]
-Should loop recovery heuristics assume an irreducible interval is a loop? \{yes\}.
-
-\item[\OptArg{--loop-fwd-subst}{yes|no}]
-Should loop recovery heuristics assume forward substitution may occur? \{yes\}.
-
-\item[\OptArg{-N}{all|safe|none}, \OptArg{--normalize}{all|safe|none}]
-Specify normalizations to apply to program structure. \{all\}
-  \begin{itemize}
-  \item \textbf{all}: apply all normalizations
-  \item \textbf{safe}: apply only safe normalizations
-  \item \textbf{none}: apply no normalizations
-  \end{itemize}
+This option may appear multiple times.
 
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
-Substitute instances of \Arg{old-path} with \Arg{new-path}; apply to all paths (e.g., a profile's load map and source code) for which \Arg{old-path} is a prefix.  Use '\\' to escape instances of '=' within a path. May pass multiple times.
+Replace instances of \Arg{old-path} with \Arg{new-path} in all paths with \Arg{old-path} is a prefix
+(e.g., a profile's load map and source code).
+Use \verb+'\'+ to escape instances of '=' within specified paths.
+This option may appear multiple times.
   
-Use this option when a profile or binary contains references to files that have been relocated, such as might occur with a file system change.
+Use this when a profile or executable references files that have been relocated,
+such as might occur with a file system change.
+
 \end{Description}
 
 
@@ -136,12 +153,18 @@ Use this option when a profile or binary contains references to files that have 
 \begin{Description}
 
 \item[\OptArg{-o}{file}, \OptArg{--output}{file}]
-Write results to \Arg{file}.  Use `-' for \File{stdout}. \{\File{basename(}\Arg{binary}\File{).hpcstruct}\}
+Write results to \Arg{file}.  Use '-' for \File{stdout}. \{\Arg{basename(binary)}\File{.hpcstruct}\}
 
 \item[\Opt{--compact}]
-Generate compact output, eliminating extra white space.
+Generate compact output by eliminating extra white space.
 
-% \item[\OptArg{-p}{path-list}, \OptArg{--canonical-paths}{path-list}] Ensure that scope tree only contains files found in the colon-separated path list \Arg{path-list}. May be passed multiple times.
+\item[\Opt{--show-gaps}]
+Write a text file describing all the "gaps" found by \Prog{hpcstruct},
+i.e. address regions not identified as belonging to a code or data segment
+by the ParseAPI parser used to analyze application executables.
+The file is named \emph{outfile}\File{.gaps}, which by default is \emph{appname}\File{.hpcstruct.gaps}.
+A gaps file can't be written when \emph{outfile} is \Prog{stdout}.
+
 
 \end{Description}
 
@@ -150,13 +173,17 @@ Generate compact output, eliminating extra white space.
 
 %\begin{enumerate}
 %\item 
-Assume we have collected profiling information for the (optimized) binary \File{sweep3dsingle}, compiled with debugging information.
-We wish to recover program structure in the file \File{sweep3dsingle.hpcstruct} for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
+Assume we have collected profiling information for the (optimized) binary \File{sweep3dsingle},
+compiled with debugging information.
+We wish to recover program structure in the file \File{sweep3dsingle.hpcstruct}
+for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
 To do this, execute:
+
 \begin{verbatim}
     hpcstruct sweep3dsingle
 \end{verbatim}
 
+By defult the output is placed in a file named \File{sweep3dsingle.hpcstruct}.
 %\end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,17 +192,17 @@ To do this, execute:
 \begin{enumerate}
 
 \item For best results, an application binary should be compiled with debugging information.
-To generate debugging information while also enabling optimizations, use the appropriate variant of \verb+-g+ for the following compilers:
+To generate debugging information while also enabling optimizations,
+use the appropriate variant of \verb+-g+ for the following compilers:
 \begin{itemize}
 \item GNU compilers: \verb+-g+
 \item Intel compilers: \verb+-g -debug inline_debug_info+
-\item PathScale compilers: \verb+-g+
+\item IBM compilers: \verb+-g -fstandalone-debug -qfulldebug -qfullpath+
 \item PGI compilers: \verb+-gopt+
-%\item Compaq and SGI MIPSpro compilers: \verb+-g3+
-%\item Sun Compilers: \verb+-g -xs+
 \end{itemize}
 
-\item While \Prog{hpcstruct} attempts to guard against inaccurate debugging information, some compilers (notably PGI's) often generate invalid and inconsistent debugging information.
+\item While \Prog{hpcstruct} attempts to guard against inaccurate debugging information,
+some compilers (notably PGI's) often generate invalid and inconsistent debugging information.
 Garbage in; garbage out.
 
 \item C++ mangling is compiler specific. On non-GNU platforms, \Prog{hpcstruct}
@@ -184,16 +211,13 @@ tries both platform's and GNU's demangler.
 \end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Bugs}
+%% \section{Bugs}
+%% 
+%% \begin{enumerate}
 
-\begin{enumerate}
+%% \item xxxxxx
 
-\item \Prog{hpcstruct} may incorrectly infer the structure of loops contained within switch statements.
-When reconstructing the control flow graph (CFG) of the object code, \Prog{hpcstruct} currently ignores indirect jumps and does not add edges from the jump to possible target basic blocks.
-The result is an incomplete CFG and a misleading loop nesting tree.
-The workaround is to use an if/elseif/else statement.
-
-\end{enumerate}
+%% \end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
@@ -203,13 +227,13 @@ The workaround is to use an if/elseif/else statement.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
 
-Version: \Version\ of \Date.
+Version: \Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2018, Rice University.
+\item[Copyright] \copyright\ 2002-2019, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

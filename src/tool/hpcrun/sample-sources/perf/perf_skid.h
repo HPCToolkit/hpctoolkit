@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -12,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,26 +42,34 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef sample_source_datacentric_h
-#define sample_source_datacentric_h
+#ifndef __PERF_SKID_H__
+#define __PERF_SKID_H__
 
-/******************************************************************************
- * local includes 
- ******************************************************************************/
+// constants of precise_ip (see the man page)
+#define PERF_EVENT_AUTODETECT_SKID       4
+#define PERF_EVENT_SKID_ZERO_REQUIRED    3
+#define PERF_EVENT_SKID_ZERO_REQUESTED   2
+#define PERF_EVENT_SKID_CONSTANT         1
+#define PERF_EVENT_SKID_ARBITRARY        0
+#define PERF_EVENT_SKID_ERROR           -1
 
-#include <cct/cct.h>
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
+// parse the event into event_name and the type of precise_ip
+//  the name of the event excludes the precise ip suffix
+// returns:
+//  PERF_EVENT_AUTODETECT_SKID       
+//  PERF_EVENT_SKID_ZERO_REQUIRED    
+//  PERF_EVENT_SKID_ZERO_REQUESTED  
+//  PERF_EVENT_SKID_CONSTANT         
+//  PERF_EVENT_SKID_ARBITRARY        
+//  PERF_EVENT_SKID_NONE    
+//  PERF_EVENT_SKID_ERROR        
+int
+perf_skid_parse_event(const char *event_string, char **event_string_without_skidmarks);
 
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
+int
+perf_skid_set_max_precise_ip(struct perf_event_attr *attr);
 
-int hpcrun_datacentric_alloc_id(); 
-int hpcrun_datacentric_active();
-void hpcrun_datacentric_free_inc(cct_node_t* node, int incr);
-
-#endif // sample_source_memleak_h
-
+u64
+perf_skid_get_precise_ip(struct perf_event_attr *attr);
+#endif

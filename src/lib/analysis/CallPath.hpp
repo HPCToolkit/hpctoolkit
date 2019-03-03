@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -135,12 +135,14 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 // - A CCT::Stmt node is always a leaf.
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   string agent, bool doNormalizeTy);
+			   string agent, bool doNormalizeTy,
+                           bool printProgress);
 
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   Prof::LoadMap::LM* loadmap_lm,
-			   Prof::Struct::LM* lmStrct);
+			   Prof::Struct::LM* lmStrct,
+                           bool printProgress);
 
 
 // lm is optional and may be NULL

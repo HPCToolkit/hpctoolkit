@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2014/03/05}
+\setDate{2018/09/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,9 +44,8 @@
 
 \begin{Name}{1}{hpcrun}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcrun:\\ Statistical Profiling}
 
-\Prog{hpcrun} is a call path profiler based on statistical sampling.
-It supports multiple sample sources during one execution.
-\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamic linking) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+\Prog{hpcrun} is profiling tool that collects call path profiles of program executions 
+using statistical sampling of hardware counters, software counters, or timers.
 
 See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
@@ -63,33 +62,55 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling (rather than instrumentation).
-It collects per-thread call path profiles that represent the full calling context of sample points.
-Sample points may be generated from multiple simultaneous sampling sources.
-\Prog{hpcrun} profiles complex applications that use forks, execs, threads, and dynamic linking/unlinking; it may be used in conjuction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+\Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling.
+\Prog{hpcrun} can profile an execution using multiple sample sources simultaneously, 
+supports measurement of applications with multiple processes and/or multiple threads, and handles complex runtime behaviors including
+fork, exec, and/or dynamic loading of shared libraries.
+\Prog{hpcrun} can be used in conjunction with program launchers such as \texttt{mpiexec} and SLURM's \texttt{srun}.
 
-To profile a statically linked executable, make sure to link with \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
+To profile a statically-linked executable, make sure to link with \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}}.
 
 To configure \Prog{hpcrun}'s sampling sources, specify events and periods using the \texttt{-e/--event} option.
-For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the and record information about the monitored \Arg{command}.
+For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e}, a sample is generated that causes \Prog{hpcrun} to inspect the 
+current calling context and augment its execution measurements of the monitored \Arg{command}.
 
-When \Arg{command} terminates, a profile measurement databse will be written to the directory:\\
-\SP\SP\SP hpctoolkit-\Arg{command}-measurements[-\Arg{jobid}]\\
-where \Arg{jobid} is a PBS or Sun Grid Engine job identifier.
+If no sample source is specified, by default \Prog{hpcrun} profile using the timer 
+CPUTIME on Linux or WALLCLOCK on Blue Gene at a frequency of 200 samples per second per thread. 
 
-\Prog{hpcrun} enables a user to abort a process and write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).
-This can be extremely useful on long-running or misbehaving applications.
+When \Arg{command} terminates, a profile measurement database will be written to the directory:\\
+\\
+\SP\SP\SP \Prog{hpctoolkit-}\Arg{command}\Prog{-measurements}[\Prog{-}\Arg{jobid}]\\
+\\
+where \Arg{jobid} is a parallel job launcher id associated with the execution, if available.
+
+\Prog{hpcrun} allows you to abort an execution and write the partial profiling data to disk by sending a signal such as SIGHUP or SIGINT 
+(which is often bound to Control-c).
+This can be extremely useful to collect data for long-running or misbehaving applications.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
+%% SKW 7/6/18:
+%% 
+%% The following arguments are implemented in hpcstruct's "Args.cpp" but are deprecated
+%% and so not documented here, per JohnMC
+%% 
+%%     agent-c++
+%%     agent-cilk
+%%     loop-intvl
+%%     loop-fwd-subst
+%%     -N / -normalize
+
+Default values for optional arguments are shown in \{\}.
+
+\subsection{Command}
+
 \begin{Description}
 \item[\Arg{command}] The command to profile.
+
 \item[\Arg{command-arguments}] Arguments to the command to profile.
 \end{Description}
-
-Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: Informational}
 
@@ -108,78 +129,206 @@ Print help.
 
 \begin{Description}
 
-\item[\OptArg{-e}{event\Lbr@period\Rbr}, \OptArg{--event}{event\Lbr@period\Rbr}]
-An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI, native processor event, or WALLCLOCK (microseconds).  May pass multiple times as implementations permits.  \{\verb+WALLCLOCK@5000+\}
+\item[\Opt{-ds}, \Opt{--delay-sampling}]
+Don't start sampling until the application enables sampling under program control. 
+Use this option to measure specific intervals in an application's execution by bracketing code 
+regions where measurement is desired 
+with calls to \Prog{hpctoolkit_sampling_start()} and \Prog{hpctoolkit_sampling_stop()}.
+Sampling may be started and stopped any number of times during an execution;
+measurements from all measurement intervals are aggregated.
+
+\item[\OptArg{-e}{event\Lbr@howoften\Rbr}, \OptArg{--event}{event\Lbr@howoften\Rbr}]
+\Arg{event} may be an architecture-independent hardware or software event supported by Linux perf, a native hardware counter event, 
+a hardware counter event supported by the PAPI library, a Linux system timer (\Prog{CPUTIME} and \Prog{REALTIME}), or the
+operating system interval timer \Prog{WALLCLOCK}.
+This option may be given multiple times to profile several events at once. 
+While events measured using the Linux perf monitoring infrastructure will be transparently multiplexed if necessary, 
+for other sampling sources or on operating systems such as the Blue Gene Compute Node Kernel,
+there may be system-dependent limits on how many events can be profiled simultaneously and on which events may be combined for profiling.
+If the value for \Arg{howoften} is a number, it will be interpreted as a sample period.
+For Linux perf events, one may specify a sampling frequency for \Arg{howoften} by writing f before a number.  
+For instance, to sample an event 100 times per second, specify \Arg{howoften} as '@f100'.
+For Linux perf events, if no value for \Arg{howoften} is specified, \Prog{hpcrun} will monitor the event using frequency-based sampling at 300 samples/second.
 \begin{itemize}
-  \item It is recommended to always specify the sampling period for each profiling event.
-  \item The special event WALLCLOCK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. Its period is in microseconds.
-  \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. 
+  \item For timer events \Prog{CPUTIME}, \Prog{REALTIME}, and \Prog{WALLCLOCK}, the units for a sample period are microseconds.
+  \item Timer events should not be mixed with hardware events.
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
 
-\item[\Opt{-t}, \Opt{--trace}]
-Generate a call path trace (in addition to a call path profile).
+\item[\OptArg{-c}{howoften}, \OptArg{--count}{howoften}]
+                       Only available for events managed by Linux perf. This option
+                       specifies a default value for how often to sample. The value for \Arg{howoften} may be a number that will be used as a default
+                       event period or an f followed by a number, e.g. f100, to specify a default sampling frequency in samples/second.
+
+By default, \Prog{hpcrun} will allow attribution of hardware counter events to have arbitrary skid. 
+Some processor architectures, e.g., ARM,  don't support attribution with any higher level of precision.
+If a processor does not support the specified level of attribution precision for a hardware counter event, 
+\Prog{hpcrun} may record 0 occurrences of the event without reporting an error.
+
 
 \item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
 Measure only a fraction \Arg{frac} of the execution's processes.
-For each process, enable measurement (of all threads) with probability \Arg{frac}; \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
-(To minimize perturbations, when a process is disabled, all threads in a process still receive sampling interrupts, but they are ignored.)
+For each process, enable measurement of each thread with probability \Arg{frac}, a real number or a fraction (1/10) between 0 and 1.
+To minimize perturbations, when measurement for a process is disabled
+all threads in a process still receive sampling interrupts but they are ignored.
 
-\item[\Opt{-r}, \Opt{--retain-recursion}]
-Normally, hpcrun will collapse (simple) recursive call chains
-to a single node. This option disables that behavior: all
-elements of a recursive call chain are recorded
-NOTE: If the user employs the RETCNT sample source, then this
-      option is enabled: RETCNT implies *all* elements of
-      call chains, including recursive elements, are recorded.
+\item[\OptArg{-lm}{size}, \OptArg{--low-memsize}{size}]
+Allocate an additional segment to store measurement data
+whenever free space in the current segment is less than the specified \Arg{size}.
+If not given, the default for \Arg{size} is~80K.
 
-
-
-\item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
-Directory for output data.
-\{\verb+hpctoolkit-<command>-measurements[-<jobid>]+\}
-
+\item[\OptArg{-m}{switch}, \OptArg{--merge-threads}{switch}]  Merge non-overlapped threads into one virtual thread.
+                       This option is to reduce the number of generated
+                       profile and trace files as each thread generates its own
+                       profile and trace data. The options are:
 \begin{itemize}
- Bug: Without a \Arg{jobid} or an output option, multiple profiles of the same <command> will be placed in the same output directory.
+   \item 0 : do not merge non-overlapped threads
+   \item 1 : merge non-overlapped threads (default)
 \end{itemize}
 
+\item[\OptArg{-ms}{size}, \OptArg{--memsize}{size}]
+Use the specified \Arg{size} as segment size when allocating memory for measurement data.
+The specified value is rounded up to a multiple of the `system page size.
+If not given, the default for \Arg{size} is~4M.
+
+\item[\OptArg{-mp}{prob}, \OptArg{--memleak-prob}{prob}]
+Monitor a subset of memory allocations performed by the application to detect leaks.
+An allocation is a call to one of \Prog{malloc}, \Prog{calloc}, \Prog{realloc}, etc\.
+and its matching call to \Prog{free}.
+At each allocation HPCToolkit generates a pseudo-random number in the range [0.0, 1.0)
+and monitors the allocation if the number is less than the value \Arg{prob} specified here,
+The value may be written as a a floating point number or as a fraction.
+If not given, the default for \Arg{prob} is~0.1.
+
+\item[\OptArg{-o}{outpath}, \OptArg{--output}{outpath}]
+Directory to receive output data.
+If not given, the default directory ia \Prog{hpctoolkit-<command>-measurements[-<jobid>]}.
+\begin{itemize}
+ Caution: If no <jobid> is available and no output option is given,
+ profiles from multiple runs of the same <command> will be placed into the same output directory,
+ which may lead to confusing or incorrect analysis results.
+\end{itemize}
+
+ \item[\Opt{-r}, \Opt{--retain-recursion}]
+Do not collapse simple recursive call chains.
+Normally as \Prog{hpcrun} monitors an application that employs simple recursion, it collapses call chains of recursive calls to a single level. 
+This design enables a user to see how the aggregate costs of recursion are associated with each recursive call yet
+saves space and time during post-mortem analysis by collapsing long chains of recursive calls.
+If this option is given, \Prog{hpcrun} will record all elements of a recursive call chain.
+Note: When you use the \Prog{RETCNT} sample source this option is enabled automatically
+to gather accurate counts.
+
+\item[\Opt{-t}, \Opt{--trace}]
+Generate a call path trace in addition to a call path profile.
+
 \end{Description}
+
+\subsection{Options: HPCToolkit Development}
+
+\begin{Description}
+
+These options are intended for use by the HPCToolkit team,
+but could be helpful to others interested in HPCToolkit's implementation.
+.
+ 
+\item[\Opt{-d}, \Opt{--debug}]
+After initialization, spin wait until you attach a debugger
+to one or more of the application's processes.
+After attaching you can set breakpoints or watchpoints in your application's code
+or in HPCToolkit's \Prog{hpcrun} code before beginning application execution.
+To continue after attaching, use the debugger to call \Prog{hpcrun_continue()}
+and then resume execution.
+
+\item[\OptArg{-dd}{flag}, \OptArg{--dynamic-debug}{flag}]
+Enable the flag \Prog{flag},
+causing \Prog{hpcrun} to log debug messages guarded with that flag
+during execution.
+A list of dynamic debug flags can be found in HPCToolkit's source code
+in the file \Prog{src/tool/hpcrun/messages/messages.flag-defns}.
+Note that not all flags are meaningful on all architectures.
+The special value \Prog{ALL} enables all debug flags.
+\\
+Caution: turning on debug flags produces many log messages,
+often dramatically slowing the application and potentially distorting the measured profile.
+
+\item[\Opt{-md}, \Opt{--monitor-debug}]
+Enable debug tracing of \Prog{libmonitor}, the \Prog{hpcrun} subsystem which implements process/thread control.
+
+\end{Description}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Environment Variables}
-For most systems, \Prog{hpcrun} requires no special environment variable settings.
-There are two situations, however, where \Prog{hpcrun}, to function correctly,
-\emph{must} refer to environment variables. These environment variables, and
-corresponding situations are:
-\begin{Description}
-  \item[\verb+HPCTOOLKIT+] To function correctly, \Prog{hpcrun} must know
-       the location of the \Prog{HPCToolkit} top-level installation directory.
-       The \Prog{hpcrun} script uses elements of the installation \File{lib} and
-       \File{libexec} subdirectories. For most systems, the 
-       installation procedure ensures that \Prog{hpcrun} can find the requisite
-       components. Some parallel job launchers, however, will \emph{copy} the
-       \Prog{hpcrun} script to a different location from the installed base. If your
-       system uses this copying mechanism, you must set the \verb+HPCTOOLKIT+
-       environment variable to the top-level installation directory.
-\end{Description}
+To function correctly, \Prog{hpcrun} must know the location of the \Prog{HPCToolkit} 
+top-level installation directory so that it can access toolkit components located 
+in its \File{lib} and \File{libexec} subdirectories. 
+Under most circumstances, \Prog{hpcrun} requires no special environment variable settings.
+
+There are two situations, however, where \Prog{hpcrun}
+\emph{must} consult the \verb+HPCTOOLKIT+ environment variable to determine the location
+of the top-level installation directory: 
+
+\begin{itemize}
+\item On some systems, parallel job launchers (e.g., Cray's aprun) \emph{copy} the
+       \Prog{hpcrun} script to a different location. For \Prog{hpcrun} to know
+       the location of its top-level installation directory, 
+       you must set the \verb+HPCTOOLKIT+ environment variable to the 
+       top-level installation directory.
+\item 
+       If you launch \Prog{hpcrun} script via a file system link,
+       you must set \verb+HPCTOOLKIT+ for the same reason.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Launching}
+
+When sampling with native events, by default hpcrun will profile using perf events.
+To force HPCToolkit to use PAPI (assuming it's available) instead of perf events, one
+must prefix the event with '\texttt{papi::}' as follows:
+
+\begin{verbatim}
+hpcrun -e papi::CYCLES
+\end{verbatim}
+
+For PAPI presets, there is no need to prefix the event with 'papi::'. For instance it is
+sufficient to specify \texttt{PAPI\_TOT\_CYC} event without any prefix to profile using PAPI.
+
+To sample an execution 100 times per second (frequency-based sampling) counting
+CYCLES and 100 times a second counting INSTRUCTIONS:
+\begin{verbatim}
+hpcrun -e CYCLES@f100 -e INSTRUCTIONS@f100 ...
+\end{verbatim}
+
+To sample an execution every 1,000,000 cycles and every 1,000,000 instructions using
+period-based sampling:
+\begin{verbatim}
+hpcrun -e CYCLES@1000000 -e INSTRUCTIONS@1000000 ...
+\end{verbatim}
+By default, hpcrun will use frequency-based sampling with the rate 300 samples per
+second per event type. Hence the following command will cause HPCToolkit to sample
+CYCLES at 300 samples per second and INSTRUCTIONS at 300 samples per second:
+\begin{verbatim}
+hpcrun -e CYCLES -e INSTRUCTIONS ...
+\end{verbatim}
+One can a different default rate using the -c option. The command below will sample
+CYCLES at 200 samples per second and INSTRUCTIONS at 200 samples per second:
+\begin{verbatim}
+hpcrun -c f200 -e CYCLES -e INSTRUCTIONS ...
+\end{verbatim}
 
 \section{Examples}
 
 Assume we wish to profile the application \texttt{zoo}.
 The following examples lists some useful events for different processor architectures.
-In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun} options.
 
-\begin{enumerate}
-\item \verb+hpcrun -e WALLCLOCK@5000 zoo+
-
-\item Opteron, (Rev B-F)
-  \begin{enumerate}
-    \item \verb+hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
-    \item \verb+hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo+
-  \end{enumerate}
+\begin{itemize}
+\item \Prog{hpcrun -e CYCLES -e INSTRUCTIONS zoo}
+\item \Prog{hpcrun -e REALTIME@5000 zoo}
+\item \Prog{hpcrun -e DC_L2_REFILL@1300013 -e PAPI_L2_DCM@510011 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
+\item \Prog{hpcrun -e PAPI_L2_DCM@510011 -e PAPI_TLB_DM@510013 -e PAPI_STL_ICY@5300013 -e PAPI_TOT_CYC@13000019 zoo}
+\end{itemize}
 
 \end{enumerate}
 
@@ -188,28 +337,115 @@ In each case, the special option \texttt{--} is used to clearly demarcate the en
 
 \subsection{Sample sources}
 
-\Prog{hpcrun} uses the PAPI library to provide access to hardware performance counter events.
-If you have not configured HPCToolkit to use the PAPI library, you will be unable to measure hardware performance counter events.
+%\newcommand{\	exttt{perf\_events}}{{\tt perf\_events}}
 
+\Prog{hpcrun} uses Linux perf\_events (default on Linux platform) and optionally the PAPI library to provide access to hardware performance counter events.
+It is important to note that on most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
+The gap is commonly 50-70 instructions.
+This means that one should not assume that aggregation at the source line level is fully precise.
+(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
+However, aggregation at the procedure and loop level is reliable.
+
+
+\subsubsection{Linux perf\_events Interface}
+
+Linux \texttt{perf\_events} provides a powerful interface that supports 
+measurement of both application execution and kernel activity. 
+Using
+\texttt{perf\_events}, one can measure both hardware and software events. 
+Using a processor's hardware performance monitoring unit (PMU), the
+\texttt{perf\_events} interface can measure an execution using any hardware counter
+supported by the PMU. Examples of hardware events include cycles, instructions
+completed, cache misses, and stall cycles. Using instrumentation built in to the Linux kernel,
+the \texttt{perf\_events} interface can measure software events. Examples of software events include page
+faults, context switches, and CPU migrations. 
+
+
+HPCToolkit uses libpfm4 to translate from an event name string to an event code recognized by the kernel. 
+An event name is case insensitive and is defined as followed:
+\begin{verbatim}
+[pmu::][event_name][:unit_mask][:modifier|:modifier=val] 
+\end{verbatim}
+
+\begin{itemize}
+	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
+	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
+	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+	\item \textbf{modifier}.  A modifier is an optional filter which modifies how the event counts. Modifiers have a type and a value specified after the equal sign. 
+		For boolean type modifiers, without specifying the value, the presence of the modifier is interpreted as meaning true. Events may support multiple modifiers, by repeating the \texttt{:modifier|:modifier=val} pattern. 
+	\begin{itemize}
+                \item \textbf{precise\_ip}. For some events, it is possible to control the amount of skid.
+Skid is a measure of how many instructions may execute between an event and the PC where the event is reported.
+Smaller skid enables more accurate attribution of events to instructions. Without a skid modifier, hpcrun allows arbitrary skid because some architectures
+don't support anything more precise.  One may optionally specify one of the following as a skid modifier:
+                        \begin{itemize}
+                                \item \verb+:p+ : a sample must have constant skid.
+                                \item \verb+:pp+ : a sample is requested to have 0 skid.
+                                \item \verb+:ppp+ : a sample must have 0 skid.
+                                \item \verb+:P+ : autodetect the least skid possible.
+                        \end{itemize}
+                        NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported
+but no samples will be delivered.
+        \end{itemize}
+\end{itemize}
+
+Some capabilities of HPCToolkit's \texttt{perf\_events} Interface include:
+\begin{itemize}
+	\item \textbf{Frequency-based sampling.} 
+Rather than picking a sample period for a hardware counter,
+the Linux \texttt{perf\_events} interface enables one to specify the desired sampling frequency
+and have the kernel automatically select and adjust the period 
+to try to achieve the desired sampling frequency.
+To use frequency-based sampling, one can specify the sampling rate
+for an event as the desired number of samples per second
+by prefixing the rate with the letter “\verb+f+”. 
+
+\item \textbf{Multiplexing.} 
+Using multiplexing enables one to monitor more events
+in a single execution than the number of hardware counters a processor
+can support for each thread. The number of events that can be monitored in
+a single execution is only limited by the maximum number of concurrent
+events that the kernel will allow a user to multiplex using the
+\texttt{perf\_events} interface.
+
+When more events are specified than can be monitored simultaneously
+using a thread's hardware counters,
+  the kernel will employ multiplexing and divide
+the set of events to be monitored into groups, monitor only one group
+of events at a time, and cycle repeatedly through the groups
+as a program executes. 
+
+
+\item \textbf{Thread blocking.} When a program executes, 
+a thread may block waiting for the kernel to complete some operation on its behalf.
+Example operations include waiting for a \texttt{read} operation to complete or having the
+kernel service a page fault or zero-fill a page. On systems running Linux 4.3 or newer, one can use the \texttt{perf\_events} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
+the time a thread spends blocked, one can profile with \verb+BLOCKTIME+ event and
+another time-based event, such as \verb+CYCLES+. The \verb+BLOCKTIME+ event shouldn't have any frequency or period specified, whereas \verb+CYCLES+ should have a frequency or period specified.
+
+\end{itemize}
+
+\subsubsection{PAPI Interface (optional)}
 The PAPI library supports a large collection of hardware counter events.
 Some events have standard names across all platforms, e.g. \verb+PAPI_TOT_CYC+, the event that measures total cycles.
 In addition to events whose names begin with the \verb+PAPI_+ prefix, platforms also provide access to a set of native events with names that are specific to the platform's processor.
 A complete list of events supported by the PAPI library for your platform may be obtained by using the \texttt{--list-events} option.
-Any event whose name begins with the \verb+PAPI_+ prefix that is listed as "Profilable" can be used as an event in a sampling source --- provided it does not conflict with another event.
+Any event whose name begins with the \verb+PAPI_+ prefix that is listed as "Profilable" can be used as an event in a sampling source provided it does not conflict with another event.
 
-The precise rules for selecting good events and periods are complex.
+The rules of thumb for selecting an appropriate set of events and their associated periods are complex.
 \begin{itemize}
 
 \item \textbf{Choosing sampling events.}
-We recommend using PAPI events in general.
-However, some PAPI events are not profilable because of PAPI implementation details.
+Some PAPI events are not profilable because of PAPI implementation details.
 Also, PAPI's standard event list may not cover an architectural feature you are interested in.
 In such cases, it is necessary to resort to native events.
 In many cases, you will have to consult the architecture's manual to fully understand what the event means: there is no standard event list or naming scheme and events sometimes have unusual meanings.
 
 \item \textbf{Number of sampling events.}
-Currently, hpcrun does not multiplex hardware counters.
-This means that the number of events that you may concurrently profile against is limited by your architecture's performance monitoring unit.
+\Prog{hpcrun} does not multiplex hardware counters for events measured using PAPI. (Events measured using the Linux
+perf interface will be multiplexed automatically.)
+Without multiplexing, the number of events that you may use to profile a single execution 
+is limited by your architecture's performance monitoring unit.
 Note that some architectures hard-wire one or more counters to a specific event (such as cycles).
 
 \item \textbf{Choosing sampling periods.}
@@ -230,25 +466,18 @@ For example, if the goal is to determine whether L2 D-cache latency is a limitin
 
 \item \textbf{Architectural event conflicts.}
 With some performance monitoring units, certain events may not be concurrently used with other events.
+\end{itemize}
 
-\item \textbf{Architectural interrupt delay.}
-On most out-of-order pipelined architectures, a hardware counter interrupt is not precisely attributed to the instruction that induced the counter to overflow.
-The gap is commonly 50-70 instructions.
-This means that one should not assume that aggregation at the source line level is fully precise.
-(E.g., if a L1 D-cache miss is attributed to a statement that has been compiled to register-only operations, assume the miss is attributed to a nearby load.)
-However, aggregation at the procedure and loop level is reliable.
-
-\item \textbf{System itimer (WALLCLOCK).}
+\subsubsection{System itimer (WALLCLOCK).}
 On Linux systems, the kernel will not deliver itimer interrupts faster than the unit of a jiffy, which defaults to 4 milliseconds; see the itimer man page.
 One can configure the kernel to use a value as small as 1 millisecond, but it is unlikely the kernel will actually deliver itimer signals at that rate when a period of 1000 microseconds is requested.
 
 However, on Linux one can get quite close to the kernel Hz rate by setting the itimer interval to something less than the Hz rate.
 For example, if the Hz rate is 1000 microseconds, one can use 500 microseconds (or just 1) and obtain about 999 interrupts per second.
-\end{itemize}
 
 \subsection{Platform-specific notes}
-\subsubsection{Cray XE and XK}
-When using dynamically linked binaries on Cray XE and XK systems, you
+\subsubsection{Cray Systems}
+When using dynamically linked binaries on Cray systems, you
 should add the \verb+HPCTOOLKIT+ environment variable to your launch
 script.  Set \verb+HPCTOOLKIT+ to the top-level \verb+HPCToolkit+ install
 prefix (the directory containing the \File{bin}, \File{lib} and
@@ -275,12 +504,13 @@ Please set HPCTOOLKIT to the install prefix, either in this script,
 or in your environment, and try again.
 \end{verbatim}
 
-The problem is that the Cray job launcher copies the \Prog{hpcrun}
+The problem is that the Cray ALPS job launcher copies the \Prog{hpcrun}
 script to a directory somewhere below \File{/var/spool/alps/} and runs
 it from there.  By moving \Prog{hpcrun} to a different directory, this
-breaks \Prog{hpcrun}'s method for finding its own install directory.
+breaks \Prog{hpcrun}'s default method for finding HPCToolkit's top-level
+installation directory.
 The solution is to add \verb+HPCTOOLKIT+ to your environment so that
-\Prog{hpcrun} can find its install directory.
+\Prog{hpcrun} can find HPCToolkit's top-level installation directory.
 
 \subsection{Miscellaneous}
 
@@ -300,13 +530,13 @@ The solution is to add \verb+HPCTOOLKIT+ to your environment so that
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
 
-Version: \Version\ of \Date.
+Version: \Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2018, Rice University.
+\item[Copyright] \copyright\ 2002-2019, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

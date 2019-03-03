@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,20 +55,35 @@
 #include <ostream>
 #include <string>
 
-#include <lib/support/ProcNameMgr.hpp>
-
-#include "InputFile.hpp"
-
 namespace BAnal {
 namespace Struct {
 
+// Parameters on how to run makeStructure().
+class Options {
+public:
+  int  jobs;
+  int  jobs_parse;
+  int  jobs_symtab;
+  bool show_time;
+  bool ourDemangle;
+
+  Options()
+  {
+    jobs = 1;
+    jobs_parse = 1;
+    jobs_symtab = 1;
+    show_time = false;
+    ourDemangle = false;
+  }
+};
+
 void
-makeStructure(InputFile & inputFile,
+makeStructure(std::string filename,
 	      std::ostream * outFile,
 	      std::ostream * gapsFile,
 	      std::string gaps_filenm,
-	      bool ourDemangle,
-	      ProcNameMgr * procNameMgr = NULL);
+	      std::string search_path,
+	      Struct::Options & opts);
 
 } // namespace Struct
 } // namespace BAnal

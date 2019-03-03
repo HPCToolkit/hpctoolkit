@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -258,7 +258,7 @@ PGMDocHandler::~PGMDocHandler()
   XMLString::release((XMLCh**)&attrLine);
   XMLString::release((XMLCh**)&attrVMA);
 
-  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
+  DIAG_AssertWarn(scopeStack.Depth() == 0, "Invalid state reading HPCStructure.");
 }
 
 

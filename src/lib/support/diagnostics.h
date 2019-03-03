@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #include "Exception.hpp"
 
-#define DIAG_CERR std::cerr
+#define DIAG_CERR std::cout
 #define DIAG_ENDL std::endl /*<< std::flush*/
 
 // All of these macros have a parameter named 'streamArgs' for one or
@@ -192,8 +192,10 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 #define DIAG_WMsg(level, streamArgs)                                 \
   DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
-
 #define DIAG_EMsg(streamArgs)                                       \
+  DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL              
+
+#define DIAG_DevEMsg(streamArgs)                                       \
   { DIAG_CERR << "ERROR: " << streamArgs << DIAG_ENDL;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
       DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << DIAG_ENDL; } \
@@ -233,24 +235,29 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #define DIAG_MsgIf(ifexpr, ...)                                     \
   if (ifexpr) {                                                     \
-    fputs("msg: ", stderr);                                         \
-    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fputs("msg: ", stdout);                                         \
+    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
 
 #define DIAG_Msg(level, ...)                                        \
   if (level <= DIAG_DBG_LVL_PUB) {                                  \
-    fprintf(stderr, "msg [%d]: ", level);                   \
-    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fprintf(stdout, "msg [%d]: ", level);                   \
+    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
 
 #define DIAG_DevMsg(level, ...)                                     \
   if (level <= DIAG_DBG_LVL) {                                      \
-    fprintf(stderr, "msg* [%d]: ", level);                  \
-    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fprintf(stdout, "msg* [%d]: ", level);                  \
+    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout); }
 
 #define DIAG_EMsg(...)                                              \
-  { fputs("ERROR: ", stderr);                                       \
-    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr);              \
+  { fputs("ERROR: ", stdout);                                       \
+    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
+  }
+
+#define DIAG_DevEMsg(...)                                              \
+  { fputs("ERROR: ", stdout);                                       \
+    fprintf(stdout, __VA_ARGS__); fputs("\n", stdout);              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      fprintf(stderr, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
+      fprintf(stdout, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
   }
 
 //#define DIAG_Assert(expr, ...) // cf. Open64's FmtAssert

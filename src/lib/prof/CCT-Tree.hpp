@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -309,10 +309,7 @@ public:
   static ANodeTy
   IntToANodeType(long i);
 
-  // N.B.: An easy implementation for now (but not thread-safe!)
-  static uint s_raToCallsiteOfst;
 
- 
 private:
   static const std::string NodeNames[TyNUMBER];
 
@@ -1281,7 +1278,9 @@ public:
     if (isValid_lip()) {
       ip = lush_lip_getLMIP(lip());
     }
-    return (ip != 0) ? (ip - s_raToCallsiteOfst) : 0;
+    // if IP is non-zero, subtract 1 from IP of return 
+    // to move it into range for the preceeding call instruction
+    return (ip != 0) ? (ip - 1) : 0;
   }
 
   // lmRA(): static (as opposed to run-time) return address

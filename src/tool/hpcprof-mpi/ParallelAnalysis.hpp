@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,6 @@
 #include <string>
 #include <vector>
 
-#include <cmath>
 #include <cstring> // for memset()
 
 #include <stdint.h>
@@ -84,114 +83,6 @@
 #include <lib/support/Unique.hpp>
 
 //*************************** Forward Declarations **************************
-
-
-//***************************************************************************
-// RankTree: Implicit tree representation for reductions/broadcasts
-//***************************************************************************
-
-namespace RankTree {
-
-// Representing a 1-based list of ranks (from 1 to n) as a binary tree:
-//
-//             1               |  level 0
-//          __/ \__            |
-//        2         3          |  level 1
-//       / \       / \         |
-//      4   5     6   7        |  level 2
-//    / |  / \   / \  | \      |
-//   8  9 10 11 12 13 14 15    |  level 3
-//
-// For rank i:
-//   parent(i):      floor(i/2), if i > 1
-//   left-child(i):  2i
-//   right-child(i): 2i + 1
-//   
-// Let the root have level 0.  Then, level l:
-//   begins with node 2^l
-//   ends with node 2^(l + 1) - 1 (assuming a complete level)
-// 
-// Given node i, its level is floor(log2(i))
-
-const int rootRank = 0;
-
-inline int 
-make1BasedRank(int rank0)
-{
-  return (rank0 + 1);
-}
-
-
-inline int 
-make0BasedRank(int rank1)
-{
-  return (rank1 - 1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns its level
-inline int 
-parent(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int parent1 = rank1 / 2; //  floor() via truncation
-  return make0BasedRank(parent1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns a
-// 0-based rank for its left child
-inline int 
-leftChild(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int child1 = 2 * rank1;
-  return make0BasedRank(child1);
-}
-
-
-// Given a 0-based rank for a node in the binary tree, returns a
-// 0-based rank for its right child
-inline int 
-rightChild(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int child1 = 2 * rank1 + 1;
-  return make0BasedRank(child1);
-}
-
-
-// level: Given a 0-based rank for a node in the binary tree, returns
-// its parent's 0-based rank
-inline int 
-level(int rank0)
-{
-  int rank1 = make1BasedRank(rank0);
-  int level = (int) log2(rank1); // floor() via truncation
-  return level;
-}
-
-
-// begNode: Given a tree level, return the first node (0-based rank)
-// on that level
-inline int 
-begNode(int level)
-{
-  int rank1 = (int) pow(2.0, level);
-  return make0BasedRank(rank1);
-}
-
-
-inline int 
-endNode(int level)
-{
-  int rank1 = (int) pow(2.0, level + 1) - 1;
-  return make0BasedRank(rank1);
-}
-
-
-} // namespace RankTree
-
 
 //***************************************************************************
 // PackedMetrics: a packable matrix
@@ -309,25 +200,36 @@ private:
 namespace ParallelAnalysis {
 
 // ------------------------------------------------------------------------
-// mergeNonLocal: merge profile on rank_y into profile on rank_x
+// recvMerge: merge profile on rank_y into profile on rank_x
 // ------------------------------------------------------------------------
 
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+packSend(Prof::CallPath::Profile* profile,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
+recvMerge(Prof::CallPath::Profile* profile,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*,
-                        ParallelAnalysis::PackedMetrics*> data,
-	      int rank_x, int rank_y, int myRank,
-	      MPI_Comm comm = MPI_COMM_WORLD);
+packSend(std::pair<Prof::CallPath::Profile*,
+	                ParallelAnalysis::PackedMetrics*> data,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
+recvMerge(std::pair<Prof::CallPath::Profile*,
+	  ParallelAnalysis::PackedMetrics*> data,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
+void
+packSend(StringSet *stringSet,
+	 int dest, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
+void
+recvMerge(StringSet *stringSet,
+	  int src, int myRank, MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
 // reduce: Uses a tree-based reduction to reduce the profile at every
 // rank into a canonical profile at the tree's root, rank 0.  Assumes
-// 0-based ranks.  Uses lg(maxRank) barriers, one at each level of the
-// binary tree.
+// 0-based ranks.
 // 
 // T: Prof::CallPath::Profile*
 // T: std::pair<Prof::CallPath::Profile*, ParallelAnalysis::PackedMetrics*>
@@ -335,43 +237,33 @@ mergeNonLocal(std::pair<Prof::CallPath::Profile*,
 
 template<typename T>
 void
-reduce(T object, int myRank, int maxRank, MPI_Comm comm = MPI_COMM_WORLD)
+reduce(T object, int myRank, int numRanks, MPI_Comm comm = MPI_COMM_WORLD)
 {
-  for (int level = RankTree::level(maxRank); level >= 1; --level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; i += 2) {
-      int parent = RankTree::parent(i);
-      int lchild = i;     // left child of parent
-      int rchild = i + 1; // right child of parent (if it exists)
-
-      // merge lchild into parent (merging left child first maintains
-      // metric order for CallPath::Profiles)
-      mergeNonLocal(object, parent, lchild, myRank);
-
-      // merge rchild into parent
-      if (rchild <= i_end) {
-	mergeNonLocal(object, parent, rchild, myRank);
-      }
+  int lchild = 2 * myRank + 1;
+  if (lchild < numRanks) {
+    recvMerge(object, lchild, myRank);
+    int rchild = 2 * myRank + 2;
+    if (rchild < numRanks) {
+      recvMerge(object, rchild, myRank);
     }
-    
-    MPI_Barrier(comm);
+  }
+  if (myRank > 0) {
+    int parent = (myRank - 1) / 2;
+    packSend(object, parent, myRank);
   }
 }
 
 
 // ------------------------------------------------------------------------
-// broadcast: Use a tree-based broadcast to broadcast the profile at
-// the tree's root (rank 0) to every other rank.  Assumes 0-based
-// ranks.  Uses lg(maxRank) barriers, one at each level of the binary
-// tree.
+// broadcast: Broadcast the profile at the tree's root (rank 0) to every
+// other rank.  Assumes 0-based ranks.
 // ------------------------------------------------------------------------
 void
-broadcast(Prof::CallPath::Profile*& profile, int myRank, int maxRank, 
-    int rootRank,
+broadcast(Prof::CallPath::Profile*& profile, int myRank,
 	  MPI_Comm comm = MPI_COMM_WORLD);
-
+void
+broadcast(StringSet &stringSet, int myRank,
+	  MPI_Comm comm = MPI_COMM_WORLD);
 
 // ------------------------------------------------------------------------
 // pack/unpack a profile to/from a buffer

@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/09/19}
+\setDate{ 2018/07/10}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -56,33 +56,43 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpclink} links HPCToolkit's performance measurement library into a statically linked application.
-(\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s method for injecting its library into a dynamically linked application will not work with a statically linked applications.)
-Although \Prog{hpclink} does require a special link step, it requires neither source code modifications nor changes to compiling individual object files and libraries.
+\Prog{hpclink} is a wrapper around the system linker
+which injects the HPCToolkit performance measurement library
+when statically linking an application.
+If your application is statically linked you must use \Prog{hopclink} at link time
+instead of \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} at run time
+because \Prog{hpcrun}'s dynamic mechanism for injecting the library
+only works for dynamically linked applications.
+Although using \Prog{hpclink} does require changing your link step,
+it does not require changes to your source code
+or to the way you compile individual files and libraries.
 
-To link with \Prog{hpclink}, first locate the last step in your application's build, that is, the command that produces the final, statically linked binary.
-Then, use this command as \Arg{link-command}.
-One simple way of accomplishing this is to simply prepend the \Prog{hpclink} command to the front of a Makefile's link line.
-You may also wish to rename the binary name (\texttt{-o app-hpclink}).
+To link with \Prog{hpclink}, first locate the last step in your application's build system
+(the command that produces the final, statically linked binary).
+Then just use \Prog{hpclink} instead of the system linker in that command.
+One simple way of accomplishing this is to prepend \Prog{hpclink} to your makefile's link line.
+You may also wish to rename your binary (e.g. \texttt{-o }\emph{appname}\texttt{-hpclink}}).
 
-To control HPCToolkit's performance measurement library during an application's execution, use the following environment variables:
+To control HPCToolkit's performance measurement during application execution,
+set one or more of the following environment variables:
 
 \begin{itemize}
 \item \verb+HPCRUN_EVENT_LIST=<event1>[@<period1>];...;<eventN>[@<periodN>]+\\
-  Sample using \Arg{event1} through \Arg{eventN} using the respective periods.
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -e/--event option.
+  Sample using \Arg{event1} through \Arg{eventN} with their associated periods.
+  Corresponds to \Prog{hpcrun} option \Prog{-e}~/~\Prog{--event}.
 
 \item \verb+HPCRUN_TRACE=1+\\
-  Enable tracing.
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -t/--trace option.
+  Enable tracing, i.e. collection of data for \Prog{hpctraceviewer}.
+  Corresponds to \Prog{hpcrun} option \Prog{-t}~/~\Prog{--trace}.
 
 \item \verb+HPCRUN_PROCESS_FRACTION=<frac>+\\
   Measure only a fraction \Arg{frac} of the execution's processses.
-  For each process, enable measurement with probability \Arg{frac}, where \Arg{frac} is a real number (0.10) or a fraction (1/10) between 0 and 1.
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -f/-fp/--process-fraction option.
+  For each process, enable measurement with probability \Arg{frac},
+  a real number or fraction between 0 and 1.
+  Corresponds to \Prog{hpcrun} option \Prog{-f}~/~\Prog{-fp}~/~\Prog{--process-fraction}.
 
 \item \verb+HPCRUN_OUT_PATH=<outpath>+\\
-  Corresponds to \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}'s -o/--output option.
+  Corresponds to \Prog{hpcrun} option \Prog{-o}~/~\Prog{--output}.
 
 \end{itemize}
 
@@ -102,14 +112,16 @@ It typically has the following form:\\
 \subsection{Options: Informational}
 
 \begin{Description}
+
 \item[\Opt{-v}, \Opt{--verbose}]
-Verbose. Displays the original and modified command lines.
+Emit verbose messages: display both the original and the modified link command lines.
 
 \item[\Opt{-V}, \Opt{--version}]
 Print version information.
 
 \item[\Opt{-h}, \Opt{--help}]
 Print help.
+
 \end{Description}
 
 
@@ -117,12 +129,33 @@ Print help.
 
 \begin{Description}
 
+\item[\Opt{-dw}, \Opt{--double-wrap}]
+Double quote the linker wrap options introduced by \Prog{hpclink},
+i.e.emit \Prog{-Wl,-Wl} instead of \Prog{-Wl}.
+Use this to work around problems with the Berkeley UPC compiler script (rarely necessary).
+
+\item[\OptArg{-fe}{dir}, \OptArg{--front-end}{dir}]
+In a cross-compile link,
+use the current install tree for back-end libraries and
+use \Arg{dir} for the install directory (prefix) of front-end tools (\Prog{hpcfnbounds}).
+
+\item[\Opt{--io}]
+Include a library to track and report the number of io bytes read and written.
+
+\item[\Opt{--ga}]
+Include wrappers for the Global Arrays library.
+
 \item[\Opt{--memleak}]
 Include HPCToolkit's memory leak detection libraries.
 
+\item[\OptArg{--plugin}{name}]
+Add the libraries and wrapped symbols specified by plugin \Arg{name} in the plugins directory.
+
 \item[\OptArg{-u}{symbol}, \OptArg{--undefined}{symbol}]
 Pass \Arg{symbol} to the linker as an undefined symbol.
-This option is rarely needed, but if \Prog{hpclink} fails with an undefined reference to \texttt{\_\_real\_foo}, then the option ``\texttt{-u foo}'' may induce the linker to correctly link this symbol.
+This option is rarely needed,
+but if \Prog{hpclink} fails with an undefined reference to \texttt{\_\_real\_foo}
+then the option ``\texttt{-u foo}'' may induce the linker to correctly link this symbol.
 May be used multiple times.
 
 \end{Description}
@@ -131,7 +164,7 @@ May be used multiple times.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
 
-Compile the ``hello, world'' program with \Prog{gcc} and link in the
+Compile the "hello, world" program with \Prog{gcc} and link in the
 \Prog{hpcrun} code statically.
 
 \begin{verbatim}
@@ -193,9 +226,10 @@ such as the following.
 
 The command line passed to \Prog{hpclink} must produce a statically linked binary and the \Prog{hpclink} script will fail if it does not.
 
-With some compilers, eg, IBM's XL compilers and the Pathscale compilers, interprocedural optimization interferes with \Prog{hpclink}'s ability to link, causing \Prog{hpclink} to fail.
-In this case, it is necessary to disable interprocedural optimization.
-It is not necessary to disable all optimization, just interprocedural analysis.
+With some compilers, e.g. IBM's XL family,
+interprocedural optimization interferes with \Prog{hpclink} and causes failure.
+If this occurs interprocedural optimization must be disabled.
+All other optimizations can remain enabled.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -207,13 +241,13 @@ It is not necessary to disable all optimization, just interprocedural analysis.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
 
-Version: \Version\ of \Date.
+Version: \Version
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2018, Rice University.
+\item[Copyright] \copyright\ 2002-2019, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

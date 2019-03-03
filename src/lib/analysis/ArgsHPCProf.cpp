@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -498,8 +498,8 @@ ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 std::string
 ArgsHPCProf::makeDBDirName(const std::string& profileArg)
 {
-  static const string str1 = "hpctoolkit-";
-  static const string str2 = "-measurements";
+  static const string hpctk = "hpctoolkit-";
+  static const string meas = "-measurements";
 
   string db_dir = "";
   
@@ -507,29 +507,48 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
   //   <path>/[pfx]hpctoolkit-<nm>-measurements[sfx]/<file>.hpcrun
 
   const string& fnm = profileArg;
-  size_t pos1 = fnm.find(str1);
-  size_t pos2 = fnm.find(str2);
-  if (pos1 < pos2 && pos2 != string::npos) {
+  size_t pos_hpctk = -1;
+  size_t pos_meas = string::npos;
+
+  // Find the last "hpctoolkit-" string that is followed
+  // by a "-measurements" string (with overlap possible).
+  for (;;) {
+    size_t pos1, pos2;
+    // find next "hpctoolkit-"
+    pos1 = fnm.find(hpctk, pos_hpctk + 1);
+    if (pos1 == string::npos)
+      break;
+    // find next "'measurements" after "hpctoolkit"
+    pos2 = fnm.find(meas, pos1 + hpctk.length() - 1);
+    if (pos2 == string::npos)
+      break;
+    pos_hpctk = pos1;
+    pos_meas = pos2;
+  }
+    
+  // If both strings are found, and have no '/ between them,
+  // assemble db_dir.
+  if (fnm.find_first_of("/", pos_hpctk + hpctk.length()) > pos_meas) {
     // ---------------------------------
     // prefix
     // ---------------------------------
-    size_t pfx_a   = fnm.find_last_of('/', pos1);
+    size_t pfx_a   = fnm.find_last_of('/', pos_hpctk);
     size_t pfx_beg = (pfx_a == string::npos) ? 0 : pfx_a + 1; // [inclusive
-    size_t pfx_end = pos1;                                    // exclusive)
+    size_t pfx_end = pos_hpctk;                               // exclusive)
     string pfx = fnm.substr(pfx_beg, pfx_end - pfx_beg);
 
     // ---------------------------------
     // nm (N.B.: can have 'negative' length with fnm='hpctoolkit-measurements')
     // ---------------------------------
-    size_t nm_beg = pos1 + str1.length();            // [inclusive
-    size_t nm_end = (nm_beg > pos2) ? nm_beg : pos2; // exclusive)
+    size_t nm_beg = pos_hpctk + hpctk.length();              // [inclusive
+    size_t nm_end = (nm_beg > pos_meas) ? nm_beg : pos_meas; // exclusive)
     string nm = fnm.substr(nm_beg, nm_end - nm_beg);
     
     // ---------------------------------
     // suffix
     // ---------------------------------
     string sfx;
-    size_t sfx_beg = pos2 + str2.length();            // [inclusive
+    size_t sfx_beg = pos_meas + meas.length();        // [inclusive
     size_t sfx_end = fnm.find_first_of('/', sfx_beg); // exclusive)
     if (sfx_end == string::npos) {
       sfx_end = fnm.size();

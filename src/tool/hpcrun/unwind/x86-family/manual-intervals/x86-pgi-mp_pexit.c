@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,8 +55,9 @@ static char pgi_mp_pexit_signature[] = {
   0x48, 0x83, 0x7c, 0x24, 0x08, 0x01,    	// cmpq   $0x1,0x8(%rsp)
 };
 
-static int 
-adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(pgi_mp_pexit_signature);
 
@@ -77,13 +78,3 @@ adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_pgi_mp_pexit_intervals);
-}
-
-

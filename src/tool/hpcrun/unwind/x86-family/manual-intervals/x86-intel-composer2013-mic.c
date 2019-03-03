@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,8 +72,8 @@ static char intelmic_comp13_kmp_alloc_thread_signature[] = {
 };
 
 
-static int 
-adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   // NOTE: the two signatures above are the same length. The next three lines of code below depend upon that.
   int siglen = sizeof(intelmic_comp13_for_main_signature); 
@@ -94,12 +94,4 @@ adjust_intelmic_intervals(char *ins, int len, btuwi_status_t *stat)
     return 1;
   } 
   return 0;
-}
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_intelmic_intervals);
 }

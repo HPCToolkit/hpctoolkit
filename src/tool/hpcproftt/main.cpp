@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,16 +74,20 @@ static int
 realmain(int argc, char* const* argv);
 
 static int
-main_srcCorrelation(const Args& args);
-
-static int
-main_objCorrelation(const Args& args);
-
-static int
 main_rawData(const std::vector<string>& profileFiles);
 
 
 //****************************************************************************
+
+void 
+prof_abort
+(
+  int error_code
+)
+{
+  exit(error_code);
+}
+
 
 int 
 main(int argc, char* const* argv) 
@@ -118,87 +122,13 @@ static int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);  // exits if error on command line
-
-  int ret = 0;
-
-  switch (args.mode) {
-    case Args::Mode_SourceCorrelation:
-      ret = main_srcCorrelation(args);
-      break;
-    case Args::Mode_ObjectCorrelation:
-      ret = main_objCorrelation(args);
-      break;
-    case Args::Mode_RawDataDump:
-      ret = main_rawData(args.profileFiles);
-      break;
-    default:
-      DIAG_Die("Unhandled case: " << args.mode);
-  }
-
-  return ret; 
+  return main_rawData(args.profileFiles); 
 }
 
 
 //****************************************************************************
 //
 //****************************************************************************
-
-static void
-makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
-		   uint /*Analysis::Args::MetricFlg*/ metrics);
-
-static int
-main_srcCorrelation(const Args& args)
-{
-  RealPathMgr::singleton().searchPaths(args.searchPathStr());
-
-  //-------------------------------------------------------
-  // Create metric descriptors
-  //-------------------------------------------------------
-  Prof::Metric::Mgr metricMgr;
-  metricMgr.makeRawMetrics(args.profileFiles);
-  makeDerivedMetrics(metricMgr, args.prof_metrics);
-
-  //-------------------------------------------------------
-  // Correlate metrics with program structure and Generate output
-  //-------------------------------------------------------
-  Prof::Struct::Tree structure("", new Prof::Struct::Root(""));
-
-  Analysis::Flat::Driver driver(args, metricMgr, structure);
-  int ret = driver.run();
-
-  return ret;
-}
-
-
-static int
-main_objCorrelation(const Args& args)
-{
-  std::ostream& os = std::cout;
-  
-  for (uint i = 0; i < args.profileFiles.size(); ++i) {
-    const std::string& fnm = args.profileFiles[i];
-
-    // 0. Generate nice header
-    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
-    os << fnm << std::endl;
-    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
-
-    // 1. Create metric descriptors
-    Prof::Metric::Mgr metricMgr;
-    metricMgr.makeRawMetrics(fnm, 
-			     false/*isUnitsEvents*/, 
-			     args.obj_metricsAsPercents);
-    
-    // 2. Correlate
-    Analysis::Flat::correlateWithObject(metricMgr, os,
-					args.obj_showSourceCode,
-					args.obj_procGlobs,
-					args.obj_procThreshold);
-  }
-  return 0;
-}
-
 
 static int
 main_rawData(const std::vector<string>& profileFiles)
@@ -219,38 +149,3 @@ main_rawData(const std::vector<string>& profileFiles)
 }
 
 //****************************************************************************
-
-static void
-makeDerivedMetrics(Prof::Metric::Mgr& metricMgr,
-		   uint /*Analysis::Args::MetricFlg*/ metrics)
-{
-  if (Analysis::Args::MetricFlg_isSum(metrics)) {
-    bool needAllStats =
-      Analysis::Args::MetricFlg_isSet(metrics,
-				      Analysis::Args::MetricFlg_StatsAll);
-    bool needMultiOccurance = Analysis::Args::MetricFlg_isThread(metrics);
-    metricMgr.makeSummaryMetrics(needAllStats, needMultiOccurance);
-  }
-  
-  if (!Analysis::Args::MetricFlg_isThread(metrics)) {
-    using namespace Prof;
-
-    for (uint i = 0; i < metricMgr.size(); i++) {
-      Metric::ADesc* m = metricMgr.metric(i);
-      Metric::SampledDesc* mm = dynamic_cast<Metric::SampledDesc*>(m);
-      if (mm) {
-	mm->isVisible(false);
-	mm->isSortKey(false);
-      }
-    }
-
-    for (uint i = 0; i < metricMgr.size(); i++) {
-      Metric::ADesc* m = metricMgr.metric(i);
-      Metric::DerivedDesc* mm = dynamic_cast<Metric::DerivedDesc*>(m);
-      if (mm) {
-	mm->isSortKey(true);
-	break;
-      }
-    }
-  }
-}

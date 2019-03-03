@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,6 +74,7 @@
 #include <string.h>
 #include <stdio.h>  // fdopen(), fputc_unlocked()
 
+#include <limits.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -84,12 +85,14 @@
 
 #include "hpcio.h"
 
+
+
 //*************************** Forward Declarations **************************
 
-//***************************************************************************
+
 
 //***************************************************************************
-//
+// interface operations
 //***************************************************************************
 
 // See header for interface information.
@@ -98,16 +101,15 @@ hpcio_fopen_w(const char* fnm, int overwrite)
 {
   mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
   int fd;
-  FILE* fs = NULL;
+  FILE* fs = NULL; // default return value
 
   if (overwrite == 0) {
     // Open file for writing; fail if the file already exists.  
     fd = open(fnm, O_WRONLY | O_CREAT | O_EXCL, mode);
-    if (fd < 0) { return NULL; }  
   }
   else if (overwrite == 1) {
-    // Open file for writing; truncate file already exists.
-    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode); 
+    // Open file for writing; truncate if the file already exists.
+    fd = open(fnm, O_WRONLY | O_CREAT | O_TRUNC, mode);
   }
   else if (overwrite == 2) {
     // Options specific to /dev/null.
@@ -116,9 +118,13 @@ hpcio_fopen_w(const char* fnm, int overwrite)
   else {
     return NULL; // blech
   }
-  
-  // Get a buffered stream since we will be performing many small writes.
-  fs = fdopen(fd, "w");
+
+  if (fd != -1 ) {
+    // open succeeded. create a buffered stream since we 
+    // will perform many small writes.
+    fs = fdopen(fd, "w");
+  }
+
   return fs;
 }
 

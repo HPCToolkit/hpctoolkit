@@ -58,10 +58,9 @@ static char gcc_adjust_stack_signature[] = {
 };
 
 
-static int 
-gcc_adjust_stack_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_gcc_stack_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-    // FIXME: vi3 x86recipe_t has been changed, so I have to modify this function
   int siglen = sizeof(gcc_adjust_stack_signature);
 
   if (len > siglen && strncmp((char *)gcc_adjust_stack_signature, ins, siglen) == 0) {
@@ -90,12 +89,4 @@ gcc_adjust_stack_intervals(char *ins, int len, btuwi_status_t *stat)
     return 1;
   } 
   return 0;
-}
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(gcc_adjust_stack_intervals);
 }

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -95,139 +95,210 @@ using std::string;
 namespace ParallelAnalysis {
 
 //***************************************************************************
-// 
+// forward declarations
+//***************************************************************************
+
+static void
+packStringSet(const StringSet& profile,
+		 uint8_t** buffer, size_t* bufferSz);
+
+static StringSet*
+unpackStringSet(uint8_t* buffer, size_t bufferSz);
+
+//***************************************************************************
+// private functions
+//***************************************************************************
+
+static void 
+broadcast_sizet
+(
+  size_t &size, 
+  MPI_Comm comm
+)
+{ 
+  long size_l = size;
+  MPI_Bcast(&size_l, 1, MPI_LONG, 0, comm);
+  size = size_l;
+} 
+
+
+
+//***************************************************************************
+// interface functions
 //***************************************************************************
 
 void
-broadcast(Prof::CallPath::Profile*& profile,
-	  int myRank, int maxRank, int rootRank, MPI_Comm comm)
+broadcast
+(
+  Prof::CallPath::Profile*& profile,
+  int myRank, 
+  MPI_Comm comm
+)
 {
-  if (myRank != RankTree::rootRank) {
-    DIAG_Assert(!profile, "ParallelAnalysis::broadcast: " << DIAG_UnexpectedInput);
-    profile = new Prof::CallPath::Profile("[ParallelAnalysis::broadcast]");
-    profile->isMetricMgrVirtual(true);
-  }
-  
-  int max_level = RankTree::level(maxRank);
-  for (int level = 0; level < max_level; ++level) {
-    int i_beg = RankTree::begNode(level);
-    int i_end = std::min(maxRank, RankTree::endNode(level));
-    
-    for (int i = i_beg; i <= i_end; ++i) {
-      // merge i into its left child (i_lchild)
-      int i_lchild = RankTree::leftChild(i);
-      if (i_lchild <= maxRank) {
-	mergeNonLocal(profile, i_lchild, i, myRank);
-      }
+  size_t size = 0;
+  uint8_t* buf = NULL;
 
-      // merge i into its right child (i_rchild)
-      int i_rchild = RankTree::rightChild(i);
-      if (i_rchild <= maxRank) {
-	mergeNonLocal(profile, i_rchild, i, myRank);
-      }
-    }
+  if (myRank == 0) {
+    packProfile(*profile, &buf, &size);
+  }
 
-    MPI_Barrier(comm);
+  broadcast_sizet(size, comm);
+
+  if (myRank != 0) {
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
-  if (myRank == rootRank) {
-    profile->metricMgr()->mergePerfEventStatistics_finalize(maxRank);
+
+  MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
+
+  if (myRank != 0) {
+    profile = unpackProfile(buf, size);
   }
+
+  free(buf);
+}
+
+void
+broadcast
+(
+  StringSet &stringSet,
+  int myRank, 
+  MPI_Comm comm
+)
+{
+  size_t size = 0;
+  uint8_t* buf = NULL;
+
+  if (myRank == 0) {
+    packStringSet(stringSet, &buf, &size);
+  }
+
+  broadcast_sizet(size, comm);
+
+  if (myRank != 0) {
+    buf = (uint8_t *)malloc(size * sizeof(uint8_t));
+  }
+
+  MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
+
+  if (myRank != 0) {
+    StringSet *rhs = unpackStringSet(buf, size);
+    stringSet += *rhs;
+    delete rhs;
+  }
+
+  free(buf);
 }
 
 
 void
-mergeNonLocal(Prof::CallPath::Profile* profile, int rank_x, int rank_y,
-	      int myRank, MPI_Comm comm)
+packSend(Prof::CallPath::Profile* profile,
+	 int dest, int myRank, MPI_Comm comm)
 {
-  int tag = rank_y; // sender
-
   uint8_t* profileBuf = NULL;
-
-  Prof::CallPath::Profile* profile_x = NULL;
-  Prof::CallPath::Profile* profile_y = NULL;
-
-  if (myRank == rank_x) {
-    profile_x = profile;
-
-    // rank_x probes rank_y
-    int profileBufSz = 0;
-    MPI_Status mpistat;
-    MPI_Probe(rank_y, tag, comm, &mpistat);
-    MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
-    profileBuf = new uint8_t[profileBufSz];
-
-    // rank_x receives profile from rank_y
-    MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, rank_y, tag, comm, &mpistat);
-
-    profile_y = unpackProfile(profileBuf, (size_t)profileBufSz);
-    delete[] profileBuf;
-
-    if (DBG_CCT_MERGE) {
-      string pfx0 = "[" + StrUtil::toStr(rank_x) + "]";
-      string pfx1 = "[" + StrUtil::toStr(rank_y) + "]";
-      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx0.c_str()));
-      DIAG_DevMsgIf(1, profile_y->metricMgr()->toString(pfx1.c_str()));
-    }
-    
-    int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
-    profile_x->merge(*profile_y, mergeTy);
-
-    // merging the perf event statistics
-    profile_x->metricMgr()->mergePerfEventStatistics(profile_y->metricMgr());
-
-    if (DBG_CCT_MERGE) {
-      string pfx = ("[" + StrUtil::toStr(rank_y)
-		    + " => " + StrUtil::toStr(rank_x) + "]");
-      DIAG_DevMsgIf(1, profile_x->metricMgr()->toString(pfx.c_str()));
-    }
-
-    delete profile_y;
-  }
-
-  if (myRank == rank_y) {
-    profile_y = profile;
-
-    size_t profileBufSz = 0;
-    packProfile(*profile_y, &profileBuf, &profileBufSz);
-
-    // rank_y sends profile to rank_x
-    MPI_Send(profileBuf, (int)profileBufSz, MPI_BYTE, rank_x, tag, comm);
-
-    free(profileBuf);
-  }
+  size_t profileBufSz = 0;
+  packProfile(*profile, &profileBuf, &profileBufSz);
+  MPI_Send(profileBuf, (int)profileBufSz, MPI_BYTE, dest, myRank, comm);
+  free(profileBuf);
 }
 
+void
+recvMerge(Prof::CallPath::Profile* profile,
+	  int src, int myRank, MPI_Comm comm)
+{
+  // probe src
+  MPI_Status mpistat;
+  MPI_Probe(src, src, comm, &mpistat);
+  int profileBufSz;
+  MPI_Get_count(&mpistat, MPI_BYTE, &profileBufSz);
+
+  // receive profile from src
+  uint8_t *profileBuf = new uint8_t[profileBufSz];
+  MPI_Recv(profileBuf, profileBufSz, MPI_BYTE, src, src, comm, &mpistat);
+  Prof::CallPath::Profile* new_profile =
+    unpackProfile(profileBuf, (size_t)profileBufSz);
+  delete[] profileBuf;
+
+  if (DBG_CCT_MERGE) {
+    string pfx0 = "[" + StrUtil::toStr(myRank) + "]";
+    string pfx1 = "[" + StrUtil::toStr(src) + "]";
+    DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx0.c_str()));
+    DIAG_DevMsgIf(1, new_profile->metricMgr()->toString(pfx1.c_str()));
+  }
+    
+  int mergeTy = Prof::CallPath::Profile::Merge_MergeMetricByName;
+  profile->merge(*new_profile, mergeTy);
+
+  // merging the perf event statistics
+  profile->metricMgr()->mergePerfEventStatistics(new_profile->metricMgr());
+
+  if (DBG_CCT_MERGE) {
+    string pfx = ("[" + StrUtil::toStr(src)
+		  + " => " + StrUtil::toStr(myRank) + "]");
+    DIAG_DevMsgIf(1, profile->metricMgr()->toString(pfx.c_str()));
+  }
+
+  delete new_profile;
+}
 
 void
-mergeNonLocal(std::pair<Prof::CallPath::Profile*,
+packSend(std::pair<Prof::CallPath::Profile*,
 	                ParallelAnalysis::PackedMetrics*> data,
-	      int rank_x, int rank_y, int myRank, MPI_Comm comm)
+	 int dest, int myRank, MPI_Comm comm)
 {
-  int tag = rank_y; // sender
+  Prof::CallPath::Profile* profile = data.first;
+  ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
+  packMetrics(*profile, *packedMetrics);
+  MPI_Send(packedMetrics->data(), packedMetrics->dataSize(),
+	   MPI_DOUBLE, dest, myRank, comm);
+}
 
-  if (myRank == rank_x) {
-    Prof::CallPath::Profile* profile_x = data.first;
-    ParallelAnalysis::PackedMetrics* packedMetrics_x = data.second;
+void
+recvMerge(std::pair<Prof::CallPath::Profile*,
+	  ParallelAnalysis::PackedMetrics*> data,
+	  int src, int myRank, MPI_Comm comm)
+{
+  Prof::CallPath::Profile* profile = data.first;
+  ParallelAnalysis::PackedMetrics* packedMetrics = data.second;
 
-    // rank_x receives metric data from rank_y
-    MPI_Status mpistat;
-    MPI_Recv(packedMetrics_x->data(), packedMetrics_x->dataSize(),
-	     MPI_DOUBLE, rank_y, tag, comm, &mpistat);
-    DIAG_Assert(packedMetrics_x->verify(), DIAG_UnexpectedInput);
-    
-    unpackMetrics(*profile_x, *packedMetrics_x);
-  }
+  // receive new metric data from src
+  MPI_Status mpistat;
+  MPI_Recv(packedMetrics->data(), packedMetrics->dataSize(),
+	   MPI_DOUBLE, src, src, comm, &mpistat);
+  DIAG_Assert(packedMetrics->verify(), DIAG_UnexpectedInput);
+  unpackMetrics(*profile, *packedMetrics);
+}
 
-  if (myRank == rank_y) {
-    Prof::CallPath::Profile* profile_y = data.first;
-    ParallelAnalysis::PackedMetrics* packedMetrics_y = data.second;
+void
+packSend(StringSet *stringSet,
+	 int dest, int myRank, MPI_Comm comm)
+{
+  uint8_t* stringSetBuf = NULL;
+  size_t stringSetBufSz = 0;
+  packStringSet(*stringSet, &stringSetBuf, &stringSetBufSz);
+  MPI_Send(stringSetBuf, (int)stringSetBufSz, MPI_BYTE, 
+	   dest, myRank, comm);
+  free(stringSetBuf);
+}
 
-    packMetrics(*profile_y, *packedMetrics_y);
-    
-    // rank_y sends metric data to rank_x
-    MPI_Send(packedMetrics_y->data(), packedMetrics_y->dataSize(),
-	     MPI_DOUBLE, rank_x, tag, comm);
-  }
+void
+recvMerge(StringSet *stringSet,
+	  int src, int myRank, MPI_Comm comm)
+{
+  // determine size of incoming packed directory set from src
+  MPI_Status mpistat;
+  MPI_Probe(src, src, comm, &mpistat);
+  int stringSetBufSz = 0;
+  MPI_Get_count(&mpistat, MPI_BYTE, &stringSetBufSz);
+
+  // receive new stringSet from src
+  uint8_t *stringSetBuf = new uint8_t[stringSetBufSz];
+  MPI_Recv(stringSetBuf, stringSetBufSz, MPI_BYTE, 
+	   src, src, comm, &mpistat);
+  StringSet *new_stringSet =
+    unpackStringSet(stringSetBuf, (size_t) stringSetBufSz);
+  delete[] stringSetBuf;
+  *stringSet += *new_stringSet;
+  delete new_stringSet;
 }
 
 
@@ -260,6 +331,37 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
 
   fclose(fs);
   return prof;
+}
+
+
+
+//***************************************************************************
+
+static void
+packStringSet(const StringSet& stringSet,
+	      uint8_t** buffer, size_t* bufferSz)
+{
+  // open_memstream: malloc buffer and sets bufferSz
+  FILE* fs = open_memstream((char**)buffer, bufferSz);
+
+  StringSet::fmt_fwrite(stringSet, fs);
+
+  fclose(fs);
+}
+
+
+static StringSet*
+unpackStringSet(uint8_t* buffer, size_t bufferSz)
+{
+  FILE* fs = fmemopen(buffer, bufferSz, "r");
+
+  StringSet* stringSet = NULL;
+
+  StringSet::fmt_fread(stringSet, fs);
+
+  fclose(fs);
+
+  return stringSet;
 }
 
 

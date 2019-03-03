@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,15 +79,7 @@ using std::endl;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/EmptyISA.hpp>
-#include <lib/isa/IA64ISA.hpp>
-#include <lib/isa/MipsISA.hpp>
-#include <lib/isa/PowerISA.hpp>
-#include <lib/isa/SparcISA.hpp>
-#include <lib/isa/x86ISA.hpp>
-#include <lib/isa/x86ISABinutils.hpp>
-#include <lib/isa/x86ISAXed.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
@@ -115,7 +107,6 @@ using std::endl;
 #define NORETURNS_LOOKUP_LOCAL_NOISY 0
 
 
-
 //***************************************************************************
 // private data 
 //***************************************************************************
@@ -125,7 +116,6 @@ static const char *noreturn_table[] = {
   // that don't return
 #include "names.cpp"
 };
-
 
 
 //***************************************************************************
@@ -404,7 +394,8 @@ BinUtil::LM::~LM()
 void
 BinUtil::LM::open(const char* filenm)
 {
-  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
+  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm),
+	      "Cannot open a different file!");
   
   if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
@@ -448,86 +439,20 @@ BinUtil::LM::open(const char* filenm)
   else {
     m_type = TypeNULL;
   }
-  
-#if defined(HAVE_HPC_GNUBINUTILS)
-  if (bfd_get_arch(m_bfd) == bfd_arch_alpha) {
-    m_txtBeg = bfd_ecoff_get_text_start(m_bfd);
-    m_txtEnd = bfd_ecoff_get_text_end(m_bfd);
-    m_begVMA = m_txtBeg;
-  } 
-  else {
-    // Currently, this is ELF specific
-    m_txtBeg = bfd_get_start_address(m_bfd); // entry point
-    m_begVMA = bfd_get_first_addr(m_bfd);     
-  }
-#else
+
   m_txtBeg = bfd_get_start_address(m_bfd); // entry point
   m_begVMA = m_txtBeg;
-#endif /* HAVE_HPC_GNUBINUTILS */
-  
+
   // -------------------------------------------------------
   // 3. Configure ISA.  
   // -------------------------------------------------------
 
-  // Create a new ISA (this may not be necessary, but it is cheap)
-  ISA* newisa = NULL;
-  switch (bfd_get_arch(m_bfd)) {
-    case bfd_arch_i386: // x86 and x86_64
-      if (m_useBinutils) {
-        newisa = new x86ISABinutils(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
-      } else {
-        newisa = new x86ISAXed(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
-      }
-      break;
-#ifdef bfd_mach_k1om
-    case bfd_arch_k1om: // Intel MIC, 64-bit only
-      if (m_useBinutils) {
-         newisa = new x86ISABinutils(true);
-      } else {
-         newisa = new x86ISAXed(true);
-      }
-      break;
-#endif
-    case bfd_arch_powerpc:
-      newisa = new PowerISA;
-      break;
+  // We no longer use binutils to crack instructions on any platform,
+  // so EmptyISA is a stub until we remove binutils entirely.
 
-    // semi-supported platforms
-#ifdef ENABLE_BINUTILS_IA64
-    case bfd_arch_ia64:
-      newisa = new IA64ISA;
-      break;
-#endif
-
-    // old, unsupported platforms
-#if 0
-    case bfd_arch_alpha:
-      newisa = new AlphaISA;
-      break;
-    case bfd_arch_mips:
-      newisa = new MipsISA;
-      break;
-    case bfd_arch_sparc:
-      newisa = new SparcISA;
-      break;
-#endif
-    default:
-      newisa = new EmptyISA;
-      break;
+  if (! isa) {
+    isa = new EmptyISA;
   }
-
-  // Sanity check.  Test to make sure the new LM is using the
-  // same ISA type.
-  if (!isa) {
-    isa = newisa;
-  }
-  else {
-    delete newisa;
-    // typeid(*isa).m_name()
-    DIAG_Assert(typeid(*newisa) == typeid(*isa),
-		"Cannot simultaneously open LMs with different ISAs!");
-  }
-
 }
 
 

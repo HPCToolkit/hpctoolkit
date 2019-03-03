@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,7 @@
  * local includes
  *****************************************************************************/
 #include "common.h"
+#include <hpcrun/constructors.h>
 #include "gpu_blame.h"
 #include "gpu_ctxt_actions.h"
 
@@ -626,9 +627,7 @@ static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCuDriverCalls();
 }
 
-__attribute__((constructor))
-static void
-CpuGpuBlameShiftInit(void)
+HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 {
   hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))

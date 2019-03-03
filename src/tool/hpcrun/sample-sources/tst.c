@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,8 @@
  *****************************************************************************/
 #include "sample_source_obj.h"
 #include "common.h"
-
+#include "ss-errno.h"
+ 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -377,6 +378,8 @@ METHOD_FN(display_events)
 static int
 _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   void* pc = hpcrun_context_pc(context);
@@ -402,12 +405,17 @@ _tst_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(SPECIAL, "No _tst restart, due to disabled sampling");
-    return 0;
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
 #ifdef RESET_ITIMER_EACH_SAMPLE
   METHOD_CALL(&__tst_obj, start);
 #endif
 
-  return 0; /* tell monitor that the signal has been handled */
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }

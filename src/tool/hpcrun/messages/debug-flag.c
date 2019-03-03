@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -173,14 +173,6 @@ static flag_list_t all_list = {
 static int dbg_flags[N_DBG_CATEGORIES];
 
 
-static int defaults[] = {
-  DBG_PREFIX(TROLL),
-  DBG_PREFIX(DROP),
-  DBG_PREFIX(SUSPICIOUS_INTERVAL)
-};
-#define NDEFAULTS (sizeof(defaults)/sizeof(defaults[0]))
-
-
 
 //*****************************************************************************
 // forward declarations 
@@ -320,12 +312,6 @@ debug_flag_process_string(char *in, int debug_initialization)
 static void 
 debug_flag_process_env(int debug_initialization)
 {
-  if (getenv("HPCRUN_QUIET") != NULL){
-    for (int i=0; i < NDEFAULTS; i++){
-      debug_flag_set(defaults[i], 1);
-    }
-  }
-
   char *s = getenv("HPCRUN_DEBUG_FLAGS");
   if(s){
     debug_flag_process_string(s, debug_initialization);

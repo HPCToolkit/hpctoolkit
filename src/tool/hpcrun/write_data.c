@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,13 +90,7 @@ static epoch_flags_t epoch_flags = {
 
 static const uint64_t default_measurement_granularity = 1;
 
-static const uint32_t default_ra_to_callsite_distance =
-#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
-  8 // move past branch delay slot
-#else
-  1 // probably sufficient all architectures without a branch-delay slot
-#endif
-  ;
+
 
 //*****************************************************************************
 // local utilities
@@ -259,7 +253,6 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
 			       default_measurement_granularity,
-			       default_ra_to_callsite_distance,
 			       "TODO:epoch-name","TODO:epoch-value",
 			       NULL);
 
@@ -302,7 +295,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
     //
 
     cct_bundle_t* cct      = &(s->csdata);
-    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct);
+    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map);
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);

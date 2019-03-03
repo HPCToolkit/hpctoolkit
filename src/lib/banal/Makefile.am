@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -50,10 +50,12 @@ include $(top_srcdir)/src/Makeinclude.config
 
 #----------------------------------------------------------------------
 
-BOOST_INC = @BOOST_INC@
+BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBELF_INC = @LIBELF_INC@
-SYMTABAPI_INC = @SYMTABAPI_INC@
+TBB_IFLAGS = @TBB_IFLAGS@
 
 if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
@@ -73,11 +75,12 @@ SIMPLE_SRCS = StructSimple.cpp
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@GNUBINUTILS_IFLAGS@  \
-	-I$(BOOST_INC)  \
-	$(DWARF_IFLAGS) \
+	$(BINUTILS_IFLAGS)  \
+	$(BOOST_IFLAGS)  \
+	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
-	-I$(SYMTABAPI_INC)
+	$(DYNINST_IFLAGS)  \
+	$(TBB_IFLAGS)
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
@@ -87,18 +90,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 pkglibexecdir = @my_pkglibexecdir@
 
-pkglibexec_PROGRAMS = dotgraph-bin
-
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
-
-dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CPPFLAGS = -I$(BOOST_INC) $(DWARF_IFLAGS) -I$(LIBELF_INC) -I$(SYMTABAPI_INC)
-dotgraph_bin_CXXFLAGS = @HOST_CXXFLAGS@
-dotgraph_bin_LDADD    = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST)
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
+
+if OPT_ENABLE_OPENMP
+libHPCbanal_la_CXXFLAGS += $(OPENMP_FLAG)
+endif
 
 libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
 libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)

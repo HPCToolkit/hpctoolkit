@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,33 +44,63 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//------------------------------------------------------------------------------
+// system includes
+//------------------------------------------------------------------------------
 #include <stdlib.h>
+
+
+
+//------------------------------------------------------------------------------
+// local includes
+//------------------------------------------------------------------------------
+
 #include "x86-unwind-interval-fixup.h"
-
-typedef struct x86_ui_fixup_list_item_s {
-  x86_ui_fixup_fn_t fn;
-  struct x86_ui_fixup_list_item_s *next;
-} x86_ui_fixup_list_item_t; 
-
-static x86_ui_fixup_list_item_t *x86_fixup_list = 0;
+#include "manual-intervals/x86-manual-intervals.h"
 
 
-void 
-add_x86_unwind_interval_fixup_function(x86_ui_fixup_fn_t fn)
-{
-   x86_ui_fixup_list_item_t *i = (x86_ui_fixup_list_item_t *) malloc(sizeof(x86_ui_fixup_list_item_t));
-   i->next = x86_fixup_list;
-   i->fn = fn;
-   x86_fixup_list = i;
-}
+
+//------------------------------------------------------------------------------
+// macros
+//------------------------------------------------------------------------------
+
+#define DECLARE_FIXUP_ROUTINE(fn) \
+        extern int fn(char *ins, int len, btuwi_status_t* stat); 
+
+#define REGISTER_FIXUP_ROUTINE(fn) fn,
+
+
+
+//------------------------------------------------------------------------------
+// external declarations
+//------------------------------------------------------------------------------
+
+FORALL_X86_INTERVAL_FIXUP_ROUTINES(DECLARE_FIXUP_ROUTINE)
+
+
+
+//------------------------------------------------------------------------------
+// local variables
+//------------------------------------------------------------------------------
+
+static x86_ui_fixup_fn_t x86_interval_fixup_routine_vector[] = {
+  FORALL_X86_INTERVAL_FIXUP_ROUTINES(REGISTER_FIXUP_ROUTINE)
+  0
+};
+
+
+
+//------------------------------------------------------------------------------
+// interface operations 
+//------------------------------------------------------------------------------
 
 int
 x86_fix_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
 {
-   x86_ui_fixup_list_item_t *fentry = x86_fixup_list;
-   while (fentry) {
-    if ((*fentry->fn)(ins,len,stat)) return 1;
-    fentry = fentry->next;
+   x86_ui_fixup_fn_t *fn = &x86_interval_fixup_routine_vector[0];
+
+   while (*fn) {
+    if ((*fn++)(ins,len,stat)) return 1;
    }
    return 0;
 }

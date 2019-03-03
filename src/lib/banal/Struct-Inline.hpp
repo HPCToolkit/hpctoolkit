@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -72,6 +72,7 @@
 
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
+#include <lib/support/RealPathMgr.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/StringTable.hpp>
 
@@ -272,9 +273,10 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
+  bool  irred;
 
   LoopInfo(TreeNode *nd, FLPSeqn &pth, const std::string &nm, VMA vma,
-	   long file, long base, long line)
+	   long file, long base, long line, bool ir = false)
   {
     node = nd;
     path = pth;
@@ -283,6 +285,7 @@ public:
     file_index = file;
     base_index = base;
     line_num = line;
+    irred = ir;
   }
 
   // delete the subtree 'node' in ~TreeNode(), not here.
@@ -342,11 +345,11 @@ public:
 Symtab * openSymtab(ElfFile *elfFile);
 bool closeSymtab();
 
-bool analyzeAddr(InlineSeqn &nodelist, VMA addr);
+bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
 
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line);
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
+	      VMA vma, int len, string & filenm, SrcFile::ln line);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);

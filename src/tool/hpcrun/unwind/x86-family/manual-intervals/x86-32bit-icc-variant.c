@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -62,8 +62,8 @@ static char icc_variant_signature[] = {
 };
 
 
-static int 
-adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
+int 
+x86_adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
 {
   int siglen = sizeof(icc_variant_signature);
 
@@ -96,12 +96,4 @@ adjust_icc_variant_intervals(char *ins, int len, btuwi_status_t* stat)
     return 1;
   }
   return 0;
-}
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_icc_variant_intervals);
 }

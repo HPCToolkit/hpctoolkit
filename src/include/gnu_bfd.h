@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,23 +44,21 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/****************************************************************************
- *
- * File:
- *    gnu_bfd.h
- *
- * Purpose:
- *    [The purpose of this file]
- *
- * Description:
- *    [The set of functions, macros, etc. defined in the file]
- *
- ***************************************************************************/
+// This file is a wrapper around the binutils header files designed to
+// smooth out some quirks in their files, some real, some historical.
+//
+// Files that want to use <bfd.h> and <bfdlink.h> should probably
+// include this file instead.
 
-#ifndef gnu_bfd_H 
-#define gnu_bfd_H
+//***************************************************************************
 
-/*****************************************************************************/
+#ifndef gnu_bfd_h
+#define gnu_bfd_h
+
+// bfd.h (incorrectly) assumes that config.h has already been included
+#ifndef PACKAGE
+#define PACKAGE  "hpctoolkit"
+#endif
 
 /* binutils/bfd/bfd.h only correctly tests for GNU compilers */
 #define TRUE_FALSE_ALREADY_DEFINED
@@ -71,6 +69,4 @@
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
 
-/*****************************************************************************/
-
-#endif 
+#endif

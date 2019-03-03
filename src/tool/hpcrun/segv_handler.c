@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -129,12 +129,19 @@ hpcrun_sigsegv_handler(int sig, siginfo_t* siginfo, void* context)
     // -----------------------------------------------------
     // longjump, if possible
     // -----------------------------------------------------
-    sigjmp_buf_t *it = &(td->bad_unwind);
-    if (memchk((void *)it, '\0', sizeof(*it))) {
-      EMSG("error: segv handler: invalid jmpbuf");
-      // N.B. to handle this we need an 'outer' jump buffer that captures
-      // the context right as we enter the sampling-trigger signal handler.
-      monitor_real_abort();
+    sigjmp_buf_t *it = NULL;
+
+    if (td->current_jmp_buf == &(td->bad_interval)) {
+      it = &(td->bad_interval);
+
+    } else if (td->current_jmp_buf == &(td->bad_unwind)) {
+      it = &(td->bad_unwind);
+      if (memchk((void *)it, '\0', sizeof(*it))) {
+        EMSG("error: segv handler: invalid jmpbuf");
+        // N.B. to handle this we need an 'outer' jump buffer that captures
+        // the context right as we enter the sampling-trigger signal handler.
+        monitor_real_abort();
+      }
     }
 
     hpcrun_bt_dump(td->btbuf_cur, "SEGV");
