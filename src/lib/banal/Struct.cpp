@@ -986,7 +986,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
     if (! svec.empty()) {
       // rescan the range [vma, next) but start over with a small step
       if (step <= init_step) {
-	break;
+	    break;
       }
       svec.clear();
       step = init_step;
@@ -1132,6 +1132,10 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       getProcLineMap(svec, sym_start, sym_end, sym_func);
 
       if (! svec.empty()) {
+          cout << " getProcLineMap: svec size: " << svec.size() << hex << " vma: " << sym_start << dec << endl;
+      } else {
+          cerr << " getProcLineMap returns empty statement vma:  " << hex << sym_start << dec << endl;
+      }
 	filenm = svec[0]->getFile();
 	line = svec[0]->getLine();
 	RealPathMgr::singleton().realpath(filenm);
