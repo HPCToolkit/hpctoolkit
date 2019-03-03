@@ -130,7 +130,7 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj)
 
       blockNum[block] = num;
       *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << dec << "\" ];\n";
+	       << "\\n0x" << block->end() << dec << "\" ];\n";
     }
     int endNum = num + 1;
     *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
