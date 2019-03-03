@@ -11,7 +11,7 @@ static const char *NVIDIA_FNS[NUM_FNS] = {
   "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
 };
 
-#define MODULE_IGNORE_DEBUG 1
+#define MODULE_IGNORE_DEBUG 0
 
 #if MODULE_IGNORE_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
