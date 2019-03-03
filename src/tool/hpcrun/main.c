@@ -92,7 +92,7 @@
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
-#include "hpcrun_dlopen_flags.h"
+#include "hpcrun_flag_stacks.h"
 #include "name.h"
 #include "start-stop.h"
 #include "custom-init.h"
@@ -111,6 +111,7 @@
 #include "sample_prob.h"
 #include "term_handler.h"
 
+#include "device-initializers.h"
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
 #include "addr_to_module.h"
@@ -403,6 +404,9 @@ hpcrun_init_internal(bool is_child)
   // must initialize unwind recipe map before initializing fnbounds
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
+
+  // init callbacks for each device
+  hpcrun_initializer_init();
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -1016,15 +1020,8 @@ monitor_thread_pre_create(void)
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
 
-  const char *module_name = lm_addr_to_module(thread_pre_create_address);
-  load_module_t *module = hpcrun_loadmap_findByName(module_name);
-  if (module_ignore_map_lookup(module) != NULL) {
+  if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return NULL;
-  } else {
-    if (module_ignore_map_ignore(module)) {
-      module_ignore_map_insert(module);
-      return NULL;
-    }
   }
   
   hpcrun_safe_enter();
@@ -1112,15 +1109,8 @@ monitor_init_thread(int tid, void* data)
 
   void *thread_begin_address = monitor_get_addr_thread_start();
 
-  const char *module_name = lm_addr_to_module(thread_begin_address);
-  load_module_t *module = hpcrun_loadmap_findByName(module_name);
-  if (module_ignore_map_lookup(module) != NULL) {
+  if (module_ignore_map_inrange_lookup(thread_begin_address)) {
     hpcrun_thread_suppress_sample = true;
-  } else {
-    if (module_ignore_map_ignore(module)) {
-      module_ignore_map_insert(module);
-      hpcrun_thread_suppress_sample = true;
-    }
   }
 
   return thread_data;
@@ -1608,8 +1598,10 @@ void
 monitor_dlclose(void* handle)
 {
   if (! hpcrun_is_initialized()) {
+    hpcrun_dlclose_flags_push(false);
     return;
   }
+  hpcrun_dlclose_flags_push(true);
   hpcrun_safe_enter();
   hpcrun_dlclose(handle);
   hpcrun_safe_exit();
@@ -1619,6 +1611,9 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
+  if (! hpcrun_dlclose_flags_pop()) {
+    return;
+  }
   if (! hpcrun_is_initialized()) {
     return;
   }

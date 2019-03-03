@@ -13,6 +13,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
+#include <hpcrun/module-ignore-map.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
 
@@ -23,7 +24,6 @@
 #include "cupti-correlation-id-map.h"
 #include "cupti-function-id-map.h"
 #include "cupti-host-op-map.h"
-#include "cupti-callstack-ignore-map.h"
 #include "cupti-record.h"
 
 
@@ -328,6 +328,7 @@ cupti_correlation_callback_cuda
   load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
 
   // Skip libhpcrun
+  // TODO(keren): which entry function should I use to ignore hpcrun?
   while (strstr(module->name, "libhpcrun") != NULL) {
     hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
@@ -336,14 +337,7 @@ cupti_correlation_callback_cuda
   }
 
   // Skip libcupti and libcuda
-  while (true) {
-    if (cupti_callstack_ignore_map_lookup(module) == NULL) {
-      if (cupti_callstack_ignore_map_ignore(module)) {
-        cupti_callstack_ignore_map_insert(module);
-      } else {
-        break;
-      }
-    }
+  while (module_ignore_map_module_lookup(module)) {
     hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
@@ -1333,55 +1327,6 @@ cupti_device_shutdown(void *args)
   cupti_activity_flush();
   cupti_worker_activity_apply(cupti_activity_handle);
   cupti_callbacks_unsubscribe();
-}
-
-//******************************************************************************
-// ignores
-//******************************************************************************
-
-bool
-cupti_lm_contains_fn(const char *lm, const char *fn)
-{
-  char resolved_path[PATH_MAX];
-
-  char *lm_real = realpath(lm, resolved_path);
-  PRINT("query path = %s\n", lm_real);
-  PRINT("query fn = %s\n", fn);
-  void *handle = dlopen(lm_real, RTLD_LAZY);
-  PRINT("handle = %p\n", handle);
-  if (handle) {
-    void *fp = dlsym(handle, fn);
-    PRINT("fp = %p\n", fp);
-    if (fp) {
-      Dl_info dlinfo;
-      int res = dladdr(fp, &dlinfo);
-      if (res) {
-        char dli_fname_buf[PATH_MAX];
-        PRINT("original path = %s\n", dlinfo.dli_fname);
-        char *dli_fname = realpath(dlinfo.dli_fname, dli_fname_buf);
-        PRINT("found path = %s\n", dli_fname);
-        PRINT("symbol = %s\n", dlinfo.dli_sname);
-        return strcmp(lm_real, dli_fname) == 0;
-      }
-    }
-    dlclose(handle);
-  }
-  return false;
-}
-
-
-bool
-cupti_modules_ignore(load_module_t *module)
-{
-  if (module == NULL) {
-    return true;
-  }
-  if (cupti_lm_contains_fn(module->name, "cudaLaunchKernel") ||
-      cupti_lm_contains_fn(module->name, "cuLaunchKernel") ||
-      cupti_lm_contains_fn(module->name, "cuptiActivityEnable")) {
-    return true;
-  }
-  return false;
 }
 
 //******************************************************************************

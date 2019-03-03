@@ -1,223 +1,163 @@
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <assert.h>
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/splay-macros.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-
 #include "module-ignore-map.h"
+#include <fcntl.h>   // open
+#include <dlfcn.h>  // dlopen
+#include <limits.h>  // PATH_MAX
+
+#include <hpcrun/loadmap.h>
+#include <lib/prof-lean/pfq-rwlock.h>
+
+#define NUM_FNS 3
+static const char *NVIDIA_FNS[NUM_FNS] = {
+  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
+};
+
+#define MODULE_IGNORE_DEBUG 1
+
+#if MODULE_IGNORE_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 
-/******************************************************************************
- * type definitions 
- *****************************************************************************/
-
-struct module_ignore_map_entry_s {
+typedef struct module_ignore_entry {
+  bool empty;
   load_module_t *module;
-  uint64_t refcnt;
-  struct module_ignore_map_entry_s *left;
-  struct module_ignore_map_entry_s *right;
-}; 
+} module_ignore_entry_t;
 
-/******************************************************************************
- * global data 
- *****************************************************************************/
-
-static module_ignore_fn_entry_t *module_ignore_fn = NULL;
-static module_ignore_map_entry_t *module_ignore_map_root = NULL;
-static spinlock_t module_ignore_map_lock = SPINLOCK_UNLOCKED;
-
-/******************************************************************************
- * private operations
- *****************************************************************************/
-
-static module_ignore_map_entry_t *
-module_ignore_map_entry_new(load_module_t *module)
-{
-  module_ignore_map_entry_t *e;
-  e = (module_ignore_map_entry_t *)hpcrun_malloc(sizeof(module_ignore_map_entry_t));
-  e->module = module;
-  e->refcnt = 0;
-  e->left = NULL;
-  e->right = NULL;
-
-  return e;
-}
+static module_ignore_entry_t modules[NUM_FNS];
+static pfq_rwlock_t modules_lock;
 
 
-static module_ignore_map_entry_t *
-module_ignore_map_splay(module_ignore_map_entry_t *root, load_module_t *key)
-{
-  REGULAR_SPLAY_TREE(module_ignore_map_entry_s, root, key, module, left, right);
-  return root;
-}
+static bool
+lm_contains_fn(const char *lm, const char *fn) {
+  char resolved_path[PATH_MAX];
+  bool load_handle = false;
 
-
-static void
-module_ignore_map_delete_root()
-{
-  TMSG(DEFER_CTXT, "module %d: delete", module_ignore_map_root->module);
-
-  if (module_ignore_map_root->left == NULL) {
-    module_ignore_map_root = module_ignore_map_root->right;
-  } else {
-    module_ignore_map_root->left = 
-      module_ignore_map_splay(module_ignore_map_root->left, 
-			   module_ignore_map_root->module);
-    module_ignore_map_root->left->right = module_ignore_map_root->right;
-    module_ignore_map_root = module_ignore_map_root->left;
+  char *lm_real = realpath(lm, resolved_path);
+  void *handle = dlopen(lm_real, RTLD_NOLOAD);
+  // At the start of a program, libs are not loaded by dlopen
+  if (handle == NULL) {
+    handle = dlopen(lm_real, RTLD_LAZY);
+    load_handle = handle ? true : false;
   }
-}
-
-
-
-/******************************************************************************
- * interface operations
- *****************************************************************************/
-
-module_ignore_map_entry_t *
-module_ignore_map_lookup(load_module_t *module)
-{
-  module_ignore_map_entry_t *result = NULL;
-  spinlock_lock(&module_ignore_map_lock);
-
-  module_ignore_map_root = module_ignore_map_splay(module_ignore_map_root, module);
-  if (module_ignore_map_root && module_ignore_map_root->module == module) {
-    result = module_ignore_map_root;
+  PRINT("query path = %s\n", lm_real);
+  PRINT("query fn = %s\n", fn);
+  PRINT("handle = %p\n", handle);
+  bool result = false;
+  if (handle) {
+    void *fp = dlsym(handle, fn);
+    PRINT("fp = %p\n", fp);
+    if (fp) {
+      Dl_info dlinfo;
+      int res = dladdr(fp, &dlinfo);
+      if (res) {
+        char dli_fname_buf[PATH_MAX];
+        char *dli_fname = realpath(dlinfo.dli_fname, dli_fname_buf);
+        result = (strcmp(lm_real, dli_fname) == 0);
+        PRINT("original path = %s\n", dlinfo.dli_fname);
+        PRINT("found path = %s\n", dli_fname);
+        PRINT("symbol = %s\n", dlinfo.dli_sname);
+      }
+    }
   }
-
-  spinlock_unlock(&module_ignore_map_lock);
-
-  TMSG(DEFER_CTXT, "module map lookup: module=0x%lx (record %p)", module, result);
+  // Close the handle it is opened here
+  if (load_handle) {
+    dlclose(handle);
+  }
   return result;
 }
 
 
 void
-module_ignore_map_insert(load_module_t *module)
+module_ignore_map_init()
 {
-  spinlock_lock(&module_ignore_map_lock);
-
-  if (module_ignore_map_root != NULL) {
-    module_ignore_map_root = 
-      module_ignore_map_splay(module_ignore_map_root, module);
-
-    if (module < module_ignore_map_root->module) {
-      module_ignore_map_entry_t *entry = module_ignore_map_entry_new(module);
-      TMSG(DEFER_CTXT, "module map insert: module=0x%lx (record %p)", module, entry);
-      entry->left = entry->right = NULL;
-      entry->left = module_ignore_map_root->left;
-      entry->right = module_ignore_map_root;
-      module_ignore_map_root->left = NULL;
-      module_ignore_map_root = entry;
-    } else if (module > module_ignore_map_root->module) {
-      module_ignore_map_entry_t *entry = module_ignore_map_entry_new(module);
-      TMSG(DEFER_CTXT, "module map insert: module=0x%lx (record %p)", module, entry);
-      entry->left = entry->right = NULL;
-      entry->left = module_ignore_map_root;
-      entry->right = module_ignore_map_root->right;
-      module_ignore_map_root->right = NULL;
-      module_ignore_map_root = entry;
-    } else {
-      // module already present
-    }
-  } else {
-      module_ignore_map_entry_t *entry = module_ignore_map_entry_new(module);
-      module_ignore_map_root = entry;
+  size_t i;
+  for (i = 0; i < NUM_FNS; ++i) {
+    modules[i].empty = true;
+    modules[i].module = NULL;
   }
-
-  spinlock_unlock(&module_ignore_map_lock);
+  pfq_rwlock_init(&modules_lock);
 }
 
 
-// return true if record found; false otherwise
 bool
-module_ignore_map_refcnt_update(load_module_t *module, int val)
+module_ignore_map_module_lookup(load_module_t *module)
 {
-  bool result = false; 
+  return module_ignore_map_lookup(module->dso_info->start_addr, module->dso_info->end_addr);
+}
 
-  TMSG(DEFER_CTXT, "module map refcnt_update: module=0x%lx (update %d)", 
-       module, val);
 
-  spinlock_lock(&module_ignore_map_lock);
-  module_ignore_map_root = module_ignore_map_splay(module_ignore_map_root, module);
+bool
+module_ignore_map_inrange_lookup(void *addr)
+{
+  return module_ignore_map_lookup(addr, addr);
+}
 
-  if (module_ignore_map_root && 
-      module_ignore_map_root->module == module) {
-    uint64_t old = module_ignore_map_root->refcnt;
-    module_ignore_map_root->refcnt += val;
-    TMSG(DEFER_CTXT, "module map refcnt_update: module=0x%lx (%ld --> %ld)", 
-	    module, old, module_ignore_map_root->refcnt);
-    if (module_ignore_map_root->refcnt == 0) {
-      TMSG(DEFER_CTXT, "module map refcnt_update: module=0x%lx (deleting)",
-           module);
-      module_ignore_map_delete_root();
+
+bool
+module_ignore_map_lookup(void *start, void *end)
+{
+  // Read path
+  size_t i;
+  bool result = false;
+  pfq_rwlock_read_lock(&modules_lock);
+  for (i = 0; i < NUM_FNS; ++i) {
+    if (modules[i].empty == false &&
+      modules[i].module->dso_info->start_addr <= start &&
+      modules[i].module->dso_info->end_addr >= end) {
+      /* current module should be ignored */
+      result = true;
+      break;
     }
-    result = true;
   }
-
-  spinlock_unlock(&module_ignore_map_lock);
+  pfq_rwlock_read_unlock(&modules_lock);
   return result;
 }
 
 
-uint64_t 
-module_ignore_map_entry_refcnt_get(module_ignore_map_entry_t *entry) 
+bool
+module_ignore_map_ignore(void *start, void *end)
 {
-  return entry->refcnt;
-}
-
-
-void
-module_ignore_map_register(module_ignore_fn_entry_t *entry)
-{
-  entry->next = module_ignore_fn;
-  module_ignore_fn = entry;
+  // Update path
+  // Only one thread could update the flag,
+  // Guarantee dlopen modules before notification are updated.
+  size_t i;
+  bool result = false;
+  pfq_rwlock_node_t me;
+  pfq_rwlock_write_lock(&modules_lock, &me);
+  for (i = 0; i < NUM_FNS; ++i) {
+    if (modules[i].empty == true) {
+      load_module_t *module = hpcrun_loadmap_findByAddr(start, end);
+      if (lm_contains_fn(module->name, NVIDIA_FNS[i])) {
+        modules[i].module = module;
+        modules[i].empty = false;
+        result = true;
+        break;
+      }
+    }
+  }
+  pfq_rwlock_write_unlock(&modules_lock, &me);
+  return result;
 }
 
 
 bool
-module_ignore_map_ignore(load_module_t *module)
+module_ignore_map_delete(void *start, void *end)
 {
-  module_ignore_fn_entry_t* fn = module_ignore_fn;
-  while (fn != NULL) {
-    if (fn->fn(module)) {
-      return true;
+  size_t i;
+  bool result = false;
+  pfq_rwlock_node_t me;
+  pfq_rwlock_write_lock(&modules_lock, &me);
+  for (i = 0; i < NUM_FNS; ++i) {
+    if (modules[i].empty == false &&
+      modules[i].module->dso_info->start_addr <= start &&
+      modules[i].module->dso_info->end_addr >= end) {
+      modules[i].empty = true;
+      result = true;
+      break;
     }
-    fn = fn->next;
   }
-  return false;
+  pfq_rwlock_write_unlock(&modules_lock, &me);
+  return result;
 }
-
-
-/******************************************************************************
- * debugging code
- *****************************************************************************/
-
-static int 
-module_ignore_map_count_helper(module_ignore_map_entry_t *entry) 
-{
-  if (entry) {
-     int left = module_ignore_map_count_helper(entry->left);
-     int right = module_ignore_map_count_helper(entry->right);
-     return 1 + right + left; 
-  } 
-  return 0;
-}
-
-
-int 
-module_ignore_map_count() 
-{
-  return module_ignore_map_count_helper(module_ignore_map_root);
-}
-
-

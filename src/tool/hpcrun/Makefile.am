@@ -310,8 +310,9 @@ MY_BASE_FILES =				\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
-	hpcrun_dlopen_flags.c \
+	hpcrun_flag_stacks.c \
 	device-finalizers.c \
+	device-initializers.c \
 	addr_to_module.c \
 	module-ignore-map.c \
 	threadmgr.c			\
@@ -448,7 +449,6 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cupti-api.c                  \
 								 sample-sources/nvidia/cupti-correlation-id-map.c   \
 								 sample-sources/nvidia/cupti-function-id-map.c      \
-								 sample-sources/nvidia/cupti-callstack-ignore-map.c \
 								 sample-sources/nvidia/cupti-host-op-map.c          \
 								 sample-sources/nvidia/cupti-stack.c        \
 								 sample-sources/nvidia/cupti-node.c         \
