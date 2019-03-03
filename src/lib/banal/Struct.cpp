@@ -1133,12 +1133,11 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
       if (! svec.empty()) {
           cout << " getProcLineMap: svec size: " << svec.size() << hex << " vma: " << sym_start << dec << endl;
-      } else {
+	    filenm = svec[0]->getFile();
+	    line = svec[0]->getLine();
+	    RealPathMgr::singleton().realpath(filenm);
+     } else {
           cerr << " getProcLineMap returns empty statement vma:  " << hex << sym_start << dec << endl;
-      }
-	filenm = svec[0]->getFile();
-	line = svec[0]->getLine();
-	RealPathMgr::singleton().realpath(filenm);
       }
 
       if (vma == sym_start) {
