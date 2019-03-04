@@ -611,6 +611,7 @@ makeStructure(string filename,
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
 	Module * mod = modVec[i];
+    cout << "parse line information for mod: " << mod->fullName() << endl;
 	mod->parseLineInformation();
       }
     }  // end parallel
@@ -640,6 +641,7 @@ makeStructure(string filename,
 #endif
 
     string basename = FileUtil::basename(cfilename);
+    cout << "ready to make skeleton " << endl;
     FileMap * fileMap = makeSkeleton(code_obj, basename);
 
     //
@@ -1056,6 +1058,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 static FileMap *
 makeSkeleton(CodeObject * code_obj, const string & basename)
 {
+    
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
   bool is_shared = ! (the_symtab->isExec());
