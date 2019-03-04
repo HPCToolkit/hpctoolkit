@@ -815,6 +815,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
       wlLaunch.push_back(witem);
     }
   }
+  cout << "end make work list " << endl;
 }
 
 //----------------------------------------------------------------------
