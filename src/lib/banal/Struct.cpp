@@ -1073,6 +1073,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
+    cout << "func addr: " << hex << func->addr() << dec << endl;   
     funcMap[func->addr()] = func;
   }
 
@@ -1229,6 +1230,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       // line map).  make a fake group at the parseapi entry vma.
       // this normally only happens for plt funcs.
       //
+      cout << "no symtab symbol claiming this vma " << hex << vma << dec << endl;
       string linknm = func->name();
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
@@ -1275,6 +1277,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	prettynm += " (" + basename + ")";
       }
 
+      cout << "add linknm: " << linknm << " prettynm " << prettynm << endl;
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
       addProc(fileMap, pinfo, unknown_base, NULL, vma, end);
     }
