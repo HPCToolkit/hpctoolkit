@@ -1290,6 +1290,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       addProc(fileMap, pinfo, unknown_base, NULL, vma, end);
     }
   }
+  cout << "end of iteration makeskeleton\n" << endl;
 
 #if DEBUG_SKEL_SUMMARY
   // print the skeleton map
