@@ -1127,6 +1127,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     if (found && sym_func != NULL && region != NULL
 	&& reg_start <= vma && vma < reg_end)
     {
+      cout << "for vma " << hex << vma << dec << " we found the containing function " << endl;
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
       string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
@@ -1192,6 +1193,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	  parse_filenm = pvec[0]->getFile();
 	  parse_line = pvec[0]->getLine();
 	  RealPathMgr::singleton().realpath(parse_filenm);
+      cout << "parse_filenm: " << parse_filenm << " parse_line " << parse_line << endl;
 	}
 
 	string parse_base = FileUtil::basename(parse_filenm.c_str());
