@@ -949,6 +949,7 @@ static void
 getProcLineMap(StatementVector & svec, Offset vma, Offset end,
 	       SymtabAPI::Function * sym_func)
 {
+  cout << "getProcLineMap called " << hex << vma << dec << endl;
   svec.clear();
 
   // try a full module lookup first
@@ -978,6 +979,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   for (;;) {
     // invariant: vma does not have line info, but next might
     Offset next = vma + step;
+    cout << "stepping vma: " << hex << next << dec << endl;
     if (next >= end) {
       break;
     }
@@ -1090,7 +1092,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     string  vma_str = buf.str();
 
     DEBUG_SKEL("\nskel:    " << vma_str << "  " << func->name() << "\n");
-
+    cout << "skel:    " << vma_str << "  " << func->name() << "\n";
     // see if entry vma lies within a valid symtab function
     bool found = the_symtab->getContainingFunction(vma, sym_func);
     VMA  sym_start = 0;
@@ -1114,6 +1116,10 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     DEBUG_SKEL("symbol:  0x" << hex << sym_start << "--0x" << sym_end
 	       << "  next:  0x" << next_vma
 	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
+
+    cout << "symbol:  0x" << hex << sym_start << "--0x" << sym_end
+	       << "  next:  0x" << next_vma
+	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n" << endl;
 
     // symtab doesn't recognize plt funcs and puts them in the wrong
     // region.  to be a valid symbol, the func entry must lie within
