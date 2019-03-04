@@ -639,7 +639,10 @@ makeStructure(string filename,
 #ifdef ENABLE_OPENMP
     omp_set_num_threads(opts.jobs);
 #endif
-
+    vector<Address> dyn_reloc_addr; 
+    Module* mod = modVec[0];
+    mod->getDyninstRelocateFunc(dyn_reloc_addr);
+    cout << "reloc size: " << dyn_reloc_addr.size() << endl; 
     string basename = FileUtil::basename(cfilename);
     cout << "ready to make skeleton " << endl;
     FileMap * fileMap = makeSkeleton(code_obj, basename);
@@ -784,10 +787,11 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
       wlPrint.push_back(witem);
     }
   }
-
+ 
   // if single-threaded, then order doesn't matter
   if (opts.jobs == 1) {
     wlLaunch = wlPrint;
+    cout << "end work list single \n" << endl;
     return;
   }
 
