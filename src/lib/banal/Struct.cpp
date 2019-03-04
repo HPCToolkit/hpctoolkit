@@ -660,7 +660,7 @@ makeStructure(string filename,
     makeWorkList(fileMap, wlPrint, wlLaunch);
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
-
+    
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
@@ -756,6 +756,7 @@ doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
 static void
 makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 {
+    cout << "makeWorkList " << endl;
   double total_cost = 0.0;
 
   wlPrint.clear();
@@ -1060,7 +1061,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 static FileMap *
 makeSkeleton(CodeObject * code_obj, const string & basename)
 {
-    
+  cout << "start of make skeleton\n" << endl;    
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
   bool is_shared = ! (the_symtab->isExec());
