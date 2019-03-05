@@ -191,7 +191,20 @@ DATACENTRIC_Unknown(void)
 #define P(a, b) PERF_MEM_##a##_##b
 
 static void
-datacentric_record_load_mem(cct_node_t *node,
+datacentric_record_metric(int metric_id, cct_node_t *cct_node, cct_node_t *cct_datacentric,
+                          cct_metric_data_t value)
+{
+  cct_metric_data_increment(metric_id, cct_node, value);
+  cct_metric_data_increment(metric_id, cct_datacentric, value);
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_id]);
+  info_aux->num_samples++;
+}
+
+
+static void
+datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
                         perf_mem_data_src_t *data_src)
 {
   struct perf_data_src_mem_lvl_s  data_mem;
@@ -204,8 +217,8 @@ datacentric_record_load_mem(cct_node_t *node,
   // ---------------------------------------------------
   // number of load operations
   // ---------------------------------------------------
-  cct_metric_data_increment(metric.memload, node,
-                            (cct_metric_data_t){.i = 1});
+  cct_metric_data_t value = (cct_metric_data_t){.i = 1};
+  datacentric_record_metric(metric.memload, node, datacentric_node, value );
 
   // ---------------------------------------------------
   // local load hit
@@ -263,29 +276,29 @@ datacentric_record_load_mem(cct_node_t *node,
   u64 llc_miss =  data_mem.lcl_dram + data_mem.rmt_dram +
                   data_mem.rmt_hit  + data_mem.rmt_hitm ;
   if (llc_miss > 0) {
-    cct_metric_data_increment(metric.memllc_miss, node,
-                              (cct_metric_data_t){.i = llc_miss});
+    value.i = llc_miss;
+    datacentric_record_metric(metric.memllc_miss, node, datacentric_node, value);
   }
 
   // ---------------------------------------------------
   // load miss
   // ---------------------------------------------------
   if ((lvl & P(LVL, MISS))) {
-    cct_metric_data_increment(metric.memload_miss, node,
-                              (cct_metric_data_t){.i = 1});
+    value.i = 1;
+    datacentric_record_metric(metric.memload_miss, node, datacentric_node, value);
   }
 }
 
 static void
-datacentric_record_store_mem( cct_node_t *node,
+datacentric_record_store_mem( cct_node_t *node, cct_node_t *datacentric_node,
                           perf_mem_data_src_t *data_src)
 {
   struct perf_data_src_mem_lvl_s  data_mem;
 
   memset(&data_mem, 0, sizeof(struct perf_data_src_mem_lvl_s));
 
-  cct_metric_data_increment(metric.memstore, node,
-                            (cct_metric_data_t){.i = 1});
+  cct_metric_data_t value = (cct_metric_data_t){.i = 1};
+  datacentric_record_metric(metric.memstore, node, datacentric_node, value);
 
   u64 lvl   = data_src->mem_lvl;
 
@@ -293,15 +306,15 @@ datacentric_record_store_mem( cct_node_t *node,
     if (lvl & P(LVL, UNC)) data_mem.st_uncache++;
     if (lvl & P(LVL, L1 )) {
       data_mem.st_l1hit++;
-      cct_metric_data_increment(metric.memstore_l1_hit, node,
-                                  (cct_metric_data_t){.i = 1});
+      datacentric_record_metric(metric.memstore_l1_hit, node, datacentric_node,
+                                  value);
     }
   }
   if (lvl & P(LVL, MISS))
     if (lvl & P(LVL, L1)) {
       data_mem.st_l1miss++;
-      cct_metric_data_increment(metric.memstore_l1_miss, node,
-                                  (cct_metric_data_t){.i = 1});
+      datacentric_record_metric(metric.memstore_l1_miss, node, datacentric_node,
+                                  value);
     }
 }
 
@@ -350,14 +363,16 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
  * manage signal handler for datacentric event
  */
 static void
-datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+datacentric_handler(event_handler_arg_t *args)
 {
-  if ( (current == NULL)      ||  (mmap_data == NULL) ||
-       (sv.sample_node == NULL))
+  if ( (args->current == NULL)  ||  (args->data == NULL) ||
+       (args->sample->sample_node == NULL))
     return;
 
-  cct_node_t *node = sv.sample_node;
+  perf_mmap_data_t *mmap_data = args->data;
+
+  cct_node_t *sample_node = args->sample->sample_node;
+  cct_node_t *node = sample_node;
 
   // ---------------------------------------------------------
   // memory information exists:
@@ -398,7 +413,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
         cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
         cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
-        cct_addr_t *addr             = hpcrun_cct_addr(sv.sample_node);
+        cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
 
         var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
                         (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
@@ -427,7 +442,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     }
 
     // copy the callpath of the sample to the variable context
-    node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, var_context);
+    node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
 
     metric_set_t *mset = hpcrun_reify_metric_set(node);
 
@@ -443,7 +458,11 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
     // check if this is the maximum value. if this is the case, record it in the metric
     metric_id = datacentric_get_metric_addr_end();
+    val_addr.p++;
     hpcrun_metric_std_max(metric_id, mset, val_addr);
+
+    // re-record metric event for this node
+    hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
 
     hpcrun_cct_set_node_memaccess(node);
   }
@@ -460,12 +479,10 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
   perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
 
   if (data_src.mem_op & P(OP, LOAD)) {
-    datacentric_record_load_mem( node, &data_src );
-    datacentric_record_load_mem( sv.sample_node, &data_src );
+    datacentric_record_load_mem( node, sample_node, &data_src );
   }
   if (data_src.mem_op & P(OP, STORE)) {
-    datacentric_record_store_mem( node, &data_src );
-    datacentric_record_store_mem( sv.sample_node, &data_src );
+    datacentric_record_store_mem( node, sample_node, &data_src );
   }
 }
 

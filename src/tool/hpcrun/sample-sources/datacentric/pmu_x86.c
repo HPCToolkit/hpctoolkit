@@ -102,7 +102,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
     int metric = hpcrun_new_metric();
     hpcrun_set_metric_info_and_period(
           metric, pmu_events[i].event,
-          MetricFlags_ValFmt_Int, 1, metric_property_none);
+          MetricFlags_ValFmt_Real, 1, metric_property_none);
 
     // ------------------------------------------
     // Register the event to the global list

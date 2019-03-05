@@ -53,6 +53,19 @@
 // data type
 // --------------------------------------------------------------
 
+
+typedef struct event_handler_arg_s {
+  int    metric;       /* metric id */
+  double metric_value; /* the value of the metric by perf handler */
+  void   *context;     /* current context */
+
+  sample_val_t *sample; /* the result of sampling by hpcrun callpath */
+
+  struct event_info_s     *current;  /* info of the event */
+  struct perf_mmap_data_s *data;     /* additional data from Linux kernel */
+} event_handler_arg_t;
+
+
 typedef struct event_custom_s event_custom_t;
 
 // callback functions
@@ -60,10 +73,7 @@ typedef int  register_event_t(sample_source_t *self,
                               event_custom_t *event,
                               struct event_threshold_s *period);
 
-typedef void event_handler_t(struct event_info_s*,
-                             void *context,
-                             sample_val_t ,
-                             perf_mmap_data_t* );
+typedef void event_handler_t(event_handler_arg_t *args);
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
@@ -81,6 +91,7 @@ typedef struct event_custom_s {
   event_handle_type_t handle_type; // whether the handler will be called exclusively or inclusively (all events)
 
 } event_custom_t;
+
 
 // --------------------------------------------------------------
 // Function interface
@@ -113,7 +124,7 @@ void event_custom_display(FILE *std);
  * method to be called during signal delivery. If an event is recognized, 
  * it will delivered to the custom handler.
  **/ 
-int event_custom_handler(struct event_info_s* event, void *context,
-		sample_val_t sample, struct perf_mmap_data_s* data);
+int event_custom_handler(event_handler_arg_t *args);
+
 
 #endif
