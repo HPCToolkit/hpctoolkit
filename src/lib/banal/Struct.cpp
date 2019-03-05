@@ -610,9 +610,9 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
-	Module * mod = modVec[i];
-    cout << "parse line information for mod: " << mod->fullName() << endl;
-	mod->parseLineInformation();
+	    Module * mod = modVec[i];
+        cout << "parse line information for mod: " << mod->fullName() << endl;
+	    mod->parseLineInformation();
       }
     }  // end parallel
 
@@ -664,6 +664,7 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
+         cout << "do work item " << i << endl; 
 	doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
@@ -695,6 +696,7 @@ makeStructure(string filename,
 
       delete code_obj;
       delete code_src;
+      cout << "close symtab " << endl;
       Inline::closeSymtab();
     }
   }
@@ -1108,8 +1110,8 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
       region = sym_func->getRegion();
       if (region != NULL) {
-	reg_start = region->getMemOffset();
-	reg_end = reg_start + region->getMemSize();
+	    reg_start = region->getMemOffset();
+	    reg_end = reg_start + region->getMemSize();
       }
     }
 
