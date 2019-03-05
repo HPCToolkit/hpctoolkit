@@ -1167,7 +1167,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
       auto p = linknm.find("_dyninst");
-      if (linknm.find("_dyninst") != string::npos) {
+      if (p != string::npos) {
          cout << "link name contains _dyninst " << linknm << endl;  
          linknm.erase(p, string::npos);
          cout << "after erasing " << linknm << endl;
@@ -1248,7 +1248,8 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       //
       cout << "no symtab symbol claiming this vma " << hex << vma << dec << endl;
       string linknm = func->name();
-      if (linknm.find("_dyninst") != string::npos) {
+      auto p = linknm.find("_dyninst");
+      if (p != string::npos) {
          cout << "link name contains _dyninst " << linknm << endl;  
          linknm.erase(p, string::npos);
          cout << "after erasing " << linknm << endl;
