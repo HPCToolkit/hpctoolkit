@@ -639,14 +639,8 @@ makeStructure(string filename,
 #ifdef ENABLE_OPENMP
     omp_set_num_threads(opts.jobs);
 #endif
-    vector<Address> dyn_reloc_addr; 
-    Module* mod = modVec[0];
-    mod->getDyninstRelocateFunc(dyn_reloc_addr);
-    cout << "reloc size: " << dyn_reloc_addr.size() << endl; 
     string basename = FileUtil::basename(cfilename);
-    cout << "ready to make skeleton " << endl;
     FileMap * fileMap = makeSkeleton(code_obj, basename);
-
     //
     // make two work lists:
     //  wlPrint -- the output order in the struct file as determined
