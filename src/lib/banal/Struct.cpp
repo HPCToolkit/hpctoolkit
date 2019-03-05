@@ -396,6 +396,7 @@ public:
     }
 
     // no line info available
+    cout << "no line info available for address: " << hex << vma << dec << endl;
     filenm = "";
     line = 0;
     return false;
@@ -1714,10 +1715,10 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
-     cout << "iterating instructions in the block of func " << func->name() << hex << " instr addr: " << vma << dec << endl;
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
+     cout << "iterating instructions in the block of func " << func->name() << hex << " instr addr: " << vma << dec << endl;
 
 #ifdef DYNINST_INSTRUCTION_PTR
     int  len = iit->second->size();
