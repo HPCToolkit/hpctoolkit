@@ -1039,7 +1039,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
     ginfo = new GroupInfo(sym_func, start, end, alt_file);
     finfo->groupMap[start] = ginfo;
   }
-  cout << "ProcInfo - entry vma: " << pinfo->entry_vma << endl;
+  cout << "ProcInfo - entry vma: " << hex << pinfo->entry_vma << dec << endl;
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
@@ -1150,7 +1150,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	    line = svec[0]->getLine();
 	    RealPathMgr::singleton().realpath(filenm);
      } else {
-          cerr << " getProcLineMap returns empty statement vma:  " << hex << sym_start << dec << endl;
+          cerr << " getProcLineMap returns empty statement symbol start:  " << hex << sym_start << dec << endl;
       }
 
       if (vma == sym_start) {
@@ -1172,12 +1172,12 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
          linknm.erase(p, string::npos);
          cout << "after erasing " << linknm << endl;
       }
-	  if (opts.ourDemangle) {
+	  //if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
-	  }
-	  else if (pretty_it != sym_func->pretty_names_end()) {
-	    prettynm = *pretty_it;
-	  }
+	 // }
+	//  else if (pretty_it != sym_func->pretty_names_end()) {
+	 //   prettynm = *pretty_it;
+	  //}
 	}
 	if (is_shared) {
 	  prettynm += " (" + basename + ")";
