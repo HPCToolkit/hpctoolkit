@@ -263,8 +263,8 @@ namespace TraceAnalysis {
       }
       
       metrics->subtreeImbIR = metrics->nodeExcImbIR;
-      if (node->type == TCTANode::Prof) {
-        const TCTProfileNode* prof = (const TCTProfileNode*) node;
+      if (node->type == TCTANode::NonCFGProf) {
+        const TCTNonCFGProfileNode* prof = (const TCTNonCFGProfileNode*) node;
         for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
           computeMetrics(it->second, metrics->derivedLabel);
           metrics->addChildMetrics(metricsMap[it->second]);
@@ -385,8 +385,8 @@ namespace TraceAnalysis {
           explainImb = false;
           explainComm.clear();
         }
-        else if (node->type == TCTANode::Prof) {
-          const TCTProfileNode* prof = (const TCTProfileNode*) node;
+        else if (node->type == TCTANode::NonCFGProf) {
+          const TCTNonCFGProfileNode* prof = (const TCTNonCFGProfileNode*) node;
           for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++) {
             const TCTANode* child = it->second;
             CallpathMetrics* childMetrics = metricsMap[child];
@@ -440,12 +440,12 @@ namespace TraceAnalysis {
         generateInefficientSegments(callpath, isParentAdded);
         callpath.pop_back();
       }
-      else if (node->type == TCTANode::Prof) {
-        const TCTProfileNode* prof = (const TCTProfileNode*) node;
+      else if (node->type == TCTANode::NonCFGProf) {
+        const TCTNonCFGProfileNode* prof = (const TCTNonCFGProfileNode*) node;
 
         // Copy all children into an array
         uint numChildren = prof->getChildMap().size();
-        const TCTProfileNode** children = new const TCTProfileNode*[numChildren];
+        const TCTNonCFGProfileNode** children = new const TCTNonCFGProfileNode*[numChildren];
         uint k = 0;
         for (auto it = prof->getChildMap().begin(); it != prof->getChildMap().end(); it++)
           children[k++] = it->second;
@@ -466,7 +466,7 @@ namespace TraceAnalysis {
 
               // Use their id as tie breaker
               if ( (compare == 1) || (compare == 0 && children[j]->id < children[i]->id) ) {
-                const TCTProfileNode* swap = children[i];
+                const TCTNonCFGProfileNode* swap = children[i];
                 children[i] = children[j];
                 children[j] = swap;
               }

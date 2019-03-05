@@ -85,7 +85,7 @@ namespace TraceAnalysis {
   }
   
   TCTANode* DifferenceQuantifier::mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
-          bool ifAccumulate, bool isScoreOnly) {
+          bool ifAccumulate, bool isScoreOnly, bool isSum) {
     if (!(node1->id == node2->id))
       print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes with different id: %s vs %s.\n", 
               node1->id.toString().c_str(), node2->id.toString().c_str());
@@ -93,36 +93,51 @@ namespace TraceAnalysis {
     if (node1->getDepth() != node2->getDepth())
       print_msg(MSG_PRIO_HIGH, "ERROR: merging node at difference depth %d vs %d.\n", node1->getDepth(), node2->getDepth());
     
-    if (node1->type == TCTANode::Prof || node2->type == TCTANode::Prof) {
-      TCTProfileNode* prof1 = node1->type == TCTANode::Prof ? (TCTProfileNode*)node1 : TCTProfileNode::newProfileNode(node1);
-      TCTProfileNode* prof2 = node2->type == TCTANode::Prof ? (TCTProfileNode*)node2 : TCTProfileNode::newProfileNode(node2);
-      TCTProfileNode* merged = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
-      if (node1->type != TCTANode::Prof) delete prof1;
-      if (node2->type != TCTANode::Prof) delete prof2;
+    if (node1->type == TCTANode::NonCFGProf || node2->type == TCTANode::NonCFGProf) {
+      TCTNonCFGProfileNode* prof1 = node1->type == TCTANode::NonCFGProf ? (TCTNonCFGProfileNode*)node1 : TCTNonCFGProfileNode::newNonCFGProfileNode(node1);
+      TCTNonCFGProfileNode* prof2 = node2->type == TCTANode::NonCFGProf ? (TCTNonCFGProfileNode*)node2 : TCTNonCFGProfileNode::newNonCFGProfileNode(node2);
+      TCTNonCFGProfileNode* merged = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly, isSum);
+      if (node1->type != TCTANode::NonCFGProf) delete prof1;
+      if (node2->type != TCTANode::NonCFGProf) delete prof2;
       return merged;
     }
     else {
       if (node1->type != node2->type) {
-        print_msg(MSG_PRIO_MAX, "ERROR: merging non-profile nodes but their types don't match %d vs %d.\n", node1->type, node2->type);
+        // if one of them is a loop, use its profile node instead.
+        if (node1->type == TCTANode::Loop)
+          return mergeNode(((TCTLoopNode*)node1)->getProfileNode(), weight1, node2, weight2, ifAccumulate, isScoreOnly, isSum);
+        if (node2->type == TCTANode::Loop)
+          return mergeNode(node1, weight1, ((TCTLoopNode*)node2)->getProfileNode(), weight2, ifAccumulate, isScoreOnly, isSum);
+        
+        print_msg(MSG_PRIO_MAX, "ERROR: merging two nodes but their types don't match %d vs %d.\n", node1->type, node2->type);
         return node1->voidDuplicate();
       }
       if (node1->type == TCTANode::Loop) {
-        return mergeLoopNode((TCTLoopNode*)node1, weight1, (TCTLoopNode*)node2, weight2, ifAccumulate, isScoreOnly);
+        return mergeLoopNode((TCTLoopNode*)node1, weight1, (TCTLoopNode*)node2, weight2, ifAccumulate, isScoreOnly, isSum);
       }
       else 
-        return mergeACFGNode((TCTACFGNode*)node1, weight1, (TCTACFGNode*)node2, weight2, ifAccumulate, isScoreOnly);
+        return mergeACFGNode((TCTACFGNode*)node1, weight1, (TCTACFGNode*)node2, weight2, ifAccumulate, isScoreOnly, isSum);
     }
   }
 
-  TCTProfileNode* DifferenceQuantifier::mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
-          bool ifAccumulate, bool isScoreOnly) {
-    TCTProfileNode* mergedProf = (TCTProfileNode*)prof1->voidDuplicate();
-    mergedProf->getTime().setAsAverageTime(prof1->getTime(), weight1, prof2->getTime(), weight2);
-    if (!isScoreOnly) {
-      mergedProf->setWeight(weight1 + weight2);
+  TCTNonCFGProfileNode* DifferenceQuantifier::mergeProfileNode(const TCTNonCFGProfileNode* prof1, long weight1, const TCTNonCFGProfileNode* prof2, long weight2, 
+          bool ifAccumulate, bool isScoreOnly, bool isSum) {
+    TCTNonCFGProfileNode* mergedProf = (TCTNonCFGProfileNode*)prof1->voidDuplicate();
+    if (!isSum) {
+      mergedProf->getTime().setAsAverageTime(prof1->getTime(), weight1, prof2->getTime(), weight2);
+      if (!isScoreOnly) {
+        mergedProf->setWeight(weight1 + weight2);
+        mergedProf->setRetCount(prof1->getRetCount() + prof2->getRetCount());
+        mergedProf->setDerivedSemanticLabel(prof1->getDerivedSemanticLabel() & prof2->getDerivedSemanticLabel());
+        mergedProf->getPerfLossMetric().setDuratonMetric(prof1->getPerfLossMetric(), prof2->getPerfLossMetric());
+      }
+    }
+    else {
+      mergedProf->getTime().clear();
+      mergedProf->getTime().addTime(prof1->getTime());
+      mergedProf->getTime().addTime(prof2->getTime());
+      mergedProf->setWeight(weight1);
       mergedProf->setRetCount(prof1->getRetCount() + prof2->getRetCount());
-      mergedProf->setDerivedSemanticLabel(prof1->getDerivedSemanticLabel() & prof2->getDerivedSemanticLabel());
-      mergedProf->getPerfLossMetric().setDuratonMetric(prof1->getPerfLossMetric(), prof2->getPerfLossMetric());
     }
     
     /**
@@ -142,27 +157,27 @@ namespace TraceAnalysis {
     Time samplingPeriod = mergedProf->getSamplingPeriod();
     double inclusiveDiff = 0;
     
-    const map<TCTID, TCTProfileNode*>& map1 = prof1->getChildMap();
-    const map<TCTID, TCTProfileNode*>& map2 = prof2->getChildMap();
+    const map<TCTID, TCTNonCFGProfileNode*>& map1 = prof1->getChildMap();
+    const map<TCTID, TCTNonCFGProfileNode*>& map2 = prof2->getChildMap();
     
     for (auto it = map1.begin(); it != map1.end(); it++) {
-      TCTProfileNode* child1 = it->second;
+      TCTNonCFGProfileNode* child1 = it->second;
       // Children that both profile nodes have
       if (map2.find(child1->id) != map2.end()) {
-        TCTProfileNode* child2 = map2.find(child1->id)->second;
-        TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+        TCTNonCFGProfileNode* child2 = map2.find(child1->id)->second;
+        TCTNonCFGProfileNode* mergedChild = (TCTNonCFGProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
         
         if (isScoreOnly) delete mergedChild;
         else mergedProf->addChild(mergedChild);
       }
       else { // Children that only profile 1 has.
-        TCTProfileNode* child2 = (TCTProfileNode*) child1->voidDuplicate();
+        TCTNonCFGProfileNode* child2 = (TCTNonCFGProfileNode*) child1->voidDuplicate();
         child2->setWeight(weight2);
-        child2->getTime().setDuration(child1->getMinDuration() - child1->getDuration(), child1->getMaxDuration() - child1->getDuration());
+        if (!isSum) child2->getTime().setDuration(-samplingPeriod, samplingPeriod);
         child2->initPerfLossMetric();
         
-        TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+        TCTNonCFGProfileNode* mergedChild = (TCTNonCFGProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
         
         if (isScoreOnly) delete mergedChild;
@@ -175,13 +190,13 @@ namespace TraceAnalysis {
     for (auto it = map2.begin(); it != map2.end(); it++)
       // Children that only profile 2 has.
       if (map1.find(it->first) == map1.end()) {
-        TCTProfileNode* child2 = it->second;
-        TCTProfileNode* child1 = (TCTProfileNode*) child2->voidDuplicate();
+        TCTNonCFGProfileNode* child2 = it->second;
+        TCTNonCFGProfileNode* child1 = (TCTNonCFGProfileNode*) child2->voidDuplicate();
         child1->setWeight(weight1);
-        child1->getTime().setDuration(child2->getMinDuration() - child2->getDuration(), child2->getMaxDuration() - child2->getDuration());
+        if (!isSum) child1->getTime().setDuration(-samplingPeriod, samplingPeriod);
         child1->initPerfLossMetric();
         
-        TCTProfileNode* mergedChild = (TCTProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+        TCTNonCFGProfileNode* mergedChild = (TCTNonCFGProfileNode*)mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // belongs to 1.3) when not accumulating and 1) when accumulating
 
         if (isScoreOnly) delete mergedChild;
@@ -190,56 +205,58 @@ namespace TraceAnalysis {
         delete child1;
       }
     
-    Time minExclusive1, maxExclusive1, minExclusive2, maxExclusive2;
-    prof1->getExclusiveDuration(minExclusive1, maxExclusive1);
-    prof2->getExclusiveDuration(minExclusive2, maxExclusive2);
-    
-    inclusiveDiff += (double)computeRangeDiff(minExclusive1, maxExclusive1, minExclusive2, maxExclusive2, samplingPeriod)
-            * (double) weight1 * (double) weight2;  // belongs to 2.3)
+    if (!isSum) {
+      Time minExclusive1, maxExclusive1, minExclusive2, maxExclusive2;
+      prof1->getExclusiveDuration(minExclusive1, maxExclusive1);
+      prof2->getExclusiveDuration(minExclusive2, maxExclusive2);
 
-    /**
-     * The exclusive difference score of a node is the sum of difference at this node (not counting is children),
-     * which is the sum of difference of inclusive duration among all nodes represented by the merged profile node.
-     * When accumulating, exclusive difference score of the merged profile node consists of the following components -- 
-     *  1) the difference of inclusive duration among all nodes represented by prof1
-     *  2) the difference of inclusive duration among all nodes represented by prof2
-     *  3) the difference of inclusive duration between nodes represented by prof1 and prof2
-     * 
-     * When not accumulating, only 3) is needed.
-     */
-    double exclusiveDiff = (double)computeRangeDiff(prof1->getMinDuration(), prof1->getMaxDuration(), 
-                                                    prof2->getMinDuration(), prof2->getMaxDuration(), samplingPeriod)
-            * (double) weight1 * (double) weight2; // Add 3)
-    
-    if (ifAccumulate) {
-      // Add 1) and 2) to exclusive diff score.
-      exclusiveDiff += prof1->getDiffScore().getExclusive() + prof2->getDiffScore().getExclusive();
-      
-      // The above code has added 1) and 2.3) to inclusive diff score. Add 2.1) and 2.2) to inclusive diff score below.
-      // Add 2.1)
-      inclusiveDiff += prof1->getDiffScore().getInclusive();
-      for (auto it = map1.begin(); it != map1.end(); it++)
-        inclusiveDiff -= it->second->getDiffScore().getInclusive();
-      
-      // Add 2.2)
-      inclusiveDiff += prof2->getDiffScore().getInclusive();
-      for (auto it = map2.begin(); it != map2.end(); it++)
-        inclusiveDiff -= it->second->getDiffScore().getInclusive();
+      inclusiveDiff += (double)computeRangeDiff(minExclusive1, maxExclusive1, minExclusive2, maxExclusive2, samplingPeriod)
+              * (double) weight1 * (double) weight2;  // belongs to 2.3)
+
+      /**
+       * The exclusive difference score of a node is the sum of difference at this node (not counting is children),
+       * which is the sum of difference of inclusive duration among all nodes represented by the merged profile node.
+       * When accumulating, exclusive difference score of the merged profile node consists of the following components -- 
+       *  1) the difference of inclusive duration among all nodes represented by prof1
+       *  2) the difference of inclusive duration among all nodes represented by prof2
+       *  3) the difference of inclusive duration between nodes represented by prof1 and prof2
+       * 
+       * When not accumulating, only 3) is needed.
+       */
+      double exclusiveDiff = (double)computeRangeDiff(prof1->getMinDuration(), prof1->getMaxDuration(), 
+                                                      prof2->getMinDuration(), prof2->getMaxDuration(), samplingPeriod)
+              * (double) weight1 * (double) weight2; // Add 3)
+
+      if (ifAccumulate) {
+        // Add 1) and 2) to exclusive diff score.
+        exclusiveDiff += prof1->getDiffScore().getExclusive() + prof2->getDiffScore().getExclusive();
+
+        // The above code has added 1) and 2.3) to inclusive diff score. Add 2.1) and 2.2) to inclusive diff score below.
+        // Add 2.1)
+        inclusiveDiff += prof1->getDiffScore().getInclusive();
+        for (auto it = map1.begin(); it != map1.end(); it++)
+          inclusiveDiff -= it->second->getDiffScore().getInclusive();
+
+        // Add 2.2)
+        inclusiveDiff += prof2->getDiffScore().getInclusive();
+        for (auto it = map2.begin(); it != map2.end(); it++)
+          inclusiveDiff -= it->second->getDiffScore().getInclusive();
+      }
+
+      /* Inclusive diff score should be no less than "exclusive diff score" plus minimum accumulation.
+       * (As we hide noises from sampling, the resulting inclusive diff score could be smaller than 
+       * the minimum threshold)
+       */
+      double minInclusiveDiff = (double)computeRangeDiff(prof1->getMinDuration(), prof1->getMaxDuration(), 
+                                                      prof2->getMinDuration(), prof2->getMaxDuration(), samplingPeriod)
+              * (double) weight1 * (double) weight2;
+      if (ifAccumulate)
+        minInclusiveDiff += prof1->getDiffScore().getInclusive() + prof2->getDiffScore().getInclusive();
+
+      if (inclusiveDiff < minInclusiveDiff) inclusiveDiff = minInclusiveDiff;
+
+      mergedProf->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
     }
-    
-    /* Inclusive diff score should be no less than "exclusive diff score" plus minimum accumulation.
-     * (As we hide noises from sampling, the resulting inclusive diff score could be smaller than 
-     * the minimum threshold)
-     */
-    double minInclusiveDiff = (double)computeRangeDiff(prof1->getMinDuration(), prof1->getMaxDuration(), 
-                                                    prof2->getMinDuration(), prof2->getMaxDuration(), samplingPeriod)
-            * (double) weight1 * (double) weight2;
-    if (ifAccumulate)
-      minInclusiveDiff += prof1->getDiffScore().getInclusive() + prof2->getDiffScore().getInclusive();
-    
-    if (inclusiveDiff < minInclusiveDiff) inclusiveDiff = minInclusiveDiff;
-    
-    mergedProf->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
     
     return mergedProf;
   }
@@ -279,10 +296,10 @@ namespace TraceAnalysis {
       
       for (auto mit = pendingEdges.begin(); mit != pendingEdges.end(); mit++) {
         const TCTANode* dst = mit->second.begin()->second->getDst();
-        if (dst->id == dummyEndNode.id || cfg->compareChild(midNode->ra, dst->ra) == -1) { // if there is a control flow from mid -> dst.
+        if (dst->id == TCTACFGNode::dummyEndNode.id || cfg->compareChild(midNode->ra, dst->ra) == -1) { // if there is a control flow from mid -> dst.
           for (auto it = mit->second.begin(); it != mit->second.end();) {
             const TCTANode* src = it->second->getSrc(); 
-            if (src->id == dummyBeginNode.id || cfg->compareChild(midNode->ra, src->ra) == 1) { // if there is a control flow from src -> mid
+            if (src->id == TCTACFGNode::dummyBeginNode.id || cfg->compareChild(midNode->ra, src->ra) == 1) { // if there is a control flow from src -> mid
               // Split the edge into two
               // The first edge is src->mid
               TCTACFGNode::Edge* edge1 = it->second->duplicate();
@@ -324,17 +341,37 @@ namespace TraceAnalysis {
     vector<TCTACFGNode::Edge*>& getAllEdges() {
       return completedEdges;
     }
+    
+    // This can only be called when edges are not inserted to any CFG node.
+    void deallocateAllEdges() {
+      for (auto edge : completedEdges)
+        delete edge;
+      
+      for (auto mit = pendingEdges.begin(); mit != pendingEdges.end(); mit++)
+        for (auto it = mit->second.begin(); it != mit->second.end(); it++)
+          delete it->second;
+    }
   };
-  //TODO: edges to entry call sites, edges leaving exit call sites.
+  
   TCTANode* DifferenceQuantifier::mergeACFGNode(const TCTACFGNode* node1, long weight1, const TCTACFGNode* node2, long weight2, 
-          bool ifAccumulate, bool isScoreOnly) {
+          bool ifAccumulate, bool isScoreOnly, bool isSum) {
     TCTACFGNode* mergedCFG = (TCTACFGNode*) node1->voidDuplicate();
-    mergedCFG->getTime().setAsAverageTime(node1->getTime(), weight1, node2->getTime(), weight2);
-    if (!isScoreOnly) {
-      mergedCFG->setWeight(weight1 + weight2);
+    if (!isSum) {
+      mergedCFG->getTime().setAsAverageTime(node1->getTime(), weight1, node2->getTime(), weight2);
+      if (!isScoreOnly) {
+        mergedCFG->setWeight(weight1 + weight2);
+        mergedCFG->setRetCount(node1->getRetCount() + node2->getRetCount());
+        mergedCFG->setDerivedSemanticLabel(node1->getDerivedSemanticLabel() & node2->getDerivedSemanticLabel());
+        mergedCFG->getPerfLossMetric().setDuratonMetric(node1->getPerfLossMetric(), node2->getPerfLossMetric());
+      }
+    }
+    else {
+      mergedCFG->toCFGProfile();
+      mergedCFG->getTime().clear();
+      mergedCFG->getTime().addTime(node1->getTime());
+      mergedCFG->getTime().addTime(node2->getTime());
+      mergedCFG->setWeight(weight1);
       mergedCFG->setRetCount(node1->getRetCount() + node2->getRetCount());
-      mergedCFG->setDerivedSemanticLabel(node1->getDerivedSemanticLabel() & node2->getDerivedSemanticLabel());
-      mergedCFG->getPerfLossMetric().setDuratonMetric(node1->getPerfLossMetric(), node2->getPerfLossMetric());
     }
     
     /**
@@ -360,11 +397,11 @@ namespace TraceAnalysis {
       // Process entry edges for node1 and node2
       if (node1->getNumChild() > 0)
         for (auto it = node1->getEntryEdges().begin(); it != node1->getEntryEdges().end(); it++)
-          em.insertPendingEdge((*it)->duplicate(), &dummyBeginNode);
+          em.insertPendingEdge((*it)->duplicate(), &TCTACFGNode::dummyBeginNode);
       
       if (node2->getNumChild() > 0)
         for (auto it = node2->getEntryEdges().begin(); it != node2->getEntryEdges().end(); it++)
-          em.insertPendingEdge((*it)->duplicate(), &dummyBeginNode);
+          em.insertPendingEdge((*it)->duplicate(), &TCTACFGNode::dummyBeginNode);
     }
     
     while (k1 < node1->getNumChild() || k2 < node2->getNumChild()) {
@@ -375,7 +412,7 @@ namespace TraceAnalysis {
         const TCTANode* child2 = node2->getChild(k2);
         
         // Add child diff: 1.3) when not accumulating and 1) when accumulating
-        TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+        TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
         inclusiveDiff += mergedChild->getDiffScore().getInclusive();
         
         if (isScoreOnly) delete mergedChild;
@@ -403,9 +440,10 @@ namespace TraceAnalysis {
                     || !node1->cfgGraph->hasChild(node2->getChild(k2)->ra) // or RA of node2[k2] is not found in cfgGraph
                ))) { // Return a nonCFG node.
           delete mergedCFG;
-          TCTProfileNode* prof1 = TCTProfileNode::newProfileNode(node1);
-          TCTProfileNode* prof2 = TCTProfileNode::newProfileNode(node2);
-          TCTProfileNode* mergedProf = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly);
+          em.deallocateAllEdges();
+          TCTNonCFGProfileNode* prof1 = TCTNonCFGProfileNode::newNonCFGProfileNode(node1);
+          TCTNonCFGProfileNode* prof2 = TCTNonCFGProfileNode::newNonCFGProfileNode(node2);
+          TCTNonCFGProfileNode* mergedProf = mergeProfileNode(prof1, weight1, prof2, weight2, ifAccumulate, isScoreOnly, isSum);
           delete prof1;
           delete prof2;
           return mergedProf;
@@ -423,11 +461,12 @@ namespace TraceAnalysis {
           const TCTANode* child1 = node1->getChild(k1);
           
           // Create dummy child2 node
+          //TODO: set start/end time for the dummy node when isSum == false;
           TCTANode* child2 = child1->voidDuplicate();
           child2->setWeight(weight2);
           child2->initPerfLossMetric();
           
-          TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+          TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating
 
           if (isScoreOnly) delete mergedChild;
@@ -450,11 +489,12 @@ namespace TraceAnalysis {
           const TCTANode* child2 = node2->getChild(k2);
           
           // Create dummy child1 node
+          //TODO: set start/end time for the dummy node when isSum == false;
           TCTANode* child1 = child2->voidDuplicate();
           child1->setWeight(weight1);
           child1->initPerfLossMetric();
           
-          TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly);
+          TCTANode* mergedChild = mergeNode(child1, weight1, child2, weight2, ifAccumulate, isScoreOnly, isSum);
           inclusiveDiff += mergedChild->getDiffScore().getInclusive(); // Add child diff: 1.3) when not accumulating and 1) when accumulating
 
           if (isScoreOnly) delete mergedChild;
@@ -477,60 +517,66 @@ namespace TraceAnalysis {
     
     // Add edges
     if (!isScoreOnly) {
-      em.completePendingEdge(&dummyEndNode);
+      em.completePendingEdge(&TCTACFGNode::dummyEndNode);
       mergedCFG->setEdges(em.getAllEdges());
     }
     
-    // Compute diff among gaps
-    Time minExclusive1, maxExclusive1, minExclusive2, maxExclusive2;
-    node1->getExclusiveDuration(minExclusive1, maxExclusive1);
-    node2->getExclusiveDuration(minExclusive2, maxExclusive2);
-    inclusiveDiff += (double)computeRangeDiff(minExclusive1, maxExclusive1, minExclusive2, maxExclusive2, samplingPeriod)
-            * (double) weight1 * (double) weight2;  // belongs to 2.3)
+    // Set to CFG profile if necessary
+    if (node1->isCFGProfile() || node2->isCFGProfile())
+      mergedCFG->toCFGProfile();
+    
+    if (!isSum) {
+      // Compute diff among gaps
+      Time minExclusive1, maxExclusive1, minExclusive2, maxExclusive2;
+      node1->getExclusiveDuration(minExclusive1, maxExclusive1);
+      node2->getExclusiveDuration(minExclusive2, maxExclusive2);
+      inclusiveDiff += (double)computeRangeDiff(minExclusive1, maxExclusive1, minExclusive2, maxExclusive2, samplingPeriod)
+              * (double) weight1 * (double) weight2;  // belongs to 2.3)
 
-    /**
-     * The exclusive difference score of a node is the sum of difference at this node (not counting is children),
-     * which is the sum of difference of inclusive duration among all nodes represented by the merged CFG node.
-     * When accumulating, exclusive difference score of the merged profile node consists of the following components -- 
-     *  1) the difference of inclusive duration among all nodes represented by node1
-     *  2) the difference of inclusive duration among all nodes represented by node2
-     *  3) the difference of inclusive duration between nodes represented by node1 and node2
-     * 
-     * When not accumulating, only 3) is needed.
-     */
-    double exclusiveDiff = (double)computeRangeDiff(node1->getMinDuration(), node1->getMaxDuration(), 
-                                                    node2->getMinDuration(), node2->getMaxDuration(), samplingPeriod)
-            * (double) weight1 * (double) weight2; // Add 3)
-    
-    if (ifAccumulate) {
-      // Add 1) and 2) to exclusive diff score.
-      exclusiveDiff += node1->getDiffScore().getExclusive() + node2->getDiffScore().getExclusive();
-      
-      // The above code has added 1) and 2.3) to inclusive diff score. Add 2.1) and 2.2) to inclusive diff score below.
-      // Add 2.1)
-      inclusiveDiff += node1->getDiffScore().getInclusive();
-      for (int i = 0; i < node1->getNumChild(); i++)
-        inclusiveDiff -= node1->getChild(i)->getDiffScore().getInclusive();
-      
-      // Add 2.2)
-      inclusiveDiff += node2->getDiffScore().getInclusive();
-      for (int i = 0; i < node2->getNumChild(); i++)
-        inclusiveDiff -= node2->getChild(i)->getDiffScore().getInclusive();
+      /**
+       * The exclusive difference score of a node is the sum of difference at this node (not counting is children),
+       * which is the sum of difference of inclusive duration among all nodes represented by the merged CFG node.
+       * When accumulating, exclusive difference score of the merged profile node consists of the following components -- 
+       *  1) the difference of inclusive duration among all nodes represented by node1
+       *  2) the difference of inclusive duration among all nodes represented by node2
+       *  3) the difference of inclusive duration between nodes represented by node1 and node2
+       * 
+       * When not accumulating, only 3) is needed.
+       */
+      double exclusiveDiff = (double)computeRangeDiff(node1->getMinDuration(), node1->getMaxDuration(), 
+                                                      node2->getMinDuration(), node2->getMaxDuration(), samplingPeriod)
+              * (double) weight1 * (double) weight2; // Add 3)
+
+      if (ifAccumulate) {
+        // Add 1) and 2) to exclusive diff score.
+        exclusiveDiff += node1->getDiffScore().getExclusive() + node2->getDiffScore().getExclusive();
+
+        // The above code has added 1) and 2.3) to inclusive diff score. Add 2.1) and 2.2) to inclusive diff score below.
+        // Add 2.1)
+        inclusiveDiff += node1->getDiffScore().getInclusive();
+        for (int i = 0; i < node1->getNumChild(); i++)
+          inclusiveDiff -= node1->getChild(i)->getDiffScore().getInclusive();
+
+        // Add 2.2)
+        inclusiveDiff += node2->getDiffScore().getInclusive();
+        for (int i = 0; i < node2->getNumChild(); i++)
+          inclusiveDiff -= node2->getChild(i)->getDiffScore().getInclusive();
+      }
+
+      /* Inclusive diff score should be no less than "exclusive diff score" plus minimum accumulation.
+       * (As we hide noises from sampling, the resulting inclusive diff score could be smaller than 
+       * the minimum threshold)
+       */
+      double minInclusiveDiff = (double)computeRangeDiff(node1->getMinDuration(), node1->getMaxDuration(), 
+                                                      node2->getMinDuration(), node2->getMaxDuration(), samplingPeriod)
+              * (double) weight1 * (double) weight2;
+      if (ifAccumulate)
+        minInclusiveDiff += node1->getDiffScore().getInclusive() + node2->getDiffScore().getInclusive();
+
+      if (inclusiveDiff < minInclusiveDiff) inclusiveDiff = minInclusiveDiff;
+
+      mergedCFG->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
     }
-    
-    /* Inclusive diff score should be no less than "exclusive diff score" plus minimum accumulation.
-     * (As we hide noises from sampling, the resulting inclusive diff score could be smaller than 
-     * the minimum threshold)
-     */
-    double minInclusiveDiff = (double)computeRangeDiff(node1->getMinDuration(), node1->getMaxDuration(), 
-                                                    node2->getMinDuration(), node2->getMaxDuration(), samplingPeriod)
-            * (double) weight1 * (double) weight2;
-    if (ifAccumulate)
-      minInclusiveDiff += node1->getDiffScore().getInclusive() + node2->getDiffScore().getInclusive();
-    
-    if (inclusiveDiff < minInclusiveDiff) inclusiveDiff = minInclusiveDiff;
-    
-    mergedCFG->getDiffScore().setScores(inclusiveDiff, exclusiveDiff);
     
     return mergedCFG;
   }
@@ -751,23 +797,24 @@ namespace TraceAnalysis {
   }
   */
   TCTANode* DifferenceQuantifier::mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
-          bool ifAccumulate, bool isScoreOnly) {
+          bool ifAccumulate, bool isScoreOnly, bool isSum) {
     // If either loop is not accepted 
     if ((!loop1->accept()) || (!loop2->accept()) 
             || (loop1->getNumIteration() != loop2->getNumIteration())
-            || (loop1->getNumAcceptedIteration() != loop2->getNumAcceptedIteration()))
-      return mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, isScoreOnly);
+            || (loop1->getNumAcceptedIteration() != loop2->getNumAcceptedIteration())
+            || isSum)
+      return mergeNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, isScoreOnly, isSum);
     
     TCTLoopNode* mergedLoop = NULL;
-    TCTProfileNode* mergedProf = NULL;
+    TCTANode* mergedProf = NULL;
     if (!isScoreOnly) {
       mergedLoop = new TCTLoopNode(*loop1, weight1, *loop2, weight2, ifAccumulate);
       mergedProf = mergedLoop->getProfileNode();
     } 
     else {
-      mergedProf = mergeProfileNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, true);
+      mergedProf = mergeNode(loop1->getProfileNode(), weight1, loop2->getProfileNode(), weight2, ifAccumulate, isScoreOnly, isSum);
     }
-    TCTProfileNode* minCopy = (TCTProfileNode*)mergedProf->duplicate();
+    TCTANode* minCopy = mergedProf->duplicate();
     mergedProf->clearDiffScore();
     
     const TCTClusterNode* cluster1 = loop1->getClusterNode();
@@ -795,7 +842,7 @@ namespace TraceAnalysis {
     
     for (int i = 0; i < numCluster1; i++)
       for (int j = 0; j < numCluster2; j++) {
-        diffNodes[i][j] = mergeNode(rep1[i], 1, rep2[j], 1, false, isScoreOnly);
+        diffNodes[i][j] = mergeNode(rep1[i], 1, rep2[j], 1, false, isScoreOnly, isSum);
         diffRatio[i][j] = diffNodes[i][j]->getDiffScore().getInclusive() / (double)(rep1[i]->getDuration() + rep2[j]->getDuration());
       }
     
@@ -840,7 +887,7 @@ namespace TraceAnalysis {
     while (numCluster1 > 0) {
       numCluster1--;
       TCTANode* dummyNode = rep1[numCluster1]->voidDuplicate();
-      TCTANode* diffNode = mergeNode(rep1[numCluster1], 1, dummyNode, 1, false, isScoreOnly);
+      TCTANode* diffNode = mergeNode(rep1[numCluster1], 1, dummyNode, 1, false, isScoreOnly, isSum);
       addDiffScore(mergedProf, diffNode, 
               (double)numMembers1[numCluster1] * (double)weight1 * (double) weight2 / (double)loop1->getWeight() / (double)loop2->getWeight());
       delete dummyNode;
@@ -850,19 +897,19 @@ namespace TraceAnalysis {
     while (numCluster2 > 0) {
       numCluster2--;
       TCTANode* dummyNode = rep2[numCluster2]->voidDuplicate();
-      TCTANode* diffNode = mergeNode(rep2[numCluster2], 1, dummyNode, 1, false, isScoreOnly);
+      TCTANode* diffNode = mergeNode(rep2[numCluster2], 1, dummyNode, 1, false, isScoreOnly, isSum);
       addDiffScore(mergedProf, diffNode, 
               (double)numMembers2[numCluster2] * (double)weight1 * (double) weight2 / (double)loop1->getWeight() / (double)loop2->getWeight());
       delete dummyNode;
       delete diffNode;
     }
     
-    const TCTProfileNode* rej1 = loop1->getRejectedIterations();
-    const TCTProfileNode* rej2 = loop2->getRejectedIterations();
+    const TCTANode* rej1 = loop1->getRejectedIterations();
+    const TCTANode* rej2 = loop2->getRejectedIterations();
     if (rej1 != NULL || rej2 != NULL) {
-      if (rej1 == NULL) rej1 = (TCTProfileNode*)rej2->voidDuplicate();
-      if (rej2 == NULL) rej2 = (TCTProfileNode*)rej1->voidDuplicate();
-      TCTProfileNode* rejDiff = diffQ.mergeProfileNode(rej1, weight1, rej2, weight2, false, isScoreOnly);
+      if (rej1 == NULL) rej1 = rej2->voidDuplicate();
+      if (rej2 == NULL) rej2 = rej1->voidDuplicate();
+      TCTANode* rejDiff = diffQ.mergeNode(rej1, weight1, rej2, weight2, false, isScoreOnly, isSum);
       addDiffScore(mergedProf, rejDiff, 1);
       delete rejDiff;
       if (loop1->getRejectedIterations() == NULL) delete rej1;
@@ -891,17 +938,19 @@ namespace TraceAnalysis {
   void DifferenceQuantifier::addDiffScore(TCTANode* dst, const TCTANode* src, double ratio) {
     if (src->getDiffScore().getInclusive() == 0) return;
     
-    if (dst->type == TCTANode::Prof) {
-      if (src->type == TCTANode::Prof) 
-        addDiffScore((TCTProfileNode*)dst, (TCTProfileNode*)src, ratio);
+    if (dst->type == TCTANode::NonCFGProf) {
+      if (src->type == TCTANode::NonCFGProf) 
+        addDiffScore((TCTNonCFGProfileNode*)dst, (TCTNonCFGProfileNode*)src, ratio);
       else {
-        TCTProfileNode* temp = TCTProfileNode::newProfileNode(src);
-        addDiffScore((TCTProfileNode*)dst, temp, ratio);
+        TCTNonCFGProfileNode* temp = TCTNonCFGProfileNode::newNonCFGProfileNode(src);
+        addDiffScore((TCTNonCFGProfileNode*)dst, temp, ratio);
         delete temp;
       }
     } 
     else if (dst->type == TCTANode::Loop) 
       addDiffScore((TCTLoopNode*)dst, (TCTLoopNode*)src, ratio);
+    else if (src->type == TCTANode::Loop)
+      addDiffScore((TCTACFGNode*)dst, ((TCTLoopNode*)src)->getProfileNode(), ratio);
     else
       addDiffScore((TCTACFGNode*)dst, (TCTACFGNode*)src, ratio);
   }
@@ -942,7 +991,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_NORMAL, "ERROR: failed to add diff scores of all children for trace node %s.\n", src->id.toString().c_str());
   }*/
   
-  void DifferenceQuantifier::addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio) {
+  void DifferenceQuantifier::addDiffScore(TCTNonCFGProfileNode* dst, const TCTNonCFGProfileNode* src, double ratio) {
     double inclusive = dst->getDiffScore().getInclusive() + src->getDiffScore().getInclusive() * ratio;
     double exclusive = dst->getDiffScore().getExclusive() + src->getDiffScore().getExclusive() * ratio;
     dst->getDiffScore().setScores(inclusive, exclusive);
@@ -968,7 +1017,7 @@ namespace TraceAnalysis {
     
     TCTANode* avgRep = cluster->getClusterRepAt(0)->duplicate();
     for (int k = 1; k < cluster->getNumClusters(); k++) {
-      TCTANode* temp = mergeNode(avgRep, avgRep->getWeight(), cluster->getClusterRepAt(k), cluster->getClusterRepAt(k)->getWeight(), false, false);
+      TCTANode* temp = mergeNode(avgRep, avgRep->getWeight(), cluster->getClusterRepAt(k), cluster->getClusterRepAt(k)->getWeight(), false, false, false);
       delete avgRep;
       avgRep = temp;
     }
@@ -979,7 +1028,7 @@ namespace TraceAnalysis {
     
     for (int i = 0; i < cluster->getNumClusters(); i++)
       for (int j = i+1; j < cluster->getNumClusters(); j++) {
-        TCTANode* temp = mergeNode(cluster->getClusterRepAt(i), cluster->getClusterRepAt(i)->getWeight(), cluster->getClusterRepAt(j), cluster->getClusterRepAt(j)->getWeight(), false, false);
+        TCTANode* temp = mergeNode(cluster->getClusterRepAt(i), cluster->getClusterRepAt(i)->getWeight(), cluster->getClusterRepAt(j), cluster->getClusterRepAt(j)->getWeight(), false, false, false);
         addDiffScore(avgRep, temp, 1);
         delete temp;
       }

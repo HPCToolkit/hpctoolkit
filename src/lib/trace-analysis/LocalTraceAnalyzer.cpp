@@ -144,7 +144,7 @@ namespace TraceAnalysis {
           return;
         } else {
           // for loops without valid cfgGraph, turn them into profile nodes.
-          TCTProfileNode* profile = TCTProfileNode::newProfileNode(node);
+          TCTNonCFGProfileNode* profile = TCTNonCFGProfileNode::newNonCFGProfileNode(node);
           delete node;
           pushOneNode(profile, startTimeExclusive, startTimeInclusive, numSamples);
           return;
@@ -203,7 +203,7 @@ namespace TraceAnalysis {
         }
       }
       // if the parent is a non-loop trace node, detect conflict on all child nodes
-      else if (activeStack.back()->type != TCTANode::Prof) {
+      else if (activeStack.back()->type != TCTANode::NonCFGProf) {
         TCTACFGNode* parent = (TCTACFGNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id.id == node->id.id) {
@@ -241,7 +241,7 @@ namespace TraceAnalysis {
 
 #ifdef KEEP_ACCEPTED_ITERATION      
     void printLoops(TCTANode* node) {
-      if (node->type == TCTANode::Prof) return;
+      if (node->type == TCTANode::NonCFGProf) return;
       else if (node->type == TCTANode::Loop) {
         TCTLoopNode* loop = (TCTLoopNode*) node;
         

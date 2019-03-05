@@ -65,15 +65,15 @@ namespace TraceAnalysis {
      * Callee responsible for deallocating the merged node.
      */
     TCTANode* mergeNode(const TCTANode* node1, long weight1, const TCTANode* node2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly);
+            bool ifAccumulate, bool isScoreOnly, bool isSum);
     TCTANode* mergeACFGNode(const TCTACFGNode* node1, long weight1, const TCTACFGNode* node2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly);
-    TCTProfileNode* mergeProfileNode(const TCTProfileNode* prof1, long weight1, const TCTProfileNode* prof2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly);
+            bool ifAccumulate, bool isScoreOnly, bool isSum);
+    TCTNonCFGProfileNode* mergeProfileNode(const TCTNonCFGProfileNode* prof1, long weight1, const TCTNonCFGProfileNode* prof2, long weight2, 
+            bool ifAccumulate, bool isScoreOnly, bool isSum);
     //TCTANode* mergeTraceNode(const TCTATraceNode* trace1, long weight1, const TCTATraceNode* trace2, long weight2, 
     //        bool ifAccumulate, bool isScoreOnly);
     TCTANode* mergeLoopNode(const TCTLoopNode* loop1, long weight1, const TCTLoopNode* loop2, long weight2, 
-            bool ifAccumulate, bool isScoreOnly);
+            bool ifAccumulate, bool isScoreOnly, bool isSum);
     
     TCTANode* computeAvgRep(const TCTClusterNode* cluster);
     
@@ -81,7 +81,7 @@ namespace TraceAnalysis {
     void addDiffScore(TCTANode* dst, const TCTANode* src, double ratio);
     void addDiffScore(TCTACFGNode* dst, const TCTACFGNode* src, double ratio);
     //void addDiffScore(TCTATraceNode* dst, const TCTATraceNode* src, double ratio);
-    void addDiffScore(TCTProfileNode* dst, const TCTProfileNode* src, double ratio);
+    void addDiffScore(TCTNonCFGProfileNode* dst, const TCTNonCFGProfileNode* src, double ratio);
     void addDiffScore(TCTLoopNode* dst, const TCTLoopNode* src, double ratio);
   };
   

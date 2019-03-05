@@ -71,7 +71,7 @@ namespace TraceAnalysis {
       case TCTANode::Func : ret += "(F) "; break;
       case TCTANode::Iter : ret += "(I) "; break;
       case TCTANode::Loop : ret += "(L) "; break;
-      case TCTANode::Prof : ret += "(P) "; break;
+      case TCTANode::NonCFGProf : ret += "(P) "; break;
       default: ret += "    ";
     }
     ret += name + id.toString();
@@ -165,7 +165,7 @@ namespace TraceAnalysis {
     return ret;
   }
   
-  string TCTProfileNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {
+  string TCTNonCFGProfileNode::toString(int maxDepth, Time minDuration, double minDiffScore) const {
     string ret = TCTANode::toString(maxDepth, minDuration, minDiffScore);
     
     if (depth >= maxDepth) return ret;
@@ -221,7 +221,8 @@ namespace TraceAnalysis {
       pendingIteration = NULL;
       rejectedIterations = NULL;
       clusterNode = new TCTClusterNode(*this);
-      profileNode = NULL;
+      profileNode = new TCTIterationTraceNode(id, name, depth, cfgGraph, semanticLabel);
+      ((TCTACFGNode*)profileNode)->toCFGProfile();
     }
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
@@ -234,7 +235,7 @@ namespace TraceAnalysis {
       pendingIteration = NULL;
     
     if (orig.rejectedIterations != NULL)
-      rejectedIterations = (TCTProfileNode*)(orig.rejectedIterations->duplicate());
+      rejectedIterations = (TCTNonCFGProfileNode*)(orig.rejectedIterations->duplicate());
     else
       rejectedIterations = NULL;
 
@@ -249,7 +250,7 @@ namespace TraceAnalysis {
       clusterNode = NULL;
     
     if (orig.profileNode != NULL)
-      profileNode = (TCTProfileNode*)(orig.profileNode->duplicate());
+      profileNode = (TCTNonCFGProfileNode*)(orig.profileNode->duplicate());
     else
       profileNode = NULL;
   }
@@ -269,22 +270,22 @@ namespace TraceAnalysis {
     numAcceptedIteration = loop1.numAcceptedIteration;
     pendingIteration = NULL;
     
-    profileNode = diffQ.mergeProfileNode(loop1.getProfileNode(), weight1, loop2.getProfileNode(), weight2, accumulate, false);
+    profileNode = diffQ.mergeNode(loop1.getProfileNode(), weight1, loop2.getProfileNode(), weight2, accumulate, false, false);
     
-    TCTProfileNode* rej1 = loop1.rejectedIterations;
-    TCTProfileNode* rej2 = loop2.rejectedIterations;
+    TCTANode* rej1 = loop1.rejectedIterations;
+    TCTANode* rej2 = loop2.rejectedIterations;
     if (rej1 == NULL && rej2 == NULL)
       rejectedIterations = NULL;
     else {
       if (rej1 == NULL)  {
-        rej1 = (TCTProfileNode*)rej2->voidDuplicate();
+        rej1 = rej2->voidDuplicate();
         rej1->setWeight(weight1);
       }
       if (rej2 == NULL) {
-        rej2 = (TCTProfileNode*)rej1->voidDuplicate();
+        rej2 = rej1->voidDuplicate();
         rej2->setWeight(weight2);
       }
-      rejectedIterations = diffQ.mergeProfileNode(rej1, weight1, rej2, weight2, accumulate, false);
+      rejectedIterations = diffQ.mergeNode(rej1, weight1, rej2, weight2, accumulate, false, false);
       
       if (loop1.rejectedIterations == NULL) delete rej1;
       if (loop2.rejectedIterations == NULL) delete rej2;
@@ -311,16 +312,10 @@ namespace TraceAnalysis {
     if (profileNode != NULL)
       return profileNode->getExclusiveDuration();
     
-    TCTProfileNode* tmp = TCTProfileNode::newProfileNode(this);
+    TCTNonCFGProfileNode* tmp = TCTNonCFGProfileNode::newNonCFGProfileNode(this);
     Time exclusive = tmp->getExclusiveDuration();
     delete tmp;
     return exclusive;
-  }
-  
-  TCTProfileNode* TCTLoopNode::getProfileNode() {
-    if (profileNode == NULL) 
-      profileNode = TCTProfileNode::newProfileNode(this);
-    return profileNode;
   }
   
   bool TCTLoopNode::acceptPendingIteration() {
@@ -353,23 +348,36 @@ namespace TraceAnalysis {
     pendingIteration->finalizeEnclosingLoops();
     pendingIteration->shiftTime(-pendingIteration->getTime().getStartTimeExclusive());
     
+    TCTACFGNode* iterProfile = (TCTACFGNode*)pendingIteration->duplicate();
+    iterProfile->toCFGProfile();
+    iterProfile->setDepth(profileNode->getDepth());
+    
+    TCTANode* mergedProf = diffQ.mergeNode(profileNode, profileNode->getWeight(), iterProfile, iterProfile->getWeight(), 
+        false, false, true);
+    delete profileNode;
+    profileNode = mergedProf;
+
     if (acceptPendingIteration()) {
       numAcceptedIteration++;
 #ifdef KEEP_ACCEPTED_ITERATION      
       acceptedIterations.push_back(pendingIteration->duplicate());
 #endif     
       clusterNode->addChild(pendingIteration, numIteration);
+      delete iterProfile;
     }
     else {
-      TCTProfileNode* prof = TCTProfileNode::newProfileNode(pendingIteration);
-      if (rejectedIterations != NULL) {
-        rejectedIterations->merge(prof);
-        delete prof;
-      } else {
-        rejectedIterations = prof;
-        rejectedIterations->setName("Rejected Iterations");
-      }
       delete pendingIteration;
+      
+      if (rejectedIterations != NULL) {
+        TCTANode* mergedRejected = diffQ.mergeNode(rejectedIterations, rejectedIterations->getWeight(), iterProfile, iterProfile->getWeight(),
+            false, false, true);
+        delete rejectedIterations;
+        delete iterProfile;
+        rejectedIterations = mergedRejected;
+      } else {
+        iterProfile->setName("Rejected Iterations");
+        rejectedIterations = iterProfile;
+      }
     }
     
     numIteration++;
@@ -388,9 +396,9 @@ namespace TraceAnalysis {
   void TCTLoopNode::finalizeEnclosingLoops() {
     finalizePendingIteration();
     
-    if (profileNode != NULL)
-      print_msg(MSG_PRIO_MAX, "ERROR: TCTLoopNode::finalizeEnclosingLoops() called when profileNode is not NULL for loop %s.\n", getName().c_str());
-    profileNode = TCTProfileNode::newProfileNode(this);
+    //if (profileNode != NULL)
+      //print_msg(MSG_PRIO_MAX, "ERROR: TCTLoopNode::finalizeEnclosingLoops() called when profileNode is not NULL for loop %s.\n", getName().c_str());
+    //profileNode = TCTNonCFGProfileNode::newNonCFGProfileNode(this);
     profileNode->clearDiffScore();
     profileNode->initPerfLossMetric();
     
@@ -411,7 +419,7 @@ namespace TraceAnalysis {
 
       if (getClusterNode()->getNumClusters() > 1) {
         TCTANode* highlight = diffQ.mergeNode(getClusterNode()->getClusterRepAt(0), getClusterNode()->getClusterRepAt(0)->getWeight(), 
-                                                getClusterNode()->getClusterRepAt(1), getClusterNode()->getClusterRepAt(1)->getWeight(), false, false);
+                                                getClusterNode()->getClusterRepAt(1), getClusterNode()->getClusterRepAt(1)->getWeight(), false, false, false);
         print_msg(MSG_PRIO_LOW, "Compare first two clusters:\n");
         print_msg(MSG_PRIO_LOW, "%s\n", highlight->toString(highlight->getDepth()+5, 0, 0).c_str());
         delete highlight;
@@ -473,7 +481,7 @@ namespace TraceAnalysis {
     numClusters = cluster1.numClusters + cluster2.numClusters;
     
     if (cluster1.avgRep != NULL && cluster2.avgRep != NULL) 
-      avgRep = diffQ.mergeNode(cluster1.avgRep, cluster1.avgRep->getWeight(), cluster2.avgRep, cluster2.avgRep->getWeight(), false, false);
+      avgRep = diffQ.mergeNode(cluster1.avgRep, cluster1.avgRep->getWeight(), cluster2.avgRep, cluster2.avgRep->getWeight(), false, false, false);
     else if (cluster1.avgRep != NULL)
       avgRep = cluster1.avgRep->duplicate();
     else if (cluster2.avgRep != NULL)
@@ -499,7 +507,7 @@ namespace TraceAnalysis {
         diffRatio[i+cluster1.numClusters][j+cluster1.numClusters] = cluster2.diffRatio[i][j];
     for (int i = 0; i < cluster1.numClusters; i++)
       for (int j = 0; j < cluster2.numClusters; j++) {
-        TCTANode* tempNode = diffQ.mergeNode(clusters[i].representative, 1, clusters[j+cluster1.numClusters].representative, 1, false, true);
+        TCTANode* tempNode = diffQ.mergeNode(clusters[i].representative, 1, clusters[j+cluster1.numClusters].representative, 1, false, true, false);
         diffRatio[i][j+cluster1.numClusters] = tempNode->getDiffScore().getInclusive() / 
                 (double)(clusters[i].representative->getDuration() + clusters[j+cluster1.numClusters].representative->getDuration());
         delete tempNode;
@@ -532,7 +540,7 @@ namespace TraceAnalysis {
     clusters[numClusters].members->addMember(idx);
     
     for (int k = 0; k < numClusters; k++) {
-      TCTANode* tempNode = diffQ.mergeNode(child, 1, clusters[k].representative, 1, false, true);
+      TCTANode* tempNode = diffQ.mergeNode(child, 1, clusters[k].representative, 1, false, true, false);
       diffRatio[k][numClusters] = tempNode->getDiffScore().getInclusive() / (double)(child->getDuration() + clusters[k].representative->getDuration());
       delete tempNode;
     }
@@ -559,7 +567,7 @@ namespace TraceAnalysis {
           diffRatio[min_x][min_y] <= maxDR * REL_DIFF_RATIO ||
           numClusters > MAX_NUM_CLUSTER) {
       TCTANode* tempNode = diffQ.mergeNode(clusters[min_x].representative, clusters[min_x].representative->getWeight(),
-              clusters[min_y].representative, clusters[min_y].representative->getWeight(), true, false);
+              clusters[min_y].representative, clusters[min_y].representative->getWeight(), true, false, false);
       delete clusters[min_x].representative;
       delete clusters[min_y].representative;
       clusters[min_x].representative = tempNode;
@@ -585,13 +593,13 @@ namespace TraceAnalysis {
       
       // Recompute diffRatio values for the merged cluster.
       for (int k = 0; k < min_x; k++) {
-        TCTANode* tempNode = diffQ.mergeNode(clusters[min_x].representative, 1, clusters[k].representative, 1, false, true);
+        TCTANode* tempNode = diffQ.mergeNode(clusters[min_x].representative, 1, clusters[k].representative, 1, false, true, false);
         diffRatio[k][min_x] = tempNode->getDiffScore().getInclusive() / (double)(clusters[min_x].representative->getDuration() + clusters[k].representative->getDuration());
         delete tempNode;
       }
       
       for (int k = min_x+1; k < numClusters; k++) {
-        TCTANode* tempNode = diffQ.mergeNode(clusters[min_x].representative, 1, clusters[k].representative, 1, false, true);
+        TCTANode* tempNode = diffQ.mergeNode(clusters[min_x].representative, 1, clusters[k].representative, 1, false, true, false);
         diffRatio[min_x][k] = tempNode->getDiffScore().getInclusive() / (double)(clusters[min_x].representative->getDuration() + clusters[k].representative->getDuration());
         delete tempNode;
       }
@@ -602,9 +610,9 @@ namespace TraceAnalysis {
     return false;
   }
   
-  TCTProfileNode::TCTProfileNode(const TCTACFGNode& node) : TCTANode (node, Prof) {
+  TCTNonCFGProfileNode::TCTNonCFGProfileNode(const TCTACFGNode& node) : TCTANode (node, NonCFGProf) {
     for (int k = 0; k < node.getNumChild(); k++) {
-      TCTProfileNode* child = TCTProfileNode::newProfileNode(node.getChild(k));
+      TCTNonCFGProfileNode* child = TCTNonCFGProfileNode::newNonCFGProfileNode(node.getChild(k));
       child->getTime().toProfileTime();
       if (childMap.find(child->id) == childMap.end())
         childMap[child->id] = child;
@@ -615,15 +623,17 @@ namespace TraceAnalysis {
     }
   }
   
-  TCTProfileNode::TCTProfileNode(const TCTLoopNode& loop) : TCTANode (loop, Prof) {
+  TCTNonCFGProfileNode::TCTNonCFGProfileNode(const TCTLoopNode& loop) : TCTANode (loop, NonCFGProf) {
+    print_msg(MSG_PRIO_MAX, "ERROR: conversion from TCTLoopNode to TCTNonCFGProfileNode shouldn't been called.\n");
+    
     if (loop.getClusterNode() != NULL) {
       for (int k = 0; k < loop.getClusterNode()->getNumClusters(); k++) {
-        TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.getClusterNode()->getClusterRepAt(k));
+        TCTNonCFGProfileNode* child = TCTNonCFGProfileNode::newNonCFGProfileNode(loop.getClusterNode()->getClusterRepAt(k));
         child->setDepth(this->depth);
         child->amplify(child->weight, weight, getTime());
         for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
           if (childMap.find(iit->second->id) == childMap.end())
-            childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+            childMap[iit->second->id] = (TCTNonCFGProfileNode*) iit->second->duplicate();
           else
             childMap[iit->second->id]->merge(iit->second);
         }
@@ -632,11 +642,11 @@ namespace TraceAnalysis {
     }
     
     if (loop.getRejectedIterations() != NULL) {
-      TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.getRejectedIterations());
+      TCTNonCFGProfileNode* child = TCTNonCFGProfileNode::newNonCFGProfileNode(loop.getRejectedIterations());
       child->setDepth(this->depth);
       for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
         if (childMap.find(iit->second->id) == childMap.end())
-          childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+          childMap[iit->second->id] = (TCTNonCFGProfileNode*) iit->second->duplicate();
         else
           childMap[iit->second->id]->merge(iit->second);
       }
@@ -644,11 +654,11 @@ namespace TraceAnalysis {
     }
     
     if (loop.hasPendingIteration()) {
-      TCTProfileNode* child = TCTProfileNode::newProfileNode(loop.getPendingIteration());
+      TCTNonCFGProfileNode* child = TCTNonCFGProfileNode::newNonCFGProfileNode(loop.getPendingIteration());
       child->setDepth(this->depth);
       for (auto iit = child->childMap.begin(); iit != child->childMap.end(); iit++) {
         if (childMap.find(iit->second->id) == childMap.end())
-          childMap[iit->second->id] = (TCTProfileNode*) iit->second->duplicate();
+          childMap[iit->second->id] = (TCTNonCFGProfileNode*) iit->second->duplicate();
         else
           childMap[iit->second->id]->merge(iit->second);
       }
@@ -656,18 +666,18 @@ namespace TraceAnalysis {
     }
   }
   
-  TCTProfileNode::TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap) : TCTANode (prof) {
+  TCTNonCFGProfileNode::TCTNonCFGProfileNode(const TCTNonCFGProfileNode& prof, bool copyChildMap) : TCTANode (prof) {
     if (copyChildMap)
       for (auto it = prof.childMap.begin(); it != prof.childMap.end(); it++)
-        childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+        childMap[it->second->id] = (TCTNonCFGProfileNode*) it->second->duplicate();
   }
   
-  void TCTProfileNode::addChild(TCTANode* child) {
-    TCTProfileNode* profChild = NULL; 
-    if (child->type == TCTANode::Prof)
-      profChild = (TCTProfileNode*) child;
+  void TCTNonCFGProfileNode::addChild(TCTANode* child) {
+    TCTNonCFGProfileNode* profChild = NULL; 
+    if (child->type == TCTANode::NonCFGProf)
+      profChild = (TCTNonCFGProfileNode*) child;
     else {
-      profChild = TCTProfileNode::newProfileNode(child);
+      profChild = TCTNonCFGProfileNode::newNonCFGProfileNode(child);
       delete child;
     }
 
@@ -679,18 +689,26 @@ namespace TraceAnalysis {
     }
   }
   
-  void TCTProfileNode::merge(const TCTProfileNode* other) {
+  void TCTNonCFGProfileNode::merge(const TCTNonCFGProfileNode* other) {
     retCount += other->retCount;
     time.addTime(other->time);
+    
+    /*
+    if (getMaxDuration() - getMinDuration() > getSamplingPeriod() * MAX_SAMPLE_NOISE) {
+      Time mid = getDuration();
+      Time samplingPeriod = getSamplingPeriod();
+      getTime().setDuration(mid - MAX_SAMPLE_NOISE * samplingPeriod / 2, mid + MAX_SAMPLE_NOISE * samplingPeriod / 2);
+    }*/
+    
     for (auto it = other->childMap.begin(); it != other->childMap.end(); it++) {
       if (childMap.find(it->second->id) == childMap.end())
-        childMap[it->second->id] = (TCTProfileNode*) it->second->duplicate();
+        childMap[it->second->id] = (TCTNonCFGProfileNode*) it->second->duplicate();
       else
         childMap[it->second->id]->merge(it->second);
     }
   }
   
-  Time TCTProfileNode::getExclusiveDuration() const {
+  Time TCTNonCFGProfileNode::getExclusiveDuration() const {
     Time exclusive = getDuration();
     for (auto it = childMap.begin(); it != childMap.end(); it++)
       if (it->second->isLoop())
@@ -700,17 +718,17 @@ namespace TraceAnalysis {
     return exclusive;
   }
   
-  void TCTProfileNode::getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const {
+  void TCTNonCFGProfileNode::getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const {
     minExclusive = getMinDuration();
     maxExclusive = getMaxDuration();
     for (auto it = childMap.begin(); it != childMap.end(); it++) {
-      TCTProfileNode* child = it->second;
+      TCTNonCFGProfileNode* child = it->second;
       minExclusive -= child->getMaxDuration();
       maxExclusive -= child->getMinDuration();
     }
   }
   
-  void TCTProfileNode::amplify(long amplifier, long divider, const TCTTime& parent_time) {  
+  void TCTNonCFGProfileNode::amplify(long amplifier, long divider, const TCTTime& parent_time) {  
     getTime().setNumSamples(getNumSamples() * amplifier / divider);
     getTime().setDuration(getMinDuration() * amplifier / divider, getMaxDuration() * amplifier / divider);
     if (getTime().getMaxDuration() > parent_time.getMaxDuration()) {
@@ -774,6 +792,27 @@ namespace TraceAnalysis {
     maxGap = currStartInclusive - lastEndInclusive - 1;
   }
   */
+  
+  TCTACFGNode::TCTACFGNode(const TCTACFGNode& orig) : TCTANode(orig), isProfile(orig.isProfile) {
+    unordered_map<TCTID, TCTANode*> childTable;
+    for (auto it = orig.children.begin(); it != orig.children.end(); it++) {
+      children.push_back((*it)->duplicate());
+      childTable[children.back()->id] = children.back();
+    }
+    childTable[dummyBeginNode.id] = &dummyBeginNode;
+    childTable[dummyEndNode.id] = &dummyEndNode;
+
+    for (auto it = orig.outEdges.begin(); it != orig.outEdges.end(); it++) {
+      outEdges[it->first] = unordered_set<Edge*>();
+      for (auto eit = it->second.begin(); eit != it->second.end(); eit++) {
+        Edge* newEdge = (*eit)->duplicate();
+        newEdge->setSrc(childTable[newEdge->getSrc()->id]);
+        newEdge->setDst(childTable[newEdge->getDst()->id]);
+        outEdges[it->first].insert(newEdge);
+      }
+    }
+  }
+  
   Time TCTACFGNode::getExclusiveDuration() const {
     Time exclusive = getDuration();
     for (auto it = children.begin(); it != children.end(); it++)
@@ -832,6 +871,70 @@ namespace TraceAnalysis {
     }
   }
   
-  TCTFunctionTraceNode dummyBeginNode(-1, -1, "dummy begin node", -1, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
-  TCTFunctionTraceNode dummyEndNode(-2, -2, "dummy end node", -2, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
+  void TCTACFGNode::toCFGProfile() {
+    if (isProfile)
+      return;
+    
+    isProfile = true;
+    for (uint i = 0; i < children.size(); i++) {
+      children[i]->getTime().toProfileTime();
+      if (children[i]->type == TCTANode::Loop) {
+        TCTLoopNode* loop = (TCTLoopNode*)children[i];
+        children[i] = loop->getProfileNode()->duplicate();
+
+        for (auto it = outEdges.begin(); it != outEdges.end(); it++)
+          for (auto eit = it->second.begin(); eit != it->second.end(); eit++) {
+            if ((*eit)->getSrc() == loop)
+              (*eit)->setSrc(children[i]);
+            if ((*eit)->getDst() == loop)
+              (*eit)->setDst(children[i]);
+          }
+        
+        delete loop;
+      }
+      else if (children[i]->type != TCTANode::NonCFGProf)
+        ((TCTACFGNode*)children[i])->toCFGProfile();
+    }
+  }
+  
+  TCTFunctionTraceNode TCTACFGNode::dummyBeginNode(-1, -1, "dummy begin node", -1, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
+  TCTFunctionTraceNode TCTACFGNode::dummyEndNode(-2, -2, "dummy end node", -2, NULL, 0, SEMANTIC_LABEL_COMPUTATION);
+  
+  /*
+  TCTCFGProfileNode* TCTCFGProfileNode::newCFGProfileNode(const TCTANode* node) {
+    if (node->type == TCTANode::NonCFGProf)
+      return NULL;
+    if (node->type == TCTANode::Loop) {
+      if (((TCTLoopNode*)node)->profileNode != NULL)
+        return newCFGProfileNode(((TCTLoopNode*)node)->profileNode);
+      else 
+        return new TCTCFGProfileNode(*((TCTLoopNode*)node));
+    }
+    return new TCTCFGProfileNode(*((TCTACFGNode*)node));
+  }
+
+  TCTCFGProfileNode::TCTCFGProfileNode(const TCTACFGNode& node) : TCTACFGNode (node, CFGProf) {
+    unordered_map<TCTID, TCTANode*> childTable;
+    for (int idx = 0; idx < node.getNumChild(); idx++) {
+      children.push_back(node.getChild(idx)->duplicate());
+      childTable[children.back()->id] = children.back();
+    }
+    childTable[dummyBeginNode.id] = &dummyBeginNode;
+    childTable[dummyEndNode.id] = &dummyEndNode;
+
+    for (auto it = node.outEdges.begin(); it != node.outEdges.end(); it++) {
+      outEdges[it->first] = unordered_set<Edge*>();
+      for (auto eit = it->second.begin(); eit != it->second.end(); eit++) {
+        Edge* newEdge = (*eit)->duplicate();
+        newEdge->setSrc(childTable[newEdge->getSrc()->id]);
+        newEdge->setDst(childTable[newEdge->getDst()->id]);
+        outEdges[it->first].insert(newEdge);
+      }
+    }
+  }
+  
+  TCTCFGProfileNode::TCTCFGProfileNode(const TCTLoopNode& node) : TCTACFGNode (node, CFGProf) {
+    
+  }
+  */
 }

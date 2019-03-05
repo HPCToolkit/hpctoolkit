@@ -125,7 +125,7 @@ namespace TraceAnalysis {
     ar.template register_type<TCTRootNode>();
     ar.template register_type<TCTLoopNode>();
     ar.template register_type<TCTClusterNode>();
-    ar.template register_type<TCTProfileNode>();
+    ar.template register_type<TCTNonCFGProfileNode>();
   }
   #ifdef BOOST_ARCHIVE_TEXT_OARCHIVE_HPP || BOOST_ARCHIVE_TEXT_IARCHIVE_HPP
     template void register_class<text_oarchive>(text_oarchive& ar);
@@ -248,6 +248,7 @@ namespace TraceAnalysis {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & children;
     ar & outEdges;
+    ar & isProfile;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTACFGNode)
   
@@ -291,11 +292,11 @@ namespace TraceAnalysis {
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTClusterNode)
           
   template<class Archive>
-  void TCTProfileNode::serialize(Archive& ar, const unsigned int version) {
+  void TCTNonCFGProfileNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & childMap;
   }
-  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTProfileNode)
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTNonCFGProfileNode)
           
   // ***************************************************************************
   // Implementation of serialization functions in TCT-Cluster.hpp

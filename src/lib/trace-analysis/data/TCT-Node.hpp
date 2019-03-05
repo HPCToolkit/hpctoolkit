@@ -134,7 +134,7 @@ namespace TraceAnalysis {
   class TCTIterationTraceNode;
   class TCTLoopNode;
   class TCTClusterNode;
-  class TCTProfileNode;
+  class TCTNonCFGProfileNode;
   class TCTRootNode;
 
   // Temporal Context Tree Abstract Node
@@ -145,7 +145,7 @@ namespace TraceAnalysis {
       Func,
       Iter,
       Loop,
-      Prof,
+      NonCFGProf,
       Cluster
     };
     
@@ -286,6 +286,8 @@ namespace TraceAnalysis {
       plm.initDurationMetric(this, weight);
     }
     
+    virtual void setDepth(int depth) = 0;
+    
     // returns a pointer to a duplicate of this object. 
     // Caller responsible for deallocating the duplicate.
     virtual TCTANode* duplicate() const = 0;
@@ -336,6 +338,9 @@ namespace TraceAnalysis {
     friend class boost::serialization::access;
     
   public:
+    static TCTFunctionTraceNode dummyBeginNode;
+    static TCTFunctionTraceNode dummyEndNode;
+  
     class Edge {
       friend class boost::serialization::access;
       
@@ -387,19 +392,12 @@ namespace TraceAnalysis {
   protected:
     // Constructor for serialization only.
     TCTACFGNode(NodeType type) : TCTANode(type) {}
-    
+
   public:
     TCTACFGNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
-      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
-    TCTACFGNode(const TCTACFGNode& orig) : TCTANode(orig) {
-      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
-        children.push_back((*it)->duplicate());
-      for (auto it = orig.outEdges.begin(); it != orig.outEdges.end(); it++) {
-        outEdges[it->first] = unordered_set<Edge*>();
-        for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
-          outEdges[it->first].insert((*eit)->duplicate());
-      }
-    }
+      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel), isProfile(false) {}
+    TCTACFGNode(const TCTACFGNode& orig);
+
     virtual ~TCTACFGNode() {
       for (auto it = children.begin(); it != children.end(); it++)
         delete (*it);
@@ -434,10 +432,8 @@ namespace TraceAnalysis {
     virtual const unordered_set<TCTACFGNode::Edge*>& getEntryEdges() const;
     
     virtual const unordered_set<TCTACFGNode::Edge*>& getOutEdges(int idx) const {
-      if (outEdges.find(children[idx]->id) == outEdges.end()) {
-        print_msg(MSG_PRIO_MAX, "ERROR: no set located.");
-        return unordered_set<TCTACFGNode::Edge*>();
-      }
+      if (outEdges.find(children[idx]->id) == outEdges.end())
+        print_msg(MSG_PRIO_MAX, "ERROR: no edge set located in TCTACFGNode::getOutEdges().");
       return outEdges.at(children[idx]->id);
     }
     
@@ -477,12 +473,26 @@ namespace TraceAnalysis {
     
     virtual void finishInit();
     
+    virtual void toCFGProfile();
+    
+    virtual bool isCFGProfile() const {
+      return isProfile;
+    }
+
+    virtual void setDepth(int depth) {
+      this->depth = depth;
+      for (auto child : children)
+        child->setDepth(depth+1);
+    }
+      
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
     vector<TCTANode*> children;
     //          Source ID
     unordered_map<TCTID, unordered_set<Edge*>> outEdges;
+    
+    bool isProfile;
     
     virtual void accumulateSemanticDurations(Time* durations) {
       for (int i = 0; i < getNumChild(); i++)
@@ -535,7 +545,7 @@ namespace TraceAnalysis {
     vector<TCTANode*> children;
 
   };*/
-  
+
   // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTACFGNode {
     friend class boost::serialization::access;
@@ -558,10 +568,7 @@ namespace TraceAnalysis {
       return new TCTFunctionTraceNode(id.id, id.procID, name, depth, cfgGraph, ra, semanticLabel);
     }
   };
-  
-  extern TCTFunctionTraceNode dummyBeginNode;
-  extern TCTFunctionTraceNode dummyEndNode;
-  
+
   // Temporal Context Tree Root Node
   class TCTRootNode : public TCTACFGNode {
     friend class boost::serialization::access;
@@ -610,8 +617,37 @@ namespace TraceAnalysis {
     }
   };
   
+  /*
+  class TCTCFGProfileNode : public TCTACFGNode {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    TCTCFGProfileNode() : TCTACFGNode(CFGProf) {}
+    
+  public:
+    static TCTCFGProfileNode* newCFGProfileNode(const TCTANode* node);
+    
+    virtual TCTANode* duplicate() const {
+      return new TCTCFGProfileNode(*this);
+    }
+    
+    virtual TCTANode* voidDuplicate() const {
+      return new TCTCFGProfileNode(id.id, id.procID, name, depth, cfgGraph, ra, semanticLabel);
+    }
+    
+  private:
+    TCTCFGProfileNode(const TCTACFGNode& node);
+    TCTCFGProfileNode(const TCTLoopNode& node);
+    TCTCFGProfileNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
+      TCTACFGNode(CFGProf, id, procID, name, depth, cfgGraph, ra, semanticLabel) {
+      getTime().toProfileTime();
+    }
+  };*/
+  
   class TCTLoopNode : public TCTANode {
-    friend class TCTProfileNode;
+    friend class TCTNonCFGProfileNode;
     friend class boost::serialization::access;
   private:
     template<class Archive>
@@ -689,17 +725,23 @@ namespace TraceAnalysis {
     
     virtual void initPerfLossMetric();
     
-    TCTProfileNode* getProfileNode();
+    virtual void setDepth(int depth) {
+      print_msg(MSG_PRIO_MAX, "ERROR: TCTLoopNode::setDepth() is not implemented.\n");
+    }
     
-    const TCTProfileNode* getProfileNode() const {
-      return const_cast<TCTLoopNode*>(this)->getProfileNode();
+    TCTANode* getProfileNode() {
+      return profileNode;
+    }
+    
+    const TCTANode* getProfileNode() const {
+      return profileNode;
     }
     
     const TCTClusterNode* getClusterNode() const {
       return clusterNode;
     }
     
-    const TCTProfileNode* getRejectedIterations() const {
+    const TCTANode* getRejectedIterations() const {
       return rejectedIterations;
     }
     
@@ -727,11 +769,11 @@ namespace TraceAnalysis {
     // Stores clusters of accepted loop iterations
     TCTClusterNode* clusterNode;
     // Stores all rejected iterations (merged into a Profile node).
-    TCTProfileNode* rejectedIterations;
+    TCTANode* rejectedIterations;
     
     // Stores a profile of the entire loop.
     // diffScore of this node quantifies the difference across multiple instances of this loop (when this loop is nested in another loop).
-    TCTProfileNode* profileNode;
+    TCTANode* profileNode;
     
     // Return true if we are confident that children of the pending iteration
     // belong to one iteration in the execution.
@@ -814,6 +856,10 @@ namespace TraceAnalysis {
         clusters[i].representative->initPerfLossMetric();
     }
     
+    virtual void setDepth(int depth) {
+      print_msg(MSG_PRIO_MAX, "ERROR: TCTClusterNode::setDepth() is not implemented.\n");
+    }
+    
     virtual string toString(int maxDepth, Time minDuration, double minDiffScore) const;
     
   protected:
@@ -832,38 +878,34 @@ namespace TraceAnalysis {
     TCTANode* avgRep;
   };
   
-  class TCTProfileNode : public TCTANode {
+  class TCTNonCFGProfileNode : public TCTANode {
     friend class boost::serialization::access;
   private:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version);
     // Constructor for serialization only.
-    TCTProfileNode() : TCTANode(Prof) {}  
+    TCTNonCFGProfileNode() : TCTANode(NonCFGProf) {}  
     
   public:
-    static TCTProfileNode* newProfileNode(const TCTANode* node) {
-      if (node->type == TCTANode::Prof)
-        return new TCTProfileNode(*((TCTProfileNode*)node), true);
-      if (node->type == TCTANode::Loop) {
-        if (((TCTLoopNode*)node)->profileNode != NULL)
-          return new TCTProfileNode(*(((TCTLoopNode*)node)->profileNode), true);
-        else 
-          return new TCTProfileNode(*((TCTLoopNode*)node));
-      }
-      return new TCTProfileNode(*((TCTACFGNode*)node));
+    static TCTNonCFGProfileNode* newNonCFGProfileNode(const TCTANode* node) {
+      if (node->type == TCTANode::NonCFGProf)
+        return new TCTNonCFGProfileNode(*((TCTNonCFGProfileNode*)node), true);
+      if (node->type == TCTANode::Loop)
+          return newNonCFGProfileNode(((TCTLoopNode*)node)->profileNode);
+      return new TCTNonCFGProfileNode(*((TCTACFGNode*)node));
     }
     
-    virtual ~TCTProfileNode() {
+    virtual ~TCTNonCFGProfileNode() {
       for (auto it = childMap.begin(); it != childMap.end(); it++)
         delete it->second;
     }
     
     virtual TCTANode* duplicate() const {
-      return new TCTProfileNode(*this, true);
+      return new TCTNonCFGProfileNode(*this, true);
     };
     
     virtual TCTANode* voidDuplicate() const {
-      TCTProfileNode* ret = new TCTProfileNode(*this, false);
+      TCTNonCFGProfileNode* ret = new TCTNonCFGProfileNode(*this, false);
       ret->retCount = 0;
       ret->time.clear();
       ret->diffScore.clear();
@@ -873,7 +915,7 @@ namespace TraceAnalysis {
     
     virtual void addChild(TCTANode* child);
     
-    virtual const map<TCTID, TCTProfileNode*>& getChildMap() const {
+    virtual const map<TCTID, TCTNonCFGProfileNode*>& getChildMap() const {
       return childMap;
     }
     
@@ -883,7 +925,7 @@ namespace TraceAnalysis {
     
     // Merge with the input profile node. Deallocation responsibility is NOT transfered.
     // This node won't hold any reference to the input node or its children.
-    virtual void merge(const TCTProfileNode* other);
+    virtual void merge(const TCTNonCFGProfileNode* other);
     
     virtual void finalizeEnclosingLoops() {}
     
@@ -905,11 +947,11 @@ namespace TraceAnalysis {
     
   protected:
     // Map id to child profile node.
-    map<TCTID, TCTProfileNode*> childMap;
+    map<TCTID, TCTNonCFGProfileNode*> childMap;
     
-    TCTProfileNode(const TCTACFGNode& node);
-    TCTProfileNode(const TCTLoopNode& loop);
-    TCTProfileNode(const TCTProfileNode& prof, bool copyChildMap);
+    TCTNonCFGProfileNode(const TCTACFGNode& node);
+    TCTNonCFGProfileNode(const TCTLoopNode& loop);
+    TCTNonCFGProfileNode(const TCTNonCFGProfileNode& prof, bool copyChildMap);
     
     void setDepth(int depth) {
       this->depth = depth;
