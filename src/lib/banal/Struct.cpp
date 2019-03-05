@@ -665,7 +665,7 @@ makeStructure(string filename,
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
           printf(" do work item %d\n", i);
-	doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
+	    doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
 	if (output_mtx.try_lock()) {
@@ -846,7 +846,7 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
       ProcInfo * pinfo = pit->second;
 
       if (! pinfo->gap_only) {
-	Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
+	      Output::printProc(outFile, gapsFile, gaps_filenm, finfo, ginfo, pinfo, *strTab);
       }
       delete pinfo->root;
       pinfo->root = NULL;
@@ -1039,7 +1039,7 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
     ginfo = new GroupInfo(sym_func, start, end, alt_file);
     finfo->groupMap[start] = ginfo;
   }
-
+  cout << "ProcInfo - entry vma: " << pinfo->entry_vma << endl;
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
@@ -1129,7 +1129,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     if (found && sym_func != NULL && region != NULL
 	&& reg_start <= vma && vma < reg_end)
     {
-      cout << "for vma " << hex << vma << dec << " we found the containing function " << endl;
+      cout << "for vma " << hex << vma << dec << " we found the containing function in symtab api " << endl;
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
       string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
@@ -1137,7 +1137,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
       // symtab lets some funcs (_init) spill into the next region
       if (sym_start < reg_end && reg_end < sym_end) {
-	sym_end = reg_end;
+	    sym_end = reg_end;
       }
 
       // line map for symtab func
@@ -1160,13 +1160,18 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	// cases are also valid).
 	//
 	DEBUG_SKEL("(case 1)\n");
-
+    cout << "ParseAPI func start address matches SymtabAPI func start address " << hex << vma << dec << endl;
 	auto mangled_it = sym_func->mangled_names_begin();
 	auto pretty_it = sym_func->pretty_names_begin();
 
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
-
+      auto p = linknm.find("_dyninst");
+      if (linknm.find("_dyninst") != string::npos) {
+         cout << "link name contains _dyninst " << linknm << endl;  
+         linknm.erase(p, string::npos);
+         cout << "after erasing " << linknm << endl;
+      }
 	  if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
 	  }
@@ -1213,6 +1218,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	  // case 2 -- outline func inside symtab func with same file
 	  // name.  use 'outline 0xxxxxx' proc name.
 	  //
+      
 	  DEBUG_SKEL("(case 2)\n");
 
 	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
@@ -1242,6 +1248,11 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       //
       cout << "no symtab symbol claiming this vma " << hex << vma << dec << endl;
       string linknm = func->name();
+      if (linknm.find("_dyninst") != string::npos) {
+         cout << "link name contains _dyninst " << linknm << endl;  
+         linknm.erase(p, string::npos);
+         cout << "after erasing " << linknm << endl;
+      }
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
 
@@ -1366,6 +1377,7 @@ static void
 doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
   long num_funcs = ginfo->procMap.size();
+  printf("doFunctionList called %lu\n", num_funcs);
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
 
@@ -1502,7 +1514,7 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
     for (auto bit = bvec.begin(); bit != bvec.end(); ++bit) {
       Block * block = *bit;
       if (! visited[block]) {
-	doBlock(env, ginfo, func, visited, block, root);
+	    doBlock(env, ginfo, func, visited, block, root);
       }
     }
 
