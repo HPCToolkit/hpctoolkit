@@ -664,7 +664,7 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
-         cout << "do work item " << i << endl; 
+          std::cout << "do work item " << i << std::endl; 
 	doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
