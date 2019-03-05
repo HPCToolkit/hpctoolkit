@@ -500,7 +500,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
       (*mit)->getSourceLines(svec, vma);
       if (! svec.empty()) {
-	break;
+	    break;
       }
     }
   }
@@ -508,6 +508,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
   // a known file and unknown line is now legal, but we require that
   // any line map must contain a file name
   if (! svec.empty() && svec[0]->getFile() == "") {
+      cout << "clearning svec for emtpy file name " << endl;
     svec.clear();
   }
 }
