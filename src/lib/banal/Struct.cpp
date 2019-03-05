@@ -1695,6 +1695,7 @@ static void
 doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 	BlockSet & visited, Block * block, TreeNode * root)
 {
+    cout << "do block in for function " << func->name() << endl;
   if (block == NULL || visited[block]) {
     return;
   }
@@ -1713,6 +1714,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   block->getInsns(imap);
 
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
+     cout << "iterating instructions in the block of func " << func->name() << hex << " instr addr: " << vma << dec << endl;
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
