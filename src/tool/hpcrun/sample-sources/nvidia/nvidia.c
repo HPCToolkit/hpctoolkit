@@ -341,8 +341,8 @@ CUpti_ActivityKind
 kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
-  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
-  CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
+//  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
+//  CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
   CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };                                   
@@ -671,16 +671,18 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     cupti_monitoring_set(runtime_activities, true);
 
-    // Specify desired monitoring
-    if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
-      cupti_pc_sampling_enable();
-    } else {
-      cupti_monitoring_set(kernel_invocation_activities, true);
+    //// TODO(keren) ppecify desired monitoring
+    //if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
+    //} else {
+    //}
 
-      cupti_monitoring_set(kernel_execution_activities, true);
-                        
-      cupti_monitoring_set(data_motion_explicit_activities, true);
-    }
+    cupti_pc_sampling_enable();
+
+    cupti_monitoring_set(kernel_invocation_activities, true);
+
+    cupti_monitoring_set(kernel_execution_activities, true);
+
+    cupti_monitoring_set(data_motion_explicit_activities, true);
 
     cupti_metrics_init();
 
