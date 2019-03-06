@@ -508,8 +508,8 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
   // a known file and unknown line is now legal, but we require that
   // any line map must contain a file name
   if (! svec.empty() && svec[0]->getFile() == "") {
-      cout << "clearning svec for emtpy file name " << endl;
-    svec.clear();
+    //  cout << "clearing svec for emtpy file name " << endl;
+    //svec.clear();
   }
 }
 
