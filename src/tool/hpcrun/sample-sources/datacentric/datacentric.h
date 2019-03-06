@@ -70,10 +70,19 @@
 
 void datacentric_init();
 
+// ----------------------------------------------
 // to be implemented by specific hardware
+// ----------------------------------------------
+
+// called to create events and the metric has to be stored by store_events_and_info
 int datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period);
 
+// called when a sample occurs
+void
+datacentric_hw_handler(perf_mmap_data_t *mmap_data,
+                       cct_node_t *datacentric_node,
+                       cct_node_t *sample_node);
 
 #endif // sample_source_memleak_h
 
