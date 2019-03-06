@@ -1174,12 +1174,12 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
          linknm.erase(p, string::npos);
          cout << "after erasing " << linknm << endl;
       }
-	  if (opts.ourDemangle) {
+	  //if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
-	  }
-	  else if (pretty_it != sym_func->pretty_names_end()) {
-	    prettynm = *pretty_it;
-	 }
+	 // }
+	  //else if (pretty_it != sym_func->pretty_names_end()) {
+	  //  prettynm = *pretty_it;
+	// }
 	}
 	if (is_shared) {
 	  prettynm += " (" + basename + ")";
