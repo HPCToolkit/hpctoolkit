@@ -373,6 +373,7 @@ public:
   {
     // try cache first
     if (start <= vma && vma < end) {
+      cout << hex << "[start = " << start << " <= " << vma << " < " << end << "]" << dec << endl;
       filenm = cache_filenm;
       line = cache_line;
       return true;
