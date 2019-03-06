@@ -113,6 +113,10 @@ get_intel_cpu_type(struct cpuid_type_s *cpuid)
     case 87:
             type = INTEL_KNL;
             break;
+    case 0x7e:
+            type = INTEL_ICL;
+            break;
+
     }
   }
   return type;
