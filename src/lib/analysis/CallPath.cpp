@@ -533,9 +533,10 @@ overlayStaticStructure(Prof::CCT::ANode* node,
     if (n_dyn && (n_dyn->lmId() == loadmap_lm->id())) {
       using namespace Prof;
 
-      const string* unkProcNm = NULL;
+      const string* unkProcNm = &Prof::Struct::Tree::UnknownProcNm;
       if (n_dyn->isSecondarySynthRoot()) {
-	unkProcNm = &Struct::Tree::PartialUnwindProcNm;
+        unkProcNm = &Struct::Tree::PartialUnwindProcNm;
+
       } else if (n_dyn->hpcrun_node_type() == NODE_TYPE_GLOBAL_VARIABLE) {
         // datacentric: case for global variable, if the address of the variable
         // is not recognized, we need to label it as "<unknown variable> instead of

@@ -84,7 +84,8 @@ namespace Struct {
   // bunch of other stuff as well as OA, etc.
 
   Prof::Struct::Stmt*
-  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
+  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma,
+      const string* unknownProcNm);
 
   Prof::Struct::Stmt*
   demandStmtStructure(Prof::Struct::LM* lmStrct, Prof::Struct::Proc* procStrct,

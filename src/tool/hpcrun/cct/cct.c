@@ -468,7 +468,6 @@ void
 hpcrun_cct_set_node_allocation(cct_node_t *node)
 {
   node->node_type |= NODE_TYPE_ALLOCATION;
-  hpcrun_cct_retain(node);
 }
 
 bool

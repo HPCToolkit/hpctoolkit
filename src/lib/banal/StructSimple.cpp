@@ -103,7 +103,7 @@ using namespace Prof;
 // makeStructureSimple: Uses the line map to make structure
 Prof::Struct::Stmt*
 BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
-				   BinUtil::LM* lm, VMA vma)
+				   BinUtil::LM* lm, VMA vma, const string* unknownProcNm)
 {
   string procnm, filenm;
   SrcFile::ln line = Prof::Struct::Tree::UnknownLine;
@@ -117,7 +117,7 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   if (procnm.empty()) {
     std::stringstream buf;
 
-    buf << Prof::Struct::Tree::UnknownProcNm
+    buf << *unknownProcNm
 	<< " 0x" << std::hex << vma << std::dec
 	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
 
