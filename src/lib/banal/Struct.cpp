@@ -93,6 +93,7 @@
 #include <Instruction.h>
 #include <Module.h>
 #include <Region.h>
+#include <StringTable.h>
 #include <Symtab.h>
 
 #include <include/hpctoolkit-config.h>
