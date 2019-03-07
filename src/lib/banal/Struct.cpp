@@ -618,8 +618,8 @@ makeStructure(string filename,
 	    Module * mod = modVec[i];
         cout << "parse line information for mod: " << mod->fullName() << endl;
 	    auto lineinfo = mod->parseLineInformation();
-        auto stringTblPtr = lineinfo->getStrings();
-        cout << *stringTblPtr << endl;
+       // auto stringTblPtr = lineinfo->getStrings();
+       //cout << *stringTblPtr << endl;
       }
     }  // end parallel
 
