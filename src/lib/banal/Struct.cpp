@@ -91,6 +91,7 @@
 #include <CodeSource.h>
 #include <Function.h>
 #include <Instruction.h>
+#include <LineInformation.h>
 #include <Module.h>
 #include <Region.h>
 #include <StringTable.h>
