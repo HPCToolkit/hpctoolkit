@@ -484,6 +484,7 @@ LoopInfoLessThan(LoopInfo * l1, LoopInfo * l2)
 static void
 getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 {
+    cout << "getStatement called " << hex << vma << dec << endl;
   svec.clear();
 
   // try the Module in sym_func first as a hint
@@ -514,6 +515,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     cout << "clearing svec for empty file name " << endl;
     svec.clear();
   }
+  cout << "end get statement " << hex << vma << dec << endl;
 }
 
 //----------------------------------------------------------------------
