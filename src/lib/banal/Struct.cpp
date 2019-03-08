@@ -511,10 +511,12 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
   // a known file and unknown line is now legal, but we require that
   // any line map must contain a file name
+   /*
   if (! svec.empty() && svec[0]->getFile() == "") {
     cout << "clearing svec for empty file name " << endl;
     svec.clear();
   }
+  */
   cout << "end get statement " << hex << vma << dec << endl;
 }
 
@@ -988,7 +990,6 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   for (;;) {
     // invariant: vma does not have line info, but next might
     Offset next = vma + step;
-    cout << "stepping vma: " << hex << next << dec << endl;
     if (next >= end) {
       break;
     }
@@ -1154,12 +1155,12 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       if (! svec.empty()) {
           cout << " getProcLineMap: svec size: " << svec.size() << hex << " vma: " << sym_start << dec << endl;
 	    filenm = svec[0]->getFile();
+        cout << "* filename: " << filenm << endl;
 	    line = svec[0]->getLine();
 	    RealPathMgr::singleton().realpath(filenm);
      } else {
           cerr << " getProcLineMap returns empty statement symbol start:  " << hex << sym_start << dec << endl;
       }
-      cout << "where is bad alloc " << endl;
       if (vma == sym_start) {
 	//
 	// case 1 -- group leader of a valid symtab func.  take proc
