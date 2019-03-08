@@ -511,12 +511,10 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 
   // a known file and unknown line is now legal, but we require that
   // any line map must contain a file name
-   /*
   if (! svec.empty() && svec[0]->getFile() == "") {
     cout << "clearing svec for empty file name " << endl;
     svec.clear();
   }
-  */
   cout << "end get statement " << hex << vma << dec << endl;
 }
 
