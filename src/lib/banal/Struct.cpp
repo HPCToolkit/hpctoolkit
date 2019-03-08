@@ -1157,7 +1157,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
      } else {
           cerr << " getProcLineMap returns empty statement symbol start:  " << hex << sym_start << dec << endl;
       }
-
+      cout << "where is bad alloc " << endl;
       if (vma == sym_start) {
 	//
 	// case 1 -- group leader of a valid symtab func.  take proc
