@@ -141,7 +141,7 @@
   macro("EM_TIME (us)",    11)  
 
 #define FORALL_SYNC(macro) \
-  macro("SYNC_UNKNWON (us)",     0) \
+  macro("SYNC_UNKNOWN (us)",     0) \
   macro("SYNC_EVENT (us)",       1) \
   macro("SYNC_STREAM (us)",      2) \
   macro("SYNC_STREAM_WAIT (us)", 3) \
