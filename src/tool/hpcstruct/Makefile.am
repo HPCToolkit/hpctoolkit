@@ -143,10 +143,15 @@ endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
+GENHEADERS = $(srcdir)/cubins-analysis.h
+
 #----------------------------------------------------------------------
 
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
+
+noinst_HEADERS = $(GENHEADERS)
+BUILT_SOURCES = $(GENHEADERS)
 
 bin_SCRIPTS = hpcstruct
 pkglibexec_SCRIPTS = dotgraph
@@ -162,8 +167,17 @@ dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
 dotgraph_bin_LDADD    = $(DOT_LDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
+#############################################################################
+# Other rules
+#############################################################################
 
-#----------------------------------------------------------------------
+$(srcdir)/%.h : $(srcdir)/%.txt
+	$(srcdir)/stringify.py < $<  > $@
+
+
+#############################################################################
+# Common rules
+#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.rules
 

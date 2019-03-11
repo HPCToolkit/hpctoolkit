@@ -181,6 +181,10 @@ Options: Output:\n\
 //  --Li : Select the opposite of the --loop-intvl default.
 //  --Lf : Select the opposite of the --loop-fwd-subst default.
 
+static const char* cubins_analysis_makefile =
+#include "cubins-analysis.h"
+;
+
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
@@ -463,12 +467,13 @@ Args::parse(int argc, const char* const argv[])
 
     if (is_directory(input_name)) {
       // parse cubins
-      auto structs_dir = input_name + "/structs";
       auto cubins_dir = input_name + "/cubins";
       DIR *dir;
-      struct dirent *ent;
       if ((dir = opendir(cubins_dir.c_str())) != NULL) {
+	auto structs_dir = input_name + "/structs";
         mkdir(structs_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+#if 0
+	struct dirent *ent;
         /* append files within the directory */
         while ((ent = readdir(dir)) != NULL) {
           std::string file_name = std::string(ent->d_name);
@@ -485,6 +490,27 @@ Args::parse(int argc, const char* const argv[])
             }
           }
         }
+#else
+	// use "make" to launch parallel analysis of a directory full of cubin files
+	auto makefile_name = structs_dir + "/Makefile";
+        FILE *makefile = fopen(makefile_name.c_str(),"w");
+        if (makefile) {
+          size_t len =  strlen(cubins_analysis_makefile);
+          size_t bytes_written = fwrite(cubins_analysis_makefile, (size_t) 1, len, makefile);
+          if (bytes_written == len) {
+	    fclose(makefile);
+
+	    // see cubins-analysis.txt in this directory to understand this command
+            std::string make_cmd = 
+	      "make CUBINS_DIR=" + cubins_dir + " STRUCTS_DIR=" + structs_dir + 
+	      " MAKEFILE_NAME=" + makefile_name + " -f " + makefile_name;
+
+            system(make_cmd.c_str());
+          } else {
+            fclose(makefile);
+          }
+        }
+#endif
         closedir(dir);
       }
     } else {
