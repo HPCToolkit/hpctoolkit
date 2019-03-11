@@ -60,7 +60,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CUBINS_DIR)/%
 #    invoke make recursively with supplementary arguments
 #-------------------------------------------------------------------------------
 default:
-	@make -k -j --silent analyze -f $(MAKEFILE_NAME) $(MAKEFLAGS)
+	@make -k -j --silent analyze
 
 
 #-------------------------------------------------------------------------------

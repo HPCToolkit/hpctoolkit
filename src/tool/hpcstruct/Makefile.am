@@ -143,7 +143,9 @@ endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-GENHEADERS = $(srcdir)/cubins-analysis.h
+GENHEADERS = \
+	$(srcdir)/cubins-analysis.h \
+	$(srcdir)/usage.h
 
 #----------------------------------------------------------------------
 

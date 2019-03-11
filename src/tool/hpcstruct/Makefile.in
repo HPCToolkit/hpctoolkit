@@ -582,7 +582,10 @@ DOT_LDADD = \
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)
 MYCLEAN = @HOST_LIBTREPOSITORY@
-GENHEADERS = $(srcdir)/cubins-analysis.h
+GENHEADERS = \
+	$(srcdir)/cubins-analysis.h \
+	$(srcdir)/usage.h
+
 noinst_HEADERS = $(GENHEADERS)
 BUILT_SOURCES = $(GENHEADERS)
 bin_SCRIPTS = hpcstruct
