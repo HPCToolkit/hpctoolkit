@@ -438,11 +438,16 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
         DIR *dir;
         struct dirent *ent;
         if ((dir = opendir(structs_dir.c_str())) != NULL) {
+          auto struct_suffix = std::string("hpcstruct");
           /* append files within the directory */
           while ((ent = readdir(dir)) != NULL) {
-            auto file_name = structs_dir + "/" + std::string(ent->d_name);
-            if (!is_directory(file_name)) {
-              structureFiles.push_back(file_name);
+            auto file_name = std::string(ent->d_name);
+            std::size_t found = file_name.find(struct_suffix);
+            if (found != std::string::npos) {
+              auto path_name = structs_dir + "/" + file_name;
+              if (!is_directory(path_name)) {
+                structureFiles.push_back(path_name);
+              }
             }
           }
           closedir(dir);
