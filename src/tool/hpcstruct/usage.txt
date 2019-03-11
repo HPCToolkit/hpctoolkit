@@ -1,14 +1,16 @@
-Given an application binary or DSO <binary>, hpcstruct recovers the program
-structure of its object code.  Program structure is a mapping of a program's
-static source-level structure to its object code.  By default, hpcstruct
-writes its results to the file 'basename(<binary>).hpcstruct'.  This file
-is typically passed to HPCToolkit's correlation tool hpcprof.
+Given an application binary, a shared library, or an hpctoolkit
+measurement directory collected for a GPU-accelerated program that run
+on NVIDIA GPUs, hpcstruct recovers the program structure of its object
+code.  Program structure is a mapping of a program's static source-level
+structure to its object code.  By default, hpcstruct writes its results
+to the file 'basename(<binary>).hpcstruct'.  This file is typically
+passed to HPCToolkit's correlation tool hpcprof.
 
-hpcstruct is designed primarily for highly optimized binaries created from
-C, C++ and Fortran source code. Because hpcstruct's algorithms exploit a
-binary's debugging information, for best results, binary should be compiled
-with standard debugging information.  See the documentation for more
-information.
+hpcstruct is designed for highly optimized binaries created from
+compiled languages such as C, C++, Fortran, and CUDA source code. Because
+hpcstruct's algorithms exploit a binary's debugging information, for best
+results, binary should be compiled with standard debugging information.
+See the documentation for more information.
 
 Options: General
   -v [<n>], --verbose [<n>]
