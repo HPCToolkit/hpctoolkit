@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
 #include <set>
+#include <sstream>
 
 
 #include <CodeSource.h>
@@ -235,6 +237,19 @@ parseDotCFG
 }
 
 
+std::string
+getFilename
+(
+  void
+)
+{
+  pid_t self = getpid();
+  std::stringstream ss;
+  ss << self;
+  return ss.str();
+}
+
+
 bool
 readCubinCFG
 (
@@ -248,7 +263,7 @@ readCubinCFG
   bool dump_cubin_success = false;
 
   if (nvdisasm_usable) {
-    std::string filename = "tmp";
+    std::string filename = getFilename();
     std::string cubin = filename;
     std::string dot = filename + ".dot";
 
@@ -262,6 +277,8 @@ readCubinCFG
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
+      unlink(dot.c_str());
+      unlink(cubin.c_str());
       return true;
     }
   }
