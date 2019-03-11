@@ -453,6 +453,11 @@ namespace TraceAnalysis {
     if (profileNode != NULL) profileNode->shiftTime(offset);
   }
   
+  void TCTLoopNode::adjustCFGEdgeWeight(int w) {
+    if (profileNode->type == TCTANode::Iter)
+      ((TCTACFGNode*)profileNode)->adjustEdgeWeight(w);
+  }
+  
   TCTClusterNode::TCTClusterNode(const TCTClusterNode& other, bool isVoid) : TCTANode(other) {
     if (isVoid) {
       numClusters = 0;
@@ -833,8 +838,8 @@ namespace TraceAnalysis {
     }
   }
   
-  void TCTACFGNode::finishInit() {
-    TCTANode::finishInit();
+  void TCTACFGNode::completeNodeInit() {
+    TCTANode::completeNodeInit();
     
     outEdges[dummyBeginNode.id] = unordered_set<Edge*>();
     if (getNumChild() > 0) {
@@ -895,6 +900,18 @@ namespace TraceAnalysis {
       else if (children[i]->type != TCTANode::NonCFGProf)
         ((TCTACFGNode*)children[i])->toCFGProfile();
     }
+  }
+  
+  void TCTACFGNode::adjustEdgeWeight(int w) {
+    for (auto it = outEdges.begin(); it != outEdges.end(); it++)
+      for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
+        (*eit)->setWeight(w);
+
+    for (TCTANode* child : children)
+      if (child->type == TCTANode::Iter || child->type == TCTANode::Func)
+        ((TCTACFGNode*) child)->adjustEdgeWeight(w);
+      else if (child->type == TCTANode::Loop)
+        ((TCTLoopNode*) child)->adjustCFGEdgeWeight(w);
   }
   
   TCTFunctionTraceNode TCTACFGNode::dummyBeginNode(-1, -1, "dummy begin node", -1, NULL, 0, SEMANTIC_LABEL_COMPUTATION);

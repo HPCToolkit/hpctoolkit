@@ -180,7 +180,7 @@ namespace TraceAnalysis {
       totalDuration = root->getDuration();
       currentSegment = new ExecutionSegment();
       
-      root->assignDerivedSemanticLabel(NULL);
+      //root->assignDerivedSemanticLabel(NULL);
       computeMetrics(root, SEMANTIC_LABEL_COMPUTATION);
       
       vector<const TCTANode*> callpath;

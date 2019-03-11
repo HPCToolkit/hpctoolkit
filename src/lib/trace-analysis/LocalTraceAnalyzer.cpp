@@ -115,7 +115,7 @@ namespace TraceAnalysis {
       node->getTime().setNumSamples(endSample - startSample);
       node->getTime().setEndTime(endTimeInclusive, endTimeExclusive);
       
-      node->finishInit();
+      node->completeNodeInit();
       
       activeStack.pop_back();
       if (activeStack.size() > 0) activeStack.back()->addChild(node);
@@ -409,7 +409,7 @@ namespace TraceAnalysis {
       delete prev;
 
       root->finalizeEnclosingLoops();
-      root->assignDerivedSemanticLabel(NULL);
+      root->completeThreadTCT();
       //printLoops(root);
 
       return root;

@@ -281,7 +281,8 @@ namespace TraceAnalysis {
       return plm;
     }
     
-    virtual void finishInit() {
+    // complete a node after all its children are added.
+    virtual void completeNodeInit() {
       setRetCount(1);
       plm.initDurationMetric(this, weight);
     }
@@ -370,6 +371,10 @@ namespace TraceAnalysis {
         weight += inc;
       }
       
+      void setWeight(long w) {
+        weight = w;
+      }
+      
       void setSrc(TCTANode* src) {
         this->src = src;
       }
@@ -439,6 +444,8 @@ namespace TraceAnalysis {
     
     virtual void setEdges(vector<Edge*>& edges);
     
+    virtual void adjustEdgeWeight(int w);
+    
     virtual Time getExclusiveDuration() const;
     
     virtual void getExclusiveDuration(Time& minExclusive, Time& maxExclusive) const;
@@ -471,8 +478,9 @@ namespace TraceAnalysis {
         getChild(i)->initPerfLossMetric();
     }
     
-    virtual void finishInit();
+    virtual void completeNodeInit();
     
+    // Convert a trace node to CFG profile node
     virtual void toCFGProfile();
     
     virtual bool isCFGProfile() const {
@@ -500,53 +508,6 @@ namespace TraceAnalysis {
     }
   };
   
-  /*
-  // Temporal Context Tree Abstract Trace Node
-  class TCTATraceNode : public TCTACFGNode {
-    friend class boost::serialization::access;
-  private:
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-  protected:
-    // Constructor for serialization only.
-    TCTATraceNode(NodeType type) : TCTANode(type) {}
- 
-  public:
-    TCTATraceNode(NodeType type, int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
-      TCTANode(type, id, procID, name, depth, cfgGraph, ra, semanticLabel) {}
-    TCTATraceNode(const TCTATraceNode& orig) : TCTANode(orig) {
-      for (auto it = orig.children.begin(); it != orig.children.end(); it++)
-        children.push_back((*it)->duplicate());
-    }
-    virtual ~TCTATraceNode() {
-      for (auto it = children.begin(); it != children.end(); it++)
-        delete (*it);
-    }
-
-    
-    // Return the end time of child #(idx-1). 
-    // When idx = 0, return the start time of the node itself.
-    virtual void getLastChildEndTime(int idx, Time& inclusive, Time& exclusive) const;
-    
-    // Return the start time of child #(idx). 
-    // When idx = getNumChild(), return the end time of the node itself.
-    virtual void getCurrChildStartTime(int idx, Time& exclusive, Time& inclusive) const;
-    
-    // Return the gap between child #(idx-1) and #(idx).
-    // When idx = 0, return the gap before child #0.
-    // When idx = getNumChild(), return the gap after child #(getNumChild()-1).
-    virtual void getGapBeforeChild(int idx, Time& minGap, Time& maxGap) const;
-   
-
-    
-    
-    
-  protected:
-    vector<TCTANode*> children;
-
-  };*/
-
-  // Temporal Context Tree Function Trace Node
   class TCTFunctionTraceNode : public TCTACFGNode {
     friend class boost::serialization::access;
   private:
@@ -590,6 +551,11 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const {
       return new TCTRootNode(id.id, id.procID, name, depth);
     }
+    
+    virtual void completeThreadTCT() {
+      assignDerivedSemanticLabel(NULL);
+      adjustEdgeWeight(1);
+    }
   };
   
   // Temporal Context Tree Iteration Trace Node
@@ -616,35 +582,6 @@ namespace TraceAnalysis {
       return new TCTIterationTraceNode(id.id, name, depth, cfgGraph, semanticLabel);
     }
   };
-  
-  /*
-  class TCTCFGProfileNode : public TCTACFGNode {
-    friend class boost::serialization::access;
-  private:
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version);
-    // Constructor for serialization only.
-    TCTCFGProfileNode() : TCTACFGNode(CFGProf) {}
-    
-  public:
-    static TCTCFGProfileNode* newCFGProfileNode(const TCTANode* node);
-    
-    virtual TCTANode* duplicate() const {
-      return new TCTCFGProfileNode(*this);
-    }
-    
-    virtual TCTANode* voidDuplicate() const {
-      return new TCTCFGProfileNode(id.id, id.procID, name, depth, cfgGraph, ra, semanticLabel);
-    }
-    
-  private:
-    TCTCFGProfileNode(const TCTACFGNode& node);
-    TCTCFGProfileNode(const TCTLoopNode& node);
-    TCTCFGProfileNode(int id, int procID, string name, int depth, CFGAGraph* cfgGraph, VMA ra, uint semanticLabel) :
-      TCTACFGNode(CFGProf, id, procID, name, depth, cfgGraph, ra, semanticLabel) {
-      getTime().toProfileTime();
-    }
-  };*/
   
   class TCTLoopNode : public TCTANode {
     friend class TCTNonCFGProfileNode;
@@ -748,6 +685,8 @@ namespace TraceAnalysis {
     bool hasPendingIteration() const {
       return (pendingIteration != NULL);
     }
+    
+    void adjustCFGEdgeWeight(int w);
     
   protected:
     virtual void accumulateSemanticDurations(Time* durations) {
