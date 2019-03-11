@@ -584,10 +584,17 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   const char* pre);
 
 static inline bool
-hpcrun_fmt_root_type_node(uint16_t type)
+hpcrun_fmt_node_type_root(uint16_t type)
 {
   return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
 }
+
+static inline bool
+hpcrun_fmt_node_type_allocation(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
+}
+
 
 // --------------------------------------------------------------------------
 // 

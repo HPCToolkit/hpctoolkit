@@ -58,6 +58,14 @@
 
 #define PERF_IBS_CONFIG   (1ULL<<19)
 
+
+void
+datacentric_hw_handler(perf_mmap_data_t *mmap_data,
+                       cct_node_t *datacentric_node,
+                       cct_node_t *sample_node)
+{}
+
+
 int 
 datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period)
@@ -96,7 +104,8 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
 
   if (ret >= 0) {
     close(ret);
-    return 0;
+  } else {
+    EMSG("Cannot initialize event %x, type: %d", einfo->attr.config, einfo->attr.type);
   }
 
   einfo->metric_custom = event;

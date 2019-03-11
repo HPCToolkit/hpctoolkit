@@ -468,7 +468,6 @@ void
 hpcrun_cct_set_node_allocation(cct_node_t *node)
 {
   node->node_type |= NODE_TYPE_ALLOCATION;
-  hpcrun_cct_retain(node);
 }
 
 bool
@@ -520,7 +519,7 @@ hpcrun_cct_set_node_root(cct_node_t *root)
 bool
 hpcrun_cct_is_node_root(cct_node_t *node)
 {
-  return (node->node_type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+  return hpcrun_fmt_node_type_root(node->node_type);
 }
 
 //***************************************************************************

@@ -108,78 +108,31 @@
  * data structure
  *****************************************************************************/
 
-typedef union perf_mem_data_src perf_mem_data_src_t;
-
-struct perf_data_src_mem_lvl_s {
-  u32 nr_entries;
-
-  u32 locks;               /* count of 'lock' transactions */
-  u32 store;               /* count of all stores in trace */
-  u32 st_uncache;          /* stores to uncacheable address */
-  u32 st_noadrs;           /* cacheable store with no address */
-  u32 st_l1hit;            /* count of stores that hit L1D */
-  u32 st_l1miss;           /* count of stores that miss L1D */
-  u32 load;                /* count of all loads in trace */
-  u32 ld_excl;             /* exclusive loads, rmt/lcl DRAM - snp none/miss */
-  u32 ld_shared;           /* shared loads, rmt/lcl DRAM - snp hit */
-  u32 ld_uncache;          /* loads to uncacheable address */
-  u32 ld_io;               /* loads to io address */
-  u32 ld_miss;             /* loads miss */
-  u32 ld_noadrs;           /* cacheable load with no address */
-  u32 ld_fbhit;            /* count of loads hitting Fill Buffer */
-  u32 ld_l1hit;            /* count of loads that hit L1D */
-  u32 ld_l2hit;            /* count of loads that hit L2D */
-  u32 ld_llchit;           /* count of loads that hit LLC */
-  u32 lcl_hitm;            /* count of loads with local HITM  */
-  u32 rmt_hitm;            /* count of loads with remote HITM */
-  u32 tot_hitm;            /* count of loads with local and remote HITM */
-  u32 rmt_hit;             /* count of loads with remote hit clean; */
-  u32 lcl_dram;            /* count of loads miss to local DRAM */
-  u32 rmt_dram;            /* count of loads miss to remote DRAM */
-  u32 nomap;               /* count of load/stores with no phys adrs */
-  u32 noparse;             /* count of unparsable data sources */
-};
-
-struct perf_mem_metric {
-  int memload;
-  int memload_miss;
-
-  int memstore;
-  int memstore_l1_hit;
-  int memstore_l1_miss;
-
-  int memllc_miss;
-};
-
-/******************************************************************************
- * local variables
- *****************************************************************************/
-
-
-static struct perf_mem_metric metric;
-
-//
-// "Special" routine to serve as a placeholder for "dynamic" allocatopm
-//
 
 
 /******************************************************************************
  * Place forlder
  *****************************************************************************/
+//
+// "Special" routine to serve as a placeholder for "dynamic" allocatopm
+//
 
 static void
 DATACENTRIC_Dynamic(void)
 {}
 
-
 //
-// "Special" routine to serve as a placeholder for "static" allocatopm
+// "Special" routine to serve as a placeholder for "static" allocation
 //
 
 static void
 DATACENTRIC_Static(void)
 {}
 
+//
+// "Special" routine to serve as a placeholder for any variables that
+//  are not static nor dynamic
+//
 static void
 DATACENTRIC_Unknown(void)
 {}
@@ -188,122 +141,6 @@ DATACENTRIC_Unknown(void)
  * PRIVATE Function implementation
  *****************************************************************************/
 
-#define P(a, b) PERF_MEM_##a##_##b
-
-static void
-datacentric_record_load_mem(cct_node_t *node,
-                        perf_mem_data_src_t *data_src)
-{
-  struct perf_data_src_mem_lvl_s  data_mem;
-
-  u64 lvl   = data_src->mem_lvl;
-  u64 snoop = data_src->mem_snoop;
-
-  memset(&data_mem, 0, sizeof(struct perf_data_src_mem_lvl_s));
-
-  // ---------------------------------------------------
-  // number of load operations
-  // ---------------------------------------------------
-  cct_metric_data_increment(metric.memload, node,
-                            (cct_metric_data_t){.i = 1});
-
-  // ---------------------------------------------------
-  // local load hit
-  // ---------------------------------------------------
-  if ( lvl & P(LVL, HIT) ) {
-
-    if (lvl & P(LVL, UNC)) data_mem.ld_uncache++; // uncached memory
-    if (lvl & P(LVL, IO))  data_mem.ld_io++;      // I/O memory
-    if (lvl & P(LVL, LFB)) data_mem.ld_fbhit++;   // life fill buffer
-    if (lvl & P(LVL, L1 )) data_mem.ld_l1hit++;   // level 1 cache
-    if (lvl & P(LVL, L2 )) data_mem.ld_l2hit++;   // level 2 cache
-    if (lvl & P(LVL, L3 )) {                      // level 3 cache
-      if (snoop & P(SNOOP, HITM))
-        data_mem.lcl_hitm++;                      // loads with local HITM
-      else
-        data_mem.ld_llchit++;                     // loads that hit LLC
-    }
-
-    if (lvl & P(LVL, LOC_RAM)) {
-      data_mem.lcl_dram++;                        // loads miss to local DRAM
-      if (snoop & P(SNOOP, HIT))
-        data_mem.ld_shared++;                     // shared loads, rmt/lcl DRAM - snp hit
-      else
-        data_mem.ld_excl++;                       // exclusive loads, rmt/lcl DRAM - snp none/miss
-    }
-
-    if ((lvl & P(LVL, REM_RAM1)) ||
-        (lvl & P(LVL, REM_RAM2))) {
-
-      data_mem.rmt_dram++;                        // loads miss to remote DRAM
-      if (snoop & P(SNOOP, HIT))
-        data_mem.ld_shared++;
-      else
-        data_mem.ld_excl++;
-    }
-  }
-
-  // ---------------------------------------------------
-  // remote load hit
-  // ---------------------------------------------------
-  if ((lvl & P(LVL, REM_CCE1)) ||
-      (lvl & P(LVL, REM_CCE2))) {
-    if (snoop & P(SNOOP, HIT)) {
-      data_mem.rmt_hit++;
-    }
-    else if (snoop & P(SNOOP, HITM)) {
-      data_mem.rmt_hitm++;
-      data_mem.tot_hitm++;
-    }
-  }
-
-  // ---------------------------------------------------
-  // llc miss
-  // ---------------------------------------------------
-  u64 llc_miss =  data_mem.lcl_dram + data_mem.rmt_dram +
-                  data_mem.rmt_hit  + data_mem.rmt_hitm ;
-  if (llc_miss > 0) {
-    cct_metric_data_increment(metric.memllc_miss, node,
-                              (cct_metric_data_t){.i = llc_miss});
-  }
-
-  // ---------------------------------------------------
-  // load miss
-  // ---------------------------------------------------
-  if ((lvl & P(LVL, MISS))) {
-    cct_metric_data_increment(metric.memload_miss, node,
-                              (cct_metric_data_t){.i = 1});
-  }
-}
-
-static void
-datacentric_record_store_mem( cct_node_t *node,
-                          perf_mem_data_src_t *data_src)
-{
-  struct perf_data_src_mem_lvl_s  data_mem;
-
-  memset(&data_mem, 0, sizeof(struct perf_data_src_mem_lvl_s));
-
-  cct_metric_data_increment(metric.memstore, node,
-                            (cct_metric_data_t){.i = 1});
-
-  u64 lvl   = data_src->mem_lvl;
-
-  if (lvl & P(LVL, HIT)) {
-    if (lvl & P(LVL, UNC)) data_mem.st_uncache++;
-    if (lvl & P(LVL, L1 )) {
-      data_mem.st_l1hit++;
-      cct_metric_data_increment(metric.memstore_l1_hit, node,
-                                  (cct_metric_data_t){.i = 1});
-    }
-  }
-  if (lvl & P(LVL, MISS))
-    if (lvl & P(LVL, L1)) {
-      data_mem.st_l1miss++;
-      cct_metric_data_increment(metric.memstore_l1_miss, node,
-                                  (cct_metric_data_t){.i = 1});
-    }
-}
 
 
 static cct_node_t*
@@ -350,14 +187,16 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
  * manage signal handler for datacentric event
  */
 static void
-datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+datacentric_handler(event_handler_arg_t *args)
 {
-  if ( (current == NULL)      ||  (mmap_data == NULL) ||
-       (sv.sample_node == NULL))
+  if ( (args->current == NULL)  ||  (args->data == NULL) ||
+       (args->sample->sample_node == NULL))
     return;
 
-  cct_node_t *node = sv.sample_node;
+  perf_mmap_data_t *mmap_data = args->data;
+
+  cct_node_t *sample_node = args->sample->sample_node;
+  cct_node_t *node = sample_node;
 
   // ---------------------------------------------------------
   // memory information exists:
@@ -398,7 +237,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
         cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
         cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
-        cct_addr_t *addr             = hpcrun_cct_addr(sv.sample_node);
+        cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
 
         var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
                         (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
@@ -427,7 +266,7 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     }
 
     // copy the callpath of the sample to the variable context
-    node = hpcrun_cct_insert_path_return_leaf(sv.sample_node, var_context);
+    node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
 
     metric_set_t *mset = hpcrun_reify_metric_set(node);
 
@@ -443,30 +282,17 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
 
     // check if this is the maximum value. if this is the case, record it in the metric
     metric_id = datacentric_get_metric_addr_end();
+    val_addr.p++;
     hpcrun_metric_std_max(metric_id, mset, val_addr);
+
+    // re-record metric event for this node
+    hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
 
     hpcrun_cct_set_node_memaccess(node);
   }
 
-  if (mmap_data->data_src == 0) {
-    return;
-  }
-
-  // ---------------------------------------------------------
-  // data source information exist:
-  // - add metrics about load and store of the memory
-  // ---------------------------------------------------------
-
-  perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
-
-  if (data_src.mem_op & P(OP, LOAD)) {
-    datacentric_record_load_mem( node, &data_src );
-    datacentric_record_load_mem( sv.sample_node, &data_src );
-  }
-  if (data_src.mem_op & P(OP, STORE)) {
-    datacentric_record_store_mem( node, &data_src );
-    datacentric_record_store_mem( sv.sample_node, &data_src );
-  }
+  // hardware specific event handler
+  datacentric_hw_handler(mmap_data, node, sample_node);
 }
 
 
@@ -494,36 +320,6 @@ datacentric_register(sample_source_t *self,
   int result = datacentric_hw_register(self, event, &threshold);
   if (result == 0)
     return 0;
-
-  // ------------------------------------------
-  // Memory load metric
-  // ------------------------------------------
-  metric.memload = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload, "MEM-Load");
-
-  // ------------------------------------------
-  // Memory store metric
-  // ------------------------------------------
-  metric.memstore = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore, "MEM-Store");
-
-  metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
-
-  metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
-
-  // ------------------------------------------
-  // Memory load miss metric
-  // ------------------------------------------
-  metric.memload_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
-
-  // ------------------------------------------
-  // Memory llc load metric
-  // ------------------------------------------
-  metric.memllc_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
 
   return 1;
 }

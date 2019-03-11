@@ -153,11 +153,12 @@ blame_kernel_time(cct_node_t *cct_kernel,
  *  end if
  ***********************************************************************/
 static void
-kernel_block_handler( event_info_t *current_event, void *context, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+kernel_block_handler(event_handler_arg_t *args)
 {
   if (metric_blocking_index < 0)
     return; // not initialized or something wrong happens in the initialization
+
+  perf_mmap_data_t *mmap_data = args->data;
 
   if (mmap_data == NULL) {
 
@@ -194,7 +195,7 @@ kernel_block_handler( event_info_t *current_event, void *context, sample_val_t s
     //   cct kernel
     // ----------------------------------------------------------------
 
-    if (current_event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
+    if (args->current->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
 
       if (cct_kernel != NULL && time_cs_out > 0) {
         // corner case : context switch within a context switch !
@@ -202,7 +203,7 @@ kernel_block_handler( event_info_t *current_event, void *context, sample_val_t s
         time_cs_out  = 0;
       }
       // context switch inside the kernel:  record the new cct
-      cct_kernel  = sv.sample_node;
+      cct_kernel  = args->sample;
 
     } else if (cct_kernel != NULL) {
       // other event than cs occurs (it can be cycles, clocks or others)

@@ -491,17 +491,17 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 
 /***
  * record a sample.
- * output: sample node sv if successful
+ * output: pointer to sample node sv if successful
  *
- * return 1 node of the sample if successful
- * return 0 if fails
+ * return 0 is the record is not valid
+ * return metric value if successful
  */
-static void
+static double
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, int metric, int freq, sample_val_t *sv)
 {
   if (current == NULL)
-    return ;
+    return 0.0;
 
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
@@ -531,7 +531,12 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   if (scale_f < 1.0)
     scale_f = 1.0;
 
-  double counter = scale_f * metric_inc;
+  // if PERF_SAMPLE_WEIGHT is enabled, we need to consider the counter with the weight
+  // to emphasize its costness
+
+  int weight = (mmap_data->weight < 1 ? 1 : mmap_data->weight);
+
+  double counter = scale_f * metric_inc * (double) weight;
 
   // ----------------------------------------------------------------------------
   // set additional information for the metric description
@@ -548,7 +553,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // case of multiplexed or frequency-based sampling, we need to store the mean and
   // the standard deviation of the sampling period
   info_aux->num_samples++;
-  const double delta    = counter - info_aux->threshold_mean;
+  const double delta = counter - info_aux->threshold_mean;
   info_aux->threshold_mean += delta / info_aux->num_samples;
 
   // ----------------------------------------------------------------------------
@@ -569,8 +574,9 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipinner*/, 0/*issync*/, &info);
 
-  blame_shift_apply(metric, sv->sample_node, 
-                    counter /*metricincr*/);
+  blame_shift_apply(metric, sv->sample_node, counter /*metricincr*/);
+
+  return counter;
 }
 
 /**
@@ -1119,10 +1125,12 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
   // parse the buffer until it finishes reading all buffers
   // ----------------------------------------------------------------------------
-  event_info_t *event_info = (event_info_t *)self->evl.events[event_index].event_info;
+  event_info_t *event_info     = (event_info_t *)self->evl.events[event_index].event_info;
   struct perf_event_attr *attr = &event_info->attr;
 
+  int metric    = self->evl.events[event_index].metric_id;
   int more_data = 0;
+
   do {
     perf_mmap_data_t mmap_data;
     memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
@@ -1137,12 +1145,19 @@ perf_event_handler(
 
     if (mmap_data.header_type == PERF_RECORD_SAMPLE) {
 
-      int freq   = event_info->attr.freq;
-      int metric = self->evl.events[event_index].metric_id;
+      double val = record_sample(current, &mmap_data, context,
+                                 metric, event_info->attr.freq, &sv);
 
-      record_sample(current, &mmap_data, context, metric, freq, &sv);
+      event_handler_arg_t arg;
+      arg.context = context;
+      arg.current = event_info;
+      arg.data    = &mmap_data;
+      arg.metric  = metric;
+      arg.sample  = &sv;
+      arg.metric_value = val;
+
+      event_custom_handler(&arg);
     }
-    event_custom_handler(event_info, context, sv, &mmap_data);
 
   } while (more_data);
 
