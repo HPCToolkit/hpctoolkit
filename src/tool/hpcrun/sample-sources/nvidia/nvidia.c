@@ -672,11 +672,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_monitoring_set(runtime_activities, true);
 
     //// TODO(keren) ppecify desired monitoring
-    //if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
     //} else {
     //}
 
-    cupti_pc_sampling_enable();
+    if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
+      cupti_pc_sampling_enable();
+    }
 
     cupti_monitoring_set(kernel_invocation_activities, true);
 
