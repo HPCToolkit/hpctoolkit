@@ -169,24 +169,61 @@ hpcrun_pre_allocate_metrics(size_t num)
   // NOTE: actual metric count not incremented until a new metric is requested
 }
 
+const char *
+check(int ans)
+{
+  static const char *answers[] = {"n", "y"};
+  return answers[ans];
+}
 
+
+void
+hpcrun_metric_data_dump()
+{
+  if (!all_kinds_done) hpcrun_get_num_kind_metrics();
+
+  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+    hpcrun_get_num_metrics(kind);
+    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+      printf("metric_data[%d].(desc=%p (%s), id=%d (%s), kind=%p (%s), proc=%p (%s))\n", 
+	     l->g_id,
+	     metric_data[l->g_id].desc,
+	     check(metric_data[l->g_id].desc == &l->val),
+	     metric_data[l->g_id].id,
+	     check(metric_data[l->g_id].id == l->id),
+	     metric_data[l->g_id].kind, 
+	     check(metric_data[l->g_id].kind == kind),
+	     metric_data[l->g_id].proc,
+	     check(metric_data[l->g_id].proc == l->proc));
+    }
+  }
+}
+
+
+void
+hpcrun_metrics_data_finalize()
+{
+  metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
+
+  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+    hpcrun_get_num_metrics(kind);
+    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+      metric_data[l->g_id].desc = &l->val;
+      metric_data[l->g_id].id = l->id;
+      metric_data[l->g_id].kind = kind;
+      metric_data[l->g_id].proc = l->proc;
+    }
+  }
+  all_kinds_done = true;
+}
+
+// Note: (johnmc) needs double-checked locking if all_kinds_done not 
+// set prior to multithreading
 int
 hpcrun_get_num_kind_metrics()
 {
   if (!all_kinds_done) {
-    metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
-
-    for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
-      hpcrun_get_num_metrics(kind);
-      for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
-        metric_data[l->g_id].desc = &l->val;
-        metric_data[l->g_id].id = l->id;
-        metric_data[l->g_id].kind = kind;
-        metric_data[l->g_id].proc = l->proc;
-      }
-    }
-
-    all_kinds_done = true;
+    hpcrun_metric_data_finalize();
   }
 
   return num_kind_metrics;
@@ -235,6 +272,19 @@ hpcrun_id2metric(int metric_id)
   int n_metrics = hpcrun_get_num_kind_metrics();
   if ((0 <= metric_id) && (metric_id < n_metrics)) {
     return metric_data[metric_id].desc;
+  }
+  return NULL;
+}
+
+
+// non finalizing
+metric_desc_t*
+hpcrun_id2metric_linked(int metric_id)
+{
+  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+      if (l->id == metric_id) return &l->val;
+    }
   }
   return NULL;
 }

@@ -904,7 +904,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     free(name);
   }
   while (i--) {
-    metric_desc_t *m = hpcrun_id2metric(event_desc[i].metric);
+    metric_desc_t *m = hpcrun_id2metric_linked(event_desc[i].metric);
 
     m->is_frequency_metric = (event_desc[i].attr.freq == 1);
     event_desc[i].metric_desc = m;
