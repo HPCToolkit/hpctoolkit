@@ -298,7 +298,7 @@ Args::printUsage(std::ostream& os) const
 void
 Args::printError(std::ostream& os, const char* msg) const
 {
-  os << getCmd() << ": " << msg << endl
+  os << "ERROR: " << msg << "\n"
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
@@ -312,7 +312,8 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string&
 Args::getCmd() const
 {
-  return parser.getCmd();
+  static const std::string command = std::string("hpcstruct");
+  return command;
 }
 
 
