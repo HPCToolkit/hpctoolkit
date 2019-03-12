@@ -114,7 +114,7 @@
  * Place forlder
  *****************************************************************************/
 //
-// "Special" routine to serve as a placeholder for "dynamic" allocatopm
+// "Special" routine to serve as a placeholder for "dynamic" allocation
 //
 
 static void
@@ -122,7 +122,7 @@ DATACENTRIC_Dynamic(void)
 {}
 
 //
-// "Special" routine to serve as a placeholder for "static" allocation
+// "Special" routine to serve as a placeholder for "static" global variables
 //
 
 static void

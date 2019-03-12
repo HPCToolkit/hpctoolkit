@@ -42,7 +42,7 @@ const char *MONITOR_DATA_FIRST_TOUCH = "<first touch>";
 const char *DATACENTRIC_ROOT    = "<datacentric>";
 const char *DATACENTRIC_DYNAMIC = "<heap allocation>";
 const char *DATACENTRIC_STATIC  = "<static variable>";
-const char *DATACENTRIC_UNKNOWN = "<unknown variable>";
+const char *DATACENTRIC_UNKNOWN = "<unknown attribute>";
 
 const int NO_FAKE             = 0;
 const int FAKE_PROCEDURE      = 1;
