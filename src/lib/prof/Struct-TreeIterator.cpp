@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,6 +109,8 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
 	      ANode::ANodeTyToName(ANode::TyStmt).c_str(), ANode::TyStmt),
   ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
+  ANodeFilter(HasANodeTy,
+        ANode::ANodeTyToName(ANode::TyVariable).c_str(), ANode::TyVariable),
   ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };

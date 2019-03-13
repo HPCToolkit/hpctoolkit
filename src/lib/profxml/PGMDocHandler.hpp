@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -245,6 +245,7 @@ private:
   // element names
   const XMLCh *const elemStructure;
   const XMLCh *const elemLM;
+  const XMLCh *const elemVariable;
   const XMLCh *const elemFile;
   const XMLCh *const elemProc;
   const XMLCh *const elemAlien;

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -512,10 +512,12 @@ hpcrun_fmt_doRetainId(uint32_t id)
 //
 // hpcrun node types
 //
-#define NODE_TYPE_REGULAR      0
-#define NODE_TYPE_LEAF         1
-#define NODE_TYPE_ALLOCATION   2
-#define NODE_TYPE_MEMACCESS    4
+#define NODE_TYPE_REGULAR           0
+#define NODE_TYPE_LEAF              1
+#define NODE_TYPE_ALLOCATION        2
+#define NODE_TYPE_GLOBAL_VARIABLE   4
+#define NODE_TYPE_MEMACCESS         8
+#define NODE_TYPE_ROOT             16
 
 
 #define HPCRUN_FMT_LMId_NULL (0)
@@ -580,6 +582,18 @@ extern int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
+
+static inline bool
+hpcrun_fmt_node_type_root(uint16_t type)
+{
+  return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+}
+
+static inline bool
+hpcrun_fmt_node_type_allocation(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
+}
 
 
 // --------------------------------------------------------------------------
@@ -748,26 +762,6 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
-//***************************************************************************
-// node type interface
-//***************************************************************************
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_allocation_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION);
-}
-
-
-// return true of the node type is an allocation node
-// used by data-centric code
-static inline bool
-hpcrun_fmt_is_memaccess_type(uint16_t node_type)
-{
-  return ((node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS);
-}
 
 //***************************************************************************
 

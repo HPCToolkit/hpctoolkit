@@ -108,244 +108,101 @@
  * data structure
  *****************************************************************************/
 
-typedef union perf_mem_data_src perf_mem_data_src_t;
 
-struct perf_data_src_mem_lvl_s {
-  u32 nr_entries;
-
-  u32 locks;               /* count of 'lock' transactions */
-  u32 store;               /* count of all stores in trace */
-  u32 st_uncache;          /* stores to uncacheable address */
-  u32 st_noadrs;           /* cacheable store with no address */
-  u32 st_l1hit;            /* count of stores that hit L1D */
-  u32 st_l1miss;           /* count of stores that miss L1D */
-  u32 load;                /* count of all loads in trace */
-  u32 ld_excl;             /* exclusive loads, rmt/lcl DRAM - snp none/miss */
-  u32 ld_shared;           /* shared loads, rmt/lcl DRAM - snp hit */
-  u32 ld_uncache;          /* loads to uncacheable address */
-  u32 ld_io;               /* loads to io address */
-  u32 ld_miss;             /* loads miss */
-  u32 ld_noadrs;           /* cacheable load with no address */
-  u32 ld_fbhit;            /* count of loads hitting Fill Buffer */
-  u32 ld_l1hit;            /* count of loads that hit L1D */
-  u32 ld_l2hit;            /* count of loads that hit L2D */
-  u32 ld_llchit;           /* count of loads that hit LLC */
-  u32 lcl_hitm;            /* count of loads with local HITM  */
-  u32 rmt_hitm;            /* count of loads with remote HITM */
-  u32 tot_hitm;            /* count of loads with local and remote HITM */
-  u32 rmt_hit;             /* count of loads with remote hit clean; */
-  u32 lcl_dram;            /* count of loads miss to local DRAM */
-  u32 rmt_dram;            /* count of loads miss to remote DRAM */
-  u32 nomap;               /* count of load/stores with no phys adrs */
-  u32 noparse;             /* count of unparsable data sources */
-};
-
-struct perf_mem_metric {
-  int memload;
-  int memload_miss;
-
-  int memstore;
-  int memstore_l1_hit;
-  int memstore_l1_miss;
-
-  int memllc_miss;
-
-  int memaccess;
-};
 
 /******************************************************************************
- * local variables
+ * Place forlder
  *****************************************************************************/
+//
+// "Special" routine to serve as a placeholder for "dynamic" allocation
+//
 
+static void
+DATACENTRIC_Dynamic(void)
+{}
 
-static struct perf_mem_metric metric;
+//
+// "Special" routine to serve as a placeholder for "static" global variables
+//
 
+static void
+DATACENTRIC_Static(void)
+{}
+
+//
+// "Special" routine to serve as a placeholder for any variables that
+//  are not static nor dynamic
+//
+static void
+DATACENTRIC_Unknown(void)
+{}
 
 /******************************************************************************
  * PRIVATE Function implementation
  *****************************************************************************/
 
-#define P(a, b) PERF_MEM_##a##_##b
 
-static void
-datacentric_record_load_mem(cct_node_t *node,
-                        perf_mem_data_src_t *data_src)
-{
-  struct perf_data_src_mem_lvl_s  data_mem;
 
-  u64 lvl   = data_src->mem_lvl;
-  u64 snoop = data_src->mem_snoop;
-
-  memset(&data_mem, 0, sizeof(struct perf_data_src_mem_lvl_s));
-
-  // ---------------------------------------------------
-  // number of load operations
-  // ---------------------------------------------------
-  cct_metric_data_increment(metric.memload, node,
-                            (cct_metric_data_t){.i = 1});
-
-  // ---------------------------------------------------
-  // local load hit
-  // ---------------------------------------------------
-  if ( lvl & P(LVL, HIT) ) {
-
-    if (lvl & P(LVL, UNC)) data_mem.ld_uncache++; // uncached memory
-    if (lvl & P(LVL, IO))  data_mem.ld_io++;      // I/O memory
-    if (lvl & P(LVL, LFB)) data_mem.ld_fbhit++;   // life fill buffer
-    if (lvl & P(LVL, L1 )) data_mem.ld_l1hit++;   // level 1 cache
-    if (lvl & P(LVL, L2 )) data_mem.ld_l2hit++;   // level 2 cache
-    if (lvl & P(LVL, L3 )) {                      // level 3 cache
-      if (snoop & P(SNOOP, HITM))
-        data_mem.lcl_hitm++;                      // loads with local HITM
-      else
-        data_mem.ld_llchit++;                     // loads that hit LLC
-    }
-
-    if (lvl & P(LVL, LOC_RAM)) {
-      data_mem.lcl_dram++;                        // loads miss to local DRAM
-      if (snoop & P(SNOOP, HIT))
-        data_mem.ld_shared++;                     // shared loads, rmt/lcl DRAM - snp hit
-      else
-        data_mem.ld_excl++;                       // exclusive loads, rmt/lcl DRAM - snp none/miss
-    }
-
-    if ((lvl & P(LVL, REM_RAM1)) ||
-        (lvl & P(LVL, REM_RAM2))) {
-
-      data_mem.rmt_dram++;                        // loads miss to remote DRAM
-      if (snoop & P(SNOOP, HIT))
-        data_mem.ld_shared++;
-      else
-        data_mem.ld_excl++;
-    }
-  }
-
-  // ---------------------------------------------------
-  // remote load hit
-  // ---------------------------------------------------
-  if ((lvl & P(LVL, REM_CCE1)) ||
-      (lvl & P(LVL, REM_CCE2))) {
-    if (snoop & P(SNOOP, HIT)) {
-      data_mem.rmt_hit++;
-    }
-    else if (snoop & P(SNOOP, HITM)) {
-      data_mem.rmt_hitm++;
-      data_mem.tot_hitm++;
-    }
-  }
-
-  // ---------------------------------------------------
-  // llc miss
-  // ---------------------------------------------------
-  u64 llc_miss =  data_mem.lcl_dram + data_mem.rmt_dram +
-                  data_mem.rmt_hit  + data_mem.rmt_hitm ;
-  if (llc_miss > 0) {
-    cct_metric_data_increment(metric.memllc_miss, node,
-                              (cct_metric_data_t){.i = llc_miss});
-  }
-
-  // ---------------------------------------------------
-  // load miss
-  // ---------------------------------------------------
-  if ((lvl & P(LVL, MISS))) {
-    cct_metric_data_increment(metric.memload_miss, node,
-                              (cct_metric_data_t){.i = 1});
-  }
-}
-
-static void
-datacentric_record_store_mem( cct_node_t *node,
-                          perf_mem_data_src_t *data_src)
-{
-  struct perf_data_src_mem_lvl_s  data_mem;
-
-  memset(&data_mem, 0, sizeof(struct perf_data_src_mem_lvl_s));
-
-  cct_metric_data_increment(metric.memstore, node,
-                            (cct_metric_data_t){.i = 1});
-
-  u64 lvl   = data_src->mem_lvl;
-
-  if (lvl & P(LVL, HIT)) {
-    if (lvl & P(LVL, UNC)) data_mem.st_uncache++;
-    if (lvl & P(LVL, L1 )) {
-      data_mem.st_l1hit++;
-      cct_metric_data_increment(metric.memstore_l1_hit, node,
-                                  (cct_metric_data_t){.i = 1});
-    }
-  }
-  if (lvl & P(LVL, MISS))
-    if (lvl & P(LVL, L1)) {
-      data_mem.st_l1miss++;
-      cct_metric_data_increment(metric.memstore_l1_miss, node,
-                                  (cct_metric_data_t){.i = 1});
-    }
-}
-
-/***
- * create a cct node for static variable,
- * only if the node is not created yet.
- */
 static cct_node_t*
-datacentric_create_static_node(datatree_info_t *info)
+datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
+                             uintptr_t addr_start, uintptr_t addr_end)
 {
-  if (info->context == NULL) {
-    ip_normalized_t npc;
-    cct_addr_t addr;
+  // create a node for this variable
 
-    memset(&npc,  0, sizeof(ip_normalized_t));
-    memset(&addr, 0, sizeof(cct_addr_t));
+  ip_normalized_t npc;
+  cct_addr_t addr;
 
-    // create a node with the ip = memory address
-    // this node will be translated by hpcprof and name it with
-    //  the static variable that matches with the memory address
+  memset(&npc,  0, sizeof(ip_normalized_t));
+  memset(&addr, 0, sizeof(cct_addr_t));
 
-    npc.lm_ip    = (uintptr_t)info->memblock;
-    addr.ip_norm = npc;
+  // create a node with the ip = memory address
+  // this node will be translated by hpcprof and name it with
+  //  the static variable that matches with the memory address
 
-    thread_data_t* td    = hpcrun_get_thread_data();
-    cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
-    cct_node_t *node     = hpcrun_cct_bundle_get_datacentric_static_node(bundle);
+  npc.lm_ip    = addr_start + 1; // hpcprof sometimes decrements the value of IP.
+  npc.lm_id    = lm_id;
+  addr.ip_norm = npc;
 
-    info->context = hpcrun_cct_insert_addr(node, &addr);
-    hpcrun_cct_set_node_allocation(info->context);
+  cct_node_t *context = hpcrun_cct_insert_addr(root, &addr);
 
-    // assign the start address and the end address metric
-    // for this node
-    int metric_id      = datacentric_get_metric_addr_start();
-    metric_set_t *mset = hpcrun_reify_metric_set(info->context);
+  // assign the start address and the end address metric
+  // for this node
+  int metric_id      = datacentric_get_metric_addr_start();
+  metric_set_t *mset = hpcrun_reify_metric_set(context);
 
-    hpcrun_metricVal_t value;
-    value.p = info->memblock;
-    hpcrun_metric_std_set(metric_id, mset, value);
+  hpcrun_metricVal_t value;
+  value.p = (void*)addr_start;
+  hpcrun_metric_std_min(metric_id, mset, value);
 
-    metric_id = datacentric_get_metric_addr_end();
-    value.p   = info->rmemblock;
-    hpcrun_metric_std_set(metric_id, mset, value);
-  }
+  metric_id = datacentric_get_metric_addr_end();
+  value.p   = (void*)addr_end;
+  hpcrun_metric_std_max(metric_id, mset, value);
 
-  return info->context;
+  return context;
 }
+
 
 
 /***
  * manage signal handler for datacentric event
  */
 static void
-datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+datacentric_handler(event_handler_arg_t *args)
 {
-  if ( (current == NULL)      ||  (mmap_data == NULL) ||
-       (sv.sample_node == NULL))
+  if ( (args->current == NULL)  ||  (args->data == NULL) ||
+       (args->sample->sample_node == NULL))
     return;
- 
-  cct_node_t *node = sv.sample_node;
-  void *start = NULL, *end = NULL;
+
+  perf_mmap_data_t *mmap_data = args->data;
+
+  cct_node_t *sample_node = args->sample->sample_node;
+  cct_node_t *node = sample_node;
 
   // ---------------------------------------------------------
   // memory information exists:
   // - check if we have this variable address in our database
-  // - if it's in our database, add it to the cct node
+  //   - if it's in our database (either static or dynamic), add it to the cct node
+  //   - otherwise, it must be unknown variable. Not sure what we should do with this
   // ---------------------------------------------------------
   if (mmap_data->addr) {
 
@@ -358,56 +215,84 @@ datacentric_handler(event_info_t *current, void *context, sample_val_t sv,
     //  recognized metric.
     // --------------------------------------------------------------
 
-    datatree_info_t *info  = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+    void *start = NULL, *end = NULL;
+
+    datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+    cct_node_t *var_context = NULL;
+    thread_data_t* td       = hpcrun_get_thread_data();
+    cct_bundle_t *bundle    = &(td->core_profile_trace_data.epoch->csdata);
+
+    // --------------------------------------------------------------
+    // try to find the accessed memory address from the database
+    // if the accessed memory is within the range (found in the database), then it must be
+    // either static variable or heap allocation
+    // otherwise, we encounter an unknown variable
+    // --------------------------------------------------------------
 
     if (info) {
-      cct_node_t *context = info->context;
+      var_context = info->context;
+
       if (info->magic == DATA_STATIC_MAGIC) {
-        // static allocation
-        context = datacentric_create_static_node(info);
+        // attach this node of static variable to the datacentric root
+
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
+        cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
+
+        var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
+                        (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+
+        // mark that this is a special node for global variable
+        // hpcprof will treat specially to print the name of the variable to xml file
+        // (if hpcstruct provides the information)
+
+        hpcrun_cct_set_node_variable(var_context);
+
+      } else {
+        // dynamic allocation
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
+
+        var_context = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
+
+        hpcrun_cct_set_node_allocation(var_context);
       }
-      // copy the callpath of the "node" to data centric root context
-      node = hpcrun_cct_insert_path_return_leaf_ts(node, context);
+    } else {
+      // unknown variable
+      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+      var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
-      metric_set_t *mset = hpcrun_reify_metric_set(node);
-
-      // variable address is store in the database
-      // record the interval of this access
-
-      hpcrun_metricVal_t val_addr;
-      val_addr.p = (void *)mmap_data->addr;
-
-      // check if this is the minimum value. if this is the case, record it in the metric
-      int metric_id = datacentric_get_metric_addr_start();
-      hpcrun_metric_std_min(metric_id, mset, val_addr);
-
-      // check if this is the maximum value. if this is the case, record it in the metric
-      metric_id = datacentric_get_metric_addr_end();
-      hpcrun_metric_std_max(metric_id, mset, val_addr);
-      cct_metric_data_increment(metric.memaccess, node, (hpcrun_metricVal_t) {.i = 1});
+      hpcrun_cct_set_node_variable(var_context);
     }
+
+    // copy the callpath of the sample to the variable context
+    node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+
+    metric_set_t *mset = hpcrun_reify_metric_set(node);
+
+    // variable address is store in the database
+    // record the interval of this access
+
+    hpcrun_metricVal_t val_addr;
+    val_addr.p = (void *)mmap_data->addr;
+
+    // check if this is the minimum value. if this is the case, record it in the metric
+    int metric_id = datacentric_get_metric_addr_start();
+    hpcrun_metric_std_min(metric_id, mset, val_addr);
+
+    // check if this is the maximum value. if this is the case, record it in the metric
+    metric_id = datacentric_get_metric_addr_end();
+    val_addr.p++;
+    hpcrun_metric_std_max(metric_id, mset, val_addr);
+
+    // re-record metric event for this node
+    hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
+
     hpcrun_cct_set_node_memaccess(node);
   }
 
-  if (mmap_data->data_src == 0) {
-    return;
-  }
-
-  // ---------------------------------------------------------
-  // data source information exist:
-  // - add metrics about load and store of the memory
-  // ---------------------------------------------------------
-
-  perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
-
-  if (data_src.mem_op & P(OP, LOAD)) {
-    datacentric_record_load_mem( node, &data_src );
-  }
-  if (data_src.mem_op & P(OP, STORE)) {
-    datacentric_record_store_mem( node, &data_src );
-  }
-
-  //TMSG(DATACENTRIC, "data-fd: %d, lvl: %d, op: %d", current->attr.config, data_src.mem_lvl, data_src.mem_op );
+  // hardware specific event handler
+  datacentric_hw_handler(mmap_data, node, sample_node);
 }
 
 
@@ -435,44 +320,6 @@ datacentric_register(sample_source_t *self,
   int result = datacentric_hw_register(self, event, &threshold);
   if (result == 0)
     return 0;
-
-  // ------------------------------------------
-  // Memory load metric
-  // ------------------------------------------
-  metric.memload = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload, "MEM-Load");
-
-  // ------------------------------------------
-  // Memory store metric
-  // ------------------------------------------
-  metric.memstore = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore, "MEM-Store");
-
-  metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
-
-  metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
-
-  // ------------------------------------------
-  // Memory load miss metric
-  // ------------------------------------------
-  metric.memload_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
-
-  // ------------------------------------------
-  // Memory llc load metric
-  // ------------------------------------------
-  metric.memllc_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
-
-  // ------------------------------------------
-  // node allocation id
-  // ------------------------------------------
-  metric.memaccess = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memaccess, DATACENTRIC_METRIC_PREFIX "Access",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true, false);
-
 
   return 1;
 }

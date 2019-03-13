@@ -234,6 +234,7 @@ is_active()
 }
 
 
+static const unsigned int MAX_CHAR_FORMULA = 32;
 
 /**
  * initialize metrics
@@ -248,18 +249,20 @@ metric_initialize()
   addr_start_metric_id = hpcrun_new_metric();
   addr_end_metric_id   = hpcrun_new_metric();
 
-  hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "$<Start",
+  // set the formula for metric start address and end address
+  // the start address metric is the minimum address
+  // the end address metric is the maximum of all accessed memory
+
+  metric_desc_t *metric_start = hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
-  hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "$>End",
+  metric_desc_t *metric_end   = hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
       MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
 
-  size_t mem_metrics_size     = NUM_DATA_METRICS * sizeof(metric_aux_info_t);
-  metric_aux_info_t* aux_info = (metric_aux_info_t*) hpcrun_malloc(mem_metrics_size);
-  memset(aux_info, 0, mem_metrics_size);
+  metric_start->formula = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(metric_start->formula, "min($%d)", addr_start_metric_id);
 
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  td->core_profile_trace_data.perf_event_info = aux_info;
+  metric_end->formula   = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(metric_end->formula, "max($%d)", addr_end_metric_id);
 }
 
 /**
@@ -388,12 +391,6 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   return DATACENTRIC_LOC_NONE;
 }
 
-static cct_node_t *
-datacentric_update_before_bt_insertion(cct_bundle_t *bundle,
-                      cct_node_t *path, void *data_aux)
-{
-  return hpcrun_cct_bundle_get_datacentric_dynamic_node(bundle);
-}
 
 // Fill in the leakinfo struct, add metric to CCT, add to splay tree
 // (if footer) and print TMSG.
@@ -428,18 +425,13 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
       // this mostly happens inside a library initialization
       return;
     }
-    sampling_info_t info;
-    memset(&info, 0, sizeof(sampling_info_t));
-
-    info.flags = SAMPLING_IN_MALLOC;
-    info.sample_custom_cct.update_before_fn = datacentric_update_before_bt_insertion;
 
     int metric_start_addr = datacentric_get_metric_addr_start();
 
     // record the call path to this allocation, and the address
     sample_val_t smpl = hpcrun_sample_callpath(uc, metric_start_addr,
                                                (hpcrun_metricVal_t) {.p=appl_ptr},
-                                               0, 1, &info);
+                                               0, 1, NULL);
 
     // update the number of metric counter
     metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);

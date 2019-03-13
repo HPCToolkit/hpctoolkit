@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -148,21 +148,26 @@ event_custom_create_event(sample_source_t *self, char *name)
 }
 
 int
-event_custom_handler(struct event_info_s* current, void *context, sample_val_t sample, struct perf_mmap_data_s* data)
+event_custom_handler(event_handler_arg_t *args)
 {
-  if (current == NULL)
+  if (args == NULL || args->current == NULL)
     return 0;
 
   events_list_t *item = NULL;
 
   SLIST_FOREACH(item, &list_events_head, entries) {
     if (item != NULL) {
-    	if (item->event->handle_type == INCLUSIVE) {
-    		item->event->handler_fn(current, context, sample, data);
+      // if the custom event is inclusive, we call the handler
+      //   even if this is not its event
+      // if the custom event is exclusive, we call the handler
+      //  iff the event is from the custom event
 
-    	} else if (item->event == current->metric_custom) {
+    	if (item->event->handle_type == INCLUSIVE) {
+    		item->event->handler_fn(args);
+
+    	} else if (item->event == args->current->metric_custom) {
     	  // exclusive event: make sure the event is the same is the current event
-    		item->event->handler_fn(current, context, sample, data);
+    		item->event->handler_fn(args);
     	}
     }
   }

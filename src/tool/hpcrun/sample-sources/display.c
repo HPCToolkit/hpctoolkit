@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -83,23 +83,27 @@ printw(FILE *output, const char *name, const char *desc)
   char sdesc[MAX_DESC_PER_LINE];
 
   int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
-  for (int i=0; i<lines; i++) {
-    strncpy(sdesc, line[i], len[i]);
-    sdesc[len[i]] = '\0';
-    const char *name_ptr = " ";
+  if (lines == 0) {
+    fprintf(output, "%s\n", name);
+  } else {
+    for (int i=0; i<lines; i++) {
+      strncpy(sdesc, line[i], len[i]);
+      sdesc[len[i]] = '\0';
+      const char *name_ptr = " ";
 
-    if (i == 0) {
-      int len = strlen(name);
-      if (len > MAX_EVENT_NAME) {
-        fprintf(output, "%s\n", name);
-      } else {
-	name_ptr = name;
+      if (i == 0) {
+        int len = strlen(name);
+        if (len > MAX_EVENT_NAME) {
+          fprintf(output, "%s\n", name);
+        } else {
+	  name_ptr = name;
+        }
       }
+      fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
     }
-    fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
+    free (line);
+    free (len);
   }
-  free (line);
-  free (len);
 }
 
 

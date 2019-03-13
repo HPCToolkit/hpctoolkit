@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -477,17 +477,24 @@ ANode::aggregateMetricsIncl(const VMAIntervalSet& ivalset)
 		   IteratorStack::PostOrder);
   for (ANode* n = NULL; (n = it.current()); ++it) {
     if (n != root) {
-      ANode* n_parent = n->parent();
-      
-      for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
-	   it1 != ivalset.end(); ++it1) {
-	const VMAInterval& ival = *it1;
-	uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
-	for (uint mId = mBegId; mId < mEndId; ++mId) {
-	  double mVal = n->demandMetric(mId, mEndId/*size*/);
-	  n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
-	}
+      if (hpcrun_fmt_node_type_root(n->hpcrun_node_type())) {
+        // Special treatement for "artificial root":
+        //  we don't aggregate the metrics of "artificial root" into the "invisible root"
+        //  this is because the artificial root will be rendered in a separate view
+        //  by the viewer
+        continue;
+      }
+      ANode* n_parent = n->parent();
+      for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
+          it1 != ivalset.end(); ++it1) {
+        const VMAInterval& ival = *it1;
+        uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
+
+        for (uint mId = mBegId; mId < mEndId; ++mId) {
+          double mVal = n->demandMetric(mId, mEndId/*size*/);
+          n_parent->demandMetric(mId, mEndId/*size*/) += mVal;
+        }
       }
     }
   }
@@ -1264,6 +1271,10 @@ ProcFrm::toStringMe(uint oFlags) const
 
     if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
       self += " str" + xml::MakeAttrNum(structure()->m_origId);
+    }
+
+    if (m_hpcrun_type > 0) {
+      self += " t" + xml::MakeAttrNum(m_hpcrun_type) ;
     }
   }
 

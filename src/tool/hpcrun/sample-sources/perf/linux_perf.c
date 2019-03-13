@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -158,10 +158,6 @@
 #define PERF_EVENT_AVAILABLE_UNKNOWN 0
 #define PERF_EVENT_AVAILABLE_NO      1
 #define PERF_EVENT_AVAILABLE_YES     2
-
-#define RAW_NONE        0
-#define RAW_IBS_FETCH   1
-#define RAW_IBS_OP      2
 
 #define PERF_MULTIPLEX_RANGE 1.2
 
@@ -453,6 +449,12 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
   monitor_real_pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
   for(int i=0; i<nevents; i++) {
+    if (!event_thread) {
+       continue; // in some situations, it is possible a shutdown signal is delivered
+       	         // while hpcrun is in the middle of abort.
+		 // in this case, all information is null and we shouldn't
+		 // start profiling.
+    }
     if (event_thread[i].fd >= 0) {
       close(event_thread[i].fd);
       event_thread[i].fd = PERF_FD_FINALIZED;
@@ -489,17 +491,17 @@ get_fd_index(int nevents, int fd, event_thread_t *event_thread)
 
 /***
  * record a sample.
- * output: sample node sv if successful
+ * output: pointer to sample node sv if successful
  *
- * return 1 node of the sample if successful
- * return 0 if fails
+ * return 0 is the record is not valid
+ * return metric value if successful
  */
-static void
+static double
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, int metric, int freq, sample_val_t *sv)
 {
   if (current == NULL)
-    return ;
+    return 0.0;
 
   // ----------------------------------------------------------------------------
   // for event with frequency, we need to increase the counter by its period
@@ -529,7 +531,12 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   if (scale_f < 1.0)
     scale_f = 1.0;
 
-  double counter = scale_f * metric_inc;
+  // if PERF_SAMPLE_WEIGHT is enabled, we need to consider the counter with the weight
+  // to emphasize its costness
+
+  int weight = (mmap_data->weight < 1 ? 1 : mmap_data->weight);
+
+  double counter = scale_f * metric_inc * (double) weight;
 
   // ----------------------------------------------------------------------------
   // set additional information for the metric description
@@ -546,7 +553,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // case of multiplexed or frequency-based sampling, we need to store the mean and
   // the standard deviation of the sampling period
   info_aux->num_samples++;
-  const double delta    = counter - info_aux->threshold_mean;
+  const double delta = counter - info_aux->threshold_mean;
   info_aux->threshold_mean += delta / info_aux->num_samples;
 
   // ----------------------------------------------------------------------------
@@ -567,8 +574,9 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipinner*/, 0/*issync*/, &info);
 
-  blame_shift_apply(metric, sv->sample_node, 
-                    counter /*metricincr*/);
+  blame_shift_apply(metric, sv->sample_node, counter /*metricincr*/);
+
+  return counter;
 }
 
 /**
@@ -916,6 +924,11 @@ METHOD_FN(gen_event_set, int lush_metrics)
   int nevents 	  = self->evl.nevents;
   int num_metrics = hpcrun_get_num_metrics();
 
+  // -------------------------------------------------------------------------
+  // TODO: we need to fix this allocation.
+  //       there is no need to allocate a memory if we are reusing thread data
+  // -------------------------------------------------------------------------
+
   // a list of event information, private for each thread
   event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
 
@@ -935,11 +948,12 @@ METHOD_FN(gen_event_set, int lush_metrics)
   //  but there will be no samples
   for (int i=0; i<nevents; i++)
   {
+    // initialize this event. If it's valid, we set the metric for the event
     event_info_t *event_desc = (event_info_t*) self->evl.events[i].event_info;
-    // initialize this event. if it's valid, we set the metric for the event
-    if (!perf_thread_init( event_desc, &(event_thread[i]) ) ) {
+    if (!perf_thread_init( event_desc, &(event_thread[i])) ) {
       metric_desc_t *mdesc = hpcrun_id2metric(i);
-      EEMSG("Failed to initialize event %d (%s)", i, mdesc->name);
+      EEMSG("Failed to initialize event %d (%s): %s", i, mdesc->name, strerror(errno));
+      exit(1);
     }
   }
 
@@ -1111,10 +1125,12 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
   // parse the buffer until it finishes reading all buffers
   // ----------------------------------------------------------------------------
-  event_info_t *event_info = (event_info_t *)self->evl.events[event_index].event_info;
+  event_info_t *event_info     = (event_info_t *)self->evl.events[event_index].event_info;
   struct perf_event_attr *attr = &event_info->attr;
 
+  int metric    = self->evl.events[event_index].metric_id;
   int more_data = 0;
+
   do {
     perf_mmap_data_t mmap_data;
     memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
@@ -1129,12 +1145,19 @@ perf_event_handler(
 
     if (mmap_data.header_type == PERF_RECORD_SAMPLE) {
 
-      int freq   = event_info->attr.freq;
-      int metric = self->evl.events[event_index].metric_id;
+      double val = record_sample(current, &mmap_data, context,
+                                 metric, event_info->attr.freq, &sv);
 
-      record_sample(current, &mmap_data, context, metric, freq, &sv);
+      event_handler_arg_t arg;
+      arg.context = context;
+      arg.current = event_info;
+      arg.data    = &mmap_data;
+      arg.metric  = metric;
+      arg.sample  = &sv;
+      arg.metric_value = val;
+
+      event_custom_handler(&arg);
     }
-    event_custom_handler(event_info, context, sv, &mmap_data);
 
   } while (more_data);
 

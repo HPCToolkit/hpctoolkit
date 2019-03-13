@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@
 
 void hpcrun_trace_init();
 void hpcrun_trace_open(core_profile_trace_data_t * cptd);
-void hpcrun_trace_append(core_profile_trace_data_t * cptd, uint call_path_id, uint metric_id);
+void hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id);
 void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
 void hpcrun_trace_close(core_profile_trace_data_t * cptd);
 

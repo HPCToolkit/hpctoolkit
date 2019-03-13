@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@
 
 #include "cct_bundle.h"
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <cct/cct_addr.h>
+#include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
@@ -72,23 +72,10 @@ DATACENTRIC()
 {}
 
 
-//
-// "Special" routine to serve as a placeholder for "dynamic" allocatopm
-//
-
-static void
-DATACENTRIC_Dynamic(void)
-{}
-
-
-//
-// "Special" routine to serve as a placeholder for "static" allocatopm
-//
-
-static void
-DATACENTRIC_Static(void)
-{}
-
+void
+NO_THREAD(void)
+{
+}
 
 //
 // Interface procedures
@@ -120,19 +107,16 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root  = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
-
-  bundle->special_datacentric_node    = hpcrun_cct_new_special(DATACENTRIC_Dynamic);
-  bundle->special_datacentric_dynamic = hpcrun_insert_special_node(
-      bundle->special_datacentric_node, DATACENTRIC_Dynamic);
-  bundle->special_datacentric_static  = hpcrun_insert_special_node(
-      bundle->special_datacentric_node, DATACENTRIC_Static);
+  bundle->special_datacentric_node  = hpcrun_cct_new_special(DATACENTRIC+1);
+  bundle->special_no_thread_node    = hpcrun_cct_new_special(NO_THREAD);
 }
 
 //
 // Write to file for cct bundle: 
 //
 int 
-hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
+hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
+                         cct2metrics_t* cct2metrics_map)
 {
   if (!fs) { return HPCRUN_ERR; }
 
@@ -151,7 +135,7 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
 
   // write out newly constructed cct
 
-  return hpcrun_cct_fwrite(bndl->top, fs, flags);
+  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
 }
 
 //
@@ -173,8 +157,8 @@ hpcrun_empty_cct(cct_bundle_t* cct)
 
 cct_node_t*
 hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
-{
   // attach special node to root if not already attached
+{
   if (! hpcrun_cct_parent(cct->special_idle_node))
     hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
 
@@ -187,21 +171,17 @@ hpcrun_cct_bundle_init_datacentric_node(cct_bundle_t *cct)
 {
   if (!hpcrun_cct_parent(cct->special_datacentric_node)) {
     hpcrun_cct_insert_node(cct->top, cct->special_datacentric_node);
+    hpcrun_cct_set_node_root(cct->special_datacentric_node);
   }
   return cct->special_datacentric_node;
 }
 
 cct_node_t*
-hpcrun_cct_bundle_get_datacentric_dynamic_node(cct_bundle_t *cct)
+hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct)
+  // attach special node to root if not already attached
 {
-  hpcrun_cct_bundle_init_datacentric_node(cct);
-  return cct->special_datacentric_dynamic;
-}
+  if (! hpcrun_cct_parent(cct->special_no_thread_node))
+    hpcrun_cct_insert_node(cct->top, cct->special_no_thread_node);
 
-
-cct_node_t*
-hpcrun_cct_bundle_get_datacentric_static_node(cct_bundle_t *cct)
-{
-  hpcrun_cct_bundle_init_datacentric_node(cct);
-  return cct->special_datacentric_static;
+  return cct->special_no_thread_node;
 }

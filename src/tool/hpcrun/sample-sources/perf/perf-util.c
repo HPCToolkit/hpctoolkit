@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -450,13 +450,10 @@ perf_util_attr_init(
   }
   
   char *name;
-  int precise_ip_type = 0;
-  if (event_name != NULL) {
-    perf_skid_parse_event(event_name, &name);
-    free(name);
-  }
+  int precise_ip_type = precise_ip_type = perf_skid_parse_event(event_name, &name);
+  free(name);
 
-  u64 precise_ip;
+  u64 precise_ip = 0;
 
   switch (precise_ip_type) {
     case PERF_EVENT_AUTODETECT_SKID: 

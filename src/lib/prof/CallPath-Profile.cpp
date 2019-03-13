@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -581,7 +581,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     uint id = strct->id();
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int fake_procedure = 0;
 
     if (type == 1) { // LoadModule
       nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
@@ -709,8 +709,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
+    if (fake_procedure > 0) {
+      os << " f" << MakeAttrNum(fake_procedure);
     } 
 
     os << "/>\n";
@@ -1567,7 +1567,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
 #if DBG_DATA
-    //if (node->metricMgr().)
+    if (node->hpcrun_node_type() > 20) {
+      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() << "\n" ;
+    }
 #endif
   }
 
@@ -1986,7 +1988,9 @@ cct_makeNode(Prof::CallPath::Profile& prof,
       }
       metricData.metric(i_dst) = mval * (double)mdesc->period();
     }
-    hasMetrics = !hpcrun_metricVal_isZero(m);
+    if (!hpcrun_metricVal_isZero(m)) {
+      hasMetrics = true;
+    }
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
@@ -2017,7 +2021,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
+    n = new CCT::Stmt(NULL, cpId, nodeFmt, lmId, lmIP, opIdx, lip,
           metricData);
   }
 
@@ -2032,11 +2036,11 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId0, nodeFmt, lmId, lmIP, opIdx,
       lipCopy, metricData0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId, nodeFmt, lmId, lmIP, opIdx,
 			lip, metricData);
     }
   }
@@ -2055,6 +2059,14 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
   const Prof::CCT::ADynNode* n_dyn_p =
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+
+  n_fmt.node_type = n.hpcrun_node_type();
+#if DBG_DATA
+  if (n_fmt.node_type > 20) {
+    std::cerr << "Error: invalid-node-type: " << n_fmt.node_type <<", id: " << n_fmt.id << "\n";
+  }
+#endif
+
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;

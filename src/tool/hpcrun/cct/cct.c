@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,8 @@ struct cct_node_t {
   
   uint16_t node_type;
 
+  cct_addr_t addr; // bundle abstract address components into a data type
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -117,9 +119,6 @@ struct cct_node_t {
   // left and right pointers for splay tree of siblings
   struct cct_node_t* left;
   struct cct_node_t* right;
-
-  cct_addr_t addr; // bundle abstract address components into a data type
-
 };
 
 //
@@ -267,6 +266,7 @@ typedef struct {
   FILE* fs;
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
+  cct2metrics_t* cct2metrics_map;
 } write_arg_t;
 
 
@@ -304,12 +304,13 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // metrics
   // -------------------------
   tmp->num_metrics = my_arg->num_metrics;
-  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
-			       my_arg->num_metrics);
 
   // -------------------------
   // write to IO
   // -------------------------
+  metric_set_t* ms = hpcrun_get_metric_set_specific(&(my_arg->cct2metrics_map), node);
+
+  hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -440,6 +441,9 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
   return new;
 }
 
+//***************************************************************************
+// node type interface
+//***************************************************************************
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path
@@ -448,13 +452,6 @@ void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
   node->node_type |= NODE_TYPE_LEAF;
-}
-
-void
-hpcrun_cct_set_node_allocation(cct_node_t *node)
-{
-  node->node_type |= NODE_TYPE_ALLOCATION;
-  hpcrun_cct_retain(node);
 }
 
 bool
@@ -467,10 +464,28 @@ hpcrun_cct_is_leaf(cct_node_t *node)
   return false;
 }
 
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_ALLOCATION;
+}
+
 bool
 hpcrun_cct_is_node_allocation(cct_node_t *node)
 {
   return (node->node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
+}
+
+void
+hpcrun_cct_set_node_variable(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+bool
+hpcrun_cct_is_node_variable(cct_node_t *node)
+{
+  return (node->node_type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
 }
 
 //
@@ -491,6 +506,23 @@ hpcrun_cct_is_node_memaccess(cct_node_t *node)
   return (node->node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
+// mark that the node is supposed to be a root
+// theoretically, a root has no parent, but to make it easy
+// we need a fake root and hang it to the invisible parent
+void
+hpcrun_cct_set_node_root(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_ROOT;
+}
+
+// check if the node is supposed to be a root
+bool
+hpcrun_cct_is_node_root(cct_node_t *node)
+{
+  return hpcrun_fmt_node_type_root(node->node_type);
+}
+
+//***************************************************************************
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -499,6 +531,7 @@ hpcrun_cct_is_node_memaccess(cct_node_t *node)
 // cct is ASSUMED TO BE DIFFERENT FROM ANY ADDR IN target's
 // child set. [Otherwise something recursive has to happen]
 //
+//***************************************************************************
 //
 cct_node_t*
 hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
@@ -636,7 +669,7 @@ hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
 // Writing operation
 //
 int
-hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
+hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
@@ -653,6 +686,10 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
     .fs          = fs,
     .flags       = flags,
     .tmp_node    = &tmp_node,
+
+    // multithreaded code: add personalized cct2metrics_map for multithreading programs
+    // this is to allow a thread to write the profile data of another thread.
+    .cct2metrics_map = cct2metrics_map
   };
   
   hpcrun_metricVal_t metrics[num_metrics];
@@ -839,21 +876,6 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
   return hpcrun_cct_insert_addr(root, &(path->addr));
 }
 
-static spinlock_t datatree_lock = SPINLOCK_UNLOCKED;
-
-// thread-safety version of hpcrun_cct_insert_path_return_leaf
-cct_node_t*
-hpcrun_cct_insert_path_return_leaf_ts(cct_node_t *path, cct_node_t *root)
-{
-  if(!path || ! path->parent) return root;
-  root = hpcrun_cct_insert_path_return_leaf_ts(path->parent, root);
-
-  spinlock_lock(&datatree_lock);
-  cct_node_t *node =  hpcrun_cct_insert_addr(root, &(path->addr));
-  spinlock_unlock(&datatree_lock);
-
-  return node;
-}
 
 
 cct_node_t *

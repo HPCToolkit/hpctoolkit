@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,10 @@
 
 #ifndef include_gnu_dis_asm_h
 #define include_gnu_dis_asm_h
+
+// correct for a missing header file in binutils 2.31.1
+
+#include <string.h>
 
 //*************************** User Include Files ****************************
 

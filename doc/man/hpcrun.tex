@@ -177,8 +177,17 @@ Allocate an additional segment to store measurement data
 whenever free space in the current segment is less than the specified \Arg{size}.
 If not given, the default for \Arg{size} is~80K.
 
-\item[\OptArg{-m}{size}, \OptArg{--memsize}{size}]
-Uuse the specified \Arg{size} as segment size when allocating memory for measurement data.
+\item[\OptArg{-m}{switch}, \OptArg{--merge-threads}{switch}]  Merge non-overlapped threads into one virtual thread.
+                       This option is to reduce the number of generated
+                       profile and trace files as each thread generates its own
+                       profile and trace data. The options are:
+\begin{itemize}
+   \item 0 : do not merge non-overlapped threads
+   \item 1 : merge non-overlapped threads (default)
+\end{itemize}
+
+\item[\OptArg{-ms}{size}, \OptArg{--memsize}{size}]
+Use the specified \Arg{size} as segment size when allocating memory for measurement data.
 The specified value is rounded up to a multiple of the `system page size.
 If not given, the default for \Arg{size} is~4M.
 
@@ -527,7 +536,7 @@ Version: \Version
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2018, Rice University.
+\item[Copyright] \copyright\ 2002-2019, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

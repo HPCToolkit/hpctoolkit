@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -258,6 +258,19 @@ printFileEnd(ostream * os, FileInfo * finfo)
   doIndent(os, 1);
   *os << "</F>\n";
 }
+
+//----------------------------------------------------------------------
+void
+printVariable(ostream * os, FileInfo * finfo, VariableInfo vinfo)
+{
+  doIndent(os, 2);
+  *os << "<V"
+      << INDEX
+      << STRING("n", vinfo.prettyName)
+      << VRANGE(vinfo.entry_vma, vinfo.num_bytes)
+      << "/>\n";
+}
+
 
 //----------------------------------------------------------------------
 

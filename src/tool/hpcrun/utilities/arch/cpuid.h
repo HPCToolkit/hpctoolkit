@@ -62,19 +62,23 @@ struct cpuid_type_s {
 typedef enum {
   CPU_UNSUP = 0,
 
-  INTEL_WSM_EX,
-  INTEL_SNB,
-  INTEL_SNB_EP,
-  INTEL_NHM_EX,
-  INTEL_NHM_EP,
-  INTEL_WSM_EP,
-  INTEL_IVB_EX,
-  INTEL_HSX,
-  INTEL_BDX,
-  INTEL_SKX,
-  INTEL_KNL,
+  INTEL_WSM_EX,   // westmere
+  INTEL_WSM_EP,   // westmere server
 
-  AMD_MGN_CRS
+  INTEL_SNB,      // sandy bridge
+  INTEL_SNB_EP,   // sandy bridge server
+  INTEL_NHM_EX,   // nehalem
+  INTEL_NHM_EP,   // nehalem server
+
+  INTEL_IVB_EX,   // ivy bridge
+
+  INTEL_HSX,      // haswell
+  INTEL_BDX,      // broadwell
+  INTEL_SKX,      // sky lake
+  INTEL_ICL,
+  INTEL_KNL,      // knight landing
+
+  AMD_MGN_CRS     // amd magny cours
 } cpu_type_t;
 
 
