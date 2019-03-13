@@ -81,39 +81,44 @@ FUNCTION_FOLDER(first_touch)
 /******************************************************************************
  * local variables
  *****************************************************************************/
-static int metric_page_fault = -1;
+
+
+/******************************************************************************
+ * local methods
+ *****************************************************************************/
+
 
 static void
-memcentric_handler(event_info_t *current, void *context, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+memcentric_handler(event_handler_arg_t *args)
 {
-  if ( (current == NULL)      ||  (mmap_data == NULL) ||
-       (mmap_data->addr == 0) ||  (sv.sample_node == NULL))
+  if ( (args->current == NULL) || (args->data == NULL) ||
+       (args->data->addr == 0) || (args->sample->sample_node == NULL))
     return;
 
   // memory information exists
   void *start, *end;
-  struct datatree_info_s *info = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+  struct datatree_info_s *info = datatree_splay_lookup((void*) args->data->addr, &start, &end);
 
   if (info && info->context) {
-    cct_node_t *root   = hpcrun_cct_get_root(sv.sample_node);
-    cct_node_t *cursor = hpcrun_insert_special_node(root, POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
+    thread_data_t* td    = hpcrun_get_thread_data();
+    cct_bundle_t *bundle = &(td->core_profile_trace_data.epoch->csdata);
+
+    cct_node_t *root = hpcrun_insert_special_node(bundle->tree_root,
+        POINTER_TO_FUNCTION FUNCTION_FOLDER_NAME(first_touch));
 
     // copy the call path of the malloc
-    cct_node_t *node   = info->context;
-    cursor             = hpcrun_cct_insert_path_return_leaf(node, cursor);
+    cct_node_t *node =  hpcrun_cct_insert_path_return_leaf(info->context, root);
 
-    metric_set_t* mset = hpcrun_reify_metric_set(cursor);
+    metric_set_t* mset = hpcrun_reify_metric_set(node);
 
-    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, metric_page_fault);
+    hpcrun_metricVal_t* loc = hpcrun_metric_set_loc(mset, args->metric);
     if (loc->i == 0) {
-      loc->i = mmap_data->addr;
+      loc->i = args->data->addr;
     }
 
-    thread_data_t *td = hpcrun_get_thread_data();
-    td->core_profile_trace_data.perf_event_info[metric_page_fault].num_samples++;
+    td->core_profile_trace_data.perf_event_info[args->metric].num_samples++;
 
-    TMSG(DATACENTRIC, "handling node %p, cct: %p, addr: %p", node, sv.sample_node, mmap_data->addr);
+    TMSG(DATACENTRIC, "handling node %p, cct: %p, addr: %p", node, args->sample->sample_node, args->data->addr);
   }
 }
 
@@ -135,7 +140,7 @@ memcentric_register(sample_source_t *self, event_custom_t *event, struct event_t
   // ------------------------------------------
   // create metric page-fault
   // ------------------------------------------
-  metric_page_fault = hpcrun_new_metric();
+  int metric_page_fault = hpcrun_new_metric();
 
   hpcrun_set_metric_info_and_period(
       metric_page_fault, "PAGE-FAULTS",
@@ -179,7 +184,7 @@ memcentric_register(sample_source_t *self, event_custom_t *event, struct event_t
 
 
 /******************************************************************************
- * method definitions
+ * Interface
  *****************************************************************************/
 
 

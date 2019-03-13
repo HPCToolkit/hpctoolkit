@@ -143,6 +143,7 @@
       <!--   (l)ine range: "beg-end" (inclusive range) -->
       <!--   (a)lien: whether frame is alien to enclosing P -->
       <!--   (str)uct: hpcstruct node id -->
+      <!--   (t)ype: hpcrun node type: memory access, variable declaration, ...  -->
       <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
       <!ELEMENT PF (PF|Pr|L|C|S|M)*>
       <!ATTLIST PF

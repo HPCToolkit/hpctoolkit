@@ -1274,7 +1274,7 @@ ProcFrm::toStringMe(uint oFlags) const
     }
 
     if (m_hpcrun_type > 0) {
-      self += " h" + xml::MakeAttrNum(m_hpcrun_type) ;
+      self += " t" + xml::MakeAttrNum(m_hpcrun_type) ;
     }
   }
 
