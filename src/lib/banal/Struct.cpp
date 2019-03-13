@@ -375,7 +375,6 @@ public:
   {
     // try cache first
     if (start <= vma && vma < end) {
-      cout << hex << "[start = " << start << " <= " << vma << " < " << end << "]" << dec << endl;
       filenm = cache_filenm;
       line = cache_line;
       return true;
@@ -399,7 +398,6 @@ public:
     }
 
     // no line info available
-    cout << "no line info available for address: " << hex << vma << dec << endl;
     filenm = "";
     line = 0;
     return false;
@@ -484,7 +482,6 @@ LoopInfoLessThan(LoopInfo * l1, LoopInfo * l2)
 static void
 getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
 {
-    cout << "getStatement called " << hex << vma << dec << endl;
   svec.clear();
 
   // try the Module in sym_func first as a hint
@@ -512,10 +509,8 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
   // a known file and unknown line is now legal, but we require that
   // any line map must contain a file name
   if (! svec.empty() && svec[0]->getFile() == "") {
-    cout << "clearing svec for empty file name " << endl;
     svec.clear();
   }
-  cout << "end get statement " << hex << vma << dec << endl;
 }
 
 //----------------------------------------------------------------------
@@ -618,7 +613,6 @@ makeStructure(string filename,
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
 	    Module * mod = modVec[i];
-        cout << "parse line information for mod: " << mod->fullName() << endl;
 	    auto lineinfo = mod->parseLineInformation();
       }
     }  // end parallel
@@ -762,7 +756,6 @@ doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
 static void
 makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
 {
-    cout << "makeWorkList " << endl;
   double total_cost = 0.0;
 
   wlPrint.clear();
@@ -794,7 +787,6 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
   // if single-threaded, then order doesn't matter
   if (opts.jobs == 1) {
     wlLaunch = wlPrint;
-    cout << "end work list single \n" << endl;
     return;
   }
 
@@ -822,7 +814,6 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
       wlLaunch.push_back(witem);
     }
   }
-  cout << "end make work list " << endl;
 }
 
 //----------------------------------------------------------------------
@@ -958,7 +949,6 @@ static void
 getProcLineMap(StatementVector & svec, Offset vma, Offset end,
 	       SymtabAPI::Function * sym_func)
 {
-  cout << "getProcLineMap called " << hex << vma << dec << endl;
   svec.clear();
 
   // try a full module lookup first
@@ -1068,7 +1058,6 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 static FileMap *
 makeSkeleton(CodeObject * code_obj, const string & basename)
 {
-  cout << "start of make skeleton\n" << endl;    
   FileMap * fileMap = new FileMap;
   string unknown_base = unknown_file + " [" + basename + "]";
   bool is_shared = ! (the_symtab->isExec());
@@ -1083,7 +1072,6 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
   for (auto flit = funcList.begin(); flit != funcList.end(); ++flit) {
     ParseAPI::Function * func = *flit;
-    cout << "func addr: " << hex << func->addr() << dec << endl;   
     funcMap[func->addr()] = func;
   }
 
@@ -1100,7 +1088,6 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
     string  vma_str = buf.str();
 
     DEBUG_SKEL("\nskel:    " << vma_str << "  " << func->name() << "\n");
-    cout << "skel:    " << vma_str << "  " << func->name() << "\n";
     // see if entry vma lies within a valid symtab function
     bool found = the_symtab->getContainingFunction(vma, sym_func);
     VMA  sym_start = 0;
@@ -1125,17 +1112,12 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	       << "  next:  0x" << next_vma
 	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n");
 
-    cout << "symbol:  0x" << hex << sym_start << "--0x" << sym_end
-	       << "  next:  0x" << next_vma
-	       << "  region:  0x" << reg_start << "--0x" << reg_end << dec << "\n" << endl;
-
     // symtab doesn't recognize plt funcs and puts them in the wrong
     // region.  to be a valid symbol, the func entry must lie within
     // the symbol's region.
     if (found && sym_func != NULL && region != NULL
 	&& reg_start <= vma && vma < reg_end)
     {
-      cout << "for vma " << hex << vma << dec << " we found the containing function in symtab api " << endl;
       string filenm = unknown_base;
       string linknm = unknown_link + vma_str;
       string prettynm = unknown_proc + " " + vma_str + " [" + basename + "]";
@@ -1151,9 +1133,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       getProcLineMap(svec, sym_start, sym_end, sym_func);
 
       if (! svec.empty()) {
-          cout << " getProcLineMap: svec size: " << svec.size() << hex << " vma: " << sym_start << dec << endl;
 	    filenm = svec[0]->getFile();
-        cout << "* filename: " << filenm << endl;
 	    line = svec[0]->getLine();
 	    RealPathMgr::singleton().realpath(filenm);
      } else {
@@ -1166,7 +1146,6 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	// cases are also valid).
 	//
 	DEBUG_SKEL("(case 1)\n");
-    cout << "ParseAPI func start address matches SymtabAPI func start address " << hex << vma << dec << endl;
 	auto mangled_it = sym_func->mangled_names_begin();
 	auto pretty_it = sym_func->pretty_names_begin();
 
@@ -1174,9 +1153,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	  linknm = *mangled_it;
       auto p = linknm.find("_dyninst");
       if (p != string::npos) {
-         cout << "link name contains _dyninst " << linknm << endl;  
          linknm.erase(p, string::npos);
-         cout << "after erasing " << linknm << endl;
       }
 	  //if (opts.ourDemangle) {
 	    prettynm = BinUtil::demangleProcName(linknm);
@@ -1206,7 +1183,6 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	  parse_filenm = pvec[0]->getFile();
 	  parse_line = pvec[0]->getLine();
 	  RealPathMgr::singleton().realpath(parse_filenm);
-      cout << "parse_filenm: " << parse_filenm << " parse_line " << parse_line << endl;
 	}
 
 	string parse_base = FileUtil::basename(parse_filenm.c_str());
@@ -1252,13 +1228,10 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       // line map).  make a fake group at the parseapi entry vma.
       // this normally only happens for plt funcs.
       //
-      cout << "no symtab symbol claiming this vma " << hex << vma << dec << endl;
       string linknm = func->name();
       auto p = linknm.find("_dyninst");
       if (p != string::npos) {
-         cout << "link name contains _dyninst " << linknm << endl;  
          linknm.erase(p, string::npos);
-         cout << "after erasing " << linknm << endl;
       }
       string prettynm = BinUtil::demangleProcName(linknm);
       VMA end = 0;
@@ -1305,12 +1278,10 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	prettynm += " (" + basename + ")";
       }
 
-      cout << "add linknm: " << linknm << " prettynm " << prettynm << endl;
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
       addProc(fileMap, pinfo, unknown_base, NULL, vma, end);
     }
   }
-  cout << "end of iteration makeskeleton\n" << endl;
 
 #if DEBUG_SKEL_SUMMARY
   // print the skeleton map
@@ -1701,7 +1672,6 @@ static void
 doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 	BlockSet & visited, Block * block, TreeNode * root)
 {
-    cout << "do block in for function " << func->name() << endl;
   if (block == NULL || visited[block]) {
     return;
   }
@@ -1723,7 +1693,6 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     Offset vma = iit->first;
     string filenm = "";
     uint line = 0;
-     cout << "iterating instructions in the block of func " << func->name() << hex << " instr addr: " << vma << dec << endl;
 
 #ifdef DYNINST_INSTRUCTION_PTR
     int  len = iit->second->size();
