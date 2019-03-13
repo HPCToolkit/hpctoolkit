@@ -141,7 +141,7 @@
   macro("EM_TIME (us)",    11)  
 
 #define FORALL_SYNC(macro) \
-  macro("SYNC_UNKNWON (us)",     0) \
+  macro("SYNC_UNKNOWN (us)",     0) \
   macro("SYNC_EVENT (us)",       1) \
   macro("SYNC_STREAM (us)",      2) \
   macro("SYNC_STREAM_WAIT (us)", 3) \
@@ -672,11 +672,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_monitoring_set(runtime_activities, true);
 
     //// TODO(keren) ppecify desired monitoring
-    //if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
     //} else {
     //}
 
-    cupti_pc_sampling_enable();
+    if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
+      cupti_pc_sampling_enable();
+    }
 
     cupti_monitoring_set(kernel_invocation_activities, true);
 

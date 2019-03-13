@@ -3,6 +3,8 @@
 #include <dlfcn.h>  // dlopen
 #include <limits.h>  // PATH_MAX
 
+#include <monitor.h>  // PATH_MAX
+
 #include <hpcrun/loadmap.h>
 #include <lib/prof-lean/pfq-rwlock.h>
 
@@ -35,10 +37,10 @@ lm_contains_fn(const char *lm, const char *fn) {
   bool load_handle = false;
 
   char *lm_real = realpath(lm, resolved_path);
-  void *handle = dlopen(lm_real, RTLD_NOLOAD);
+  void *handle = monitor_real_dlopen(lm_real, RTLD_NOLOAD);
   // At the start of a program, libs are not loaded by dlopen
   if (handle == NULL) {
-    handle = dlopen(lm_real, RTLD_LAZY);
+    handle = monitor_real_dlopen(lm_real, RTLD_LAZY);
     load_handle = handle ? true : false;
   }
   PRINT("query path = %s\n", lm_real);
@@ -63,7 +65,7 @@ lm_contains_fn(const char *lm, const char *fn) {
   }
   // Close the handle it is opened here
   if (load_handle) {
-    dlclose(handle);
+    monitor_real_dlclose(handle);
   }
   return result;
 }

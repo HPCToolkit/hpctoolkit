@@ -484,6 +484,7 @@ hpcrun_init_internal(bool is_child)
   //
   if (! is_child) {
     SAMPLE_SOURCES(process_event_list, lush_metrics);
+    hpcrun_metrics_data_finalize();
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 

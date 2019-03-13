@@ -112,9 +112,14 @@ void hpcrun_pre_allocate_metrics(size_t num);
 
 int hpcrun_get_num_metrics(kind_info_t *kind);
 
+void hpcrun_metrics_data_finalize();
+
 int hpcrun_get_num_kind_metrics(void);
 
 metric_desc_t* hpcrun_id2metric(int id);
+
+// non finalizing
+metric_desc_t* hpcrun_id2metric_linked(int metric_id);
 
 metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
