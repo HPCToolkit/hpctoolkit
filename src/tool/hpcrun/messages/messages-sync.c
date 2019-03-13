@@ -136,7 +136,7 @@ messages_init()
   debug_flag_init();
   global_msg_count = 0;
 
-  spinlock_unlock(&pmsg_lock); // initialize lock for async operations
+  spinlock_init(&pmsg_lock); // initialize lock for async operations
 
   log_file    = stderr;
   log_file_fd = 2;      // std unix stderr
