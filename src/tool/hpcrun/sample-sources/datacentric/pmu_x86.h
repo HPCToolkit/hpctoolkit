@@ -86,8 +86,8 @@ struct pmu_config_s pmu_events[] = {
 
     {INTEL_WSM_EX, "MEM_INST_RETIRED:LATENCY_ABOVE_THRESHOLD:ldlat=3"},
 
-    {INTEL_KNL, "OFFCORE_RESPONSE_0"},
-    {INTEL_KNL, "MEM_UOPS_RETIRED:LD_L2_HIT"}
+    /// knl cannot initialize 2 PEBS events at the same execution  ?
+    {INTEL_KNL, "OFFCORE_RESPONSE_0"} //,    {INTEL_KNL, "MEM_UOPS_RETIRED:L2_MISS_LOAD"}
 };
 
 #endif // __PMU_X86_H__
