@@ -665,7 +665,6 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < wlLaunch.size(); i++) {
-          printf(" do work item %d\n", i);
 	    doWorkItem(wlLaunch[i], search_path, cuda_file, gapsFile != NULL);
 
 	// the printing must be single threaded
@@ -1355,7 +1354,6 @@ static void
 doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps)
 {
   long num_funcs = ginfo->procMap.size();
-  printf("doFunctionList called %lu\n", num_funcs);
   set <Address> coveredFuncs;
   VMAIntervalSet covered;
 
