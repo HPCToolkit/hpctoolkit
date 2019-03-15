@@ -92,12 +92,15 @@
 #include "env.h"
 
 #include "sample-sources/perf/event_custom.h"
+#include "sample-sources/perf/perfmon-util.h"
+#include "sample-sources/perf/perf_skid.h"
 
 
 /******************************************************************************
  * macros 
  *****************************************************************************/
 
+#define EVNAME_ADDRESS_CENTRIC "PAGE-FAULTS"
 
 /******************************************************************************
  * prototypes and forward declaration
@@ -296,6 +299,72 @@ datacentric_handler(event_handler_arg_t *args)
 }
 
 
+/*************
+ * Include address-centric with data-centric
+ *
+ * To record the first touch, we use perf_events' PAGE-FAULTS event
+ * which is delivered when a page fault occurs (by the kernel).
+ *
+ * It seems this software event has the same effect with mprotect()
+ * but without requiring to handle sigsegv. We need to avoid handling sigsegv
+ * since it interferes with hpcrun sigsegv.
+ *************/
+static int
+datacentric_register_address_centric(sample_source_t *self, event_custom_t  *event)
+{
+  event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_info == NULL)
+    return -1;
+
+  memset(event_info, 0, sizeof(event_info_t));
+
+  event_info->metric_custom = event;
+  u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID    |
+                    PERF_SAMPLE_TIME | PERF_SAMPLE_PERIOD |
+                    PERF_SAMPLE_CPU  | PERF_SAMPLE_ADDR
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+                    | PERF_SAMPLE_DATA_SRC | PERF_SAMPLE_WEIGHT
+#endif
+  ;
+
+  struct perf_event_attr *attr = &(event_info->attr);
+
+  if (pfmu_getEventAttribute(EVNAME_ADDRESS_CENTRIC, attr) < 0) {
+    EMSG("Cannot initialize event %s", EVNAME_ADDRESS_CENTRIC);
+    return 0; // the kernel has no support for page-faults event
+  }
+
+  // set the default attributes for page fault
+  perf_util_attr_init(
+      EVNAME_ADDRESS_CENTRIC,
+      attr,
+      true ,          /* use_period      */
+      1,              /* deliver sample for every page fault */
+      sample_type     /* need additional info to gather memory address */
+  );
+  perf_skid_set_max_precise_ip(attr);
+
+  // ------------------------------------------
+  // create metric page-fault
+  // ------------------------------------------
+  int metric_page_fault = hpcrun_new_metric();
+
+  hpcrun_set_metric_info_and_period(
+      metric_page_fault, EVNAME_ADDRESS_CENTRIC,
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
+
+  // ------------------------------------------
+  // register the event to be created later
+  // ------------------------------------------
+
+  METHOD_CALL(self, store_event_and_info,
+              attr->config,       /* event id     */
+              1,                  /* threshold    */
+              metric_page_fault,  /* metric id    */
+              event_info          /* info pointer */ );
+
+  return 1;
+}
 
 /****
  * register datacentric event
@@ -304,7 +373,7 @@ datacentric_handler(event_handler_arg_t *args)
  *
  *  This method will create metrics for different memory events and then the
  *  metrics are read-only, it will not modified by others.
- *  All children threads will use this metrics to record the memory activities.
+ *  All child threads will use this metric descriptors to record the memory activities.
  */
 static int
 datacentric_register(sample_source_t *self,
@@ -320,6 +389,11 @@ datacentric_register(sample_source_t *self,
   int result = datacentric_hw_register(self, event, &threshold);
   if (result == 0)
     return 0;
+
+  // ------------------------------------------
+  // Support for address centric (page fault event)
+  // ------------------------------------------
+  datacentric_register_address_centric(self, event);
 
   return 1;
 }

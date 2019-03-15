@@ -314,8 +314,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period)
 {
   int size = sizeof(pmu_events)/sizeof(struct pmu_config_s);
-  u64 sample_type = PERF_SAMPLE_CALLCHAIN
-                    | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
+  u64 sample_type =   PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
                     | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
