@@ -66,17 +66,6 @@ typedef struct event_handler_arg_s {
 } event_handler_arg_t;
 
 
-typedef struct event_custom_s event_custom_t;
-
-// callback functions
-typedef int  register_event_t(sample_source_t *self,
-                              event_custom_t *event,
-                              struct event_threshold_s *period);
-
-typedef void event_handler_t(event_handler_arg_t *args);
-
-typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
-
 // --------------------------------------------------------------
 // data structure for our customized event
 // this type should be used only within perf module.
@@ -91,6 +80,18 @@ typedef struct event_custom_s {
   event_handle_type_t handle_type; // whether the handler will be called exclusively or inclusively (all events)
 
 } event_custom_t;
+
+
+typedef struct event_custom_s event_custom_t;
+
+// callback functions
+typedef int  register_event_t(sample_source_t *self,
+                              event_custom_t *event,
+                              struct event_threshold_s *period);
+
+typedef void event_handler_t(event_handler_arg_t *args);
+
+typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
 
 
 // --------------------------------------------------------------
@@ -109,7 +110,7 @@ event_custom_t *event_custom_find(const char *name);
 
 /**
  * register a new event. 
- * For the sake of simplicity, if an event already exists, it still  adda it the head.
+ * For the sake of simplicity, if an event already exists, it still adds it.
  * The caller has to make sure the name of the event is unique
  * @param event_custom_t event
  **/

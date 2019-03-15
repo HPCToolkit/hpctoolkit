@@ -351,7 +351,7 @@ datacentric_register_address_centric(sample_source_t *self, event_custom_t  *eve
 
   hpcrun_set_metric_info_and_period(
       metric_page_fault, EVNAME_ADDRESS_CENTRIC,
-      MetricFlags_ValFmt_Int, 1, metric_property_none);
+      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // ------------------------------------------
   // register the event to be created later

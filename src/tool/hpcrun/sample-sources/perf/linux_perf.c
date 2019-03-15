@@ -123,7 +123,6 @@
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
 #include "sample-sources/datacentric/datacentric.h"     // api for datacentric
-#include "sample-sources/datacentric/memaddress.h"      // api for address centric
 
 #include "lib/support-lean/compress.h"
 
@@ -625,7 +624,6 @@ METHOD_FN(init)
   // init events
   kernel_blocking_init();
   datacentric_init();
-  memcentric_init();
 
   TMSG(LINUX_PERF, "%d: init ok", self->sel_idx);
 }
