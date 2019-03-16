@@ -279,22 +279,29 @@ datacentric_handler(event_handler_arg_t *args)
     hpcrun_metricVal_t val_addr;
     val_addr.p = (void *)mmap_data->addr;
 
-    // check if this is the minimum value. if this is the case, record it in the metric
+    // record the lower offset address
     int metric_id = datacentric_get_metric_addr_start();
     hpcrun_metric_std_min(metric_id, mset, val_addr);
 
-    // check if this is the maximum value. if this is the case, record it in the metric
+    // record the upper offset address
     metric_id = datacentric_get_metric_addr_end();
     val_addr.p++;
     hpcrun_metric_std_max(metric_id, mset, val_addr);
 
-    // re-record metric event for this node
+    // re-record metric event for this node with the same value as linux_perf
+    // the total metric of hpcrun cct and datacentric has to be the same for this metric
+    //
+    // this is important so that users can see the aggregate metrics across variables
+    // while datacentric shows the distribution between variables
+
     hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
 
     hpcrun_cct_set_node_memaccess(node);
   }
 
   // hardware specific event handler
+  // e.g. Intel PEBS provides additional information in the mmapped buffer
+  ///     for memory latency (see perf c2c and mem tool)
   datacentric_hw_handler(mmap_data, node, sample_node);
 }
 

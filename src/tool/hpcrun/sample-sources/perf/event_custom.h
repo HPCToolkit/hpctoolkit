@@ -55,31 +55,15 @@
 
 
 typedef struct event_handler_arg_s {
-  int    metric;       /* metric id */
-  double metric_value; /* the value of the metric by perf handler */
-  void   *context;     /* current context */
+  int    metric;                      /* metric id */
+  double metric_value;                /* the value of the metric by perf handler */
+  void   *context;                    /* current context */
 
-  sample_val_t *sample; /* the result of sampling by hpcrun callpath */
+  sample_val_t *sample;               /* the result of sampling by hpcrun callpath */
 
-  struct event_info_s     *current;  /* info of the event */
-  struct perf_mmap_data_s *data;     /* additional data from Linux kernel */
+  struct event_info_s     *current;   /* info of the event */
+  struct perf_mmap_data_s *data;      /* additional data from Linux kernel */
 } event_handler_arg_t;
-
-
-// --------------------------------------------------------------
-// data structure for our customized event
-// this type should be used only within perf module.
-// --------------------------------------------------------------
-typedef struct event_custom_s {
-  const char *name;            // unique name of the event
-  const char *desc;            // brief description of the event
-
-  register_event_t *register_fn;// function to register the event
-  event_handler_t  *handler_fn; // callback to be used during the sampling
-
-  event_handle_type_t handle_type; // whether the handler will be called exclusively or inclusively (all events)
-
-} event_custom_t;
 
 
 typedef struct event_custom_s event_custom_t;
@@ -92,6 +76,21 @@ typedef int  register_event_t(sample_source_t *self,
 typedef void event_handler_t(event_handler_arg_t *args);
 
 typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
+
+// --------------------------------------------------------------
+// data structure for our customized event
+// this type should be used only within perf module.
+// --------------------------------------------------------------
+typedef struct event_custom_s {
+  const char *name;                 // unique name of the event
+  const char *desc;                 // brief description of the event
+
+  register_event_t *register_fn;    // function to register the event
+  event_handler_t  *handler_fn;     // callback to be used during the sampling
+
+  event_handle_type_t handle_type;  // whether the handler will be called exclusively or inclusively (all events)
+
+} event_custom_t;
 
 
 // --------------------------------------------------------------
