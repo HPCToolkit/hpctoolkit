@@ -238,6 +238,8 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
+    if (dLCA > HPCTRACE_FMT_DLCA_NULL)
+      dLCA = HPCTRACE_FMT_DLCA_NULL;
     HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
