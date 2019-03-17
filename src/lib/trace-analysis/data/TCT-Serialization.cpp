@@ -267,6 +267,7 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTIterationTraceNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTACFGNode>(*this);
+    ar & iterNum;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTIterationTraceNode)
   

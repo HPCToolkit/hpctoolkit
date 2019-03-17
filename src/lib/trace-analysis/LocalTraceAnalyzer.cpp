@@ -402,10 +402,12 @@ namespace TraceAnalysis {
         current = reader.readNextSample();
       }
 
+      Time samplePeriod = (prev->timestamp - root->getTime().getStartTimeExclusive()) / numSamples;
+      
       // Pop every thing in active stack.
       numSamples++;
       while (activeStack.size() > 0)
-        popActiveStack(prev->timestamp, prev->timestamp + 1);    
+        popActiveStack(prev->timestamp, prev->timestamp + samplePeriod);    
       delete prev;
 
       root->finalizeEnclosingLoops();
@@ -444,7 +446,7 @@ namespace TraceAnalysis {
       return false;
   }
   
-  TCTClusterNode* LocalTraceAnalyzer::analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
+  TCTClusterNode* LocalTraceAnalyzer::analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks, vector<TCTRootNode*>& rootNodes) {
     // Step 1: analyze binary files to get CFGs for later analysis
     const Prof::LoadMap* loadmap = prof->loadmap();
     for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
@@ -499,6 +501,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
       LocalTraceAnalyzerImpl analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
       TCTRootNode* root = analyzer.analyze();
+      rootNodes.push_back((TCTRootNode*)root->duplicate());
       print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 0, 0).c_str());
       
       if (rootCluster == NULL) {

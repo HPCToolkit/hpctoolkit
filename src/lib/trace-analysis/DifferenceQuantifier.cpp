@@ -398,10 +398,18 @@ namespace TraceAnalysis {
       if (node1->getNumChild() > 0)
         for (auto it = node1->getEntryEdges().begin(); it != node1->getEntryEdges().end(); it++)
           em.insertPendingEdge((*it)->duplicate(), &TCTACFGNode::dummyBeginNode);
+      else {
+        TCTACFGNode::Edge* edge = new TCTACFGNode::Edge(&TCTACFGNode::dummyBeginNode, &TCTACFGNode::dummyEndNode, weight1);
+        em.insertPendingEdge(edge, &TCTACFGNode::dummyBeginNode);
+      }
       
       if (node2->getNumChild() > 0)
         for (auto it = node2->getEntryEdges().begin(); it != node2->getEntryEdges().end(); it++)
           em.insertPendingEdge((*it)->duplicate(), &TCTACFGNode::dummyBeginNode);
+      else {
+        TCTACFGNode::Edge* edge = new TCTACFGNode::Edge(&TCTACFGNode::dummyBeginNode, &TCTACFGNode::dummyEndNode, weight2);
+        em.insertPendingEdge(edge, &TCTACFGNode::dummyBeginNode);
+      }
     }
     
     while (k1 < node1->getNumChild() || k2 < node2->getNumChild()) {

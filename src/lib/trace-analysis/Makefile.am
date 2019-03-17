@@ -85,7 +85,8 @@ MYSOURCES = \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
 	TraceFileReader.hpp TraceFileReader.cpp \
 	DifferenceQuantifier.hpp DifferenceQuantifier.cpp \
-	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp
+	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp \
+	ClockSynchronizer.hpp ClockSynchronizer.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 LIBDWARF_INC = @LIBDWARF_INC@

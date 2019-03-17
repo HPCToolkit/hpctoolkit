@@ -153,7 +153,8 @@ am__objects_1 = data/libHPCtrace_analysis_la-TCT-Time.lo \
 	libHPCtrace_analysis_la-LocalTraceAnalyzer.lo \
 	libHPCtrace_analysis_la-TraceFileReader.lo \
 	libHPCtrace_analysis_la-DifferenceQuantifier.lo \
-	libHPCtrace_analysis_la-PerformanceDiagnoser.lo
+	libHPCtrace_analysis_la-PerformanceDiagnoser.lo \
+	libHPCtrace_analysis_la-ClockSynchronizer.lo
 am_libHPCtrace_analysis_la_OBJECTS = $(am__objects_1)
 libHPCtrace_analysis_la_OBJECTS =  \
 	$(am_libHPCtrace_analysis_la_OBJECTS)
@@ -543,7 +544,8 @@ MYSOURCES = \
 	LocalTraceAnalyzer.hpp LocalTraceAnalyzer.cpp \
 	TraceFileReader.hpp TraceFileReader.cpp \
 	DifferenceQuantifier.hpp DifferenceQuantifier.cpp \
-	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp
+	PerformanceDiagnoser.hpp PerformanceDiagnoser.cpp \
+	ClockSynchronizer.hpp ClockSynchronizer.cpp
 
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
@@ -653,6 +655,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-BinaryAnalyzer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-CCTVisitor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-ClockSynchronizer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-DifferenceQuantifier.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-LocalTraceAnalyzer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCtrace_analysis_la-PerformanceDiagnoser.Plo@am__quote@
@@ -787,6 +790,13 @@ libHPCtrace_analysis_la-PerformanceDiagnoser.lo: PerformanceDiagnoser.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='PerformanceDiagnoser.cpp' object='libHPCtrace_analysis_la-PerformanceDiagnoser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-PerformanceDiagnoser.lo `test -f 'PerformanceDiagnoser.cpp' || echo '$(srcdir)/'`PerformanceDiagnoser.cpp
+
+libHPCtrace_analysis_la-ClockSynchronizer.lo: ClockSynchronizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCtrace_analysis_la-ClockSynchronizer.lo -MD -MP -MF $(DEPDIR)/libHPCtrace_analysis_la-ClockSynchronizer.Tpo -c -o libHPCtrace_analysis_la-ClockSynchronizer.lo `test -f 'ClockSynchronizer.cpp' || echo '$(srcdir)/'`ClockSynchronizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCtrace_analysis_la-ClockSynchronizer.Tpo $(DEPDIR)/libHPCtrace_analysis_la-ClockSynchronizer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ClockSynchronizer.cpp' object='libHPCtrace_analysis_la-ClockSynchronizer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCtrace_analysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCtrace_analysis_la-ClockSynchronizer.lo `test -f 'ClockSynchronizer.cpp' || echo '$(srcdir)/'`ClockSynchronizer.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

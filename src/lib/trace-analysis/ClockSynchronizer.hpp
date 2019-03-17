@@ -45,58 +45,33 @@
 // ******************************************************* EndRiceCopyright *
 
 /* 
- * File:   TraceAnalysis.cpp
+ * File:   ClockSynchronizer.hpp
  * Author: Lai Wei <lai.wei@rice.edu>
  *
- * Created on February 28, 2018, 10:59 PM
+ * Created on March 14, 2019, 11:32 AM
  */
 
-#include "TraceAnalysis.hpp"
-#include <lib/trace-analysis/LocalTraceAnalyzer.hpp>
-#include <lib/trace-analysis/PerformanceDiagnoser.hpp>
-#include <sys/time.h>
-#include "RemoteTraceAnalyzer.hpp"
+#ifndef CLOCKSYNCHRONIZER_HPP
+#define CLOCKSYNCHRONIZER_HPP
+
+#include "TraceAnalysisCommon.hpp"
+#include "data/TCT-Node.hpp"
 
 namespace TraceAnalysis {
-  bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
-    if (myRank == 0) {
-      struct timeval time;
-      gettimeofday(&time, NULL);
-      setStartTime(time.tv_sec * 1000000 + time.tv_usec);
-      print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
-    }
+  class ClockSynchronizer {
+  public:
+    ClockSynchronizer(const TCTRootNode* repRoot);
+    virtual ~ClockSynchronizer();
     
-    LocalTraceAnalyzer local;
-    vector<TCTRootNode*> rootNodes;
-    TCTClusterNode* rootCluster = local.analyze(prof, dbDir, myRank, numRanks, rootNodes);
+    /** Return the clock difference between two temporal context trees.
+     *  Clock difference = root1 - root2.
+     */
+    Time getClockDifference(const TCTRootNode* root1, const TCTRootNode* root2);
     
-    if (myRank == 0) {
-      struct timeval time;
-      gettimeofday(&time, NULL);
-      long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
-      print_msg(MSG_PRIO_MAX, "\nLocal trace analysis finished, remote trace analysis started at %s.\n", timeToString(timeDiff).c_str());
-    }
-    
-    RemoteTraceAnalyzer remote;
-    rootCluster = remote.analyze(rootCluster, myRank, numRanks);
-    
-    if (myRank == 0) {
-      struct timeval time;
-      gettimeofday(&time, NULL);
-      long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
-      print_msg(MSG_PRIO_MAX, "\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
-      
-      rootCluster->computeAvgRep();
-      print_msg(MSG_PRIO_NORMAL, "\nAvg Rep: %s", rootCluster->getAvgRep()->toString(20, 0, 10000).c_str());
-      print_msg(MSG_PRIO_NORMAL, "\nRoot Cluster: %s", rootCluster->toString(20, 0, 1000).c_str());
-      
-      PerformanceDiagnoser diagnoser;
-      diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
-    }
-    
-    for (TCTRootNode* root : rootNodes)
-      delete root;
-    delete rootCluster;
-    return true;
-  }
+  private:
+    void* ptr;
+  };
 }
+
+#endif /* CLOCKSYNCHRONIZER_HPP */
+

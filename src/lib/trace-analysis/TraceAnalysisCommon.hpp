@@ -59,9 +59,11 @@
 #include <string>
 using std::string;
 
+#include <climits>
+
 namespace TraceAnalysis {
   typedef unsigned long VMA; // Virtual Memory Address
-  typedef int64_t Time; // Virtual Memory Address
+  typedef int64_t Time;
   
   Time getStartTime();
   void setStartTime(Time time);
@@ -75,6 +77,8 @@ namespace TraceAnalysis {
   string vmaToHexString(VMA vma);
   string timeToString(Time time);
   
+  const double FP_ERROR = 1e-9;
+  
   // Parameters and functions for iteration identification.
   const int ITER_CHILD_DUR_ACC = 5; // 5 samples
   const int ITER_NUM_CHILD_ACC = 5;
@@ -84,6 +88,10 @@ namespace TraceAnalysis {
   // LOOP_REJ_THRESHOLD, the whole loop will be rejected.
   const double LOOP_REJ_THRESHOLD = 0.3;
 
+  // Parameters for iteration sampling
+  const int ITER_SAMPLE_SIZE = 10;
+  const int ITER_SAMPLE_SEED = 16807;
+  
   // Parameters and functions for difference quantification.
   const uint MAX_SAMPLE_NOISE = 10; // 10 samples
   const Time computeWeightedAverage(Time time1, long w1, Time time2, long w2);
@@ -112,6 +120,10 @@ namespace TraceAnalysis {
   const double IMB_RESOLVE_RATIO = 0.2;
   const double COMM_LONG_INSTANCE_SAMPLES = 100;
   const double COMM_SHORT_INSTANCE_SAMPLES = 10;
+  
+  // Parameters for clock synchronization.
+  const int MAX_CLOCK_SYNC_NOISE = 10;
+  const Time CLOCK_SYNC_FAILED = LONG_MIN;
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

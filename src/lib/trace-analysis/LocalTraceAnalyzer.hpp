@@ -68,7 +68,7 @@ namespace TraceAnalysis {
     LocalTraceAnalyzer();
     virtual ~LocalTraceAnalyzer();
     
-    TCTClusterNode* analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+    TCTClusterNode* analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks, vector<TCTRootNode*>& rootNodes);
   };
 }
 

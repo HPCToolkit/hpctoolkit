@@ -126,6 +126,10 @@ namespace TraceAnalysis {
     if (accept()) {
       string ret = TCTANode::toString(maxDepth, minDuration, minDiffScore);
      
+      for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+        if (sampledIterations[idx] != NULL)
+          ret += sampledIterations[idx]->toString(0, 0, 0);
+      
       if (profileNode != NULL) { 
         string temp = profileNode->toString(maxDepth, minDuration, minDiffScore);
         ret += temp.substr(temp.find_first_of('\n') + 1);
@@ -223,6 +227,8 @@ namespace TraceAnalysis {
       clusterNode = new TCTClusterNode(*this);
       profileNode = new TCTIterationTraceNode(id, name, depth, cfgGraph, semanticLabel);
       ((TCTACFGNode*)profileNode)->toCFGProfile();
+      for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+          sampledIterations[idx] = NULL;
     }
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& orig) : TCTANode(orig) {
@@ -253,6 +259,12 @@ namespace TraceAnalysis {
       profileNode = (TCTNonCFGProfileNode*)(orig.profileNode->duplicate());
     else
       profileNode = NULL;
+    
+    for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+      if (orig.sampledIterations[idx] == NULL)
+        sampledIterations[idx] = NULL;
+      else
+        sampledIterations[idx] = (TCTIterationTraceNode*) orig.sampledIterations[idx]->duplicate();
   }
   
   TCTLoopNode::TCTLoopNode(const TCTLoopNode& loop1, long weight1, const TCTLoopNode& loop2, long weight2, bool accumulate) : TCTANode(loop1) {
@@ -269,6 +281,9 @@ namespace TraceAnalysis {
     numIteration = loop1.numIteration;
     numAcceptedIteration = loop1.numAcceptedIteration;
     pendingIteration = NULL;
+    
+    for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+        sampledIterations[idx] = NULL;
     
     profileNode = diffQ.mergeNode(loop1.getProfileNode(), weight1, loop2.getProfileNode(), weight2, accumulate, false, false);
     
@@ -306,6 +321,10 @@ namespace TraceAnalysis {
 #endif
     if (clusterNode != NULL) delete clusterNode;
     if (profileNode != NULL) delete profileNode;
+    
+    for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+      if (sampledIterations[idx] != NULL)
+        delete sampledIterations[idx];
   }
   
   Time TCTLoopNode::getExclusiveDuration() const {
@@ -346,7 +365,6 @@ namespace TraceAnalysis {
     if (pendingIteration == NULL) return;
     
     pendingIteration->finalizeEnclosingLoops();
-    pendingIteration->shiftTime(-pendingIteration->getTime().getStartTimeExclusive());
     
     TCTACFGNode* iterProfile = (TCTACFGNode*)pendingIteration->duplicate();
     iterProfile->toCFGProfile();
@@ -361,7 +379,24 @@ namespace TraceAnalysis {
       numAcceptedIteration++;
 #ifdef KEEP_ACCEPTED_ITERATION      
       acceptedIterations.push_back(pendingIteration->duplicate());
-#endif     
+#endif
+      
+      pendingIteration->setIterNum(numAcceptedIteration);
+      if (numAcceptedIteration <= ITER_SAMPLE_SIZE)
+        sampledIterations[numAcceptedIteration-1] = (TCTIterationTraceNode*) pendingIteration->duplicate();
+      else {
+        int rand = generator.rand(numAcceptedIteration);
+        if (rand <= ITER_SAMPLE_SIZE) {
+          rand = generator.rand(ITER_SAMPLE_SIZE);
+          if (sampledIterations[rand] == NULL)
+            print_msg(MSG_PRIO_MAX, "ERROR: replacing sampled iterations but the original one is NULL.\n");
+          else
+            delete sampledIterations[rand];
+          sampledIterations[rand] = (TCTIterationTraceNode*) pendingIteration->duplicate();
+        }
+      }
+      
+      pendingIteration->shiftTime(-pendingIteration->getTime().getStartTimeExclusive());
       clusterNode->addChild(pendingIteration, numIteration);
       delete iterProfile;
     }
@@ -903,9 +938,16 @@ namespace TraceAnalysis {
   }
   
   void TCTACFGNode::adjustEdgeWeight(int w) {
+    if (outEdges.find(dummyBeginNode.id) == outEdges.end())
+      return;
+    
+    double origialWeight = 0;
+    for (auto edge : outEdges[dummyBeginNode.id])
+      origialWeight += edge->getWeight();
+      
     for (auto it = outEdges.begin(); it != outEdges.end(); it++)
       for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
-        (*eit)->setWeight(w);
+        (*eit)->setWeight((*eit)->getWeight() / origialWeight * w);
 
     for (TCTANode* child : children)
       if (child->type == TCTANode::Iter || child->type == TCTANode::Func)

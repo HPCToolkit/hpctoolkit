@@ -56,8 +56,12 @@
 #include "TraceAnalysisCommon.hpp"
 #include "DifferenceQuantifier.hpp"
 #include "PerformanceDiagnoser.hpp"
+#include "ClockSynchronizer.hpp"
 
 #include <sys/time.h>
+
+#include <vector>
+using std::vector;
 
 namespace TraceAnalysis {
   bool analysis(Prof::CallPath::Profile* prof, string dbDir) {
@@ -69,7 +73,8 @@ namespace TraceAnalysis {
     }
     
     LocalTraceAnalyzer analyzer;
-    TCTClusterNode* rootCluster = analyzer.analyze(prof, dbDir, 0, 1);
+    vector<TCTRootNode*> rootNodes;
+    TCTClusterNode* rootCluster = analyzer.analyze(prof, dbDir, 0, 1, rootNodes);
     
     {
       struct timeval time;
@@ -83,8 +88,14 @@ namespace TraceAnalysis {
       
       PerformanceDiagnoser diagnoser;
       diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
+      
+      ClockSynchronizer clocksync((TCTRootNode*)rootCluster->getAvgRep());
+      for (uint procID = 1; procID < rootNodes.size(); procID++)
+        print_msg(MSG_PRIO_NORMAL, "\n Clock diff between proc #0 and proc #%d is %ld.\n", procID, clocksync.getClockDifference(rootNodes[0], rootNodes[procID]));
     }
     
+    for (TCTRootNode* root : rootNodes)
+      delete root;
     delete rootCluster;
     return true;
   }

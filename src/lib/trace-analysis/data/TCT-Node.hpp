@@ -121,7 +121,7 @@ namespace std {
     {
       std::size_t h1 = hash<int>()(id.id);
       std::size_t h2 = hash<int>()(id.procID);
-      return h1 ^ (h2 << 1);
+      return h1 ^ (h2 << 8);
     }
   };
 }
@@ -352,7 +352,7 @@ namespace TraceAnalysis {
       Edge() {}
       
     public:
-      Edge(TCTANode* src, TCTANode* dst, long weight) : src(src), dst(dst), weight(weight) {}
+      Edge(TCTANode* src, TCTANode* dst, double weight) : src(src), dst(dst), weight(weight) {}
       virtual ~Edge() {}
       
     private:
@@ -361,17 +361,17 @@ namespace TraceAnalysis {
     public:
       TCTANode* getSrc() {return src;}
       TCTANode* getDst() {return dst;}
-      long getWeight() {return weight;}
+      double getWeight() {return weight;}
       
       Edge* duplicate() {
         return new Edge(*this);
       }
       
-      void addWeight(long inc) {
+      void addWeight(double inc) {
         weight += inc;
       }
       
-      void setWeight(long w) {
+      void setWeight(double w) {
         weight = w;
       }
       
@@ -388,7 +388,7 @@ namespace TraceAnalysis {
     private:
       TCTANode* src;
       TCTANode* dst;
-      long weight;
+      double weight;
     };
     
   private:
@@ -569,10 +569,10 @@ namespace TraceAnalysis {
     
   public:
     TCTIterationTraceNode(int id, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
-      TCTACFGNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
+      TCTACFGNode(Iter, id, 0, "", depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel), iterNum(-1) {}
     TCTIterationTraceNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel) :
-      TCTACFGNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel) {}
-    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTACFGNode(orig) {}
+      TCTACFGNode(Iter, id, 0, name, depth, cfgGraph, cfgGraph == NULL ? 0 : cfgGraph->vma, semanticLabel), iterNum(-1) {}
+    TCTIterationTraceNode(const TCTIterationTraceNode& orig) : TCTACFGNode(orig), iterNum(orig.iterNum) {}
     virtual ~TCTIterationTraceNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -581,6 +581,18 @@ namespace TraceAnalysis {
     virtual TCTANode* voidDuplicate() const {
       return new TCTIterationTraceNode(id.id, name, depth, cfgGraph, semanticLabel);
     }
+    
+    int getIterNum() const {
+      return iterNum;
+    }
+    
+    void setIterNum(int num) {
+      iterNum = num;
+      setName("Iteration #" + std::to_string(iterNum));
+    }
+    
+  private:
+    int iterNum;
   };
   
   class TCTLoopNode : public TCTANode {
@@ -592,6 +604,21 @@ namespace TraceAnalysis {
     // Constructor for serialization only.
     TCTLoopNode() : TCTANode(Loop), numIteration(-1), numAcceptedIteration(-1), 
       pendingIteration(NULL), clusterNode(NULL), rejectedIterations(NULL), profileNode(NULL) {}
+    
+    // A simple implementation of random number generator.
+    class RandGenerator {
+    public:
+      RandGenerator() : seed(ITER_SAMPLE_SEED) {};
+      RandGenerator(const RandGenerator& orig) : seed(orig.seed) {}
+      
+      int rand(int max) {
+        seed = seed * 48271 % 2147483647;
+        return seed % max;
+      }
+      
+    private:
+      long seed;
+    };
     
   public:
     TCTLoopNode(int id, string name, int depth, CFGAGraph* cfgGraph, uint semanticLabel);
@@ -686,6 +713,14 @@ namespace TraceAnalysis {
       return (pendingIteration != NULL);
     }
     
+    int getNumSampledIterations() const {
+      return std::min(ITER_SAMPLE_SIZE, numAcceptedIteration);
+    }
+    
+    const TCTIterationTraceNode* getSampledIteration(int idx) const {
+      return sampledIterations[idx];
+    }
+    
     void adjustCFGEdgeWeight(int w);
     
   protected:
@@ -704,6 +739,11 @@ namespace TraceAnalysis {
     // stores all accepted iterations
     vector<TCTIterationTraceNode*> acceptedIterations;
 #endif
+    
+    // Random number generator
+    RandGenerator generator;
+    // Stores sampled iterations
+    TCTIterationTraceNode* sampledIterations[ITER_SAMPLE_SIZE];
     
     // Stores clusters of accepted loop iterations
     TCTClusterNode* clusterNode;
