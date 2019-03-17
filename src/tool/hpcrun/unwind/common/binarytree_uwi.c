@@ -206,10 +206,19 @@ static void
 uwi_t_any_tostr(void* uwip, char str[], unwinder_t uw)
 {
   uwi_t *uwi = uwip;
+
+  //allocate and clear a string buffer
   char intervalstr[MAX_INTERVAL_STR];
+  intervalstr[0] = 0;
+
   interval_t_tostr(&uwi->interval, intervalstr);
+
+  //allocate and clear a string buffer
   char recipestr[MAX_RECIPE_STR];
+  recipestr[0] = 0;
+
   uw_recipe_tostr(uwi->recipe, recipestr, uw);
+
   sprintf(str, "(%s %s)", intervalstr, recipestr);
 }
 
@@ -236,7 +245,10 @@ void
 bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents,
 			   char treestr[], unwinder_t uw)
 {
+  // allocate and clear a string buffer
   char uwibuff[MAX_UWI_STR];
+  uwibuff[0] = 0;
+
   binarytree_tostring_indent((binarytree_t*)tree,
 	  uwi_t_tostr[uw], uwibuff, indents, treestr);
 }
