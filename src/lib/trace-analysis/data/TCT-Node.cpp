@@ -109,13 +109,15 @@ namespace TraceAnalysis {
     if (minDuration > 0 && time.getDuration() < minDuration) return ret;
     if (diffScore.getInclusive() < minDiffScore) return ret;
     if (name.find("<unknown procedure>") != string::npos) return ret;
-    
-    for (auto eit = outEdges.at(dummyBeginNode.id).begin(); eit != outEdges.at(dummyBeginNode.id).end(); eit++)
-      ret += (*eit)->toString();
-    
-    for (TCTANode* child : children)
-      for (auto eit = outEdges.at(child->id).begin(); eit != outEdges.at(child->id).end(); eit++)
+   
+/*    if (outEdges.find(dummyBeginNode.id) != outEdges.end()) {
+      for (auto eit = getEntryEdges().begin(); eit != getEntryEdges().end(); eit++)
         ret += (*eit)->toString();
+    
+      for (int idx = 0; idx < getNumChild(); idx++)
+        for (auto eit = getOutEdges(idx).begin(); eit != getOutEdges(idx).end(); eit++)
+          ret += (*eit)->toString();
+    }*/
     
     for (TCTANode* child : children)
       ret += child->toString(maxDepth, minDuration, minDiffScore);
@@ -875,7 +877,17 @@ namespace TraceAnalysis {
   
   void TCTACFGNode::completeNodeInit() {
     TCTANode::completeNodeInit();
-    
+
+    // This function can be called multiple times when conflicts are detected,
+    // in which case we will need to deallocate and clear the edges.
+    if (!outEdges.empty()) {
+      for (auto it = outEdges.begin(); it != outEdges.end(); it++) {
+        for (auto eit = it->second.begin(); eit != it->second.end(); eit++)
+          delete (*eit);
+      }
+      outEdges.clear();
+    }
+   
     outEdges[dummyBeginNode.id] = unordered_set<Edge*>();
     if (getNumChild() > 0) {
       Edge* edge = new Edge(&dummyBeginNode, children[0], 1);
@@ -896,6 +908,8 @@ namespace TraceAnalysis {
   }
   
   const unordered_set<TCTACFGNode::Edge*>& TCTACFGNode::getEntryEdges() const {
+    if (outEdges.find(dummyBeginNode.id) == outEdges.end())
+      print_msg(MSG_PRIO_MAX, "ERROR: no edge set located in TCTACFGNode::getEntryEdges().");
     return outEdges.at(dummyBeginNode.id);
   }
   
