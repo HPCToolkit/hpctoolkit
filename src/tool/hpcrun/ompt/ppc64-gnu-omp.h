@@ -65,7 +65,10 @@
 //******************************************************************************
 
 static inline uint64_t 
-length_of_call_instruction()
+length_of_call_instruction
+(
+  void
+)
 {
   return PPC64_CALL_NBYTES;
 } 
@@ -73,7 +76,10 @@ length_of_call_instruction()
 
 // return true iff the instruction is a PPC64 branch and link 
 static inline bool
-isInsn_BL(uint32_t insn)
+isInsn_BL
+(
+  uint32_t insn
+)
 {
   return (insn & PPC_OP_I_MASK) == PPC_OP_BL;
 }
@@ -83,9 +89,14 @@ isInsn_BL(uint32_t insn)
 // difference in bytes between the end of that call instruction and the 
 // initial instruction pointer
 static inline int 
-offset_to_pc_after_next_call(void *ip)
+offset_to_pc_after_next_call
+(
+  void *ip
+)
 {
   uint32_t *insn = (uint32_t *) ip;
+
   while (!isInsn_BL(*insn++));
-  return ((char *) insn) - (char *) ip;
-} 
+
+  return ((char *) insn) - ((char *) ip);
+}

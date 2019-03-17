@@ -1,10 +1,65 @@
-#ifndef __ompt_types_h__ 
+// -*-Mode: C++;-*- // technically C99
 
-#define __ompt_types_h__ 
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2014, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+#ifndef __OMPT_TYPES_H__ 
+#define __OMPT_TYPES_H__ 
+
+
+//******************************************************************************
+// local includes  
+//******************************************************************************
 
 #include "../../../lib/prof-lean/stdatomic.h"
 #include "../cct/cct.h"
 
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
 
 #define FOREACH_OMPT_PLACEHOLDER_FN(macro)  \
     macro (ompt_idle)                       \
@@ -13,21 +68,27 @@
     macro (ompt_task_wait)                  \
     macro (ompt_mutex_wait)
 
+#define task_data_invalid ((void*)~0)
+#define ompt_base_nil ((ompt_base_t*)0)
+#define ompt_base_invalid ((ompt_base_t*)~0)
+
+
+
+//******************************************************************************
+// forward declarations of types
+//******************************************************************************
 
 struct ompt_base_s;
-
-
 struct ompt_queue_data_s;
 struct ompt_notification_s;
 struct ompt_threads_queue_s;
 struct ompt_thread_region_freelist_s;
 
-// FIXME:
-// create a union
-//union{
-// _Atomic(ompt_base_t*)anext
-// ompt_base_t* next
-//};
+
+
+//******************************************************************************
+// type declarations 
+//******************************************************************************
 
 typedef union ompt_next_u ompt_next_t;
 union ompt_next_u{
@@ -35,56 +96,67 @@ union ompt_next_u{
   _Atomic (struct ompt_base_s*)anext;
 };
 
+
 typedef struct ompt_base_s{
    ompt_next_t next; // FIXME: this should be Atomic too
-}ompt_base_t;
+} ompt_base_t;
 
 
-#define ompt_base_nil (ompt_base_t*)0
-#define ompt_base_invalid (ompt_base_t*)~0
 // ompt_wfq_s
 typedef struct ompt_wfq_s{
   _Atomic(ompt_base_t*)head;
-}ompt_wfq_t;
+} ompt_wfq_t;
+
 
 typedef struct ompt_region_data_s {
   // region freelist, must be at the begin because od up/downcasting
   // like inherited class in C++, inheretes from base_t
   ompt_next_t next;
+
   // region's wait free queue
   ompt_wfq_t queue;
+
   // region's freelist which belongs to thread
   ompt_wfq_t *thread_freelist;
+
   // region id
   uint64_t region_id;
+
   // call_path to the region
   cct_node_t *call_path;
+
   // depth of the region, starts from zero
   int depth;
 } ompt_region_data_t;
 
+
 typedef struct ompt_notification_s{
   // it can also cover freelist to, we do not need another next_freelist
   ompt_next_t next;
+
   ompt_region_data_t *region_data;
+
   // struct ompt_threads_queue_s *threads_queue;
   ompt_wfq_t *threads_queue;
+
   // pointer to the cct pseudo node of the region that should be resolve
   cct_node_t* unresolved_cct;
 } ompt_notification_t;
 
+
 // trl = Thread's Regions List
 // el  = element
 typedef struct ompt_trl_el_s {
-  // inheret from base_t
+  // inherit from base_t
   ompt_next_t next;
+
   // previous in double-linked list
   struct ompt_trl_el_s* prev;
+
   // stores region's information
   ompt_region_data_t* region_data;
 } ompt_trl_el_t;
 
-extern int ompt_eager_context;
 
 // region stack element which points to the corresponding
 // notification, and says if thread took sample and if the
@@ -96,8 +168,8 @@ typedef struct region_stack_el_s {
   ompt_frame_t *parent_frame;
 } region_stack_el_t;
 
-#define task_data_invalid (void*)~0
+
+// FIXME vi3: ompt_data_t freelist manipulation
 
 #endif
 
-// FIXME vi3: ompt_data_t freelist manipulation

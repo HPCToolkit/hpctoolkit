@@ -118,6 +118,7 @@
 #include "write_data.h"
 #include "sample-sources/itimer.h"
 #include "ompt/ompt-defer.h"
+#include "ompt/ompt-callstack.h"
 #include <utilities/token-iter.h>
 
 #include <memory/hpcrun-malloc.h>
@@ -609,9 +610,7 @@ hpcrun_fini_internal()
 {
   hpcrun_disable_sampling();
 
-
-//  printf("Master resolves from here.\n");
-  if(!ompt_eager_context)
+  if (!ompt_eager_context_p())
     resolving_all_remaining_context();
 
   TMSG(FINI, "process");
@@ -731,10 +730,11 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 void
 hpcrun_thread_fini(epoch_t *epoch)
 {
-  // FIXME: vi3 Just for now resolve at this place
-  if(!ompt_eager_context)
-    resolving_all_remaining_context();
   TMSG(FINI,"thread fini");
+
+  // FIXME: vi3 Just for now resolve at this place
+  if (!ompt_eager_context_p())
+    resolving_all_remaining_context();
 
   // take no action if this thread is suppressed
   if (hpcrun_thread_suppress_sample) return;

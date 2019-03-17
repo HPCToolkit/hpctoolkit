@@ -1,4 +1,3 @@
-
 // -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
@@ -50,8 +49,6 @@
 // local includes  
 //******************************************************************************
 
-#include <ompt.h>
-
 #include <lib/prof-lean/placeholders.h>
 #include <hpcrun/cct_backtrace_finalize.h>
 #include <hpcrun/sample_event.h>
@@ -61,6 +58,7 @@
 
 #include "../hpcrun-initializers.h"
 
+#include "ompt.h"
 #include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-state-placeholders.h"
@@ -74,6 +72,7 @@
 #include "../sample_event.h"
 #include "../trace.h"
 #include "../unresolved.h"
+
 
 #if defined(HOST_CPU_PPC) 
 #include "ppc64-gnu-omp.h"
@@ -107,7 +106,8 @@ static cct_backtrace_finalize_entry_t ompt_finalizer;
 
 static closure_t ompt_callstack_init_closure;
 
-int ompt_eager_context = 0;
+static int ompt_eager_context = 0;
+
 static int ompt_callstack_debug = 1;
 
 
@@ -117,11 +117,12 @@ static int ompt_callstack_debug = 1;
 //******************************************************************************
 
 static void 
-stack_dump(
-  char *tag, 
-  frame_t *inner, 
-  frame_t *outer, 
-  uint64_t region_id
+stack_dump
+(
+ char *tag, 
+ frame_t *inner, 
+ frame_t *outer, 
+ uint64_t region_id
 ) 
 {
   EMSG("-----%s start", tag); 
@@ -141,7 +142,10 @@ stack_dump(
 
 
 static void 
-frame_dump() 
+frame_dump
+(
+ void
+) 
 {
   EMSG("-----frame start");
   for (int i=0;; i++) {
@@ -157,10 +161,11 @@ frame_dump()
 
 
 static int
-interval_contains(
-  void *lower, 
-  void *upper, 
-  void *addr
+interval_contains
+(
+ void *lower, 
+ void *upper, 
+ void *addr
 )
 {
   uint64_t uaddr  = (uint64_t) addr;
@@ -172,7 +177,10 @@ interval_contains(
 
 
 static ompt_state_t
-check_state()
+check_state
+(
+ void
+)
 {
   uint64_t wait_id;
   return hpcrun_ompt_get_state(&wait_id);
@@ -180,7 +188,11 @@ check_state()
 
 
 static void 
-set_frame(frame_t *f, ompt_placeholder_t *ph)
+set_frame
+(
+ frame_t *f, 
+ ompt_placeholder_t *ph
+)
 {
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
@@ -191,8 +203,11 @@ set_frame(frame_t *f, ompt_placeholder_t *ph)
 
 
 static void
-collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
-
+collapse_callstack
+(
+ backtrace_info_t *bt, 
+ ompt_placeholder_t *placeholder
+)
 {
 
   set_frame(bt->last, placeholder);
@@ -205,25 +220,17 @@ collapse_callstack(backtrace_info_t *bt, ompt_placeholder_t *placeholder)
 }
 
 
-
 static void
-ompt_elide_runtime_frame_internal(
+ompt_elide_runtime_frame(
   backtrace_info_t *bt, 
   uint64_t region_id, 
-  int isSync,
-  int replay
+  int isSync
 )
 {
-
-
-  //return;
   frame_t **bt_outer = &bt->last;
   frame_t **bt_inner = &bt->begin;
 
   frame_t *bt_outer_at_entry = *bt_outer;
-
-  //printf("Eliding\n");
-  // eliding only if the thread is an OpenMP initial or worker thread
 
   switch(ompt_thread_type_get()) {
   case ompt_thread_initial:
@@ -233,7 +240,7 @@ ompt_elide_runtime_frame_internal(
 //    if (hpcrun_ompt_get_parallel_info_id(0) != ompt_parallel_id_none)
 //      break;
 //
-//    if(!TD_GET(master)){
+//    if (!TD_GET(master)){
 //      thread_data_t *td = hpcrun_get_thread_data();
 //      td->core_profile_trace_data.epoch->csdata.top = main_top_root;
 //      td->core_profile_trace_data.epoch->csdata.thread_root = main_top_root;
@@ -260,7 +267,7 @@ ompt_elide_runtime_frame_internal(
     case ompt_state_wait_barrier_implicit:
     case ompt_state_wait_barrier_explicit:
       break; // FIXME: skip barrier collapsing until the kinks are worked out.
-//    if(!TD_GET(master)){
+//    if (!TD_GET(master)){
 //
 //      collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
 //      goto return_label;
@@ -363,7 +370,7 @@ ompt_elide_runtime_frame_internal(
 
     ompt_data_t *task_data = hpcrun_ompt_get_task_data(i);
     cct_node_t *omp_task_context = NULL;
-    if(task_data)
+    if (task_data)
       omp_task_context = task_data->ptr;
     
     void *low_sp = (*bt_inner)->cursor.sp;
@@ -386,10 +393,10 @@ ompt_elide_runtime_frame_internal(
        previous iterations.
     */
     it = *bt_inner; 
-    if(exit0_flag) {
+    if (exit0_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_frame.ptr)) {
-//        if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
+        if ((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_frame.ptr)) {
+//        if ((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
           exit0 = it - 1;
           break;
         }
@@ -417,10 +424,10 @@ ompt_elide_runtime_frame_internal(
     }
 #endif
 
-    if(reenter1_flag) {
+    if (reenter1_flag) {
       for (; it <= *bt_outer; it++) {
-        if((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->enter_frame.ptr)) {
-       // if((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
+        if ((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->enter_frame.ptr)) {
+       // if ((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
           reenter1 = it - 1;
           break;
         }
@@ -441,10 +448,10 @@ ompt_elide_runtime_frame_internal(
       //  in the callpath
 
       // FIXME vi3: find better way to solve this  "This makes trouble with master thread when defering"
-//      if(TD_GET(master)){
+//      if (TD_GET(master)){
 //        return;
 //      }
-//      if(omp_get_thread_num() == 0)
+//      if (omp_get_thread_num() == 0)
 //        return;
 
       //------------------------------------
@@ -487,6 +494,7 @@ ompt_elide_runtime_frame_internal(
       goto return_label;
     }
 
+#if 0
     /* runtime frames with nothing else; it is harmless to reveal them all */
     uint64_t idle_frame = (uint64_t) hpcrun_ompt_get_idle_frame();
 
@@ -504,6 +512,7 @@ ompt_elide_runtime_frame_internal(
     } else {
       /* no idle frame. show the whole stack. */
     }
+#endif
     
     elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer, region_id);
     goto return_label;
@@ -518,17 +527,8 @@ ompt_elide_runtime_frame_internal(
 
 }
 
-static void
-ompt_elide_runtime_frame(
-        backtrace_info_t *bt,
-        uint64_t region_id,
-        int isSync
-)
-{
-  ompt_elide_runtime_frame_internal(bt, region_id, isSync, 0);
-}
 
-
+#if 0
 static cct_node_t *
 memoized_context_get(thread_data_t* td, uint64_t region_id)
 {
@@ -543,10 +543,14 @@ memoized_context_set(thread_data_t* td, uint64_t region_id, cct_node_t *result)
     td->outer_region_id = region_id;
     td->outer_region_context = result;
 }
+#endif
 
 
 cct_node_t *
-region_root(cct_node_t *_node)
+ompt_region_root
+(
+ cct_node_t *_node
+)
 {
   cct_node_t *root;
   cct_node_t *node = _node;
@@ -565,34 +569,14 @@ region_root(cct_node_t *_node)
   return root;
 }
 
-// vi3: not used in this file
-//static cct_node_t *
-//lookup_region_id(uint64_t region_id)
-//{
-//  thread_data_t* td = hpcrun_get_thread_data();
-//  cct_node_t *result = NULL;
-//
-//  if (hpcrun_trace_isactive()) {
-//    result = memoized_context_get(td, region_id);
-//    if (result) return result;
-//
-//    cct_node_t *t0_path = hpcrun_region_lookup(region_id);
-//    if (t0_path) {
-//      cct_node_t *rroot = region_root(t0_path);
-//      result = hpcrun_cct_insert_path_return_leaf(rroot, t0_path);
-//      memoized_context_set(td, region_id, result);
-//    }
-//  }
-//
-//  return result;
-//}
-
 
 cct_node_t *
-ompt_region_context(uint64_t region_id, 
-		    ompt_context_type_t ctype, 
-		    int levels_to_skip,
-                    int adjust_callsite)
+ompt_region_context
+(
+  uint64_t region_id, 
+  ompt_scope_endpoint_t se_type, 
+  int adjust_callsite
+)
 {
   cct_node_t *node;
   ucontext_t uc;
@@ -620,7 +604,7 @@ ompt_region_context(uint64_t region_id,
 
     // adjust the address to point to return address of the call to 
     // the outlined function in the master
-    if (ctype == ompt_context_begin) {
+    if (se_type == ompt_scope_begin) {
       void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
       uint64_t offset = offset_to_pc_after_next_call(ip);
       master_outlined_fn_return_addr = lm_ip + offset;
@@ -640,12 +624,13 @@ ompt_region_context(uint64_t region_id,
 }
 
 
-// ===========================
 void
-ompt_region_context_end_region_not_eager(uint64_t region_id,
-                    ompt_context_type_t ctype,
-                    int levels_to_skip,
-                    int adjust_callsite)
+ompt_region_context_end_region_not_eager
+(
+  uint64_t region_id,
+  ompt_scope_endpoint_t se_type, 
+  int adjust_callsite
+)
 {
   cct_node_t *node;
   ucontext_t uc;
@@ -673,7 +658,7 @@ ompt_region_context_end_region_not_eager(uint64_t region_id,
 //
 //    // adjust the address to point to return address of the call to
 //    // the outlined function in the master
-//    if (ctype == ompt_context_begin) {
+//    if (se_type == ompt_scope_begin) {
 //      void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
 //      uint64_t offset = offset_to_pc_after_next_call(ip);
 //      master_outlined_fn_return_addr = lm_ip + offset;
@@ -692,29 +677,28 @@ ompt_region_context_end_region_not_eager(uint64_t region_id,
 //  return node;
 }
 
-// ===========================
-
-
 
 cct_node_t *
-ompt_parallel_begin_context(ompt_id_t region_id, int levels_to_skip, 
-                            int adjust_callsite)
+ompt_parallel_begin_context
+(
+ ompt_id_t region_id, 
+ int adjust_callsite
+)
 {
-//  return ompt_region_context(region_id, ompt_context_begin,
-//                             ++levels_to_skip, adjust_callsite);
+  cct_node_t *context = NULL;
   if (ompt_eager_context) {
-    return ompt_region_context(region_id, ompt_context_begin,
-                               ++levels_to_skip, adjust_callsite);
-  } else {
-    return NULL;
+    context = ompt_region_context(region_id, ompt_scope_begin,
+                                  adjust_callsite);
   }
+  return context;
 }
 
 
 static void
-ompt_backtrace_finalize(
-  backtrace_info_t *bt, 
-  int isSync
+ompt_backtrace_finalize
+(
+ backtrace_info_t *bt, 
+ int isSync
 ) 
 {
   // ompt: elide runtime frames
@@ -724,7 +708,7 @@ ompt_backtrace_finalize(
     if (need_defer_cntxt()) {
 //      resolve_cntxt();
     }
-    if(!ompt_eager_context)
+    if (!ompt_eager_context)
       resolve_cntxt();
   }
   uint64_t region_id = TD_GET(region_id);
@@ -739,8 +723,12 @@ ompt_backtrace_finalize(
 //******************************************************************************
 
 cct_node_t *
-ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt, 
-                           cct_node_t *cct_cursor)
+ompt_cct_cursor_finalize
+(
+ cct_bundle_t *cct, 
+ backtrace_info_t *bt, 
+ cct_node_t *cct_cursor
+)
 {
 
   // when providing a path for the region in which we had a task
@@ -756,16 +744,16 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   if (omp_task_context && omp_task_context != task_data_invalid) {
     cct_node_t *root;
 #if 1
-    root = region_root(omp_task_context);
+    root = ompt_region_root(omp_task_context);
 #else
-    if((is_partial_resolve((cct_node_tt *)omp_task_context) > 0)) {
+    if ((is_partial_resolve((cct_node_tt *)omp_task_context) > 0)) {
       root = hpcrun_get_thread_epoch()->csdata.unresolved_root;
     } else {
       root = hpcrun_get_thread_epoch()->csdata.tree_root;
     }
 #endif
     // FIXME: vi3 why is this called here??? Makes troubles for worker thread when !ompt_eager_context
-    if(ompt_eager_context || TD_GET(master))
+    if (ompt_eager_context || TD_GET(master))
       return hpcrun_cct_insert_path_return_leaf(root, omp_task_context);
   } else if (omp_task_context && omp_task_context == task_data_invalid) {
     region_stack_el_t *stack_el = &region_stack[top_index];
@@ -792,7 +780,7 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
     // FIXME: check whether bottom frame elided will be right for IBM runtime
     //        without help of get_idle_frame
 
-    if(not_master_region && bt->bottom_frame_elided){
+    if (not_master_region && bt->bottom_frame_elided){
       // it should be enough just to set cursor to unresolved node
       // which corresponds to not_master_region
 
@@ -805,14 +793,22 @@ ompt_cct_cursor_finalize(cct_bundle_t *cct, backtrace_info_t *bt,
   return cct_cursor;
 }
 
+
 void
-ompt_callstack_init_deferred(void)
+ompt_callstack_init_deferred
+(
+ void
+)
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
 }
 
+
 void
-ompt_callstack_init(void)
+ompt_callstack_init
+(
+ void
+)
 {
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
@@ -827,3 +823,14 @@ ompt_callstack_init(void)
   // register closure
   hpcrun_initializers_defer(&ompt_callstack_init_closure);
 }
+
+
+int
+ompt_eager_context_p
+(
+ void
+)
+{
+  return ompt_eager_context;
+}
+

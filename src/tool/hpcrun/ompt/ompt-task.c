@@ -45,17 +45,17 @@
 // ******************************************************* EndRiceCopyright *
 
 
-/******************************************************************************
- * ompt
- *****************************************************************************/
+//*****************************************************************************
+// system includes 
+//*****************************************************************************
 
 #include <stdio.h>
-#include <ompt.h>
 
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -63,14 +63,12 @@
 
 #include <hpcrun/cct/cct.h>
 
-#include <hpcrun/ompt/ompt-callback.h>
-#include <hpcrun/ompt/ompt-task.h>
-#include <hpcrun/ompt/ompt-region-map.h>
-
-#include <ompt-callstack.h>
-
+#include "ompt.h"
+#include "ompt-callback.h"
+#include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-region.h"
+#include "ompt-task.h"
 
 
 //----------------------------------------------------------------------------
@@ -79,8 +77,9 @@
 
 
 static void 
-ompt_task_begin_internal(
-  ompt_data_t* task_data
+ompt_task_begin_internal
+(
+ ompt_data_t* task_data
 )
 {
   thread_data_t *td = hpcrun_get_thread_data();
@@ -93,12 +92,11 @@ ompt_task_begin_internal(
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node = NULL;
-  if(ompt_task_full_context){
+  if (ompt_task_full_context_p()){
     hpcrun_metricVal_t zero_metric_incr_metricVal;
     zero_metric_incr_metricVal.i = 0;
     cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr_metricVal, 1, 1, NULL).sample_node;
-  }
-  else{
+  } else {
 
 //    thread_data_t *td = hpcrun_get_thread_data();
 
@@ -112,7 +110,7 @@ ompt_task_begin_internal(
 #if 0
     cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
 
-    if(!TD_GET(master)){
+    if (!TD_GET(master)){
       prefix = hpcrun_cct_insert_path_return_leaf(
         td->core_profile_trace_data.epoch->csdata.tree_root,
         prefix); 
@@ -122,7 +120,7 @@ ompt_task_begin_internal(
     cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
     while(cct_node->parent != prefix && cct_node->parent != NULL) cct_node = cct_node->parent;
 
-    if(!cct_node->parent) assert(0);
+    if (!cct_node->parent) assert(0);
 #else
     cct_node = prefix;
 #endif
@@ -149,54 +147,28 @@ ompt_task_begin_internal(
 }
 
 
-
-#ifdef OMPT_V2013_07
-static ompt_task_id_t 
-get_task_id()
-{
-  static ompt_task_id_t next_task_id = 1; 
-  return __sync_fetch_and_add(&next_task_id, 1);
-}
-#endif
-
-#ifdef OMPT_V2013_07
-
 void
-ompt_task_begin(
-  ompt_data_t  *parent_task_data,   /* tool data for parent task    */
-  ompt_frame_t *parent_task_frame,  /* frame data for parent task   */
-  ompt_data_t  *new_task_data       /* tool data for created task   */
-)
-{
-  ompt_task_id_t new_task_id = get_task_id();
-  new_task_data->value = new_task_id;
-  ompt_task_begin_internal(new_task_id);
-}
-
-#else
-
-
-void
-ompt_task_create(
-    ompt_data_t *parent_task_data,    /* data of parent task          */
-    const ompt_frame_t *parent_frame, /* frame data for parent task   */
-    ompt_data_t *new_task_data,       /* data of created task         */
-    ompt_task_flag_t type,
-    int has_dependences,
-    const void *codeptr_ra
+ompt_task_create
+(
+ ompt_data_t *parent_task_data,    // data of parent task
+ const ompt_frame_t *parent_frame, // frame data for parent task
+ ompt_data_t *new_task_data,       // data of created task
+ ompt_task_flag_t type,
+ int has_dependences,
+ const void *codeptr_ra
 )
 {
   new_task_data->ptr = NULL;
 
-  if(type == ompt_task_initial) return;
+  if (type == ompt_task_initial) return;
   ompt_task_begin_internal(new_task_data);
 }
 
-#endif
 
 void
-ompt_task_register_callbacks(
-    ompt_set_callback_t ompt_set_callback_fn
+ompt_task_register_callbacks
+(
+ ompt_set_callback_t ompt_set_callback_fn
 )
 {
   int retval;

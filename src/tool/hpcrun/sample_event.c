@@ -75,6 +75,7 @@
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
+#include "ompt/ompt-callstack.h"
 #include "ompt/ompt-defer.h"
 #include "utilities/arch/context-pc.h"
 
@@ -204,11 +205,8 @@ hpcrun_sample_callpath(void* context, int metricId,
   }
 #endif
   // FIXME: check if it is ok to leave this check here
-  if(!isSync && !ompt_eager_context){
-//    if(!TD_GET(master)){
-//      register_thread_to_all_regions();
+  if(!isSync && !ompt_eager_context_p()){
     register_to_all_regions();
-//    }
   }
 
   TMSG(SAMPLE_CALLPATH, "attempting sample");

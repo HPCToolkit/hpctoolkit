@@ -49,55 +49,31 @@
 // local includes  
 //******************************************************************************
 
-//#include <ompt.h>
 #include <zconf.h>
 #include "ompt-thread.h"
 #include "ompt.h"
-//#include <stdio.h>
-//#include <stdlib.h>
+
+
 
 //******************************************************************************
-// private variables 
+// global variables 
 //******************************************************************************
-
-static __thread int ompt_thread_type = ompt_thread_unknown;
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-ompt_thread_type_set(ompt_thread_t ttype)
-{
-  ompt_thread_type = ttype;
-}
-
-
-ompt_thread_t 
-ompt_thread_type_get()
-{
-  return ompt_thread_type; 
-}
-
 
 // Memoization process vi3:
 __thread ompt_data_t* not_master_region = NULL;
 __thread cct_node_t* cct_not_master_region = NULL;
 
-
-
 __thread ompt_trl_el_t* registered_regions = NULL;
+
 //__thread ompt_threads_queue_t threads_queue;
 __thread ompt_wfq_t threads_queue;
 __thread ompt_data_t* private_threads_queue = NULL;
-
 
 // freelists
 __thread ompt_notification_t* notification_freelist_head = NULL;
 __thread ompt_trl_el_t* thread_region_freelist_head = NULL;
 __thread ompt_wfq_t public_region_freelist;
 __thread ompt_data_t* private_region_freelist_head = NULL;
-
 
 // stack for regions
 __thread region_stack_el_t region_stack[MAX_NESTING_LEVELS];
@@ -113,20 +89,65 @@ __thread ompt_frame_t *top_ancestor_frame = NULL;
 
 
 
+//******************************************************************************
+// private variables 
+//******************************************************************************
+
+static __thread int ompt_thread_type = ompt_thread_unknown;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+ompt_thread_type_set
+(
+ ompt_thread_t ttype
+)
+{
+  ompt_thread_type = ttype;
+}
+
+
+ompt_thread_t 
+ompt_thread_type_get
+(
+)
+{
+  return ompt_thread_type; 
+}
+
 
 region_stack_el_t*
-top_region_stack(){
+top_region_stack
+(
+ void
+)
+{
   // FIXME: is invalid value for region ID
   return (top_index) > -1 ? &region_stack[top_index] : NULL;
 }
 
 region_stack_el_t*
-pop_region_stack(){
+pop_region_stack
+(
+ void
+)
+{
   return (top_index) > -1 ? &region_stack[top_index--] : NULL;
 }
 
+
 void
-push_region_stack(ompt_notification_t* notification, bool took_sample, bool team_master){
+push_region_stack
+(
+ ompt_notification_t* notification, 
+ bool took_sample, 
+ bool team_master
+)
+{
   // FIXME: potential place of segfault, when stack is full
   top_index++;
   region_stack[top_index].notification = notification;
@@ -134,14 +155,22 @@ push_region_stack(ompt_notification_t* notification, bool took_sample, bool team
   region_stack[top_index].team_master = team_master;
 }
 
+
 void
-clear_region_stack(){
+clear_region_stack
+(
+ void
+)
+{
   top_index = -1;
 }
 
+
 int
-is_empty_region_stack(){
+is_empty_region_stack
+(
+ void
+)
+{
   return top_index < 0;
 }
-
-

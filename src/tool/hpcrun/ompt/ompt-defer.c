@@ -1,22 +1,68 @@
-/******************************************************************************
- * system includes
- *****************************************************************************/
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2019, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
 #include <assert.h>
 
 
 
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
+//*****************************************************************************
+// libmonitor
+//*****************************************************************************
 
 #include <monitor.h>
 
 
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
 #include "ompt-region.h"
 #include "ompt-defer.h"
@@ -27,10 +73,6 @@
 #include "ompt-types.h"
 
 #include "ompt-interface.h"
-#include "ompt-region-map.h"
-
-
-
 
 #include "../../../lib/prof-lean/stdatomic.h"
 #include "../thread_data.h"
@@ -43,10 +85,7 @@
 #include <hpcrun/unresolved.h>
 #include <unwind/common/backtrace_info.h>
 
-
 #include "ompt.h"
-
-
 
 #include "../memory/hpcrun-malloc.h"
 #include "../cct/cct.h"
@@ -58,18 +97,10 @@
 #include "../messages/debug-flag.h"
 
 
-/******************************************************************************
- * external declarations 
- *****************************************************************************/
 
-extern int omp_get_level(void);
-extern int omp_get_thread_num(void);
-
-
-
-/******************************************************************************
- * private operations
- *****************************************************************************/
+//*****************************************************************************
+// private operations
+//*****************************************************************************
 
 //
 // TODO: add trace correction info here
@@ -77,7 +108,12 @@ extern int omp_get_thread_num(void);
 // OpenMP
 //
 static void
-merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
+merge_metrics
+(
+ cct_node_t *a, 
+ cct_node_t *b, 
+ merge_op_arg_t arg
+)
 {
   // if nodes a and b are the same, no need to merge
   if (a == b) return;
@@ -109,7 +145,12 @@ merge_metrics(cct_node_t *a, cct_node_t *b, merge_op_arg_t arg)
 
 
 static void
-omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
+omp_resolve
+(
+ cct_node_t* cct, 
+ cct_op_arg_t a, 
+ size_t l
+)
 {
   cct_node_t *prefix;
   thread_data_t *td = (thread_data_t *)a;
@@ -136,7 +177,7 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
     if (partial_region_id == 0) {
 #if 1
-      cct_node_t *root = region_root(prefix);
+      cct_node_t *root = ompt_region_root(prefix);
       prefix = hpcrun_cct_insert_path_return_leaf(root,  prefix);
 #else
       prefix = hpcrun_cct_insert_path_return_leaf
@@ -168,14 +209,22 @@ omp_resolve(cct_node_t* cct, cct_op_arg_t a, size_t l)
 
 
 static void
-omp_resolve_and_free(cct_node_t* cct, cct_op_arg_t a, size_t l)
+omp_resolve_and_free
+(
+ cct_node_t* cct, 
+ cct_op_arg_t a, 
+ size_t l
+)
 {
   omp_resolve(cct, a, l);
 }
 
 
 int
-need_defer_cntxt()
+need_defer_cntxt
+(
+ void
+)
 {
   if (ENABLED(OMPT_LOCAL_VIEW)) return 0;
 
@@ -190,7 +239,10 @@ need_defer_cntxt()
 
 
 uint64_t
-is_partial_resolve(cct_node_t *prefix)
+is_partial_resolve
+(
+ cct_node_t *prefix
+)
 {
   //go up the path to check whether there is a node with UNRESOLVED tag
   cct_node_t *node = prefix;
@@ -221,7 +273,11 @@ is_partial_resolve(cct_node_t *prefix)
 //     unresolved tree indexed by the current region_id
 // (4) Update td->region_id to be the current region id
 
-void resolve_cntxt()
+void 
+resolve_cntxt
+(
+ void
+)
 {
   return;
   cct_node_t* tbd_cct = (hpcrun_get_thread_epoch()->csdata).unresolved_root;
@@ -328,8 +384,12 @@ void resolve_cntxt()
 #endif
 }
 
+
 void
-resolve_cntxt_fini(thread_data_t *td)
+resolve_cntxt_fini
+(
+ thread_data_t *td
+)
 {
   //printf("Resolving for thread... region = %d\n", td->region_id);
   //printf("Root children = %p\n", td->core_profile_trace_data.epoch->csdata.unresolved_root->children);
@@ -339,7 +399,10 @@ resolve_cntxt_fini(thread_data_t *td)
 
 
 cct_node_t *
-hpcrun_region_lookup(uint64_t id)
+hpcrun_region_lookup
+(
+ uint64_t id
+)
 {
   cct_node_t *result = NULL;
 
@@ -359,10 +422,15 @@ hpcrun_region_lookup(uint64_t id)
 
 // FIXME: move this function at better place
 
-int get_stack_index(ompt_region_data_t *region_data) {
+int 
+get_stack_index
+(
+ ompt_region_data_t *region_data
+)
+{
   int i;
   for (i = top_index; i>=0; i--) {
-    if(region_stack[i].notification->region_data->region_id == region_data->region_id) {
+    if (region_stack[i].notification->region_data->region_id == region_data->region_id) {
       return i;
     }
   }
@@ -379,7 +447,10 @@ int get_stack_index(ompt_region_data_t *region_data) {
 
 
 ompt_notification_t*
-help_notification_alloc(ompt_region_data_t *region_data)
+help_notification_alloc
+(
+ ompt_region_data_t *region_data
+)
 {
   ompt_notification_t *notification = hpcrun_ompt_notification_alloc();
   notification->region_data = region_data;
@@ -387,8 +458,12 @@ help_notification_alloc(ompt_region_data_t *region_data)
   return notification;
 }
 
+
 void
-swap_and_free(ompt_region_data_t* region_data)
+swap_and_free
+(
+ ompt_region_data_t* region_data
+)
 {
 
   int depth = region_data->depth;
@@ -425,7 +500,11 @@ swap_and_free(ompt_region_data_t* region_data)
 }
 
 void
-add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_master)
+add_region_and_ancestors_to_stack
+(
+ ompt_region_data_t *region_data, 
+ bool team_master
+)
 {
 
   if (!region_data) {
@@ -462,27 +541,38 @@ add_region_and_ancestors_to_stack(ompt_region_data_t *region_data, bool team_mas
 }
 
 
-void add_to_list(ompt_region_data_t* region_data){
+void 
+add_to_list
+(
+ ompt_region_data_t* region_data
+)
+{
   ompt_trl_el_t* new_region = hpcrun_ompt_trl_el_alloc();
   new_region->region_data = region_data;
   OMPT_BASE_T_GET_NEXT(new_region) = OMPT_BASE_T_STAR(registered_regions);
-  if(registered_regions)
+  if (registered_regions)
     registered_regions->prev = new_region;
   registered_regions = new_region;
   new_region->prev = NULL;
 }
 
-void remove_from_list(ompt_region_data_t* region_data){
+
+void 
+remove_from_list
+(
+ ompt_region_data_t* region_data
+)
+{
   ompt_trl_el_t* current = registered_regions;
   while(current){
-    if(current->region_data == region_data){
-      if(current->prev){
+    if (current->region_data == region_data){
+      if (current->prev){
         OMPT_BASE_T_GET_NEXT(current->prev) = OMPT_BASE_T_GET_NEXT(current);
       } else{
         registered_regions = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
       }
 
-      if(OMPT_BASE_T_GET_NEXT(current)){
+      if (OMPT_BASE_T_GET_NEXT(current)){
         ((ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current))->prev = current->prev;
       }
 
@@ -493,11 +583,16 @@ void remove_from_list(ompt_region_data_t* region_data){
   hpcrun_ompt_trl_el_free(current);
 }
 
+
 cct_node_t*
-add_pseudo_cct (ompt_region_data_t* region_data) {
+add_pseudo_cct
+(
+ ompt_region_data_t* region_data
+)
+{
   // should add cct inside the tree
   cct_node_t* new;
-  if(top_index == 0) {
+  if (top_index == 0) {
     // this is the first parallel region add pseudo cct
     // which corresponds to the region as a child of thread root
     new = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).thread_root,
@@ -514,20 +609,31 @@ add_pseudo_cct (ompt_region_data_t* region_data) {
 }
 
 
-
 // vi3 temp check
-int alredy_in_list(ompt_region_data_t *region_data) {
-    ompt_trl_el_t* current = registered_regions;
-    while(current){
-        if(current->region_data == region_data){
-            return 1;
-        }
-        current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
+int 
+alredy_in_list
+(
+ ompt_region_data_t *region_data
+) 
+{
+  ompt_trl_el_t* current = registered_regions;
+  while(current){
+    if (current->region_data == region_data){
+      return 1;
     }
-
-    return 0;
+    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
+  }
+  
+  return 0;
 }
-int print_list() {
+
+
+int 
+print_list
+(
+ void
+)
+{
     ompt_trl_el_t* current = registered_regions;
     int i = 0;
     while(current){
@@ -540,9 +646,12 @@ int print_list() {
 }
 
 
-
 void
-register_to_region(ompt_notification_t* notification){
+register_to_region
+(
+ ompt_notification_t* notification
+)
+{
  ompt_region_data_t* region_data = notification->region_data;
 
  // create notification and enqueu to region's queue
@@ -557,7 +666,11 @@ register_to_region(ompt_notification_t* notification){
 }
 
 ompt_notification_t*
-add_notification_to_stack(ompt_region_data_t* region_data) {
+add_notification_to_stack
+(
+ ompt_region_data_t* region_data
+)
+{
     ompt_notification_t* notification = hpcrun_ompt_notification_alloc();
     notification->region_data = region_data;
     notification->threads_queue = &threads_queue;
@@ -566,18 +679,26 @@ add_notification_to_stack(ompt_region_data_t* region_data) {
     return notification;
 }
 
+
 void
-register_if_not_master(ompt_notification_t *notification)
+register_if_not_master
+(
+ ompt_notification_t *notification
+)
 {
-  if(notification && not_master_region == notification->region_data) {
+  if (notification && not_master_region == notification->region_data) {
     register_to_region(notification);
     // should memoize the cct for not_master_region
     cct_not_master_region = notification->unresolved_cct;
   }
 }
 
+
 int
-get_took_sample_parent_index()
+get_took_sample_parent_index
+(
+ void
+)
 {
   int i;
   for (i = top_index; i >= 0; i--) {
@@ -590,9 +711,11 @@ get_took_sample_parent_index()
 
 
 void
-register_to_all_regions(){
-
-
+register_to_all_regions
+(
+ void
+)
+{
   // find ancestor on the stack in which we took a sample
   // a go until the top of the stack
   int start_register_index = get_took_sample_parent_index() + 1;
@@ -633,11 +756,16 @@ register_to_all_regions(){
 
 }
 
+
 // insert a path to the root and return the path in the root
 cct_node_t*
-hpcrun_cct_insert_path_return_leaf_tmp(cct_node_t *root, cct_node_t *path)
+hpcrun_cct_insert_path_return_leaf_tmp
+(
+ cct_node_t *root,
+ cct_node_t *path
+)
 {
-    if(!path) return root;
+    if (!path) return root;
     cct_node_t *parent = hpcrun_cct_parent(path);
     if (parent) {
       root = hpcrun_cct_insert_path_return_leaf_tmp(root, parent);
@@ -647,11 +775,14 @@ hpcrun_cct_insert_path_return_leaf_tmp(cct_node_t *root, cct_node_t *path)
 
 // return one if successful
 int
-try_resolve_one_region_context()
+try_resolve_one_region_context
+(
+ void
+)
 {
   ompt_notification_t *old_head = NULL;
   old_head = (ompt_notification_t*) wfq_dequeue_private(&threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
-  if(!old_head)
+  if (!old_head)
     return 0;
   // region to resolve
   ompt_region_data_t *region_data = old_head->region_data;
@@ -666,7 +797,7 @@ try_resolve_one_region_context()
       return 0;
   }
 
-  if(region_data->call_path == NULL) {
+  if (region_data->call_path == NULL) {
     printf("*******************This is very bad!\n");
     return 0;
   }
@@ -717,7 +848,7 @@ try_resolve_one_region_context()
 
   // any thread should be notify
   ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
-  if(to_notify){
+  if (to_notify){
     wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
   }else{
     // notify creator of region that region_data can be put in region's freelist
@@ -729,7 +860,13 @@ try_resolve_one_region_context()
   return 1;
 }
 
-void resolving_all_remaining_context(){
+
+void 
+resolving_all_remaining_context
+(
+ void
+)
+{
   // resolve all remaining regions
   //printf("master: %d, unresolved_cnt: %d\n", TD_GET(master), unresolved_cnt);
   while(unresolved_cnt) {
@@ -738,8 +875,13 @@ void resolving_all_remaining_context(){
   // FIXME vi3: find all memory leaks
 }
 
+
 cct_node_t*
-top_cct(cct_node_t* current_cct) {
+top_cct
+(
+ cct_node_t* current_cct
+)
+{
   if (!current_cct)
     return NULL;
 
@@ -756,24 +898,37 @@ top_cct(cct_node_t* current_cct) {
 
 // first_frame_above
 frame_t*
-first_frame_above(frame_t *start, frame_t *end, uint64_t frame_address, int *index)
+first_frame_above
+(
+ frame_t *start, 
+ frame_t *end, 
+ uint64_t frame_address, 
+ int *index
+)
 {
   frame_t *it;
   for(it = start; it <= end; it++, (*index)++) {
     // FIXME: exit frame of current should be the same as enter_frame.ptr of previous frane
-    if(UINT64_T(it->cursor.sp) >= frame_address){
+    if (UINT64_T(it->cursor.sp) >= frame_address){
       return it;
     }
   }
   return NULL;
 }
 
+
 // first_frame_below
 frame_t*
-first_frame_below(frame_t *start, frame_t *end, uint64_t frame_address, int *index)
+first_frame_below
+(
+ frame_t *start, 
+ frame_t *end, 
+ uint64_t frame_address, 
+ int *index
+)
 {
   frame_t *it = first_frame_above(start, end, frame_address, index);
-  if(!it) {
+  if (!it) {
     return NULL;
   }
 
@@ -781,9 +936,9 @@ first_frame_below(frame_t *start, frame_t *end, uint64_t frame_address, int *ind
   it--;
   (*index)--;
 
-  if(frame_address > UINT64_T(it->cursor.sp)) {
+  if (frame_address > UINT64_T(it->cursor.sp)) {
     //printf("***********first_frame_below********Inside user code\n");
-  } else if(frame_address == UINT64_T(it)) {
+  } else if (frame_address == UINT64_T(it)) {
     printf("***********first_frame_below********The same address\n");
   } else {
     printf("***********first_frame_below********Something is bad\n");
@@ -793,18 +948,21 @@ first_frame_below(frame_t *start, frame_t *end, uint64_t frame_address, int *ind
 }
 
 
-
 cct_node_t*
-get_cct_from_prefix(cct_node_t* cct, int index)
+get_cct_from_prefix
+(
+ cct_node_t* cct, 
+ int index
+)
 {
-  if(!cct)
+  if (!cct)
     return NULL;
 
   // FIXME: this is just a temporary solution
   cct_node_t* current = cct;
   int current_index = 0;
   while(current) {
-    if(current_index == index) {
+    if (current_index == index) {
       return current;
     }
     current = hpcrun_cct_parent(current);
@@ -813,8 +971,13 @@ get_cct_from_prefix(cct_node_t* cct, int index)
   return NULL;
 }
 
+
 cct_node_t*
-copy_prefix(cct_node_t* top, cct_node_t* bottom)
+copy_prefix
+(
+ cct_node_t* top, 
+ cct_node_t* bottom
+)
 {
   // FIXME: vi3 do we need to copy? find the best way to copy callpath
   // previous implementation
@@ -822,13 +985,13 @@ copy_prefix(cct_node_t* top, cct_node_t* bottom)
 
   // direct manipulation with cct nodes, which is probably not good way to solve this
 
-  if(!bottom || !top){
+  if (!bottom || !top){
     return NULL;
   }
 
   cct_node_t *prefix_bottom = hpcrun_cct_copy_just_addr(bottom);
   // it is possible that just one node is call path between regions
-  if(top == bottom) {
+  if (top == bottom) {
     return prefix_bottom;
   }
 
@@ -842,7 +1005,7 @@ copy_prefix(cct_node_t* top, cct_node_t* bottom)
     hpcrun_cct_set_parent(child, parent);
     hpcrun_cct_set_children(parent, child);
     // find the top
-    if(it == top) {
+    if (it == top) {
       return prefix_bottom;
     }
     it = hpcrun_cct_parent(it);
@@ -852,30 +1015,43 @@ copy_prefix(cct_node_t* top, cct_node_t* bottom)
 
 }
 
+
 // Check whether we found the outermost region in which current thread is the master
 // returns -1 when there is no regions
 // returns 0 if the region is not the outermost region of which current thread is master
 // returns 1 when the region is the outermost region of which current thread is master
 int
-is_outermost_region_thread_is_master(int stack_index)
+is_outermost_region_thread_is_master
+(
+ int stack_index
+)
 {
   // no regions
-  if(is_empty_region_stack())
+  if (is_empty_region_stack())
     return -1;
   // thread is initial master, and we found the region which is on the top of the stack
-  if(TD_GET(master) && stack_index == 0)
+  if (TD_GET(master) && stack_index == 0)
     return 1;
 
   // thread is not the master, and region that is upper on the stack is not_master_region
-  if(!TD_GET(master) && stack_index && region_stack[stack_index - 1].notification->region_data == not_master_region){
+  if (!TD_GET(master) && stack_index && region_stack[stack_index - 1].notification->region_data == not_master_region){
     return 1;
   }
 
   return 0;
 }
 
+
 void
-print_prefix_info(char *message, cct_node_t *prefix, ompt_region_data_t *region_data, int stack_index, backtrace_info_t *bt, cct_node_t *cct)
+print_prefix_info
+(
+ char *message, 
+ cct_node_t *prefix, 
+ ompt_region_data_t *region_data, 
+ int stack_index, 
+ backtrace_info_t *bt, 
+ cct_node_t *cct
+)
 {
     // prefix length
     int len_prefix = 0;
@@ -912,9 +1088,13 @@ print_prefix_info(char *message, cct_node_t *prefix, ompt_region_data_t *region_
 //           message, region_data->region_id, stack_index, TD_GET(master), tmp_top, tmp_bottom, len_prefix, len_bt, len_cct);
 }
 
+
 // check if the thread cannot resolved region because of reasons mentioned below
 int
-this_thread_cannot_resolve_region(ompt_notification_t *current_notification)
+this_thread_cannot_resolve_region
+(
+ ompt_notification_t *current_notification
+)
 {
   // if current notification is null, or the thread is not the master
   // or the path is already resolved
@@ -924,7 +1104,11 @@ this_thread_cannot_resolve_region(ompt_notification_t *current_notification)
 }
 
 int
-prefix_length(cct_node_t *bottom_prefix, cct_node_t *top_prefix)
+prefix_length
+(
+ cct_node_t *bottom_prefix, 
+ cct_node_t *top_prefix
+)
 {
   int len = 0;
   cct_node_t *current = bottom_prefix;
@@ -940,7 +1124,12 @@ prefix_length(cct_node_t *bottom_prefix, cct_node_t *top_prefix)
 }
 
 void
-provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
+provide_callpath_for_regions_if_needed
+(
+ backtrace_info_t *bt, 
+ cct_node_t *cct
+)
+{
   if (bt->partial_unwind) {
     printf("---------------------Something is not good here\n");
   }
@@ -1168,8 +1357,14 @@ provide_callpath_for_regions_if_needed(backtrace_info_t *bt, cct_node_t *cct) {
 
 }
 
+
 void
-provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
+provide_callpath_for_end_of_the_region
+(
+ backtrace_info_t *bt, 
+ cct_node_t *cct
+)
+{
     if (bt->partial_unwind) {
         printf("---------------------Something is not good here\n");
     }
@@ -1307,8 +1502,13 @@ provide_callpath_for_end_of_the_region(backtrace_info_t *bt, cct_node_t *cct) {
 
 }
 
+
 void
-tmp_end_region_resolve(ompt_notification_t *notification, cct_node_t* prefix)
+tmp_end_region_resolve
+(
+ ompt_notification_t *notification, 
+ cct_node_t* prefix
+)
 {
 
 #if 1

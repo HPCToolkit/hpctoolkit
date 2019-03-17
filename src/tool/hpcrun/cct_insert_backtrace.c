@@ -66,6 +66,8 @@
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
 #include <ompt/ompt-defer.h>
+#include <ompt/ompt-callstack.h>
+
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
 #include "lush/lush-backtrace.h"
@@ -423,7 +425,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 					 tramp_found,
 					 metricId, metricIncr, data);
 
-  if (!ompt_eager_context) {
+  if (!ompt_eager_context_p()) {
     // FIXME vi3: a big hack
     if (isSync == 33) {
       provide_callpath_for_end_of_the_region(&bt, n);

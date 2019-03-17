@@ -65,7 +65,10 @@
 //******************************************************************************
 
 static inline uint64_t 
-length_of_call_instruction()
+length_of_call_instruction
+(
+  void
+)
 {
   return X86_CALL_NBYTES; 
 } 
@@ -75,7 +78,10 @@ length_of_call_instruction()
 // difference in bytes between the end of that call instruction and the 
 // initial instruction pointer
 static inline int 
-offset_to_pc_after_next_call(void *ip)
+offset_to_pc_after_next_call
+(
+  void *ip
+)
 {
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
@@ -87,7 +93,6 @@ offset_to_pc_after_next_call(void *ip)
 
   // continue until success or failure
   for (;;) {
-
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, ins, 15);
 
@@ -109,5 +114,4 @@ offset_to_pc_after_next_call(void *ip)
        break;
     }
   }
-
 }

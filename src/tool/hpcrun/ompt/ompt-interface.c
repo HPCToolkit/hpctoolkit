@@ -45,56 +45,54 @@
 // ******************************************************* EndRiceCopyright *
 
 
-/******************************************************************************
- * ompt
- *****************************************************************************/
-
-//#include <ompt.h>
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
-#include <hpcrun/ompt/ompt-region.h>
-#include <hpcrun/ompt/ompt-task.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/hpcrun-initializers.h>
-
-#include "ompt-interface.h"
-#include "ompt-callstack.h"
-#include "ompt-state-placeholders.h"
-#include "ompt-thread.h"
 
 #include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
 #include "sample-sources/blame-shift/blame-shift.h"
 #include "sample-sources/blame-shift/blame-map.h"
-
 #include "sample-sources/idle.h"
-#include "ompt.h"
+
 #include "../../../lib/prof-lean/stdatomic.h"
 #include "../memory/hpcrun-malloc.h"
 #include "../sample-sources/blame-shift/undirected.h"
-#include "ompt-defer.h"
 #include "../thread_data.h"
 
-/******************************************************************************
- * macros
- *****************************************************************************/
+#include "ompt.h"
+#include "ompt-defer.h"
+#include "ompt-callstack.h"
+#include "ompt-interface.h"
+#include "ompt-state-placeholders.h"
+#include "ompt-region.h"
+#include "ompt-task.h"
+#include "ompt-thread.h"
+
+
+
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
 
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_set_sometimes) | (r ==  ompt_set_always))
 
+#define OMPT_DEBUG_STARTUP 0
 
 
-/******************************************************************************
- * static variables
- *****************************************************************************/
+
+//*****************************************************************************
+// static variables
+//*****************************************************************************
 
 // struct that contains pointers for initializing and finalizing
 static ompt_start_tool_result_t init;
@@ -102,6 +100,8 @@ static const char* ompt_runtime_version;
 
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
+
+static int ompt_task_full_context = 0;
 
 static int ompt_mutex_blame_requested = 0;
 static int ompt_idle_blame_requested = 0;
@@ -157,7 +157,10 @@ static __thread int ompt_idle_count;
 //-------------------------------------------------
 
 static uint64_t
-ompt_mutex_blame_target()
+ompt_mutex_blame_target
+(
+ void
+)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
@@ -178,7 +181,10 @@ ompt_mutex_blame_target()
 
 
 static int
-ompt_serial_only(void *arg)
+ompt_serial_only
+(
+ void *arg
+)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
@@ -195,7 +201,10 @@ ompt_serial_only(void *arg)
 
 
 static int *
-ompt_get_idle_count_ptr()
+ompt_get_idle_count_ptr
+(
+ void
+)
 {
   return &ompt_idle_count;
 }
@@ -206,7 +215,10 @@ ompt_get_idle_count_ptr()
 //----------------------------------------------------------------------------
 
 static _Bool
-ompt_thread_participates(void)
+ompt_thread_participates
+(
+ void
+)
 {
   switch(ompt_thread_type_get()) {
   case ompt_thread_initial:
@@ -222,7 +234,10 @@ ompt_thread_participates(void)
 
 
 static _Bool
-ompt_thread_needs_blame(void)
+ompt_thread_needs_blame
+(
+ void
+)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
@@ -249,7 +264,10 @@ ompt_thread_needs_blame(void)
 //----------------------------------------------------------------------------
 
 static void
-ompt_mutex_blame_shift_register(void)
+ompt_mutex_blame_shift_register
+(
+ void
+)
 {
   mutex_bs_entry.fn = directed_blame_sample;
   mutex_bs_entry.next = NULL;
@@ -265,7 +283,10 @@ ompt_mutex_blame_shift_register(void)
 
 
 static void
-ompt_register_mutex_metrics(void)
+ompt_register_mutex_metrics
+(
+ void
+)
 {
   int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
@@ -278,7 +299,10 @@ ompt_register_mutex_metrics(void)
 
 
 static void
-ompt_register_idle_metrics(void)
+ompt_register_idle_metrics
+(
+ void
+)
 {
   int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
@@ -289,8 +313,12 @@ ompt_register_idle_metrics(void)
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 }
 
+
 static void
-ompt_idle_blame_shift_register(void)
+ompt_idle_blame_shift_register
+(
+ void
+)
 {
   ompt_idle_blame_enabled = 1;
 
@@ -311,7 +339,10 @@ ompt_idle_blame_shift_register(void)
 //----------------------------------------------------------------------------
 
 static void 
-ompt_init_inquiry_fn_ptrs(ompt_function_lookup_t ompt_fn_lookup)
+ompt_init_inquiry_fn_ptrs
+(
+ ompt_function_lookup_t ompt_fn_lookup
+)
 {
 #define ompt_interface_fn(f) \
   f ## _fn = (f ## _t) ompt_fn_lookup(#f);
@@ -333,8 +364,11 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 
 static void
-ompt_thread_begin(ompt_thread_t thread_type,
-                  ompt_data_t *thread_data)
+ompt_thread_begin
+(
+ ompt_thread_t thread_type,
+ ompt_data_t *thread_data
+)
 {
   //printf("Thread begin... %d\n", thread_data->value);
   ompt_thread_type_set(thread_type);
@@ -350,7 +384,10 @@ ompt_thread_begin(ompt_thread_t thread_type,
 
 
 static void
-ompt_thread_end(ompt_data_t *thread_data)
+ompt_thread_end
+(
+ ompt_data_t *thread_data
+)
 {
   undirected_blame_thread_end(&omp_idle_blame_info);
 //  printf("DEBUG: number of unresolved regions: %d\n", unresolved_cnt);
@@ -363,43 +400,54 @@ ompt_thread_end(ompt_data_t *thread_data)
 //-------------------------------------------------
 
 static void
-ompt_idle_begin()
+ompt_idle_begin
+(
+ void
+)
 {
   undirected_blame_idle_begin(&omp_idle_blame_info);
-  if (!ompt_eager_context) {
+  if (!ompt_eager_context_p()) {
     while(try_resolve_one_region_context());
   }
 }
 
 
 static void
-ompt_idle_end()
+ompt_idle_end
+(
+ void
+)
 {
   undirected_blame_idle_end(&omp_idle_blame_info);
 }
 
+
 static void
-ompt_idle(ompt_scope_endpoint_t endpoint)
+ompt_idle
+(
+ ompt_scope_endpoint_t endpoint
+)
 {
-  if(endpoint == ompt_scope_begin) ompt_idle_begin();
-  else if(endpoint == ompt_scope_end) ompt_idle_end();
+  if (endpoint == ompt_scope_begin) ompt_idle_begin();
+  else if (endpoint == ompt_scope_end) ompt_idle_end();
   else assert(0);
 
   //printf("Thread id = %d, \tIdle %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
 }
 
 static void
-ompt_sync(
-  ompt_sync_region_t kind,
-  ompt_scope_endpoint_t endpoint,
-  ompt_data_t *parallel_data,
-  ompt_data_t *task_data,
-  const void *codeptr_ra
+ompt_sync
+(
+ ompt_sync_region_t kind,
+ ompt_scope_endpoint_t endpoint,
+ ompt_data_t *parallel_data,
+ ompt_data_t *task_data,
+ const void *codeptr_ra
 )
 {
-  if(kind == ompt_sync_region_barrier) {
-    if(endpoint == ompt_scope_begin) ompt_idle_begin();
-    else if(endpoint == ompt_scope_end) ompt_idle_end();
+  if (kind == ompt_sync_region_barrier) {
+    if (endpoint == ompt_scope_begin) ompt_idle_begin();
+    else if (endpoint == ompt_scope_end) ompt_idle_end();
     else assert(0);
 
     //printf("Thread id = %d, \tBarrier %s\n", omp_get_thread_num(), endpoint==1?"begin":"end");
@@ -413,7 +461,10 @@ ompt_sync(
 //-------------------------------------------------
 
 static void 
-ompt_mutex_blame_accept(uint64_t mutex)
+ompt_mutex_blame_accept
+(
+ uint64_t mutex
+)
 {
   //printf("Lock has been realesed. \n");
   directed_blame_accept(&omp_mutex_blame_info, mutex);
@@ -425,7 +476,10 @@ ompt_mutex_blame_accept(uint64_t mutex)
 //----------------------------------------------------------------------------
 
 static void 
-init_threads()
+init_threads
+(
+ void
+)
 {
   int retval;
   retval = ompt_set_callback_fn(ompt_callback_thread_begin,
@@ -439,21 +493,30 @@ init_threads()
 
 
 static void 
-init_parallel_regions()
+init_parallel_regions
+(
+ void
+)
 {
   ompt_parallel_region_register_callbacks(ompt_set_callback_fn);
 }
 
 
 static void 
-init_tasks() 
+init_tasks
+(
+ void
+)
 {
   ompt_task_register_callbacks(ompt_set_callback_fn);
 }
 
 
 static void
-init_mutex_blame_shift(const char *version)
+init_mutex_blame_shift
+(
+ const char *version
+)
 {
   int mutex_blame_shift_avail = 0;
   int retval = 0;
@@ -484,10 +547,11 @@ init_mutex_blame_shift(const char *version)
 // the work happening on other threads when the
 // idleness occurs.
 //-------------------------------------------------
-
-
 static void
-init_idle_blame_shift(const char *version)
+init_idle_blame_shift
+(
+ const char *version
+)
 {
   int idle_blame_shift_avail = 0;
   int retval = 0;
@@ -530,9 +594,12 @@ init_idle_blame_shift(const char *version)
 //-------------------------------------------------
 
 int
-ompt_initialize(ompt_function_lookup_t lookup,
-                int initial_device_num,
-                ompt_data_t *tool_data)
+ompt_initialize
+(
+ ompt_function_lookup_t lookup,
+ int initial_device_num,
+ ompt_data_t *tool_data
+)
 {
   printf("Initializing...\n");
 
@@ -544,21 +611,21 @@ ompt_initialize(ompt_function_lookup_t lookup,
   init_threads();
   init_parallel_regions();
 
-
   init_mutex_blame_shift(ompt_runtime_version);
   init_idle_blame_shift(ompt_runtime_version);
 
   char* ompt_task_full_ctxt_str = getenv("OMPT_TASK_FULL_CTXT");
-  if(ompt_task_full_ctxt_str){
-    ompt_task_full_context = strcmp("ENABLED", getenv("OMPT_TASK_FULL_CTXT")) == 0;
-  }else{
+  if (ompt_task_full_ctxt_str) {
+    ompt_task_full_context = 
+      strcmp("ENABLED", getenv("OMPT_TASK_FULL_CTXT")) == 0;
+  } else{
     ompt_task_full_context = 0;
   }
   init_tasks();
 
   printf("Task full context: %s\n", ompt_task_full_context ? "yes" : "no");
 
-  if(!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
+  if (!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
     ompt_callstack_init();
   }
@@ -568,36 +635,49 @@ ompt_initialize(ompt_function_lookup_t lookup,
     sample_filters_register(&serial_only_sf_entry);
   }
 
-
-
   thread_data_t* td = hpcrun_get_thread_data();
   main_top_root = td->core_profile_trace_data.epoch->csdata.top;
-
 
   return 1;
 }
 
+
 void
-ompt_finalize(ompt_data_t *tool_data)
+ompt_finalize
+(
+ ompt_data_t *tool_data
+)
 {
+#if OMPT_DEBUG_STARTUP
   printf("Finalizing...\n");
+#endif
 }
 
 
 ompt_start_tool_result_t *
-ompt_start_tool(unsigned int omp_version,
-		const char *runtime_version)
+ompt_start_tool
+(
+ unsigned int omp_version,
+ const char *runtime_version
+)
 {
-	printf("Starting tool...\n");
-    ompt_runtime_version = runtime_version;
-    init.initialize = &ompt_initialize;
-    init.finalize = &ompt_finalize;
-    return &init;
+#if OMPT_DEBUG_STARTUP
+  printf("Starting tool...\n");
+#endif
+  ompt_runtime_version = runtime_version;
+
+  init.initialize = &ompt_initialize;
+  init.finalize = &ompt_finalize;
+
+  return &init;
 }
 
 
 int 
-hpcrun_omp_state_is_overhead()
+hpcrun_omp_state_is_overhead
+(
+ void
+)
 {
   if (ompt_initialized) {
     ompt_wait_id_t wait_id;
@@ -626,7 +706,10 @@ hpcrun_omp_state_is_overhead()
 //-------------------------------------------------
 
 int
-hpcrun_ompt_elide_frames()
+hpcrun_ompt_elide_frames
+(
+ void
+)
 {
   return ompt_elide; 
 }
@@ -639,7 +722,10 @@ hpcrun_ompt_elide_frames()
 
 
 ompt_state_t
-hpcrun_ompt_get_state(uint64_t *wait_id)
+hpcrun_ompt_get_state
+(
+ uint64_t *wait_id
+)
 {
   if (ompt_initialized) return ompt_get_state_fn(wait_id);
   return ompt_state_undefined;
@@ -647,7 +733,10 @@ hpcrun_ompt_get_state(uint64_t *wait_id)
 
 
 ompt_frame_t *
-hpcrun_ompt_get_task_frame(int level)
+hpcrun_ompt_get_task_frame
+(
+ int level
+)
 {
   if (ompt_initialized) {
     int task_type_flags;
@@ -665,9 +754,11 @@ hpcrun_ompt_get_task_frame(int level)
 
 
 ompt_data_t*
-hpcrun_ompt_get_task_data(int level)
+hpcrun_ompt_get_task_data
+(
+ int level
+)
 {
-#ifndef OMPT_V2013_07
   if (ompt_initialized){
     int task_type_flags;
     ompt_data_t *task_data = NULL;
@@ -678,33 +769,30 @@ hpcrun_ompt_get_task_data(int level)
     ompt_get_task_info_fn(level, &task_type_flags, &task_data, &task_frame, &parallel_data, &thread_num);
     return task_data;
   }
-#endif
   return (ompt_data_t*) ompt_data_none;
 }
 
 
 void *
-hpcrun_ompt_get_idle_frame()
+hpcrun_ompt_get_idle_frame
+(
+ void
+)
 {
-//  printf("Current in get_idle_frame\n");
-#if 0
-#ifndef OMPT_V2013_07
-  if (ompt_initialized) return ompt_get_idle_frame_fn();
-#endif
-  return NULL;
-#endif
   return NULL;
 }
 
 
 // new version
 
-int hpcrun_ompt_get_parallel_info(
-  int ancestor_level,
-  ompt_data_t **parallel_data,
-  int *team_size)
+int hpcrun_ompt_get_parallel_info
+(
+ int ancestor_level,
+ ompt_data_t **parallel_data,
+ int *team_size
+)
 {
-  if(ompt_initialized) {
+  if (ompt_initialized) {
     // FIXME: changed at 2nd March 2018 16:43 CET
     return ompt_get_parallel_info_fn(ancestor_level, parallel_data, team_size);
 //    return 2;
@@ -718,7 +806,7 @@ uint64_t hpcrun_ompt_get_unique_id()
 //  return __sync_fetch_and_add(&ID, 1);
 //  static uint64_t thread = 1;
 //  static __thread uint64_t ID = 0;
-//  if(ompt_initialized) {
+//  if (ompt_initialized) {
 //    if (ID == 0) {
 //      uint64_t new_thread = __sync_fetch_and_add(&thread, 1);
 //      ID = new_thread << (sizeof(uint64_t) * 8 - 16);
@@ -727,28 +815,38 @@ uint64_t hpcrun_ompt_get_unique_id()
 //    return ID;
 //  }else return 0;
 
-  if(ompt_initialized) return ompt_get_unique_id_fn();
+  if (ompt_initialized) return ompt_get_unique_id_fn();
   return 0;
 }
 
-uint64_t hpcrun_ompt_get_parallel_info_id(int ancestor_level)
+
+uint64_t 
+hpcrun_ompt_get_parallel_info_id
+(
+ int ancestor_level
+)
 {
   ompt_data_t *parallel_info = NULL;
   int team_size = 0;
   hpcrun_ompt_get_parallel_info(ancestor_level, &parallel_info, &team_size);
-  if(parallel_info == NULL) return 0;
+  if (parallel_info == NULL) return 0;
   return parallel_info->value;
 //  ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_info->ptr;
 //  return region_data->region_id;
 }
 
 
-void hpcrun_ompt_get_parallel_info_id_pointer(int ancestor_level, uint64_t *region_id)
+void 
+hpcrun_ompt_get_parallel_info_id_pointer
+(
+ int ancestor_level, 
+ uint64_t *region_id
+)
 {
   ompt_data_t *parallel_info = NULL;
   int team_size = 0;
   hpcrun_ompt_get_parallel_info(ancestor_level, &parallel_info, &team_size);
-  if(parallel_info == NULL){
+  if (parallel_info == NULL){
     *region_id = 0L;
   };
   *region_id =  parallel_info->value;
@@ -762,7 +860,10 @@ void hpcrun_ompt_get_parallel_info_id_pointer(int ancestor_level, uint64_t *regi
 //-------------------------------------------------
 
 uint64_t
-hpcrun_ompt_outermost_parallel_id()
+hpcrun_ompt_outermost_parallel_id
+(
+ void
+)
 { 
   ompt_id_t outer_id = 0; 
   if (ompt_initialized) { 
@@ -778,19 +879,25 @@ hpcrun_ompt_outermost_parallel_id()
 
 
 void
-ompt_mutex_blame_shift_request()
+ompt_mutex_blame_shift_request
+(
+  void
+)
 {
   ompt_mutex_blame_requested = 1;
   ompt_register_mutex_metrics();
 }
 
 
-void 
-ompt_idle_blame_shift_request()
+int 
+ompt_task_full_context_p
+(
+  void
+)
 {
-  ompt_idle_blame_requested = 1;
-  ompt_register_idle_metrics();
+  return ompt_task_full_context;
 }
+
 
 // added by vi3:
 
@@ -802,7 +909,7 @@ ompt_idle_blame_shift_request()
 // rename freelist_remove_first
 ompt_base_t*
 freelist_remove_first(ompt_base_t **head){
-  if(*head){
+  if (*head){
     ompt_base_t* first = *head;
     // note: this is not thread safe, because of that we introduce private_queue_remove_first
     *head = OMPT_BASE_T_GET_NEXT(first);
@@ -811,8 +918,14 @@ freelist_remove_first(ompt_base_t **head){
   return ompt_base_nil;
 }
 
-// rename: freelist_add_first
-void freelist_add_first(ompt_base_t *new, ompt_base_t **head){
+
+void 
+freelist_add_first
+(
+ ompt_base_t *new, 
+ ompt_base_t **head
+)
+{
   if (!new)
     return;
   OMPT_BASE_T_GET_NEXT(new) = *head;
@@ -821,8 +934,12 @@ void freelist_add_first(ompt_base_t *new, ompt_base_t **head){
 
 // Remove the head of the private queue. This function is thread safe, see below.
 ompt_base_t*
-private_queue_remove_first(ompt_base_t **head){
-    if(*head){
+private_queue_remove_first
+(
+ ompt_base_t **head
+)
+{
+    if (*head){
         ompt_base_t* first = *head;
         // Spin wait until the next pointer of the current head is not set to valid value
         // The valid next pointer is the new head of the private queue
@@ -835,16 +952,24 @@ private_queue_remove_first(ompt_base_t **head){
 // vi3: wait free queue functions
 // prefix wfq
 void
-wfq_set_next_pending(ompt_base_t *element){
+wfq_set_next_pending
+(
+ ompt_base_t *element
+)
+{
   // set invalid value
   atomic_exchange(&element->next.anext, ompt_base_invalid);
 }
 
 // prefix wfq
 ompt_base_t*
-wfq_get_next(ompt_base_t *element){
+wfq_get_next
+(
+ ompt_base_t *element
+)
+{
   // wait until next pointer is set properly
-//  ompt_base_t* curr_next = atomic_load(&element->next.anext);
+  //  ompt_base_t* curr_next = atomic_load(&element->next.anext);
   ompt_base_t* curr_next;
   // FIXME vi3: is it okay to write something like this
   while ((curr_next=atomic_load(&element->next.anext)) == ompt_base_invalid);  // FIXME: this should be loaded atomically
@@ -853,13 +978,22 @@ wfq_get_next(ompt_base_t *element){
 
 
 void
-wfq_init(ompt_wfq_t *queue){
+wfq_init
+(
+ompt_wfq_t *queue
+)
+{
   atomic_init(&queue->head, ompt_base_nil);
 }
 
-// add element to wait free queue
+
 void
-wfq_enqueue(ompt_base_t *new, ompt_wfq_t *queue){
+wfq_enqueue
+(
+ ompt_base_t *new, 
+ ompt_wfq_t *queue
+)
+{
   wfq_set_next_pending(new);
   // FIXME vi3: should OMPT_BASE_T_STAR
   ompt_base_t *old_head = (ompt_base_t*)atomic_exchange(&queue->head, new);
@@ -870,9 +1004,13 @@ wfq_enqueue(ompt_base_t *new, ompt_wfq_t *queue){
 // when all adding are finished before removing
 // dequeue_public
 ompt_base_t*
-wfq_dequeue_public(ompt_wfq_t *public_queue){
+wfq_dequeue_public
+(
+ ompt_wfq_t *public_queue
+)
+{
   ompt_base_t* first = atomic_load(&public_queue->head);
-  if(first){
+  if (first){
     ompt_base_t* succ = wfq_get_next(first);
     atomic_exchange(&public_queue->head, succ);
     atomic_exchange(&first->next.anext, ompt_base_nil);
@@ -884,9 +1022,14 @@ wfq_dequeue_public(ompt_wfq_t *public_queue){
 // if it is empty, takes all element from public queue
 // and store them to private list
 ompt_base_t*
-wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue){
+wfq_dequeue_private
+(
+ ompt_wfq_t *public_queue, 
+ ompt_base_t **private_queue
+)
+{
   // private list is empty
-  if(!(*private_queue)){
+  if (!(*private_queue)){
     // take all from public list, but there is also possibility that this list is empty too
     ompt_base_t* old_head = atomic_exchange(&public_queue->head, ompt_base_nil);
     *private_queue = old_head;
@@ -903,7 +1046,10 @@ wfq_dequeue_private(ompt_wfq_t *public_queue, ompt_base_t **private_queue){
 
 // allocating and free regions
 ompt_region_data_t*
-hpcrun_ompt_region_alloc(){
+hpcrun_ompt_region_alloc
+(
+)
+{
   // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
   // FIXME vi3: I think that call to wfq_dequeue_private in this case should be thread safe
   // but check this one more time
@@ -916,14 +1062,22 @@ hpcrun_ompt_region_alloc(){
 
 
 void
-hpcrun_ompt_region_free(ompt_region_data_t *region_data){
+hpcrun_ompt_region_free
+(
+ ompt_region_data_t *region_data
+)
+{
   wfq_enqueue(OMPT_BASE_T_STAR(region_data), region_data->thread_freelist);
 }
 
 
 // allocating and free notifications
 ompt_notification_t*
-hpcrun_ompt_notification_alloc(){
+hpcrun_ompt_notification_alloc
+(
+ void
+)
+{
   // only the current thread uses notification_freelist_head
   ompt_notification_t* first = (ompt_notification_t*) freelist_remove_first(
           OMPT_BASE_T_STAR_STAR(notification_freelist_head));
@@ -932,51 +1086,73 @@ hpcrun_ompt_notification_alloc(){
 
 
 void
-hpcrun_ompt_notification_free(ompt_notification_t *notification){
+hpcrun_ompt_notification_free
+(
+ ompt_notification_t *notification
+)
+{
   freelist_add_first(OMPT_BASE_T_STAR(notification), OMPT_BASE_T_STAR_STAR(notification_freelist_head));
 }
 
 
 // allocate and free thread's region
 ompt_trl_el_t*
-hpcrun_ompt_trl_el_alloc(){
+hpcrun_ompt_trl_el_alloc
+(
+ void
+)
+{
   // only the thread that owns thread_region_freelist_head access to it
   ompt_trl_el_t* first = (ompt_trl_el_t*) freelist_remove_first(OMPT_BASE_T_STAR_STAR(thread_region_freelist_head));
   return first ? first : (ompt_trl_el_t*)hpcrun_malloc(sizeof(ompt_trl_el_t));
 }
 
+
 void
-hpcrun_ompt_trl_el_free(ompt_trl_el_t *thread_region){
+hpcrun_ompt_trl_el_free
+(
+ ompt_trl_el_t *thread_region
+)
+{
   freelist_add_first(OMPT_BASE_T_STAR(thread_region), OMPT_BASE_T_STAR_STAR(thread_region_freelist_head));
 }
 
 
 //FIXME: regex \(ompt_base_t\s+\*\)
 
-
-
-
-
-
 // vi3: Helper function to get region_data
 ompt_region_data_t*
-hpcrun_ompt_get_region_data(int ancestor_level){
+hpcrun_ompt_get_region_data
+(
+ int ancestor_level
+)
+{
   ompt_data_t* parallel_data = NULL;
   int team_size;
   int ret_val = hpcrun_ompt_get_parallel_info(ancestor_level, &parallel_data, &team_size);
   // FIXME: potential problem if parallel info is unavailable and runtime returns 1
-  if(ret_val < 2)
+  if (ret_val < 2)
     return NULL;
   return parallel_data ? (ompt_region_data_t*)parallel_data->ptr : NULL;
 }
 
+
 ompt_region_data_t*
-hpcrun_ompt_get_current_region_data(){
+hpcrun_ompt_get_current_region_data
+(
+ void
+)
+{
   return hpcrun_ompt_get_region_data(0);
 }
 
+
 ompt_region_data_t*
-hpcrun_ompt_get_parent_region_data(){
+hpcrun_ompt_get_parent_region_data
+(
+ void
+)
+{
   return hpcrun_ompt_get_region_data(1);
 }
 
