@@ -445,9 +445,10 @@ hpcrun_loadmap_map(dso_info_t* dso)
                 dso->name, lm->dso_info->start_addr, lm->dso_info->end_addr);
 #endif
 
-        hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
-                                  lm->dso_info->end_addr);
   }
+
+  hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
+			    lm->dso_info->end_addr);
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
        dso->name, s_loadmap_ptr->size, msg);
