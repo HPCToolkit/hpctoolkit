@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -152,7 +152,7 @@ static step_state (*dbg_unw_step)(hpcrun_unw_cursor_t* cursor) = t1_dbg_unw_step
 //************************************************
 
 static void
-save_registers(hpcrun_unw_cursor_t* cursor, void *pc, void *bp, void *sp,
+save_registers(hpcrun_unw_cursor_t* cursor, void **pc, void **bp, void *sp,
 	       void **ra_loc)
 {
   cursor->pc_unnorm = pc;
@@ -239,7 +239,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 {
   libunw_unw_init_cursor(cursor, context);
 
-  void *pc, **bp, *sp;
+  void *pc, **bp, **sp;
   unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
   unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
   unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
@@ -411,28 +411,29 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
 
   if (cursor->libunw_status == LIBUNW_READY) {
     unw_res = libunw_take_step(cursor);
+
     // libunw_take_step() only updates PC.
     // Here, we need to update bp, sp, ra_loc.
     void *pc, *bp, *sp;
     unw_save_loc_t ip_loc;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
-    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
-    
-    /** libunwind version after Mar 6, 2018 
-     * (commission 7f04c2032f1a2328072f3a3733abf74a72188458)
-     * is needed to get location of IP.
-     */
-    unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
-    save_registers(cursor, pc, bp, sp, 
-            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
-    TMSG(UNW, "unw_step: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
+    unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);    
+    // sanity check to avoid infinite unwind loop
+    if (sp <= cursor->sp) {
+      cursor->libunw_status = LIBUNW_UNAVAIL;
+      unw_res = STEP_ERROR;
+    }
+    else {
+      unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
+      save_registers(cursor, pc, bp, sp, 
+          ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
+    }
     
     // if PC is trampoline, must skip libunw_finalize_cursor() to avoid trolling.
     if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))
         return STEP_OK;
-    
+
     if (unw_res == STEP_OK) {
       libunw_finalize_cursor(cursor);
     }
@@ -440,6 +441,14 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
     if (unw_res == STEP_STOP || unw_res == STEP_OK) {
       return unw_res;
     }
+    bool found = uw_recipe_map_lookup(((char *)pc) - 1, NATIVE_UNWINDER, &cursor->unwr_info);
+
+    if (!found) {
+      EMSG("hpcrun_unw_step: cursor could NOT build an interval for last libunwind pc = %p",
+	   cursor->pc_unnorm);
+      return unw_res;
+    }
+    compute_normalized_ips(cursor);
   }
 
   if ( ENABLED(DBG_UNW_STEP) ){

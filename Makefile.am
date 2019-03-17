@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -122,7 +122,13 @@ define copy-libs
     fi
 endef
 
+hash_file = $(BASE_LIBS_DIR)/hash-file
+hash_value = @hash_value@
+
 install-exec-local:
+	@echo "Installing launch script hash ..."
+	rm -f "$(hash_file)"
+	echo "$(hash_value)" > "$(hash_file)"
 	@echo "Copying external package libraries ..."
 	@$(mkinstalldirs) "$(EXT_LIBS_DIR)"
 	@for lib in $(BOOST_COPY_LIST) ; do  \

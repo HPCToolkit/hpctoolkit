@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -155,10 +155,6 @@
 #define PERF_EVENT_AVAILABLE_UNKNOWN 0
 #define PERF_EVENT_AVAILABLE_NO      1
 #define PERF_EVENT_AVAILABLE_YES     2
-
-#define RAW_NONE        0
-#define RAW_IBS_FETCH   1
-#define RAW_IBS_OP      2
 
 #define PERF_MULTIPLEX_RANGE 1.2
 
@@ -461,6 +457,12 @@ perf_thread_fini(int nevents, event_thread_t *event_thread)
   monitor_real_pthread_sigmask(SIG_BLOCK, &perf_sigset, NULL);
 
   for(int i=0; i<nevents; i++) {
+    if (!event_thread) {
+       continue; // in some situations, it is possible a shutdown signal is delivered
+       	         // while hpcrun is in the middle of abort.
+		 // in this case, all information is null and we shouldn't
+		 // start profiling.
+    }
     if (event_thread[i].fd >= 0) {
       close(event_thread[i].fd);
       event_thread[i].fd = PERF_FD_FINALIZED;
@@ -923,6 +925,11 @@ METHOD_FN(gen_event_set, int lush_metrics)
   int nevents 	  = (self->evl).nevents;
   int num_metrics = hpcrun_get_num_metrics();
 
+  // -------------------------------------------------------------------------
+  // TODO: we need to fix this allocation.
+  //       there is no need to allocate a memory if we are reusing thread data
+  // -------------------------------------------------------------------------
+
   // a list of event information, private for each thread
   event_thread_t  *event_thread = (event_thread_t*) hpcrun_malloc(sizeof(event_thread_t) * nevents);
 
@@ -945,7 +952,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
   {
     // initialize this event. If it's valid, we set the metric for the event
     if (!perf_thread_init( &(event_desc[i]), &(event_thread[i])) ) {
-      EEMSG("Failed to initialize the %s event.", event_desc[i].metric_desc->name);
+      EEMSG("Failed to initialize the %s event.: %s", event_desc[i].metric_desc->name,
+             strerror(errno));
+      exit(1);
     }
   }
 
