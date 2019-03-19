@@ -712,17 +712,16 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
-  // handle event sets for sample sources
-  SAMPLE_SOURCES(gen_event_set,lush_metrics);
-
-  // sample sources take thread specific action prior to start (often is a 'registration' action);
-  SAMPLE_SOURCES(thread_init_action);
-
   // release the wallclock handler -for this thread-
   hpcrun_itimer_wallclock_ok(true);
-  // start the sample sources
-  if (! hpcrun_thread_suppress_sample)
+  if (! hpcrun_thread_suppress_sample) {
+    // handle event sets for sample sources
+    SAMPLE_SOURCES(gen_event_set,lush_metrics);
+    // sample sources take thread specific action prior to start (often is a 'registration' action);
+    SAMPLE_SOURCES(thread_init_action);
+    // start the sample sources
     SAMPLE_SOURCES(start);
+  }
 
   return (void*) epoch;
 }
@@ -1100,6 +1099,14 @@ monitor_init_thread(int tid, void* data)
 		  }
 		});
 
+  void *thread_begin_address = monitor_get_addr_thread_start();
+
+  if (module_ignore_map_inrange_lookup(thread_begin_address)) {
+    hpcrun_thread_suppress_sample = true;
+  }
+
+  hpcrun_safe_enter();
+
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
   TMSG(THREAD,"back from init thread %d",tid);
@@ -1107,12 +1114,6 @@ monitor_init_thread(int tid, void* data)
   hpcrun_threadmgr_thread_new();
 
   hpcrun_safe_exit();
-
-  void *thread_begin_address = monitor_get_addr_thread_start();
-
-  if (module_ignore_map_inrange_lookup(thread_begin_address)) {
-    hpcrun_thread_suppress_sample = true;
-  }
 
   return thread_data;
 }

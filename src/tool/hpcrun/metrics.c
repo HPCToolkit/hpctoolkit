@@ -283,7 +283,7 @@ hpcrun_id2metric_linked(int metric_id)
 {
   for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
     for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
-      if (l->id == metric_id) return &l->val;
+      if (l->g_id == metric_id) return &l->val;
     }
   }
   return NULL;
