@@ -374,8 +374,6 @@ static void
 cskl_ilmstat_btuwi_any_node_tostr(void* nodeval, int node_height, int max_height,
 				  char str[], int max_cskl_str_len, unwinder_t uw)
 {
-  cskl_levels_tostr(node_height, max_height, str, max_cskl_str_len);
-
   // build needed indentation to print the binary tree inside the skiplist:
   char indents[MAX_CSKIPLIST_STR];
   snprintf(indents, MAX_CSKIPLIST_STR, "%s%s", str, ildmod_stat_maxspaces());
@@ -431,7 +429,11 @@ uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
   uw_recipe_map_report(op, start, end);
   unwinder_t uw;
   for (uw = 0; uw < NUM_UNWINDERS; uw++) {
+    // allocate and clear a string buffer
     char buf[MAX_CSKIPLIST_STR];
+    buf[0] = 0;
+
+    fprintf(stderr, "********* recipe map for unwinder %d *********\n", uw);
     cskl_tostr(addr2recipe_map[uw], cskl_ilmstat_btuwi_node_tostr[uw], buf, MAX_CSKIPLIST_STR);
     fprintf(stderr, "%s", buf);
   }
