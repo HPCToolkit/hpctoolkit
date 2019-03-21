@@ -66,9 +66,9 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
     }
     
-    LocalTraceAnalyzer local;
+    LocalTraceAnalyzer local(prof, dbDir, myRank, numRanks);
     vector<TCTRootNode*> rootNodes;
-    TCTClusterNode* rootCluster = local.analyze(prof, dbDir, myRank, numRanks, rootNodes);
+    TCTClusterNode* rootCluster = local.analyze(rootNodes);
     
     if (myRank == 0) {
       struct timeval time;
@@ -84,8 +84,10 @@ namespace TraceAnalysis {
       struct timeval time;
       gettimeofday(&time, NULL);
       long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
-      print_msg(MSG_PRIO_MAX, "\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
-      
+      print_msg(MSG_PRIO_MAX, "\nRemote trace analysis finished at %s.\n", timeToString(timeDiff).c_str());
+    }
+    
+    if (myRank == 0) {
       rootCluster->computeAvgRep();
       print_msg(MSG_PRIO_NORMAL, "\nAvg Rep: %s", rootCluster->getAvgRep()->toString(20, 0, 10000).c_str());
       print_msg(MSG_PRIO_NORMAL, "\nRoot Cluster: %s", rootCluster->toString(20, 0, 1000).c_str());
@@ -93,6 +95,14 @@ namespace TraceAnalysis {
       PerformanceDiagnoser diagnoser;
       diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
     }
+    
+    vector<Time> clockDiff(rootNodes.size(), 0);
+    if (myRank == 0)
+      remote.writeClockSyncFile((TCTRootNode*)rootCluster->getAvgRep(), rootNodes, myRank, numRanks, clockDiff);
+    else
+      remote.writeClockSyncFile(NULL, rootNodes, myRank, numRanks, clockDiff);
+    if (!local.adjustClockDiff(clockDiff))
+      print_msg(MSG_PRIO_MAX, "ERROR: Clock sync failed on rank #%d!\n", myRank);
     
     for (TCTRootNode* root : rootNodes)
       delete root;

@@ -124,6 +124,9 @@ namespace TraceAnalysis {
   // Parameters for clock synchronization.
   const int MAX_CLOCK_SYNC_NOISE = 10;
   const Time CLOCK_SYNC_FAILED = LONG_MIN;
+  const string CLOCK_SYNC_FILE_NAME = "clock_synchronization";
+  
+  void int8ToBigEndian(char* buf, Time time);
 }
 
 #endif /* TRACEANALYSISCOMMON_HPP */

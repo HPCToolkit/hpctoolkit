@@ -82,7 +82,7 @@ using std::unordered_map;
 
 namespace TraceAnalysis {
 
-  class LocalTraceAnalyzerImpl {
+  class TraceFileAnalyzerImpl {
   public:
     TraceFileReader reader;
     
@@ -94,10 +94,10 @@ namespace TraceAnalysis {
     unordered_map<int, uint64_t> nodeStartSample;
     unordered_map<int, uint64_t> iterStartSample;
     
-    LocalTraceAnalyzerImpl(CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
+    TraceFileAnalyzerImpl(CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
           reader(cctVisitor, traceFileName, minTime),
           numSamples(0) {}
-    ~LocalTraceAnalyzerImpl() {}
+    ~TraceFileAnalyzerImpl() {}
     
       
     void pushOneNode(TCTANode* node, Time startTimeExclusive, Time startTimeInclusive, uint64_t startSample) {
@@ -418,13 +418,6 @@ namespace TraceAnalysis {
     }
   };
 
-  
-  LocalTraceAnalyzer::LocalTraceAnalyzer() {
-  }
-
-  LocalTraceAnalyzer::~LocalTraceAnalyzer() {
-  }
-  
   int hpctraceFileFilter(const struct dirent* entry)
   {
     static const string ext = string(".") + HPCRUN_TraceFnmSfx;
@@ -437,7 +430,7 @@ namespace TraceAnalysis {
     }
     return 0;
   }
-
+  
   // Return true if it is a worker thread.
   bool workerThreadFilter(string filename) {
     if (filename.find("-000-") == string::npos)
@@ -446,74 +439,126 @@ namespace TraceAnalysis {
       return false;
   }
   
-  TCTClusterNode* LocalTraceAnalyzer::analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks, vector<TCTRootNode*>& rootNodes) {
-    // Step 1: analyze binary files to get CFGs for later analysis
-    const Prof::LoadMap* loadmap = prof->loadmap();
-    for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-         i <= loadmap->size(); ++i) {
-      Prof::LoadMap::LM* lm = loadmap->lm(i);
-      if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-        print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
-        binaryAnalyzer.parse(lm->name());
-      }
-    }
-
-    // Step 2: visit CCT to build an cpid to CCTNode map.
-    CCTVisitor cctVisitor(prof->cct());
-
-    // Step 3: get a list of trace files.
-    vector<string> traceFiles;
-    string path = dbDir;
-    if (FileUtil::isDir(path.c_str())) {
-      // ensure 'path' ends in '/'
-      if (path[path.length() - 1] != '/') {
-        path += "/";
-      }
-
-      struct dirent** dirEntries = NULL;
-      int dirEntriesSz = scandir(path.c_str(), &dirEntries,
-                                 hpctraceFileFilter, alphasort);
-      if (dirEntriesSz > 0) {
-        for (int i = 0; i < dirEntriesSz; ++i) {
-          if (!workerThreadFilter(dirEntries[i]->d_name))
-            traceFiles.push_back(path + dirEntries[i]->d_name);
-          free(dirEntries[i]);
+  class LocalTraceAnalyzerImpl {
+  public:
+    LocalTraceAnalyzerImpl(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) : cctVisitor(prof->cct()) {
+      // Step 1: analyze binary files to get CFGs for later analysis
+      const Prof::LoadMap* loadmap = prof->loadmap();
+      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
+           i <= loadmap->size(); ++i) {
+        Prof::LoadMap::LM* lm = loadmap->lm(i);
+        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
+          print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
+          binaryAnalyzer.parse(lm->name());
         }
-        free(dirEntries);
       }
-    }
 
-    if (myRank == 0) {
-      struct timeval time;
-      gettimeofday(&time, NULL);
-      long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
-      print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n\n", timeToString(timeDiff).c_str());
-    }
+      // Step 2: get a list of trace files.
+      string path = dbDir;
+      if (FileUtil::isDir(path.c_str())) {
+        // ensure 'path' ends in '/'
+        if (path[path.length() - 1] != '/') {
+          path += "/";
+        }
 
-    bool debug = false;
-    while (debug) ;
-    
-    // Step 4: analyze each trace file
-    TCTClusterNode* rootCluster = NULL;
-    int begIdx = traceFiles.size() * myRank / numRanks;
-    int endIdx = traceFiles.size() * (myRank + 1) / numRanks;
-    for (int i = begIdx; i < endIdx; i++) {
-      print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
-      LocalTraceAnalyzerImpl analyzer(cctVisitor, traceFiles[i], prof->traceMinTime());
-      TCTRootNode* root = analyzer.analyze();
-      rootNodes.push_back((TCTRootNode*)root->duplicate());
-      print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 0, 0).c_str());
+        struct dirent** dirEntries = NULL;
+        int dirEntriesSz = scandir(path.c_str(), &dirEntries,
+                                   hpctraceFileFilter, alphasort);
+        if (dirEntriesSz > 0) {
+          for (int i = 0; i < dirEntriesSz; ++i) {
+            if (!workerThreadFilter(dirEntries[i]->d_name))
+              traceFiles.push_back(path + dirEntries[i]->d_name);
+            free(dirEntries[i]);
+          }
+          free(dirEntries);
+        }
+      }
       
-      if (rootCluster == NULL) {
-        rootCluster = new TCTClusterNode(*root);
-        rootCluster->setName("All Roots");
+      traceMinTime = prof->traceMinTime();
+
+      if (myRank == 0) {
+        struct timeval time;
+        gettimeofday(&time, NULL);
+        long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
+        print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n\n", timeToString(timeDiff).c_str());
       }
-      rootCluster->addChild(root, i);
+
+      // Step 3: calculate begIdx and endIdx for this rank.
+      if (numRanks > (int)traceFiles.size())
+        numRanks = traceFiles.size();
+      if (myRank >= numRanks) {
+        begIdx = -1;
+        endIdx = -1;
+      } else {
+        begIdx = traceFiles.size() * myRank / numRanks;
+        endIdx = traceFiles.size() * (myRank + 1) / numRanks;
+      }
+    }
+    virtual ~LocalTraceAnalyzerImpl() {}
+    
+    TCTClusterNode* analyze(vector<TCTRootNode*>& rootNodes) {
+      TCTClusterNode* rootCluster = NULL;
+      for (int i = begIdx; i < endIdx; i++) {
+        print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
+        TraceFileAnalyzerImpl analyzer(cctVisitor, traceFiles[i], traceMinTime);
+        TCTRootNode* root = analyzer.analyze();
+        root->setRootID(i);
+        rootNodes.push_back((TCTRootNode*)root->duplicate());
+        print_msg(MSG_PRIO_LOW, "\n\n\n\n%s", root->toString(10, 0, 0).c_str());
+
+        if (rootCluster == NULL) {
+          rootCluster = new TCTClusterNode(*root);
+          rootCluster->setName("All Roots");
+        }
+        rootCluster->addChild(root, i);
+      }
+
+      print_msg(MSG_PRIO_LOW, "\n\n\nRoot Cluster:\n%s", rootCluster->toString(10, 4000, 0).c_str());
+
+      return rootCluster;
     }
     
-    print_msg(MSG_PRIO_LOW, "\n\n\nRoot Cluster:\n%s", rootCluster->toString(10, 4000, 0).c_str());
+    bool adjustClockDiff(const vector<Time>& clockDiff) {
+      if ((int)clockDiff.size() != (endIdx - begIdx)) {
+        print_msg(MSG_PRIO_MAX, "ERROR: size of clockDiff[] doesn't match the number of trace files.\n");
+        return false;
+      }
+        
+      for (int i = begIdx; i < endIdx; i++) 
+        if (clockDiff[i-begIdx] != 0) {
+          TraceFileRewriter rewriter(traceFiles[i]);
+          if (!rewriter.rewriteTimestamps(clockDiff[i-begIdx])) {
+            print_msg(MSG_PRIO_MAX, "ERROR: rewrite trace file #%d failed.\n", i);
+            return false;
+          }
+          print_msg(MSG_PRIO_MAX, "Clock sync for trace file #%d successful, offset = %ld.\n", i, clockDiff[i-begIdx]);
+        }
+      
+      return true;
+    }
     
-    return rootCluster;
+  private:
+    CCTVisitor cctVisitor;
+    Time traceMinTime;
+    vector<string> traceFiles;
+    int begIdx;
+    int endIdx;
+  };
+  
+  LocalTraceAnalyzer::LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
+    ptr = new LocalTraceAnalyzerImpl(prof, dbDir, myRank, numRanks);
+  }
+
+  LocalTraceAnalyzer::~LocalTraceAnalyzer() {
+    delete (LocalTraceAnalyzerImpl*)ptr;
+  }
+  
+  TCTClusterNode* LocalTraceAnalyzer::analyze(vector<TCTRootNode*>& rootNodes) {
+    return ((LocalTraceAnalyzerImpl*)ptr)->analyze(rootNodes);
+  }
+  
+  bool LocalTraceAnalyzer::adjustClockDiff(const vector<Time>& clockDiff) {
+    return ((LocalTraceAnalyzerImpl*)ptr)->adjustClockDiff(clockDiff);
   }
 }
 

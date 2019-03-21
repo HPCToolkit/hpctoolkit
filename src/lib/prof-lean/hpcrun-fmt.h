@@ -676,6 +676,8 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
   (bits & HPCTRACE_FMT_TIME_MAX)
 #define HPCTRACE_FMT_SET_TIME(bits, time) \
   bits = (bits & (~HPCTRACE_FMT_TIME_MAX)) | (time & HPCTRACE_FMT_TIME_MAX)
+#define HPCTRACE_FMT_ADJUST_TIME(bits, offset) \
+  bits += offset;  // Timestamp is in lower bits; therefore, we can adjust the time by adding offset directly.
 
 // dLCA = distance of previous sample's leaf call frame to 
 // the Least Common Ancestor (LCA) with this sample in the CCT.
@@ -703,6 +705,9 @@ typedef struct hpctrace_fmt_datum_t {
 int
 hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			 FILE* fs);
+
+int
+hpctrace_fmt_datum_size(hpctrace_hdr_flags_t flags);
 
 int
 hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,

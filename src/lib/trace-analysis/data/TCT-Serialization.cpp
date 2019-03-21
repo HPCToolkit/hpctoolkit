@@ -261,6 +261,7 @@ namespace TraceAnalysis {
   template<class Archive>
   void TCTRootNode::serialize(Archive& ar, const unsigned int version) {
     ar & boost::serialization::base_object<TCTACFGNode>(*this);
+    ar & pid;
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTRootNode)
   
@@ -276,6 +277,8 @@ namespace TraceAnalysis {
     ar & boost::serialization::base_object<TCTANode>(*this);
     ar & numIteration & numAcceptedIteration;
     ar & pendingIteration & clusterNode & rejectedIterations & profileNode;
+    for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+      ar & sampledIterations[idx];
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTLoopNode)
   

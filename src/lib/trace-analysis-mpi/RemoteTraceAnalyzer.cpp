@@ -55,6 +55,7 @@
 
 #include <lib/trace-analysis/TraceAnalysisCommon.hpp>
 #include <lib/trace-analysis/data/TCT-Serialization.hpp>
+#include <lib/trace-analysis/ClockSynchronizer.hpp>
 
 #include <sstream>
 using std::stringstream;
@@ -66,7 +67,7 @@ namespace TraceAnalysis {
 
   RemoteTraceAnalyzer::~RemoteTraceAnalyzer() {}
   
-  string rootClusterToString(TCTClusterNode* rootCluster) {
+  string rootClusterToString(const TCTClusterNode* rootCluster) {
     std::stringstream ss;
     binary_oarchive oa(ss);
     register_class(oa);
@@ -107,7 +108,7 @@ namespace TraceAnalysis {
           MPI_Recv(buf, buf_size, MPI_CHAR, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
           string str(buf, buf_size);
           TCTClusterNode* otherRootCluster = stringToRootCluster(str);
-          delete buf;
+          delete[] buf;
           str.clear();
           
           print_msg(MSG_PRIO_LOW, "\n\nAfter MPI_Recv:\n\n%s", otherRootCluster->toString(10, 4000, 0).c_str());
@@ -130,6 +131,75 @@ namespace TraceAnalysis {
     }
     
     return rootCluster;
+  }
+  
+    
+  string rootToString(const TCTRootNode* root) {
+    std::stringstream ss;
+    binary_oarchive oa(ss);
+    register_class(oa);
+    oa << root;
+    return ss.str();
+  }
+  
+  TCTRootNode* stringToRoot(string& str) {
+    TCTRootNode* root = NULL;
+    std::stringstream ss(str);
+    binary_iarchive ia(ss);
+    register_class(ia);
+    ia >> root;
+    return root;
+  }
+  
+  const TCTRootNode* bcastRootNode(const TCTRootNode* root, int myRank, int numRanks) {
+    char* buf = NULL;
+    int bufSize = 0;
+
+    // Init buf and bufSize for the rootRank.
+    if (myRank == 0) {
+      string str = rootToString(root);
+      bufSize = str.size();
+      buf = new char[bufSize];
+      memcpy(buf, str.c_str(), bufSize);
+    }
+
+    // Bcast bufSize
+    MPI_Bcast(&bufSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Bcast buf
+    if (myRank != 0)
+      buf = new char[bufSize];
+    MPI_Bcast(buf, bufSize, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    // Read node from buf
+    if (myRank != 0) {
+      string str(buf, bufSize);
+      root = stringToRoot(str);
+    }
+
+    delete[] buf;
+    return root;
+  }
+  
+  void RemoteTraceAnalyzer::writeClockSyncFile(const TCTRootNode* avgRoot, const vector<TCTRootNode*>& rootNodes, 
+      int myRank, int numRanks, vector<Time>& clockDiff) {
+    // Step 1: bcast avgRoot to every MPI rank.
+    avgRoot = bcastRootNode(avgRoot, myRank, numRanks);
+    
+    // Bcast the thread TCT used for clock comparison, which would be rootNodes[0] of rank #0.
+    const TCTRootNode* clockCmpRootNode = NULL;
+    if (myRank == 0)
+      clockCmpRootNode = rootNodes[0];
+    clockCmpRootNode = bcastRootNode(clockCmpRootNode, myRank, numRanks);
+    
+    ClockSynchronizer clocksync(avgRoot);
+    for (uint idx = 0; idx < rootNodes.size(); idx++) 
+      clockDiff[idx] = clocksync.getClockDifference(clockCmpRootNode, rootNodes[idx]);
+    
+    if (myRank != 0) {
+      delete avgRoot;
+      delete clockCmpRootNode;
+    }
   }
 }
 

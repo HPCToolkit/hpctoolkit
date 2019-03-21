@@ -896,6 +896,17 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   return HPCFMT_OK;
 }
 
+int
+hpctrace_fmt_datum_size(hpctrace_hdr_flags_t flags)
+{
+  int size = 0;
+  size += sizeof(hpctrace_fmt_time_dLCA_composite_t);
+  size += sizeof(uint32_t);
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS))
+    size += sizeof(uint32_t);
+  
+  return size;
+}
 
 // Append the trace record to the outbuf.
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.

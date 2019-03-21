@@ -541,8 +541,8 @@ namespace TraceAnalysis {
     
   public:
     TCTRootNode(int id, int procID, string name, int depth) : 
-            TCTACFGNode(Root, id, procID, name, depth, NULL, 0, SEMANTIC_LABEL_COMPUTATION) {}
-    TCTRootNode(const TCTRootNode& orig) : TCTACFGNode(orig) {}
+            TCTACFGNode(Root, id, procID, name, depth, NULL, 0, SEMANTIC_LABEL_COMPUTATION), pid(-1) {}
+    TCTRootNode(const TCTRootNode& orig) : TCTACFGNode(orig), pid(orig.pid) {}
     virtual ~TCTRootNode() {}
     
     virtual TCTANode* duplicate() const {
@@ -556,6 +556,17 @@ namespace TraceAnalysis {
       assignDerivedSemanticLabel(NULL);
       adjustEdgeWeight(1);
     }
+    
+    virtual void setRootID(int id) {
+      pid = id;
+    }
+    
+    virtual int getRootID() const {
+      return pid;
+    }
+    
+  private:
+    int pid;
   };
   
   // Temporal Context Tree Iteration Trace Node

@@ -105,4 +105,12 @@ namespace TraceAnalysis {
     double average = round(total / (double)(w1 + w2));
     return (Time) average;
   }
+  
+  void int8ToBigEndian(char* buf, int64_t value) {
+    int k = 0;
+    for (int shift = 56; shift >= 0; shift -= 8) {
+      buf[k] = (value >> shift) & 0xff;
+      k++;
+    }
+  }
 }

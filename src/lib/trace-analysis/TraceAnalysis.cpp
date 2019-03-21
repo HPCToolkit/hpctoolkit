@@ -63,6 +63,9 @@
 #include <vector>
 using std::vector;
 
+#include <fstream> 
+using std::ofstream;
+
 namespace TraceAnalysis {
   bool analysis(Prof::CallPath::Profile* prof, string dbDir) {
     {
@@ -72,28 +75,30 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
     }
     
-    LocalTraceAnalyzer analyzer;
+    LocalTraceAnalyzer analyzer(prof, dbDir, 0, 1);
     vector<TCTRootNode*> rootNodes;
-    TCTClusterNode* rootCluster = analyzer.analyze(prof, dbDir, 0, 1, rootNodes);
+    TCTClusterNode* rootCluster = analyzer.analyze(rootNodes);
+    rootCluster->computeAvgRep();
+    print_msg(MSG_PRIO_NORMAL, "\nAvg Rep: %s", rootCluster->getAvgRep()->toString(20, 0, 10000).c_str());
+    print_msg(MSG_PRIO_NORMAL, "\nRoot Cluster: %s", rootCluster->toString(20, 0, 1000).c_str());
+
+    PerformanceDiagnoser diagnoser;
+    diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
+    
+    ClockSynchronizer clocksync((TCTRootNode*)rootCluster->getAvgRep());
+    vector<Time> clockDiff(rootNodes.size(), 0);
+    for (uint idx = 0; idx < rootNodes.size(); idx++)
+      clockDiff[idx] = clocksync.getClockDifference(rootNodes[0], rootNodes[idx]);
+    if (!analyzer.adjustClockDiff(clockDiff))
+      print_msg(MSG_PRIO_MAX, "ERROR: Clock sync failed!\n");
     
     {
       struct timeval time;
       gettimeofday(&time, NULL);
       long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
       print_msg(MSG_PRIO_MAX, "\nTrace analysis finished at %s.\n", timeToString(timeDiff).c_str());
-      
-      rootCluster->computeAvgRep();
-      print_msg(MSG_PRIO_NORMAL, "\nAvg Rep: %s", rootCluster->getAvgRep()->toString(20, 0, 10000).c_str());
-      print_msg(MSG_PRIO_NORMAL, "\nRoot Cluster: %s", rootCluster->toString(20, 0, 1000).c_str());
-      
-      PerformanceDiagnoser diagnoser;
-      diagnoser.generateDiagnosis((TCTRootNode*)rootCluster->getAvgRep(), dbDir);
-      
-      ClockSynchronizer clocksync((TCTRootNode*)rootCluster->getAvgRep());
-      for (uint procID = 1; procID < rootNodes.size(); procID++)
-        print_msg(MSG_PRIO_NORMAL, "\n Clock diff between proc #0 and proc #%d is %ld.\n", procID, clocksync.getClockDifference(rootNodes[0], rootNodes[procID]));
     }
-    
+
     for (TCTRootNode* root : rootNodes)
       delete root;
     delete rootCluster;

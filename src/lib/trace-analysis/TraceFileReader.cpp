@@ -59,6 +59,9 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof/NameMappings.hpp>
 
+#include <vector>
+using std::vector;
+
 namespace TraceAnalysis {
   CallPathFrame::CallPathFrame(uint id, uint procID, string name, VMA vma, FrameType type, VMA ra) :
           id(id), procID(procID), name(name), vma(vma), type(type), ra(ra) {}
@@ -165,5 +168,37 @@ namespace TraceAnalysis {
     }
     
     return cp;
+  }
+  
+  TraceFileRewriter::TraceFileRewriter(string filename) {
+    file = fopen(filename.c_str(),"r+b");
+    if (file != NULL) {
+      hdr = new hpctrace_fmt_hdr_t();
+      hpctrace_fmt_hdr_fread((hpctrace_fmt_hdr_t*)hdr, file);
+    }
+  }
+  
+  TraceFileRewriter::~TraceFileRewriter() {
+    if (file != NULL) {
+      delete (hpctrace_fmt_hdr_t*)hdr;
+      fclose(file);
+    }
+  }
+  
+  bool TraceFileRewriter::rewriteTimestamps(Time offset) {
+    if (file == NULL) return false;
+    
+    hpctrace_fmt_datum_t trace;
+    int recordSize = hpctrace_fmt_datum_size(((hpctrace_fmt_hdr_t*)hdr)->flags);
+
+    while (hpctrace_fmt_datum_fread(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file) == HPCFMT_OK) {
+      HPCTRACE_FMT_ADJUST_TIME(trace.comp, offset);
+      
+      if (fseek(file, -recordSize, SEEK_CUR) != 0) return false;
+      if (hpctrace_fmt_datum_fwrite(&trace, ((hpctrace_fmt_hdr_t*)hdr)->flags, file) != HPCFMT_OK)
+        return false;
+    }
+    
+    return true;
   }
 }

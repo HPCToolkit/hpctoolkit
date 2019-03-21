@@ -135,6 +135,19 @@ namespace TraceAnalysis {
     FILE* file;
     void* hdr;
   };
+  
+  // Handles read from and write to raw trace file
+  class TraceFileRewriter {
+  public:
+    TraceFileRewriter(string filename);
+    virtual ~TraceFileRewriter();
+    
+    bool rewriteTimestamps(Time offset);
+    
+  private:
+    FILE* file;
+    void* hdr;
+  };
 }
 
 #endif /* TRACEFILEREADER_HPP */

@@ -214,6 +214,11 @@ namespace TraceAnalysis {
       }
       
       print_msg(MSG_PRIO, "totalAdjMin = %ld, totalAdjMax = %ld, misAlignment = %ld.\n", totalMinAdj, totalMaxAdj, totalMisalignment);
+      if ( (totalMaxAdj - totalMinAdj) > repRoot->getSamplingPeriod() * MAX_CLOCK_SYNC_NOISE) {
+        if (totalMinAdj <= 0 && totalMaxAdj >= 0) return 0;
+        else if (totalMaxAdj < 0) return totalMaxAdj;
+        else return totalMinAdj;
+      }
       // return the mid point of [totalMinAdj, totalMaxAdj]
       return (totalMinAdj + totalMaxAdj) / 2;
     }

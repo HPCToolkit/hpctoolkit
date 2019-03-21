@@ -65,10 +65,14 @@ using std::string;
 namespace TraceAnalysis {
   class LocalTraceAnalyzer {
   public:
-    LocalTraceAnalyzer();
+    LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
     virtual ~LocalTraceAnalyzer();
     
-    TCTClusterNode* analyze(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks, vector<TCTRootNode*>& rootNodes);
+    TCTClusterNode* analyze(vector<TCTRootNode*>& rootNodes);
+    bool adjustClockDiff(const vector<Time>& clockDiff);
+    
+  private:
+    void* ptr;
   };
 }
 
