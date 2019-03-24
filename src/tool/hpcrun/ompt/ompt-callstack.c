@@ -76,8 +76,11 @@
 
 #if defined(HOST_CPU_PPC) 
 #include "ppc64-gnu-omp.h"
+#define ADJUST_PC
 #elif defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
 #include "x86-gnu-omp.h"
+#define ADJUST_PC
+#elif defined(HOST_CPU_ARM64)
 #else
 #error "invalid architecture type"
 #endif
@@ -616,6 +619,7 @@ ompt_adjust_calling_context
  ompt_scope_endpoint_t se_type
 )
 {
+#ifdef ADJUST_PC
   // extract the load module and offset of the leaf CCT node at the 
   // end of a call path representing a parallel region
   cct_addr_t *n = hpcrun_cct_addr(node);
@@ -640,6 +644,9 @@ ompt_adjust_calling_context
   cct_node_t *sibling = hpcrun_cct_insert_addr
     (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
   return sibling;
+#else
+  return node;
+#endif
 }
 
 
