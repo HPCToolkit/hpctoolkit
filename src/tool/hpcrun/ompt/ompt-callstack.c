@@ -97,6 +97,23 @@
 #define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #endif
 
+//------------------------------------------------------------------------
+// check if an OMPT frame pointer points into an application frame by 
+// checking for the presence of the ompt_frame_application flag.
+//------------------------------------------------------------------------
+#define frame_in_application(frame, which)			\
+  (frame->which ## _frame_flags & ompt_frame_application)
+
+//------------------------------------------------------------------------
+// check if a frame pointer point into a runtime frame by checking for
+// the absence of the ompt_frame_application flag. it is unfortunate
+// that ompt_frame_runtime is defined as 0, which means that it can't
+// be checked directly with a mask.
+// ------------------------------------------------------------------------
+#define frame_in_runtime(frame, which)		\
+  (!frame_in_application(frame, which))
+
+
 
 //******************************************************************************
 // private variables 
@@ -152,9 +169,13 @@ frame_dump
     ompt_frame_t *frame = hpcrun_ompt_get_task_frame(i);
     if (frame == NULL) break;
 
-    void *r = frame->enter_frame.ptr;
-    void *e = frame->exit_frame.ptr;
-    EMSG("frame %d: (r=%p, e=%p)", i, r, e);
+    void *ep = frame->enter_frame.ptr;
+    int ef = frame->enter_frame_flags;
+
+    void *xp = frame->exit_frame.ptr;
+    int xf = frame->exit_frame_flags;
+
+    EMSG("frame %d: enter=(%p,%x), exit=(%p,%x)", i, ep, ef, xp, xf);
   }
   EMSG("-----frame end"); 
 }
@@ -274,12 +295,9 @@ ompt_elide_runtime_frame(
 //    }
 
     case ompt_state_idle:
-//    if (!TD_GET(master)) {
-      // FIXME vi3: I think we should delete task context when thread is idle-ing
       TD_GET(omp_task_context) = 0;
       collapse_callstack(bt, &ompt_placeholders.ompt_idle);
       goto return_label;
-//    }
     default:
       break;
   }
@@ -405,12 +423,27 @@ ompt_elide_runtime_frame(
 
     if (exit0_flag && omp_task_context) {
       TD_GET(omp_task_context) = omp_task_context;
-      *bt_outer = exit0 - 1;
+      int in_runtime = frame_in_runtime(frame0, exit);
+      int offset = in_runtime ? -1 : 0;
+      *bt_outer = exit0 + offset;
       break;
     }
 
     frame1 = hpcrun_ompt_get_task_frame(++i);
     if (!frame1) break;
+
+    //-------------------------------------------------------------------------
+    //  frame1 points into the stack above the task frame (in the
+    //  runtime from the outer task's perspective). frame0 points into
+    //  the the stack inside the first application frame (in the
+    //  application from the inner task's perspective) the two points
+    //  are equal. there is nothing to elide at this step.
+    //-------------------------------------------------------------------------
+    if ((frame1->enter_frame.ptr == frame0->exit_frame.ptr) &&
+	(frame_in_application(frame0, exit) &&
+	 frame_in_runtime(frame1, enter)))
+      continue;
+
 
     bool reenter1_flag = 
       interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
@@ -519,31 +552,11 @@ ompt_elide_runtime_frame(
   }
 
 
-  return_label:
+ return_label:
   {
     return;
   };
-
-
 }
-
-
-#if 0
-static cct_node_t *
-memoized_context_get(thread_data_t* td, uint64_t region_id)
-{
-  return (td->outer_region_id == region_id && td->outer_region_context) ? 
-    td->outer_region_context : 
-    NULL;
-}
-
-static void
-memoized_context_set(thread_data_t* td, uint64_t region_id, cct_node_t *result)
-{
-    td->outer_region_id = region_id;
-    td->outer_region_context = result;
-}
-#endif
 
 
 cct_node_t *
@@ -570,6 +583,66 @@ ompt_region_root
 }
 
 
+//-------------------------------------------------------------------------------
+// Unlike other compilers, gcc4 generates code to invoke the master
+// task from the program itself rather than the runtime, as shown 
+// in the sketch below
+//
+// user_function_f () 
+// {
+//  ...
+//         omp_parallel_start(task, ...)
+//  label_1:
+//         task(...)
+//  label_2: 
+//         omp_parallel_end(task, ...)
+//  label_3: 
+//  ...
+// }
+//
+// As a result, unwinding from within a callback from either parallel_start or 
+// parallel_end will return an address marked by label_1 or label_2. unwinding
+// on the master thread from within task will have label_2 as a return address 
+// on its call stack.
+//
+// Cope with the lack of an LCA by adjusting unwinds from within callbacks 
+// when entering or leaving a task by moving the leaf of the unwind representing 
+// the region within user_function_f to label_2. 
+//-------------------------------------------------------------------------------
+static cct_node_t *
+ompt_adjust_calling_context
+(
+ cct_node_t *node,
+ ompt_scope_endpoint_t se_type
+)
+{
+  // extract the load module and offset of the leaf CCT node at the 
+  // end of a call path representing a parallel region
+  cct_addr_t *n = hpcrun_cct_addr(node);
+  cct_node_t *n_parent = hpcrun_cct_parent(node); 
+  uint16_t lm_id = n->ip_norm.lm_id; 
+  uintptr_t lm_ip = n->ip_norm.lm_ip;
+  uintptr_t master_outlined_fn_return_addr;
+
+  // adjust the address to point to return address of the call to 
+  // the outlined task in the master
+  if (se_type == ompt_scope_begin) {
+    void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
+    uint64_t offset = offset_to_pc_after_next_call(ip);
+    master_outlined_fn_return_addr = lm_ip + offset;
+  } else { 
+    uint64_t offset = length_of_call_instruction();
+    master_outlined_fn_return_addr = lm_ip - offset;
+  }
+  // ensure that there is a leaf CCT node with the proper return address
+  // to use as the context. when using the GNU API for OpenMP, it will 
+  // be a sibling to one returned by sample_callpath.
+  cct_node_t *sibling = hpcrun_cct_insert_addr
+    (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
+  return sibling;
+}
+
+
 cct_node_t *
 ompt_region_context
 (
@@ -582,44 +655,14 @@ ompt_region_context
   ucontext_t uc;
   getcontext(&uc);
 
-  // levels to skip will be broken if inlining occurs.
-  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath
-  // vi3 old version
-  // node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
-  // vi3 new version
   hpcrun_metricVal_t blame_metricVal;
   blame_metricVal.i = 0;
   node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 1, NULL).sample_node;
 
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
-#if 0
   if (node && adjust_callsite) {
-    // extract the load module and offset of the leaf CCT node at the 
-    // end of a call path representing a parallel region
-    cct_addr_t *n = hpcrun_cct_addr(node);
-    cct_node_t *n_parent = hpcrun_cct_parent(node); 
-    uint16_t lm_id = n->ip_norm.lm_id; 
-    uintptr_t lm_ip = n->ip_norm.lm_ip;
-    uintptr_t master_outlined_fn_return_addr;
-
-    // adjust the address to point to return address of the call to 
-    // the outlined function in the master
-    if (se_type == ompt_scope_begin) {
-      void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
-      uint64_t offset = offset_to_pc_after_next_call(ip);
-      master_outlined_fn_return_addr = lm_ip + offset;
-    } else { 
-      uint64_t offset = length_of_call_instruction();
-      master_outlined_fn_return_addr = lm_ip - offset;
-    }
-    // ensure that there is a leaf CCT node with the proper return address
-    // to use as the context. when using the GNU API for OpenMP, it will 
-    // be a sibling to one returned by sample_callpath.
-    cct_node_t *sibling = hpcrun_cct_insert_addr
-      (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
-    node = sibling;
+    node = ompt_adjust_calling_context(node, se_type);
   }
-#endif
   return node;
 }
 
@@ -636,45 +679,11 @@ ompt_region_context_end_region_not_eager
   ucontext_t uc;
   getcontext(&uc);
 
-  // levels to skip will be broken if inlining occurs.
-  // FIXME: vi3 Change according new signature of hpcrun_sample_callpath
-  // vi3 old version
-  // node = hpcrun_sample_callpath(&uc, 0, 0, 0, 1).sample_node;
-  // vi3 new version
   hpcrun_metricVal_t blame_metricVal;
   blame_metricVal.i = 0;
   node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 33, NULL).sample_node;
 
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
-
-//  if (node && adjust_callsite) {
-//    // extract the load module and offset of the leaf CCT node at the
-//    // end of a call path representing a parallel region
-//    cct_addr_t *n = hpcrun_cct_addr(node);
-//    cct_node_t *n_parent = hpcrun_cct_parent(node);
-//    uint16_t lm_id = n->ip_norm.lm_id;
-//    uintptr_t lm_ip = n->ip_norm.lm_ip;
-//    uintptr_t master_outlined_fn_return_addr;
-//
-//    // adjust the address to point to return address of the call to
-//    // the outlined function in the master
-//    if (se_type == ompt_scope_begin) {
-//      void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
-//      uint64_t offset = offset_to_pc_after_next_call(ip);
-//      master_outlined_fn_return_addr = lm_ip + offset;
-//    } else {
-//      uint64_t offset = length_of_call_instruction();
-//      master_outlined_fn_return_addr = lm_ip - offset;
-//    }
-//    // ensure that there is a leaf CCT node with the proper return address
-//    // to use as the context. when using the GNU API for OpenMP, it will
-//    // be a sibling to one returned by sample_callpath.
-//    cct_node_t *sibling = hpcrun_cct_insert_addr
-//            (n_parent, &(ADDR2(lm_id, master_outlined_fn_return_addr)));
-//    node = sibling;
-//  }
-
-//  return node;
 }
 
 
@@ -769,7 +778,6 @@ ompt_cct_cursor_finalize
   }
 
   // FIXME: vi3 consider this when tracing, for now everything works fine
-
   // if I am not the master thread, full context may not be immediately available.
   // if that is the case, then it will later become available in a deferred fashion.
   if (!TD_GET(master)) { // sub-master thread in nested regions
