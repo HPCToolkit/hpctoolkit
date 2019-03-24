@@ -87,6 +87,7 @@
   ((r ==  ompt_set_sometimes) | (r ==  ompt_set_always))
 
 #define OMPT_DEBUG_STARTUP 0
+#define OMPT_DEBUG_TASK 0
 
 
 
@@ -601,7 +602,9 @@ ompt_initialize
  ompt_data_t *tool_data
 )
 {
+#if OMPT_DEBUG_STARTUP
   printf("Initializing...\n");
+#endif
 
   ompt_initialized = 1;
 
@@ -623,7 +626,9 @@ ompt_initialize
   }
   init_tasks();
 
+#if DEBUG_TASK
   printf("Task full context: %s\n", ompt_task_full_context ? "yes" : "no");
+#endif
 
   if (!ENABLED(OMPT_KEEP_ALL_FRAMES)) {
     ompt_elide = 1;
@@ -958,7 +963,7 @@ wfq_set_next_pending
 )
 {
   // set invalid value
-  atomic_exchange(&element->next.anext, ompt_base_invalid);
+  atomic_store(&element->next.anext, ompt_base_invalid);
 }
 
 // prefix wfq
@@ -968,12 +973,15 @@ wfq_get_next
  ompt_base_t *element
 )
 {
-  // wait until next pointer is set properly
-  //  ompt_base_t* curr_next = atomic_load(&element->next.anext);
-  ompt_base_t* curr_next;
-  // FIXME vi3: is it okay to write something like this
-  while ((curr_next=atomic_load(&element->next.anext)) == ompt_base_invalid);  // FIXME: this should be loaded atomically
-  return curr_next;
+  ompt_base_t* next;
+
+  // wait until next pointer is properly initialized
+  for(;;) {
+    next = atomic_load(&element->next.anext);
+    if (next != ompt_base_invalid) break;
+  }
+
+  return next;
 }
 
 
@@ -997,7 +1005,7 @@ wfq_enqueue
   wfq_set_next_pending(new);
   // FIXME vi3: should OMPT_BASE_T_STAR
   ompt_base_t *old_head = (ompt_base_t*)atomic_exchange(&queue->head, new);
-  atomic_exchange(&new->next.anext, old_head);
+  atomic_store(&new->next.anext, old_head);
 }
 
 // remove one element from the end and is used in case
@@ -1012,8 +1020,8 @@ wfq_dequeue_public
   ompt_base_t* first = atomic_load(&public_queue->head);
   if (first){
     ompt_base_t* succ = wfq_get_next(first);
-    atomic_exchange(&public_queue->head, succ);
-    atomic_exchange(&first->next.anext, ompt_base_nil);
+    atomic_store(&public_queue->head, succ);
+    atomic_store(&first->next.anext, ompt_base_nil);
   }
   return first;
 }
