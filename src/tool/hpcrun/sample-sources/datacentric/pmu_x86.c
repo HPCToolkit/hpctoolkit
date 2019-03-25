@@ -358,6 +358,8 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
     // ------------------------------------------
     event_info_t *einfo  = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
     einfo->metric_custom = event;
+    einfo->id            = pmu_events[i].event;
+
     memcpy(&einfo->attr, &event_attr, sizeof(struct perf_event_attr));
 
     METHOD_CALL(self, store_event_and_info,

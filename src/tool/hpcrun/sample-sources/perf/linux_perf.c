@@ -1143,18 +1143,23 @@ perf_event_handler(
 
     if (mmap_data.header_type == PERF_RECORD_SAMPLE) {
 
-      double val = record_sample(current, &mmap_data, context,
-                                 metric, event_info->attr.freq, &sv);
-
       event_handler_arg_t arg;
       arg.context = context;
       arg.current = event_info;
       arg.data    = &mmap_data;
       arg.metric  = metric;
+      arg.sample  = NULL;
+      arg.metric_value = 0.0;
+
+      if (event_custom_pre_handler(&arg) == REJECT_EVENT)
+        continue;
+
+      double val = record_sample(current, &mmap_data, context,
+                                 metric, event_info->attr.freq, &sv);
       arg.sample  = &sv;
       arg.metric_value = val;
 
-      event_custom_handler(&arg);
+      event_custom_post_handler(&arg);
     }
 
   } while (more_data);

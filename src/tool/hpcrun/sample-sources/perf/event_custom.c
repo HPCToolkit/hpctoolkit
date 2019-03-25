@@ -147,11 +147,46 @@ event_custom_create_event(sample_source_t *self, char *name)
   return event->register_fn(self, event, &default_threshold);
 }
 
-int
-event_custom_handler(event_handler_arg_t *args)
+event_accept_type_t
+event_custom_pre_handler(event_handler_arg_t *args)
 {
   if (args == NULL || args->current == NULL)
-    return 0;
+    return NOT_MY_EVENT;
+
+  events_list_t *item = NULL;
+
+  SLIST_FOREACH(item, &list_events_head, entries) {
+    if (item != NULL) {
+      // if the custom event is inclusive, we call the handler
+      //   even if this is not its event
+      // if the custom event is exclusive, we call the handler
+      //  iff the event is from the custom event
+
+      if (item->event->handle_type == INCLUSIVE &&
+          item->event->pre_handler_fn) {
+
+          item->event->pre_handler_fn(args);
+
+      } else if ( item->event->handle_type == EXCLUSIVE &&
+                  item->event == args->current->metric_custom) {
+
+        // exclusive event: make sure the event is the same is the current event
+        if (item->event->pre_handler_fn)
+          return item->event->pre_handler_fn(args);
+        else
+          return ACCEPT_EVENT;
+      }
+    }
+  }
+  return NOT_MY_EVENT;
+}
+
+
+event_accept_type_t
+event_custom_post_handler(event_handler_arg_t *args)
+{
+  if (args == NULL || args->current == NULL)
+    return NOT_MY_EVENT;
 
   events_list_t *item = NULL;
 
@@ -163,15 +198,17 @@ event_custom_handler(event_handler_arg_t *args)
       //  iff the event is from the custom event
 
     	if (item->event->handle_type == INCLUSIVE) {
-    		item->event->handler_fn(args);
+    		if (item->event->post_handler_fn)
+    		  item->event->post_handler_fn(args);
 
     	} else if (item->event == args->current->metric_custom) {
     	  // exclusive event: make sure the event is the same is the current event
-    		item->event->handler_fn(args);
+        if (item->event->post_handler_fn)
+          return item->event->post_handler_fn(args);
     	}
     }
   }
-  return 0;
+  return NOT_MY_EVENT;
 }
 
 

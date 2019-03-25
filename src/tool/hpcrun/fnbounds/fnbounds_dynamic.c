@@ -109,6 +109,7 @@
 #include <messages/messages.h>
 
 #include <lib/prof-lean/spinlock.h>
+#include "lib/support-lean/datacentric_config.h"
 
 #include "data_tree.h"
 
@@ -156,8 +157,6 @@ fnbounds_compute(const char *filename, void *start, void *end);
 static void
 fnbounds_map_executable();
 
-static bool
-fnbounds_is_datacentric_enabled();
 
 //*********************************************************************
 // interface operations
@@ -260,8 +259,6 @@ insert_var_table(void **var_table, unsigned long num)
   int i;
   for (i = 0; i < num; i+=2) {
     size_t num_bytes   = (size_t)var_table[i+1];
-    if (num_bytes < DATACENTRIC_MIN_BYTES)
-      continue;
 
     // create splay node
     struct datatree_info_s *data_info = hpcrun_malloc(sizeof(struct datatree_info_s));
@@ -274,6 +271,7 @@ insert_var_table(void **var_table, unsigned long num)
 
     data_info->magic     = DATA_STATIC_MAGIC;
     data_info->context   = NULL;
+    data_info->status    = DATATREE_INFO_UNHANDLED;
 
     datatree_splay_insert(data_info);
   }
@@ -387,7 +385,7 @@ fnbounds_dso_exec(void)
 
   dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
 
-  if (fnbounds_is_datacentric_enabled()) {
+  if (datacentric_is_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_dso_exec %s", filename);
     // ----------------------------------------------------------
     // add into var data tree
@@ -499,13 +497,6 @@ fnbounds_fetch_executable_table(void)
 //*********************************************************************
 
 
-static bool
-fnbounds_is_datacentric_enabled()
-{
-  char *events     = getenv(HPCRUN_EVENT_LIST);
-  return strcasestr(events, EVNAME_DATACENTRIC) != NULL;
-}
-
 
 static dso_info_t* 
 fnbounds_compute(const char* incoming_filename, void* start, void* end)
@@ -565,7 +556,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
 
   dso_info_t *dso = hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 
-  if (fnbounds_is_datacentric_enabled()) {
+  if (datacentric_is_enabled()) {
     TMSG(DATACENTRIC, "fnbounds_compute %s", filename);
     // ----------------------------------------------------------
     // add into var data tree

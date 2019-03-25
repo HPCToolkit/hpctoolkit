@@ -100,7 +100,7 @@
  * macros 
  *****************************************************************************/
 
-#define EVNAME_ADDRESS_CENTRIC "PAGE-FAULTS"
+const char *EVNAME_ADDRESS_CENTRIC = "MINOR-FAULTS";
 
 /******************************************************************************
  * prototypes and forward declaration
@@ -187,14 +187,52 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
 
 
 /***
- * manage signal handler for datacentric event
+ * manage pre signal handler for datacentric event
+ * we only accept the event if:
+ * - it contains memory references,
+ * - case for address centric: the reference is known
  */
-static void
-datacentric_handler(event_handler_arg_t *args)
+static event_accept_type_t
+datacentric_pre_handler(event_handler_arg_t *args)
+{
+  if ( (args->current == NULL)  ||  (args->data == NULL) )
+    return REJECT_EVENT;
+
+  perf_mmap_data_t *mmap_data = args->data;
+  if (mmap_data->addr == 0)
+    return REJECT_EVENT;
+
+  // for data centric event (not address centric event), we don't care
+  // if the address is known or not. If it's unknown, we will attribute it
+  // to "unknown attribute" root node
+
+  if (args->current->id == EVNAME_ADDRESS_CENTRIC) {
+
+    // for address centric event, the address has to be known in the database
+    // otherwise, it's just a waste of cpu time
+
+    void *start = NULL, *end = NULL;
+
+    datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+    if (info == NULL || info->status == DATATREE_INFO_HANDLED)
+      return REJECT_EVENT;  // the address is NOT in the database
+                            // or the memory has been handled
+  }
+
+  return ACCEPT_EVENT;
+}
+
+
+
+/***
+ * manage post signal handler for datacentric event
+ */
+static event_accept_type_t
+datacentric_post_handler(event_handler_arg_t *args)
 {
   if ( (args->current == NULL)  ||  (args->data == NULL) ||
        (args->sample->sample_node == NULL))
-    return;
+    return REJECT_EVENT;
 
   perf_mmap_data_t *mmap_data = args->data;
 
@@ -207,102 +245,105 @@ datacentric_handler(event_handler_arg_t *args)
   //   - if it's in our database (either static or dynamic), add it to the cct node
   //   - otherwise, it must be unknown variable. Not sure what we should do with this
   // ---------------------------------------------------------
-  if (mmap_data->addr) {
+  if (mmap_data->addr == 0) return REJECT_EVENT;
 
-    // --------------------------------------------------------------
-    // store the memory address reported by the hardware counter to the metric
-    // even if the address is outside the range of recognized variable (see
-    //    datatree_splay_lookup() function which returns if the address is recognized)
-    // we may need to keep the information (?).
-    // another solution is to create a sibling node to avoid to step over the
-    //  recognized metric.
-    // --------------------------------------------------------------
+  // --------------------------------------------------------------
+  // store the memory address reported by the hardware counter to the metric
+  // even if the address is outside the range of recognized variable (see
+  //    datatree_splay_lookup() function which returns if the address is recognized)
+  // we may need to keep the information (?).
+  // another solution is to create a sibling node to avoid to step over the
+  //  recognized metric.
+  // --------------------------------------------------------------
 
-    void *start = NULL, *end = NULL;
+  void *start = NULL, *end = NULL;
 
-    datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
-    cct_node_t *var_context = NULL;
-    thread_data_t* td       = hpcrun_get_thread_data();
-    cct_bundle_t *bundle    = &(td->core_profile_trace_data.epoch->csdata);
+  datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+  cct_node_t *var_context = NULL;
+  thread_data_t* td       = hpcrun_get_thread_data();
+  cct_bundle_t *bundle    = &(td->core_profile_trace_data.epoch->csdata);
 
-    // --------------------------------------------------------------
-    // try to find the accessed memory address from the database
-    // if the accessed memory is within the range (found in the database), then it must be
-    // either static variable or heap allocation
-    // otherwise, we encounter an unknown variable
-    // --------------------------------------------------------------
+  // --------------------------------------------------------------
+  // try to find the accessed memory address from the database
+  // if the accessed memory is within the range (found in the database), then it must be
+  // either static variable or heap allocation
+  // otherwise, we encounter an unknown variable
+  // --------------------------------------------------------------
 
-    if (info) {
-      var_context = info->context;
+  if (info) {
+    var_context = info->context;
 
-      if (info->magic == DATA_STATIC_MAGIC) {
-        // attach this node of static variable to the datacentric root
+    if (info->magic == DATA_STATIC_MAGIC) {
+      // attach this node of static variable to the datacentric root
 
-        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
-        cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
-
-        var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
-                        (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
-
-        // mark that this is a special node for global variable
-        // hpcprof will treat specially to print the name of the variable to xml file
-        // (if hpcstruct provides the information)
-
-        hpcrun_cct_set_node_variable(var_context);
-
-      } else {
-        // dynamic allocation
-        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
-
-        var_context = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
-
-        hpcrun_cct_set_node_allocation(var_context);
-      }
-    } else {
-      // unknown variable
       cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-      var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
+      cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
+      cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
+
+      var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
+                      (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+
+      // mark that this is a special node for global variable
+      // hpcprof will treat specially to print the name of the variable to xml file
+      // (if hpcstruct provides the information)
 
       hpcrun_cct_set_node_variable(var_context);
+
+    } else {
+      // dynamic allocation
+      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+      cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
+
+      var_context = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
+
+      hpcrun_cct_set_node_allocation(var_context);
     }
+    info->status = DATATREE_INFO_HANDLED;
 
-    // copy the callpath of the sample to the variable context
-    node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+  } else {
+    // unknown variable
+    cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+    var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
-    metric_set_t *mset = hpcrun_reify_metric_set(node);
-
-    // variable address is store in the database
-    // record the interval of this access
-
-    hpcrun_metricVal_t val_addr;
-    val_addr.p = (void *)mmap_data->addr;
-
-    // record the lower offset address
-    int metric_id = datacentric_get_metric_addr_start();
-    hpcrun_metric_std_min(metric_id, mset, val_addr);
-
-    // record the upper offset address
-    metric_id = datacentric_get_metric_addr_end();
-    val_addr.p++;
-    hpcrun_metric_std_max(metric_id, mset, val_addr);
-
-    // re-record metric event for this node with the same value as linux_perf
-    // the total metric of hpcrun cct and datacentric has to be the same for this metric
-    //
-    // this is important so that users can see the aggregate metrics across variables
-    // while datacentric shows the distribution between variables
-
-    hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
-
-    hpcrun_cct_set_node_memaccess(node);
+    hpcrun_cct_set_node_variable(var_context);
   }
+
+  // copy the callpath of the sample to the variable context
+  node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+
+  metric_set_t *mset = hpcrun_reify_metric_set(node);
+
+  // variable address is store in the database
+  // record the interval of this access
+
+  hpcrun_metricVal_t val_addr;
+  val_addr.p = (void *)mmap_data->addr;
+
+  // record the lower offset address
+  int metric_id = datacentric_get_metric_addr_start();
+  hpcrun_metric_std_min(metric_id, mset, val_addr);
+
+  // record the upper offset address
+  metric_id = datacentric_get_metric_addr_end();
+  val_addr.p++;
+  hpcrun_metric_std_max(metric_id, mset, val_addr);
+
+  // re-record metric event for this node with the same value as linux_perf
+  // the total metric of hpcrun cct and datacentric has to be the same for this metric
+  //
+  // this is important so that users can see the aggregate metrics across variables
+  // while datacentric shows the distribution between variables
+
+  hpcrun_metric_std_inc(args->metric, mset, (hpcrun_metricVal_t) {.r=args->metric_value});
+
+  hpcrun_cct_set_node_memaccess(node);
 
   // hardware specific event handler
   // e.g. Intel PEBS provides additional information in the mmapped buffer
   ///     for memory latency (see perf c2c and mem tool)
   datacentric_hw_handler(mmap_data, node, sample_node);
+
+  return ACCEPT_EVENT;
 }
 
 
@@ -317,7 +358,9 @@ datacentric_handler(event_handler_arg_t *args)
  * since it interferes with hpcrun sigsegv.
  *************/
 static int
-datacentric_register_address_centric(sample_source_t *self, event_custom_t  *event)
+datacentric_register_address_centric(sample_source_t *self,
+    event_custom_t  *event,
+    struct event_threshold_s *period)
 {
   event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
   if (event_info == NULL)
@@ -325,7 +368,9 @@ datacentric_register_address_centric(sample_source_t *self, event_custom_t  *eve
 
   memset(event_info, 0, sizeof(event_info_t));
 
+  event_info->id = EVNAME_ADDRESS_CENTRIC;
   event_info->metric_custom = event;
+
   u64 sample_type = PERF_SAMPLE_IP   | PERF_SAMPLE_TID    |
                     PERF_SAMPLE_TIME | PERF_SAMPLE_PERIOD |
                     PERF_SAMPLE_CPU  | PERF_SAMPLE_ADDR
@@ -345,8 +390,8 @@ datacentric_register_address_centric(sample_source_t *self, event_custom_t  *eve
   perf_util_attr_init(
       EVNAME_ADDRESS_CENTRIC,
       attr,
-      true ,          /* use_period      */
-      1,              /* deliver sample for every page fault */
+      period->threshold_type == PERIOD ,  /* use_period      */
+      period->threshold_num,              /* should we deliver sample for every page fault ?*/
       sample_type     /* need additional info to gather memory address */
   );
   perf_skid_set_max_precise_ip(attr);
@@ -372,6 +417,8 @@ datacentric_register_address_centric(sample_source_t *self, event_custom_t  *eve
 
   return 1;
 }
+
+
 
 /****
  * register datacentric event
@@ -400,7 +447,7 @@ datacentric_register(sample_source_t *self,
   // ------------------------------------------
   // Support for address centric (page fault event)
   // ------------------------------------------
-  datacentric_register_address_centric(self, event);
+  datacentric_register_address_centric(self, event, period);
 
   return 1;
 }
@@ -417,8 +464,10 @@ datacentric_init()
   event_datacentric->name         = EVNAME_DATACENTRIC;
   event_datacentric->desc         = "Experimental counter: counting the memory latency.";
   event_datacentric->register_fn  = datacentric_register;   // call backs
-  event_datacentric->handler_fn   = datacentric_handler;
   event_datacentric->handle_type  = EXCLUSIVE;// call me only for my events
+
+  event_datacentric->post_handler_fn   = datacentric_post_handler;
+  event_datacentric->pre_handler_fn    = datacentric_pre_handler;
 
   event_custom_register(event_datacentric);
 }

@@ -56,12 +56,16 @@
 
 #define DATA_STATIC_MAGIC 0xFEA12B0B
 
-#define DATACENTRIC_MIN_BYTES 1024
 
 
 /******************************************************************************
  * type definitions
  *****************************************************************************/
+
+typedef enum datatree_info_status_e {
+  DATATREE_INFO_UNHANDLED,
+  DATATREE_INFO_HANDLED
+} datatree_info_status_t;
 
 typedef struct datatree_info_s {
   long        magic;
@@ -69,6 +73,8 @@ typedef struct datatree_info_s {
   size_t      bytes;
   void       *memblock;
   void       *rmemblock;	// additional information to record remote memory
+
+  datatree_info_status_t status;
 
   struct datatree_info_s *left;
   struct datatree_info_s *right;

@@ -61,6 +61,8 @@
 #include <map>
 #include <set>
 
+#include "lib/support-lean/datacentric_config.h"
+
 using namespace std;
 
 
@@ -143,11 +145,17 @@ dump_variables()
   }
 }
 
-
+/***
+ * Add a new static variable to the list
+ * We assume the caller has the correct size of the variable.
+ * Ideally, the size has to be bigger than evn_get_datacentric_min_bytes()
+ */
 void
 add_variable_entry(void *addr, long size, const string *comment, bool isvisible)
 {
-  if(size == 0) return;
+  if (size < env_get_datacentric_min_bytes())
+    return;
+
   VariableSet::iterator it = variable_entries.find(addr);
 
   if (it == variable_entries.end()) {

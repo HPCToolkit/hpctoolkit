@@ -54,6 +54,12 @@
 // --------------------------------------------------------------
 
 
+typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
+
+typedef enum event_accept_type_e {NOT_MY_EVENT, ACCEPT_EVENT, REJECT_EVENT} event_accept_type_t;
+
+typedef struct event_custom_s event_custom_t;
+
 typedef struct event_handler_arg_s {
   int    metric;                      /* metric id */
   double metric_value;                /* the value of the metric by perf handler */
@@ -66,29 +72,30 @@ typedef struct event_handler_arg_s {
 } event_handler_arg_t;
 
 
-typedef struct event_custom_s event_custom_t;
-
+// --------------------------------------------------------------
 // callback functions
+// --------------------------------------------------------------
+
 typedef int  register_event_t(sample_source_t *self,
                               event_custom_t *event,
                               struct event_threshold_s *period);
 
-typedef void event_handler_t(event_handler_arg_t *args);
-
-typedef enum event_handle_type_e {EXCLUSIVE, INCLUSIVE} event_handle_type_t;
+typedef event_accept_type_t event_handler_t(event_handler_arg_t *args);
 
 // --------------------------------------------------------------
-// data structure for our customized event
-// this type should be used only within perf module.
+// Main data structure to register a customized event
+// this type should be used only within perf plug-in.
 // --------------------------------------------------------------
 typedef struct event_custom_s {
-  const char *name;                 // unique name of the event
-  const char *desc;                 // brief description of the event
+  const char *name;                  // unique name of the event
+  const char *desc;                  // brief description of the event
 
-  register_event_t *register_fn;    // function to register the event
-  event_handler_t  *handler_fn;     // callback to be used during the sampling
+  register_event_t *register_fn;     // function to register the event
 
-  event_handle_type_t handle_type;  // whether the handler will be called exclusively or inclusively (all events)
+  event_handler_t  *pre_handler_fn;  // callback to be used during the sampling
+  event_handler_t  *post_handler_fn; // callback to be used during the sampling
+
+  event_handle_type_t handle_type;   // whether the handler will be called exclusively or inclusively (all events)
 
 } event_custom_t;
 
@@ -121,10 +128,18 @@ int event_custom_register(event_custom_t *event);
 void event_custom_display(FILE *std);
 
 /**
- * method to be called during signal delivery. If an event is recognized, 
+ * to be called during the signal handler, BEFORE unwinding
+ * the custom event can decide not to continue handling the sample, hence
+ *  save the cpu time to avoid unwinding undesired sample
+ */
+event_accept_type_t
+event_custom_pre_handler(event_handler_arg_t *args);
+
+/**
+ * method to be called after signal delivery. If an event is recognized,
  * it will delivered to the custom handler.
  **/ 
-int event_custom_handler(event_handler_arg_t *args);
+event_accept_type_t event_custom_post_handler(event_handler_arg_t *args);
 
 
 #endif

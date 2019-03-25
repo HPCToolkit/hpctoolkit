@@ -761,10 +761,10 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
-       << " v=\"" << m->toValueTyStringXML() << "\""
-       << " em=\"" << m->isMultiplexed()    << "\""
-       << " es=\"" << m->num_samples()      << "\""
-       << " ep=\"" << long(m->periodMean())       << "\""
+       << " v=\""  << m->toValueTyStringXML() << "\""
+       << " em=\"" << m->isMultiplexed()      << "\""
+       << " es=\"" << m->num_samples()        << "\""
+       << " ep=\"" << m->periodMean()         << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());

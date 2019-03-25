@@ -90,10 +90,12 @@
 #include <messages/messages.h>
 #include <safe-sampling.h>
 #include <sample_event.h>
+#include <env.h>
+
 #include <monitor-exts/monitor_ext.h>
+#include "lib/support-lean/datacentric_config.h"
 
-#include <sample-sources/datacentric/datacentric.h>
-
+#include "datacentric.h"
 #include "data_tree.h"
 #include "data-overrides.h"
 
@@ -409,6 +411,8 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     return;
   }
 
+  memset(info_ptr, 0, sizeof(datatree_info_t));
+
   info_ptr->magic      = DATACENTRIC_MAGIC;
   info_ptr->bytes      = bytes;
   info_ptr->memblock   = appl_ptr;
@@ -416,6 +420,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 
   info_ptr->left      = NULL;
   info_ptr->right     = NULL;
+  info_ptr->status    = DATATREE_INFO_UNHANDLED;
 
   if (is_active()) {
     thread_data_t *td = hpcrun_get_thread_data();
@@ -526,7 +531,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
 	 name, bytes, sys_ptr);
     return sys_ptr;
   }
-  if (bytes <= DATACENTRIC_MIN_BYTES) return sys_ptr;
+  if (bytes <= env_get_datacentric_min_bytes()) return sys_ptr;
 
   TMSG(DATACENTRIC, "%s: bytes: %ld", name, bytes);
 
@@ -784,7 +789,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   } else if (use_datacentric_prob && (random()/(float)RAND_MAX > datacentric_prob)) {
     active = 0;
     inactive_mesg = "not sampled";
-  } else if (bytes <= DATACENTRIC_MIN_BYTES) {
+  } else if (bytes <= env_get_datacentric_min_bytes()) {
     active = 0;
     inactive_mesg = "size too small";
   }
