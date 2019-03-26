@@ -717,14 +717,12 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
     SAMPLE_SOURCES(gen_event_set,lush_metrics);
     // sample sources take thread specific action prior to start (often is a 'registration' action);
     SAMPLE_SOURCES(thread_init_action);
-  }
 
-  // release the wallclock handler -for this thread-
-  hpcrun_itimer_wallclock_ok(true);
-
-  if (! hpcrun_thread_suppress_sample) {
     // start the sample sources
     SAMPLE_SOURCES(start);
+
+    // release the wallclock handler -for this thread-
+    hpcrun_itimer_wallclock_ok(true);
   }
 
   return (void*) epoch;
