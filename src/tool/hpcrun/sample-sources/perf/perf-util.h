@@ -135,7 +135,9 @@ struct event_custom_s;
 // --------------------------------------------------------------
 typedef struct event_info_s {
 
-  struct perf_event_attr attr; // the event attribute
+  const char *id;  // unique event ID. Usually the name of the event.
+
+  struct perf_event_attr attr;          // perf event attribute
   struct event_custom_s *metric_custom;	// pointer to the predefined metric
 
 } event_info_t;

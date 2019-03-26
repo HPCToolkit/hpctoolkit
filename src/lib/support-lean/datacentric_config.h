@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,28 +44,18 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-#ifndef sample_source_memcentric_h
-#define sample_source_memcentric_h
-
-/******************************************************************************
- * local includes
- ******************************************************************************/
-
-#include <cct/cct.h>                       // cct_node_t
-#include "sample-sources/perf/perf-util.h" // event_info_t
+#ifndef __DATACENTRIC_CONFIG_H__
+#define __DATACENTRIC_CONFIG_H__
 
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
+int env_get_datacentric_min_bytes();
 
-void memcentric_init();
+#ifdef __cplusplus
+}
+#endif
 
-
-#endif // sample_source_memcentric_h
-
+#endif

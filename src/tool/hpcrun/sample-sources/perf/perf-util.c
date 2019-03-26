@@ -427,11 +427,9 @@ perf_util_attr_init(
     attr->sample_period = our_rate;
   }
 
-  attr->disabled       = 1;                 /* the counter will be enabled later  */
+  attr->disabled       = 1;    /* the counter will be enabled later  */
+  attr->wakeup_events  = 1;    /* wake up on every counter overflow  */
   attr->sample_type    = sample_type;
-  attr->exclude_kernel = EXCLUDE;
-  attr->exclude_hv     = EXCLUDE;
-
   attr->exclude_kernel = EXCLUDE;
   attr->exclude_hv     = EXCLUDE;
 
@@ -464,8 +462,6 @@ perf_util_attr_init(
 	    // check the HPCRUN_PRECISE_IP env variable
 	    precise_ip = perf_skid_get_precise_ip(attr);
 	    break;
-    default:
-            precise_ip = precise_ip_type;
   }
 
   attr->precise_ip    = precise_ip;

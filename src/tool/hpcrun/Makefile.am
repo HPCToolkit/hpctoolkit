@@ -366,8 +366,7 @@ endif
 
 if OPT_PERF_MEM_DATA_SRC
 MY_BASE_FILES +=  			\
-	sample-sources/datacentric/datacentric.c	\
-	sample-sources/datacentric/memaddress.c		
+	sample-sources/datacentric/datacentric.c	
 
 if OPT_IBS_OP
 MY_BASE_FILES +=  			\

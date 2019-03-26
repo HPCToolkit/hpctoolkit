@@ -46,8 +46,9 @@
 
 #include <stdio.h>
 
-#include "event_info.h"
 #include <hpcrun/messages/messages.h>
+
+#include "event_info.h"
 #include "sample-sources/perf/perf-util.h"
 #include "sample-sources/perf/perf_event_open.h"
 #include "sample-sources/perf/perf_skid.h"
@@ -55,6 +56,7 @@
 #include "datacentric.h"
 
 #define IBS_OP_TYPE_FILE "/sys/bus/event_source/devices/ibs_op/type"
+#define IBS_EVNAME	 "IBS_OP"
 
 #define PERF_IBS_CONFIG   (1ULL<<19)
 
@@ -95,7 +97,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         | PERF_SAMPLE_CPU    | PERF_SAMPLE_TID;
 
   bool is_period = period->threshold_type == PERIOD;
-  perf_util_attr_init(NULL, &einfo->attr, is_period, period->threshold_num, sample_type);
+  perf_util_attr_init(IBS_EVNAME, &einfo->attr, is_period, period->threshold_num, sample_type);
   perf_skid_set_max_precise_ip(&einfo->attr);
 
   // testing the feasibility;

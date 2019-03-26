@@ -64,6 +64,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
+#include <cstring>   // strcmp
 
 //*****************************************************************************
 // local includes
@@ -394,6 +395,9 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
   dump_reachable_functions();
 }
 
+// dump static variable of a load module and send to the client
+// temporarily, it's tightly coupled with datacentric.
+// we only send variables if the size is bigger than datacentric_min_bytes
 
 static void 
 dump_symbols_var(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,

@@ -75,8 +75,9 @@ LZMA_INC=@LZMA_INC@
 MYSOURCES = \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c \
-	\
-	compress_lzma.c
+	compress_lzma.c  \
+	datacentric_config.c
+	
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)  -I$(LZMA_INC)
 

@@ -152,11 +152,11 @@ blame_kernel_time(cct_node_t *cct_kernel,
  *    end if
  *  end if
  ***********************************************************************/
-static void
+static event_accept_type_t
 kernel_block_handler(event_handler_arg_t *args)
 {
   if (metric_blocking_index < 0)
-    return; // not initialized or something wrong happens in the initialization
+    return REJECT_EVENT; // not initialized or something wrong happens in the initialization
 
   perf_mmap_data_t *mmap_data = args->data;
 
@@ -165,7 +165,7 @@ kernel_block_handler(event_handler_arg_t *args)
     // somehow, at the end of the execution, a sample event is still triggered
     // and in this case, the arguments are null. Is this our bug ? or gdb ?
 
-    return;
+    return NOT_MY_EVENT;
   }
 
   if (mmap_data->context_switch_time > 0) {
@@ -203,7 +203,7 @@ kernel_block_handler(event_handler_arg_t *args)
         time_cs_out  = 0;
       }
       // context switch inside the kernel:  record the new cct
-      cct_kernel  = args->sample;
+      cct_kernel  = args->sample->sample_node;
 
     } else if (cct_kernel != NULL) {
       // other event than cs occurs (it can be cycles, clocks or others)
@@ -221,6 +221,7 @@ kernel_block_handler(event_handler_arg_t *args)
       }
     }
   }
+  return ACCEPT_EVENT;
 }
 
 
@@ -249,6 +250,7 @@ register_blocking(sample_source_t *self,
   // create metric to compute blocking time
   // ------------------------------------------
   event_info->metric_custom = event;
+  event_info->id            = EVNAME_KERNEL_BLOCK;
 
   metric_blocking_index= hpcrun_new_metric();
   hpcrun_set_metric_info_and_period(
@@ -283,9 +285,8 @@ register_blocking(sample_source_t *self,
   );
 
   event_info->attr.context_switch = 1;
-  event_info->attr.sample_id_all = 1;
+  event_info->attr.sample_id_all  = 1;
 
-  event_info->metric_custom = event;
 
   METHOD_CALL(self, store_event_and_info,
                           attr->config, 1, metric_cs, event_info);;
@@ -307,7 +308,7 @@ void kernel_blocking_init()
 					" The unit time is hardware-dependent but mostly in microseconds."  
 					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
-  event_kernel_blocking->handler_fn   = kernel_block_handler;
+  event_kernel_blocking->post_handler_fn   = kernel_block_handler;
   event_kernel_blocking->handle_type  = INCLUSIVE;// please call me for all events
 
   event_custom_register(event_kernel_blocking);
