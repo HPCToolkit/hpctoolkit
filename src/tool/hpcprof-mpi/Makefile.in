@@ -118,6 +118,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
 pkglibexec_PROGRAMS = hpcprof-mpi-bin$(EXEEXT)
 subdir = src/tool/hpcprof-mpi
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -149,6 +150,7 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(HPCLIB_TraceAnalysisMPI) $(HPCLIB_TraceAnalysis) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 hpcprof_mpi_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -561,7 +563,8 @@ MYSOURCES = \
 	ParallelAnalysis.hpp ParallelAnalysis.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
+	@XERCES_IFLAGS@ $(am__append_1)
 MYLDFLAGS = \
 	@HPCPROFMPI_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
@@ -583,18 +586,17 @@ MYLDADD = \
 	$(HPCLIB_SupportLean) \
 	$(HPCLIB_TraceAnalysisMPI) \
 	$(HPCLIB_TraceAnalysis) \
-	$(MY_LIB_CFG) \
 	@DYNINST_LFLAGS@ \
 	@BOOST_LFLAGS@ \
+	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
-	@HOST_HPCPROF_LDFLAGS@
+	@HOST_HPCPROF_LDFLAGS@ \
+	$(TBB_LFLAGS) $(TBB_PROXY_LIB)
 
-MY_LIB_CFG = \
-	-L$(LIBDWARF_LIB) -ldwarf  \
-	-L$(LIBELF_LIB) -lelf
-
+@OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+@OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_PROF_MPI_LIBS)
 MYCLEAN = @HOST_LIBTREPOSITORY@

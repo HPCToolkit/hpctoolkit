@@ -356,7 +356,9 @@ namespace TraceAnalysis {
     delete (ClockSynchronizerImpl*)ptr;
   }
   
-  Time ClockSynchronizer::getClockDifference(const TCTRootNode* root1, const TCTRootNode* root2) {
-    return ((ClockSynchronizerImpl*)ptr)->getClockDifference(root1, root2);
+  Time ClockSynchronizer::getClockDifferenceAndSync(const TCTRootNode* root1, TCTRootNode* root2) {
+    Time diff = ((ClockSynchronizerImpl*)ptr)->getClockDifference(root1, root2);
+    root2->shiftTime(diff);
+    return diff;
   }
 }

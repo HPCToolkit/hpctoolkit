@@ -131,6 +131,8 @@ namespace TraceAnalysis {
       for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
         if (sampledIterations[idx] != NULL)
           ret += sampledIterations[idx]->toString(0, 0, 0);
+        else
+          break;
       
       if (profileNode != NULL) { 
         string temp = profileNode->toString(maxDepth, minDuration, minDiffScore);
@@ -327,6 +329,8 @@ namespace TraceAnalysis {
     for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
       if (sampledIterations[idx] != NULL)
         delete sampledIterations[idx];
+      else
+        break;
   }
   
   Time TCTLoopNode::getExclusiveDuration() const {
@@ -486,6 +490,12 @@ namespace TraceAnalysis {
   
   void TCTLoopNode::shiftTime(Time offset) {
     TCTANode::shiftTime(offset);
+    for (int idx = 0; idx < ITER_SAMPLE_SIZE; idx++)
+      if (sampledIterations[idx] != NULL)
+         sampledIterations[idx]->shiftTime(offset);
+      else
+        break;
+    
     if (clusterNode != NULL) clusterNode->shiftTime(offset);
     if (profileNode != NULL) profileNode->shiftTime(offset);
   }

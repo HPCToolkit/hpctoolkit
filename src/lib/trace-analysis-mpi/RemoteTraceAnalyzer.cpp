@@ -181,7 +181,7 @@ namespace TraceAnalysis {
     return root;
   }
   
-  void RemoteTraceAnalyzer::writeClockSyncFile(const TCTRootNode* avgRoot, const vector<TCTRootNode*>& rootNodes, 
+  void RemoteTraceAnalyzer::getClockDiffAndSync(const TCTRootNode*& avgRoot, const vector<TCTRootNode*>& rootNodes, 
       int myRank, int numRanks, vector<Time>& clockDiff) {
     // Step 1: bcast avgRoot to every MPI rank.
     avgRoot = bcastRootNode(avgRoot, myRank, numRanks);
@@ -193,13 +193,11 @@ namespace TraceAnalysis {
     clockCmpRootNode = bcastRootNode(clockCmpRootNode, myRank, numRanks);
     
     ClockSynchronizer clocksync(avgRoot);
-    for (uint idx = 0; idx < rootNodes.size(); idx++) 
-      clockDiff[idx] = clocksync.getClockDifference(clockCmpRootNode, rootNodes[idx]);
+    for (uint idx = 0; idx < rootNodes.size(); idx++)
+      clockDiff[idx] = clocksync.getClockDifferenceAndSync(clockCmpRootNode, rootNodes[idx]);
     
-    if (myRank != 0) {
-      delete avgRoot;
+    if (myRank != 0)
       delete clockCmpRootNode;
-    }
   }
 }
 

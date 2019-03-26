@@ -64,9 +64,10 @@ namespace TraceAnalysis {
     virtual ~ClockSynchronizer();
     
     /** Return the clock difference between two temporal context trees.
+     *  Also adjust times in root2 to synchronize the clocks.
      *  Clock difference = root1 - root2.
      */
-    Time getClockDifference(const TCTRootNode* root1, const TCTRootNode* root2);
+    Time getClockDifferenceAndSync(const TCTRootNode* root1, TCTRootNode* root2);
     
   private:
     void* ptr;

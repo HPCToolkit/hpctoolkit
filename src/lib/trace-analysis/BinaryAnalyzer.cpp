@@ -97,11 +97,11 @@ namespace TraceAnalysis {
       for (auto iit = insns.begin(); iit != insns.end(); ++iit)
       {
         VMA addr = iit->first;
-        InsnCategory cat = iit->second->getCategory();
+        InsnCategory cat = iit->second.getCategory();
 
         if (cat == c_CallInsn) {
           blockMap[block->start()] = addr;
-          raMap[addr] = addr + iit->second->size();
+          raMap[addr] = addr + iit->second.size();
           return true;
         }
       }

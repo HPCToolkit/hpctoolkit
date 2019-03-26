@@ -63,7 +63,7 @@ namespace TraceAnalysis {
     virtual ~RemoteTraceAnalyzer();
     
     TCTClusterNode* analyze(TCTClusterNode* rootCluster, int myRank, int numRanks);
-    void writeClockSyncFile(const TCTRootNode* avgRoot, const vector<TCTRootNode*>& rootNodes, int myRank, int numRanks, vector<Time>& clockDiff);
+    void getClockDiffAndSync(const TCTRootNode*& avgRoot, const vector<TCTRootNode*>& rootNodes, int myRank, int numRanks, vector<Time>& clockDiff);
   };
 }
 

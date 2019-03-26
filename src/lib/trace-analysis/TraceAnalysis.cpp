@@ -88,7 +88,7 @@ namespace TraceAnalysis {
     ClockSynchronizer clocksync((TCTRootNode*)rootCluster->getAvgRep());
     vector<Time> clockDiff(rootNodes.size(), 0);
     for (uint idx = 0; idx < rootNodes.size(); idx++)
-      clockDiff[idx] = clocksync.getClockDifference(rootNodes[0], rootNodes[idx]);
+      clockDiff[idx] = clocksync.getClockDifferenceAndSync(rootNodes[0], rootNodes[idx]);
     if (!analyzer.adjustClockDiff(clockDiff))
       print_msg(MSG_PRIO_MAX, "ERROR: Clock sync failed!\n");
     

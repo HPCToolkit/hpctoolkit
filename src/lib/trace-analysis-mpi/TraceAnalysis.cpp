@@ -97,15 +97,19 @@ namespace TraceAnalysis {
     }
     
     vector<Time> clockDiff(rootNodes.size(), 0);
+    const TCTRootNode* avgRoot = NULL;
     if (myRank == 0)
-      remote.writeClockSyncFile((TCTRootNode*)rootCluster->getAvgRep(), rootNodes, myRank, numRanks, clockDiff);
-    else
-      remote.writeClockSyncFile(NULL, rootNodes, myRank, numRanks, clockDiff);
+      avgRoot = (TCTRootNode*)rootCluster->getAvgRep();
+
+    remote.getClockDiffAndSync(avgRoot, rootNodes, myRank, numRanks, clockDiff);
+    
     if (!local.adjustClockDiff(clockDiff))
       print_msg(MSG_PRIO_MAX, "ERROR: Clock sync failed on rank #%d!\n", myRank);
     
     for (TCTRootNode* root : rootNodes)
       delete root;
+    if (myRank != 0)
+      delete avgRoot;
     delete rootCluster;
     return true;
   }
