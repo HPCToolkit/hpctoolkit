@@ -207,7 +207,7 @@ namespace TraceAnalysis {
         TCTACFGNode* parent = (TCTACFGNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id.id == node->id.id) {
-            bool printError = (i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
+            bool printError = false; //(i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
             if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
             if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
             

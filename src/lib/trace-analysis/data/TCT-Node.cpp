@@ -115,8 +115,9 @@ namespace TraceAnalysis {
         ret += (*eit)->toString();
     
       for (int idx = 0; idx < getNumChild(); idx++)
-        for (auto eit = getOutEdges(idx).begin(); eit != getOutEdges(idx).end(); eit++)
-          ret += (*eit)->toString();
+        if (outEdges.find(children[idx]->id) != outEdges.end())
+          for (auto eit = getOutEdges(idx).begin(); eit != getOutEdges(idx).end(); eit++)
+            ret += (*eit)->toString();
     }*/
     
     for (TCTANode* child : children)

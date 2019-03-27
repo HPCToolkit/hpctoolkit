@@ -425,6 +425,22 @@ namespace TraceAnalysis {
     }
     
     virtual void addChild(TCTANode* child) {
+      if (cfgGraph != NULL && !cfgGraph->hasChild(child->ra)) {
+        if (child->getNumSamples() >= ITER_CHILD_DUR_ACC)
+          print_msg(MSG_PRIO_NORMAL, "ERROR: child %s @ RA 0x%s not found in parent %s @ CFG 0x%s.\n", 
+              child->getName().c_str(), vmaToHexString(child->ra).c_str(), name.c_str(), vmaToHexString(cfgGraph->vma).c_str());
+        delete child;
+        return;
+      }
+      
+      if (cfgGraph != NULL && (!children.empty()) && (cfgGraph->compareChild(children.back()->ra, child->ra) == 1)) {
+        if (child->getNumSamples() >= ITER_CHILD_DUR_ACC)
+          print_msg(MSG_PRIO_NORMAL, "ERROR: child %s @ RA 0x%s is a predecessor of previous child %s @ RA 0x%s.\n", 
+              child->getName().c_str(), vmaToHexString(child->ra).c_str(), children.back()->getName().c_str(), vmaToHexString(children.back()->ra).c_str());
+        delete child;
+        return;
+      }
+      
       children.push_back(child);
     }
     
