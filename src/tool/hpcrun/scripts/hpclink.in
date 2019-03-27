@@ -9,6 +9,7 @@
 # Usage: hpclink [options] compiler file ...
 #
 #     -h, --help
+#     --datacentric
 #     --memleak
 #     -u, --undefined  <symbol>
 #     -v, --verbose
@@ -142,6 +143,8 @@ Options: Informational
   -h, --help           Print help.
 
 Options: Linking
+  --datacentric	       Include HPCToolkit's memory movement analysis.
+
   -dw, --double-wrap   Double quote the linker wrap options (-Wl,-Wl instead
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
@@ -210,6 +213,15 @@ do
     case "$1" in
 	-h | --help )
 	    usage
+	    ;;
+	-datacentric | --datacentric )
+	    datacentric_wrap="${libhpcrun_dir}/libhpcrun_datacentric_wrap.a"
+	    test -f "$datacentric_wrap" || die "unable to find: $datacentric_wrap"
+	    extra_hpc_files="$extra_hpc_files $datacentric_wrap"
+	    extra_wrap_names="$extra_wrap_names posix_memalign memalign valloc"
+	    extra_wrap_names="$extra_wrap_names calloc free malloc realloc"
+	    undef_names="$undef_names malloc"
+	    shift
 	    ;;
 	-dw | --double-wrap )
 	    double_wrap=yes
