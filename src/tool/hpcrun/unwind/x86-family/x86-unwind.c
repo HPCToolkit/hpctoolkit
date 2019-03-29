@@ -703,7 +703,6 @@ stack_troll_dyninst_frame(hpcrun_unw_cursor_t* cursor, int offset)
     // dyninst emits a magic word 'beefdead' to help locate the instrumentation frames
     memcpy((void*)&buffer, (void*)magicWordAddr, 8);
     if (buffer == magicWord) { // found the magic word 
-        printf("found magic word\n");
         uint64_t diff = (uint64_t)(framePtr) - (uint64_t)(stackPtr);
         if (diff >= 500 * 8) { // if the frame size is too large, it is not likely to be an instrumentation frame
             return false;
