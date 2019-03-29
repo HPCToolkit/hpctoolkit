@@ -91,10 +91,6 @@ demangleProcName(const std::string& name)
   // demangle using the API for the C++ demangler
   //----------------------------------------------------------
   int status;
-  if (name.find("dyninst") != string::npos) {
-     printf("found dyninst in link name\n");
-     return bestname;
-  }
 
   char *str = hpctoolkit_demangle(name.c_str(), 0, 0, &status);
   

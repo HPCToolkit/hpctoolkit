@@ -613,7 +613,7 @@ makeStructure(string filename,
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
 	    Module * mod = modVec[i];
-	    auto lineinfo = mod->parseLineInformation();
+	    mod->parseLineInformation();
       }
     }  // end parallel
 
@@ -696,7 +696,6 @@ makeStructure(string filename,
 
       delete code_obj;
       delete code_src;
-      cout << "close symtab " << endl;
       Inline::closeSymtab();
     }
   }
@@ -1034,7 +1033,6 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
     ginfo = new GroupInfo(sym_func, start, end, alt_file);
     finfo->groupMap[start] = ginfo;
   }
-  cout << "ProcInfo - entry vma: " << hex << pinfo->entry_vma << dec << endl;
   ginfo->procMap[pinfo->entry_vma] = pinfo;
 
 #if DEBUG_MAKE_SKEL
@@ -1135,9 +1133,8 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	    filenm = svec[0]->getFile();
 	    line = svec[0]->getLine();
 	    RealPathMgr::singleton().realpath(filenm);
-     } else {
-          cerr << " getProcLineMap returns empty statement symbol start:  " << hex << sym_start << dec << endl;
-      }
+      } 
+
       if (vma == sym_start) {
 	//
 	// case 1 -- group leader of a valid symtab func.  take proc
@@ -1150,8 +1147,8 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
 	if (mangled_it != sym_func->mangled_names_end()) {
 	  linknm = *mangled_it;
-      auto p = linknm.find("_dyninst");
-      if (p != string::npos) {
+      auto p = linknm.find("_dyninst"); // find if the link name contains _dyninst suffix
+      if (p != string::npos) { // if found the _dyninst suffix, remove it before demangling
          linknm.erase(p, string::npos);
       }
 	  //if (opts.ourDemangle) {
@@ -1228,7 +1225,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       // this normally only happens for plt funcs.
       //
       string linknm = func->name();
-      auto p = linknm.find("_dyninst");
+      auto p = linknm.find("_dyninst"); 
       if (p != string::npos) {
          linknm.erase(p, string::npos);
       }
