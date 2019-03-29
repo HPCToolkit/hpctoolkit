@@ -700,10 +700,12 @@ stack_troll_dyninst_frame(hpcrun_unw_cursor_t* cursor, int offset)
     void * stackPtr = cursor->sp;
     uint64_t magicWordAddr = (uint64_t)framePtr + magicWordPos;
     uint64_t buffer;
+    // dyninst emits a magic word 'beefdead' to help locate the instrumentation frames
     memcpy((void*)&buffer, (void*)magicWordAddr, 8);
-    if (buffer == magicWord) {
+    if (buffer == magicWord) { // found the magic word 
+        printf("found magic word\n");
         uint64_t diff = (uint64_t)(framePtr) - (uint64_t)(stackPtr);
-        if (diff >= 500 * 8) {
+        if (diff >= 500 * 8) { // if the frame size is too large, it is not likely to be an instrumentation frame
             return false;
         }
         uint64_t usrFramePtr;
@@ -719,7 +721,7 @@ stack_troll_dyninst_frame(hpcrun_unw_cursor_t* cursor, int offset)
         compute_normalized_ips(cursor);
         return true;
     }
-    // fall through the frame pointer based unwinding 
+    // if the magic word 'beefdead' does not help, try using the frame pointer based unwinding 
     void ** bp = cursor->bp;
     void *  sp = cursor->sp;
     void *  pc = cursor->pc_unnorm;
@@ -777,9 +779,11 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     // fall through for error handling
   }
   else {
+      /*
     TMSG(TROLL, "Troll failed: dropping sample, cursor pc = %p", 
 	 cursor->pc_unnorm);
     TMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc_unnorm);
+    */
     if (stack_troll_dyninst_frame(cursor, offset))
         return; // success! frame pointer based unwinding for dyninst frames
     // fall through for error handling
