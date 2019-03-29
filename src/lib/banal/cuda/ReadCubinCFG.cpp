@@ -284,7 +284,7 @@ readCubinCFG
   }
 
   *code_src = new SymtabCodeSource(the_symtab);
-  *code_obj = new CodeObject(*code_src);
+  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
 
   return false;
 }
