@@ -28,8 +28,8 @@
  *****************************************************************************/
 
 struct cubin_id_map_entry_s {
-  uint64_t cubin_id;
-  uint64_t hpctoolkit_module_id;
+  uint32_t cubin_id;
+  uint32_t hpctoolkit_module_id;
   Elf_SymbolVector *elf_vector;
   struct cubin_id_map_entry_s *left;
   struct cubin_id_map_entry_s *right;
@@ -47,7 +47,7 @@ static spinlock_t cubin_id_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static cubin_id_map_entry_t *
-cubin_id_map_entry_new(uint64_t cubin_id, Elf_SymbolVector *vector)
+cubin_id_map_entry_new(uint32_t cubin_id, Elf_SymbolVector *vector)
 {
   cubin_id_map_entry_t *e;
   e = (cubin_id_map_entry_t *)hpcrun_malloc(sizeof(cubin_id_map_entry_t));
@@ -61,7 +61,7 @@ cubin_id_map_entry_new(uint64_t cubin_id, Elf_SymbolVector *vector)
 
 
 static cubin_id_map_entry_t *
-cubin_id_map_splay(cubin_id_map_entry_t *root, uint64_t key)
+cubin_id_map_splay(cubin_id_map_entry_t *root, uint32_t key)
 {
   REGULAR_SPLAY_TREE(cubin_id_map_entry_s, root, key, cubin_id, left, right);
   return root;
@@ -89,7 +89,7 @@ cubin_id_map_delete_root()
  *****************************************************************************/
 
 cubin_id_map_entry_t *
-cubin_id_map_lookup(uint64_t id)
+cubin_id_map_lookup(uint32_t id)
 {
   cubin_id_map_entry_t *result = NULL;
   spinlock_lock(&cubin_id_map_lock);
@@ -107,7 +107,7 @@ cubin_id_map_lookup(uint64_t id)
 
 
 void
-cubin_id_map_insert(uint64_t cubin_id, uint64_t hpctoolkit_module_id, Elf_SymbolVector *vector)
+cubin_id_map_insert(uint32_t cubin_id, uint32_t hpctoolkit_module_id, Elf_SymbolVector *vector)
 {
   spinlock_lock(&cubin_id_map_lock);
 
@@ -149,7 +149,7 @@ cubin_id_map_insert(uint64_t cubin_id, uint64_t hpctoolkit_module_id, Elf_Symbol
 void
 cubin_id_map_delete
 (
- uint64_t cubin_id
+ uint32_t cubin_id
 )
 {
   cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, cubin_id);
@@ -159,7 +159,7 @@ cubin_id_map_delete
 }
 
 
-uint64_t
+uint32_t
 cubin_id_map_entry_hpctoolkit_id_get(cubin_id_map_entry_t *entry)
 {
   return entry->hpctoolkit_module_id;
@@ -178,13 +178,13 @@ cubin_id_map_entry_elf_vector_get(cubin_id_map_entry_t *entry)
 // looking up elf symbols inside a cubin
 //--------------------------------------------------------------------------
 ip_normalized_t
-cubin_id_transform(uint64_t cubin_id, uint64_t function_id, int64_t offset)
+cubin_id_transform(uint32_t cubin_id, uint32_t function_id, int64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
   PRINT("cubin_id %d\n", cubin_id);
   if (entry != NULL) {
-    uint64_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
+    uint32_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
     PRINT("get hpctoolkit_module_id %d\n", hpctoolkit_module_id);
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;

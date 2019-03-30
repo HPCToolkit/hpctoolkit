@@ -24,6 +24,13 @@ typedef struct cupti_pc_sampling {
   CUpti_ActivityPCSamplingStallReason stallReason;
 } cupti_pc_sampling_t;
 
+typedef struct cupti_pc_sampling_record_info {
+  uint64_t droppedSamples;
+  uint64_t samplingPeriodInCycles;
+  uint64_t totalSamples;
+  uint64_t fullSMSamples;
+} cupti_pc_sampling_record_info_t;
+
 // memory
 typedef struct cupti_memcpy {
   uint64_t start;
@@ -46,6 +53,8 @@ typedef struct cupti_kernel {
   int32_t dynamicSharedMemory;
   int32_t staticSharedMemory;
   int32_t localMemoryTotal;
+  uint32_t activeWarpsPerSM;
+  uint32_t maxActiveWarpsPerSM;
 } cupti_kernel_t;
 
 typedef enum {
@@ -92,6 +101,7 @@ typedef struct cupti_activity {
   CUpti_ActivityKind kind;
   union {
     cupti_pc_sampling_t pc_sampling;
+    cupti_pc_sampling_record_info_t pc_sampling_record_info;
     cupti_memcpy_t memcpy;
     cupti_memory_t memory;
     cupti_kernel_t kernel;

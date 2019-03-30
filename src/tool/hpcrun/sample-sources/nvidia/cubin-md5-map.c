@@ -21,7 +21,7 @@
  *****************************************************************************/
 
 struct cubin_md5_map_entry_s {
-  uint64_t cubin_id;
+  uint32_t cubin_id;
   unsigned char md5[MD5_DIGEST_LENGTH];
   struct cubin_md5_map_entry_s *left;
   struct cubin_md5_map_entry_s *right;
@@ -39,7 +39,7 @@ static spinlock_t cubin_md5_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static cubin_md5_map_entry_t *
-cubin_md5_map_entry_new(uint64_t cubin_id, const void *cubin, size_t size)
+cubin_md5_map_entry_new(uint32_t cubin_id, const void *cubin, size_t size)
 {
   cubin_md5_map_entry_t *e;
   e = (cubin_md5_map_entry_t *)hpcrun_malloc(sizeof(cubin_md5_map_entry_t));
@@ -53,7 +53,7 @@ cubin_md5_map_entry_new(uint64_t cubin_id, const void *cubin, size_t size)
 
 
 static cubin_md5_map_entry_t *
-cubin_md5_map_splay(cubin_md5_map_entry_t *root, uint64_t key)
+cubin_md5_map_splay(cubin_md5_map_entry_t *root, uint32_t key)
 {
   REGULAR_SPLAY_TREE(cubin_md5_map_entry_s, root, key, cubin_id, left, right);
   return root;
@@ -83,7 +83,7 @@ cubin_md5_map_delete_root()
  *****************************************************************************/
 
 cubin_md5_map_entry_t *
-cubin_md5_map_lookup(uint64_t id)
+cubin_md5_map_lookup(uint32_t id)
 {
   cubin_md5_map_entry_t *result = NULL;
   spinlock_lock(&cubin_md5_map_lock);
@@ -101,7 +101,7 @@ cubin_md5_map_lookup(uint64_t id)
 
 
 void
-cubin_md5_map_insert(uint64_t cubin_id, const void *cubin, size_t size)
+cubin_md5_map_insert(uint32_t cubin_id, const void *cubin, size_t size)
 {
   spinlock_lock(&cubin_md5_map_lock);
 

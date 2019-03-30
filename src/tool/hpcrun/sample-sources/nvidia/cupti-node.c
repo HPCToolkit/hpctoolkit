@@ -3,7 +3,14 @@
 #include <cupti_version.h>
 #include <cupti_activity.h>
 #include "cupti-node.h"
+#include "cupti-analysis.h"
 
+//-------------------------------------------------------------
+// Read fields from a CUpti_Activity and assign to a cupti_node
+// This function is only used by CUPTI thread.
+// It is thread-safe as long as it does not access data structures
+// shared by worker threads.
+// ------------------------------------------------------------
 void
 cupti_activity_node_set
 (
@@ -31,6 +38,20 @@ cupti_activity_node_set
       entry->activity.data.pc_sampling.latencySamples = activity_sample->latencySamples;
       break;
     }
+    case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
+    {
+      CUpti_ActivityPCSamplingRecordInfo *activity_info =
+        (CUpti_ActivityPCSamplingRecordInfo *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO;
+      entry->activity.data.pc_sampling_record_info.totalSamples = activity_info->totalSamples;
+      entry->activity.data.pc_sampling_record_info.droppedSamples = activity_info->droppedSamples;
+      entry->activity.data.pc_sampling_record_info.samplingPeriodInCycles = activity_info->samplingPeriodInCycles;
+      uint64_t totalSamples = 0;
+      uint64_t fullSMSamples = 0;
+      cupti_sm_efficiency_analyze(activity_info, &totalSamples, &fullSMSamples);
+      entry->activity.data.pc_sampling_record_info.fullSMSamples = fullSMSamples;
+      break;
+    }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
       CUpti_ActivityMemcpy *activity_memcpy = (CUpti_ActivityMemcpy *)activity;
@@ -50,6 +71,11 @@ cupti_activity_node_set
       entry->activity.data.kernel.localMemoryTotal = activity_kernel->localMemoryTotal;
       entry->activity.data.kernel.start = activity_kernel->start;
       entry->activity.data.kernel.end = activity_kernel->end;
+      uint32_t activeWarpsPerSM = 0;
+      uint32_t maxActiveWarpsPerSM = 0;
+      cupti_occupancy_analyze(activity_kernel, &activeWarpsPerSM, &maxActiveWarpsPerSM);
+      entry->activity.data.kernel.activeWarpsPerSM = activeWarpsPerSM;
+      entry->activity.data.kernel.maxActiveWarpsPerSM = maxActiveWarpsPerSM;
       break;
     }
     case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:

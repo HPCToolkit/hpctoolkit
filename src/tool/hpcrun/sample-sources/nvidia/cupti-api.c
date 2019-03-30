@@ -4,7 +4,6 @@
 #include <limits.h>  // PATH_MAX
 #include <stdio.h>   // sprintf
 #include <unistd.h>
-#include <dlfcn.h>  // dlopen
 #include <sys/stat.h>  // mkdir
 #include <openssl/md5.h>
 
@@ -21,6 +20,7 @@
 #include "cubin-id-map.h"
 #include "cubin-md5-map.h"
 #include "cupti-api.h"
+#include "cupti-device-id-map.h"
 #include "cupti-correlation-id-map.h"
 #include "cupti-function-id-map.h"
 #include "cupti-host-op-map.h"
@@ -256,7 +256,7 @@ cupti_load_callback_cuda
   if (file_flag) {
     char device_file[PATH_MAX]; 
     sprintf(device_file, "%s", file_name);
-    uint64_t hpctoolkit_module_id;
+    uint32_t hpctoolkit_module_id;
     load_module_t *module = NULL;
     hpcrun_loadmap_lock();
     if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
@@ -886,6 +886,17 @@ cupti_unknown_process
 
 
 static void
+cupti_device_process
+(
+ CUpti_ActivityDevice2 *device
+)
+{
+  PRINT("Device id %d\n", device->id);
+  cupti_device_id_map_insert(device->id, device);
+}
+
+
+static void
 cupti_sample_process
 (
  void *record
@@ -912,8 +923,8 @@ cupti_sample_process
     PRINT("external_id %d\n", external_id);
     cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(sample->functionId);
     if (entry != NULL) {
-      uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
-      uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
+      uint32_t function_index = cupti_function_id_map_entry_function_index_get(entry);
+      uint32_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
       ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, sample->pcOffset);
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
@@ -974,6 +985,13 @@ cupti_sampling_record_info_process
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sri->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)sri, host_op_node, record);
+    }
+    // sample record info is the last record for a given correlation id
     if (!cupti_host_op_map_total_samples_update(external_id, sri->totalSamples - sri->droppedSamples)) {
       cupti_correlation_id_map_delete(sri->correlationId);
     }
@@ -989,12 +1007,13 @@ cupti_correlation_process
  CUpti_ActivityExternalCorrelation *ec
 )
 {
-  uint64_t correlation_id = ec->correlationId;
+  uint32_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
-  if (cupti_correlation_id_map_lookup(correlation_id) != NULL) {
-    cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
-  } else {
+  if (cupti_correlation_id_map_lookup(correlation_id) == NULL) {
     cupti_correlation_id_map_insert(correlation_id, external_id);
+  } else {
+    PRINT("External CorrelationId Replace %lu)\n", external_id);
+    cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
   }
   PRINT("External CorrelationId %lu\n", external_id);
   PRINT("CorrelationId %lu\n", correlation_id);
@@ -1097,17 +1116,16 @@ cupti_kernel_process
 {
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
+    cupti_correlation_id_map_kernel_update(activity->correlationId,
+      activity->deviceId, activity->start, activity->end);
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
-      //not delete it because it shares external_id with activity samples
-      //cupti_host_op_map_delete(external_id);
+      // do not delete it because it shares external_id with activity samples
     }
-    //not delete it because it shares external_id with activity samples
-    //cupti_correlation_id_map_delete(activity->correlationId);
   }
   PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
 }
@@ -1177,8 +1195,8 @@ cupti_instruction_process
     PRINT("external_id %d\n", external_id);
     cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(function_id);
     if (entry != NULL) {
-      uint64_t function_index = cupti_function_id_map_entry_function_index_get(entry);
-      uint64_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
+      uint32_t function_index = cupti_function_id_map_entry_function_index_get(entry);
+      uint32_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
       ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
@@ -1214,9 +1232,14 @@ cupti_activity_process
     cupti_sample_process(activity);
     break;
 
+  case CUPTI_ACTIVITY_KIND_DEVICE:
+    cupti_device_process(
+      (CUpti_ActivityDevice2 *) activity);
+    break;
+
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
-    cupti_sampling_record_info_process
-      ((CUpti_ActivityPCSamplingRecordInfo *) activity);
+    cupti_sampling_record_info_process(
+      (CUpti_ActivityPCSamplingRecordInfo *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_FUNCTION:

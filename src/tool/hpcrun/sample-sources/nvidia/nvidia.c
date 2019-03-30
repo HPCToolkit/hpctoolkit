@@ -119,10 +119,15 @@
   macro("ME_TIME (us)",           7)
 
 #define FORALL_KE(macro)	  \
-  macro("KE_STATIC_MEM_BYTES",  0) \
-  macro("KE_DYNAMIC_MEM_BYTES", 1) \
-  macro("KE_LOCAL_MEM_BYTES",   2) \
-  macro("KE_TIME (us)",         3) \
+  macro("KE_STATIC_MEM_BYTES",  0)       \
+  macro("KE_DYNAMIC_MEM_BYTES", 1)       \
+  macro("KE_LOCAL_MEM_BYTES",   2)       \
+  macro("KE_ACTIVE_WARPS_PER_SM", 3)     \
+  macro("KE_MAX_ACTIVE_WARPS_PER_SM", 4) \
+  macro("KE_COUNT ", 5)                  \
+
+#define FORALL_KE_TIME(macro) \
+  macro("KE_TIME (us)",         6)
 
 #define FORALL_EM(macro)	\
   macro("EM_INVALID",       0)	\
@@ -169,6 +174,12 @@
 #define FORALL_BH(macro) \
   macro("BH_WARP_DIVERGED", 0) \
   macro("BH_WARP_EXECUTED", 1)
+
+#define FORALL_INFO(macro)	\
+  macro("INFO_DROPPED_SAMPLES", 0)  \
+  macro("INFO_PERIOD_IN_CYCLES", 1) \
+  macro("INFO_TOTAL_SAMPLES", 2)    \
+  macro("INFO_SM_FULL_SAMPLES", 3)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
@@ -270,6 +281,7 @@ static kind_info_t* gl_kind; // global memory accesses
 static kind_info_t* sh_kind; // shared memory accesses
 static kind_info_t* bh_kind; // branches
 static kind_info_t* sync_kind; // stream, context, or event sync
+static kind_info_t* info_kind; // pc sampling info
 
 static int stall_metric_id[NUM_CLAUSES(FORALL_STL)+2];
 static int gpu_inst_metric_id;
@@ -292,11 +304,20 @@ static int bh_metric_id[NUM_CLAUSES(FORALL_BH)];
 static int bh_diverged_metric_id;
 static int bh_executed_metric_id;
 
-static int ke_metric_id[NUM_CLAUSES(FORALL_KE)];
+static int ke_metric_id[NUM_CLAUSES(FORALL_KE)+1];
 static int ke_static_shared_metric_id;
 static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
+static int ke_active_warps_per_sm_metric_id;
+static int ke_max_active_warps_per_sm_metric_id;
+static int ke_count_metric_id;
 static int ke_time_metric_id;
+
+static int info_metric_id[NUM_CLAUSES(FORALL_INFO)];
+static int info_dropped_samples_id;
+static int info_period_in_cycles_id;
+static int info_total_samples_id;
+static int info_sm_full_samples_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
 
@@ -391,6 +412,26 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
+    case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
+    {
+      PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO\n");
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, info_dropped_samples_id);
+      hpcrun_metric_std_inc(info_dropped_samples_id, metrics,
+        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
+
+      metrics = hpcrun_reify_metric_set(cct_node, info_period_in_cycles_id);
+      hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
+        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
+
+      metrics = hpcrun_reify_metric_set(cct_node, info_total_samples_id);
+      hpcrun_metric_std_inc(info_total_samples_id, metrics,
+        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.totalSamples});
+
+      metrics = hpcrun_reify_metric_set(cct_node, info_sm_full_samples_id);
+      hpcrun_metric_std_inc(info_sm_full_samples_id, metrics,
+        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.fullSMSamples});
+      break;
+    }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMCPY\n");
@@ -400,7 +441,8 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
 
         metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
-        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.memcpy.end - activity->data.memcpy.start});
+        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i =
+          (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
       }
       break;
     }
@@ -416,8 +458,20 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metrics = hpcrun_reify_metric_set(cct_node, ke_local_metric_id);
       hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.localMemoryTotal});
 
+      metrics = hpcrun_reify_metric_set(cct_node, ke_active_warps_per_sm_metric_id);
+      hpcrun_metric_std_inc(ke_active_warps_per_sm_metric_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.activeWarpsPerSM});
+
+      metrics = hpcrun_reify_metric_set(cct_node, ke_max_active_warps_per_sm_metric_id);
+      hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
+
+      metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
+      hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
+
       metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
-      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.end - activity->data.kernel.start});
+      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i =
+        (activity->data.kernel.end - activity->data.kernel.start) / 1000.0});
       break;
     }
     case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
@@ -426,8 +480,8 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       if (activity->data.synchronization.syncKind != 0x7fffffff) {
         int index = sync_metric_id[activity->data.synchronization.syncKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){
-          .i = activity->data.synchronization.end - activity->data.synchronization.start});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .i =
+          (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
       break;
     }
@@ -440,7 +494,8 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
 
         metrics = hpcrun_reify_metric_set(cct_node, me_time_metric_id);
-        hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.i = activity->data.memory.end - activity->data.memory.start});
+        hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.i =
+          (activity->data.memory.end - activity->data.memory.start) / 1000.0});
       }
       break;
     }
@@ -588,43 +643,64 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_im_metric(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info(im_kind, name);
 
+#define declare_im_metric_time(name, index) \
+  im_metric_id[index] = hpcrun_set_new_metric_info_and_period(im_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
   im_kind = hpcrun_metrics_new_kind();
   FORALL_IM(declare_im_metric);	
-  FORALL_IM_TIME(declare_im_metric);
+  FORALL_IM_TIME(declare_im_metric_time);
   im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
   hpcrun_close_kind(im_kind);
 
 #define declare_em_metric(name, index) \
   em_metric_id[index] = hpcrun_set_new_metric_info(em_kind, name);
 
+#define declare_em_metric_time(name, index) \
+  em_metric_id[index] = hpcrun_set_new_metric_info_and_period(em_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
   em_kind = hpcrun_metrics_new_kind();
   FORALL_EM(declare_em_metric);	
-  FORALL_EM_TIME(declare_em_metric);
+  FORALL_EM_TIME(declare_em_metric_time);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   hpcrun_close_kind(em_kind);
 
 #define declare_me_metric(name, index) \
   me_metric_id[index] = hpcrun_set_new_metric_info(me_kind, name);
 
+#define declare_me_metric_time(name, index) \
+  me_metric_id[index] = hpcrun_set_new_metric_info_and_period(me_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
   me_kind = hpcrun_metrics_new_kind();
   FORALL_ME(declare_me_metric);	
-  FORALL_ME_TIME(declare_me_metric);
+  FORALL_ME_TIME(declare_me_metric_time);
   me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
   hpcrun_close_kind(me_kind);
 
 #define declare_ke_metric(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
 
+#define declare_ke_metric_time(name, index) \
+  ke_metric_id[index] = hpcrun_set_new_metric_info_and_period(ke_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
+
   ke_kind = hpcrun_metrics_new_kind();
   FORALL_KE(declare_ke_metric);	
+  FORALL_KE_TIME(declare_ke_metric_time);	
   ke_static_shared_metric_id = ke_metric_id[0];
   ke_dynamic_shared_metric_id = ke_metric_id[1];
   ke_local_metric_id = ke_metric_id[2];
-  ke_time_metric_id = ke_metric_id[3];
+  ke_active_warps_per_sm_metric_id = ke_metric_id[3];
+  ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
+  ke_count_metric_id = ke_metric_id[5];
+  ke_time_metric_id = ke_metric_id[6];
   hpcrun_close_kind(ke_kind);
 
 #define declare_sync_metric(name, index) \
-  sync_metric_id[index] = hpcrun_set_new_metric_info(sync_kind, name);
+  sync_metric_id[index] = hpcrun_set_new_metric_info_and_period(sync_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metric);	
@@ -652,6 +728,17 @@ METHOD_FN(process_event_list, int lush_metrics)
   bh_diverged_metric_id = bh_metric_id[0];
   bh_executed_metric_id = bh_metric_id[1];
   hpcrun_close_kind(bh_kind);
+
+#define declare_info_metrics(name, index) \
+  info_metric_id[index] = hpcrun_set_new_metric_info(info_kind, name);
+
+  info_kind = hpcrun_metrics_new_kind();
+  FORALL_INFO(declare_info_metrics);	
+  info_dropped_samples_id = info_metric_id[0];
+  info_period_in_cycles_id = info_metric_id[1];
+  info_total_samples_id = info_metric_id[2];
+  info_sm_full_samples_id = info_metric_id[3];
+  hpcrun_close_kind(info_kind);
 
   // Fetch the event string for the sample source
   // only one event is allowed

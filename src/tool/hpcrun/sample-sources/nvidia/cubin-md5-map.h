@@ -24,14 +24,14 @@ typedef struct cubin_md5_map_entry_s cubin_md5_map_entry_t;
 cubin_md5_map_entry_t *
 cubin_md5_map_lookup
 (
- uint64_t cubin_id
+ uint32_t cubin_id
 );
 
 
 void
 cubin_md5_map_insert
 (
- uint64_t cubin_id,
+ uint32_t cubin_id,
  const void *cubin,
  size_t size
 );
