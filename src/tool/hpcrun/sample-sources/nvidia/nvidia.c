@@ -441,7 +441,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
 
         metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
-        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.i =
+        hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
       }
       break;
@@ -470,7 +470,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
-      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.i =
+      hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.r =
         (activity->data.kernel.end - activity->data.kernel.start) / 1000.0});
       break;
     }
@@ -480,7 +480,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       if (activity->data.synchronization.syncKind != 0x7fffffff) {
         int index = sync_metric_id[activity->data.synchronization.syncKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .i =
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
       break;
@@ -494,7 +494,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
 
         metrics = hpcrun_reify_metric_set(cct_node, me_time_metric_id);
-        hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.i =
+        hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memory.end - activity->data.memory.start) / 1000.0});
       }
       break;
