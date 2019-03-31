@@ -263,7 +263,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 //
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 {
   // current frame
   void*  pc = cursor->pc_unnorm;
@@ -354,7 +354,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  bool found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(nxt_pc - 1, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
@@ -374,7 +374,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 	  // Sanity check SP: Once in a while SP is clobbered.
 	  if (isPossibleParentSP(nxt_sp, try_sp)) {
 		nxt_pc = getNxtPCFromSP(try_sp);
-		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
+		bool found2 = uw_recipe_map_lookup(nxt_pc - 1, NATIVE_UNWINDER, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
 		}
