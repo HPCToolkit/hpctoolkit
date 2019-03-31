@@ -442,7 +442,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
     if (unw_res == STEP_STOP || unw_res == STEP_OK) {
       return unw_res;
     }
-    bool found = uw_recipe_map_lookup(((char *)pc) - 1, NATIVE_UNWINDER, &cursor->unwr_info);
+    bool found = uw_recipe_map_lookup(((char *)pc) - decrement_pc, NATIVE_UNWINDER, &cursor->unwr_info);
 
     if (!found) {
       EMSG("hpcrun_unw_step: cursor could NOT build an interval for last libunwind pc = %p",
