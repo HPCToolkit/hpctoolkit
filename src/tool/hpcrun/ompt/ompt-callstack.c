@@ -360,14 +360,8 @@ ompt_elide_runtime_frame(
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-        // FIXME: different from ompt branch which used >
-#if 1
       if ((uint64_t)(it->cursor.sp) > (uint64_t)frame0->enter_frame.ptr) {
-#else
-      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->enter_frame.ptr) {
-#endif
-//      if ((uint64_t)(it->cursor.bp) >= (uint64_t)frame0->enter_frame.ptr) {
-	      if (isSync) {
+        if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
         }
