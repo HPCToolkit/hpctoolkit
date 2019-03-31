@@ -646,7 +646,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   // hpcrun_generate_backtrace_no_trampoline calls
   //   1. hpcrun_unw_init_cursor(&cursor, context), which calls
   //        uw_recipe_map_lookup,
-  //   2. hpcrun_unw_step(&cursor), which calls
+  //   2. hpcrun_unw_step(&cursor, &steps_taken), which calls
   //        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
 
   unwr_info->btuwi    = NULL;

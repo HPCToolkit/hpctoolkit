@@ -207,10 +207,11 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 }
 
 bool
-libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
+libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor, int decrement_pc)
 {
-  void *pc = libunw_cursor_get_pc(cursor);
+  char *pc = libunw_cursor_get_pc(cursor);
   cursor->pc_unnorm = pc;
+  if (decrement_pc) pc--;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
   compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
@@ -269,7 +270,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
 
   if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
-    libunw_finalize_cursor(cursor);
+    libunw_finalize_cursor(cursor, 0);
   }
 }
 
@@ -344,11 +345,11 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 // ---------------------------------------------------------
 
 step_state
-libunw_unw_step(hpcrun_unw_cursor_t* cursor)
+libunw_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
 {
   step_state result = libunw_take_step(cursor);
   if (result != STEP_ERROR) {
-    libunw_finalize_cursor(cursor);
+    libunw_finalize_cursor(cursor, *steps_taken > 0);
   }
 
 #if DEBUG_LIBUNWIND_INTERFACE

@@ -102,6 +102,11 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+//****************************************************************************
+// macros
+//****************************************************************************
+
+#define DECREMENT_PC(pc) pc = ((char *)pc) - 1
 
 //****************************************************************************
 // global data 
@@ -400,18 +405,25 @@ hpcrun_retry_libunw_find_step(hpcrun_unw_cursor_t *cursor,
   LV_MCONTEXT_SP(&uc.uc_mcontext) = (intptr_t)sp;
   LV_MCONTEXT_BP(&uc.uc_mcontext) = (intptr_t)bp;
   unw_init_local(&cursor->uc, &uc);
-  return libunw_finalize_cursor(cursor);
+  return libunw_finalize_cursor(cursor, 1);
 }
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 {
   step_state unw_res;
+  int decrement_pc = 0;
+
+  if ((*steps_taken)++ > 0 && cursor->pc_unnorm != 0) {
+    DECREMENT_PC(cursor->pc_unnorm);
+    decrement_pc = 1;
+  }
 
   if (cursor->libunw_status == LIBUNW_READY) {
+    void *pc, **bp, **sp;
+
     unw_res = libunw_take_step(cursor);
 
-    void *pc, **bp, **sp;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
@@ -424,7 +436,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor)
       save_registers(cursor, pc, bp, sp, (void **)(sp - 1));
 
     if (unw_res == STEP_OK) {
-      libunw_finalize_cursor(cursor);
+      libunw_finalize_cursor(cursor, decrement_pc);
     }
 
     if (unw_res == STEP_STOP || unw_res == STEP_OK) {

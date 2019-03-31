@@ -204,6 +204,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   hpcrun_unw_cursor_t cursor;
   hpcrun_unw_init_cursor(&cursor, context);
 
+  int steps_taken = 0;
   do {
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
@@ -248,7 +249,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     frame_t* prev = td->btbuf_cur++;
 
-    ret = hpcrun_unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor, &steps_taken);
     switch (ret) {
     case STEP_TROLL:
       bt->n_trolls++;
