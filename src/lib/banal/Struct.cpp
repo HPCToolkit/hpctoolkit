@@ -86,6 +86,8 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include <lib/support-lean/datacentric_config.h>
+
 #include <CFG.h>
 #include <CodeObject.h>
 #include <CodeSource.h>
@@ -139,8 +141,6 @@ using namespace std;
 #endif
 
 #define WORK_LIST_PCT  0.05
-
-#define MIN_BYTES_GLOBAL_VARIABLE 1024
 
 static int merge_irred_loops = 1;
 
@@ -1052,6 +1052,10 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 }
 
 
+//----------------------------------------------------------------------
+// output the list of static variable in the current module
+// if the size of the variable is bigger than env_get_datacentric_min_bytes()
+//  we are not interested to output small size variables
 static void
 makeVariables(ostream * outFile)
 {
@@ -1065,7 +1069,7 @@ makeVariables(ostream * outFile)
 
   for (auto i=0; i<symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (s->getOffset() == 0 || s->getSize()<MIN_BYTES_GLOBAL_VARIABLE)
+    if (s->getOffset() == 0 || s->getSize()<env_get_datacentric_min_bytes())
       continue;
 
     VariableInfo vinfo;
@@ -1081,7 +1085,6 @@ makeVariables(ostream * outFile)
 }
 
 //----------------------------------------------------------------------
-
 // getFuncNames -- helper for makeSkeleton() to select the pretty and
 // link (mangled) names for a SymtabAPI::Function.
 //
