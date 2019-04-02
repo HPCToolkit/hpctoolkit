@@ -319,27 +319,36 @@ cupti_correlation_callback_cuda
 
   cct_node_t *node = hpcrun_sample_callpath(&uc, cupti_host_op_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
 
+  hpcrun_safe_exit();
+  td->overhead--;
+
   // Compress callpath
   node = hpcrun_cct_parent(node);
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
   load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
 
-  // Skip libhpcrun
-  // TODO(keren): which entry function should I use to ignore hpcrun?
-  while (strstr(module->name, "libhpcrun") != NULL) {
-    hpcrun_cct_delete_self(node);
-    node = hpcrun_cct_parent(node);
-    node_addr = hpcrun_cct_addr(node);
-    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
-  }
+  // Skip dummy module (root cct-node which has lm_id 0)
+  if (module != NULL) {
+    // Skip libhpcrun
+    // TODO(keren): which entry function should I use to ignore hpcrun?
+    while (strstr(module->name, "libhpcrun") != NULL) {
+      //hpcrun_cct_delete_self(node);
+      node = hpcrun_cct_parent(node);
+      node_addr = hpcrun_cct_addr(node);
+      module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+    }
 
-  // Skip libcupti and libcuda
-  while (module_ignore_map_module_lookup(module)) {
-    hpcrun_cct_delete_self(node);
-    node = hpcrun_cct_parent(node);
-    node_addr = hpcrun_cct_addr(node);
-    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+    // Skip libcupti and libcuda
+    while (module_ignore_map_module_lookup(module)) {
+      //hpcrun_cct_delete_self(node);
+      node = hpcrun_cct_parent(node);
+      node_addr = hpcrun_cct_addr(node);
+      module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+    }
   }
+  
+  td->overhead++;
+  hpcrun_safe_enter();
 
   // Get the dummy node, which will be eliminated before writing out,
   // since we do not the actual callback node that maps to hpctoolkit.
