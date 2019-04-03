@@ -89,6 +89,10 @@
 #define PERF_MMAP_SIZE(pagesz)    ((pagesz) * (PERF_DATA_PAGES + 1))
 #define PERF_TAIL_MASK(pagesz)    (((pagesz) * PERF_DATA_PAGES) - 1)
 
+#define BUFFER_FRONT(current_perf_mmap)              ((char *) current_perf_mmap + pagesize)
+#define BUFFER_SIZE               (tail_mask + 1)
+#define BUFFER_OFFSET(tail)       ((tail) & tail_mask)
+
 
 
 /******************************************************************************
@@ -113,25 +117,8 @@ static size_t tail_mask  = 0;
  * local methods
  *****************************************************************************/
 
-/*
- * Not the data we need? Skip the data.
- */
-/*static void skip_perf_data(pe_mmap_t *hdr, size_t sz)
-{
-  if ((hdr->data_tail + sz) > hdr->data_head)
-    sz = hdr->data_head - hdr->data_tail;
-
-  hdr->data_tail += sz;
-} */
 
 
-static u64
-perf_mmap_read_head(pe_mmap_t *hdr)
-{
-	u64 head = hdr->data_head;
-	rmb(); // required by the man page to issue a barrier for SMP-capable platforms
-	return head;
-}
 
 /***
  * number of reminder data in the buffer
@@ -139,8 +126,12 @@ perf_mmap_read_head(pe_mmap_t *hdr)
 static int
 num_of_more_perf_data(pe_mmap_t *hdr)
 {
-  u64 head = perf_mmap_read_head(hdr);
-  return (head - hdr->data_tail);
+  // compute bytes available in the circular buffer
+  u64 data_head = hdr->data_head;
+  u64 data_tail = hdr->data_tail;
+  rmb();
+
+  return (data_head - data_tail);
 }
 
 /***
@@ -151,8 +142,6 @@ has_more_perf_data(pe_mmap_t *hdr)
 {
   return (num_of_more_perf_data(hdr) > 0);
 }
-
-
 
 
 //----------------------------------------------------------
@@ -169,23 +158,25 @@ perf_read(
   if (current_perf_mmap == NULL)
     return -1;
 
-  // front of the circular data buffer
-  char *data = BUFFER_FRONT(current_perf_mmap);
-
   // compute bytes available in the circular buffer
-  u64 data_head = perf_mmap_read_head(current_perf_mmap);
+  u64 data_head = current_perf_mmap->data_head;
+  u64 data_tail = current_perf_mmap->data_tail;
+  rmb();
 
-  size_t bytes_available = data_head - current_perf_mmap->data_tail;
+  size_t bytes_available = data_head - data_tail;
 
   if (bytes_wanted > bytes_available) return -1;
 
   // compute offset of tail in the circular buffer
-  unsigned long tail = BUFFER_OFFSET(current_perf_mmap->data_tail);
+  unsigned long tail = BUFFER_OFFSET(data_tail);
 
   long bytes_at_right = BUFFER_SIZE - tail;
 
   // bytes to copy to the right of tail
   size_t right = bytes_at_right < bytes_wanted ? bytes_at_right : bytes_wanted;
+
+  // front of the circular data buffer
+  char *data = BUFFER_FRONT(current_perf_mmap);
 
   // copy bytes from tail position
   memcpy(buf, data + tail, right);
@@ -197,6 +188,7 @@ perf_read(
   }
 
   // update tail after consuming bytes_wanted
+  rmb();
   current_perf_mmap->data_tail += bytes_wanted;
 
   return 0;
@@ -304,22 +296,24 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
   return mmap_data->nr;
 }
 
-
+#if 1
 //----------------------------------------------------------
 // part of the buffer to be skipped
 //----------------------------------------------------------
 static void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
-  struct perf_event_mmap_page *hdr = current_perf_mmap;
-  u64 data_head = perf_mmap_read_head(current_perf_mmap);
+  u64 data_head = current_perf_mmap->data_head;
+  u64 data_tail = current_perf_mmap->data_tail;
   rmb();
 
-  if ((hdr->data_tail + sz) > data_head)
-     sz = data_head - hdr->data_tail;
+  if ((data_tail + sz) > data_head)
+     sz = data_head - data_tail;
 
-  hdr->data_tail += sz;
+  rmb();
+  current_perf_mmap->data_tail += sz;
 }
+#endif
 
 /**
  * parse mmapped buffer and copy the values into perf_mmap_data_t mmap_info.
@@ -327,10 +321,10 @@ skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
  * returns the number of read event attributes
  */
 static int
-parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_info )
+parse_buffer(int sample_type, pe_mmap_t *current_perf_mmap,
+    struct perf_event_attr *attr,
+    perf_mmap_data_t *mmap_info )
 {
-	pe_mmap_t *current_perf_mmap = current->mmap;
-
 	int data_read = 0;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)
 	if (sample_type & PERF_SAMPLE_IDENTIFIER) {
@@ -377,7 +371,7 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 	if (sample_type & PERF_SAMPLE_READ) {
 	  // to be used by datacentric event
 	  handle_struct_read_format(current_perf_mmap,
-	      current->event->attr.read_format);
+	      attr->read_format);
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_CALLCHAIN) {
@@ -404,6 +398,7 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 #endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 	if (sample_type & PERF_SAMPLE_WEIGHT) {
+	  perf_read_u64(current_perf_mmap, &mmap_info->weight);
 	  data_read++;
 	}
 	if (sample_type & PERF_SAMPLE_DATA_SRC) {
@@ -438,10 +433,10 @@ parse_buffer(int sample_type, event_thread_t *current, perf_mmap_data_t *mmap_in
 //        false otherwise
 //----------------------------------------------------------
 int
-read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
+read_perf_buffer(pe_mmap_t *current_perf_mmap,
+    struct perf_event_attr *attr, perf_mmap_data_t *mmap_info)
 {
   pe_header_t hdr;
-  pe_mmap_t *current_perf_mmap = current->mmap;
 
   int read_successfully = perf_read_header(current_perf_mmap, &hdr);
   if (read_successfully != 0) {
@@ -455,8 +450,8 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (hdr.size <= 0) {
         return 0;
       }
-      int sample_type = current->event->attr.sample_type;
-      parse_buffer(sample_type, current, mmap_info);
+      int sample_type = attr->sample_type;
+      parse_buffer(sample_type, current_perf_mmap, attr, mmap_info);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   } else if (hdr.type == PERF_RECORD_SWITCH) {
@@ -466,7 +461,7 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       struct { uint32_t pid, tid; } pid;
       struct { uint32_t cpu, reserved; } cpu;
 
-      type = current->event->attr.sample_type;
+      type = attr->sample_type;
 
       if (type & PERF_SAMPLE_TID) {
         perf_read( current_perf_mmap, &pid, sizeof(pid)) ;
@@ -493,9 +488,9 @@ read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info)
       if (hdr.size <= 0) {
         return 0;
       }
-      //skip_perf_data(current_perf_mmap, hdr.size);
+      skip_perf_data(current_perf_mmap, hdr.size);
       TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
-    		  current->fd,
+    		  attr->config,
     		  hdr.type, hdr.misc, hdr.size);
   }
 
