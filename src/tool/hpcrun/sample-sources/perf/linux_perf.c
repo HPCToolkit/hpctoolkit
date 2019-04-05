@@ -1113,7 +1113,6 @@ perf_event_handler(
   // ----------------------------------------------------------------------------
 
   int event_index = get_fd_index(nevents, fd, event_thread);
-  int old_event_index = event_index;
 
   if (event_index < 0) {
     // signal not from perf event
@@ -1128,7 +1127,6 @@ perf_event_handler(
     return 1; // tell monitor the signal has not been handled
   }
   event_thread_t *current = &(event_thread[event_index]);
-  event_thread_t *old_current = current;
 
   if (current == NULL || current->mmap == NULL || current->fd < 0) {
     TMSG(LINUX_PERF, "Corrupt data for fd: %d, current->fd: %d", fd, current->fd);
@@ -1150,10 +1148,6 @@ perf_event_handler(
   do {
     perf_mmap_data_t mmap_data;
     memset(&mmap_data, 0, sizeof(perf_mmap_data_t));
-
-    if (old_event_index != event_index || old_current != current) {
-       assert(0);
-    }
 
     // reading info from mmapped buffer
     more_data = read_perf_buffer(current->mmap, attr, &mmap_data);
