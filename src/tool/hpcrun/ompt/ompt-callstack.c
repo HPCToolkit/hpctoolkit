@@ -415,8 +415,8 @@ ompt_elide_runtime_frame(
     if (exit0_flag) {
       for (; it <= *bt_outer; it++) {
         if ((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_frame.ptr)) {
-//        if ((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
-          exit0 = it - 1;
+          int offset = frame_in_application(frame0, exit) ? 0 : 1;
+          exit0 = it - offset;
           break;
         }
       }
