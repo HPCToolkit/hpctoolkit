@@ -342,7 +342,6 @@ ompt_elide_runtime_frame(
 
   if (frame0->exit_frame.ptr &&
       (((uint64_t) frame0->exit_frame.ptr) <
-      //  ((uint64_t) (*bt_inner)->cursor.bp))) {
         ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
     // however, exit_frame.ptr points beyond the top of stack. the final call 
@@ -360,7 +359,7 @@ ompt_elide_runtime_frame(
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-      if ((uint64_t)(it->cursor.sp) > (uint64_t)frame0->enter_frame.ptr) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->enter_frame.ptr) {
         if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
@@ -395,10 +394,6 @@ ompt_elide_runtime_frame(
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
 
-//    void *low_sp = (*bt_inner)->cursor.bp;
-//    void *high_sp = (*bt_outer)->cursor.bp;
-
-
     // if a frame marker is inside the call stack, set its flag to true
     bool exit0_flag = 
       interval_contains(low_sp, high_sp, frame0->exit_frame.ptr);
@@ -414,7 +409,7 @@ ompt_elide_runtime_frame(
     it = *bt_inner; 
     if (exit0_flag) {
       for (; it <= *bt_outer; it++) {
-        if ((uint64_t)(it->cursor.sp) > (uint64_t)(frame0->exit_frame.ptr)) {
+        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_frame.ptr)) {
           int offset = frame_in_application(frame0, exit) ? 0 : 1;
           exit0 = it - offset;
           break;
@@ -424,9 +419,7 @@ ompt_elide_runtime_frame(
 
     if (exit0_flag && omp_task_context) {
       TD_GET(omp_task_context) = omp_task_context;
-      int in_runtime = frame_in_runtime(frame0, exit);
-      int offset = in_runtime ? -1 : 0;
-      *bt_outer = exit0 + offset;
+      *bt_outer = exit0 - 1;
       break;
     }
 
@@ -460,8 +453,7 @@ ompt_elide_runtime_frame(
 
     if (reenter1_flag) {
       for (; it <= *bt_outer; it++) {
-        if ((uint64_t)(it->cursor.sp) > (uint64_t)(frame1->enter_frame.ptr)) {
-       // if ((uint64_t)(it->cursor.bp) > (uint64_t)(frame0->exit_frame.ptr)) {
+        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->enter_frame.ptr)) {
           reenter1 = it - 1;
           break;
         }
@@ -536,7 +528,6 @@ ompt_elide_runtime_frame(
       /* clip below the idle frame */
       for (it = *bt_inner; it <= *bt_outer; it++) {
         if ((uint64_t)(it->cursor.sp) >= idle_frame) {
-       // if ((uint64_t)(it->cursor.bp) >= idle_frame) {
           *bt_outer = it - 2;
               bt->bottom_frame_elided = true;
               bt->partial_unwind = true;
