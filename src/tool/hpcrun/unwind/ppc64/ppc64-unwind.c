@@ -407,7 +407,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   TMSG(UNW, "next: pc=%p, sp=%p, fp=%p", nxt_pc, nxt_sp, nxt_fp);
   if (MYDBG) { ui_dump(nxt_intvl); }
 
-  save_registers(cursor, nxt_pc, nxt_fp, nxt_sp, nxt_ra);
+  save_registers(cursor, nxt_pc - 1, nxt_fp, nxt_sp, nxt_ra);
   cursor->flags     = UnwFlg_NULL;
 
   compute_normalized_ips(cursor);

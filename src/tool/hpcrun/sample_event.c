@@ -292,7 +292,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive()) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;

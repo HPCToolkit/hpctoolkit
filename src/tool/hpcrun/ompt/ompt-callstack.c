@@ -514,7 +514,7 @@ ompt_elide_runtime_frame(
       //   (1) reset both cursors to something acceptable
       //   (2) collapse context to an <openmp idle>
       //------------------------------------------------------------------------
-      *bt_outer = *bt_inner = bt_outer_at_entry; 
+      *bt_outer = *bt_inner;
       TD_GET(omp_task_context) = 0;
       collapse_callstack(bt, &ompt_placeholders.ompt_idle);
     }
