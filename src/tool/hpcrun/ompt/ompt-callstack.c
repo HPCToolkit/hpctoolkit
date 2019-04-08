@@ -501,6 +501,25 @@ ompt_elide_runtime_frame(
   if (*bt_outer != bt_outer_at_entry) {
     bt->bottom_frame_elided = true;
     bt->partial_unwind = false;
+    if (*bt_outer < *bt_inner) {
+      //------------------------------------------------------------------------
+      // corner case: 
+      //   the thread state is not ompt_state_idle, but we are eliding the 
+      //   whole call stack anyway. 
+      // how this arises:
+      //   when a sample is delivered between when a worker thread's task state 
+      //   is set to ompt_state_work_parallel but the user outlined function 
+      //   has not yet been invoked. 
+      // considerations:
+      //   bt_outer may be out of bounds 
+      // handling:
+      //   (1) reset both cursors to something acceptable
+      //   (2) collapse context to an <openmp idle>
+      //------------------------------------------------------------------------
+      *bt_outer = *bt_inner = bt_outer_at_entry; 
+      TD_GET(omp_task_context) = 0;
+      collapse_callstack(bt, &ompt_placeholders.ompt_idle);
+    }
   }
 
   bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
