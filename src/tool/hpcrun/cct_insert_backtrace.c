@@ -217,7 +217,7 @@ cct_node_t*
 hpcrun_cct_insert_bt(cct_node_t* node,
 		     int metricId,
 		     backtrace_t* bt,
-		     cct_metric_data_t datum, void **trace_pc)
+		     cct_metric_data_t datum)
 {
   return hpcrun_cct_insert_backtrace_w_metric(node, metricId, 
 					      bt->beg + bt->len - 1,
@@ -433,8 +433,6 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
       provide_callpath_for_regions_if_needed(&bt, n);
     }
   }
-
-  // *trace_pc = bt.trace_pc;  // JMC
 
   if (bt.n_trolls != 0) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));

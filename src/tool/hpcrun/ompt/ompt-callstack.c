@@ -238,8 +238,6 @@ collapse_callstack
   bt->begin = bt->last;
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
-//  printf("*****************Collapsing to idle\n");
-//  bt->trace_pc = (bt->begin)->cursor.pc_unnorm;
 //  bt->fence = FENCE_MAIN;
 }
 
@@ -522,8 +520,6 @@ ompt_elide_runtime_frame(
     }
   }
 
-  bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
-
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
   goto return_label;
 
@@ -535,7 +531,6 @@ ompt_elide_runtime_frame(
       *bt_inner = *bt_outer;
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
-      bt->trace_pc = (*bt_inner)->cursor.pc_unnorm;
       goto return_label;
     }
 
