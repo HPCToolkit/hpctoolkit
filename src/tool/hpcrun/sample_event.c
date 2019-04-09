@@ -123,6 +123,9 @@ record_partial_unwind(
     return NULL;
   }
 
+  if (bt_last < bt_beg)
+    bt_last = bt_beg;
+  
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
