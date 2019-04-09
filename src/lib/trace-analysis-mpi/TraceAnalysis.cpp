@@ -52,6 +52,7 @@
  */
 
 #include "TraceAnalysis.hpp"
+#include <lib/trace-analysis/BinaryAnalyzer.hpp>
 #include <lib/trace-analysis/LocalTraceAnalyzer.hpp>
 #include <lib/trace-analysis/PerformanceDiagnoser.hpp>
 #include <sys/time.h>
@@ -59,6 +60,11 @@
 
 namespace TraceAnalysis {
   bool analysis(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
+    RemoteTraceAnalyzer remote;
+    
+    BinaryAnalyzer* binaryAnalyzer = new BinaryAnalyzer(prof, myRank, numRanks);
+    remote.syncBinaryAnalyzer(binaryAnalyzer, myRank, numRanks);
+    
     if (myRank == 0) {
       struct timeval time;
       gettimeofday(&time, NULL);
@@ -66,7 +72,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
     }
     
-    LocalTraceAnalyzer local(prof, dbDir, myRank, numRanks);
+    LocalTraceAnalyzer local(prof, dbDir, *binaryAnalyzer, myRank, numRanks);
     vector<TCTRootNode*> rootNodes;
     TCTClusterNode* rootCluster = local.analyze(rootNodes);
     
@@ -77,8 +83,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "\nLocal trace analysis finished, remote trace analysis started at %s.\n", timeToString(timeDiff).c_str());
     }
     
-    RemoteTraceAnalyzer remote;
-    rootCluster = remote.analyze(rootCluster, myRank, numRanks);
+    rootCluster = remote.mergeRootCluster(rootCluster, myRank, numRanks);
     
     if (myRank == 0) {
       struct timeval time;
@@ -111,6 +116,7 @@ namespace TraceAnalysis {
     if (myRank != 0)
       delete avgRoot;
     delete rootCluster;
+    delete binaryAnalyzer;
     return true;
   }
 }

@@ -61,11 +61,12 @@ using std::string;
 
 #include <lib/analysis/CallPath.hpp>
 #include "data/TCT-Node.hpp"
+#include "BinaryAnalyzer.hpp"
 
 namespace TraceAnalysis {
   class LocalTraceAnalyzer {
   public:
-    LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks);
+    LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, const BinaryAnalyzer& binaryAnalyzer, int myRank, int numRanks);
     virtual ~LocalTraceAnalyzer();
     
     TCTClusterNode* analyze(vector<TCTRootNode*>& rootNodes);

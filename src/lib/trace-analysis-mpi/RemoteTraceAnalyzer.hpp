@@ -55,6 +55,7 @@
 #define REMOTETRACEANALYZER_HPP
 
 #include <lib/trace-analysis/data/TCT-Node.hpp>
+#include <lib/trace-analysis/BinaryAnalyzer.hpp>
 
 namespace TraceAnalysis {
   class RemoteTraceAnalyzer {
@@ -62,7 +63,8 @@ namespace TraceAnalysis {
     RemoteTraceAnalyzer();
     virtual ~RemoteTraceAnalyzer();
     
-    TCTClusterNode* analyze(TCTClusterNode* rootCluster, int myRank, int numRanks);
+    void syncBinaryAnalyzer(BinaryAnalyzer*& binaryAnalyzer, int myRank, int numRanks);
+    TCTClusterNode* mergeRootCluster(TCTClusterNode* rootCluster, int myRank, int numRanks);
     void getClockDiffAndSync(const TCTRootNode*& avgRoot, const vector<TCTRootNode*>& rootNodes, int myRank, int numRanks, vector<Time>& clockDiff);
   };
 }

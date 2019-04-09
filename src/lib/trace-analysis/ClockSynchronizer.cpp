@@ -147,10 +147,8 @@ namespace TraceAnalysis {
       unordered_map<TCTID, TimestampRecord> records;
       collectTimestampRecords(records, root1, root2);
       
-      if (records.empty()) {
-        print_msg(MSG_PRIO_MAX, "WARNING: no sync call paths for clock synchronization.\n");
-        return 0;
-      }
+      if (records.empty())
+        return CLOCK_SYNC_FAILED;
       
       // For all records, calculate the clock adjustment needed to match the endTime.
       vector<ClockAdjRecord> clockAdjRecords;
@@ -168,8 +166,8 @@ namespace TraceAnalysis {
       records.clear();
       std::sort(clockAdjRecords.begin(), clockAdjRecords.end());
       
-      if (clockAdjRecords.back().minAdj - clockAdjRecords.front().maxAdj > repRoot->getSamplingPeriod() * MAX_CLOCK_SYNC_NOISE)
-        return CLOCK_SYNC_FAILED;
+      //if (clockAdjRecords.back().minAdj - clockAdjRecords.front().maxAdj > repRoot->getSamplingPeriod() * MAX_CLOCK_SYNC_NOISE)
+        //return CLOCK_SYNC_FAILED;
       
       // Find an adjustment segment [totalMinAdj, totalMaxAdj] that minimize the overall clock misalignment.
       Time totalMisalignment = 0;

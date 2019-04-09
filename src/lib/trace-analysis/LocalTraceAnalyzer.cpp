@@ -84,6 +84,8 @@ namespace TraceAnalysis {
 
   class TraceFileAnalyzerImpl {
   public:
+    const BinaryAnalyzer& binaryAnalyzer;
+    
     TraceFileReader reader;
     
     vector<TCTANode*> activeStack;
@@ -94,7 +96,8 @@ namespace TraceAnalysis {
     unordered_map<int, uint64_t> nodeStartSample;
     unordered_map<int, uint64_t> iterStartSample;
     
-    TraceFileAnalyzerImpl(CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
+    TraceFileAnalyzerImpl(const BinaryAnalyzer& binaryAnalyzer, CCTVisitor& cctVisitor, string traceFileName, Time minTime) : 
+          binaryAnalyzer(binaryAnalyzer),
           reader(cctVisitor, traceFileName, minTime),
           numSamples(0) {}
     ~TraceFileAnalyzerImpl() {}
@@ -441,19 +444,9 @@ namespace TraceAnalysis {
   
   class LocalTraceAnalyzerImpl {
   public:
-    LocalTraceAnalyzerImpl(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) : cctVisitor(prof->cct()) {
-      // Step 1: analyze binary files to get CFGs for later analysis
-      const Prof::LoadMap* loadmap = prof->loadmap();
-      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
-           i <= loadmap->size(); ++i) {
-        Prof::LoadMap::LM* lm = loadmap->lm(i);
-        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
-          print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
-          binaryAnalyzer.parse(lm->name());
-        }
-      }
-
-      // Step 2: get a list of trace files.
+    LocalTraceAnalyzerImpl(Prof::CallPath::Profile* prof, string dbDir, const BinaryAnalyzer& binaryAnalyzer, 
+        int myRank, int numRanks) : binaryAnalyzer(binaryAnalyzer), cctVisitor(prof->cct()) {
+      // Get a list of trace files.
       string path = dbDir;
       if (FileUtil::isDir(path.c_str())) {
         // ensure 'path' ends in '/'
@@ -475,15 +468,8 @@ namespace TraceAnalysis {
       }
       
       traceMinTime = prof->traceMinTime();
-
-      if (myRank == 0) {
-        struct timeval time;
-        gettimeofday(&time, NULL);
-        long timeDiff = time.tv_sec * 1000000 + time.tv_usec - getStartTime();
-        print_msg(MSG_PRIO_MAX, "\nTrace analysis init ended at %s.\n\n", timeToString(timeDiff).c_str());
-      }
-
-      // Step 3: calculate begIdx and endIdx for this rank.
+      
+      // Calculate begIdx and endIdx for this rank.
       if (numRanks > (int)traceFiles.size())
         numRanks = traceFiles.size();
       if (myRank >= numRanks) {
@@ -500,7 +486,7 @@ namespace TraceAnalysis {
       TCTClusterNode* rootCluster = NULL;
       for (int i = begIdx; i < endIdx; i++) {
         print_msg(MSG_PRIO_MAX, "Analyzing file #%d = %s.\n", i, traceFiles[i].c_str());
-        TraceFileAnalyzerImpl analyzer(cctVisitor, traceFiles[i], traceMinTime);
+        TraceFileAnalyzerImpl analyzer(binaryAnalyzer, cctVisitor, traceFiles[i], traceMinTime);
         TCTRootNode* root = analyzer.analyze();
         root->setRootID(i);
         rootNodes.push_back((TCTRootNode*)root->duplicate());
@@ -525,7 +511,9 @@ namespace TraceAnalysis {
       }
         
       for (int i = begIdx; i < endIdx; i++) 
-        if (clockDiff[i-begIdx] != 0) {
+        if (clockDiff[i-begIdx] == CLOCK_SYNC_FAILED)
+          print_msg(MSG_PRIO_MAX, "Clock sync for trace file #%d failed.\n", i, clockDiff[i-begIdx]);
+        else if (clockDiff[i-begIdx] != 0) {
           TraceFileRewriter rewriter(traceFiles[i]);
           if (!rewriter.rewriteTimestamps(clockDiff[i-begIdx])) {
             print_msg(MSG_PRIO_MAX, "ERROR: rewrite trace file #%d failed.\n", i);
@@ -538,6 +526,7 @@ namespace TraceAnalysis {
     }
     
   private:
+    const BinaryAnalyzer& binaryAnalyzer;
     CCTVisitor cctVisitor;
     Time traceMinTime;
     vector<string> traceFiles;
@@ -545,8 +534,9 @@ namespace TraceAnalysis {
     int endIdx;
   };
   
-  LocalTraceAnalyzer::LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, int myRank, int numRanks) {
-    ptr = new LocalTraceAnalyzerImpl(prof, dbDir, myRank, numRanks);
+  LocalTraceAnalyzer::LocalTraceAnalyzer(Prof::CallPath::Profile* prof, string dbDir, const BinaryAnalyzer& binaryAnalyzer, 
+      int myRank, int numRanks) {
+    ptr = new LocalTraceAnalyzerImpl(prof, dbDir, binaryAnalyzer, myRank, numRanks);
   }
 
   LocalTraceAnalyzer::~LocalTraceAnalyzer() {

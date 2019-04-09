@@ -313,7 +313,18 @@ namespace TraceAnalysis {
     }
   };
   
-  BinaryAnalyzer::BinaryAnalyzer() {
+  BinaryAnalyzer::BinaryAnalyzer(Prof::CallPath::Profile* prof, int myRank, int numRanks) {
+    if (myRank == 0) {
+      const Prof::LoadMap* loadmap = prof->loadmap();
+      for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
+           i <= loadmap->size(); ++i) {
+        Prof::LoadMap::LM* lm = loadmap->lm(i);
+        if (lm->isUsed() && lm->id() != Prof::LoadMap::LMId_NULL) {
+          print_msg(MSG_PRIO_MAX, "Analyzing executable: %s\n", lm->name().c_str());
+          parse(lm->name());
+        }
+      }
+    }
   }
 
   BinaryAnalyzer::~BinaryAnalyzer() {
@@ -335,16 +346,14 @@ namespace TraceAnalysis {
     return ret;
   }
 
-  CFGFunc* BinaryAnalyzer::findFunc(VMA vma) {
+  CFGFunc* BinaryAnalyzer::findFunc(VMA vma) const {
     if (CFGFuncMap.find(vma) == CFGFuncMap.end()) return NULL;
-    return CFGFuncMap[vma];
+    return CFGFuncMap.at(vma);
   }
 
 
-  CFGLoop* BinaryAnalyzer::findLoop(VMA vma) {
+  CFGLoop* BinaryAnalyzer::findLoop(VMA vma) const{
     if (CFGLoopMap.find(vma) == CFGLoopMap.end()) return NULL;
-    return CFGLoopMap[vma];
+    return CFGLoopMap.at(vma);
   }
-  
-  BinaryAnalyzer binaryAnalyzer;
 }

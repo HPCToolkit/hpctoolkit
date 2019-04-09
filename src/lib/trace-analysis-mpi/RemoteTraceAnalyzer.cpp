@@ -51,11 +51,11 @@
  * Created on August 5, 2018, 11:23 AM
  */
 
-#include "RemoteTraceAnalyzer.hpp"
-
-#include <lib/trace-analysis/TraceAnalysisCommon.hpp>
 #include <lib/trace-analysis/data/TCT-Serialization.hpp>
+#include <lib/trace-analysis/TraceAnalysisCommon.hpp>
 #include <lib/trace-analysis/ClockSynchronizer.hpp>
+
+#include "RemoteTraceAnalyzer.hpp"
 
 #include <sstream>
 using std::stringstream;
@@ -66,6 +66,54 @@ namespace TraceAnalysis {
   RemoteTraceAnalyzer::RemoteTraceAnalyzer() {}
 
   RemoteTraceAnalyzer::~RemoteTraceAnalyzer() {}
+  
+  string binaryAnalyzerToString(const BinaryAnalyzer* binaryAnalyzer) {
+    std::stringstream ss;
+    binary_oarchive oa(ss);
+    register_class(oa);
+    oa << binaryAnalyzer;
+    return ss.str();
+  }
+  
+  BinaryAnalyzer* stringToBinaryAnalyzer(string& str) {
+    BinaryAnalyzer* binaryAnalyzer = NULL;
+    std::stringstream ss(str);
+    binary_iarchive ia(ss);
+    register_class(ia);
+    ia >> binaryAnalyzer;
+    return binaryAnalyzer;
+  }
+  
+  void RemoteTraceAnalyzer::syncBinaryAnalyzer(BinaryAnalyzer*& binaryAnalyzer, int myRank, int numRanks) {
+    char* buf = NULL;
+    int bufSize = 0;
+
+    // Init buf and bufSize for the rootRank.
+    if (myRank == 0) {
+      string str = binaryAnalyzerToString(binaryAnalyzer);
+      bufSize = str.size();
+      buf = new char[bufSize];
+      memcpy(buf, str.c_str(), bufSize);
+    }
+    
+    // Bcast bufSize
+    MPI_Bcast(&bufSize, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // Bcast buf
+    if (myRank != 0)
+      buf = new char[bufSize];
+    MPI_Bcast(buf, bufSize, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    // Read node from buf
+    if (myRank != 0) {
+      string str(buf, bufSize);
+      delete binaryAnalyzer;
+      //BinaryAnalyzer* temp = stringToBinaryAnalyzer(str);
+      binaryAnalyzer = stringToBinaryAnalyzer(str);
+    }
+
+    delete[] buf;
+  }
   
   string rootClusterToString(const TCTClusterNode* rootCluster) {
     std::stringstream ss;
@@ -84,7 +132,7 @@ namespace TraceAnalysis {
     return rootCluster;
   }
   
-  TCTClusterNode* RemoteTraceAnalyzer::analyze(TCTClusterNode* rootCluster, int myRank, int numRanks) {
+  TCTClusterNode* RemoteTraceAnalyzer::mergeRootCluster(TCTClusterNode* rootCluster, int myRank, int numRanks) {
     // Merge rootClusters from every MPI rank using binomial tree
     int mask = 0x1;
     while (mask < numRanks) {

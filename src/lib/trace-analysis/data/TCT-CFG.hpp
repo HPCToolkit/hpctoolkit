@@ -67,12 +67,18 @@ using std::unordered_set;
 
 #include "../TraceAnalysisCommon.hpp"
 
+#include <boost/serialization/access.hpp>
+
 namespace TraceAnalysis {
-  class BinaryAnalyzer;
-  
   // For each function or loop, stores control flows among call sites and sub-loops.
   class CFGAGraph {
-    friend class BinaryAnalyzer;
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+  protected:
+    // Constructor for serialization only.
+    CFGAGraph() : vma(0), label("") {}
     
   public:
     // VMA for the function or loop
@@ -124,6 +130,13 @@ namespace TraceAnalysis {
   };
   
   class CFGLoop : public CFGAGraph {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    CFGLoop() : CFGAGraph() {}
+    
   public:
     CFGLoop(VMA vma) : CFGAGraph(vma, "loop@0x" + vmaToHexString(vma)) {}
     virtual ~CFGLoop() {}
@@ -134,6 +147,13 @@ namespace TraceAnalysis {
   };
   
   class CFGFunc : public CFGAGraph {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    CFGFunc() : CFGAGraph() {}
+    
   public:
     CFGFunc(VMA vma, string label) : CFGAGraph(vma, label) {}
     virtual ~CFGFunc() {}

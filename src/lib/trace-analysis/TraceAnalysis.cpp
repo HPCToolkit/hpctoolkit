@@ -52,6 +52,7 @@
  */
 
 #include "TraceAnalysis.hpp"
+#include "BinaryAnalyzer.hpp"
 #include "LocalTraceAnalyzer.hpp"
 #include "TraceAnalysisCommon.hpp"
 #include "DifferenceQuantifier.hpp"
@@ -68,6 +69,8 @@ using std::ofstream;
 
 namespace TraceAnalysis {
   bool analysis(Prof::CallPath::Profile* prof, string dbDir) {
+    BinaryAnalyzer binaryAnalyzer(prof, 0, 1);
+    
     {
       struct timeval time;
       gettimeofday(&time, NULL);
@@ -75,7 +78,7 @@ namespace TraceAnalysis {
       print_msg(MSG_PRIO_MAX, "Trace analysis started at 0.000s.\n\n");
     }
     
-    LocalTraceAnalyzer analyzer(prof, dbDir, 0, 1);
+    LocalTraceAnalyzer analyzer(prof, dbDir, binaryAnalyzer, 0, 1);
     vector<TCTRootNode*> rootNodes;
     TCTClusterNode* rootCluster = analyzer.analyze(rootNodes);
     rootCluster->computeAvgRep();

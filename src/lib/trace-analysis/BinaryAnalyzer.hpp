@@ -62,31 +62,41 @@ using std::string;
 #include <unordered_map>
 using std::unordered_map;
 
+#include <lib/analysis/CallPath.hpp>
+
 #include "TraceAnalysisCommon.hpp"
 #include "data/TCT-CFG.hpp"
+
+#include <boost/serialization/access.hpp>
 
 namespace TraceAnalysis {
     
   class BinaryAnalyzer {
+    friend class boost::serialization::access;
+  private:
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+    // Constructor for serialization only.
+    BinaryAnalyzer() {}
+    
   public:
-    BinaryAnalyzer();
+    BinaryAnalyzer(Prof::CallPath::Profile* prof, int myRank, int numRanks);
     virtual ~BinaryAnalyzer();
-
-    bool parse(const string& filename);
 
     // Return a pointer to CFGFunc associated with vma.
     // NULL if no such CFGFunc exist.
-    CFGFunc* findFunc(VMA vma);
+    CFGFunc* findFunc(VMA vma) const;
     
     // Return a pointer to CFGLoop associated with vma.
     // NULL if no such CFGFunc exist.
-    CFGLoop* findLoop(VMA vma);
+    CFGLoop* findLoop(VMA vma) const;
+    
   private:
     unordered_map<VMA, CFGFunc*> CFGFuncMap;
     unordered_map<VMA, CFGLoop*> CFGLoopMap;
+    
+    bool parse(const string& filename);
   };
-
-  extern BinaryAnalyzer binaryAnalyzer;
 }
 
 #endif /* BINARYANALYZER_HPP */

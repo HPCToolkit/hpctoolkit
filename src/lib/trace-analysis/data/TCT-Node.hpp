@@ -152,10 +152,7 @@ namespace TraceAnalysis {
     friend class boost::serialization::access;
   private:
     template<class Archive>
-    void save(Archive & ar, const unsigned int version) const;
-    template<class Archive>
-    void load(Archive & ar, const unsigned int version);
-    BOOST_SERIALIZATION_SPLIT_MEMBER();
+    void serialize(Archive & ar, const unsigned int version);
   protected:
     // Constructor for serialization only.
     TCTANode(NodeType type) : type(type), id(), cfgGraph(NULL), ra(0), name(), depth(0), weight(0), retCount(0), 

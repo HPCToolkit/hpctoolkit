@@ -117,6 +117,9 @@ namespace TraceAnalysis {
   // ***************************************************************************
   template<class Archive>
   void register_class(Archive &ar) {
+    ar.template register_type<CFGLoop>();
+    ar.template register_type<CFGFunc>();
+    
     ar.template register_type<TCTTraceTime>();
     ar.template register_type<TCTProfileTime>();
     
@@ -135,6 +138,37 @@ namespace TraceAnalysis {
     template void register_class<binary_oarchive>(binary_oarchive& ar);
     template void register_class<binary_iarchive>(binary_iarchive& ar);
   #endif
+
+  // ***************************************************************************
+  // Implementation of serialization functions in TCT-CFG.hpp
+  // ***************************************************************************    
+  template<class Archive>
+  void CFGAGraph::serialize(Archive & ar, const unsigned int version) {
+    ar & const_cast<VMA&>(vma) & const_cast<string&>(label);
+    ar & successorMap;
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(CFGAGraph)
+    
+  template<class Archive>
+  void CFGLoop::serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<CFGAGraph>(*this);
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(CFGLoop)
+  
+  template<class Archive>
+  void CFGFunc::serialize(Archive & ar, const unsigned int version) {
+    ar & boost::serialization::base_object<CFGAGraph>(*this);
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(CFGFunc)
+  
+  // ***************************************************************************
+  // Implementation of serialization functions in BinaryAnalyzer.hpp
+  // ***************************************************************************    
+  template<class Archive>
+  void BinaryAnalyzer::serialize(Archive & ar, const unsigned int version) {
+    ar & CFGFuncMap & CFGLoopMap;
+  }
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(BinaryAnalyzer)
   
   // ***************************************************************************
   // Implementation of serialization functions in TCT-Time.hpp and TCT-Time-Internal.hpp
@@ -197,43 +231,16 @@ namespace TraceAnalysis {
     ar & const_cast<int&>(id) & const_cast<int&>(procID);
   }
   GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTID)
-  
+
   template<class Archive>
-  void TCTANode::save(Archive& ar, const unsigned int version) const {
+  void TCTANode::serialize(Archive& ar, const unsigned int version) {
     ar & const_cast<TCTID&>(id) & const_cast<VMA&>(ra);
     ar & name & depth & weight & retCount;
     ar & semanticLabel & derivedLabel;
     ar & time & diffScore & plm;
-    
-    // Special handling for cfgGraph
-    bool isCfgNull = (cfgGraph == NULL);
-    ar & isCfgNull;
-    if (!isCfgNull) {
-      bool isFunc = (dynamic_cast<CFGLoop* const>(cfgGraph) == NULL);
-      ar & isFunc;
-      ar & cfgGraph->vma;
-    }
+    ar & const_cast<CFGAGraph*&>(cfgGraph);
   }
-  template<class Archive>
-  void TCTANode::load(Archive& ar, const unsigned int version) {
-    ar & const_cast<TCTID&>(id) & const_cast<VMA&>(ra);
-    ar & name & depth & weight & retCount;
-    ar & semanticLabel & derivedLabel;
-    ar & time & diffScore & plm;
-    
-    // Special handling for cfgGraph
-    bool isCfgNull;
-    ar & isCfgNull;
-    // If isCfgNull == true, cfgGraph has been initialized to NULL, no further actions.
-    if (!isCfgNull) {
-      bool isFunc;
-      ar & isFunc;
-      VMA vma;
-      ar & vma;
-      const_cast<CFGAGraph*&>(cfgGraph) = isFunc ? (CFGAGraph*)binaryAnalyzer.findFunc(vma) : (CFGAGraph*)binaryAnalyzer.findLoop(vma);
-    }
-  }
-  GENERATE_SAVE_LOAD_TEMPLATE_INSTANTIATION(TCTANode)
+  GENERATE_SERIALIZE_TEMPLATE_INSTANTIATION(TCTANode)
   
   template<class Archive>
   void TCTACFGNode::Edge::serialize(Archive& ar, const unsigned int version) {
