@@ -111,7 +111,6 @@
 #include <utilities/arch/mcontext.h>
 #endif
 
-#define NUM_DATA_METRICS 2
 
 
 /******************************************************************************
@@ -186,8 +185,12 @@ static char *loc_name[4] = {
 
 static int datainfo_size = sizeof(struct datatree_info_s);
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC  
 static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
+#endif
+
+static int metric_variable_size = -1;
 
 
 /******************************************************************************
@@ -226,16 +229,9 @@ is_initialized()
 }
 
 
-/**
- * @return true if the module was initialized, and active
- */
-static int
-is_active()
-{
-  return datacentric_get_metric_addr_end() >= 0;
-}
 
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC  
 static const unsigned int MAX_CHAR_FORMULA = 32;
 
 /**
@@ -266,6 +262,8 @@ metric_initialize()
   metric_end->formula   = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(metric_end->formula, "max($%d)", addr_end_metric_id);
 }
+#endif
+
 
 /**
  * initialize datacentric module
@@ -306,7 +304,13 @@ datacentric_initialize(void)
     srandom(seed);
   }
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC  
   metric_initialize();
+#endif
+  metric_variable_size = hpcrun_new_metric();
+
+  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, true, false );
 
   overrides_status = OVERRIDES_INITIALIZED;
 
@@ -422,7 +426,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
   info_ptr->right     = NULL;
   info_ptr->status    = DATATREE_INFO_UNHANDLED;
 
-  if (is_active()) {
+  if (is_initialized() && datacentric_is_active()) {
     thread_data_t *td = hpcrun_get_thread_data();
     if (!td || !td->core_profile_trace_data.epoch) {
       // if we are called too early and epoch is not set,
@@ -431,17 +435,18 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
       return;
     }
 
-    int metric_start_addr = datacentric_get_metric_addr_start();
+    int metric = metric_variable_size;
 
     // record the call path to this allocation, and the address
-    sample_val_t smpl = hpcrun_sample_callpath(uc, metric_start_addr,
-                                               (hpcrun_metricVal_t) {.p=appl_ptr},
+    sample_val_t smpl = hpcrun_sample_callpath(uc, metric,
+                                               (hpcrun_metricVal_t) {.i=bytes},
                                                0, 1, NULL);
 
     // update the number of metric counter
-    metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric_start_addr]);
+    metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric]);
     info_aux->num_samples++;
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC  
     // record the end address of this allocation
     metric_set_t *mset = hpcrun_reify_metric_set(smpl.sample_node);
     hpcrun_metricVal_t value;
@@ -453,6 +458,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     // update the number of metric counter
     info_aux = &(td->core_profile_trace_data.perf_event_info[metric_end_addr]);
     info_aux->num_samples++;
+#endif
 
     info_ptr->context = smpl.sample_node;
     loc_str = loc_name[loc];
@@ -496,7 +502,7 @@ datacentric_malloc_helper(const char *name, size_t bytes, size_t align,
   // do the real malloc, aligned or not.  note: we can't track malloc
   // inside dlopen, that would lead to deadlock.
   active = 1;
-  if (! (is_initialized() && is_active())) {
+  if (! (is_initialized() && datacentric_is_active()) ) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;
@@ -781,7 +787,7 @@ MONITOR_EXT_WRAP_NAME(realloc)(void *ptr, size_t bytes)
   // but if there used to be a header, then must slide user data.
   // again, can't track malloc inside dlopen.
   active = 1;
-  if (! (is_initialized() && is_active())) {
+  if (! (is_initialized() && datacentric_is_active())) {
     active = 0;
   } else if (TD_GET(inside_dlfcn)) {
     active = 0;
@@ -835,6 +841,13 @@ finish:
 // Exported functions
 /////////////////////////////////////////////////////////
 
+int
+datacentric_get_metric_variable_size()
+{
+  return metric_variable_size;
+}
+
+#if SUPPORT_FOR_ADDRESS_CENTRIC  
 /***
  * @return the metric id of allocation
  */
@@ -849,4 +862,4 @@ datacentric_get_metric_addr_start()
 {
   return addr_start_metric_id;
 }
-
+#endif
