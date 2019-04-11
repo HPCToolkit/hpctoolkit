@@ -88,6 +88,7 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/module-ignore-map.h>
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/safe-sampling.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -395,6 +396,10 @@ runtime_activities[] = {
 void
 cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+  hpcrun_safe_enter();
+
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
@@ -551,6 +556,9 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     default:
       break;
   }
+
+  hpcrun_safe_exit();
+  td->overhead--;
 }
 
 
