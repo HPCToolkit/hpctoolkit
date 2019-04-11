@@ -86,6 +86,8 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include <boost/atomic.hpp>
+
 #include <CFG.h>
 #include <CodeObject.h>
 #include <CodeSource.h>
@@ -328,8 +330,8 @@ public:
   double cost;
   bool first_proc;
   bool last_proc;
-  bool is_done;
   bool promote;
+  boost::atomic <bool> is_done;
 
   WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last, double cst)
   {
@@ -338,8 +340,8 @@ public:
     cost = cst;
     first_proc = first;
     last_proc = last;
-    is_done = false;
     promote = false;
+    is_done.store(false);
   }
 };
 
@@ -736,7 +738,7 @@ doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
     doFunctionList(witem->env, finfo, ginfo, fullGaps);
   }
 
-  witem->is_done = true;
+  witem->is_done.store(true);
 }
 
 //----------------------------------------------------------------------
@@ -828,7 +830,7 @@ static void
 printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
 	      ostream * gapsFile, string & gaps_filenm)
 {
-  while (num_done < workList.size() && workList[num_done]->is_done) {
+  while (num_done < workList.size() && workList[num_done]->is_done.load()) {
     WorkItem * witem = workList[num_done];
     FileInfo * finfo = witem->finfo;
     GroupInfo * ginfo = witem->ginfo;
