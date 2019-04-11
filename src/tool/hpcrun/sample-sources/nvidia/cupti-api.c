@@ -323,7 +323,6 @@ cupti_correlation_callback_cuda
   td->overhead--;
 
   // Compress callpath
-  node = hpcrun_cct_parent(node);
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
   load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
 
