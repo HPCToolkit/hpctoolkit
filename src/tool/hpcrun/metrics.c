@@ -223,7 +223,7 @@ int
 hpcrun_get_num_kind_metrics()
 {
   if (!all_kinds_done) {
-    hpcrun_metric_data_finalize();
+    hpcrun_metrics_data_finalize();
   }
 
   return num_kind_metrics;
