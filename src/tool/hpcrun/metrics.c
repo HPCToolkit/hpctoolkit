@@ -123,7 +123,8 @@ struct kind_info_t {
 
 static kind_info_t *first_kind = NULL;
 static kind_info_t **next_kind = &first_kind;
-static bool all_kinds_done = false;
+typedef enum { KIND_UNINITIALIZED, KIND_INITIALIZING, KIND_INITIALIZED } kind_state_t;
+static _Atomic(kind_state_t) kind_state = ATOMIC_VAR_INIT(KIND_UNINITIALIZED);
 static int num_kind_metrics;
 static struct dmap {
   metric_desc_t *desc;
@@ -180,7 +181,7 @@ check(int ans)
 void
 hpcrun_metric_data_dump()
 {
-  if (!all_kinds_done) hpcrun_get_num_kind_metrics();
+  hpcrun_metrics_data_finalize();
 
   for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
     hpcrun_get_num_metrics(kind);
@@ -203,18 +204,25 @@ hpcrun_metric_data_dump()
 void
 hpcrun_metrics_data_finalize()
 {
-  metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
+  if (atomic_load(&kind_state) != KIND_INITIALIZED) {
+    kind_state_t old_state = KIND_UNINITIALIZED;
+    if (atomic_compare_exchange_strong(&kind_state, &old_state, KIND_INITIALIZING)) {
+      metric_data = hpcrun_malloc(num_kind_metrics * sizeof(struct dmap));
 
-  for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
-    hpcrun_get_num_metrics(kind);
-    for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
-      metric_data[l->g_id].desc = &l->val;
-      metric_data[l->g_id].id = l->id;
-      metric_data[l->g_id].kind = kind;
-      metric_data[l->g_id].proc = l->proc;
+      for (kind_info_t *kind = first_kind; kind != NULL; kind = kind->link) {
+        hpcrun_get_num_metrics(kind);
+        for(metric_desc_list_t* l = kind->metric_data; l; l = l->next) {
+          metric_data[l->g_id].desc = &l->val;
+          metric_data[l->g_id].id = l->id;
+          metric_data[l->g_id].kind = kind;
+          metric_data[l->g_id].proc = l->proc;
+        }
+      }
+      atomic_store(&kind_state, KIND_INITIALIZED);
+    } else {
+      while (atomic_load(&kind_state) != KIND_INITIALIZED);
     }
   }
-  all_kinds_done = true;
 }
 
 // Note: (johnmc) needs double-checked locking if all_kinds_done not 
@@ -222,9 +230,7 @@ hpcrun_metrics_data_finalize()
 int
 hpcrun_get_num_kind_metrics()
 {
-  if (!all_kinds_done) {
-    hpcrun_metrics_data_finalize();
-  }
+  hpcrun_metrics_data_finalize();
 
   return num_kind_metrics;
 }
