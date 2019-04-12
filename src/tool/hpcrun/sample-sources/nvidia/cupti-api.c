@@ -483,6 +483,7 @@ cupti_subscriber_callback
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
+            cupti_pc_sampling_config(cb_info->context, cupti_pc_sampling_frequency_get());
             cupti_worker_activity_apply(cupti_activity_handle);
           }
           if (cb_info->callbackSite == CUPTI_API_ENTER) {
@@ -578,6 +579,7 @@ cupti_subscriber_callback
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000) {  
+            cupti_pc_sampling_config(cb_info->context, cupti_pc_sampling_frequency_get());
             cupti_worker_activity_apply(cupti_activity_handle);
           }
           if (cb_info->callbackSite == CUPTI_API_ENTER) {
@@ -865,13 +867,13 @@ void
 cupti_pc_sampling_config
 (
   CUcontext context,
-  CUpti_ActivityPCSamplingPeriod period
+  int period
 )
 {
   CUpti_ActivityPCSamplingConfig config;
-  config.samplingPeriod = period;
-  config.size = 0;
-  config.samplingPeriod2 = 0;
+  config.samplingPeriod = 0;
+  config.samplingPeriod2 = period;
+  config.size = sizeof(config);
   HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 }
 

@@ -322,7 +322,8 @@ static int info_sm_full_samples_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
 
-static int pc_sampling_frequency = 1;
+static const long pc_sampling_frequency_default = 20;
+static long pc_sampling_frequency = 0;
 
 typedef enum {
   NVIDIA_UNINITIALIZED,
@@ -762,7 +763,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
-  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name, &pc_sampling_frequency, 1);
+  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
+    &pc_sampling_frequency, pc_sampling_frequency_default);
   if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
     cupti_metrics_init();
   }
@@ -771,7 +773,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  // Only init nvidia activities once
+  // This method is called by multiple threads, but we only init nvidia activities once
   if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING) ||
     hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     if (atomic_load(&nvidia_state) != NVIDIA_INITIALIZED) {

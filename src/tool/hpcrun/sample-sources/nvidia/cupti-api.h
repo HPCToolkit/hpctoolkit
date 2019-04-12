@@ -171,7 +171,7 @@ extern void
 cupti_pc_sampling_config
 (
   CUcontext context,
-  CUpti_ActivityPCSamplingPeriod period
+  int period
 );
 
 
