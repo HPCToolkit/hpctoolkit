@@ -322,17 +322,11 @@ static int info_sm_full_samples_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
 
-static const long pc_sampling_frequency_default = 20;
-static long pc_sampling_frequency = 0;
-
-typedef enum {
-  NVIDIA_UNINITIALIZED,
-  NVIDIA_INITIALIZING,
-  NVIDIA_INITIALIZED
-} nvidia_state_t;
-
-static _Atomic(nvidia_state_t) nvidia_state = ATOMIC_VAR_INIT(NVIDIA_UNINITIALIZED);
-
+static const long pc_sampling_frequency_default = 10;
+// -1: disabled, 5-31: 2^frequency
+static long pc_sampling_frequency = -1;
+static int cupti_enabled_activities = 0;
+// event name, which can be either nvidia-ompt or nvidia-cuda
 static char nvidia_name[128];
 
 //******************************************************************************
@@ -402,6 +396,17 @@ runtime_activities[] = {
   CUPTI_ACTIVITY_KIND_RUNTIME,
   CUPTI_ACTIVITY_KIND_INVALID
 };
+
+
+typedef enum cupti_activities_flags {
+  CUPTI_DATA_MOTION_EXPLICIT = 1,
+  CUPTI_DATA_MOTION_IMPLICIT = 2,
+  CUPTI_KERNEL_INVOCATION    = 4,
+  CUPTI_KERNEL_EXECUTION     = 8,
+  CUPTI_DRIVER               = 16,
+  CUPTI_RUNTIME	             = 32,
+  CUPTI_OVERHEAD	           = 64
+} cupti_activities_flags_t;
 
 
 void
@@ -577,6 +582,41 @@ int
 cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
+}
+
+
+void
+cupti_enable_activities
+(
+ CUcontext context
+)
+{
+  PRINT("Enter cupti_enable_activities\n");
+
+  #define FORALL_ACTIVITIES(macro, context)                                      \
+    macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
+    macro(context, CUPTI_DATA_MOTION_IMPLICIT, data_motion_explicit_activities)  \
+    macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
+    macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
+    macro(context, CUPTI_DRIVER, driver_activities)                              \
+    macro(context, CUPTI_RUNTIME, runtime_activities)                            \
+    macro(context, CUPTI_OVERHEAD, overhead_activities)
+
+  #define CUPTI_SET_ACTIVITIES(context, activity_kind, activity)  \
+    if (cupti_enabled_activities & activity_kind) {               \
+      cupti_monitoring_set(context, activity, true);              \
+    }
+
+  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
+
+  if (pc_sampling_frequency != -1) {
+    PRINT("pc sampling enabled\n");
+    cupti_pc_sampling_enable(context, pc_sampling_frequency);
+  }
+
+  cupti_correlation_enable(context);
+
+  PRINT("Exit cupti_enable_activities\n");
 }
 
 /******************************************************************************
@@ -767,55 +807,37 @@ METHOD_FN(process_event_list, int lush_metrics)
     &pc_sampling_frequency, pc_sampling_frequency_default);
   if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
     cupti_metrics_init();
+    
+    // Register hpcrun callbacks
+    device_finalizer_flush.fn = cupti_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+    device_finalizer_shutdown.fn = cupti_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    // Register cupti callbacks
+    cupti_trace_init();
+    cupti_callbacks_subscribe();
+    cupti_trace_start();
+
+    // Set enabling activities
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+    if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
+      pc_sampling_frequency = -1;
+    }
+  } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
+    ompt_pc_sampling_enable();
   }
 }
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-  // This method is called by multiple threads, but we only init nvidia activities once
-  if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING) ||
-    hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
-    if (atomic_load(&nvidia_state) != NVIDIA_INITIALIZED) {
-      nvidia_state_t old_state = NVIDIA_UNINITIALIZED;
-      if (atomic_compare_exchange_strong(&nvidia_state, &old_state, NVIDIA_INITIALIZING)) {
-        if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
-          ompt_pc_sampling_enable();
-        } else {
-          // Register device finailzers
-          device_finalizer_flush.fn = cupti_device_flush;
-          device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
-          device_finalizer_shutdown.fn = cupti_device_shutdown;
-          device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-          cupti_monitoring_set(driver_activities, true);
-
-          cupti_monitoring_set(runtime_activities, true);
-
-          if (hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
-            cupti_pc_sampling_enable();
-          }
-
-          cupti_monitoring_set(kernel_invocation_activities, true);
-
-          cupti_monitoring_set(kernel_execution_activities, true);
-
-          cupti_monitoring_set(data_motion_explicit_activities, true);
-
-          cupti_trace_init();
-
-          cupti_callbacks_subscribe();
-
-          cupti_correlation_enable();
-
-          cupti_trace_start();
-        }
-        atomic_store(&nvidia_state, NVIDIA_INITIALIZED);
-      } else {
-        while (atomic_load(&nvidia_state) != NVIDIA_INITIALIZED) {}
-      }
-    }
-  }
 }
 
 static void

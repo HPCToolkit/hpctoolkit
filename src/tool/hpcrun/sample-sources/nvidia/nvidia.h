@@ -9,4 +9,6 @@ extern void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct
 
 extern int cupti_pc_sampling_frequency_get();
 
+extern void cupti_enable_activities(CUcontext context);
+
 #endif

@@ -446,6 +446,7 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cubin-id-map.c               \
 								 sample-sources/nvidia/cubin-md5-map.c              \
 								 sample-sources/nvidia/cubin-symbols.c              \
+								 sample-sources/nvidia/cuda-api.c                   \
 								 sample-sources/nvidia/cupti-analysis.c             \
 								 sample-sources/nvidia/cupti-api.c                  \
 								 sample-sources/nvidia/cupti-correlation-id-map.c   \

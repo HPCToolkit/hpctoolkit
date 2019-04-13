@@ -763,7 +763,7 @@ hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
   macro(ompt_get_record_native) \
   macro(ompt_get_record_abstract) \
   macro(ompt_advance_buffer_cursor) \
-  macro(ompt_set_pc_sampling_frequency) 
+  macro(ompt_set_pc_sampling) 
 
 #define ompt_decl_name(fn) \
   fn ## _t  fn;
@@ -822,7 +822,6 @@ void
 ompt_pc_sampling_enable()
 {
   ompt_pc_sampling_enabled = true;
-  cupti_pc_sampling_enable();
 }
 
 
@@ -830,7 +829,6 @@ void
 ompt_pc_sampling_disable()
 {
   ompt_pc_sampling_enabled = false;
-  cupti_pc_sampling_disable();
 }
 
 
@@ -850,6 +848,8 @@ ompt_trace_configure(ompt_device_t *device)
     flags |= ompt_native_kernel_execution;
 
     flags |= ompt_native_data_motion_explicit;
+  } else {
+    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
   }
 
   // indicate desired monitoring
@@ -857,8 +857,6 @@ ompt_trace_configure(ompt_device_t *device)
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
-
-  ompt_set_pc_sampling_frequency(device, cupti_pc_sampling_frequency_get());
 }
 
 

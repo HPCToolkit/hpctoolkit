@@ -76,6 +76,7 @@ typedef void (*cupti_error_callback_t)
 
 typedef CUptiResult (*cupti_activity_enable_t)
 (
+ CUcontext context,
  CUpti_ActivityKind activity
 );
 
@@ -366,7 +367,7 @@ cupti_subscriber_callback
  void *userdata,
  CUpti_CallbackDomain domain,
  CUpti_CallbackId cb_id,
- const CUpti_CallbackData *cb_info
+ const void *cb_info
 )
 {
   cupti_stop_flag_set();
@@ -378,14 +379,16 @@ cupti_subscriber_callback
       PRINT("loaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
-    }
-    if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
+    } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) rd->resourceDescriptor;
       PRINT("unloaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+    } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
+      cupti_enable_activities(rd->context);
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
+    const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     switch (cb_id) {
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -483,17 +486,16 @@ cupti_subscriber_callback
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz ||
               cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
-            cupti_pc_sampling_config(cb_info->context, cupti_pc_sampling_frequency_get());
             cupti_worker_activity_apply(cupti_activity_handle);
           }
-          if (cb_info->callbackSite == CUPTI_API_ENTER) {
+          if (cd->callbackSite == CUPTI_API_ENTER) {
             uint64_t correlation_id;
             cupti_correlation_callback(&correlation_id);
             HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
               (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
             PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
           }
-          if (cb_info->callbackSite == CUPTI_API_EXIT) {
+          if (cd->callbackSite == CUPTI_API_EXIT) {
             uint64_t correlation_id;
             HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
               (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
@@ -505,6 +507,7 @@ cupti_subscriber_callback
         break;
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
+    const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
@@ -579,16 +582,15 @@ cupti_subscriber_callback
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000 ||
               cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000) {  
-            cupti_pc_sampling_config(cb_info->context, cupti_pc_sampling_frequency_get());
             cupti_worker_activity_apply(cupti_activity_handle);
           }
-          if (cb_info->callbackSite == CUPTI_API_ENTER) {
+          if (cd->callbackSite == CUPTI_API_ENTER) {
             uint64_t correlation_id = 0;
             cupti_correlation_callback(&correlation_id);
             PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
             HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
           }
-          if (cb_info->callbackSite == CUPTI_API_EXIT) {
+          if (cd->callbackSite == CUPTI_API_EXIT) {
             uint64_t correlation_id = 0;
             HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
             PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
@@ -691,6 +693,7 @@ cupti_buffer_completion_callback
 cupti_set_status_t
 cupti_monitoring_set
 (
+ CUcontext context,
  const CUpti_ActivityKind activity_kinds[],
  bool enable
 )
@@ -699,12 +702,12 @@ cupti_monitoring_set
   int failed = 0;
   int succeeded = 0;
   cupti_activity_enable_t action =
-    (enable ? cuptiActivityEnable: cuptiActivityDisable);
+    (enable ? cuptiActivityEnableContext: cuptiActivityDisableContext);
   int i = 0;
   for (;;) {
     CUpti_ActivityKind activity_kind = activity_kinds[i++];
     if (activity_kind == CUPTI_ACTIVITY_KIND_INVALID) break;
-    bool succ = action(activity_kind) == CUPTI_SUCCESS;
+    bool succ = action(context, activity_kind) == CUPTI_SUCCESS;
     if (succ) {
       if (enable) {
         PRINT("activity %d enable succeeded\n", activity_kind);
@@ -838,11 +841,18 @@ cupti_correlation_disable
 void
 cupti_pc_sampling_enable
 (
+ CUcontext context,
+ int frequency
 )
 {
   PRINT("enter cupti_pc_sampling_enable\n");
   cupti_pc_sampling_enabled = true;
-  HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+  CUpti_ActivityPCSamplingConfig config;
+  config.samplingPeriod = 0;
+  config.samplingPeriod2 = frequency;
+  config.size = sizeof(config);
+  HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+  HPCRUN_CUPTI_CALL(cuptiActivityEnableContext, (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
   PRINT("exit cupti_pc_sampling_enable\n");
 }
 
@@ -850,31 +860,13 @@ cupti_pc_sampling_enable
 void
 cupti_pc_sampling_disable
 (
+ CUcontext context
 )
 {
   if (cupti_pc_sampling_enabled) {
-    HPCRUN_CUPTI_CALL(cuptiActivityDisable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+    HPCRUN_CUPTI_CALL(cuptiActivityDisableContext, (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
     cupti_pc_sampling_enabled = false;
   }
-}
-
-
-//******************************************************************************
-// pc sampling configs
-//******************************************************************************
-
-void
-cupti_pc_sampling_config
-(
-  CUcontext context,
-  int period
-)
-{
-  CUpti_ActivityPCSamplingConfig config;
-  config.samplingPeriod = 0;
-  config.samplingPeriod2 = period;
-  config.size = sizeof(config);
-  HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 }
 
 
@@ -899,7 +891,6 @@ cupti_device_process
 )
 {
   PRINT("Device id %d\n", device->id);
-  cupti_device_id_map_insert(device->id, device);
 }
 
 
@@ -1123,6 +1114,9 @@ cupti_kernel_process
 {
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
+    if (cupti_device_id_map_lookup(activity->deviceId) == NULL) {
+      cupti_device_id_map_insert(activity->deviceId);
+    }
     cupti_correlation_id_map_kernel_update(activity->correlationId,
       activity->deviceId, activity->start, activity->end);
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
@@ -1134,6 +1128,7 @@ cupti_kernel_process
       // do not delete it because it shares external_id with activity samples
     }
   }
+  PRINT("Kernel execution deviceId %u\n", activity->deviceId);
   PRINT("Kernel execution CorrelationId %u\n", activity->correlationId);
 }
 
@@ -1237,11 +1232,6 @@ cupti_activity_process
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     cupti_sample_process(activity);
-    break;
-
-  case CUPTI_ACTIVITY_KIND_DEVICE:
-    cupti_device_process(
-      (CUpti_ActivityDevice2 *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:

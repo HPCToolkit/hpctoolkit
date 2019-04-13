@@ -87,18 +87,22 @@ cupti_correlation_disable
 extern void
 cupti_pc_sampling_enable
 (
+ CUcontext context,
+ int frequency 
 );
 
 
 extern void
 cupti_pc_sampling_disable
 (
+ CUcontext context
 );
 
 
 extern cupti_set_status_t 
 cupti_monitoring_set
 (
+ CUcontext context,
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
 );
@@ -164,14 +168,6 @@ cupti_buffer_completion_callback
  uint8_t *buffer,
  size_t size,
  size_t validSize
-);
-
-
-extern void
-cupti_pc_sampling_config
-(
-  CUcontext context,
-  int period
 );
 
 

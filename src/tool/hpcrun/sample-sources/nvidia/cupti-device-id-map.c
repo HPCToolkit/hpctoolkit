@@ -12,6 +12,7 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+#include "cuda-api.h"
 #include "cupti-device-id-map.h"
 
 /******************************************************************************
@@ -20,7 +21,7 @@
 
 struct cupti_device_id_map_entry_s {
   uint32_t device_id;
-  cupti_device_property_t device;
+  cupti_device_property_t property;
   struct cupti_device_id_map_entry_s *left;
   struct cupti_device_id_map_entry_s *right;
 }; 
@@ -45,37 +46,6 @@ cupti_device_id_map_entry_new(uint32_t device_id)
   e->right = NULL;
 
   return e;
-}
-
-
-static void
-cupti_device_id_map_entry_assign(cupti_device_id_map_entry_t *entry, CUpti_ActivityDevice2 *device)
-{
-  entry->device.globalMemoryBandwidth = device->globalMemoryBandwidth;
-  entry->device.globalMemorySize = device->globalMemorySize;
-  entry->device.constantMemorySize = device->constantMemorySize;
-  entry->device.l2CacheSize = device->l2CacheSize;
-  entry->device.numThreadsPerWarp = device->numThreadsPerWarp;
-  entry->device.coreClockRate = device->coreClockRate;
-  entry->device.numMemcpyEngines = device->numMemcpyEngines;
-  entry->device.numMultiprocessors = device->numMultiprocessors;
-  entry->device.maxIPC = device->maxIPC;
-  entry->device.maxWarpsPerMultiprocessor = device->maxWarpsPerMultiprocessor;
-  entry->device.maxBlocksPerMultiprocessor = device->maxBlocksPerMultiprocessor;
-  entry->device.maxSharedMemoryPerMultiprocessor = device->maxSharedMemoryPerMultiprocessor;
-  entry->device.maxRegistersPerMultiprocessor = device->maxRegistersPerMultiprocessor;
-  entry->device.maxRegistersPerBlock = device->maxRegistersPerBlock;
-  entry->device.maxSharedMemoryPerBlock = device->maxSharedMemoryPerBlock;
-  entry->device.maxThreadsPerBlock = device->maxThreadsPerBlock;
-  entry->device.maxBlockDimX = device->maxBlockDimX;
-  entry->device.maxBlockDimY = device->maxBlockDimY;
-  entry->device.maxBlockDimZ = device->maxBlockDimZ;
-  entry->device.maxGridDimX = device->maxGridDimX;
-  entry->device.maxGridDimY = device->maxGridDimY;
-  entry->device.maxGridDimZ = device->maxGridDimZ;
-  entry->device.computeCapabilityMajor = device->computeCapabilityMajor;
-  entry->device.computeCapabilityMinor = device->computeCapabilityMinor;
-  entry->device.eccEnabled = device->eccEnabled;
 }
 
 
@@ -123,10 +93,10 @@ cupti_device_id_map_lookup(uint32_t id)
 
 
 void
-cupti_device_id_map_insert(uint32_t device_id, CUpti_ActivityDevice2 *device)
+cupti_device_id_map_insert(uint32_t device_id)
 {
   cupti_device_id_map_entry_t *entry = cupti_device_id_map_entry_new(device_id);
-  cupti_device_id_map_entry_assign(entry, device);
+  cuda_device_property_query(device_id, &entry->property); 
 
   TMSG(DEFER_CTXT, "device_id map insert: id=0x%lx (record %p)", device_id, entry);
 
@@ -173,7 +143,7 @@ cupti_device_id_map_entry_device_property_get
  cupti_device_id_map_entry_t *entry
 )
 {
-  return &entry->device;
+  return &entry->property;
 }
 
 
