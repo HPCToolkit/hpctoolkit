@@ -47,9 +47,15 @@
 #ifndef __DATA_OVERRIDES_H
 #define __DATA_OVERRIDES_H
 
+#define SUPPORT_FOR_ADDRESS_CENTRIC  0
+
+int datacentric_get_metric_variable_size();
+
+
+#if SUPPORT_FOR_ADDRESS_CENTRIC
 int datacentric_get_metric_addr_end();
 int datacentric_get_metric_addr_start();
-
+#endif
 
 #endif
 
