@@ -3171,10 +3171,16 @@ else
       AC_COMPILE_IFELSE([
       AC_LANG_SOURCE([[
 #include <linux/perf_event.h>
+#include <linux/version.h>
+
 static struct perf_event_attr attr;
 void check_kernel()
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   attr.context_switch = 1;
+#else
+#error "kernel is older than 4.3"
+#endif
 }
 ]])], [kernel_blocking=yes], [kernel_blocking=no])
     kernel_blocking_mesg="$kernel_blocking"
