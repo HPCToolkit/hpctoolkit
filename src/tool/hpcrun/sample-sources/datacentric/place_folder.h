@@ -60,10 +60,10 @@
 #define FUNCTION_DATA_FOLDER(start,end)      FUNCTION_FOLDER(range_ ## start ## _ ## end)
 
 
-#define POINTER_TO_FUNCTION
-
 #if defined(__PPC64__) || defined(HOST_CPU_IA64)
 #define POINTER_TO_FUNCTION *(void**)
+#else
+#define POINTER_TO_FUNCTION
 #endif
 
 /********************************
