@@ -821,6 +821,7 @@ cupti_correlation_enable
 {
   PRINT("enter cupti_correlation_enable\n");
   cupti_correlation_enabled = true;
+  // For unknown reasons, external correlation ids do not return using cuptiActivityEnableContext
   HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
   PRINT("exit cupti_correlation_enable\n");
 }
