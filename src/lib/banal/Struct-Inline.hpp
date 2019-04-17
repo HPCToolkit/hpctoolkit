@@ -296,9 +296,10 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
+  bool  irred;
 
   LoopInfo(TreeNode *nd, FLPSeqn &pth, const std::string &nm, VMA vma,
-	   long file, long base, long line)
+	   long file, long base, long line, bool ir = false)
   {
     node = nd;
     path = pth;
@@ -307,6 +308,7 @@ public:
     file_index = file;
     base_index = base;
     line_num = line;
+    irred = ir;
   }
 
   // delete the subtree 'node' in ~TreeNode(), not here.
