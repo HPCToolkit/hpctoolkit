@@ -379,6 +379,7 @@ parse_record_buffer(u64 data_head, u64 *data_tail,
 	return data_read;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
 // special parser for smaple_id
 // any event that used sample_id_all or perf_record_misc_switch
 // needs to be parsed here
@@ -414,15 +415,16 @@ parse_sample_id_buffer(u64 data_head, u64 *data_tail,
     perf_read_u32(data_head, data_tail, current_perf_mmap, &mmap_info->res);
     data_read++;
   }
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0)
   if (sample_type & PERF_SAMPLE_IDENTIFIER) {
     perf_read_u64(data_head, data_tail, current_perf_mmap, &mmap_info->sample_id);
     data_read++;
   }
-#endif
 
   return data_read;
 }
+#endif
+
+
 //----------------------------------------------------------------------
 // Public Interfaces
 //----------------------------------------------------------------------
