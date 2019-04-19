@@ -461,7 +461,8 @@ read_perf_buffer(pe_mmap_t *current_perf_mmap,
       // only available since kernel 4.3
 
     parse_sample_id_buffer(data_head, &data_tail, current_perf_mmap, attr, mmap_info);
-    mmap_info->context_switch_time = mmap_info->time;
+
+    TMSG(LINUX_PERF, "%d context switch %d, time: %u", attr->config, hdr.misc, mmap_info->time);
 
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
   } else if (hdr.type == PERF_RECORD_LOST_SAMPLES) {
