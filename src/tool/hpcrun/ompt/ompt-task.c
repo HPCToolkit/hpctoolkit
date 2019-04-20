@@ -84,9 +84,8 @@ ompt_task_begin_internal
 )
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  td->overhead ++;
 
-  hpcrun_safe_enter();
+  td->overhead ++;
 
   // record the task creation context into task structure (in omp runtime)
   cct_node_t *cct_node = NULL;
@@ -98,40 +97,12 @@ ompt_task_begin_internal
     zero_metric_incr_metricVal.i = 0;
     cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr_metricVal, 1, 1, NULL).sample_node;
   } else {
-
-//    thread_data_t *td = hpcrun_get_thread_data();
-
-
     ompt_data_t *parallel_info = NULL;
     int team_size = 0;
     hpcrun_ompt_get_parallel_info(0, &parallel_info, &team_size);
-    ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_info->ptr;
-    cct_node_t* prefix = region_data->call_path;
-
-#if 0
-    cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
-
-    if (!TD_GET(master)){
-      prefix = hpcrun_cct_insert_path_return_leaf(
-        td->core_profile_trace_data.epoch->csdata.tree_root,
-        prefix); 
-    }
-
-
-    cct_node = hpcrun_sample_callpath(&uc, 0, zero_metric_incr, 1, 1).sample_node;
-    while(cct_node->parent != prefix && cct_node->parent != NULL) cct_node = cct_node->parent;
-
-    if (!cct_node->parent) assert(0);
-#else
-    cct_node = prefix;
-#endif
-
-//
-//    cct_node = prefix;
+    ompt_region_data_t* region_data = (ompt_region_data_t*) parallel_info->ptr;
+    cct_node = region_data->call_path;
   }
-
-  hpcrun_safe_exit();
-
 
   task_data->ptr = cct_node;
 
@@ -144,7 +115,6 @@ ompt_task_begin_internal
   }
 
   td->overhead --;
-
 }
 
 
@@ -163,8 +133,9 @@ ompt_task_create
 
   new_task_data->ptr = NULL;
 
-  if (type == ompt_task_initial) return;
-  ompt_task_begin_internal(new_task_data);
+  if (type != ompt_task_initial) {
+    ompt_task_begin_internal(new_task_data);
+  }
 
   hpcrun_safe_exit();
 }
