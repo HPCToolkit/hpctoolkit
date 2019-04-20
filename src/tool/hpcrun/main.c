@@ -113,12 +113,11 @@
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
+#include "thread_finalize.h"
 #include "thread_use.h"
 #include "trace.h"
 #include "write_data.h"
 #include "sample-sources/itimer.h"
-#include "ompt/ompt-defer.h"
-#include "ompt/ompt-callstack.h"
 #include <utilities/token-iter.h>
 
 #include <memory/hpcrun-malloc.h>
@@ -612,9 +611,6 @@ hpcrun_fini_internal()
 {
   hpcrun_disable_sampling();
 
-  if (!ompt_eager_context_p())
-    resolving_all_remaining_context();
-
   TMSG(FINI, "process");
 
 //  hpcrun_unthreaded_data();
@@ -642,6 +638,9 @@ hpcrun_fini_internal()
     // This typically means flushing files that were not done by their creators.
 
     hpcrun_process_aux_cleanup_action();
+
+    int is_process = 1;
+    thread_finalize(is_process);
 
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
@@ -734,10 +733,6 @@ hpcrun_thread_fini(epoch_t *epoch)
 {
   TMSG(FINI,"thread fini");
 
-  // FIXME: vi3 Just for now resolve at this place
-  if (!ompt_eager_context_p())
-    resolving_all_remaining_context();
-
   // take no action if this thread is suppressed
   if (hpcrun_thread_suppress_sample) return;
 
@@ -750,6 +745,9 @@ hpcrun_thread_fini(epoch_t *epoch)
     if (hpcrun_get_disabled()) {
       return;
     }
+
+    int is_process = 0;
+    thread_finalize(is_process);
 
     // inform thread manager that we are terminating the thread
     // thread manager may enqueue the thread_data (in compact mode)

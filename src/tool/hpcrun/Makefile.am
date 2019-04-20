@@ -312,6 +312,7 @@ MY_BASE_FILES =				\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	thread_finalize.c		\
 	threadmgr.c			\
 	trace.c				\
 	weak.c				\

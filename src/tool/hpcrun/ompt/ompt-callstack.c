@@ -53,6 +53,7 @@
 #include <hpcrun/hpcrun-initializers.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/thread_finalize.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 
@@ -112,6 +113,8 @@
 //******************************************************************************
 
 static cct_backtrace_finalize_entry_t ompt_finalizer;
+
+static thread_finalize_entry_t ompt_thread_finalizer;
 
 static closure_t ompt_callstack_init_closure;
 
@@ -813,6 +816,11 @@ ompt_callstack_init_deferred
 )
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
+  else {
+    ompt_thread_finalizer.next = 0;
+    ompt_thread_finalizer.fn = ompt_resolve_region_contexts;
+    thread_finalize_register(&ompt_thread_finalizer);
+  }
 }
 
 

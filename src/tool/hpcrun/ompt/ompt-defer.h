@@ -176,9 +176,9 @@ resolve_one_region_context
 
 
 void 
-resolving_all_remaining_context
+ompt_resolve_region_contexts
 (
- void
+ int is_process
 );
 
 

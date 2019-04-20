@@ -447,25 +447,25 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/perf/event_custom.c \
+	term_handler.c thread_data.c thread_use.c thread_finalize.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -559,11 +559,11 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-sample-filters.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
-	libhpcrun_la-thread_use.lo libhpcrun_la-threadmgr.lo \
-	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
-	libhpcrun_la-write_data.lo cct/libhpcrun_la-cct_bundle.lo \
-	cct/libhpcrun_la-cct_ctxt.lo cct/libhpcrun_la-cct.lo \
-	libhpcrun_la-cct2metrics.lo \
+	libhpcrun_la-thread_use.lo libhpcrun_la-thread_finalize.lo \
+	libhpcrun_la-threadmgr.lo libhpcrun_la-trace.lo \
+	libhpcrun_la-weak.lo libhpcrun_la-write_data.lo \
+	cct/libhpcrun_la-cct_bundle.lo cct/libhpcrun_la-cct_ctxt.lo \
+	cct/libhpcrun_la-cct.lo libhpcrun_la-cct2metrics.lo \
 	trampoline/common/libhpcrun_la-trampoline.lo \
 	lush/libhpcrun_la-lush-backtrace.lo lush/libhpcrun_la-lush.lo \
 	lush/libhpcrun_la-lush-pthread.lo \
@@ -763,25 +763,25 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	sample-sources/perf/event_custom.c \
+	term_handler.c thread_data.c thread_use.c thread_finalize.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -877,6 +877,7 @@ am__objects_45 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) \
+	libhpcrun_o-thread_finalize.$(OBJEXT) \
 	libhpcrun_o-threadmgr.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
 	libhpcrun_o-weak.$(OBJEXT) libhpcrun_o-write_data.$(OBJEXT) \
 	cct/libhpcrun_o-cct_bundle.$(OBJEXT) \
@@ -1553,26 +1554,26 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct2metrics.c trampoline/common/trampoline.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_12) $(am__append_14) $(am__append_15) \
-	$(am__append_16) $(am__append_17)
+	term_handler.c thread_data.c thread_use.c thread_finalize.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct2metrics.c \
+	trampoline/common/trampoline.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-state-placeholders.c ompt/ompt-task.c \
+	ompt/ompt-thread.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c $(am__append_12) $(am__append_14) \
+	$(am__append_15) $(am__append_16) $(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -3053,6 +3054,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-start-stop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-term_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_data.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_finalize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-thread_use.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-threadmgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-trace.Plo@am__quote@
@@ -3085,6 +3087,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-start-stop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-term_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_data.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_finalize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-thread_use.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-threadmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-trace.Po@am__quote@
@@ -3847,6 +3850,13 @@ libhpcrun_la-thread_use.lo: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_use.c' object='libhpcrun_la-thread_use.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-thread_use.lo `test -f 'thread_use.c' || echo '$(srcdir)/'`thread_use.c
+
+libhpcrun_la-thread_finalize.lo: thread_finalize.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-thread_finalize.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-thread_finalize.Tpo -c -o libhpcrun_la-thread_finalize.lo `test -f 'thread_finalize.c' || echo '$(srcdir)/'`thread_finalize.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-thread_finalize.Tpo $(DEPDIR)/libhpcrun_la-thread_finalize.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_finalize.c' object='libhpcrun_la-thread_finalize.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-thread_finalize.lo `test -f 'thread_finalize.c' || echo '$(srcdir)/'`thread_finalize.c
 
 libhpcrun_la-threadmgr.lo: threadmgr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-threadmgr.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-threadmgr.Tpo -c -o libhpcrun_la-threadmgr.lo `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
@@ -5177,6 +5187,20 @@ libhpcrun_o-thread_use.obj: thread_use.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_use.c' object='libhpcrun_o-thread_use.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_use.obj `if test -f 'thread_use.c'; then $(CYGPATH_W) 'thread_use.c'; else $(CYGPATH_W) '$(srcdir)/thread_use.c'; fi`
+
+libhpcrun_o-thread_finalize.o: thread_finalize.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-thread_finalize.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-thread_finalize.Tpo -c -o libhpcrun_o-thread_finalize.o `test -f 'thread_finalize.c' || echo '$(srcdir)/'`thread_finalize.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-thread_finalize.Tpo $(DEPDIR)/libhpcrun_o-thread_finalize.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_finalize.c' object='libhpcrun_o-thread_finalize.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_finalize.o `test -f 'thread_finalize.c' || echo '$(srcdir)/'`thread_finalize.c
+
+libhpcrun_o-thread_finalize.obj: thread_finalize.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-thread_finalize.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-thread_finalize.Tpo -c -o libhpcrun_o-thread_finalize.obj `if test -f 'thread_finalize.c'; then $(CYGPATH_W) 'thread_finalize.c'; else $(CYGPATH_W) '$(srcdir)/thread_finalize.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-thread_finalize.Tpo $(DEPDIR)/libhpcrun_o-thread_finalize.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_finalize.c' object='libhpcrun_o-thread_finalize.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_finalize.obj `if test -f 'thread_finalize.c'; then $(CYGPATH_W) 'thread_finalize.c'; else $(CYGPATH_W) '$(srcdir)/thread_finalize.c'; fi`
 
 libhpcrun_o-threadmgr.o: threadmgr.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-threadmgr.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-threadmgr.Tpo -c -o libhpcrun_o-threadmgr.o `test -f 'threadmgr.c' || echo '$(srcdir)/'`threadmgr.c
