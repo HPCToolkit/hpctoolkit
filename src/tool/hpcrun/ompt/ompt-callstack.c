@@ -75,10 +75,10 @@
 
 
 #if defined(HOST_CPU_PPC) 
-#include "ppc64-gnu-omp.h"
+#include "ompt-gcc4-ppc64.h"
 #define ADJUST_PC
 #elif defined(HOST_CPU_x86) || defined(HOST_CPU_x86_64)
-#include "x86-gnu-omp.h"
+#include "ompt-gcc4-x86.h"
 #define ADJUST_PC
 #elif defined(HOST_CPU_ARM64)
 #else
