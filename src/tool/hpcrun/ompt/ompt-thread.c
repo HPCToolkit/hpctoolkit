@@ -49,9 +49,7 @@
 // local includes  
 //******************************************************************************
 
-#include <zconf.h>
 #include "ompt-thread.h"
-#include "ompt.h"
 
 
 

@@ -64,37 +64,14 @@
 // local includes
 //*****************************************************************************
 
-#include "ompt-region.h"
-#include "ompt-region-debug.h"
-
-#include "ompt-defer.h"
-#include "ompt-callback.h"
-#include "ompt-callstack.h"
-#include "ompt-queues.h"
-
-#include "ompt-thread.h"
-
-#include "ompt-interface.h"
-
-#include "../../../lib/prof-lean/stdatomic.h"
-#include "../thread_data.h"
-#include "../cct/cct_bundle.h"
-
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
-#include <unwind/common/backtrace_info.h>
 
-#include "../memory/hpcrun-malloc.h"
-#include "../cct/cct.h"
-#include "../thread_data.h"
-#include "../cct/cct_bundle.h"
-#include "../unresolved.h"
-#include "../../../lib/prof-lean/hpcrun-fmt.h"
-#include "../utilities/ip-normalized.h"
-#include "../messages/debug-flag.h"
+#include "ompt-callstack.h"
+#include "ompt-defer.h"
+#include "ompt-interface.h"
+#include "ompt-region-debug.h"
+#include "ompt-queues.h"
+#include "ompt-thread.h"
 
 
 

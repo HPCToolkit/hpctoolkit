@@ -63,7 +63,7 @@
 #include "epoch.h"
 #include "cct2metrics.h"
 #include "core_profile_trace_data.h"
-#include "ompt/ompt.h"
+#include "ompt/omp-tools.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>

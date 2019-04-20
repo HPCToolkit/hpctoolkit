@@ -55,9 +55,8 @@
 //******************************************************************************
 
 #include <hpcrun/thread_data.h>
-#include <unwind/common/backtrace_info.h>
+#include <hpcrun/unwind/common/backtrace_info.h>
 
-#include "ompt.h"
 #include "ompt-types.h"
 
 

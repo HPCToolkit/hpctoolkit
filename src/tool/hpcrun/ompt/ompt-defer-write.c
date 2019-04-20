@@ -45,6 +45,14 @@
 // ******************************************************* EndRiceCopyright *
 
 //*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <dlfcn.h>
+
+
+
+//*****************************************************************************
 // libmonitor
 //*****************************************************************************
 
@@ -56,31 +64,9 @@
 // local includes
 //*****************************************************************************
 
-#include <hpcrun/hpcrun_options.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
-#include <messages/messages.h>
-#include <lib/prof-lean/hpcrun-fmt.h>
-
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/stdatomic.h>
-
-#include <dlfcn.h>
-#include <hpcrun/loadmap.h>
 #include <hpcrun/trace.h>
-
-#include <lib/prof-lean/splay-macros.h>
-
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/metrics.h>
-
-#include <hpcrun/unresolved.h>
 #include <hpcrun/write_data.h>
 
-#include "ompt.h"
-#include "ompt-region.h"
 #include "ompt-defer.h"
 #include "ompt-defer-write.h"
 

@@ -49,36 +49,22 @@
 // local includes
 //*****************************************************************************
 
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
+#include <hpcrun/sample-sources/blame-shift/blame-shift.h>
+#include <hpcrun/sample-sources/blame-shift/directed.h>
+#include <hpcrun/sample-sources/blame-shift/undirected.h>
+#include <hpcrun/sample-sources/sample-filters.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/hpcrun-initializers.h>
 
-#include <monitor.h>
-
-#include "sample-sources/sample-filters.h"
-#include "sample-sources/blame-shift/directed.h"
-#include "sample-sources/blame-shift/undirected.h"
-#include "sample-sources/blame-shift/blame-shift.h"
-#include "sample-sources/blame-shift/blame-map.h"
-#include "sample-sources/idle.h"
-
-#include "../../../lib/prof-lean/stdatomic.h"
-#include "../memory/hpcrun-malloc.h"
-#include "../sample-sources/blame-shift/undirected.h"
-#include "../thread_data.h"
-
-#include "ompt.h"
-#include "ompt-defer.h"
 #include "ompt-callstack.h"
+#include "ompt-defer.h"
 #include "ompt-interface.h"
-#include "ompt-state-placeholders.h"
 #include "ompt-queues.h"
 #include "ompt-region.h"
+#include "ompt-state-placeholders.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
-
 
 
 

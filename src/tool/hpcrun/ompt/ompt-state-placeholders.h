@@ -53,10 +53,9 @@
 // local include files
 //***************************************************************************
 
-#include "ompt.h"
-#include "ompt-types.h"
+#include <hpcrun/utilities/ip-normalized.h>
 
-#include "../utilities/ip-normalized.h"
+#include "ompt-types.h"
 
 
 

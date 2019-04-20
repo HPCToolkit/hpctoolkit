@@ -61,21 +61,22 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 
-#include <hpcrun/cct/cct.h>
+#include "omp-tools.h"
 
-#include "ompt.h"
 #include "ompt-callback.h"
-#include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-region.h"
 #include "ompt-task.h"
 
 
+
+//*****************************************************************************
+// private operations
+//*****************************************************************************
+
 //----------------------------------------------------------------------------
 // note the creation context for an OpenMP task
 //----------------------------------------------------------------------------
-
-
 static void 
 ompt_task_begin_internal
 (
@@ -147,7 +148,7 @@ ompt_task_begin_internal
 }
 
 
-void
+static void
 ompt_task_create
 (
  ompt_data_t *parent_task_data,    // data of parent task
@@ -168,6 +169,11 @@ ompt_task_create
   hpcrun_safe_exit();
 }
 
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
 
 void
 ompt_task_register_callbacks

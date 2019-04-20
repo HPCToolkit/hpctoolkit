@@ -52,9 +52,9 @@
 // local includes
 //*****************************************************************************
 
-#include "../cct/cct.h"
+#include <hpcrun/cct/cct.h>
 
-#include "ompt.h"
+#include "omp-tools.h"
 #include "ompt-types.h"
 
 

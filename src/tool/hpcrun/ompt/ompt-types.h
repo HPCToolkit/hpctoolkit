@@ -51,7 +51,7 @@
 // OMPT
 //******************************************************************************
 
-#include "ompt.h"
+#include "omp-tools.h"
 
 
 
@@ -59,8 +59,9 @@
 // local includes  
 //******************************************************************************
 
-#include "../../../lib/prof-lean/stdatomic.h"
-#include "../cct/cct.h"
+#include <lib/prof-lean/stdatomic.h>
+
+#include <hpcrun/cct/cct.h>
 
 
 

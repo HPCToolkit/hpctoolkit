@@ -65,14 +65,8 @@
 // local includes
 //*****************************************************************************
 
-#include "../../../lib/prof-lean/stdatomic.h"
-
-#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/sample_event.h>
-#include <printf.h>
 
 #include "ompt-callback.h"
 #include "ompt-callstack.h"
@@ -81,9 +75,7 @@
 #include "ompt-queues.h"
 #include "ompt-region.h"
 #include "ompt-region-debug.h"
-#include "ompt-task.h"
 #include "ompt-thread.h"
-#include "ompt.h"
 
 
 

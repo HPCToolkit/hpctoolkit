@@ -57,10 +57,11 @@
 // local includes 
 //***************************************************************************
 
-#include "../fnbounds/fnbounds_interface.h"
-#include "../../../lib/prof-lean/placeholders.h"
-#include "../safe-sampling.h"
-#include "../hpcrun-initializers.h"
+#include <lib/prof-lean/placeholders.h>
+
+#include <hpcrun/fnbounds/fnbounds_interface.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/hpcrun-initializers.h>
 
 #include "ompt-state-placeholders.h"
 
