@@ -66,13 +66,8 @@
 //*****************************************************************************
 
 #include "../../../lib/prof-lean/stdatomic.h"
-#include "../safe-sampling.h"
-#include "../thread_data.h"
-#include "../memory/hpcrun-malloc.h"
 
-#include "ompt-queues.h"
-#include "ompt-region-debug.h"
-
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
@@ -83,19 +78,12 @@
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
+#include "ompt-queues.h"
 #include "ompt-region.h"
+#include "ompt-region-debug.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
 #include "ompt.h"
-
-
-
-//*****************************************************************************
-// macros
-//****************************************************************************/
-
-// FIXME: should use eliding interface rather than skipping frames manually
-#define LEVELS_TO_SKIP 2 // skip one level in enclosing OpenMP runtime
 
 
 

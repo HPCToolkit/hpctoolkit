@@ -74,6 +74,7 @@
 #include "ompt-callstack.h"
 #include "ompt-interface.h"
 #include "ompt-state-placeholders.h"
+#include "ompt-queues.h"
 #include "ompt-region.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
@@ -302,6 +303,7 @@ ompt_register_mutex_metrics
 
 
 static void
+__attribute__ ((unused))
 ompt_register_idle_metrics
 (
  void
@@ -424,7 +426,8 @@ ompt_idle_end
 }
 
 
-static void
+static void 
+__attribute__ ((unused))
 ompt_idle
 (
  ompt_scope_endpoint_t endpoint

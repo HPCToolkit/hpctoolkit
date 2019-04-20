@@ -99,6 +99,14 @@
 
 
 //*****************************************************************************
+// macros
+//*****************************************************************************
+
+#define DEFER_DEBUGGING 0
+
+
+
+//*****************************************************************************
 // private operations
 //*****************************************************************************
 
@@ -517,9 +525,9 @@ add_region_and_ancestors_to_stack
   ompt_region_data_t *current = region_data;
   int level = 0;
   int depth;
-  ompt_notification_t *notification;
+
   // up through region stack until first region which is on the stack
-  // if none of region is on the stack, then stack will be completle changed
+  // if none of region is on the stack, then stack will be completely changed
   while (current) {
     depth = current->depth;
     // found region which is on the stack
@@ -972,6 +980,8 @@ is_outermost_region_thread_is_master
 }
 
 
+#if DEFER_DEBUGGING
+
 void
 print_prefix_info
 (
@@ -1017,6 +1027,8 @@ print_prefix_info
 //    printf("%s REGION_IND: %lx STACK_INDEX: %d MASTER: %d TOP CCT: %p BOTOOM CCT: %p PEF_LENGTH: %d FRAME_NUMBER: %d CCT_NUMBER: %d\n",
 //           message, region_data->region_id, stack_index, TD_GET(master), tmp_top, tmp_bottom, len_prefix, len_bt, len_cct);
 }
+
+#endif
 
 
 // check if the thread cannot resolved region because of reasons mentioned below
