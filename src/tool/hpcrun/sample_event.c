@@ -75,8 +75,6 @@
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
-#include "ompt/ompt-callstack.h"
-#include "ompt/ompt-defer.h"
 #include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
@@ -204,12 +202,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     return ret;
   }
 #endif
-#if 0
-  // FIXME: check if it is ok to leave this check here
-  if(!isSync && !ompt_eager_context_p()){
-    register_to_all_regions();
-  }
-#endif
 
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
@@ -324,13 +316,6 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
-
-//  if(!isSync && !ompt_eager_context){
-////    if(!TD_GET(master)){
-////      register_thread_to_all_regions();
-//      register_to_all_regions();
-////    }
-//  }
 
   return ret;
 }
