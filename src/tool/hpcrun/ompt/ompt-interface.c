@@ -55,6 +55,8 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/hpcrun-initializers.h>
 
+#include <monitor.h>
+
 #include "sample-sources/sample-filters.h"
 #include "sample-sources/blame-shift/directed.h"
 #include "sample-sources/blame-shift/undirected.h"
@@ -376,7 +378,6 @@ ompt_thread_begin
   undirected_blame_thread_start(&omp_idle_blame_info);
 
   wfq_init(&threads_queue);
-  wfq_init(&public_region_freelist);
 
   registered_regions = NULL;
   unresolved_cnt = 0;
@@ -500,6 +501,7 @@ init_parallel_regions
 )
 {
   ompt_parallel_region_register_callbacks(ompt_set_callback_fn);
+  ompt_regions_init();
 }
 
 
@@ -602,8 +604,10 @@ ompt_initialize
  ompt_data_t *tool_data
 )
 {
+  hpcrun_safe_enter();
+
 #if OMPT_DEBUG_STARTUP
-  printf("Initializing...\n");
+  printf("Initializing OMPT interface\n");
 #endif
 
   ompt_initialized = 1;
@@ -643,6 +647,8 @@ ompt_initialize
   thread_data_t* td = hpcrun_get_thread_data();
   main_top_root = td->core_profile_trace_data.epoch->csdata.top;
 
+  hpcrun_safe_exit();
+
   return 1;
 }
 
@@ -653,9 +659,13 @@ ompt_finalize
  ompt_data_t *tool_data
 )
 {
+  hpcrun_safe_enter();
+
 #if OMPT_DEBUG_STARTUP
-  printf("Finalizing...\n");
+  printf("Finalizing OMPT interface\n");
 #endif
+
+  hpcrun_safe_exit();
 }
 
 
@@ -734,6 +744,16 @@ hpcrun_ompt_get_state
 {
   if (ompt_initialized) return ompt_get_state_fn(wait_id);
   return ompt_state_undefined;
+}
+
+ompt_state_t
+hpcrun_ompt_get_state_only
+(
+ void
+)
+{
+  uint64_t wait_id;
+  return hpcrun_ompt_get_state(&wait_id);
 }
 
 
@@ -936,149 +956,6 @@ freelist_add_first
   OMPT_BASE_T_GET_NEXT(new) = *head;
   *head = new;
 }
-
-// Remove the head of the private queue. This function is thread safe, see below.
-ompt_base_t*
-private_queue_remove_first
-(
- ompt_base_t **head
-)
-{
-    if (*head){
-        ompt_base_t* first = *head;
-        // Spin wait until the next pointer of the current head is not set to valid value
-        // The valid next pointer is the new head of the private queue
-        *head = wfq_get_next(first);
-        return first;
-    }
-    return ompt_base_nil;
-}
-
-// vi3: wait free queue functions
-// prefix wfq
-void
-wfq_set_next_pending
-(
- ompt_base_t *element
-)
-{
-  // set invalid value
-  atomic_store(&element->next.anext, ompt_base_invalid);
-}
-
-// prefix wfq
-ompt_base_t*
-wfq_get_next
-(
- ompt_base_t *element
-)
-{
-  ompt_base_t* next;
-
-  // wait until next pointer is properly initialized
-  for(;;) {
-    next = atomic_load(&element->next.anext);
-    if (next != ompt_base_invalid) break;
-  }
-
-  return next;
-}
-
-
-void
-wfq_init
-(
-ompt_wfq_t *queue
-)
-{
-  atomic_init(&queue->head, ompt_base_nil);
-}
-
-
-void
-wfq_enqueue
-(
- ompt_base_t *new, 
- ompt_wfq_t *queue
-)
-{
-  wfq_set_next_pending(new);
-  // FIXME vi3: should OMPT_BASE_T_STAR
-  ompt_base_t *old_head = (ompt_base_t*)atomic_exchange(&queue->head, new);
-  atomic_store(&new->next.anext, old_head);
-}
-
-// remove one element from the end and is used in case
-// when all adding are finished before removing
-// dequeue_public
-ompt_base_t*
-wfq_dequeue_public
-(
- ompt_wfq_t *public_queue
-)
-{
-  ompt_base_t* first = atomic_load(&public_queue->head);
-  if (first){
-    ompt_base_t* succ = wfq_get_next(first);
-    atomic_store(&public_queue->head, succ);
-    atomic_store(&first->next.anext, ompt_base_nil);
-  }
-  return first;
-}
-
-// returns first element from private list
-// if it is empty, takes all element from public queue
-// and store them to private list
-ompt_base_t*
-wfq_dequeue_private
-(
- ompt_wfq_t *public_queue, 
- ompt_base_t **private_queue
-)
-{
-  // private list is empty
-  if (!(*private_queue)){
-    // take all from public list, but there is also possibility that this list is empty too
-    ompt_base_t* old_head = atomic_exchange(&public_queue->head, ompt_base_nil);
-    *private_queue = old_head;
-  }
-
-  // In private_queue_remove_first, thread will spinwait while
-  // the next pointer of the current head is invalid
-  // FIXME vi3: if it would be more elegant, we could spinwait in this function instead
-  // of private_queue_remove_first
-  return private_queue_remove_first(private_queue);
-}
-
-// vi3: Part for allocation
-
-// allocating and free regions
-ompt_region_data_t*
-hpcrun_ompt_region_alloc
-(
-)
-{
-  // FIXME vi3: should in this situation call OMPT_REGION_DATA_T_STAR / Notification / TRL_EL
-  // FIXME vi3: I think that call to wfq_dequeue_private in this case should be thread safe
-  // but check this one more time
-  ompt_region_data_t* first =
-          (ompt_region_data_t*) wfq_dequeue_private(&public_region_freelist,
-                                                    OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
-  // FIXME vi3: leave allocation with explicit casting
-  return first ? first : (ompt_region_data_t*)hpcrun_malloc(sizeof(ompt_region_data_t));
-}
-
-
-void
-hpcrun_ompt_region_free
-(
- ompt_region_data_t *region_data
-)
-{
-  wfq_enqueue(OMPT_BASE_T_STAR(region_data), region_data->thread_freelist);
-}
-
-
 // allocating and free notifications
 ompt_notification_t*
 hpcrun_ompt_notification_alloc
@@ -1180,11 +1057,3 @@ hpcrun_ompt_get_thread_num(int level)
     }
     return -1;
 }
-
-// FIXME vi3: couple of notes and warning from stdatomic
-//warning: value computed is not used [-Wunused-value]
-
-
-// FIXME vi3: Should use above, or make freelist_add_first_region/notification/trl_el
-//freelist_add_first(OMPT_BASE_T_STAR(region_data), OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
-// FIXME vi3: Same for enqueue and dequeue

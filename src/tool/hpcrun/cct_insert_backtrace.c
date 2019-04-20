@@ -386,6 +386,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   thread_data_t* td = hpcrun_get_thread_data();
   backtrace_info_t bt;
 
+  // initialize bt
+  memset(&bt, 0, sizeof(bt));
+
   bool success = hpcrun_generate_backtrace(&bt, context, skipInner);
 
   assert(!success == bt.partial_unwind);

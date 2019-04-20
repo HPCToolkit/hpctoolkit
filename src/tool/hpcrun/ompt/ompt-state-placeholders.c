@@ -63,7 +63,6 @@
 #include "../hpcrun-initializers.h"
 
 #include "ompt-state-placeholders.h"
-#include "ompt-types.h"
 
 
 

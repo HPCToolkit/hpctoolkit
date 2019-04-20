@@ -93,8 +93,6 @@ extern __thread ompt_trl_el_t* thread_region_freelist_head;
 // public freelist where all thread's can enqueue region_data to be reused
 extern __thread ompt_wfq_t public_region_freelist;
 
-// private freelist from which only thread owner can reused regions
-extern __thread ompt_data_t* private_region_freelist_head;
 
 // stack that contais all nested parallel region
 // FIXME vi3: 128 levels are supported
@@ -102,8 +100,8 @@ extern __thread region_stack_el_t region_stack[];
 extern  __thread int top_index;
 
 // Memoization process vi3:
-extern __thread ompt_data_t* not_master_region;
-extern __thread cct_node_t* cct_not_master_region;
+extern __thread ompt_region_data_t *not_master_region;
+extern __thread cct_node_t *cct_not_master_region;
 
 
 // FIXME vi3: just a temp solution

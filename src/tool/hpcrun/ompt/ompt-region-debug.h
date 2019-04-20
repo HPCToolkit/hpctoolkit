@@ -44,15 +44,37 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __OMPT_REGION_H__
-#define __OMPT_REGION_H__
+#ifndef __OMPT_REGION_DEBUG_H__
+#define __OMPT_REGION_DEBUG_H__
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
+#define REGION_DEBUG 1
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
+#if REGION_DEBUG == 0
+
+// debugging disabled: empty macros replace the API
+
+#define ompt_region_debug_notify_needed(notification)
+#define ompt_region_debug_notify_received(notification)
+#define ompt_region_debug_init()
+#define ompt_region_debug_region_create(region)
+
+#else
+
 
 
 //*****************************************************************************
 // local includes
 //*****************************************************************************
 
-#include "ompt.h"
+#include "ompt-region.h"
 #include "ompt-types.h"
 
 
@@ -61,28 +83,36 @@
 // interface operations
 //*****************************************************************************
 
-// initialize support for regions
+// this thread requires an asynchronous notification for this region
 void
-ompt_regions_init
+ompt_region_debug_notify_needed
+(
+ ompt_notification_t *notification
+);
+
+
+// this thread received an asynchronous notification for this region
+void
+ompt_region_debug_notify_received
+(
+ ompt_notification_t *notification
+);
+
+
+// initialize persistent state maintained by this module
+void
+ompt_region_debug_init
 (
  void
 );
 
 
-void 
-ompt_parallel_region_register_callbacks
+void
+ompt_region_debug_region_create
 (
- ompt_set_callback_t ompt_set_callback_fn
-);
+  ompt_region_data_t* region
+ );
 
-
-// free adds entity to freelist
-void 
-hpcrun_ompt_region_free
-(
- ompt_region_data_t *region_data
-);
-
-
+#endif
 
 #endif

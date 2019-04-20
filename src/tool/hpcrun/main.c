@@ -511,6 +511,8 @@ hpcrun_init_internal(bool is_child)
   }
 #endif
 
+  hpcrun_initializers_apply();
+
   // start the sampling process
 
   hpcrun_enable_sampling();
@@ -523,7 +525,7 @@ hpcrun_init_internal(bool is_child)
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
       SAMPLE_SOURCES(start);
   }
-  hpcrun_initializers_apply();
+
   hpcrun_is_initialized_private = true;
 }
 

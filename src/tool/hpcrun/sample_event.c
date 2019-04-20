@@ -204,10 +204,12 @@ hpcrun_sample_callpath(void* context, int metricId,
     return ret;
   }
 #endif
+#if 0
   // FIXME: check if it is ok to leave this check here
   if(!isSync && !ompt_eager_context_p()){
     register_to_all_regions();
   }
+#endif
 
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
@@ -370,6 +372,10 @@ hpcrun_gen_thread_ctxt(void* context)
   td->btbuf_cur = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   backtrace_info_t bt;
+
+  // initialize bt
+  memset(&bt, 0, sizeof(bt));
+
   if (ljmp == 0) {
     if (epoch != NULL) {
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,

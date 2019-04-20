@@ -48,68 +48,34 @@
 #define OMPT_QUEUES_H
 
 //*****************************************************************************
+// Description:
+//
+//   interface for sequential and concurrent LIFO queues (AKA stacks)
+//
+//*****************************************************************************
+
+
+
+//*****************************************************************************
 // macros types
 //*****************************************************************************
 
 #include "../../../lib/prof-lean/stdatomic.h"
 
+#include "../../../lib/prof-lean/queues.h"
+
+#include "ompt-types.h"
+
 
 
 //*****************************************************************************
 // macros types
 //*****************************************************************************
-#define typed_squeue(type)				\
-  void						\
-  type ## _squeue_push(type **q, type *e)		\
-  {							\
-    squeue_push((q_element_t **) q, (q_element_t *) e);	\
-  }							\
-  							\
-  type *						\
-  type ## _squeue_pop(type **q)				\
-  {							\
-    type *e = (type *) squeue_pop((q_element_t **) q);	\
-    return e;						\
-  }
-
-
-
-//*****************************************************************************
-// types
-//*****************************************************************************
-
-typedef union q_element_next_u {
-  struct q_element_s *next;
-  _Atomic (struct q_element_s*)anext;
-} q_element_next_t;
-
-
-typedef struct q_element_s {
-  struct q_element_s *next;
-} q_element_t;
-
-
 
 //*****************************************************************************
 // interface functions
 //*****************************************************************************
 
-void
-squeue_push
-(
-  q_element_t **q,
-  q_element_t *e
-);
-
-
-q_element_t *
-squeue_pop
-(
-  q_element_t **q
-);
-
-
-#if 0
 //-----------------------------------------------------------------------------
 // wait-free queue manipulation
 //-----------------------------------------------------------------------------
@@ -156,8 +122,6 @@ wfq_dequeue_private
  ompt_wfq_t *public_queue, 
  ompt_base_t **private_queue
 );
-
-#endif
 
 
 #endif

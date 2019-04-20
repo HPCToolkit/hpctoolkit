@@ -60,7 +60,7 @@
 //******************************************************************************
 
 // Memoization process vi3:
-__thread ompt_data_t* not_master_region = NULL;
+__thread ompt_region_data_t* not_master_region = NULL;
 __thread cct_node_t* cct_not_master_region = NULL;
 
 __thread ompt_trl_el_t* registered_regions = NULL;
@@ -73,7 +73,6 @@ __thread ompt_data_t* private_threads_queue = NULL;
 __thread ompt_notification_t* notification_freelist_head = NULL;
 __thread ompt_trl_el_t* thread_region_freelist_head = NULL;
 __thread ompt_wfq_t public_region_freelist;
-__thread ompt_data_t* private_region_freelist_head = NULL;
 
 // stack for regions
 __thread region_stack_el_t region_stack[MAX_NESTING_LEVELS];

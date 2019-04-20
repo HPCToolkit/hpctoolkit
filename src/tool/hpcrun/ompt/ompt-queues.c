@@ -53,39 +53,32 @@
 
 
 //*****************************************************************************
+// private operations
+//*****************************************************************************
+
+// Remove the head of the private queue. This function is thread safe, see below.
+static ompt_base_t*
+private_queue_remove_first
+(
+ ompt_base_t **head
+)
+{
+    if (*head){
+        ompt_base_t* first = *head;
+        // Spin wait until the next pointer of the current head is not set to valid value
+        // The valid next pointer is the new head of the private queue
+        *head = wfq_get_next(first);
+        return first;
+    }
+    return ompt_base_nil;
+}
+
+
+
+//*****************************************************************************
 // interface functions
 //*****************************************************************************
 
-void
-squeue_push
-(
-  q_element_t **q,
-  q_element_t *e
-)
-{
-  e->next = *q;
-  *q = e;
-}
-
-
-q_element_t *
-squeue_pop
-(
-  q_element_t **q
-)
-{
-  q_element_t *e = 0;
-
-  if (*q) {
-    e = *q;
-    *q = e->next;
-    e->next = 0;
-  } 
-
-  return e;
-}
-
-#if 0
 // vi3: wait free queue functions
 // prefix wfq
 void
@@ -181,67 +174,3 @@ wfq_dequeue_private
   // of private_queue_remove_first
   return private_queue_remove_first(private_queue);
 }
-
-#endif
-
-
-//*****************************************************************************
-// test case
-//*****************************************************************************
-
-#define UNIT_TEST 1
-#if UNIT_TEST
-
-#include <stdlib.h>
-#include <stdio.h>
-
-typedef struct {
-  q_element_t qe;
-  int value;
-} int_q_element_t;
-
-int_q_element_t *queue = 0;
-
-typed_squeue(int_q_element_t)
-
-int_q_element_t *
-int_q_element_new(int value)
-{
-  int_q_element_t *e =(int_q_element_t *) malloc(sizeof(int_q_element_t));
-  e->value = value;
-}
-
-
-void pop(int n)
-{
-  for(int i = 0; i < n; i++) {
-    int_q_element_t *e = int_q_element_t_squeue_pop(&queue);
-    if (e == 0) {
-      printf("queue empty\n");
-      break;
-    } else {
-      printf("popping %d\n", e->value);
-    }
-  }
-}
-
-
-void 
-push(int min, int n) {
-  for(int i = min; i < min+n; i++) {
-    printf("pushing %d\n", i);
-    int_q_element_t_squeue_push(&queue, int_q_element_new(i));
-  }
-}
-
-
-int
-main(int argc, char **argv)
-{
-  push(0, 30);
-  pop(10);
-  push(100, 12);
-  pop(100);
-}
-
-#endif

@@ -65,12 +65,14 @@
 //*****************************************************************************
 
 #include "ompt-region.h"
+#include "ompt-region-debug.h"
+
 #include "ompt-defer.h"
 #include "ompt-callback.h"
 #include "ompt-callstack.h"
+#include "ompt-queues.h"
 
 #include "ompt-thread.h"
-#include "ompt-types.h"
 
 #include "ompt-interface.h"
 
@@ -84,8 +86,6 @@
 #include <hpcrun/trace.h>
 #include <hpcrun/unresolved.h>
 #include <unwind/common/backtrace_info.h>
-
-#include "ompt.h"
 
 #include "../memory/hpcrun-malloc.h"
 #include "../cct/cct.h"
@@ -454,7 +454,9 @@ help_notification_alloc
 {
   ompt_notification_t *notification = hpcrun_ompt_notification_alloc();
   notification->region_data = region_data;
+  notification->region_id = region_data->region_id;
   notification->threads_queue = &threads_queue;
+
   return notification;
 }
 
@@ -541,49 +543,6 @@ add_region_and_ancestors_to_stack
 }
 
 
-void 
-add_to_list
-(
- ompt_region_data_t* region_data
-)
-{
-  ompt_trl_el_t* new_region = hpcrun_ompt_trl_el_alloc();
-  new_region->region_data = region_data;
-  OMPT_BASE_T_GET_NEXT(new_region) = OMPT_BASE_T_STAR(registered_regions);
-  if (registered_regions)
-    registered_regions->prev = new_region;
-  registered_regions = new_region;
-  new_region->prev = NULL;
-}
-
-
-void 
-remove_from_list
-(
- ompt_region_data_t* region_data
-)
-{
-  ompt_trl_el_t* current = registered_regions;
-  while(current){
-    if (current->region_data == region_data){
-      if (current->prev){
-        OMPT_BASE_T_GET_NEXT(current->prev) = OMPT_BASE_T_GET_NEXT(current);
-      } else{
-        registered_regions = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
-      }
-
-      if (OMPT_BASE_T_GET_NEXT(current)){
-        ((ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current))->prev = current->prev;
-      }
-
-      break;
-    }
-    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
-  }
-  hpcrun_ompt_trl_el_free(current);
-}
-
-
 cct_node_t*
 add_pseudo_cct
 (
@@ -609,43 +568,6 @@ add_pseudo_cct
 }
 
 
-// vi3 temp check
-int 
-alredy_in_list
-(
- ompt_region_data_t *region_data
-) 
-{
-  ompt_trl_el_t* current = registered_regions;
-  while(current){
-    if (current->region_data == region_data){
-      return 1;
-    }
-    current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
-  }
-  
-  return 0;
-}
-
-
-int 
-print_list
-(
- void
-)
-{
-    ompt_trl_el_t* current = registered_regions;
-    int i = 0;
-    while(current){
-        printf("%p, %lx, i: %d, master:%d\n", &threads_queue, current->region_data->region_id, i, TD_GET(master));
-        current = (ompt_trl_el_t*)OMPT_BASE_T_GET_NEXT(current);
-        i++;
-    }
-
-    return 0;
-}
-
-
 void
 register_to_region
 (
@@ -654,8 +576,11 @@ register_to_region
 {
  ompt_region_data_t* region_data = notification->region_data;
 
+ ompt_region_debug_notify_needed(notification);
+
  // create notification and enqueu to region's queue
  OMPT_BASE_T_GET_NEXT(notification) = NULL;
+
  // register thread to region's wait free queue
  wfq_enqueue(OMPT_BASE_T_STAR(notification), &region_data->queue);
 
@@ -671,7 +596,7 @@ add_notification_to_stack
  ompt_region_data_t* region_data
 )
 {
-    ompt_notification_t* notification = hpcrun_ompt_notification_alloc();
+    ompt_notification_t* notification = help_notification_alloc(region_data);
     notification->region_data = region_data;
     notification->threads_queue = &threads_queue;
     // push to stack
@@ -781,11 +706,16 @@ try_resolve_one_region_context
 )
 {
   ompt_notification_t *old_head = NULL;
-  old_head = (ompt_notification_t*) wfq_dequeue_private(&threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
-  if (!old_head)
-    return 0;
+
+  old_head = (ompt_notification_t*) 
+    wfq_dequeue_private(&threads_queue, OMPT_BASE_T_STAR_STAR(private_threads_queue));
+
+  if (!old_head) return 0;
+
   // region to resolve
   ompt_region_data_t *region_data = old_head->region_data;
+
+  ompt_region_debug_notify_received(old_head);
 
   // ================================== resolving part
   cct_node_t *unresolved_cct = old_head->unresolved_cct;

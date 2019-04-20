@@ -47,6 +47,13 @@
 #ifndef __OMPT_TYPES_H__ 
 #define __OMPT_TYPES_H__ 
 
+//******************************************************************************
+// OMPT
+//******************************************************************************
+
+#include "ompt.h"
+
+
 
 //******************************************************************************
 // local includes  
@@ -127,6 +134,8 @@ typedef struct ompt_region_data_s {
 
   // depth of the region, starts from zero
   int depth;
+
+  struct ompt_region_data_s *next_region;
 } ompt_region_data_t;
 
 
@@ -135,6 +144,9 @@ typedef struct ompt_notification_s{
   ompt_next_t next;
 
   ompt_region_data_t *region_data;
+
+  // region id
+  uint64_t region_id;
 
   // struct ompt_threads_queue_s *threads_queue;
   ompt_wfq_t *threads_queue;

@@ -90,7 +90,7 @@
 // macros
 //******************************************************************************
 
-#define OMPT_DEBUG 1
+#define OMPT_DEBUG 0
 
 #if OMPT_DEBUG
 #define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
@@ -128,7 +128,7 @@ static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
 
-static int ompt_callstack_debug = 1;
+static int ompt_callstack_debug = 0;
 
 
 
@@ -137,6 +137,7 @@ static int ompt_callstack_debug = 1;
 //******************************************************************************
 
 static void 
+__attribute__ ((unused))
 stack_dump
 (
  char *tag, 
@@ -221,8 +222,6 @@ set_frame
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
   f->the_function = ph->pc_norm;
-//  printf("------------------Just setting to idle\n");
-
 }
 
 
@@ -238,6 +237,7 @@ collapse_callstack
   bt->begin = bt->last;
   bt->bottom_frame_elided = false;
   bt->partial_unwind = false;
+  bt->collapsed = true;
 //  bt->fence = FENCE_MAIN;
 }
 
@@ -288,14 +288,14 @@ ompt_elide_runtime_frame(
     case ompt_state_wait_barrier:
     case ompt_state_wait_barrier_implicit:
     case ompt_state_wait_barrier_explicit:
-      break; // FIXME: skip barrier collapsing until the kinks are worked out.
-//    if (!TD_GET(master)){
-//
-//      collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
-//      goto return_label;
-//    }
-
+      // collapse barriers on non-master ranks 
+      if (hpcrun_ompt_get_thread_num(0) != 0) {
+	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
+	goto return_label;
+      }
+      break; 
     case ompt_state_idle:
+      // collapse idle state
       TD_GET(omp_task_context) = 0;
       collapse_callstack(bt, &ompt_placeholders.ompt_idle);
       goto return_label;
@@ -685,13 +685,14 @@ ompt_region_context_end_region_not_eager
   int adjust_callsite
 )
 {
-  cct_node_t *node;
   ucontext_t uc;
   getcontext(&uc);
 
   hpcrun_metricVal_t blame_metricVal;
   blame_metricVal.i = 0;
-  node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 33, NULL).sample_node;
+
+  // side-effect: set region context
+  (void) hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 33, NULL);
 
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 }
@@ -733,6 +734,10 @@ ompt_backtrace_finalize
   uint64_t region_id = TD_GET(region_id);
 
   ompt_elide_runtime_frame(bt, region_id, isSync);
+
+  if(!isSync && !ompt_eager_context_p() && !bt->collapsed){
+    register_to_all_regions();
+  }
 }
 
 

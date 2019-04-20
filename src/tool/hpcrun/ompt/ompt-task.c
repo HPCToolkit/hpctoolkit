@@ -158,10 +158,14 @@ ompt_task_create
  const void *codeptr_ra
 )
 {
+  hpcrun_safe_enter();
+
   new_task_data->ptr = NULL;
 
   if (type == ompt_task_initial) return;
   ompt_task_begin_internal(new_task_data);
+
+  hpcrun_safe_exit();
 }
 
 

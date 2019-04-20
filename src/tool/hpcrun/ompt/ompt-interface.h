@@ -204,25 +204,6 @@ ompt_task_full_context_p
 );
 
 //-----------------------------------------------------------------------------
-// allocate and free region representations
-//-----------------------------------------------------------------------------
-
-ompt_region_data_t * 
-hpcrun_ompt_region_alloc
-(
- void
-);
-
-
-// free adds entity to freelist
-void 
-hpcrun_ompt_region_free
-(
- ompt_region_data_t *region_data
-);
-
-
-//-----------------------------------------------------------------------------
 // allocate and free notifications
 //-----------------------------------------------------------------------------
 
@@ -300,54 +281,6 @@ freelist_add_first
 (
  ompt_base_t *new, 
  ompt_base_t **head
-);
-
-
-//-----------------------------------------------------------------------------
-// wait-free queue manipulation
-//-----------------------------------------------------------------------------
-
-void 
-wfq_set_next_pending
-(
- ompt_base_t *element
-);
-
-
-ompt_base_t * 
-wfq_get_next
-(
- ompt_base_t *element
-);
-
-
-void 
-wfq_init
-(
- ompt_wfq_t *queue
-);
-
-
-void 
-wfq_enqueue
-(
- ompt_base_t *new, 
- ompt_wfq_t *queue
-);
-
-
-ompt_base_t * 
-wfq_dequeue_public
-(
- ompt_wfq_t *public_queue
-);
-
-
-ompt_base_t * 
-wfq_dequeue_private
-(
- ompt_wfq_t *public_queue, 
- ompt_base_t **private_queue
 );
 
 

@@ -70,6 +70,9 @@
 #include "../thread_data.h"
 #include "../memory/hpcrun-malloc.h"
 
+#include "ompt-queues.h"
+#include "ompt-region-debug.h"
+
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/cct/cct.h>
@@ -87,42 +90,22 @@
 
 
 
-/******************************************************************************
- * macros
- *****************************************************************************/
+//*****************************************************************************
+// macros
+//****************************************************************************/
 
 // FIXME: should use eliding interface rather than skipping frames manually
 #define LEVELS_TO_SKIP 2 // skip one level in enclosing OpenMP runtime
 
-/******************************************************************************
- * variables
- *****************************************************************************/
+
+
+//*****************************************************************************
+// variables
+//****************************************************************************/
 
 // private freelist from which only thread owner can reused regions
 static __thread ompt_data_t* private_region_freelist_head = NULL;
 
-
-
-//*****************************************************************************
-// debugging support
-//*****************************************************************************
-
-#define REGION_DEBUGGING 1
-
-#if REGION_DEBUGGING
-
-typedef struct region_resolve_tracker_s {
-  struct region_resolve_tracker_s *next;
-  ompt_region_data_t *region;
-  int thread_id;
-} rr_pending_t;
-
-static spinlock_t debuginfo_lock = SPINLOCK_UNLOCKED;
-ompt_region_data_t *global_region_list = 0;
-rr_pending_t *rr_pending = 0;
-rr_pending_t *rr_freelist = 0;
-
-#endif
 
 //*****************************************************************************
 // forward declarations
@@ -145,18 +128,7 @@ ompt_region_release
 // private operations
 //*****************************************************************************
 
-// initialize support for regions
-void
-ompt_regions_init
-(
- void
-)
-{
-  wfq_init(&public_region_freelist);
-}
-
-
-ompt_region_data_t *
+static ompt_region_data_t *
 ompt_region_data_new
 (
  uint64_t region_id, 
@@ -178,28 +150,6 @@ ompt_region_data_new
   return e;
 }
 
-//bool
-//ompt_region_data_refcnt_update(ompt_region_data_t* region_data, int val)
-//{
-//  bool result = false;
-//  spinlock_lock(&region_data->region_lock);
-//  if (region_data){
-//    region_data->refcnt += val;
-//    // FIXME: TODO: Decide when to delete region data
-//    result = true;
-//  }
-//  spinlock_unlock(&region_data->region_lock);
-//  return result;
-//}
-//
-//uint64_t
-//ompt_region_data_refcnt_get(ompt_region_data_t* region_data){
-//  spinlock_lock(&region_data->region_lock);
-//  uint64_t refcnt = region_data->refcnt;
-//  spinlock_unlock(&region_data->region_lock);
-//  return refcnt;
-//}
-
 
 static void 
 ompt_parallel_begin_internal
@@ -208,9 +158,6 @@ ompt_parallel_begin_internal
  int flags
 ) 
 {
-  hpcrun_safe_enter();
-
-
   ompt_region_data_t* region_data = ompt_region_data_new(hpcrun_ompt_get_unique_id(), NULL);
   parallel_data->ptr = region_data;
 
@@ -246,9 +193,6 @@ ompt_parallel_begin_internal
        ompt_parallel_begin_context(region_id, 
 				   flags & ompt_parallel_invoker_program);
   }
-
-  hpcrun_safe_exit();
-
 }
 
 
@@ -259,9 +203,6 @@ ompt_parallel_end_internal
  int flags
 )
 {
-  // printf("Passed to internal. \n");
-  hpcrun_safe_enter();
-
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
 
   if (!ompt_eager_context_p()){
@@ -324,17 +265,11 @@ ompt_parallel_end_internal
 
   // FIXME: vi3 do we really need to keep this line
   hpcrun_get_thread_data()->region_id = 0;
-  hpcrun_safe_exit();
-
 }
 
 
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
-
-void
+static void
 ompt_parallel_begin
 (
  ompt_data_t *parent_task_data,
@@ -345,11 +280,15 @@ ompt_parallel_begin
  const void *codeptr_ra
 )
 {
+  hpcrun_safe_enter();
+
   ompt_parallel_begin_internal(parallel_data, flags);
+
+  hpcrun_safe_exit();
 }
 
 
-void
+static void
 ompt_parallel_end
 (
  ompt_data_t *parallel_data,
@@ -358,8 +297,9 @@ ompt_parallel_end
  const void *codeptr_ra
 )
 {
+  hpcrun_safe_enter();
+
   uint64_t parallel_id = parallel_data->value;
-  //printf("Parallel end... region id = %lx\n", parallel_id);
   uint64_t task_id = task_data->value;
 
   ompt_data_t *parent_region_info = NULL;
@@ -367,15 +307,16 @@ ompt_parallel_end
   hpcrun_ompt_get_parallel_info(0, &parent_region_info, &team_size);
   uint64_t parent_region_id = parent_region_info->value;
 
-  hpcrun_safe_enter();
   TMSG(DEFER_CTXT, "team end   id=0x%lx task_id=%x ompt_get_parallel_id(0)=0x%lx", parallel_id, task_id,
        parent_region_id);
-  hpcrun_safe_exit();
+
   ompt_parallel_end_internal(parallel_data, flag);
+
+  hpcrun_safe_exit();
 }
 
 
-void
+static void
 ompt_implicit_task_internal_begin
 (
  ompt_data_t *parallel_data,
@@ -401,15 +342,11 @@ ompt_implicit_task_internal_begin
     if (thread_num != 0){
       not_master_region = region_data;
     }
-
-#if 0
-    region_stack[top_index].parent_frame = hpcrun_ompt_get_task_frame(1);
-#endif
   }
 }
 
 
-void
+static void
 ompt_implicit_task_internal_end
 (
  ompt_data_t *parallel_data,
@@ -423,7 +360,6 @@ ompt_implicit_task_internal_end
     // pop element from the stack
     pop_region_stack();
   }
-
 }
 
 
@@ -437,38 +373,21 @@ ompt_implicit_task
  unsigned int thread_num
 )
 {
-//    printf("---%p, %d\n", parallel_data, endpoint == ompt_scope_end);
- if (endpoint == ompt_scope_begin)
-   ompt_implicit_task_internal_begin(parallel_data,task_data,team_size,thread_num);
- else if (endpoint == ompt_scope_end)
-   ompt_implicit_task_internal_end(parallel_data,task_data,team_size,thread_num);
- else
-   assert(0);
+  hpcrun_safe_enter();
+
+  if (endpoint == ompt_scope_begin) {
+    ompt_implicit_task_internal_begin(parallel_data, task_data, team_size, thread_num);
+  } else if (endpoint == ompt_scope_end) {
+    ompt_implicit_task_internal_end(parallel_data, task_data, team_size, thread_num);
+  } else {
+    // should never occur. should we add a message to the log?
+  }
+
+  hpcrun_safe_exit();
 }
 
 
-void 
-ompt_parallel_region_register_callbacks
-(
- ompt_set_callback_t ompt_set_callback_fn
-)
-{
-  int retval;
-  retval = ompt_set_callback_fn(ompt_callback_parallel_begin,
-                    (ompt_callback_t)ompt_parallel_begin);
-  assert(ompt_event_may_occur(retval));
-
-  retval = ompt_set_callback_fn(ompt_callback_parallel_end,
-                    (ompt_callback_t)ompt_parallel_end);
-  assert(ompt_event_may_occur(retval));
-
-  retval = ompt_set_callback_fn(ompt_callback_implicit_task,
-                                (ompt_callback_t)ompt_implicit_task);
-  assert(ompt_event_may_occur(retval));
-}
-
-
-ompt_region_data_t* 
+static ompt_region_data_t* 
 ompt_region_alloc
 (
  void
@@ -501,26 +420,9 @@ ompt_region_freelist_put
  ompt_region_data_t *r 
 )
 {
+  r->region_id = 0xdeadbeef;
   freelist_add_first(OMPT_BASE_T_STAR(r), OMPT_BASE_T_STAR_STAR(private_region_freelist_head));
 }
-
-
-#if REGION_DEBUGGING
-void
-ompt_region_debug_chain
-(
-  ompt_region_data_t* r
-)
-{
-  // region tracking for debugging
-  spinlock_lock(&debuginfo_lock);
-
-  r->next_region = global_region_list;
-  global_region_list = r;
-
-  spinlock_unlock(&debuginfo_lock);
-}
-#endif
 
 
 ompt_region_data_t*
@@ -532,9 +434,7 @@ ompt_region_acquire
   ompt_region_data_t* r = ompt_region_freelist_get();
   if (r == 0) {
     r = ompt_region_alloc();
-#if REGION_DEBUGGING
-    ompt_region_debug_chain(r);
-#endif
+    ompt_region_debug_region_create(r);
   }
   return r;
 }
@@ -549,174 +449,49 @@ ompt_region_release
   ompt_region_freelist_put(r);
 }
 
-
-void
-rr_queue_push
-(
-  rr_pending_t **q,
-  rr_pending_t *rr
-)
-{
-  rr->next = *q;
-  *q = rr;
-}
-
-
-rr_pending_t *
-rr_queue_pop
-(
-  rr_pending_t **q
-)
-{
-  rr_pending_t *rr = 0;
-
-  if (q) {
-    rr = *q;
-    *q = rr->next;
-    rr->next = 0;
-  } 
-
-  return rr;
-}
-
-
-rr_pending_t *
-rr_alloc()
-{
-  rr_pending_t *rr = (rr_pending_t *) hpcrun_malloc(sizeof(rr_pending_t));
-  return rr;
-}
-
-
-rr_pending_t *
-rr_get()
-{
-  rr_pending_t *rr = rr_freelist ? rr_queue_pop(&rr_freelist) : rr_alloc();
-  return rr;
-}
-
-
-void
-rr_free
-(
-  rr_pending_t *rr
-)
-{
-  rr_queue_push(&rr_freelist, rr);
-}
-
-
-int
-rr_matches
-(
-  rr_pending_t *rr,
-  ompt_region_data_t *region,
-  int thread_id
-)
-{
-  return rr->region == region && rr->thread_id == thread_id;
-}
-
-
-void
-rr_queue_drop
-(
-  ompt_region_data_t *region,
-  int thread_id
-)
-{
-  // invariant: cur is pointer to next element
-  rr_pending_t **cur = &rr_pending;
-
-  // for each element in the queue 
-  for (; *cur;) { 
-    // if a match is found, remove and return it
-    if (rr_matches(*cur, region, thread_id)) {
-      rr_pending_t *rr = rr_queue_pop(cur);
-
-      printf("rr_done region %p (id=0x%lx) thread %d\n", rr->region, region->region_id, rr->thread_id);
-
-      rr_free(rr);
-
-      return;
-    }
-
-    // preserve invariant for next element in the list
-    cur = &((*cur)->next);
-  }
-
-  printf("region resolution queue drop failed q = %p, region = %p, thread = %d\n", &rr_pending, region, thread_id);
-}
-
-
-void
-rr_needed
-(
-  ompt_region_data_t *region
-)
-{
-#if 1
-  spinlock_lock(&debuginfo_lock);
-
-  rr_pending_t *rr = rr_get();
-
-  rr->region = region;
-  rr->thread_id = monitor_get_thread_num();
-
-  rr_queue_push(&rr_pending, rr);
-
-  printf("rr_needed region %p (id=0x%lx) thread %d\n", region, region->region_id, rr->thread_id);
-
-  spinlock_unlock(&debuginfo_lock);
-#endif
-}
-
-
-void
-rr_done
-(
-  ompt_region_data_t *region
-)
-{
-#if 1
-  spinlock_lock(&debuginfo_lock);
-
-  int thread_id = monitor_get_thread_num();
-
-  rr_queue_drop(region, thread_id);
-
-  spinlock_unlock(&debuginfo_lock);
-#endif
-}
-
-
-void 
-hpcrun_ompt_region_check
-(
-  void
-)
-{
-   ompt_region_data_t *e = global_region_list;
-   while (e) {
-     printf("region ((ompt_region_data_t *) %p) call_path = %p queue head = %p\n", e, e->call_path, 
-            atomic_load(&e->queue.head));
-     e = (ompt_region_data_t *) e->next_region;
-   } 
-
-   rr_pending_t *rr = rr_pending;
-   while (rr) {
-     printf("pending region %p thread %d\n", rr->region, rr->thread_id);
-     rr = rr->next;
-   }
-}
-
-
 void
 hpcrun_ompt_region_free
 (
  ompt_region_data_t *region_data
 )
 {
+  region_data->region_id = 0xdeadbead;
   wfq_enqueue(OMPT_BASE_T_STAR(region_data), region_data->thread_freelist);
 }
 
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+// initialize support for regions
+void
+ompt_regions_init
+(
+ void
+)
+{
+  wfq_init(&public_region_freelist);
+  ompt_region_debug_init();
+}
+
+void 
+ompt_parallel_region_register_callbacks
+(
+ ompt_set_callback_t ompt_set_callback_fn
+)
+{
+  int retval;
+  retval = ompt_set_callback_fn(ompt_callback_parallel_begin,
+                    (ompt_callback_t)ompt_parallel_begin);
+  assert(ompt_event_may_occur(retval));
+
+  retval = ompt_set_callback_fn(ompt_callback_parallel_end,
+                    (ompt_callback_t)ompt_parallel_end);
+  assert(ompt_event_may_occur(retval));
+
+  retval = ompt_set_callback_fn(ompt_callback_implicit_task,
+                                (ompt_callback_t)ompt_implicit_task);
+  assert(ompt_event_may_occur(retval));
+}

@@ -347,7 +347,9 @@ MY_BASE_FILES =				\
 	ompt/ompt-defer.c               \
 	ompt/ompt-defer-write.c         \
 	ompt/ompt-interface.c           \
+	ompt/ompt-queues.c              \
 	ompt/ompt-region.c              \
+	ompt/ompt-region-debug.c        \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
