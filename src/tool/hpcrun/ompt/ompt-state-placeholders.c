@@ -149,6 +149,18 @@ ompt_mutex_wait_state
 }
 
 
+void 
+ompt_region_unresolved
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+
 //***************************************************************************
 // private operations
 //***************************************************************************
@@ -205,7 +217,15 @@ ompt_init_placeholders_internal
 )
 {
   ompt_function_lookup_t ompt_fn_lookup = (ompt_function_lookup_t) arg;
+
   FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
+
+  // placeholder for unresolved regions 
+  //
+  // this placeholder is used when the context for a parallel region remains 
+  // unresolved at the end of a program execution. this can happen if a 
+  // program execution is interrupted before the region is resolved. 
+  init_placeholder(&ompt_placeholders.region_unresolved, ompt_region_unresolved);
 }
 
 

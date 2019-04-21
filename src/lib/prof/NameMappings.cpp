@@ -34,6 +34,9 @@ const char *OMP_BARRIER_WAIT = "<omp barrier>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
 const char *NO_THREAD_ROOT   = "<no thread>";
+const char *OMP_REGION_UNR   = "<omp region unresolved>";
+
+
 
 //******************************************************************************
 // types
@@ -88,7 +91,9 @@ static NameMapping renamingTable[] = {
   { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	    },
   { "ompt_mutex_wait",         OMP_MUTEX_WAIT       },
 
-  { "NO_THREAD",               NO_THREAD_ROOT       }
+  { "NO_THREAD",               NO_THREAD_ROOT       },
+
+  { "ompt_region_unresolved",  OMP_REGION_UNR       }
 };
 
 static const char *fakeProcedures[] = {

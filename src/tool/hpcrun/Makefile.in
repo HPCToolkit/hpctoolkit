@@ -464,8 +464,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-thread.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/perf/event_custom.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -588,6 +589,7 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	utilities/libhpcrun_la-executable-path.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
 	utilities/libhpcrun_la-line_wrapping.lo \
+	utilities/libhpcrun_la-timer.lo \
 	utilities/libhpcrun_la-tokenize.lo \
 	utilities/libhpcrun_la-unlink.lo $(am__objects_7) \
 	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
@@ -780,8 +782,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-thread.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c sample-sources/perf/event_custom.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -910,6 +913,7 @@ am__objects_45 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
+	utilities/libhpcrun_o-timer.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
 	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_40) \
 	$(am__objects_41) $(am__objects_42) $(am__objects_43) \
@@ -1571,9 +1575,10 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-thread.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_12) $(am__append_14) \
-	$(am__append_15) $(am__append_16) $(am__append_17)
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c $(am__append_12) \
+	$(am__append_14) $(am__append_15) $(am__append_16) \
+	$(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -2237,6 +2242,8 @@ utilities/libhpcrun_la-ip-normalized.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-line_wrapping.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_la-timer.lo: utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-tokenize.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-unlink.lo: utilities/$(am__dirstamp) \
@@ -2717,6 +2724,8 @@ utilities/libhpcrun_o-ip-normalized.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-line_wrapping.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_o-timer.$(OBJEXT): utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-tokenize.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-unlink.$(OBJEXT): utilities/$(am__dirstamp) \
@@ -3302,6 +3311,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-line_wrapping.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-timer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-tokenize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-executable-path.Po@am__quote@
@@ -3309,6 +3319,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-ip-normalized.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-line_wrapping.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-timer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-tokenize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-unlink.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/arch/ia64/$(DEPDIR)/libhpcrun_la-ia64-context-pc.Plo@am__quote@
@@ -4095,6 +4106,13 @@ utilities/libhpcrun_la-line_wrapping.lo: utilities/line_wrapping.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/line_wrapping.c' object='utilities/libhpcrun_la-line_wrapping.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-line_wrapping.lo `test -f 'utilities/line_wrapping.c' || echo '$(srcdir)/'`utilities/line_wrapping.c
+
+utilities/libhpcrun_la-timer.lo: utilities/timer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-timer.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-timer.Tpo -c -o utilities/libhpcrun_la-timer.lo `test -f 'utilities/timer.c' || echo '$(srcdir)/'`utilities/timer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_la-timer.Tpo utilities/$(DEPDIR)/libhpcrun_la-timer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/timer.c' object='utilities/libhpcrun_la-timer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-timer.lo `test -f 'utilities/timer.c' || echo '$(srcdir)/'`utilities/timer.c
 
 utilities/libhpcrun_la-tokenize.lo: utilities/tokenize.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-tokenize.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-tokenize.Tpo -c -o utilities/libhpcrun_la-tokenize.lo `test -f 'utilities/tokenize.c' || echo '$(srcdir)/'`utilities/tokenize.c
@@ -5677,6 +5695,20 @@ utilities/libhpcrun_o-line_wrapping.obj: utilities/line_wrapping.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/line_wrapping.c' object='utilities/libhpcrun_o-line_wrapping.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-line_wrapping.obj `if test -f 'utilities/line_wrapping.c'; then $(CYGPATH_W) 'utilities/line_wrapping.c'; else $(CYGPATH_W) '$(srcdir)/utilities/line_wrapping.c'; fi`
+
+utilities/libhpcrun_o-timer.o: utilities/timer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-timer.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-timer.Tpo -c -o utilities/libhpcrun_o-timer.o `test -f 'utilities/timer.c' || echo '$(srcdir)/'`utilities/timer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-timer.Tpo utilities/$(DEPDIR)/libhpcrun_o-timer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/timer.c' object='utilities/libhpcrun_o-timer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-timer.o `test -f 'utilities/timer.c' || echo '$(srcdir)/'`utilities/timer.c
+
+utilities/libhpcrun_o-timer.obj: utilities/timer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-timer.obj -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-timer.Tpo -c -o utilities/libhpcrun_o-timer.obj `if test -f 'utilities/timer.c'; then $(CYGPATH_W) 'utilities/timer.c'; else $(CYGPATH_W) '$(srcdir)/utilities/timer.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-timer.Tpo utilities/$(DEPDIR)/libhpcrun_o-timer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/timer.c' object='utilities/libhpcrun_o-timer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-timer.obj `if test -f 'utilities/timer.c'; then $(CYGPATH_W) 'utilities/timer.c'; else $(CYGPATH_W) '$(srcdir)/utilities/timer.c'; fi`
 
 utilities/libhpcrun_o-tokenize.o: utilities/tokenize.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-tokenize.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-tokenize.Tpo -c -o utilities/libhpcrun_o-tokenize.o `test -f 'utilities/tokenize.c' || echo '$(srcdir)/'`utilities/tokenize.c

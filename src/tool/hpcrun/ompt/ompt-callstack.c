@@ -817,6 +817,9 @@ ompt_callstack_init_deferred
 {
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
   else {
+    // set up a finalizer to propagate information about
+    // openmp region contexts that have not been fully 
+    // resolved across all threads.
     ompt_thread_finalizer.next = 0;
     ompt_thread_finalizer.fn = ompt_resolve_region_contexts;
     thread_finalize_register(&ompt_thread_finalizer);

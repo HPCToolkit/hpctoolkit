@@ -65,12 +65,14 @@
 //*****************************************************************************
 
 #include <hpcrun/unresolved.h>
+#include <hpcrun/utilities/timer.h>
 
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
-#include "ompt-region-debug.h"
 #include "ompt-queues.h"
+#include "ompt-region-debug.h"
+#include "ompt-state-placeholders.h"
 #include "ompt-thread.h"
 
 
@@ -756,16 +758,72 @@ try_resolve_one_region_context
 }
 
 
+void
+update_unresolved_node
+(
+ cct_node_t* n, 
+ cct_op_arg_t arg, 
+ size_t level
+)
+{
+  cct_addr_t *addr = hpcrun_cct_addr(n);
+  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
+    addr->ip_norm.lm_ip = ompt_placeholders.region_unresolved.pc_norm.lm_ip;
+    addr->ip_norm.lm_id = ompt_placeholders.region_unresolved.pc_norm.lm_id;
+  }
+}
+
+void
+update_any_unresolved_regions
+(
+ cct_node_t* root 
+)
+{
+  void *no_arg = 0;
+  hpcrun_cct_walkset(root, update_unresolved_node, no_arg);
+}
+
+
+void
+mark_remainining_unresolved_regions
+(
+)
+{
+  thread_data_t* td   = hpcrun_get_thread_data();
+  cct_bundle_t* cct = &(td->core_profile_trace_data.epoch->csdata);
+
+  // look for unresolved nodes anywhere we might find them
+  update_any_unresolved_regions(cct->top);
+  update_any_unresolved_regions(cct->tree_root);
+  update_any_unresolved_regions(cct->partial_unw_root);
+  update_any_unresolved_regions(cct->unresolved_root);
+}
+
 void 
 ompt_resolve_region_contexts
 (
  int is_process // ignored
 )
 {
+  struct timespec start_time;
+
+  size_t i = 0;
+  timer_start(&start_time);
+
   // resolve all remaining regions
-  while(unresolved_cnt) {
+  for(;;i++) {
+    if (unresolved_cnt == 0) break; 
+
     try_resolve_one_region_context();
+
+    // spin at most ten seconds
+    if (i % 1000) {
+      if (timer_elapsed(&start_time) > 3.0) break;
+    }
   }
+
+  mark_remainining_unresolved_regions();
+
   // FIXME vi3: find all memory leaks
 }
 
