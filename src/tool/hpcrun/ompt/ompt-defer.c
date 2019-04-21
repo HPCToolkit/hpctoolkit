@@ -767,11 +767,15 @@ update_unresolved_node
 )
 {
   cct_addr_t *addr = hpcrun_cct_addr(n);
-  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) {
+
+  // Note: GCC7 statically evaluates this as false and dead code
+  // eliminates the body without the cast on UNRESOLVED
+  if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) { 
     addr->ip_norm.lm_ip = ompt_placeholders.region_unresolved.pc_norm.lm_ip;
     addr->ip_norm.lm_id = ompt_placeholders.region_unresolved.pc_norm.lm_id;
   }
 }
+
 
 void
 update_any_unresolved_regions
@@ -785,8 +789,9 @@ update_any_unresolved_regions
 
 
 void
-mark_remainining_unresolved_regions
+mark_remaining_unresolved_regions
 (
+ void
 )
 {
   thread_data_t* td   = hpcrun_get_thread_data();
@@ -810,19 +815,30 @@ ompt_resolve_region_contexts
   size_t i = 0;
   timer_start(&start_time);
 
-  // resolve all remaining regions
+  // attempt to resolve all remaining regions
   for(;;i++) {
+
+    // if all regions resolved, we are done
     if (unresolved_cnt == 0) break; 
 
+    // poll for a notification to resolve a region context
     try_resolve_one_region_context();
 
-    // spin at most ten seconds
+    // infrequently check for a timeout
     if (i % 1000) {
+      
+      // there are cases where not all region contexts can be
+      // resolved. for instance, a user may initiate termination with
+      // a Cntrl-C in the middle of a parallel region. if we have
+      // tried to resolve region contexts for three seconds, that
+      // should be enough. terminate after three seconds.
       if (timer_elapsed(&start_time) > 3.0) break;
     }
   }
 
-  mark_remainining_unresolved_regions();
+  if (unresolved_cnt != 0) {
+    mark_remaining_unresolved_regions();
+  }
 
   // FIXME vi3: find all memory leaks
 }

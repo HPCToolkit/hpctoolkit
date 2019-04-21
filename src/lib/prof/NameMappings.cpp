@@ -34,7 +34,7 @@ const char *OMP_BARRIER_WAIT = "<omp barrier>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
 const char *NO_THREAD_ROOT   = "<no thread>";
-const char *OMP_REGION_UNR   = "<omp region unresolved>";
+const char *OMP_REGION_UNR   = "<unresolved omp region>";
 
 
 
