@@ -682,7 +682,7 @@ hpcrun_cct_insert_path_return_leaf_tmp
     return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path));
 }
 
-// return one if successful
+// return one if a notification was processed
 int
 try_resolve_one_region_context
 (
@@ -696,6 +696,8 @@ try_resolve_one_region_context
 
   if (!old_head) return 0;
 
+  unresolved_cnt--;
+
   // region to resolve
   ompt_region_data_t *region_data = old_head->region_data;
 
@@ -705,55 +707,48 @@ try_resolve_one_region_context
   cct_node_t *unresolved_cct = old_head->unresolved_cct;
   cct_node_t *parent_unresolved_cct = hpcrun_cct_parent(unresolved_cct);
 
-  if (parent_unresolved_cct == NULL) {
+  if (parent_unresolved_cct == NULL || region_data->call_path == NULL) {
     deferred_resolution_breakpoint();
-    return 0;
-  }
-
-  if (region_data->call_path == NULL) {
-    deferred_resolution_breakpoint();
-    return 0;
-  }
-
-  // prefix should be put between unresolved_cct and parent_unresolved_cct
-  cct_node_t *prefix = NULL;
-  cct_node_t *region_call_path = region_data->call_path;
-
-  // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
-  // when had this condtion, once infinity happen
-  if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
-    // from initial region, we should remove the first one
-    prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_call_path);
   } else {
-    // for resolving inner region, we should consider all cct nodes from prefix
-    prefix = hpcrun_cct_insert_path_return_leaf_tmp(parent_unresolved_cct, region_call_path);
+    // prefix should be put between unresolved_cct and parent_unresolved_cct
+    cct_node_t *prefix = NULL;
+    cct_node_t *region_call_path = region_data->call_path;
+
+    // FIXME: why hpcrun_cct_insert_path_return_leaf ignores top cct of the path
+    // when had this condtion, once infinity happen
+    if (parent_unresolved_cct == hpcrun_get_thread_epoch()->csdata.thread_root) {
+      // from initial region, we should remove the first one
+      prefix = hpcrun_cct_insert_path_return_leaf(parent_unresolved_cct, region_call_path);
+    } else {
+      // for resolving inner region, we should consider all cct nodes from prefix
+      prefix = hpcrun_cct_insert_path_return_leaf_tmp(parent_unresolved_cct, region_call_path);
+    }
+
+    if (prefix == NULL) {
+      deferred_resolution_breakpoint();
+    }
+
+    if (prefix != unresolved_cct) {
+      // prefix node should change the unresolved_cct
+      hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
+      // delete unresolved_cct from parent
+      hpcrun_cct_delete_self(unresolved_cct);
+    }
+    // ==================================
   }
-
-  if (prefix == NULL) {
-    deferred_resolution_breakpoint();
-  }
-
-  // prefix node should change the unresolved_cct
-  hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
-  // delete unresolved_cct from parent
-  hpcrun_cct_delete_self(unresolved_cct);
-  // ==================================
-
 
   // free notification
   hpcrun_ompt_notification_free(old_head);
 
-
-  // any thread should be notify
-  ompt_notification_t* to_notify = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
-  if (to_notify){
-    wfq_enqueue(OMPT_BASE_T_STAR(to_notify), to_notify->threads_queue);
-  }else{
+  // check if the notification needs to be forwarded 
+  ompt_notification_t* next = (ompt_notification_t*) wfq_dequeue_public(&region_data->queue);
+  if (next) {
+    wfq_enqueue(OMPT_BASE_T_STAR(next), next->threads_queue);
+  } else {
     // notify creator of region that region_data can be put in region's freelist
     hpcrun_ompt_region_free(region_data);
   }
 
-  unresolved_cnt--;
   return 1;
 }
 
@@ -804,10 +799,11 @@ mark_remaining_unresolved_regions
   update_any_unresolved_regions(cct->unresolved_root);
 }
 
+
 void 
 ompt_resolve_region_contexts
 (
- int is_process // ignored
+ int is_process
 )
 {
   struct timespec start_time;
@@ -836,20 +832,46 @@ ompt_resolve_region_contexts
     }
   }
 
+#if 0
   if (unresolved_cnt != 0) {
     mark_remaining_unresolved_regions();
+  }
+#endif
+
+  if (unresolved_cnt != 0 && hpcrun_ompt_region_check()) {
+    // hang to let debugger attach
+    volatile int x;
+    for(;;) {
+      x++;
+    };
   }
 
   // FIXME vi3: find all memory leaks
 }
 
 
-cct_node_t*
-top_cct
+void 
+ompt_resolve_region_contexts_poll
 (
- cct_node_t* current_cct
+ void
 )
 {
+  // if there are any unresolved contexts
+  if (unresolved_cnt) {
+    // attempt to resolve contexts by consuming any notifications that
+    // are currently pending.
+    while (try_resolve_one_region_context());
+  };
+}
+
+
+#if 1
+cct_node_t *
+top_cct
+(
+ cct_node_t *current_cct
+)
+{  
   if (!current_cct)
     return NULL;
 
@@ -860,6 +882,24 @@ top_cct
   }
   return temp;
 }
+#else
+// return the top node in a call path
+cct_node_t *
+top_cct
+(
+ cct_node_t *node
+)
+{
+  if (node) {
+    for (;;) {
+      cct_node_t *next = hpcrun_cct_parent(node);
+      if (next == NULL) break;
+      node = next;
+    }
+  }
+  return node;
+}
+#endif
 
 
 #define UINT64_T(value) (uint64_t)value
@@ -1363,24 +1403,19 @@ tmp_end_region_resolve
  cct_node_t* prefix
 )
 {
-
-#if 1
-  // ================================== resolving part
   cct_node_t *unresolved_cct = notification->unresolved_cct;
 
   if (prefix == NULL) {
     deferred_resolution_breakpoint();
-    //unresolved_cnt--;
     return;
   }
 
-  // prefix node should change the unresolved_cct
-  hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
-  // delete unresolved_cct from parent
-  hpcrun_cct_delete_self(unresolved_cct);
-  // ==================================
-#endif
-
-  // free notification
-  //hpcrun_ompt_notification_free(old_head);
+  // if the prefix and unresolved_cct are already equal,
+  // no action is necessary
+  if (prefix != unresolved_cct) {
+    // prefix node should change the unresolved_cct
+    hpcrun_cct_merge(prefix, unresolved_cct, merge_metrics, NULL);
+    // delete unresolved_cct from parent
+    hpcrun_cct_delete_self(unresolved_cct);
+  }
 }

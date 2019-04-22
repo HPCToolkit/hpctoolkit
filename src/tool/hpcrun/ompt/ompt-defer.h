@@ -176,6 +176,13 @@ resolve_one_region_context
 
 
 void 
+ompt_resolve_region_contexts_poll
+(
+ void
+);
+
+
+void 
 ompt_resolve_region_contexts
 (
  int is_process

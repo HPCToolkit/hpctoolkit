@@ -81,6 +81,7 @@
 //******************************************************************************
 
 #define OMPT_DEBUG 0
+#define ALLOW_DEFERRED_CONTEXT 0
 
 #if OMPT_DEBUG
 #define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
@@ -114,7 +115,9 @@
 
 static cct_backtrace_finalize_entry_t ompt_finalizer;
 
+#if ALLOW_DEFERRED_CONTEXT
 static thread_finalize_entry_t ompt_thread_finalizer;
+#endif
 
 static closure_t ompt_callstack_init_closure;
 
@@ -815,6 +818,7 @@ ompt_callstack_init_deferred
  void
 )
 {
+#if ALLOW_DEFERRED_CONTEXT
   if (hpcrun_trace_isactive()) ompt_eager_context = 1;
   else {
     // set up a finalizer to propagate information about
@@ -824,6 +828,9 @@ ompt_callstack_init_deferred
     ompt_thread_finalizer.fn = ompt_resolve_region_contexts;
     thread_finalize_register(&ompt_thread_finalizer);
   }
+#else
+  ompt_eager_context = 1;
+#endif
 }
 
 

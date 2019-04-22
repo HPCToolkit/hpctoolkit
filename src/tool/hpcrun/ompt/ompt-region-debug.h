@@ -65,6 +65,7 @@
 #define ompt_region_debug_notify_received(notification)
 #define ompt_region_debug_init()
 #define ompt_region_debug_region_create(region)
+#define hpcrun_ompt_region_check() (0)
 
 #else
 
@@ -111,7 +112,15 @@ void
 ompt_region_debug_region_create
 (
   ompt_region_data_t* region
- );
+);
+
+
+int 
+hpcrun_ompt_region_check
+(
+  void
+);
+
 
 #endif
 

@@ -339,6 +339,7 @@ ompt_implicit_task_internal_end
     // the only thing we could do (certainly) here is to pop element from the stack
     // pop element from the stack
     pop_region_stack();
+    ompt_resolve_region_contexts_poll();
   }
 }
 

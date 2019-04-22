@@ -85,6 +85,7 @@ typedef struct region_resolve_tracker_s {
   ompt_region_data_t *region;
   uint64_t region_id;
   int thread_id;
+  ompt_notification_t *notification;
 } typed_queue_elem(rn);
 
 typedef q_element_ptr_t typed_queue_elem_ptr(rn);
@@ -168,9 +169,10 @@ rn_print
  typed_queue_elem(rn) *rn
 )
 {
-  printf("%s: notification=(region %p, id 0x%lx, thread %3d) "
-	 "region->region_id 0x%lx\n", what, rn->region, 
-	 rn->region_id, rn->thread_id, rn->region->region_id);
+  printf("region %p id 0x%lx notification %p notification->next %14p thread %3d "
+	 "region->region_id 0x%lx      %s\n", rn->region, 
+	 rn->region_id, rn->notification, rn->notification->next.next, rn->thread_id, rn->region->region_id, 
+	 what);
 }
  
 
@@ -195,7 +197,7 @@ rn_queue_drop
     if (rn_matches(next, region, thread_id)) {
       typed_queue_elem(rn) *rn = typed_queue_pop(rn, squeue)(cur);
 
-      rn_print("rn_done", rn);
+      rn_print("(notify received)", rn);
       rn_free(rn);
 
       return;
@@ -230,10 +232,11 @@ ompt_region_debug_notify_needed
   rn->region = notification->region_data;
   rn->region_id = notification->region_id;
   rn->thread_id = tid;
+  rn->notification = notification;
 
   typed_queue_push(rn, cqueue)(&rn_list, rn);
 
-  rn_print("rn_needed", rn);
+  rn_print("(notify needed)", rn);
 
   spinlock_unlock(&debuginfo_lock);
 }
@@ -282,7 +285,7 @@ ompt_region_debug_region_create
 }
 
 
-void 
+int 
 hpcrun_ompt_region_check
 (
   void
@@ -290,19 +293,29 @@ hpcrun_ompt_region_check
 {
    ompt_region_data_t *e = global_region_list;
    while (e) {
-     printf("region %p: call_path = %p queue head = %p\n", 
-	    e, e->call_path, atomic_load(&e->queue.head));
+     printf("region %p region id 0x%lx call_path = %p queue head = %p\n", 
+	    e, e->region_id, e->call_path, atomic_load(&e->queue.head));
 
+     ompt_notification_t *n = (ompt_notification_t *) atomic_load(&e->queue.head);
+     while(n) {
+       printf("   notification %p region %p region_id 0x%lx threads_queue %p unresolved_cct %p next %p\n",
+	      n, n->region_data, n->region_id, n->threads_queue, n->unresolved_cct, n->next.next);
+       n = (ompt_notification_t *) n->next.next;
+     }
      e = (ompt_region_data_t *) e->next_region;
    } 
 
    typed_queue_elem(rn) *rn = 
      typed_queue_elem_ptr_get(rn, squeue)(&rn_list);
 
+   int result = rn != 0;
+
    while (rn) {
-     rn_print("rn_pending", rn);
+     rn_print("(notification pending)", rn);
      rn = typed_queue_elem_ptr_get(rn,squeue)(&rn->next); 
    }
+
+   return result;
 }
 
 
