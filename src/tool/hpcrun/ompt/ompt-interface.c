@@ -841,19 +841,20 @@ ompt_trace_configure(ompt_device_t *device)
   flags |= ompt_native_driver;
 
   flags |= ompt_native_runtime;
-  
-  if (!ompt_pc_sampling_enabled) {
-    flags |= ompt_native_kernel_invocation;
 
-    flags |= ompt_native_kernel_execution;
+  flags |= ompt_native_kernel_invocation;
 
-    flags |= ompt_native_data_motion_explicit;
-  } else {
-    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
-  }
+  flags |= ompt_native_kernel_execution;
+
+  flags |= ompt_native_data_motion_explicit;
 
   // indicate desired monitoring
   ompt_set_trace_native(device, 1, flags);
+  
+  // set pc sampling after other traces
+  if (ompt_pc_sampling_enabled) {
+    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
+  }
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
