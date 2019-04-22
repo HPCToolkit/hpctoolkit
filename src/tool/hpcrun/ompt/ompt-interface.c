@@ -1156,8 +1156,9 @@ hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
 #define OMPT_TARGET_API_FUNCTION(return_type, fn, args)  \
     OMPT_API_FUNCTION(return_type, fn, args) 
 
-OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling_frequency, (
+OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling, (
     ompt_device_t *device,
+    int enable,
     int pc_sampling_frequency
 ));
 
@@ -1172,7 +1173,7 @@ OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling_frequency, (
   macro(ompt_get_record_native) \
   macro(ompt_get_record_abstract) \
   macro(ompt_advance_buffer_cursor) \
-  macro(ompt_set_pc_sampling_frequency) 
+  macro(ompt_set_pc_sampling) 
 
 #define ompt_decl_name(fn) \
   fn ## _t  fn;
@@ -1237,7 +1238,6 @@ void
 ompt_pc_sampling_enable()
 {
   ompt_pc_sampling_enabled = true;
-  cupti_pc_sampling_enable();
 }
 
 
@@ -1245,7 +1245,6 @@ void
 ompt_pc_sampling_disable()
 {
   ompt_pc_sampling_enabled = false;
-  cupti_pc_sampling_disable();
 }
 
 
@@ -1258,22 +1257,23 @@ ompt_trace_configure(ompt_device_t *device)
   flags |= ompt_native_driver;
 
   flags |= ompt_native_runtime;
-  
-  if (!ompt_pc_sampling_enabled) {
-    flags |= ompt_native_kernel_invocation;
 
-    flags |= ompt_native_kernel_execution;
+  flags |= ompt_native_kernel_invocation;
 
-    flags |= ompt_native_data_motion_explicit;
-  }
+  flags |= ompt_native_kernel_execution;
+
+  flags |= ompt_native_data_motion_explicit;
 
   // indicate desired monitoring
   ompt_set_trace_native(device, 1, flags);
+  
+  // set pc sampling after other traces
+  if (ompt_pc_sampling_enabled) {
+    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
+  }
 
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
-
-  ompt_set_pc_sampling_frequency(device, cupti_pc_sampling_frequency_get());
 }
 
 

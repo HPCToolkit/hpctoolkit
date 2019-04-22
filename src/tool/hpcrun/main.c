@@ -748,9 +748,7 @@ hpcrun_thread_fini(epoch_t *epoch)
   TMSG(FINI,"thread fini");
 
   // take no action if this thread is suppressed
-  if (hpcrun_thread_suppress_sample) return;
-
-  if (hpcrun_is_initialized()) {
+  if (!hpcrun_thread_suppress_sample) {
     TMSG(FINI,"thread finit stops sampling");
     SAMPLE_SOURCES(stop);
     SAMPLE_SOURCES(thread_fini_action);
@@ -764,16 +762,15 @@ hpcrun_thread_fini(epoch_t *epoch)
 
     int is_process = 0;
     thread_finalize(is_process);
-    
-    // inform thread manager that we are terminating the thread
-    // thread manager may enqueue the thread_data (in compact mode)
-    // or flush the data into hpcrun file
-
-    thread_data_t* td = hpcrun_get_thread_data();
-    hpcrun_threadMgr_data_put(epoch, td);
-
-    TMSG(PROCESS, "End of thread");
   }
+    
+  // inform thread manager that we are terminating the thread
+  // thread manager may enqueue the thread_data (in compact mode)
+  // or flush the data into hpcrun file
+  thread_data_t* td = hpcrun_get_thread_data();
+  hpcrun_threadMgr_data_put(epoch, td);
+
+  TMSG(PROCESS, "End of thread");
 }
 
 //***************************************************************************

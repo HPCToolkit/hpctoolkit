@@ -88,6 +88,7 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/module-ignore-map.h>
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/safe-sampling.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -321,7 +322,12 @@ static int info_sm_full_samples_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
 
-static long pc_sampling_frequency = 1;
+static const long pc_sampling_frequency_default = 10;
+// -1: disabled, 5-31: 2^frequency
+static long pc_sampling_frequency = -1;
+static int cupti_enabled_activities = 0;
+// event name, which can be either nvidia-ompt or nvidia-cuda
+static char nvidia_name[128];
 
 //******************************************************************************
 // constants
@@ -338,7 +344,7 @@ CUpti_ActivityKind
 data_motion_explicit_activities[] = { 
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY, 
-  CUPTI_ACTIVITY_KIND_MEMORY,
+  //CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -364,7 +370,7 @@ kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_FUNCTION,
 //  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
 //  CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
-  CUPTI_ACTIVITY_KIND_BRANCH,
+//  CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };                                   
 
@@ -392,9 +398,24 @@ runtime_activities[] = {
 };
 
 
+typedef enum cupti_activities_flags {
+  CUPTI_DATA_MOTION_EXPLICIT = 1,
+  CUPTI_DATA_MOTION_IMPLICIT = 2,
+  CUPTI_KERNEL_INVOCATION    = 4,
+  CUPTI_KERNEL_EXECUTION     = 8,
+  CUPTI_DRIVER               = 16,
+  CUPTI_RUNTIME	             = 32,
+  CUPTI_OVERHEAD	           = 64
+} cupti_activities_flags_t;
+
+
 void
 cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 {
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+  hpcrun_safe_enter();
+
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
@@ -551,6 +572,9 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     default:
       break;
   }
+
+  hpcrun_safe_exit();
+  td->overhead--;
 }
 
 
@@ -558,6 +582,41 @@ int
 cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
+}
+
+
+void
+cupti_enable_activities
+(
+ CUcontext context
+)
+{
+  PRINT("Enter cupti_enable_activities\n");
+
+  #define FORALL_ACTIVITIES(macro, context)                                      \
+    macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
+    macro(context, CUPTI_DATA_MOTION_IMPLICIT, data_motion_explicit_activities)  \
+    macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
+    macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
+    macro(context, CUPTI_DRIVER, driver_activities)                              \
+    macro(context, CUPTI_RUNTIME, runtime_activities)                            \
+    macro(context, CUPTI_OVERHEAD, overhead_activities)
+
+  #define CUPTI_SET_ACTIVITIES(context, activity_kind, activity)  \
+    if (cupti_enabled_activities & activity_kind) {               \
+      cupti_monitoring_set(context, activity, true);              \
+    }
+
+  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
+
+  if (pc_sampling_frequency != -1) {
+    PRINT("pc sampling enabled\n");
+    cupti_pc_sampling_enable(context, pc_sampling_frequency);
+  }
+
+  cupti_correlation_enable(context);
+
+  PRINT("Exit cupti_enable_activities\n");
 }
 
 /******************************************************************************
@@ -744,48 +803,34 @@ METHOD_FN(process_event_list, int lush_metrics)
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
-  char name[128];
-  hpcrun_extract_ev_thresh(event, sizeof(name), name, &pc_sampling_frequency, 1);
-
-  if (hpcrun_ev_is(name, CUDA_NVIDIA) || hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
-    // Register device finailzers
+  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
+    &pc_sampling_frequency, pc_sampling_frequency_default);
+  if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
+    cupti_metrics_init();
+    
+    // Register hpcrun callbacks
     device_finalizer_flush.fn = cupti_device_flush;
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    cupti_monitoring_set(driver_activities, true);
-
-    cupti_monitoring_set(runtime_activities, true);
-
-    //// TODO(keren) ppecify desired monitoring
-    //} else {
-    //}
-
-    if (hpcrun_ev_is(name, CUDA_PC_SAMPLING)) {
-      cupti_pc_sampling_enable();
-    }
-
-    cupti_monitoring_set(kernel_invocation_activities, true);
-
-    cupti_monitoring_set(kernel_execution_activities, true);
-
-    cupti_monitoring_set(data_motion_explicit_activities, true);
-
-    cupti_metrics_init();
-
+    // Register cupti callbacks
     cupti_trace_init();
-
-    // Cannot set pc sampling frequency without knowing context,
-    // ompt_set_pc_sampling_frequency(device, cupti_get_pc_sampling_frequency());
     cupti_callbacks_subscribe();
-
-    cupti_correlation_enable();
-
     cupti_trace_start();
-  }
 
-  if (hpcrun_ev_is(name, OMPT_PC_SAMPLING)) {
+    // Set enabling activities
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+    if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
+      pc_sampling_frequency = -1;
+    }
+  } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }
 }

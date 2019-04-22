@@ -41,12 +41,11 @@ cupti_occupancy_analyze
   if (device != NULL) {
     cupti_device_property_t *device_property =
       cupti_device_id_map_entry_device_property_get(device);
-    *max_active_warps_per_sm = device_property->maxWarpsPerMultiprocessor;
-    uint32_t num_threads_per_warp = device_property->numThreadsPerWarp;
-    uint32_t max_blocks_per_multiprocessor = device_property->maxBlocksPerMultiprocessor;
-    uint32_t sm_threads = *max_active_warps_per_sm * num_threads_per_warp;
-    uint32_t sm_registers = device_property->maxRegistersPerMultiprocessor;
-    uint32_t sm_shared_memory = device_property->maxSharedMemoryPerMultiprocessor;
+    uint32_t num_threads_per_warp = device_property->num_threads_per_warp;
+    uint32_t sm_threads = device_property->sm_threads;
+    uint32_t sm_registers = device_property->sm_registers;
+    uint32_t sm_shared_memory = device_property->sm_shared_memory;
+    uint32_t sm_blocks = device_property->sm_blocks;
 
     uint32_t block_threads = kernel->blockX * kernel->blockY * kernel->blockZ;
     uint32_t block_registers = kernel->registersPerThread;
@@ -56,15 +55,16 @@ cupti_occupancy_analyze
     uint32_t max_blocks_by_threads = sm_threads / block_threads;
     uint32_t max_blocks_by_registers = sm_registers / block_registers;
     uint32_t max_blocks_by_shared_memory = block_shared_memory == 0 ? UINT32_MAX : sm_shared_memory / block_shared_memory;
+    *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
 
     uint32_t active_blocks = MIN4(max_blocks_by_threads, max_blocks_by_registers,
-      max_blocks_by_shared_memory, max_blocks_per_multiprocessor);
+      max_blocks_by_shared_memory, sm_blocks);
     *active_warps_per_sm = active_blocks * UPPER_DIV(block_threads, num_threads_per_warp);
     PRINT("sm_threads %u\n", sm_threads);
     PRINT("max_blocks_by_registers %u\n", max_blocks_by_registers);
     PRINT("max_blocks_by_threads %u\n", max_blocks_by_threads);
     PRINT("max_blocks_by_shared_memory %u\n", max_blocks_by_shared_memory);
-    PRINT("max_blocks_per_multiprocessor %u\n", max_blocks_per_multiprocessor);
+    PRINT("max_blocks_per_multiprocessor %u\n", sm_blocks);
     PRINT("active_blocks %u\n", active_blocks);
     PRINT("block_threads %u\n", block_threads);
     PRINT("num_threads_per_warp %u\n", num_threads_per_warp);
@@ -110,8 +110,8 @@ cupti_sm_efficiency_analyze
 
       uint64_t sample_period_in_cycles = pc_sampling_record_info->samplingPeriodInCycles;
       // khz to hz to hz/ns
-      double core_clock_rate = device_property->coreClockRate / 1000000.0;
-      uint64_t num_multiprocessors = device_property->numMultiprocessors;
+      double core_clock_rate = device_property->sm_clock_rate / 1000000.0;
+      uint64_t num_multiprocessors = device_property->sm_count;
       // ns
       uint64_t kernel_time = end - start;
       *total_samples = pc_sampling_record_info->totalSamples;

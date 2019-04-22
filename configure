@@ -22871,11 +22871,11 @@ else
 fi
 
 
-  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart -lcuda"
 
 fi
 
- if test "$OPT_HAVE_CUDA" = yes; then
+if test "$OPT_HAVE_CUDA" = yes; then
   OPT_ENABLE_CUDA_TRUE=
   OPT_ENABLE_CUDA_FALSE='#'
 else
