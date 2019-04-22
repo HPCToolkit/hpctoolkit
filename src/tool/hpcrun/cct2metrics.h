@@ -42,14 +42,18 @@ extern metric_data_list_t* hpcrun_reify_metric_set(cct_node_id_t cct_id, int met
 //
 // get metric data list for a node (NULL value is ok).
 //
-extern metric_data_list_t* hpcrun_get_metric_data_list(cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id);
 
-extern metric_set_t* hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_get_metric_data_list(cct_node_id_t cct_id);
 
 //
 // move metric data list from one node to another
 //
+extern metric_data_list_t* hpcrun_move_metric_data_list_specific(cct2metrics_t **map,
+  cct_node_id_t dest_id, cct_node_id_t source_id);
+
 extern metric_data_list_t* hpcrun_move_metric_data_list(cct_node_id_t dest_id, cct_node_id_t source_id);
+
 
 extern void cct2metrics_assoc(cct_node_t* node, metric_data_list_t* kind_metrics);
 

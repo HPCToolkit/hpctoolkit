@@ -126,49 +126,68 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
   return rv;
 }
 
-metric_data_list_t *
-hpcrun_get_metric_data_list(cct_node_id_t cct_id)
+metric_data_list_t*
+hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
 {
-  cct2metrics_t* map = THREAD_LOCAL_MAP();
-  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, map);
-  if (! map) return NULL;
+  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, current_map);
+  if (! current_map) return NULL;
 
-  map = splay(map, cct_id);
-  THREAD_LOCAL_MAP() = map;
-  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
+  current_map = splay(current_map, cct_id);
 
-  if (map->node == cct_id) {
-    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
-    return map->kind_metrics;
+  if (map)
+    *map = current_map;
+  else
+    THREAD_LOCAL_MAP() = current_map;
+
+  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, current_map);
+
+  if (current_map->node == cct_id) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
+    return current_map->kind_metrics;
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
 }
 
+metric_data_list_t*
+hpcrun_get_metric_data_list(cct_node_id_t cct_id)
+{
+  return hpcrun_get_metric_data_list_specific(NULL, cct_id);
+}
+
 metric_data_list_t *
-hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source)
+hpcrun_move_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t dest, cct_node_id_t source)
 {
   if (dest == NULL || source == NULL) {
     return NULL;
   }
 
-  cct2metrics_t* map = THREAD_LOCAL_MAP();
-  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", source, map);
-  if (! map) return NULL;
+  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", source, current_map);
+  if (! current_map) return NULL;
 
-  map = splay(map, source);
-  THREAD_LOCAL_MAP() = map;
-  TMSG(CCT2METRICS, " -- After Splay map = %p", source, map);
+  if (map)
+    *map = current_map;
+  else
+    THREAD_LOCAL_MAP() = current_map;
+  TMSG(CCT2METRICS, " -- After Splay map = %p", source, current_map);
 
-  if (map->node == source) {
-    TMSG(CCT2METRICS, " -- found %p, returning metrics", map->node);
-    metric_data_list_t *metric_data_list = map->kind_metrics;
-    map->kind_metrics = NULL;
+  if (current_map->node == source) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
+    metric_data_list_t *metric_data_list = current_map->kind_metrics;
+    current_map->kind_metrics = NULL;
     cct2metrics_assoc(dest, metric_data_list); 
     return metric_data_list;
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
+}
+
+metric_data_list_t*
+hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source)
+{
+  return hpcrun_move_metric_data_list_specific(NULL, dest, source);
 }
 
 //
