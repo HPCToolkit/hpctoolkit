@@ -92,6 +92,7 @@
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
 #include "hpcrun_stats.h"
+#include "hpcrun_flag_stacks.h"
 #include "name.h"
 #include "start-stop.h"
 #include "custom-init.h"
@@ -110,6 +111,10 @@
 #include "sample_prob.h"
 #include "term_handler.h"
 
+#include "device-initializers.h"
+#include "device-finalizers.h"
+#include "module-ignore-map.h"
+#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -373,9 +378,10 @@ hpcrun_set_abort_timeout()
 // ** local routines & data to support interval dumping **
 //------------------------------------
 
-static sigjmp_buf ivd_jb;
-
 siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
+
+#ifndef USE_LIBUNW
+static sigjmp_buf ivd_jb;
 
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
@@ -383,6 +389,7 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
   (*hpcrun_get_real_siglongjmp())(ivd_jb, 9);
   return 0;
 }
+#endif
 
 //------------------------------------
 // process level 
@@ -400,6 +407,9 @@ hpcrun_init_internal(bool is_child)
   // must initialize unwind recipe map before initializing fnbounds
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
+
+  // init callbacks for each device
+  hpcrun_initializer_init();
 
   // WARNING: a perfmon bug requires us to fork off the fnbounds
   // server before we call PAPI_init, which is done in argument
@@ -477,6 +487,7 @@ hpcrun_init_internal(bool is_child)
   //
   if (! is_child) {
     SAMPLE_SOURCES(process_event_list, lush_metrics);
+    hpcrun_metrics_data_finalize();
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
@@ -636,6 +647,8 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
+    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_shutdown);
 
     hpcrun_process_aux_cleanup_action();
 
@@ -707,17 +720,18 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
-  // handle event sets for sample sources
-  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  if (! hpcrun_thread_suppress_sample) {
+    // handle event sets for sample sources
+    SAMPLE_SOURCES(gen_event_set,lush_metrics);
+    // sample sources take thread specific action prior to start (often is a 'registration' action);
+    SAMPLE_SOURCES(thread_init_action);
 
-  // sample sources take thread specific action prior to start (often is a 'registration' action);
-  SAMPLE_SOURCES(thread_init_action);
-
-  // release the wallclock handler -for this thread-
-  hpcrun_itimer_wallclock_ok(true);
-  // start the sample sources
-  if (! hpcrun_thread_suppress_sample)
+    // start the sample sources
     SAMPLE_SOURCES(start);
+
+    // release the wallclock handler -for this thread-
+    hpcrun_itimer_wallclock_ok(true);
+  }
 
   return (void*) epoch;
 }
@@ -746,9 +760,11 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
+    device_finalizer_apply(device_finalizer_type_flush);
+
     int is_process = 0;
     thread_finalize(is_process);
-
+    
     // inform thread manager that we are terminating the thread
     // thread manager may enqueue the thread_data (in compact mode)
     // or flush the data into hpcrun file
@@ -759,7 +775,6 @@ hpcrun_thread_fini(epoch_t *epoch)
     TMSG(PROCESS, "End of thread");
   }
 }
-
 
 //***************************************************************************
 // hpcrun debugging support 
@@ -1013,6 +1028,15 @@ monitor_thread_pre_create(void)
   if (! hpcrun_is_initialized() || hpcrun_get_disabled()) {
     return NULL;
   }
+
+  struct monitor_thread_info mti;
+  monitor_get_new_thread_info(&mti);
+  void *thread_pre_create_address = mti.mti_create_return_addr;
+
+  if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
+    return NULL;
+  }
+  
   hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 
@@ -1088,6 +1112,13 @@ monitor_init_thread(int tid, void* data)
 		  }
 		});
 
+  void *thread_begin_address = monitor_get_addr_thread_start();
+
+  if (module_ignore_map_inrange_lookup(thread_begin_address)) {
+    hpcrun_thread_suppress_sample = true;
+  }
+
+  hpcrun_safe_enter();
 
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
@@ -1548,11 +1579,14 @@ void
 monitor_pre_dlopen(const char* path, int flags)
 {
   if (! hpcrun_is_initialized()) {
+    hpcrun_dlopen_flags_push(false);
     return;
   }
   if (! hpcrun_safe_enter()) {
+    hpcrun_dlopen_flags_push(false);
     return;
   }
+  hpcrun_dlopen_flags_push(true);
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1561,6 +1595,9 @@ monitor_pre_dlopen(const char* path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void* handle)
 {
+  if (!hpcrun_dlopen_flags_pop()) {
+    return;
+  }
   if (! hpcrun_is_initialized()) {
     return;
   }
@@ -1576,8 +1613,10 @@ void
 monitor_dlclose(void* handle)
 {
   if (! hpcrun_is_initialized()) {
+    hpcrun_dlclose_flags_push(false);
     return;
   }
+  hpcrun_dlclose_flags_push(true);
   hpcrun_safe_enter();
   hpcrun_dlclose(handle);
   hpcrun_safe_exit();
@@ -1587,6 +1626,9 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
+  if (! hpcrun_dlclose_flags_pop()) {
+    return;
+  }
   if (! hpcrun_is_initialized()) {
     return;
   }

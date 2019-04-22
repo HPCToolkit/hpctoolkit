@@ -67,7 +67,7 @@
 // local includes
 //******************************************************************************
 
-#include <lib/support/diagnostics.h>
+// #include <lib/support/diagnostics.h>
 
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
@@ -99,6 +99,7 @@ ElfFile::open
  std::string _fileName
 )
 {
+  origPtr = _memPtr;
   memPtr = _memPtr;
   memLen = _memLen;
   fileName = _fileName;
@@ -109,15 +110,18 @@ ElfFile::open
     return false;
   }
   GElf_Ehdr ehdr_v; 
-  GElf_Ehdr *ehdr = gelf_getehdr (elf, &ehdr_v);
+  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
     return false;
   }
 #ifdef EM_CUDA
 
   if (ehdr->e_machine == EM_CUDA) {
+    this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
-    relocateCubin(memPtr, elf);
+    origPtr = (char *) malloc(memLen);
+    memcpy(origPtr, memPtr, memLen);
+    relocateCubin(memPtr, memLen, elf);
 #else
     elf_end(elf);
     return false;
@@ -132,6 +136,7 @@ ElfFile::open
 
 ElfFile::~ElfFile() 
 {
+  if (origPtr != memPtr) free(origPtr);
   elf_end(elf);
 }
 

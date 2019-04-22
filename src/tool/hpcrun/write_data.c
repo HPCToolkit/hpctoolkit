@@ -260,10 +260,15 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
     // == metrics ==
     //
 
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-    hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
 
     TMSG(DATA_WRITE, "Done writing metric data");
 

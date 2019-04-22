@@ -63,6 +63,10 @@
 //*****************************************************************************
 // local includes
 //*****************************************************************************
+// johnmc merge
+#if 0
+#include "ompt-parallel-region-map.h"
+#endif
 
 #include <hpcrun/unresolved.h>
 #include <hpcrun/utilities/timer.h>
@@ -105,13 +109,13 @@ merge_metrics
   // if nodes a and b are the same, no need to merge
   if (a == b) return;
 
-  metric_set_t* mset_a = hpcrun_get_metric_set(a);
-  metric_set_t* mset_b = hpcrun_get_metric_set(b);
+  metric_data_list_t* mset_a = hpcrun_get_metric_data_list(a);
+  metric_data_list_t* mset_b = hpcrun_get_metric_data_list(b);
 
   if (!mset_a || !mset_b) return;
 
-  int num_metrics = hpcrun_get_num_metrics();
-  for (int i = 0; i < num_metrics; i++) {
+  int num_kind_metrics = hpcrun_get_num_kind_metrics();
+  for (int i = 0; i < num_kind_metrics; i++) {
     cct_metric_data_t *mdata_a = hpcrun_metric_set_loc(mset_a, i);
     cct_metric_data_t *mdata_b = hpcrun_metric_set_loc(mset_b, i);
 
@@ -175,8 +179,10 @@ omp_resolve
     else {
       prefix = hpcrun_cct_insert_path_return_leaf
 	((td->core_profile_trace_data.epoch->csdata).unresolved_root, prefix);
+
       //FIXME: Get region_data_t and update refcnt
 //      ompt_region_map_refcnt_update(partial_region_id, 1L);
+
       TMSG(DEFER_CTXT, "omp_resolve: get partial resolution to 0x%lx\n", partial_region_id);
     }
     // adjust the callsite of the prefix in side threads to make sure they are the same as
@@ -189,7 +195,7 @@ omp_resolve
       hpcrun_cct_merge(prefix, cct, merge_metrics, NULL);
       // must delete it when not used considering the performance
       TMSG(DEFER_CTXT, "omp_resolve: resolve region 0x%lx", my_region_id);
-      //ompt_region_map_refcnt_update(my_region_id, -1L);
+
       //ompt_region_map_refcnt_update(my_region_id, -1L);
     }
   }
@@ -345,7 +351,6 @@ resolve_cntxt
 //      hpcrun_cct_insert_addr(tbd_cct, &(ADDR2(UNRESOLVED, outer_region_id)));
 //    else
 //      outer_region_id = 0;
-
 
   }
 

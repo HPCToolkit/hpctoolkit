@@ -64,6 +64,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -123,13 +124,13 @@ public:
   bool isForwardSubstitution;         // default: false
   std::string dbgProcGlob;
 
-  std::string out_filenm;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
-  std::string in_filenm;
+  std::vector<std::string> in_filenm;
+  std::vector<std::string> out_filenm;
 
 private:
   void

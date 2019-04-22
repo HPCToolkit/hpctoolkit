@@ -77,6 +77,7 @@
 
 #include "Metric-IData.hpp"
 
+#include <lib/isa/ISA.hpp>
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -1724,14 +1725,19 @@ private:
 // --------------------------------------------------------------------------
 class Stmt: public ACodeNode {
 public:
+  enum StmtType {
+    STMT_STMT,
+    STMT_CALL
+  };
 
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
   Stmt(ACodeNode* parent, SrcFile::ln begLn, SrcFile::ln endLn,
-       VMA begVMA = 0, VMA endVMA = 0)
+       VMA begVMA = 0, VMA endVMA = 0,
+       StmtType stmt_type = STMT_STMT)
     : ACodeNode(TyStmt, parent, begLn, endLn, begVMA, endVMA),
-      m_sortId((int)begLn)
+      m_stmt_type(stmt_type), m_sortId((int)begLn)
   {
     ANodeTy t = (parent) ? parent->type() : TyANY;
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
@@ -1773,6 +1779,30 @@ public:
   sortId(int x)
   { m_sortId = x; }
 
+  // a handle for differentiating a CALL and a STMT
+  StmtType
+  stmtType()
+  { return m_stmt_type; }
+
+  void
+  stmtType(StmtType type)
+  { m_stmt_type = type; }
+
+  VMA &
+  target()
+  { return m_target; }
+
+  void
+  target(VMA x)
+  { m_target = x; }
+
+  std::string
+  device()
+  { return m_device; }
+
+  void
+  device(const std::string &device)
+  { m_device = device; }
 
   // --------------------------------------------------------
   // Output
@@ -1786,6 +1816,9 @@ public:
 	 const char* pre = "") const;
 
 private:
+  StmtType m_stmt_type;
+  std::string m_device;
+  VMA m_target;
   int m_sortId;
 };
 

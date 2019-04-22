@@ -660,9 +660,10 @@ ompt_region_context
   ucontext_t uc;
   getcontext(&uc);
 
-  hpcrun_metricVal_t blame_metricVal;
-  blame_metricVal.i = 0;
-  node = hpcrun_sample_callpath(&uc, 0, blame_metricVal, 0, 1, NULL).sample_node;
+  // levels to skip will be broken if inlining occurs.
+  hpcrun_metricVal_t zero = {.i = 0};
+  node = hpcrun_sample_callpath(&uc, 0, zero, 0, 1, NULL).sample_node;
+  TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
 
   TMSG(DEFER_CTXT, "unwind the callstack for region 0x%lx", region_id);
   if (node && adjust_callsite) {
@@ -805,6 +806,23 @@ ompt_cct_cursor_finalize
       // everything is ok with cursos
       cct_cursor = cct_not_master_region;
 
+// johnmc merge
+#if 0
+    if (region_id > 0 && bt->bottom_frame_elided) {
+
+      cct_node_t *prefix = lookup_region_id(region_id);
+      if (prefix) {
+	      // full context is available now. use it.
+	      cct_cursor = prefix;
+      } else {
+	      // full context is not available. if the there is a node for region_id in 
+	      // the unresolved tree, use it as the cursor to anchor the sample for now. 
+	      // it will be resolved later. otherwise, use the default cursor.
+	      prefix = hpcrun_cct_find_addr((hpcrun_get_thread_epoch()->csdata).unresolved_root,
+          &(ADDR2(UNRESOLVED, region_id)));
+	      if (prefix) cct_cursor = prefix;
+      }
+#endif
     }
   }
 

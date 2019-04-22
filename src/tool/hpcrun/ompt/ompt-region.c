@@ -77,6 +77,10 @@
 #include "ompt-region-debug.h"
 #include "ompt-thread.h"
 
+// johnmc merge
+#if 0
+#include "ompt-parallel-region-map.h"
+#endif
 
 
 //*****************************************************************************
@@ -172,6 +176,47 @@ ompt_parallel_begin_internal
      region_data->call_path =
        ompt_parallel_begin_context(region_id, 
 				   flags & ompt_parallel_invoker_program);
+// johnmc merge
+#if 0
+  cct_node_t *callpath =
+    ompt_parallel_begin_context(region_id, ++levels_to_skip, 
+                               invoker == ompt_invoker_program);
+
+  assert(region_id != 0);
+  // device_num -1 reserved for unknown device 
+  ompt_parallel_region_map_insert((uint64_t) region_id, callpath);
+
+  if (!td->master) {
+    if (td->outer_region_id == 0) {
+      // this callback occurs in the context of the parent, so
+      // the enclosing parallel region is available at level 0
+      td->outer_region_id = parent_region_id;
+      td->outer_region_context = NULL;
+    } else {
+      // check whether we should update the outermost id
+      // if the outer-most region with td->outer_region_id is an 
+      // outer region of current region,
+      // then no need to update outer-most id in the td
+      // else if it is not an outer region of the current region, 
+      // we have to update the outer-most id 
+      int i=0;
+      uint64_t outer_id = 0;
+  
+      outer_id = hpcrun_ompt_get_parallel_id(i);
+      while (outer_id > 0) {
+        if (outer_id == td->outer_region_id) break;
+  
+        outer_id = hpcrun_ompt_get_parallel_id(++i);
+      }
+      if (outer_id == 0){
+        // parent region id
+        td->outer_region_id = hpcrun_ompt_get_parallel_id(0); 
+        td->outer_region_context = 0;
+        TMSG(DEFER_CTXT, "enter a new outer region 0x%lx (start team)", 
+          td->outer_region_id);
+      }
+    }
+#endif
   }
 }
 
@@ -229,6 +274,23 @@ ompt_parallel_end_internal
       ompt_region_release(region_data);
       // or should use this
       // wfq_enqueue((ompt_base_t*)region_data, &public_region_freelist);
+
+// johnmc merge
+#if 0
+  hpcrun_safe_enter();
+  ompt_parallel_region_map_entry_t *record = ompt_parallel_region_map_lookup(parallel_id);
+  if (record) {
+    if (ompt_parallel_region_map_entry_refcnt_get(record) > 0) {
+      // associate calling context with region if it is not already present
+      if (ompt_parallel_region_map_entry_callpath_get(record) == NULL) {
+        ompt_parallel_region_map_entry_callpath_set
+          (record, 
+           ompt_region_context(parallel_id, ompt_context_end, 
+                               ++levels_to_skip, invoker == ompt_invoker_program));
+      }
+    } else {
+      ompt_parallel_region_map_refcnt_update(parallel_id, 0L);
+#endif
     }
   }
 

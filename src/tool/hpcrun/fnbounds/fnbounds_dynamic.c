@@ -508,7 +508,7 @@ fnbounds_get_loadModule(void *ip)
     if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
       if (dso) {
-	lm = hpcrun_loadmap_map(dso);
+        lm = hpcrun_loadmap_map(dso);
       }
     }
   }

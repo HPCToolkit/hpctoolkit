@@ -439,7 +439,6 @@ METHOD_FN(thread_fini_action)
     thread_data_t *td = hpcrun_get_thread_data();
     hpcrun_delete_real_timer(td);
   }
-
 }
 
 static void
@@ -591,23 +590,23 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_time);
+  kind_info_t *timer_kind = hpcrun_metrics_new_kind();
+  int metric_id =
+    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Int,
+					  sample_period, metric_property_time);
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
+					    MetricFlags_ValFmt_Real,
+					    sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
-
-    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_time);
   }
+  hpcrun_close_kind(timer_kind);
 
   event = next_tok();
   if (more_tok()) {
@@ -715,7 +714,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   // Ensure metrics are finalized.
   if (!metrics_finalized) {
-    hpcrun_finalize_metrics();
+    hpcrun_get_num_kind_metrics();
     metrics_finalized = true;
   }
 
@@ -735,9 +734,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
-			metric_delta,
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
 					    0/*skipInner*/, 0/*isSync*/, NULL);
+
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
   if(sv.sample_node) {

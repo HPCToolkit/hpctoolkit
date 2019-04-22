@@ -67,6 +67,8 @@ using std::endl;
 using std::string;
 
 //*************************** User Include Files ****************************
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include <include/hpctoolkit-config.h>
 
@@ -277,6 +279,14 @@ ArgsHPCProf::printError(std::ostream& os, const std::string& msg) const
 }
 
 
+static inline bool is_directory(const std::string &path) {
+  struct stat statbuf;
+  if (stat(path.c_str(), &statbuf) != 0)
+    return 0;
+  return S_ISDIR(statbuf.st_mode);
+}
+
+
 void
 ArgsHPCProf::parse(int argc, const char* const argv[])
 {
@@ -422,8 +432,28 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     profileFiles.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
       profileFiles[i] = parser.getArg(i);
+      std::string structs_dir = profileFiles[i] + "/structs";
+      // parse structs directory
+      if (is_directory(structs_dir)) {
+        DIR *dir;
+        struct dirent *ent;
+        if ((dir = opendir(structs_dir.c_str())) != NULL) {
+          auto struct_suffix = std::string("hpcstruct");
+          /* append files within the directory */
+          while ((ent = readdir(dir)) != NULL) {
+            auto file_name = std::string(ent->d_name);
+            std::size_t found = file_name.find(struct_suffix);
+            if (found != std::string::npos) {
+              auto path_name = structs_dir + "/" + file_name;
+              if (!is_directory(path_name)) {
+                structureFiles.push_back(path_name);
+              }
+            }
+          }
+          closedir(dir);
+        }
+      }
     }
-
 
     // For now, parse first file name to determine name of database
     if (!isDbDirSet) {

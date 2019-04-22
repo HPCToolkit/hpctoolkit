@@ -58,6 +58,20 @@
 #include "ompt-types.h"
 
 
+//*****************************************************************************
+// type declarations
+//*****************************************************************************
+
+enum {
+  ompt_op_none,
+  ompt_op_alloc,
+  ompt_op_copy_in,
+  ompt_op_copy_out,
+  ompt_op_delete,
+  ompt_op_kernel_submit
+} ompt_op_class;
+
+
 
 //*****************************************************************************
 // macros
@@ -281,6 +295,24 @@ freelist_add_first
 (
  ompt_base_t *new, 
  ompt_base_t **head
+);
+
+
+//-----------------------------------------------------------------------------
+// NVIDIA GPU pc sampling support
+//-----------------------------------------------------------------------------
+
+void 
+ompt_pc_sampling_enable
+(
+  void 
+);
+
+
+void 
+ompt_pc_sampling_disable
+(
+  void
 );
 
 

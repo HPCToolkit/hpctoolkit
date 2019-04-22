@@ -68,12 +68,12 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-#include <sample-sources/blame-shift/blame-shift.h>
 
 #include <hpcrun/hpcrun_options.h>
 
 #include <hpcrun/metrics.h>
 #include <hpcrun/sample_sources_registered.h>
+#include <sample-sources/blame-shift/blame-shift.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
@@ -199,13 +199,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "idle",
-				    MetricFlags_ValFmt_Real, 1, metric_property_none);
-
-  work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "work",
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  kind_info_t *idle_kind = hpcrun_metrics_new_kind();
+  idle_metric_id = hpcrun_set_new_metric_info_and_period
+    (idle_kind, "idle", MetricFlags_ValFmt_Real, 1, metric_property_none);
+  work_metric_id = hpcrun_set_new_metric_info(idle_kind, "work");
+  hpcrun_close_kind(idle_kind);
   TMSG(IDLE, "Metric ids = idle (%d), work(%d)",
        idle_metric_id, work_metric_id);
 

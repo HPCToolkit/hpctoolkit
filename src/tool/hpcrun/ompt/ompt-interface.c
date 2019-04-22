@@ -44,11 +44,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+/******************************************************************************
+ * global include files
+ *****************************************************************************/
+
+#include <sys/param.h>
+
+
 
 //*****************************************************************************
 // local includes
 //*****************************************************************************
 
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/cct/cct-node-vector.h>
+#include <hpcrun/cct2metrics.h>
+#include <hpcrun/device-finalizers.h>
+#include <hpcrun/hpcrun-initializers.h>
+#include <hpcrun/main.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/blame-shift/blame-shift.h>
@@ -65,7 +78,18 @@
 #include "ompt-state-placeholders.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
+#include "ompt-device-map.h"
 
+
+#define HAVE_CUDA_H 1
+
+#if HAVE_CUDA_H
+#include "sample-sources/nvidia/nvidia.h"
+#include "sample-sources/nvidia/cubin-id-map.h"
+#include "sample-sources/nvidia/cubin-symbols.h"
+#include "sample-sources/nvidia/cupti-api.h"
+#include "sample-sources/nvidia/cupti-record.h"
+#endif
 
 
 //*****************************************************************************
@@ -77,6 +101,13 @@
 
 #define OMPT_DEBUG_STARTUP 0
 #define OMPT_DEBUG_TASK 0
+#define OMPT_ACTIVITY_DEBUG 0
+
+#if OMPT_ACTIVITY_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 
 
@@ -108,11 +139,22 @@ static directed_blame_info_t omp_mutex_blame_info;
 // state for undirected blame shifting away from spinning waiting for work
 static undirected_blame_info_t omp_idle_blame_info;
 
+static device_finalizer_fn_entry_t device_finalizer;
+
+// target kind metric
+static int ompt_target_metric_id = -1;
+static int ompt_task_metric_id = -1;
+
+// pc sampling
+static bool ompt_pc_sampling_enabled = false;
+
 //-----------------------------------------
 // declare ompt interface function pointers
 //-----------------------------------------
 #define ompt_interface_fn(f) f ## _t f ## _fn;
+
 FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
+
 #undef ompt_interface_fn
 
 
@@ -130,7 +172,7 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //    nested marking.
 //-----------------------------------------
 static __thread int ompt_idle_count;
-
+static __thread cct_node_t *target_node = NULL;
 
 
 /******************************************************************************
@@ -159,7 +201,6 @@ ompt_mutex_blame_target
     switch (state) {
     case ompt_state_wait_critical:
     case ompt_state_wait_lock:
-//    case ompt_state_wait_nest_lock:
     case ompt_state_wait_atomic:
     case ompt_state_wait_ordered:
       return wait_id;
@@ -233,15 +274,15 @@ ompt_thread_needs_blame
     ompt_wait_id_t wait_id;
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
     switch(state) {
-    case ompt_state_idle:
-    case ompt_state_wait_barrier:
-    case ompt_state_wait_barrier_implicit:
-    case ompt_state_wait_barrier_explicit:
-    case ompt_state_wait_taskwait:
-    case ompt_state_wait_taskgroup:
-       return false;
-    default:
-      return true;
+      case ompt_state_idle:
+      case ompt_state_wait_barrier:
+      case ompt_state_wait_barrier_implicit:
+      case ompt_state_wait_barrier_explicit:
+      case ompt_state_wait_taskwait:
+      case ompt_state_wait_taskgroup:
+         return false;
+      default:
+        return true;
     }
   }
   return true;
@@ -278,13 +319,15 @@ ompt_register_mutex_metrics
  void
 )
 {
-  int wait_id = omp_mutex_blame_info.wait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(wait_id, "OMP_MUTEX_WAIT", 
+  kind_info_t *mut_kind = hpcrun_metrics_new_kind();
+  omp_mutex_blame_info.wait_metric_id = 
+    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_WAIT", 
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  int blame_id = omp_mutex_blame_info.blame_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blame_id, "OMP_MUTEX_BLAME",
+  omp_mutex_blame_info.blame_metric_id = 
+    hpcrun_set_new_metric_info_and_period(mut_kind, "OMP_MUTEX_BLAME",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  hpcrun_close_kind(mut_kind);
 }
 
 
@@ -295,13 +338,15 @@ ompt_register_idle_metrics
  void
 )
 {
-  int idle_metric_id = omp_idle_blame_info.idle_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(idle_metric_id, "OMP_IDLE",
+  kind_info_t *idl_kind = hpcrun_metrics_new_kind();
+  omp_idle_blame_info.idle_metric_id = 
+    hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_IDLE",
 				    MetricFlags_ValFmt_Real, 1, metric_property_none);
 
-  int work_metric_id = omp_idle_blame_info.work_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(work_metric_id, "OMP_WORK",
+  omp_idle_blame_info.work_metric_id = 
+    hpcrun_set_new_metric_info_and_period(idl_kind, "OMP_WORK",
 				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  hpcrun_close_kind(idl_kind);
 }
 
 
@@ -344,6 +389,40 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 }
 
 
+// johnmc merge
+#if 0
+//----------------------------------------------------------------------------
+// note the creation context for an OpenMP task
+//----------------------------------------------------------------------------
+
+static
+void ompt_task_begin(ompt_task_id_t parent_task_id, 
+		   ompt_frame_t *parent_task_frame, 
+		   ompt_task_id_t new_task_id,
+		   void *task_function)
+{
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+
+  ucontext_t uc;
+  getcontext(&uc);
+
+  hpcrun_safe_enter();
+
+  // record the task creation context into task structure (in omp runtime)
+  hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL);
+
+  hpcrun_safe_exit();
+
+  task_map_insert(new_task_id, cct_node);  
+
+  td->overhead--;
+}
+#endif
+
+
 //----------------------------------------------------------------------------
 // support for undirected blame shifting to attribute idleness
 //----------------------------------------------------------------------------
@@ -379,6 +458,7 @@ ompt_thread_end
  ompt_data_t *thread_data
 )
 {
+  // TODO(keren): test if it is called
   undirected_blame_thread_end(&omp_idle_blame_info);
 //  printf("DEBUG: number of unresolved regions: %d\n", unresolved_cnt);
 }
@@ -585,7 +665,13 @@ init_idle_blame_shift
 // itself.
 //-------------------------------------------------
 
-int
+
+// forward declaration
+void prepare_device();
+
+void hpcrun_ompt_device_finalizer(void *args);
+
+static int
 ompt_initialize
 (
  ompt_function_lookup_t lookup,
@@ -598,6 +684,8 @@ ompt_initialize
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
 #endif
+
+  PRINT("ompt_initialize->ompt_fn_lookup = %p\n", ompt_fn_lookup);
 
   ompt_initialized = 1;
 
@@ -617,6 +705,8 @@ ompt_initialize
   } else{
     ompt_task_full_context = 0;
   }
+
+  prepare_device();
   init_tasks();
 
 #if DEBUG_TASK
@@ -688,16 +778,15 @@ hpcrun_omp_state_is_overhead
     ompt_state_t state = hpcrun_ompt_get_state(&wait_id);
 
     switch (state) {
-  
     case ompt_state_overhead:
     case ompt_state_wait_critical:
     case ompt_state_wait_lock:
-//    case ompt_state_wait_nest_lock:
     case ompt_state_wait_atomic:
     case ompt_state_wait_ordered:
       return 1;
-  
-    default: break;
+
+    default: 
+      break;
     }
   }
   return 0;
@@ -1045,4 +1134,308 @@ hpcrun_ompt_get_thread_num(int level)
         return thread_num;
     }
     return -1;
+}
+
+
+static void
+hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
+{
+  cct_node_t *cct_child = hpcrun_cct_insert_dummy(target_node, ip);
+  cupti_worker_notification_apply(host_op_id, cct_child);
+}
+
+
+//*****************************************************************************
+// device operations
+//*****************************************************************************
+#define OMPT_API_FNTYPE(fn) fn##_t
+
+#define OMPT_API_FUNCTION(return_type, fn, args)  \
+    typedef return_type (*OMPT_API_FNTYPE(fn)) args
+
+#define OMPT_TARGET_API_FUNCTION(return_type, fn, args)  \
+    OMPT_API_FUNCTION(return_type, fn, args) 
+
+OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling_frequency, (
+    ompt_device_t *device,
+    int pc_sampling_frequency
+));
+
+#define FOREACH_OMPT_TARGET_FN(macro) \
+  macro(ompt_get_device_time) \
+  macro(ompt_translate_time) \
+  macro(ompt_set_trace_native) \
+  macro(ompt_start_trace) \
+  macro(ompt_pause_trace) \
+  macro(ompt_stop_trace) \
+  macro(ompt_get_record_type) \
+  macro(ompt_get_record_native) \
+  macro(ompt_get_record_abstract) \
+  macro(ompt_advance_buffer_cursor) \
+  macro(ompt_set_pc_sampling_frequency) 
+
+#define ompt_decl_name(fn) \
+  fn ## _t  fn;
+
+  FOREACH_OMPT_TARGET_FN(ompt_decl_name)
+
+#undef ompt_decl_name
+
+void 
+ompt_bind_names(ompt_function_lookup_t lookup)
+{
+#define ompt_bind_name(fn) \
+  fn = (fn ## _t ) lookup(#fn);
+
+  FOREACH_OMPT_TARGET_FN(ompt_bind_name)
+
+#undef ompt_bind_name
+}
+
+
+#define BUFFER_SIZE (1024 * 1024 * 8)
+
+void 
+ompt_callback_buffer_request
+(
+ int device_id,
+ ompt_buffer_t **buffer,
+ size_t *bytes
+)
+{
+  *bytes = BUFFER_SIZE;
+  *buffer = (ompt_buffer_t *)malloc(*bytes);
+  assert(buffer);
+}
+
+
+void 
+ompt_callback_buffer_complete
+(
+ int device_id,
+ ompt_buffer_t *buffer,
+ size_t bytes,
+ ompt_buffer_cursor_t begin,
+ int buffer_owned
+)
+{
+  // handle notifications
+  cupti_cupti_notification_apply(cupti_notification_handle);
+  // signal advance to return pointer to first record
+  ompt_buffer_cursor_t next = begin;
+  int status = 0;
+  do {
+    // TODO(keren): replace cupti_activity_handle with device_activity handle
+    CUpti_Activity *activity = (CUpti_Activity *)next;
+    cupti_activity_process(activity);
+    status = cupti_buffer_cursor_advance(buffer, bytes, (CUpti_Activity **)&next);
+  } while(status);
+}
+
+
+void
+ompt_pc_sampling_enable()
+{
+  ompt_pc_sampling_enabled = true;
+  cupti_pc_sampling_enable();
+}
+
+
+void
+ompt_pc_sampling_disable()
+{
+  ompt_pc_sampling_enabled = false;
+  cupti_pc_sampling_disable();
+}
+
+
+void
+ompt_trace_configure(ompt_device_t *device)
+{
+  int flags = 0;
+
+  // specify desired monitoring
+  flags |= ompt_native_driver;
+
+  flags |= ompt_native_runtime;
+  
+  if (!ompt_pc_sampling_enabled) {
+    flags |= ompt_native_kernel_invocation;
+
+    flags |= ompt_native_kernel_execution;
+
+    flags |= ompt_native_data_motion_explicit;
+  }
+
+  // indicate desired monitoring
+  ompt_set_trace_native(device, 1, flags);
+
+  // turn on monitoring previously indicated
+  ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
+
+  ompt_set_pc_sampling_frequency(device, cupti_pc_sampling_frequency_get());
+}
+
+
+void
+ompt_device_initialize(uint64_t device_num,
+                       const char *type,
+                       ompt_device_t *device,
+                       ompt_function_lookup_t lookup,
+                       const char *documentation)
+{
+  PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
+
+  ompt_bind_names(lookup);
+
+  ompt_trace_configure(device);
+
+  ompt_device_map_insert(device_num, device, type);
+}
+
+
+void 
+ompt_device_finalize(uint64_t device_num)
+{
+}
+
+
+void 
+ompt_device_load(uint64_t device_num,
+                 const char *filename,
+                 int64_t file_offset,
+                 const void *file_addr,
+                 size_t bytes,
+                 const void *host_addr,
+                 const void *device_addr,
+                 uint64_t module_id)
+{
+  PRINT("ompt_device_load->%s, %d\n", filename, device_num);
+  cupti_load_callback_cuda(module_id, host_addr, bytes);
+}
+
+
+void 
+ompt_device_unload(uint64_t device_num,
+                   uint64_t module_id)
+{
+  //cubin_id_map_delete(module_id);
+}
+
+
+void 
+ompt_target_callback
+(
+  ompt_target_t kind,
+  ompt_scope_endpoint_t endpoint,
+  uint64_t device_num,
+  ompt_data_t *task_data,
+  ompt_id_t target_id,
+  const void *codeptr_ra
+)
+{
+  PRINT("ompt_target_callback->target_id %d\n", target_id);
+  // If a thread creates a target region, we init records
+  // and it must be flushed in the finalizer
+  cupti_stop_flag_set();
+  cupti_record_init();
+
+  // process cupti records
+  cupti_worker_activity_apply(cupti_activity_handle);
+
+  // sample a record
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  ucontext_t uc;
+  getcontext(&uc);
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+  // NOTE(keren): hpcrun_safe_enter prevent self interruption
+  hpcrun_safe_enter();
+  
+  target_node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+
+  hpcrun_safe_exit();
+  td->overhead--;
+}
+
+#define FOREACH_OMPT_DATA_OP(macro)                                        \
+  macro(op, ompt_target_data_alloc, ompt_op_alloc)                \
+  macro(op, ompt_target_data_transfer_to_device, ompt_op_copy_in)    \
+  macro(op, ompt_target_data_transfer_from_device, ompt_op_copy_out) \
+  macro(op, ompt_target_data_delete, ompt_op_delete)
+
+void
+ompt_data_op_callback(ompt_id_t target_id,
+                      ompt_id_t host_op_id,
+                      ompt_target_data_op_t optype,
+                      void *host_addr,
+                      void *device_addr,
+                      size_t bytes)
+{
+  uint16_t op = 0;
+  switch (optype) {                       
+#define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
+    case ompt_op_type:                                 \
+      op = ompt_op_class;                              \
+      break;
+    
+    FOREACH_OMPT_DATA_OP(ompt_op_macro);
+
+#undef ompt_op_macro
+    default:
+      break;
+  }
+  hpcrun_ompt_op_id_notify(host_op_id, op);
+}
+
+
+void
+ompt_submit_callback(ompt_id_t target_id,
+                     ompt_id_t host_op_id)
+{
+  PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
+  hpcrun_ompt_op_id_notify(host_op_id, ompt_op_kernel_submit);
+  PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
+}
+
+
+void
+ompt_map_callback(ompt_id_t target_id,
+                  unsigned int nitems,
+                  void **host_addr,
+                  void **device_addr,
+                  size_t *bytes,
+                  unsigned int *mapping_flags)
+{
+}
+
+
+#define ompt_set_callback(e, cb) ompt_set_callback_fn(e, (ompt_callback_t) cb)
+
+void
+prepare_device()
+{
+  PRINT("ompt_initialize->prepare_device enter\n");
+
+  device_finalizer.fn = cupti_device_flush;
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer);
+
+  kind_info_t *ompt_target_kind = hpcrun_metrics_new_kind();
+  ompt_target_metric_id = hpcrun_set_new_metric_info(ompt_target_kind, "OMPT_TARGET_KIND"); 
+  hpcrun_close_kind(ompt_target_kind);
+
+  kind_info_t *ompt_task_kind = hpcrun_metrics_new_kind();
+  ompt_task_metric_id = hpcrun_set_new_metric_info(ompt_task_kind, "OMPT_TASK_KIND");
+  hpcrun_close_kind(ompt_task_kind);
+
+  ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
+  ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
+  ompt_set_callback(ompt_callback_device_load, ompt_device_load);
+  ompt_set_callback(ompt_callback_device_unload, ompt_device_unload);
+  ompt_set_callback(ompt_callback_target, ompt_target_callback);
+  ompt_set_callback(ompt_callback_target_data_op, ompt_data_op_callback);
+  ompt_set_callback(ompt_callback_target_submit, ompt_submit_callback);
+  ompt_set_callback(ompt_callback_target_map, ompt_map_callback);
+
+  PRINT("ompt_initialize->prepare_device exit\n");
 }

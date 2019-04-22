@@ -69,6 +69,7 @@ bool
 relocateCubin
 (
  char *cubin_ptr,
+ size_t cubin_size,
  Elf *cubin_elf
 );
 

@@ -209,6 +209,7 @@ static event_info_t  *event_desc = NULL;
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
+static kind_info_t *lnux_kind;
 
 
 /******************************************************************************
@@ -821,6 +822,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
   memset(event_desc, 0, size);
 
+  lnux_kind = hpcrun_metrics_new_kind();
   int i=0;
 
   set_default_threshold();
@@ -886,7 +888,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
     // set the metric for this perf event
-    event_desc[i].metric = hpcrun_new_metric();
+    event_desc[i].metric = hpcrun_set_new_metric_info_and_period(lnux_kind, name_dup,
+            MetricFlags_ValFmt_Real, threshold, prop);
    
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
@@ -897,18 +900,16 @@ METHOD_FN(process_event_list, int lush_metrics)
       //                   since the period is determine dynamically
       threshold = 1;
     }
-    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Real, threshold, prop);
-
-    if (m == NULL) {
-      EMSG("Error: unable to create metric #%d: %s", index, name);
-    } else {
-      m->is_frequency_metric = (event_desc[i].attr.freq == 1);
-    }
-    event_desc[i].metric_desc = m;
     METHOD_CALL(self, store_event, event_attr->config, threshold);
     free(name);
   }
+  while (i--) {
+    metric_desc_t *m = hpcrun_id2metric_linked(event_desc[i].metric);
+
+    m->is_frequency_metric = (event_desc[i].attr.freq == 1);
+    event_desc[i].metric_desc = m;
+  }
+  hpcrun_close_kind(lnux_kind);
 
   if (num_events > 0)
     perf_init();
@@ -923,7 +924,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   TMSG(LINUX_PERF, "gen_event_set");
 
   int nevents 	  = (self->evl).nevents;
-  int num_metrics = hpcrun_get_num_metrics();
+  int num_metrics = hpcrun_get_num_metrics(lnux_kind);
 
   // -------------------------------------------------------------------------
   // TODO: we need to fix this allocation.

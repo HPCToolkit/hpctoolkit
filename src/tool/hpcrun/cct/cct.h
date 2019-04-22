@@ -100,6 +100,7 @@
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
+#define HPCRUN_DUMMY_NODE 65534
 
 //***************************************************************************
 // Calling context tree node (abstract data type)
@@ -147,6 +148,7 @@ extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
 extern bool hpcrun_cct_no_children(cct_node_t* node);
 extern bool hpcrun_cct_is_root(cct_node_t* node);
+extern bool hpcrun_cct_is_dummy(cct_node_t* node);
 
 //
 // Mutator functions: modify a given cct
@@ -160,6 +162,11 @@ extern bool hpcrun_cct_is_root(cct_node_t* node);
 // and returned]
 //
 extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
+
+//
+// Insert a dummy node to represent the callback function by hpcrun, which will
+// be eliminated before writing out the cct.
+extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
 
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
@@ -263,7 +270,7 @@ int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
 //
 // Utilities
 //
-extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
+extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy);
 //
 // look up addr in the set of cct's children
 // return the found node or NULL

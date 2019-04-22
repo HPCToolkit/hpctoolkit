@@ -70,6 +70,7 @@
 #include <list>
 #include <map>
 
+#include <lib/isa/ISA.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
@@ -190,6 +191,8 @@ public:
 // for multiple, consecutive instructions, all with the same file and
 // line info.
 //
+// Call stmts are always a single instruction and never merged.
+//
 class StmtInfo {
 public:
   VMA   vma;
@@ -198,25 +201,45 @@ public:
   long  base_index;
   long  line_num;
 
+  // call instructions
+  VMA   target;
+  bool  is_call;
+  bool  is_sink;
+  std::string device;
+
   // constructor by index
-  StmtInfo(VMA vm, int ln, long file, long base, long line)
+  StmtInfo(VMA vm, int ln, long file, long base, long line,
+     const std::string & device_tag,
+	   bool call = false, bool sink = false,
+     VMA targ = 0)
   {
     vma = vm;
     len = ln;
     file_index = file;
     base_index = base;
     line_num = line;
+    target = targ;
+    is_call = call;
+    is_sink = sink;
+    device = device_tag;
   }
 
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
-	   const std::string & filenm, long line)
+	   const std::string & filenm, long line,
+     const std::string & device_tag,
+	   bool call = false, bool sink = false,
+     VMA targ = 0)
   {
     vma = vm;
     len = ln;
     file_index = strTab.str2index(filenm);
     base_index = strTab.str2index(FileUtil::basename(filenm.c_str()));
     line_num = line;
+    target = targ;
+    is_call = call;
+    is_sink = sink;
+    device = device_tag;
   }
 
   // returns: true if vma is contained within this range
@@ -349,7 +372,9 @@ bool analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr *);
 
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr *,
-	      VMA vma, int len, string & filenm, SrcFile::ln line);
+              VMA vma, int len, string & filenm, SrcFile::ln line,
+              std::string & device, bool is_call = false, bool is_sink = false,
+              VMA target = 0);
 
 void
 mergeInlineStmts(TreeNode * dest, TreeNode * src);
