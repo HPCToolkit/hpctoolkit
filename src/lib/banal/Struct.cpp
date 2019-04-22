@@ -86,6 +86,8 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include <boost/atomic.hpp>
+
 #include <CFG.h>
 #include <CodeObject.h>
 #include <CodeSource.h>
@@ -328,8 +330,8 @@ public:
   double cost;
   bool first_proc;
   bool last_proc;
-  bool is_done;
   bool promote;
+  boost::atomic <bool> is_done;
 
   WorkItem(FileInfo * fi, GroupInfo * gi, bool first, bool last, double cst)
   {
@@ -338,8 +340,8 @@ public:
     cost = cst;
     first_proc = first;
     last_proc = last;
-    is_done = false;
     promote = false;
+    is_done.store(false);
   }
 };
 
@@ -736,7 +738,7 @@ doWorkItem(WorkItem * witem, string & search_path, bool cuda_file,
     doFunctionList(witem->env, finfo, ginfo, fullGaps);
   }
 
-  witem->is_done = true;
+  witem->is_done.store(true);
 }
 
 //----------------------------------------------------------------------
@@ -828,7 +830,7 @@ static void
 printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
 	      ostream * gapsFile, string & gaps_filenm)
 {
-  while (num_done < workList.size() && workList[num_done]->is_done) {
+  while (num_done < workList.size() && workList[num_done]->is_done.load()) {
     WorkItem * witem = workList[num_done];
     FileInfo * finfo = witem->finfo;
     GroupInfo * ginfo = witem->ginfo;
@@ -1046,11 +1048,11 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 
 //----------------------------------------------------------------------
 
-// getFuncNames -- helper for makeSkeleton() to select the pretty and
-// link (mangled) names for a SymtabAPI::Function.
+// getFuncNames -- helper for makeSkeleton() to select the pretty
+// (typed) and link (mangled) names for a SymtabAPI::Function.
 //
 // Some functions have multiple symbols with different names for the
-// same addres (global and weak syms).  We sort the symbol names to
+// same address (global and weak syms).  We sort the symbol names to
 // make the choice deterministic.  We could prefer a global symbol,
 // but global is not always unique.
 //
@@ -1062,24 +1064,24 @@ static void
 getFuncNames(SymtabAPI::Function * sym_func, string & prettynm,
 	     string & linknm, bool ourDemangle)
 {
-  auto pretty_begin = sym_func->pretty_names_begin();
-  auto pretty_end =   sym_func->pretty_names_end();
-  auto mangled_end =  sym_func->mangled_names_end();
+  auto typed_begin = sym_func->typed_names_begin();
+  auto typed_end =   sym_func->typed_names_end();
+  auto mangled_end = sym_func->mangled_names_end();
 
-  auto pretty_it =    pretty_begin;
-  auto mangled_it =   sym_func->mangled_names_begin();
+  auto typed_it =    typed_begin;
+  auto mangled_it =  sym_func->mangled_names_begin();
 
-  while (pretty_it != pretty_end && mangled_it != mangled_end) {
+  while (typed_it != typed_end && mangled_it != mangled_end) {
     string new_mangled = *mangled_it;
-    string new_pretty =
-      (ourDemangle) ? BinUtil::demangleProcName(new_mangled) : *pretty_it;
+    string new_typed =
+      (ourDemangle) ? BinUtil::demangleProcName(new_mangled) : *typed_it;
 
-    if (pretty_it == pretty_begin || new_pretty.compare(prettynm) < 0) {
-      prettynm = new_pretty;
+    if (typed_it == typed_begin || new_typed.compare(prettynm) < 0) {
+      prettynm = new_typed;
       linknm = new_mangled;
     }
 
-    ++pretty_it;
+    ++typed_it;
     ++mangled_it;
   }
 }
