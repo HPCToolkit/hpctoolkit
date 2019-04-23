@@ -289,16 +289,20 @@ collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
   if (!hpcrun_cct_is_dummy(node)) {
     return;
   }
+  
+  // get thread specific map
+  write_arg_t *write_arg = (write_arg_t *)arg;
+  cct2metrics_t **map = &(write_arg->cct2metrics_map);
 
   // merge dummy child metrics
   cct_node_t* parent = hpcrun_cct_parent(node);
-  metric_data_list_t *node_metrics = hpcrun_get_metric_data_list(node);
+  metric_data_list_t *node_metrics = hpcrun_get_metric_data_list_specific(map, node);
   if (node_metrics != NULL) {
-    metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list(parent);
+    metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list_specific(map, parent);
     if (parent_metrics != NULL) {
       hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
     } else {
-      hpcrun_move_metric_data_list(parent, node);
+      hpcrun_move_metric_data_list_specific(map, parent, node);
     }
   }
 }
@@ -366,8 +370,9 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 #if 1
   // keren's code
   tmp->num_metrics = my_arg->num_kind_metrics;
-  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_data_list(node),
-			       my_arg->num_kind_metrics);
+  metric_data_list_t *data_list = 
+    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
+  hpcrun_metric_set_dense_copy(tmp->metrics, data_list, my_arg->num_kind_metrics);
 #else
   // code from master
   tmp->num_metrics = my_arg->num_metrics;
