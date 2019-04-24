@@ -296,13 +296,6 @@ datacentric_post_handler(event_handler_arg_t *args)
       var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
                       (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
 
-      // record the size of the variable
-      metric_set_t *mset       = hpcrun_reify_metric_set(var_context);
-      const int size_in_bytes  = info->rmemblock - info->memblock;
-      hpcrun_metricVal_t value = {.i = size_in_bytes};
-
-      hpcrun_metric_std_set( datacentric_get_metric_variable_size(), mset, value );
-
       // mark that this is a special node for global variable
       // hpcprof will treat specially to print the name of the variable to xml file
       // (if hpcstruct provides the information)
@@ -318,6 +311,14 @@ datacentric_post_handler(event_handler_arg_t *args)
 
       hpcrun_cct_set_node_allocation(var_context);
     }
+
+    // record the size of the variable
+    metric_set_t *mset       = hpcrun_reify_metric_set(var_context);
+    const int size_in_bytes  = info->rmemblock - info->memblock;
+    hpcrun_metricVal_t value = {.i = size_in_bytes};
+
+    hpcrun_metric_std_set( datacentric_get_metric_variable_size(), mset, value );
+
     info->status = DATATREE_INFO_HANDLED;
 
   } else {

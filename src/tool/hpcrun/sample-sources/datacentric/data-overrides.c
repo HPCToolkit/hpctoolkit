@@ -310,7 +310,7 @@ datacentric_initialize(void)
   metric_variable_size = hpcrun_new_metric();
 
   hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true, false );
+      MetricFlags_ValFmt_Int, 1, metric_property_none, true, true );
 
   overrides_status = OVERRIDES_INITIALIZED;
 
