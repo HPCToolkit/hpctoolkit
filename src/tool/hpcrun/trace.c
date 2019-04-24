@@ -143,7 +143,8 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     hpcrun_trace_file_validate(fd >= 0, "open");
     cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
     ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
-			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
+			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED,
+                              hpcrun_malloc);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
@@ -153,7 +154,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     flags.fields.isDataCentric = false;
 #endif
 
-    ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
+    ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
   TMSG(TRACE, "Trace open done");
@@ -239,7 +240,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     flags.fields.isDataCentric = false;
 #endif
     
-    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
+    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
 }
 

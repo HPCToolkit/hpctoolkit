@@ -65,6 +65,7 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/spinlock.h>
 
 //*************************** Concrete Data Types ***************************
 

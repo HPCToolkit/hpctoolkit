@@ -81,6 +81,7 @@
 #include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/spinlock.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
 #include "cct.h"

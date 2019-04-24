@@ -242,6 +242,7 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   cptd->hpcrun_file  = NULL;
   cptd->trace_buffer = NULL;
+  cptd->trace_outbuf = NULL;
 
   // ----------------------------------------
   // perf event support
