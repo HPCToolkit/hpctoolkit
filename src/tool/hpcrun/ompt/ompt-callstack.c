@@ -253,25 +253,7 @@ ompt_elide_runtime_frame(
   case ompt_thread_initial:
     break;
   case ompt_thread_worker:
-	break;
-//    if (hpcrun_ompt_get_parallel_info_id(0) != ompt_parallel_id_none)
-//      break;
-//
-//    if (!TD_GET(master)){
-//      thread_data_t *td = hpcrun_get_thread_data();
-//      td->core_profile_trace_data.epoch->csdata.top = main_top_root;
-//      td->core_profile_trace_data.epoch->csdata.thread_root = main_top_root;
-//      bt->fence = FENCE_MAIN;
-//
-//
-//      hpcrun_cct_insert_node(main_top_root, td->core_profile_trace_data.epoch->csdata.top);
-//      printf("\n\n\nThis is parent of top_root   : %p\n", td->core_profile_trace_data.epoch->csdata.top->parent);
-//      printf("This is parent of thread_root: %p\n", td->core_profile_trace_data.epoch->csdata.thread_root->parent);
-//
-//
-//    }
-//    collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
-//    goto return_label;
+    break;
   case ompt_thread_other:
   case ompt_thread_unknown:
   default:
