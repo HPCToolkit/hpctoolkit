@@ -684,9 +684,6 @@ ompt_initialize
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
 #endif
-
-  PRINT("ompt_initialize->ompt_fn_lookup = %p\n", ompt_fn_lookup);
-
   ompt_initialized = 1;
 
   ompt_init_inquiry_fn_ptrs(lookup);
@@ -723,8 +720,8 @@ ompt_initialize
     sample_filters_register(&serial_only_sf_entry);
   }
 
-  thread_data_t* td = hpcrun_get_thread_data();
-  main_top_root = td->core_profile_trace_data.epoch->csdata.top;
+  //thread_data_t* td = hpcrun_get_thread_data();
+  //main_top_root = td->core_profile_trace_data.epoch->csdata.top;
 
   hpcrun_safe_exit();
 

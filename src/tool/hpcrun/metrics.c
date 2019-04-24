@@ -499,6 +499,23 @@ hpcrun_new_metric_data_list_kind(kind_info_t *kind)
   return curr;
 }
 
+// only apply this method while writing out thread profile data
+metric_data_list_t *
+hpcrun_new_metric_data_list_kind_final(kind_info_t *kind)
+{
+  metric_data_list_t *curr = malloc(sizeof(metric_data_list_t));
+  hpcrun_get_num_kind_metrics();
+  curr->kind = kind;
+  int n_metrics = hpcrun_get_num_metrics(curr->kind);
+  curr->metrics = malloc(n_metrics * sizeof(hpcrun_metricVal_t));
+  // FIXME(Keren): duplicate?
+  for (int i = 0; i < n_metrics; i++)
+    curr->metrics[i].v1 = curr->kind->null_metrics[i];
+  memset(curr->metrics, 0, n_metrics * sizeof(hpcrun_metricVal_t));
+  curr->next = NULL;
+  return curr;
+}
+
 //
 // copy a metric set
 //
@@ -534,7 +551,7 @@ hpcrun_merge_cct_metrics(metric_data_list_t *dest_list, metric_data_list_t *sour
       rv = curr_dest, curr_dest = curr_dest->next);
     // Allocate a new metric_data_list
     if (curr_dest == NULL) {
-      curr_dest = hpcrun_new_metric_data_list_kind(curr_source->kind);
+      curr_dest = hpcrun_new_metric_data_list_kind_final(curr_source->kind);
       rv->next = curr_dest;
     }
     int n_metrics = hpcrun_get_num_metrics(curr_source->kind);
