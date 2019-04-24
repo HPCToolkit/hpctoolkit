@@ -88,7 +88,7 @@
 #define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #else
 #define elide_debug_dump(t,i,o,r)
-#define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
+#define elide_frame_dump() 
 #endif
 
 //------------------------------------------------------------------------
