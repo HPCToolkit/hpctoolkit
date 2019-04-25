@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 
 //******************************************************************************
@@ -86,7 +87,7 @@ sanitize
 	char *result = out;
 	while (*in != 0) {
  	  // filter out unprintable characters
-	  if (*in >= 32 && *in <= 126) *out++ = *in++;
+	  if (isprint(*in)) *out++ = *in++;
           else in++;
 	}
 	*out = 0;
