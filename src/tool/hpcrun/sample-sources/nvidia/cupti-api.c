@@ -886,6 +886,7 @@ cupti_unknown_process
 
 
 static void
+__attribute__ ((unused))
 cupti_device_process
 (
  CUpti_ActivityDevice2 *device
@@ -944,6 +945,7 @@ cupti_sample_process
 
 
 static void
+__attribute__ ((unused))
 cupti_source_locator_process
 (
  CUpti_ActivitySourceLocator *asl

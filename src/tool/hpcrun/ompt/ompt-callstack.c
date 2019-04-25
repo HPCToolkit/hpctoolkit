@@ -123,7 +123,9 @@ static closure_t ompt_callstack_init_closure;
 
 static int ompt_eager_context = 0;
 
+#if OMPT_DEBUG
 static int ompt_callstack_debug = 0;
+#endif
 
 
 
@@ -158,6 +160,7 @@ stack_dump
 
 
 static void 
+__attribute__ ((unused))
 frame_dump
 (
  void
