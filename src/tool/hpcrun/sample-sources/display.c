@@ -75,34 +75,64 @@ static const char *newline = "\n";
 // Local methods
 //******************************************************************************
 
+static 
+char *
+sanitize
+(
+  char *out,
+  const char *in
+)
+{
+	char *result = out;
+	while (*in != 0) {
+ 	  // filter out unprintable characters
+	  if (*in >= 32 && *in <= 126) *out++ = *in++;
+          else in++;
+	}
+	*out = 0;
+	return result;
+}
+
 static void
-printw(FILE *output, const char *name, const char *desc)
+printw(FILE *output, const char *name, const char *desc_unsanitized)
 {
   char **line;
   int *len;
   char sdesc[MAX_DESC_PER_LINE];
 
-  int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
-  if (lines == 0) {
-    fprintf(output, "%s\n", name);
-  } else {
-    for (int i=0; i<lines; i++) {
-      strncpy(sdesc, line[i], len[i]);
-      sdesc[len[i]] = '\0';
-      const char *name_ptr = " ";
+  int dlen;
+  char *desc_buffer;
 
-      if (i == 0) {
-        int len = strlen(name);
-        if (len > MAX_EVENT_NAME) {
-          fprintf(output, "%s\n", name);
-        } else {
-	  name_ptr = name;
+  if (desc_unsanitized) {
+    dlen = strlen(desc_unsanitized);
+    desc_buffer = (char *) malloc(dlen+1); 
+    char *desc = sanitize(desc_buffer, desc_unsanitized);
+
+    int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
+    if (lines == 0) {
+      fprintf(output, "%s\n", name);
+    } else {
+      for (int i=0; i<lines; i++) {
+        strncpy(sdesc, line[i], len[i]);
+        sdesc[len[i]] = '\0';
+        const char *name_ptr = " ";
+
+        if (i == 0) {
+          int len = strlen(name);
+          if (len > MAX_EVENT_NAME) {
+            fprintf(output, "%s\n", name);
+          } else {
+	    name_ptr = name;
+          }
         }
+        fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
       }
-      fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
+      free (line);
+      free (len);
     }
-    free (line);
-    free (len);
+    free(desc);
+  } else {
+    fprintf(output, "%s\n", name);
   }
 }
 
