@@ -690,7 +690,7 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     cur_insn++;
   }
 
-  UWI_END_ADDR(ui) = end_insn;
+  UWI_END_ADDR(ui) = (uintptr_t) end_insn;
 
   btuwi_status_t stat;
   stat.first_undecoded_ins = NULL;
