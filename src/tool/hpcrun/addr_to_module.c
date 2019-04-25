@@ -81,7 +81,7 @@ lm_segment_parse
 {
   char item[MAXPATHLEN];
   s->path[0] ='\0';
-  sscanf(line, "%lx-%lx %s %lx %s %d %s", &s->start_address, &s->end_address, item, &s->offset, s->device, &s->inode, s->path);
+  sscanf(line, "%p-%p %s %lx %s %d %s", &s->start_address, &s->end_address, item, &s->offset, s->device, &s->inode, s->path);
   s->permissions = lm_segment_permissions_decode(item);
 }
 
