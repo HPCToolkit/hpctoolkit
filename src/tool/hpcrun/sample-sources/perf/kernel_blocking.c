@@ -56,6 +56,8 @@
 #include <assert.h>
 #include <include/linux_info.h>
 
+#include <hpcrun/metrics.h>
+
 #include "kernel_blocking.h"
 
 #include "perf-util.h"    // u64, u32 and perf_mmap_data_t
@@ -236,22 +238,32 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 static void
 register_blocking(event_info_t *event_desc)
 {
+  static kind_info_t *kb_kind;
+
+  kb_kind = hpcrun_metrics_new_kind();
+
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_custom->metric_index = hpcrun_new_metric();
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
+  event_desc->metric_custom->metric_index = 
+    hpcrun_set_new_metric_info_and_period(
+      kb_kind, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
+
+  event_desc->metric_custom->metric_desc = 
+    hpcrun_id2metric_linked(event_desc->metric_custom->metric_index);  
 
   metric_blocking_index = event_desc->metric_custom->metric_index;
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
-  event_desc->metric      = hpcrun_new_metric();
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      event_desc->metric, EVNAME_CONTEXT_SWITCHES,
+  event_desc->metric = 
+    hpcrun_set_new_metric_info_and_period(
+      kb_kind, EVNAME_CONTEXT_SWITCHES,
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+
+  event_desc->metric_desc = 
+    hpcrun_id2metric_linked(event_desc->metric); 
 
   // ------------------------------------------
   // set context switch event description to be used when creating
@@ -271,6 +283,8 @@ register_blocking(event_info_t *event_desc)
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */
   );
+
+  hpcrun_close_kind(kb_kind);
 
   event_desc->attr.context_switch = 1;
   event_desc->attr.sample_id_all = 1;
