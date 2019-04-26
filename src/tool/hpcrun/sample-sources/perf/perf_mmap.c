@@ -217,7 +217,8 @@ handle_struct_read_format(u64 data_head, u64 *data_tail, pe_mmap_t *perf_mmap, i
   }
 
   if (read_format & PERF_FORMAT_GROUP) {
-    for(int i=0;i<nr;i++) {
+    int i;
+    for(i=0;i<nr;i++) {
       perf_read_u64(data_head, data_tail, perf_mmap, &value);
 
       if (read_format & PERF_FORMAT_ID) {
