@@ -411,12 +411,13 @@ cct_metric_data_t*
 hpcrun_metric_set_loc(metric_data_list_t *rv, int id)
 {
   metric_data_list_t *curr;
-  for (curr = rv->next; rv->kind != metric_data[id].kind && curr != NULL; rv = curr);
-  if (rv->kind != metric_data[id].kind) {
+  for (curr = rv; curr != NULL && curr->kind != metric_data[id].kind;
+    rv = curr, curr = curr->next);
+  if (curr == NULL) {
     curr = hpcrun_new_metric_data_list(id);
     rv->next = curr;
-    rv = curr;
   }
+  rv = curr;
 
   return &(rv->metrics->v1) + metric_data[id].id;
 }
