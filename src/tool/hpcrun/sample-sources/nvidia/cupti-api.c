@@ -920,7 +920,6 @@ cupti_sample_process
   cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(sample->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    PRINT("external_id %d\n", external_id);
     cupti_function_id_map_entry_t *entry = cupti_function_id_map_lookup(sample->functionId);
     if (entry != NULL) {
       uint32_t function_index = cupti_function_id_map_entry_function_index_get(entry);
@@ -929,15 +928,19 @@ cupti_sample_process
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
       if (host_op_entry != NULL) {
+        PRINT("external_id %d\n", external_id);
         if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
           cupti_correlation_id_map_delete(sample->correlationId);
         }
         cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
+          PRINT("frm %d\n", ip);
           cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
           cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, record);
         }
+      } else {
+        PRINT("host_map_entry %d not found\n", external_id);
       }
     }
   }
@@ -1035,7 +1038,8 @@ cupti_memcpy_process
       cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
       cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
-      cupti_host_op_map_delete(external_id);
+      //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
+      //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   } else {
@@ -1061,7 +1065,8 @@ cupti_memcpy2_process
       cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
-      cupti_host_op_map_delete(external_id);
+      //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
+      //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1150,7 +1155,8 @@ cupti_synchronization_process
       cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
-      cupti_host_op_map_delete(external_id);
+      //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
+      //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1361,6 +1367,7 @@ cupti_notification_handle(cupti_node_t *node)
 {
   if (node->type == CUPTI_ENTRY_TYPE_NOTIFICATION) {
     cupti_entry_notification_t *notification_entry = (cupti_entry_notification_t *)node->entry;
+    PRINT("Insert external id %d\n", notification_entry->host_op_id);
     cupti_host_op_map_insert(notification_entry->host_op_id, notification_entry->cct_node, notification_entry->record);
   }
 }
