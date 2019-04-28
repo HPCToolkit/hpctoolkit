@@ -265,6 +265,7 @@ computeSymbolOffsets
 
 
 static void
+__attribute__ ((unused))
 printSymbols
 (
   Elf_SymbolVector *symbols

@@ -70,6 +70,7 @@ cupti_function_id_map_splay(cupti_function_id_map_entry_t *root, uint64_t key)
 
 
 static void
+__attribute__ ((unused))
 cupti_function_id_map_delete_root()
 {
   TMSG(DEFER_CTXT, "function_id %d: delete", cupti_function_id_map_root->function_id);

@@ -5,14 +5,19 @@
 #include "cupti-record.h"
 
 static _Atomic(cupti_record_list_t *) cupti_record_list_head;
-static __thread cupti_record_t cupti_record = { .worker_notification_stack = NULL,
-                                                .worker_free_notification_stack = NULL,
-                                                .worker_activity_stack = NULL,
-                                                .worker_free_activity_stack = NULL,
-                                                .cupti_notification_stack = NULL,
-                                                .cupti_free_notification_stack = NULL,
-                                                .cupti_activity_stack = NULL,
-                                                .cupti_free_activity_stack = NULL, };
+
+static __thread cupti_record_t cupti_record = 
+{ 
+  .worker_notification_stack = { .head = {NULL}}, 
+  .worker_free_notification_stack = { .head = {NULL}}, 
+  .worker_activity_stack = { .head = {NULL}}, 
+  .worker_free_activity_stack = { .head = {NULL}}, 
+  .cupti_notification_stack = { .head = {NULL}}, 
+  .cupti_free_notification_stack = { .head = {NULL}}, 
+  .cupti_activity_stack = { .head = {NULL}}, 
+  .cupti_free_activity_stack = { .head = {NULL}} 
+};
+
 static __thread bool cupti_record_initialized = false;
 
 

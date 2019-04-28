@@ -720,9 +720,6 @@ ompt_initialize
     sample_filters_register(&serial_only_sf_entry);
   }
 
-  //thread_data_t* td = hpcrun_get_thread_data();
-  //main_top_root = td->core_profile_trace_data.epoch->csdata.top;
-
   hpcrun_safe_exit();
 
   return 1;

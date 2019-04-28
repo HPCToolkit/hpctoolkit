@@ -142,6 +142,7 @@
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/spinlock.h>
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>

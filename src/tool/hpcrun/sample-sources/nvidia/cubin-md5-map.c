@@ -61,6 +61,7 @@ cubin_md5_map_splay(cubin_md5_map_entry_t *root, uint32_t key)
 
 
 static void
+__attribute__ ((unused))
 cubin_md5_map_delete_root()
 {
   TMSG(DEFER_CTXT, "cubin_id %d: delete", cubin_md5_map_root->cubin_id);

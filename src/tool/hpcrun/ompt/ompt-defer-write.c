@@ -64,6 +64,8 @@
 // local includes
 //*****************************************************************************
 
+#include <lib/prof-lean/spinlock.h>
+
 #include <hpcrun/trace.h>
 #include <hpcrun/write_data.h>
 
