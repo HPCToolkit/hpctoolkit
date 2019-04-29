@@ -278,9 +278,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
-  bool doDispPercent = true;
-  bool isPercent = false;
-  bool isVisible = true;
+  bool doDispPercent = mSrc->doDispPercent();
+  bool isPercent = mSrc->isPercent();
+  bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
