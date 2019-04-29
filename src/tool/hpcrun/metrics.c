@@ -297,6 +297,14 @@ hpcrun_id2metric_linked(int metric_id)
 }
 
 
+// non finalizing
+void hpcrun_set_display(int metric_id, uint8_t show, uint8_t show_percent) {
+  metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
+  mdesc->flags.fields.show = show;
+  mdesc->flags.fields.showPercent = show_percent;
+}
+
+
 metric_desc_p_tbl_t*
 hpcrun_get_metric_tbl(kind_info_t **curr)
 {
