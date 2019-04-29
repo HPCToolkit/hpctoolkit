@@ -141,10 +141,6 @@ static undirected_blame_info_t omp_idle_blame_info;
 
 static device_finalizer_fn_entry_t device_finalizer;
 
-// target kind metric
-static int ompt_target_metric_id = -1;
-static int ompt_task_metric_id = -1;
-
 // pc sampling
 static bool ompt_pc_sampling_enabled = false;
 
@@ -387,40 +383,6 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 
 #undef ompt_interface_fn
 }
-
-
-// johnmc merge
-#if 0
-//----------------------------------------------------------------------------
-// note the creation context for an OpenMP task
-//----------------------------------------------------------------------------
-
-static
-void ompt_task_begin(ompt_task_id_t parent_task_id, 
-		   ompt_frame_t *parent_task_frame, 
-		   ompt_task_id_t new_task_id,
-		   void *task_function)
-{
-  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
-
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->overhead++;
-
-  ucontext_t uc;
-  getcontext(&uc);
-
-  hpcrun_safe_enter();
-
-  // record the task creation context into task structure (in omp runtime)
-  hpcrun_sample_callpath(&uc, ompt_task_metric_id, zero_metric_incr, 1, 1, NULL);
-
-  hpcrun_safe_exit();
-
-  task_map_insert(new_task_id, cct_node);  
-
-  td->overhead--;
-}
-#endif
 
 
 //----------------------------------------------------------------------------
@@ -1363,6 +1325,8 @@ ompt_target_callback
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  int zero_metric_id = 0; // nothing to see here
+
   ucontext_t uc;
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
@@ -1372,7 +1336,7 @@ ompt_target_callback
   
   int skip_this_frame = 1; // omit this procedure frame on the call path
   target_node = 
-    hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 
+    hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr, 
                            skip_this_frame, 1, NULL).sample_node; 
 
   // the load module for the runtime library that supports offloading
@@ -1450,14 +1414,6 @@ prepare_device()
 
   device_finalizer.fn = cupti_device_flush;
   device_finalizer_register(device_finalizer_type_flush, &device_finalizer);
-
-  kind_info_t *ompt_target_kind = hpcrun_metrics_new_kind();
-  ompt_target_metric_id = hpcrun_set_new_metric_info(ompt_target_kind, "OMPT_TARGET_KIND"); 
-  hpcrun_close_kind(ompt_target_kind);
-
-  kind_info_t *ompt_task_kind = hpcrun_metrics_new_kind();
-  ompt_task_metric_id = hpcrun_set_new_metric_info(ompt_task_kind, "OMPT_TASK_KIND");
-  hpcrun_close_kind(ompt_task_kind);
 
   ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
   ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
