@@ -585,6 +585,7 @@ init_tasks
 
 
 static void
+__attribute__ ((unused))
 init_mutex_blame_shift
 (
  const char *version
@@ -620,6 +621,7 @@ init_mutex_blame_shift
 // idleness occurs.
 //-------------------------------------------------
 static void
+__attribute__ ((unused))
 init_idle_blame_shift
 (
  const char *version
@@ -684,6 +686,7 @@ ompt_initialize
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
 #endif
+
   ompt_initialized = 1;
 
   ompt_init_inquiry_fn_ptrs(lookup);
@@ -692,8 +695,12 @@ ompt_initialize
   init_threads();
   init_parallel_regions();
 
+#if 0
+  // johnmc: disable blame shifting for OpenMP 5 until we have 
+  // an appropriate plan
   init_mutex_blame_shift(ompt_runtime_version);
   init_idle_blame_shift(ompt_runtime_version);
+#endif
 
   char* ompt_task_full_ctxt_str = getenv("OMPT_TASK_FULL_CTXT");
   if (ompt_task_full_ctxt_str) {
@@ -1132,9 +1139,15 @@ hpcrun_ompt_get_thread_num(int level)
 
 
 static void
-hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
+hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,  ompt_placeholder_t ph)
 {
-  cct_node_t *cct_child = hpcrun_cct_insert_dummy(target_node, ip);
+  // create a cct node for the placeholder as a child of target_node
+  cct_addr_t frm;
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = ph.pc_norm;
+  cct_node_t* cct_child = hpcrun_cct_insert_addr(target_node, &frm);
+
+  // inform the worker about the placeholder
   cupti_worker_notification_apply(host_op_id, cct_child);
 }
 
@@ -1317,6 +1330,17 @@ ompt_device_unload(uint64_t device_num,
 }
 
 
+static int 
+get_load_module
+(
+  cct_node_t *node
+)
+{
+    cct_addr_t *addr = hpcrun_cct_addr(target_node); 
+    ip_normalized_t ip = addr->ip_norm;
+    return ip.lm_id;
+}
+
 void 
 ompt_target_callback
 (
@@ -1346,7 +1370,20 @@ ompt_target_callback
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
   
-  target_node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+  int skip_this_frame = 1; // omit this procedure frame on the call path
+  target_node = 
+    hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 
+                           skip_this_frame, 1, NULL).sample_node; 
+
+  // the load module for the runtime library that supports offloading
+  int lm = get_load_module(target_node); 
+
+  // drop nodes on the call chain until we find one that is not in the load 
+  // module for runtime library that supports offloading
+  for (;;) { 
+    target_node = hpcrun_cct_parent(target_node);
+    if (get_load_module(target_node) != lm) break;
+  }
 
   hpcrun_safe_exit();
   td->overhead--;
@@ -1366,11 +1403,11 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  uint16_t op = 0;
+  ompt_placeholder_t op = ompt_placeholders.ompt_op_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
-      op = ompt_op_class;                              \
+      op = ompt_placeholders.ompt_op_class;                              \
       break;
     
     FOREACH_OMPT_DATA_OP(ompt_op_macro);
@@ -1388,7 +1425,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
-  hpcrun_ompt_op_id_notify(host_op_id, ompt_op_kernel_submit);
+  hpcrun_ompt_op_id_notify(host_op_id, ompt_placeholders.ompt_op_kernel_submit);
   PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
 }
 
