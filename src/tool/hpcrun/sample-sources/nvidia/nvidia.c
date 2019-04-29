@@ -130,6 +130,9 @@
 #define FORALL_KE_TIME(macro) \
   macro("KERNEL:TIME (us)",         6)
 
+#define FORALL_KE_OCCUPANCY(macro) \
+  macro("KERNEL:OCCUPANCY", 7)
+
 #define FORALL_EM(macro)	\
   macro("XDMOV:INVALID",       0)	\
   macro("XDMOV:HTOD_BYTES",    1)	\
@@ -181,6 +184,9 @@
   macro("KERNEL:PERIOD_IN_CYCLES", 1) \
   macro("KERNEL:TOTAL_SAMPLES", 2)    \
   macro("KERNEL:SM_FULL_SAMPLES", 3)
+
+#define FORALL_INFO_EFFICIENCY(macro) \
+  macro("KERNEL:SM_EFFICIENCY", 4)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
@@ -274,6 +280,7 @@
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
+static kind_info_t* stall_kind; // gpu insts
 static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
@@ -305,7 +312,7 @@ static int bh_metric_id[NUM_CLAUSES(FORALL_BH)];
 static int bh_diverged_metric_id;
 static int bh_executed_metric_id;
 
-static int ke_metric_id[NUM_CLAUSES(FORALL_KE)+1];
+static int ke_metric_id[NUM_CLAUSES(FORALL_KE)+2];
 static int ke_static_shared_metric_id;
 static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
@@ -313,12 +320,14 @@ static int ke_active_warps_per_sm_metric_id;
 static int ke_max_active_warps_per_sm_metric_id;
 static int ke_count_metric_id;
 static int ke_time_metric_id;
+static int ke_occupancy_metric_id;
 
-static int info_metric_id[NUM_CLAUSES(FORALL_INFO)];
+static int info_metric_id[NUM_CLAUSES(FORALL_INFO)+1];
 static int info_dropped_samples_id;
 static int info_period_in_cycles_id;
 static int info_total_samples_id;
 static int info_sm_full_samples_id;
+static int info_sm_efficiency_id;
 
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
 
@@ -328,6 +337,8 @@ static long pc_sampling_frequency = -1;
 static int cupti_enabled_activities = 0;
 // event name, which can be either nvidia-ompt or nvidia-cuda
 static char nvidia_name[128];
+
+static const unsigned int MAX_CHAR_FORMULA = 32;
 
 //******************************************************************************
 // constants
@@ -689,18 +700,18 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #define getindex(name, index) index
 #define declare_stall_metrics(name, index) \
-  stall_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
+  stall_metric_id[index] = hpcrun_set_new_metric_info(stall_kind, name);
 #define hide_stall_metrics(name, index) \
   hpcrun_set_display(stall_metric_id[index], 0, 0);
 
-  ke_kind = hpcrun_metrics_new_kind();
+  stall_kind = hpcrun_metrics_new_kind();
   FORALL_GPU_INST(declare_stall_metrics);
   FORALL_GPU_INST_LAT(declare_stall_metrics);
   FORALL_STL(declare_stall_metrics);	
   FORALL_STL(hide_stall_metrics);
   gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
   gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
-  hpcrun_close_kind(ke_kind);
+  hpcrun_close_kind(stall_kind);
 
 #define declare_im_metrics(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info(im_kind, name);
@@ -761,6 +772,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #define declare_ke_metrics(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
+
 #define hide_ke_metrics(name, index) \
   hpcrun_set_display(ke_metric_id[index], 0, 0);
 
@@ -770,11 +782,17 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define hide_ke_metric_time(name, index) \
   hpcrun_set_display(ke_metric_id[index], 0, 0);
 
+#define declare_ke_occupancy_metrics(name, index) \
+  ke_metric_id[index] = hpcrun_set_new_metric_info_and_period(ke_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none); \
+  hpcrun_set_display(ke_metric_id[index], 1, 1);
+
   ke_kind = hpcrun_metrics_new_kind();
   FORALL_KE(declare_ke_metrics);	
   FORALL_KE(hide_ke_metrics);	
   FORALL_KE_TIME(declare_ke_metric_time);	
   FORALL_KE_TIME(hide_ke_metric_time);	
+  FORALL_KE_OCCUPANCY(declare_ke_occupancy_metrics);
   ke_static_shared_metric_id = ke_metric_id[0];
   ke_dynamic_shared_metric_id = ke_metric_id[1];
   ke_local_metric_id = ke_metric_id[2];
@@ -782,7 +800,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
   ke_count_metric_id = ke_metric_id[5];
   ke_time_metric_id = ke_metric_id[6];
+  ke_occupancy_metric_id = ke_metric_id[7];
   hpcrun_close_kind(ke_kind);
+
+  metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);
+  char *ke_occupancy_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(ke_occupancy_buffer, "$%d/$%d", ke_active_warps_per_sm_metric_id, ke_max_active_warps_per_sm_metric_id);
+  ke_occupancy_metric->formula = ke_occupancy_buffer;
 
 #define declare_sync_metrics(name, index) \
   sync_metric_id[index] = hpcrun_set_new_metric_info_and_period(sync_kind, name, \
@@ -792,7 +816,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metrics);	
-  FORALL_SYNC(declare_sync_metrics);	
+  FORALL_SYNC(hide_sync_metrics);	
   hpcrun_close_kind(sync_kind);
 
 #define declare_gl_metrics(name, index) \
@@ -829,17 +853,30 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #define declare_info_metrics(name, index) \
   info_metric_id[index] = hpcrun_set_new_metric_info(info_kind, name);
+
 #define hide_info_metrics(name, index) \
   hpcrun_set_display(info_metric_id[index], 0, 0);
+
+#define declare_sm_efficiency_metrics(name, index) \
+  info_metric_id[index] = hpcrun_set_new_metric_info_and_period(info_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none); \
+  hpcrun_set_display(info_metric_id[index], 1, 1);
 
   info_kind = hpcrun_metrics_new_kind();
   FORALL_INFO(declare_info_metrics);	
   FORALL_INFO(hide_info_metrics);
+  FORALL_INFO_EFFICIENCY(declare_sm_efficiency_metrics);
   info_dropped_samples_id = info_metric_id[0];
   info_period_in_cycles_id = info_metric_id[1];
   info_total_samples_id = info_metric_id[2];
   info_sm_full_samples_id = info_metric_id[3];
+  info_sm_efficiency_id = info_metric_id[4];
   hpcrun_close_kind(info_kind);
+
+  metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
+  char *sm_efficiency_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
+  sm_efficiency_metric->formula = sm_efficiency_buffer;
 
   // Fetch the event string for the sample source
   // only one event is allowed
