@@ -1324,6 +1324,17 @@ ompt_device_unload(uint64_t device_num,
 }
 
 
+static int 
+get_load_module
+(
+  cct_node_t *node
+)
+{
+    cct_addr_t *addr = hpcrun_cct_addr(target_node); 
+    ip_normalized_t ip = addr->ip_norm;
+    return ip.lm_id;
+}
+
 void 
 ompt_target_callback
 (
@@ -1353,7 +1364,20 @@ ompt_target_callback
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
   hpcrun_safe_enter();
   
-  target_node = hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+  int skip_this_frame = 1; // omit this procedure frame on the call path
+  target_node = 
+    hpcrun_sample_callpath(&uc, ompt_target_metric_id, zero_metric_incr, 
+                           skip_this_frame, 1, NULL).sample_node; 
+
+  // the load module for the runtime library that supports offloading
+  int lm = get_load_module(target_node); 
+
+  // drop nodes on the call chain until we find one that is not in the load 
+  // module for runtime library that supports offloading
+  for (;;) { 
+    target_node = hpcrun_cct_parent(target_node);
+    if (get_load_module(target_node) != lm) break;
+  }
 
   hpcrun_safe_exit();
   td->overhead--;
