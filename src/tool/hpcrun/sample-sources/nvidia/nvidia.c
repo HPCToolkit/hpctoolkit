@@ -812,7 +812,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   sync_metric_id[index] = hpcrun_set_new_metric_info_and_period(sync_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_sync_metrics(name, index) \
-  hpcrun_set_display(sync_metric_id[index], 0, 0)
+  hpcrun_set_display(sync_metric_id[index], 0, 0);
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metrics);	
