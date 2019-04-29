@@ -252,7 +252,8 @@ ompt_elide_runtime_frame(
 
   frame_t *bt_outer_at_entry = *bt_outer;
 
-  switch(ompt_thread_type_get()) {
+  ompt_thread_t thread_type = ompt_thread_type_get();
+  switch(thread_type) {
   case ompt_thread_initial:
     break;
   case ompt_thread_worker:
@@ -313,6 +314,8 @@ ompt_elide_runtime_frame(
     frame0 = hpcrun_ompt_get_task_frame(++i);
 
     if (!frame0) {
+      if (thread_type == ompt_thread_initial) return;
+
       // corner case: the innermost task (if any) has no frame info. 
       goto clip_base_frames;
     }

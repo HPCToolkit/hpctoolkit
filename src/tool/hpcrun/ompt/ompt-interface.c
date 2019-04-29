@@ -585,6 +585,7 @@ init_tasks
 
 
 static void
+__attribute__ ((unused))
 init_mutex_blame_shift
 (
  const char *version
@@ -620,6 +621,7 @@ init_mutex_blame_shift
 // idleness occurs.
 //-------------------------------------------------
 static void
+__attribute__ ((unused))
 init_idle_blame_shift
 (
  const char *version
@@ -684,6 +686,7 @@ ompt_initialize
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
 #endif
+
   ompt_initialized = 1;
 
   ompt_init_inquiry_fn_ptrs(lookup);
@@ -692,8 +695,12 @@ ompt_initialize
   init_threads();
   init_parallel_regions();
 
+#if 0
+  // johnmc: disable blame shifting for OpenMP 5 until we have 
+  // an appropriate plan
   init_mutex_blame_shift(ompt_runtime_version);
   init_idle_blame_shift(ompt_runtime_version);
+#endif
 
   char* ompt_task_full_ctxt_str = getenv("OMPT_TASK_FULL_CTXT");
   if (ompt_task_full_ctxt_str) {
