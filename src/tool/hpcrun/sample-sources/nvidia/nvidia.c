@@ -108,147 +108,147 @@
 #endif
 
 #define FORALL_ME(macro)	  \
-  macro("ME_UNKNOWN_BYTES",       0) \
-  macro("ME_PAGEABLE_BYTES",      1) \
-  macro("ME_PINNED_BYTES",        2) \
-  macro("ME_DEVICE_BYTES",        3) \
-  macro("ME_ARRAY_BYTES",         4) \
-  macro("ME_MANAGED_BYTES",       5) \
-  macro("ME_DEVICE_STATIC_BYTES", 6)
+  macro("MEM:UNKNOWN_BYTES",       0) \
+  macro("MEM:PAGEABLE_BYTES",      1) \
+  macro("MEM:PINNED_BYTES",        2) \
+  macro("MEM:DEVICE_BYTES",        3) \
+  macro("MEM:ARRAY_BYTES",         4) \
+  macro("MEM:MANAGED_BYTES",       5) \
+  macro("MEM:DEVICE_STATIC_BYTES", 6)
 
 #define FORALL_ME_TIME(macro) \
-  macro("ME_TIME (us)",           7)
+  macro("MEM:TIME (us)",           7)
 
 #define FORALL_KE(macro)	  \
-  macro("KE_STATIC_MEM_BYTES",  0)       \
-  macro("KE_DYNAMIC_MEM_BYTES", 1)       \
-  macro("KE_LOCAL_MEM_BYTES",   2)       \
-  macro("KE_ACTIVE_WARPS_PER_SM", 3)     \
-  macro("KE_MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KE_COUNT ", 5)                  \
+  macro("KERNEL:STATIC_MEM_BYTES",  0)       \
+  macro("KERNEL:DYNAMIC_MEM_BYTES", 1)       \
+  macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
+  macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
+  macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
+  macro("KERNEL:COUNT ", 5)                  \
 
 #define FORALL_KE_TIME(macro) \
-  macro("KE_TIME (us)",         6)
+  macro("KERNEL:TIME (us)",         6)
 
 #define FORALL_EM(macro)	\
-  macro("EM_INVALID",       0)	\
-  macro("EM_HTOD_BYTES",    1)	\
-  macro("EM_DTOH_BYTES",    2)	\
-  macro("EM_HTOA_BYTES",    3)	\
-  macro("EM_ATOH_BYTES",    4)	\
-  macro("EM_ATOA_BYTES",    5)	\
-  macro("EM_ATOD_BYTES",    6)	\
-  macro("EM_DTOA_BYTES",    7)	\
-  macro("EM_DTOD_BYTES",    8)	\
-  macro("EM_HTOH_BYTES",    9)	\
-  macro("EM_PTOP_BYTES",   10) 
+  macro("XDMOV:INVALID",       0)	\
+  macro("XDMOV:HTOD_BYTES",    1)	\
+  macro("XDMOV:DTOH_BYTES",    2)	\
+  macro("XDMOV:HTOA_BYTES",    3)	\
+  macro("XDMOV:ATOH_BYTES",    4)	\
+  macro("XDMOV:ATOA_BYTES",    5)	\
+  macro("XDMOV:ATOD_BYTES",    6)	\
+  macro("XDMOV:DTOA_BYTES",    7)	\
+  macro("XDMOV:DTOD_BYTES",    8)	\
+  macro("XDMOV:HTOH_BYTES",    9)	\
+  macro("XDMOV:PTOP_BYTES",   10) 
 
 #define FORALL_EM_TIME(macro)   \
-  macro("EM_TIME (us)",    11)  
+  macro("XDMOV:TIME (us)",    11)  
 
 #define FORALL_SYNC(macro) \
-  macro("SYNC_UNKNOWN (us)",     0) \
-  macro("SYNC_EVENT (us)",       1) \
-  macro("SYNC_STREAM (us)",      2) \
-  macro("SYNC_STREAM_WAIT (us)", 3) \
-  macro("SYNC_CONTEXT (us)",     4)
+  macro("SYNC:UNKNOWN (us)",     0) \
+  macro("SYNC:EVENT (us)",       1) \
+  macro("SYNC:STREAM (us)",      2) \
+  macro("SYNC:STREAM_WAIT (us)", 3) \
+  macro("SYNC:CONTEXT (us)",     4)
 
 #define FORALL_GL(macro) \
-  macro("GL_LOAD_CACHED_BYTES",             0) \
-  macro("GL_LOAD_UNCACHED_BYTES",           1) \
-  macro("GL_STORE_BYTES",                   2) \
-  macro("GL_LOAD_CACHED_L2_TRANS",          3) \
-  macro("GL_LOAD_UNCACHED_L2_TRANS",        4) \
-  macro("GL_STORE_L2_TRANS",                5) \
-  macro("GL_LOAD_CACHED_THEORETIC_TRANS",   6) \
-  macro("GL_LOAD_UNCACHED_THEORETIC_TRANS", 7) \
-  macro("GL_STORE_THEORETIC_TRANS",         8)
+  macro("GMEM:LOAD_CACHED_BYTES",             0) \
+  macro("GMEM:LOAD_UNCACHED_BYTES",           1) \
+  macro("GMEM:STORE_BYTES",                   2) \
+  macro("GMEM:LOAD_CACHED_L2_TRANS",          3) \
+  macro("GMEM:LOAD_UNCACHED_L2_TRANS",        4) \
+  macro("GMEM:STORE_L2_TRANS",                5) \
+  macro("GMEM:LOAD_CACHED_THEORETIC_TRANS",   6) \
+  macro("GMEM:LOAD_UNCACHED_THEORETIC_TRANS", 7) \
+  macro("GMEM:STORE_THEORETIC_TRANS",         8)
 
 #define FORALL_SH(macro) \
-  macro("SH_LOAD_BYTES",            0) \
-  macro("SH_STORE_BYTES",           1) \
-  macro("SH_LOAD_TRANS",            2) \
-  macro("SH_STORE_TRANS",           3) \
-  macro("SH_LOAD_THEORETIC_TRANS",  4) \
-  macro("SH_STORE_THEORETIC_TRANS", 5)
+  macro("SMEM:LOAD_BYTES",            0) \
+  macro("SMEM:STORE_BYTES",           1) \
+  macro("SMEM:LOAD_TRANS",            2) \
+  macro("SMEM:STORE_TRANS",           3) \
+  macro("SMEM:LOAD_THEORETIC_TRANS",  4) \
+  macro("SMEM:STORE_THEORETIC_TRANS", 5)
 
 #define FORALL_BH(macro) \
-  macro("BH_WARP_DIVERGED", 0) \
-  macro("BH_WARP_EXECUTED", 1)
+  macro("BRANCH:WARP_DIVERGED", 0) \
+  macro("BRANCH:WARP_EXECUTED", 1)
 
 #define FORALL_INFO(macro)	\
-  macro("INFO_DROPPED_SAMPLES", 0)  \
-  macro("INFO_PERIOD_IN_CYCLES", 1) \
-  macro("INFO_TOTAL_SAMPLES", 2)    \
-  macro("INFO_SM_FULL_SAMPLES", 3)
+  macro("KERNEL:DROPPED_SAMPLES", 0)  \
+  macro("KERNEL:PERIOD_IN_CYCLES", 1) \
+  macro("KERNEL:TOTAL_SAMPLES", 2)    \
+  macro("KERNEL:SM_FULL_SAMPLES", 3)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro)	\
-  macro("IM_INVALID",       0)	\
-  macro("IM_HTOD_BYTES",    1)	\
-  macro("IM_DTOH_BYTES",    2)	\
-  macro("IM_CPU_PF",        3)	\
-  macro("IM_GPU_PF",        4)	\
-  macro("IM_THRASH",        5)	\
-  macro("IM_THROT",         6)	\
-  macro("IM_RMAP",          7)	\
-  macro("IM_DTOD_BYTES",    8)
+  macro("IDMOV:INVALID",       0)	\
+  macro("IDMOV:HTOD_BYTES",    1)	\
+  macro("IDMOV:DTOH_BYTES",    2)	\
+  macro("IDMOV:CPU_PF",        3)	\
+  macro("IDMOV:GPU_PF",        4)	\
+  macro("IDMOV:THRASH",        5)	\
+  macro("IDMOV:THROT",         6)	\
+  macro("IDMOV:RMAP",          7)	\
+  macro("IDMOV:DTOD_BYTES",    8)
 
 #define FORALL_IM_TIME(macro)  \
-  macro("IM_TIME (us)",     9)  
+  macro("IDMOV:TIME (us)",     9)  
 #else
 #define FORALL_IM(macro)	\
-  macro("IM_INVALID",       0)	\
-  macro("IM_HTOD_BYTES",    1)	\
-  macro("IM_DTOH_BYTES",    2)	\
-  macro("IM_CPU_PF",        3)	\
-  macro("IM_GPU_PF",        4)
+  macro("IDMOV:INVALID",       0)	\
+  macro("IDMOV:HTOD_BYTES",    1)	\
+  macro("IDMOV:DTOH_BYTES",    2)	\
+  macro("IDMOV:CPU_PF",        3)	\
+  macro("IDMOV:GPU_PF",        4)
 
 #define FORALL_IM_TIME(macro)   \
-  macro("IM_TIME (us)",     5)
+  macro("IDMOV:TIME (us)",     5)
 #endif
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_STL(macro)	\
-  macro("STL_INVALID",      0)	\
-  macro("STL_NONE",         1)	\
-  macro("STL_IFETCH",       2)	\
-  macro("STL_EXC_DEP",      3)	\
-  macro("STL_MEM_DEP",      4)	\
-  macro("STL_TEX",          5)	\
-  macro("STL_SYNC",         6)	\
-  macro("STL_CMEM_DEP",     7)	\
-  macro("STL_PIPE_BSY",     8)	\
-  macro("STL_MEM_THR",      9)	\
-  macro("STL_NOSEL",       10)	\
-  macro("STL_OTHR",        11)	\
-  macro("STL_SLEEP",       12)
+  macro("STALL:INVALID",      0)	\
+  macro("STALL:NONE",         1)	\
+  macro("STALL:IFETCH",       2)	\
+  macro("STALL:EXC_DEP",      3)	\
+  macro("STALL:MEM_DEP",      4)	\
+  macro("STALL:TEX",          5)	\
+  macro("STALL:SYNC",         6)	\
+  macro("STALL:CMEM_DEP",     7)	\
+  macro("STALL:PIPE_BSY",     8)	\
+  macro("STALL:MEM_THR",      9)	\
+  macro("STALL:NOSEL",       10)	\
+  macro("STALL:OTHR",        11)	\
+  macro("STALL:SLEEP",       12)
 
 #define FORALL_GPU_INST(macro)  \
-  macro("GPU_ISAMP",        13)  
+  macro("GPU INST",        13)  
 
 #define FORALL_GPU_INST_LAT(macro)  \
-  macro("GPU_LAT_ISAMP",    14)  
+  macro("GPU STALL",    14)  
 #else
 #define FORALL_STL(macro)	\
-  macro("STL_INVALID",      0)	\
-  macro("STL_NONE",         1)	\
-  macro("STL_IFETCH",       2)	\
-  macro("STL_EXC_DEP",      3)	\
-  macro("STL_MEM_DEP",      4)	\
-  macro("STL_TEX",          5)	\
-  macro("STL_SYNC",         6)	\
-  macro("STL_CMEM_DEP",     7)	\
-  macro("STL_PIPE_BSY",     8)	\
-  macro("STL_MEM_THR",      9)	\
-  macro("STL_NOSEL",       10)	\
-  macro("STL_OTHR",        11)
+  macro("STALL:INVALID",      0)	\
+  macro("STALL:NONE",         1)	\
+  macro("STALL:IFETCH",       2)	\
+  macro("STALL:EXC_DEP",      3)	\
+  macro("STALL:MEM_DEP",      4)	\
+  macro("STALL:TEX",          5)	\
+  macro("STALL:SYNC",         6)	\
+  macro("STALL:CMEM_DEP",     7)	\
+  macro("STALL:PIPE_BSY",     8)	\
+  macro("STALL:MEM_THR",      9)	\
+  macro("STALL:NOSEL",       10)	\
+  macro("STALL:OTHR",        11)
 
 #define FORALL_GPU_INST(macro)  \
-  macro("GPU_ISAMP",       12)  
+  macro("GPU INST",       12)  
 
 #define FORALL_GPU_INST_LAT(macro)  \
-  macro("GPU_LAT_ISAMP",   13)  
+  macro("GPU STALL",   13)  
 #endif
 
 
@@ -688,66 +688,93 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(CUDA,"nevents = %d", nevents);
 
 #define getindex(name, index) index
-#define declare_stall_metric(name, index) \
+#define declare_stall_metrics(name, index) \
   stall_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
+#define hide_stall_metrics(name, index) \
+  hpcrun_set_display(stall_metric_id[index], 0, 0);
 
   ke_kind = hpcrun_metrics_new_kind();
-  FORALL_STL(declare_stall_metric);	
-  FORALL_GPU_INST(declare_stall_metric);
-  FORALL_GPU_INST_LAT(declare_stall_metric);
+  FORALL_GPU_INST(declare_stall_metrics);
+  FORALL_GPU_INST_LAT(declare_stall_metrics);
+  FORALL_STL(declare_stall_metrics);	
+  FORALL_STL(hide_stall_metrics);
   gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
   gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
   hpcrun_close_kind(ke_kind);
 
-#define declare_im_metric(name, index) \
+#define declare_im_metrics(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info(im_kind, name);
+#define hide_im_metrics(name, index) \
+  hpcrun_set_display(im_metric_id[index], 0, 0);
 
 #define declare_im_metric_time(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info_and_period(im_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_im_metric_time(name, index) \
+  hpcrun_set_display(im_metric_id[index], 0, 0);
 
   im_kind = hpcrun_metrics_new_kind();
-  FORALL_IM(declare_im_metric);	
+  FORALL_IM(declare_im_metrics);	
+  FORALL_IM(hide_im_metrics);	
   FORALL_IM_TIME(declare_im_metric_time);
+  FORALL_IM_TIME(hide_im_metric_time);
   im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
   hpcrun_close_kind(im_kind);
 
-#define declare_em_metric(name, index) \
+#define declare_em_metrics(name, index) \
   em_metric_id[index] = hpcrun_set_new_metric_info(em_kind, name);
+#define hide_em_metrics(name, index) \
+  hpcrun_set_display(em_metric_id[index], 0, 0);
 
 #define declare_em_metric_time(name, index) \
   em_metric_id[index] = hpcrun_set_new_metric_info_and_period(em_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_em_metric_time(name, index) \
+  hpcrun_set_display(em_metric_id[index], 0, 0);
 
   em_kind = hpcrun_metrics_new_kind();
-  FORALL_EM(declare_em_metric);	
+  FORALL_EM(declare_em_metrics);	
+  FORALL_EM(hide_em_metrics);
   FORALL_EM_TIME(declare_em_metric_time);
+  FORALL_EM_TIME(hide_em_metric_time);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   hpcrun_close_kind(em_kind);
 
-#define declare_me_metric(name, index) \
+#define declare_me_metrics(name, index) \
   me_metric_id[index] = hpcrun_set_new_metric_info(me_kind, name);
+#define hide_me_metrics(name, index) \
+  hpcrun_set_display(me_metric_id[index], 0, 0);
 
 #define declare_me_metric_time(name, index) \
   me_metric_id[index] = hpcrun_set_new_metric_info_and_period(me_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_me_metric_time(name, index) \
+  hpcrun_set_display(me_metric_id[index], 0, 0);
 
   me_kind = hpcrun_metrics_new_kind();
-  FORALL_ME(declare_me_metric);	
+  FORALL_ME(declare_me_metrics);	
+  FORALL_ME(hide_me_metrics);
   FORALL_ME_TIME(declare_me_metric_time);
+  FORALL_ME_TIME(hide_me_metric_time);
   me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
   hpcrun_close_kind(me_kind);
 
-#define declare_ke_metric(name, index) \
+#define declare_ke_metrics(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
+#define hide_ke_metrics(name, index) \
+  hpcrun_set_display(ke_metric_id[index], 0, 0);
 
 #define declare_ke_metric_time(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info_and_period(ke_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_ke_metric_time(name, index) \
+  hpcrun_set_display(ke_metric_id[index], 0, 0);
 
   ke_kind = hpcrun_metrics_new_kind();
-  FORALL_KE(declare_ke_metric);	
+  FORALL_KE(declare_ke_metrics);	
+  FORALL_KE(hide_ke_metrics);	
   FORALL_KE_TIME(declare_ke_metric_time);	
+  FORALL_KE_TIME(hide_ke_metric_time);	
   ke_static_shared_metric_id = ke_metric_id[0];
   ke_dynamic_shared_metric_id = ke_metric_id[1];
   ke_local_metric_id = ke_metric_id[2];
@@ -757,42 +784,57 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_time_metric_id = ke_metric_id[6];
   hpcrun_close_kind(ke_kind);
 
-#define declare_sync_metric(name, index) \
+#define declare_sync_metrics(name, index) \
   sync_metric_id[index] = hpcrun_set_new_metric_info_and_period(sync_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_sync_metrics(name, index) \
+  hpcrun_set_display(sync_metric_id[index], 0, 0)
 
   sync_kind = hpcrun_metrics_new_kind();
-  FORALL_SYNC(declare_sync_metric);	
+  FORALL_SYNC(declare_sync_metrics);	
+  FORALL_SYNC(declare_sync_metrics);	
   hpcrun_close_kind(sync_kind);
 
-#define declare_gl_metric(name, index) \
+#define declare_gl_metrics(name, index) \
   gl_metric_id[index] = hpcrun_set_new_metric_info(gl_kind, name);
+#define hide_gl_metrics(name, index) \
+  hpcrun_set_display(gl_metric_id[index], 0, 0);
 
   gl_kind = hpcrun_metrics_new_kind();
-  FORALL_GL(declare_gl_metric);	
+  FORALL_GL(declare_gl_metrics);	
+  FORALL_GL(hide_gl_metrics);	
   hpcrun_close_kind(gl_kind);
 
-#define declare_sh_metric(name, index) \
+#define declare_sh_metrics(name, index) \
   sh_metric_id[index] = hpcrun_set_new_metric_info(sh_kind, name);
+#define hide_sh_metrics(name, index) \
+  hpcrun_set_display(sh_metric_id[index], 0, 0);
 
   sh_kind = hpcrun_metrics_new_kind();
-  FORALL_SH(declare_sh_metric);	
+  FORALL_SH(declare_sh_metrics);	
+  FORALL_SH(hide_sh_metrics);	
   hpcrun_close_kind(sh_kind);
 
-#define declare_bh_metric(name, index) \
+#define declare_bh_metrics(name, index) \
   bh_metric_id[index] = hpcrun_set_new_metric_info(bh_kind, name);
+#define hide_bh_metrics(name, index) \
+  hpcrun_set_display(bh_metric_id[index], 0, 0);
 
   bh_kind = hpcrun_metrics_new_kind();
-  FORALL_BH(declare_bh_metric);	
+  FORALL_BH(declare_bh_metrics);	
+  FORALL_BH(hide_bh_metrics);	
   bh_diverged_metric_id = bh_metric_id[0];
   bh_executed_metric_id = bh_metric_id[1];
   hpcrun_close_kind(bh_kind);
 
 #define declare_info_metrics(name, index) \
   info_metric_id[index] = hpcrun_set_new_metric_info(info_kind, name);
+#define hide_info_metrics(name, index) \
+  hpcrun_set_display(info_metric_id[index], 0, 0);
 
   info_kind = hpcrun_metrics_new_kind();
   FORALL_INFO(declare_info_metrics);	
+  FORALL_INFO(hide_info_metrics);
   info_dropped_samples_id = info_metric_id[0];
   info_period_in_cycles_id = info_metric_id[1];
   info_total_samples_id = info_metric_id[2];

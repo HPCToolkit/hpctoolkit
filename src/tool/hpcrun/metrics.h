@@ -121,6 +121,9 @@ metric_desc_t* hpcrun_id2metric(int id);
 // non finalizing
 metric_desc_t* hpcrun_id2metric_linked(int metric_id);
 
+// non finalizing
+void hpcrun_set_display(int metric_id, uint8_t show, uint8_t show_percent);
+
 metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
