@@ -161,6 +161,66 @@ ompt_region_unresolved
 }
 
 
+void 
+ompt_tgt_alloc
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+
+void 
+ompt_tgt_delete
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+
+void 
+ompt_tgt_copyin
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+
+void 
+ompt_tgt_copyout
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+
+void 
+ompt_tgt_kernel
+(
+  void
+)
+{
+  // this function is a placeholder that represents that the calling context 
+  // of an OpenMP region is unresolved. This function is not meant to be
+  // invoked
+}
+
+  
 //***************************************************************************
 // private operations
 //***************************************************************************
@@ -226,6 +286,11 @@ ompt_init_placeholders_internal
   // unresolved at the end of a program execution. this can happen if a 
   // program execution is interrupted before the region is resolved. 
   init_placeholder(&ompt_placeholders.region_unresolved, ompt_region_unresolved);
+  init_placeholder(&ompt_placeholders.ompt_op_alloc, ompt_tgt_alloc);
+  init_placeholder(&ompt_placeholders.ompt_op_copy_in, ompt_tgt_copyin);
+  init_placeholder(&ompt_placeholders.ompt_op_copy_out, ompt_tgt_copyout);
+  init_placeholder(&ompt_placeholders.ompt_op_delete, ompt_tgt_delete);
+  init_placeholder(&ompt_placeholders.ompt_op_kernel_submit, ompt_tgt_kernel);
 }
 
 

@@ -35,6 +35,11 @@ const char *OMP_TASK_WAIT    = "<omp task wait>";
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
 const char *NO_THREAD_ROOT   = "<no thread>";
 const char *OMP_REGION_UNR   = "<unresolved omp region>";
+const char *OMP_TGT_ALLOC    = "<omp tgt alloc>";
+const char *OMP_TGT_COPYIN   = "<omp tgt copyin>";
+const char *OMP_TGT_COPYOUT  = "<omp tgt copyout>";
+const char *OMP_TGT_DELETE   = "<omp tgt delete>";
+const char *OMP_TGT_KERNEL   = "<omp tgt kernel>";
 
 
 
@@ -93,7 +98,12 @@ static NameMapping renamingTable[] = {
 
   { "NO_THREAD",               NO_THREAD_ROOT       },
 
-  { "ompt_region_unresolved",  OMP_REGION_UNR       }
+  { "ompt_region_unresolved",  OMP_REGION_UNR       },
+  { "ompt_tgt_alloc",            OMP_TGT_ALLOC      },
+  { "ompt_tgt_copyin",           OMP_TGT_COPYIN     },
+  { "ompt_tgt_copyout",          OMP_TGT_COPYOUT    },
+  { "ompt_tgt_delete",           OMP_TGT_DELETE     },
+  { "ompt_tgt_kernel",           OMP_TGT_KERNEL     }
 };
 
 static const char *fakeProcedures[] = {

@@ -1139,9 +1139,15 @@ hpcrun_ompt_get_thread_num(int level)
 
 
 static void
-hpcrun_ompt_op_id_notify(ompt_id_t host_op_id, uint16_t ip)
+hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,  ompt_placeholder_t ph)
 {
-  cct_node_t *cct_child = hpcrun_cct_insert_dummy(target_node, ip);
+  // create a cct node for the placeholder as a child of target_node
+  cct_addr_t frm;
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = ph.pc_norm;
+  cct_node_t* cct_child = hpcrun_cct_insert_addr(target_node, &frm);
+
+  // inform the worker about the placeholder
   cupti_worker_notification_apply(host_op_id, cct_child);
 }
 
@@ -1397,11 +1403,11 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  uint16_t op = 0;
+  ompt_placeholder_t op = ompt_placeholders.ompt_op_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
-      op = ompt_op_class;                              \
+      op = ompt_placeholders.ompt_op_class;                              \
       break;
     
     FOREACH_OMPT_DATA_OP(ompt_op_macro);
@@ -1419,7 +1425,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
-  hpcrun_ompt_op_id_notify(host_op_id, ompt_op_kernel_submit);
+  hpcrun_ompt_op_id_notify(host_op_id, ompt_placeholders.ompt_op_kernel_submit);
   PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
 }
 

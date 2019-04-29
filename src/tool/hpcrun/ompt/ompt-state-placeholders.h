@@ -73,6 +73,12 @@ typedef struct {
 #define declare_ph(f) ompt_placeholder_t f;
   FOREACH_OMPT_PLACEHOLDER_FN(declare_ph);
   declare_ph(region_unresolved);
+  declare_ph(ompt_op_none);
+  declare_ph(ompt_op_alloc);
+  declare_ph(ompt_op_copy_in);
+  declare_ph(ompt_op_copy_out);
+  declare_ph(ompt_op_delete);
+  declare_ph(ompt_op_kernel_submit);
 #undef declare_ph 
 } ompt_placeholders_t; 
 
