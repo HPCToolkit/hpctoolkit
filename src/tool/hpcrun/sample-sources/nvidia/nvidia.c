@@ -702,7 +702,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_stall_metrics(name, index) \
   stall_metric_id[index] = hpcrun_set_new_metric_info(stall_kind, name);
 #define hide_stall_metrics(name, index) \
-  hpcrun_set_display(stall_metric_id[index], 0, 0);
+  hpcrun_set_display(stall_metric_id[index], 0, 1);
 
   stall_kind = hpcrun_metrics_new_kind();
   FORALL_GPU_INST(declare_stall_metrics);
@@ -716,13 +716,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_im_metrics(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info(im_kind, name);
 #define hide_im_metrics(name, index) \
-  hpcrun_set_display(im_metric_id[index], 0, 0);
+  hpcrun_set_display(im_metric_id[index], 0, 1);
 
 #define declare_im_metric_time(name, index) \
   im_metric_id[index] = hpcrun_set_new_metric_info_and_period(im_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_im_metric_time(name, index) \
-  hpcrun_set_display(im_metric_id[index], 0, 0);
+  hpcrun_set_display(im_metric_id[index], 0, 1);
 
   im_kind = hpcrun_metrics_new_kind();
   FORALL_IM(declare_im_metrics);	
@@ -735,13 +735,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_em_metrics(name, index) \
   em_metric_id[index] = hpcrun_set_new_metric_info(em_kind, name);
 #define hide_em_metrics(name, index) \
-  hpcrun_set_display(em_metric_id[index], 0, 0);
+  hpcrun_set_display(em_metric_id[index], 0, 1);
 
 #define declare_em_metric_time(name, index) \
   em_metric_id[index] = hpcrun_set_new_metric_info_and_period(em_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_em_metric_time(name, index) \
-  hpcrun_set_display(em_metric_id[index], 0, 0);
+  hpcrun_set_display(em_metric_id[index], 0, 1);
 
   em_kind = hpcrun_metrics_new_kind();
   FORALL_EM(declare_em_metrics);	
@@ -754,13 +754,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_me_metrics(name, index) \
   me_metric_id[index] = hpcrun_set_new_metric_info(me_kind, name);
 #define hide_me_metrics(name, index) \
-  hpcrun_set_display(me_metric_id[index], 0, 0);
+  hpcrun_set_display(me_metric_id[index], 0, 1);
 
 #define declare_me_metric_time(name, index) \
   me_metric_id[index] = hpcrun_set_new_metric_info_and_period(me_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_me_metric_time(name, index) \
-  hpcrun_set_display(me_metric_id[index], 0, 0);
+  hpcrun_set_display(me_metric_id[index], 0, 1);
 
   me_kind = hpcrun_metrics_new_kind();
   FORALL_ME(declare_me_metrics);	
@@ -774,18 +774,18 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);
 
 #define hide_ke_metrics(name, index) \
-  hpcrun_set_display(ke_metric_id[index], 0, 0);
+  hpcrun_set_display(ke_metric_id[index], 0, 1);
 
 #define declare_ke_metric_time(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info_and_period(ke_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_ke_metric_time(name, index) \
-  hpcrun_set_display(ke_metric_id[index], 0, 0);
+  hpcrun_set_display(ke_metric_id[index], 0, 1);
 
 #define declare_ke_occupancy_metrics(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info_and_period(ke_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none); \
-  hpcrun_set_display(ke_metric_id[index], 1, 1);
+  hpcrun_set_display(ke_metric_id[index], 1, 0);
 
   ke_kind = hpcrun_metrics_new_kind();
   FORALL_KE(declare_ke_metrics);	
@@ -812,7 +812,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   sync_metric_id[index] = hpcrun_set_new_metric_info_and_period(sync_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 #define hide_sync_metrics(name, index) \
-  hpcrun_set_display(sync_metric_id[index], 0, 0);
+  hpcrun_set_display(sync_metric_id[index], 0, 1);
 
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metrics);	
@@ -822,7 +822,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_gl_metrics(name, index) \
   gl_metric_id[index] = hpcrun_set_new_metric_info(gl_kind, name);
 #define hide_gl_metrics(name, index) \
-  hpcrun_set_display(gl_metric_id[index], 0, 0);
+  hpcrun_set_display(gl_metric_id[index], 0, 1);
 
   gl_kind = hpcrun_metrics_new_kind();
   FORALL_GL(declare_gl_metrics);	
@@ -832,7 +832,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_sh_metrics(name, index) \
   sh_metric_id[index] = hpcrun_set_new_metric_info(sh_kind, name);
 #define hide_sh_metrics(name, index) \
-  hpcrun_set_display(sh_metric_id[index], 0, 0);
+  hpcrun_set_display(sh_metric_id[index], 0, 1);
 
   sh_kind = hpcrun_metrics_new_kind();
   FORALL_SH(declare_sh_metrics);	
@@ -842,7 +842,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define declare_bh_metrics(name, index) \
   bh_metric_id[index] = hpcrun_set_new_metric_info(bh_kind, name);
 #define hide_bh_metrics(name, index) \
-  hpcrun_set_display(bh_metric_id[index], 0, 0);
+  hpcrun_set_display(bh_metric_id[index], 0, 1);
 
   bh_kind = hpcrun_metrics_new_kind();
   FORALL_BH(declare_bh_metrics);	
@@ -855,12 +855,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   info_metric_id[index] = hpcrun_set_new_metric_info(info_kind, name);
 
 #define hide_info_metrics(name, index) \
-  hpcrun_set_display(info_metric_id[index], 0, 0);
+  hpcrun_set_display(info_metric_id[index], 0, 1);
 
 #define declare_sm_efficiency_metrics(name, index) \
   info_metric_id[index] = hpcrun_set_new_metric_info_and_period(info_kind, name, \
     MetricFlags_ValFmt_Real, 1, metric_property_none); \
-  hpcrun_set_display(info_metric_id[index], 1, 1);
+  hpcrun_set_display(info_metric_id[index], 1, 0);
 
   info_kind = hpcrun_metrics_new_kind();
   FORALL_INFO(declare_info_metrics);	
