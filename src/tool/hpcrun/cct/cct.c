@@ -91,7 +91,7 @@
 //#include "../ompt/ompt-interface.h"
 //#include "../memory/hpcrun-malloc.h"
 
-#define HPCRUN_CCT_KEEP_DUMMY 1
+#define HPCRUN_CCT_KEEP_DUMMY 0
 
 //***************************** concrete data structure definition **********
 
