@@ -119,6 +119,8 @@
 static ompt_start_tool_result_t init;
 static const char* ompt_runtime_version;
 
+volatile int ompt_debug_wait = 1;
+
 static int ompt_elide = 0;
 static int ompt_initialized = 0;
 
@@ -718,6 +720,11 @@ ompt_start_tool
  const char *runtime_version
 )
 {
+
+ if (getenv("OMPT_DEBUG_WAIT")) {
+    while (ompt_debug_wait);
+ }
+ 
 #if OMPT_DEBUG_STARTUP
   printf("Starting tool...\n");
 #endif
