@@ -153,8 +153,6 @@ DATACENTRIC_Unknown(void)
  * PRIVATE Function implementation
  *****************************************************************************/
 
-
-
 static cct_node_t*
 datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
                              uintptr_t addr_start, uintptr_t addr_end)
@@ -326,7 +324,7 @@ datacentric_post_handler(event_handler_arg_t *args)
     cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
     var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
-    hpcrun_cct_set_node_variable(var_context);
+    hpcrun_cct_set_node_unknown_attribute(var_context);
   }
 
   // copy the callpath of the sample to the variable context
