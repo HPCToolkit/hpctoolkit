@@ -23,3 +23,5 @@ void
 cuda_init_placeholders
 (
 );
+
+#endif

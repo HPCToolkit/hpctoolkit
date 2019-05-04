@@ -82,8 +82,8 @@ cuda_init_placeholders
 (
 )
 {
-  init_placeholder(cuda_placeholders.cuda_memcpy_state, &cuda_memcpy_state);
-  init_placeholder(cuda_placeholders.cuda_memalloc_state, &cuda_memalloc_state);
-  init_placeholder(cuda_placeholders.cuda_kernel_state, &cuda_kernel_state);
-  init_placeholder(cuda_placeholders.cuda_sync_state, &cuda_sync);
+  init_placeholder(&cuda_placeholders.cuda_memcpy_state, &cuda_memcpy);
+  init_placeholder(&cuda_placeholders.cuda_memalloc_state, &cuda_memalloc);
+  init_placeholder(&cuda_placeholders.cuda_kernel_state, &cuda_kernel);
+  init_placeholder(&cuda_placeholders.cuda_sync_state, &cuda_sync);
 }
