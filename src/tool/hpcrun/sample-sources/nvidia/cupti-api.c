@@ -397,6 +397,7 @@ cupti_subscriber_callback
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
+    bool is_valid_cuda_op = false;
     switch (cb_id) {
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -406,6 +407,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
         {
           cuda_state = cuda_placeholders.cuda_sync_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
@@ -416,6 +418,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
         {
           cuda_state = cuda_placeholders.cuda_memalloc_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
@@ -487,6 +490,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
         {
           cuda_state = cuda_placeholders.cuda_memcpy_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
@@ -501,12 +505,13 @@ cupti_subscriber_callback
           // Process previous activities
           cupti_worker_activity_apply(cupti_activity_handle);
           cuda_state = cuda_placeholders.cuda_kernel_state;
+          is_valid_cuda_op = true;
           break;
         }
       default:
         break;
     }
-    if (cuda_state != cuda_none_state) {
+    if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         uint64_t correlation_id;
         cupti_correlation_callback(&correlation_id, cuda_state);
@@ -524,6 +529,7 @@ cupti_subscriber_callback
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
+    bool is_valid_cuda_op = false;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
@@ -531,6 +537,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020: 
         {
           cuda_state = cuda_placeholders.cuda_sync_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
@@ -540,6 +547,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
         {
           cuda_state = cuda_placeholders.cuda_memalloc_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
@@ -590,6 +598,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000: 
         {
           cuda_state = cuda_placeholders.cuda_memcpy_state;
+          is_valid_cuda_op = true;
           break;
         }
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
@@ -605,12 +614,13 @@ cupti_subscriber_callback
           // Process previous activities
           cupti_worker_activity_apply(cupti_activity_handle);
           cuda_state = cuda_placeholders.cuda_kernel_state;
+          is_valid_cuda_op = true;
           break;
         }
       default:
         break;
     }
-    if (cuda_state != cuda_none_state) {
+    if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
