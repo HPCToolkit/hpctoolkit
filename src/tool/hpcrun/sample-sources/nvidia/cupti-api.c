@@ -17,6 +17,7 @@
 #include <lib/prof-lean/stdatomic.h>
 
 #include "nvidia.h"
+#include "cuda-state-placeholders.h"
 #include "cubin-id-map.h"
 #include "cubin-md5-map.h"
 #include "cupti-api.h"
@@ -83,7 +84,8 @@ typedef CUptiResult (*cupti_activity_enable_t)
 
 typedef void (*cupti_correlation_callback_t)
 (
- uint64_t *id 
+ uint64_t *id,
+ cuda_placeholder_t cuda_state
 );
 
 
@@ -117,7 +119,8 @@ cupti_error_callback_dummy
 static void 
 cupti_correlation_callback_dummy
 (
- uint64_t *id
+ uint64_t *id,
+ cuda_placeholder_t cuda_state
 );
 
 //******************************************************************************
@@ -149,7 +152,8 @@ static CUpti_SubscriberHandle cupti_subscriber;
 static void 
 cupti_correlation_callback_dummy // __attribute__((unused))
 (
- uint64_t *id
+ uint64_t *id,
+ cuda_placeholder_t cuda_state
 )
 {
   *id = 0;
@@ -304,7 +308,8 @@ cupti_context_id_get
 static void
 cupti_correlation_callback_cuda
 (
- uint64_t *id 
+ uint64_t *id,
+ cuda_placeholder_t cuda_state
 )
 {
   *id = atomic_fetch_add(&cupti_correlation_id, 1);
@@ -347,14 +352,16 @@ cupti_correlation_callback_cuda
   td->overhead++;
   hpcrun_safe_enter();
 
-  // Get the dummy node, which will be eliminated before writing out,
-  // since we do not the actual callback node that maps to hpctoolkit.
-  cct_node_t *cct_child = hpcrun_cct_insert_dummy(node, 0);
+  // Insert the corresponding cuda state node
+  cct_addr_t frm;
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = cuda_state.pc_norm;
+  cct_node_t* cct_child = hpcrun_cct_insert_addr(node, &frm);
 
   hpcrun_safe_exit();
   td->overhead--;
 
-  // generate notification entry
+  // Generate notification entry
   cupti_worker_notification_apply(*id, cct_child);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
@@ -389,6 +396,7 @@ cupti_subscriber_callback
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+    cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
     switch (cb_id) {
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -396,12 +404,20 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
+        {
+          cuda_state = cuda_placeholders.cuda_sync_state;
+          break;
+        }
       case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
       case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
       case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
       case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
+        {
+          cuda_state = cuda_placeholders.cuda_memalloc_state;
+          break;
+        }
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
@@ -469,6 +485,10 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
+        {
+          cuda_state = cuda_placeholders.cuda_memcpy_state;
+          break;
+        }
       case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync:
@@ -479,49 +499,49 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
-          if (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunch ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz ||
-              cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
-            cupti_worker_activity_apply(cupti_activity_handle);
-          }
-          if (cd->callbackSite == CUPTI_API_ENTER) {
-            uint64_t correlation_id;
-            cupti_correlation_callback(&correlation_id);
-            HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
-              (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
-            PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-          }
-          if (cd->callbackSite == CUPTI_API_EXIT) {
-            uint64_t correlation_id;
-            HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
-              (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-            PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-          }
+          cupti_worker_activity_apply(cupti_activity_handle);
+          cuda_state = cuda_placeholders.cuda_kernel_state;
           break;
         }
       default:
         break;
     }
+    if (cuda_state != cuda_none_state) {
+      if (cd->callbackSite == CUPTI_API_ENTER) {
+        uint64_t correlation_id;
+        cupti_correlation_callback(&correlation_id, cuda_state);
+        HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
+          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+        PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+      }
+      if (cd->callbackSite == CUPTI_API_EXIT) {
+        uint64_t correlation_id;
+        HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
+          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+        PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+      }
+    }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+    cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020: 
-      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
+        {
+          cuda_state = cuda_placeholders.cuda_sync_state;
+          break;
+        }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
+        {
+          cuda_state = cuda_placeholders.cuda_memalloc_state;
+          break;
+        }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000:       
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000:          
@@ -568,6 +588,14 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_ptsz_v7000:  
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000: 
+        {
+          cuda_state = cuda_placeholders.cuda_memcpy_state;
+          break;
+        }
+      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
       #if CUPTI_API_VERSION >= 10
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000:
@@ -575,30 +603,27 @@ cupti_subscriber_callback
       #endif
         {
           // Process previous activities
-          if (cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000 ||
-              cb_id == CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000) {  
-            cupti_worker_activity_apply(cupti_activity_handle);
-          }
-          if (cd->callbackSite == CUPTI_API_ENTER) {
-            uint64_t correlation_id = 0;
-            cupti_correlation_callback(&correlation_id);
-            PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-            HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
-          }
-          if (cd->callbackSite == CUPTI_API_EXIT) {
-            uint64_t correlation_id = 0;
-            HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId, (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-            PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-          }
+          cupti_worker_activity_apply(cupti_activity_handle);
+          cuda_state = cuda_placeholders.cuda_kernel_state;
           break;
         }
       default:
         break;
+    }
+    if (cuda_state != cuda_none_state) {
+      if (cd->callbackSite == CUPTI_API_ENTER) {
+        uint64_t correlation_id = 0;
+        cupti_correlation_callback(&correlation_id, cuda_state);
+        PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+        HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
+          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+      }
+      if (cd->callbackSite == CUPTI_API_EXIT) {
+        uint64_t correlation_id = 0;
+        HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
+          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+        PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
+      }
     }
   }
 }
