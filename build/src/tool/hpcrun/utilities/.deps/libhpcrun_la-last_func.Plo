@@ -1,5 +1,0 @@
-utilities/libhpcrun_la-last_func.lo: \
- ../../../../src/tool/hpcrun/utilities/last_func.c \
- /usr/include/stdc-predef.h
-
-/usr/include/stdc-predef.h:
