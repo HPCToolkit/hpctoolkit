@@ -60,8 +60,6 @@ static kind_info_t *cupti_host_op_kind;
   
 static __thread bool cupti_stop_flag = false;
 
-int cupti_host_op_metric_id = 0;
-
 //******************************************************************************
 // types
 //******************************************************************************
@@ -315,7 +313,8 @@ cupti_correlation_callback_cuda
   *id = atomic_fetch_add(&cupti_correlation_id, 1);
   
   PRINT("enter cupti_correlation_callback_cuda %u\n", *id);
-  hpcrun_metricVal_t zero_metric_incr = {.i = 1};
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  int zero_metric_id = 0; // nothing to see here
   ucontext_t uc;
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
@@ -323,7 +322,7 @@ cupti_correlation_callback_cuda
   td->overhead++;
   hpcrun_safe_enter();
 
-  cct_node_t *node = hpcrun_sample_callpath(&uc, cupti_host_op_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
+  cct_node_t *node = hpcrun_sample_callpath(&uc, zero_metric_id, zero_metric_incr, 0, 1, NULL).sample_node; 
 
   hpcrun_safe_exit();
   td->overhead--;
@@ -410,17 +409,18 @@ cupti_subscriber_callback
           is_valid_cuda_op = true;
           break;
         }
-      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
-      case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
-      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
-      case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
-      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
-      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
-        {
-          cuda_state = cuda_placeholders.cuda_memalloc_state;
-          is_valid_cuda_op = true;
-          break;
-        }
+      //FIXME(Keren): do not support memory allocate and free for current CUPTI version
+      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
+      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
+      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
+      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
+      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
+      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
+      //  {
+      //    cuda_state = cuda_placeholders.cuda_memalloc_state;
+      //    is_valid_cuda_op = true;
+      //    break;
+      //  }
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
@@ -540,16 +540,17 @@ cupti_subscriber_callback
           is_valid_cuda_op = true;
           break;
         }
-      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
-      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
-        {
-          cuda_state = cuda_placeholders.cuda_memalloc_state;
-          is_valid_cuda_op = true;
-          break;
-        }
+      //FIXME(Keren): do not support memory allocate and free for current CUPTI version
+      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
+      //case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
+      //case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
+      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
+      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
+      //  {
+      //    cuda_state = cuda_placeholders.cuda_memalloc_state;
+      //    is_valid_cuda_op = true;
+      //    break;
+      //  }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000:       
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000:          
@@ -1342,7 +1343,6 @@ cupti_metrics_init
 )
 {
   cupti_host_op_kind = hpcrun_metrics_new_kind();
-  cupti_host_op_metric_id = hpcrun_set_new_metric_info(cupti_host_op_kind, "CUPTI_HOST_OP_KIND"); 
   hpcrun_close_kind(cupti_host_op_kind);
 }
 
