@@ -40,7 +40,10 @@ const char *OMP_TGT_COPYIN   = "<omp tgt copyin>";
 const char *OMP_TGT_COPYOUT  = "<omp tgt copyout>";
 const char *OMP_TGT_DELETE   = "<omp tgt delete>";
 const char *OMP_TGT_KERNEL   = "<omp tgt kernel>";
-
+const char *CUDA_SYNC   = "<cuda sync>";
+const char *CUDA_MEM_ALLOC  = "<cuda mem alloc>";
+const char *CUDA_MEMCPY   = "<cuda mem copy>";
+const char *CUDA_KERNEL   = "<cuda kernel>";
 
 
 //******************************************************************************
@@ -103,7 +106,11 @@ static NameMapping renamingTable[] = {
   { "ompt_tgt_copyin",           OMP_TGT_COPYIN     },
   { "ompt_tgt_copyout",          OMP_TGT_COPYOUT    },
   { "ompt_tgt_delete",           OMP_TGT_DELETE     },
-  { "ompt_tgt_kernel",           OMP_TGT_KERNEL     }
+  { "ompt_tgt_kernel",           OMP_TGT_KERNEL     },
+  { "cuda_memcpy",           CUDA_MEMCPY     },
+  { "cuda_sync",             CUDA_SYNC       },
+  { "cuda_mem_alloc",        CUDA_MEM_ALLOC  },
+  { "cuda_kernel",           CUDA_KERNEL     }
 };
 
 static const char *fakeProcedures[] = {
