@@ -1,0 +1,8 @@
+sample-sources/libhpcrun_la-sample-filters.lo: \
+ ../../../../src/tool/hpcrun/sample-sources/sample-filters.c \
+ /usr/include/stdc-predef.h \
+ ../../../../src/tool/hpcrun/sample-sources/sample-filters.h
+
+/usr/include/stdc-predef.h:
+
+../../../../src/tool/hpcrun/sample-sources/sample-filters.h:

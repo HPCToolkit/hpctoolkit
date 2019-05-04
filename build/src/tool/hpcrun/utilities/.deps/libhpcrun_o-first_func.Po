@@ -1,0 +1,5 @@
+utilities/libhpcrun_o-first_func.o: \
+ ../../../../src/tool/hpcrun/utilities/first_func.c \
+ /usr/include/stdc-predef.h
+
+/usr/include/stdc-predef.h:
