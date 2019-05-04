@@ -8,7 +8,10 @@ cupti_occupancy_analyze
 (
  CUpti_ActivityKernel4 *activity,
  uint32_t *active_warps_per_sm,
- uint32_t *max_active_warps_per_sm
+ uint32_t *max_active_warps_per_sm,
+ uint32_t *block_threads,
+ uint32_t *block_registers,
+ uint32_t *block_shared_memory
 ); 
 
 

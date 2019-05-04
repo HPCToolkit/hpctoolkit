@@ -125,13 +125,16 @@
   macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
   macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
   macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KERNEL:COUNT ", 5)                  \
+  macro("KERNEL:BLOCK_THREADS", 5)           \
+  macro("KERNEL:BLOCK_REGISTERS", 6)         \
+  macro("KERNEL:BLOCK_SHARED_MEMORY", 7)     \
+  macro("KERNEL:COUNT ", 8)                  \
 
 #define FORALL_KE_TIME(macro) \
-  macro("KERNEL:TIME (us)",         6)
+  macro("KERNEL:TIME (us)", 9)
 
 #define FORALL_KE_OCCUPANCY(macro) \
-  macro("KERNEL:OCCUPANCY", 7)
+  macro("KERNEL:OCCUPANCY", 10)
 
 #define FORALL_EM(macro)	\
   macro("XDMOV:INVALID",       0)	\
@@ -318,6 +321,9 @@ static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_active_warps_per_sm_metric_id;
 static int ke_max_active_warps_per_sm_metric_id;
+static int ke_block_threads_id;
+static int ke_block_registers_id;
+static int ke_block_shared_memory_id;
 static int ke_count_metric_id;
 static int ke_time_metric_id;
 static int ke_occupancy_metric_id;
@@ -497,6 +503,18 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metrics = hpcrun_reify_metric_set(cct_node, ke_max_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
+
+      metrics = hpcrun_reify_metric_set(cct_node, ke_block_threads_id);
+      hpcrun_metric_std_set(ke_block_threads_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
+
+      metrics = hpcrun_reify_metric_set(cct_node, ke_block_registers_id);
+      hpcrun_metric_std_set(ke_block_registers_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.blockRegisters});
+
+      metrics = hpcrun_reify_metric_set(cct_node, ke_block_shared_memory_id);
+      hpcrun_metric_std_set(ke_block_shared_memory_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
       hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
@@ -798,9 +816,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_local_metric_id = ke_metric_id[2];
   ke_active_warps_per_sm_metric_id = ke_metric_id[3];
   ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
-  ke_count_metric_id = ke_metric_id[5];
-  ke_time_metric_id = ke_metric_id[6];
-  ke_occupancy_metric_id = ke_metric_id[7];
+  ke_block_threads_id = ke_metric_id[5];
+  ke_block_registers_id = ke_metric_id[6];
+  ke_block_shared_memory_id = ke_metric_id[7];
+  ke_count_metric_id = ke_metric_id[8];
+  ke_time_metric_id = ke_metric_id[9];
+  ke_occupancy_metric_id = ke_metric_id[10];
   hpcrun_close_kind(ke_kind);
 
   metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);

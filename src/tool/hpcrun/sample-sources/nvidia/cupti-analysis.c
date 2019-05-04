@@ -32,7 +32,10 @@ cupti_occupancy_analyze
 (
  CUpti_ActivityKernel4 *kernel,
  uint32_t *active_warps_per_sm,
- uint32_t *max_active_warps_per_sm
+ uint32_t *max_active_warps_per_sm,
+ uint32_t *block_threads,
+ uint32_t *block_registers,
+ uint32_t *block_shared_memory
 )
 {
   *active_warps_per_sm = 0;
@@ -47,28 +50,29 @@ cupti_occupancy_analyze
     uint32_t sm_shared_memory = device_property->sm_shared_memory;
     uint32_t sm_blocks = device_property->sm_blocks;
 
-    uint32_t block_threads = kernel->blockX * kernel->blockY * kernel->blockZ;
-    uint32_t block_registers = kernel->registersPerThread;
+    *block_threads = kernel->blockX * kernel->blockY * kernel->blockZ;
+    *block_registers = (kernel->registersPerThread) * (*block_threads);
     // TODO(Keren): only static shared memory?
-    uint32_t block_shared_memory = kernel->dynamicSharedMemory + kernel->staticSharedMemory;
+    *block_shared_memory = kernel->dynamicSharedMemory + kernel->staticSharedMemory;
 
-    uint32_t max_blocks_by_threads = sm_threads / block_threads;
-    uint32_t max_blocks_by_registers = sm_registers / block_registers;
-    uint32_t max_blocks_by_shared_memory = block_shared_memory == 0 ? UINT32_MAX : sm_shared_memory / block_shared_memory;
+    uint32_t max_blocks_by_threads = sm_threads / *block_threads;
+    uint32_t max_blocks_by_registers = sm_registers / *block_registers;
+    uint32_t max_blocks_by_shared_memory = *block_shared_memory == 0 ? UINT32_MAX : sm_shared_memory / *block_shared_memory;
     *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
 
     uint32_t active_blocks = MIN4(max_blocks_by_threads, max_blocks_by_registers,
       max_blocks_by_shared_memory, sm_blocks);
-    *active_warps_per_sm = active_blocks * UPPER_DIV(block_threads, num_threads_per_warp);
+    *active_warps_per_sm = active_blocks * (UPPER_DIV(*block_threads, num_threads_per_warp));
     PRINT("sm_threads %u\n", sm_threads);
     PRINT("max_blocks_by_registers %u\n", max_blocks_by_registers);
     PRINT("max_blocks_by_threads %u\n", max_blocks_by_threads);
     PRINT("max_blocks_by_shared_memory %u\n", max_blocks_by_shared_memory);
     PRINT("max_blocks_per_multiprocessor %u\n", sm_blocks);
     PRINT("active_blocks %u\n", active_blocks);
-    PRINT("block_threads %u\n", block_threads);
+    PRINT("block_threads %u\n", *block_threads);
     PRINT("num_threads_per_warp %u\n", num_threads_per_warp);
     PRINT("active_warps_per_sm %u\n", *active_warps_per_sm);
+    PRINT("max_active_warps_per_sm %u\n", *max_active_warps_per_sm);
   }
 }
 
@@ -115,13 +119,14 @@ cupti_sm_efficiency_analyze
       // ns
       uint64_t kernel_time = end - start;
       *total_samples = pc_sampling_record_info->totalSamples;
-      *full_sm_samples = (core_clock_rate * kernel_time) / sample_period_in_cycles * num_multiprocessors;
+      *full_sm_samples = ((uint64_t)(core_clock_rate * kernel_time) / sample_period_in_cycles) * num_multiprocessors;
       PRINT("sample_period_in_cycles %lu\n", sample_period_in_cycles);
       PRINT("core_clock_rate %lf\n", core_clock_rate);
       PRINT("num_multiprocessors %lu\n", num_multiprocessors);
       PRINT("kernel_time %lu\n", kernel_time);
       PRINT("total_samples %lu\n", *total_samples);
       PRINT("full_sm_samples %lu\n", *full_sm_samples);
+      PRINT("dropped_samples %lu\n", pc_sampling_record_info->droppedSamples);
     }
   }
 }

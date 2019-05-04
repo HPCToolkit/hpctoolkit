@@ -55,6 +55,9 @@ typedef struct cupti_kernel {
   int32_t localMemoryTotal;
   uint32_t activeWarpsPerSM;
   uint32_t maxActiveWarpsPerSM;
+  uint32_t blockThreads;
+  uint32_t blockRegisters;
+  uint32_t blockSharedMemory;
 } cupti_kernel_t;
 
 typedef enum {
