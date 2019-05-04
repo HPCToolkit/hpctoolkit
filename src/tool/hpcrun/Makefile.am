@@ -446,8 +446,8 @@ if OPT_PAPI_CUPTI
 endif
 
 if OPT_ENABLE_CUDA
-    MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c
-    MY_CUDA_FILES = sample-sources/nvidia/cuda-state-placeholders.c
+    MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c \
+                    sample-sources/nvidia/cuda-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
