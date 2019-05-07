@@ -83,29 +83,23 @@
 #define OMPT_DEBUG 0
 #define ALLOW_DEFERRED_CONTEXT 0
 
+
 #if OMPT_DEBUG
-#define elide_debug_dump(t,i,o,r) if (ompt_callstack_debug) stack_dump(t,i,o,r)
+#define elide_debug_dump(t, i, o, r) \
+  if (ompt_callstack_debug) stack_dump(t, i, o, r)
 #define elide_frame_dump() if (ompt_callstack_debug) frame_dump()
 #else
-#define elide_debug_dump(t,i,o,r)
+#define elide_debug_dump(t, i, o, r)
 #define elide_frame_dump() 
 #endif
 
-//------------------------------------------------------------------------
-// check if an OMPT frame pointer points into an application frame by 
-// checking for the presence of the ompt_frame_application flag.
-//------------------------------------------------------------------------
-#define frame_in_application(frame, which)			\
-  (frame->which ## _frame_flags & ompt_frame_application)
 
-//------------------------------------------------------------------------
-// check if a frame pointer point into a runtime frame by checking for
-// the absence of the ompt_frame_application flag. it is unfortunate
-// that ompt_frame_runtime is defined as 0, which means that it can't
-// be checked directly with a mask.
-// ------------------------------------------------------------------------
-#define frame_in_runtime(frame, which)		\
-  (!frame_in_application(frame, which))
+#define FP(frame, which) (frame->which ## _frame.ptr)
+#define FF(frame, which) (frame->which ## _frame_flags)
+
+#define ff_is_appl(flags) (flags & ompt_frame_application)
+#define ff_is_rt(flags)   (!ff_is_appl(flags))
+#define ff_is_fp(flags)   (flags & ompt_frame_framepointer)
 
 
 
@@ -132,6 +126,42 @@ static int ompt_callstack_debug = 0;
 //******************************************************************************
 // private  operations
 //******************************************************************************
+
+static void *
+fp_exit
+(
+ ompt_frame_t *frame
+)
+{
+  void *ptr = FP(frame, exit);
+#if defined(HOST_CPU_PPC) 
+  int flags = FF(frame, exit);
+  // on power: ensure the enter frame pointer is CFA for runtime frame
+  if (ff_is_fp(flags)) {
+    ptr = *(void **) ptr;
+  }
+#endif
+  return ptr;
+}
+
+
+static void *
+fp_enter
+(
+ ompt_frame_t *frame
+)
+{
+  void *ptr = FP(frame, enter);
+#if defined(HOST_CPU_PPC) 
+  int flags = FF(frame, enter);
+  // on power: ensure the enter frame pointer is CFA for runtime frame
+  if (ff_is_fp(flags) && ff_is_rt(flags)) {
+    ptr = *(void **) ptr;
+  }
+#endif
+  return ptr;
+}
+
 
 static void 
 __attribute__ ((unused))
@@ -171,11 +201,11 @@ frame_dump
     ompt_frame_t *frame = hpcrun_ompt_get_task_frame(i);
     if (frame == NULL) break;
 
-    void *ep = frame->enter_frame.ptr;
-    int ef = frame->enter_frame_flags;
+    void *ep = fp_enter(frame);
+    int ef = FF(frame, enter);
 
-    void *xp = frame->exit_frame.ptr;
-    int xf = frame->exit_frame_flags;
+    void *xp = fp_exit(frame);
+    int xf = FF(frame, exit);
 
     EMSG("frame %d: enter=(%p,%x), exit=(%p,%x)", i, ep, ef, xp, xf);
   }
@@ -305,10 +335,8 @@ ompt_elide_runtime_frame(
     goto clip_base_frames;
   }
 
-
-
-  while ((frame0->enter_frame.ptr == 0) && 
-         (frame0->exit_frame.ptr == 0)) {
+  while ((fp_enter(frame0) == 0) && 
+         (fp_exit(frame0) == 0)) {
     // corner case: the top frame has been set up, 
     // but not filled in. ignore this frame.
     frame0 = hpcrun_ompt_get_task_frame(++i);
@@ -321,8 +349,8 @@ ompt_elide_runtime_frame(
     }
   }
 
-  if (frame0->exit_frame.ptr &&
-      (((uint64_t) frame0->exit_frame.ptr) <
+  if (fp_exit(frame0) &&
+      (((uint64_t) fp_exit(frame0)) <
         ((uint64_t) (*bt_inner)->cursor.sp))) {
     // corner case: the top frame has been set up, exit frame has been filled in; 
     // however, exit_frame.ptr points beyond the top of stack. the final call 
@@ -335,12 +363,12 @@ ompt_elide_runtime_frame(
     goto clip_base_frames;
   }
 
-  if (frame0->enter_frame.ptr) { 
+  if (fp_enter(frame0)) { 
     // the sample was received inside the runtime; 
     // elide frames from top of stack down to runtime entry
     int found = 0;
     for (it = *bt_inner; it <= *bt_outer; it++) {
-      if ((uint64_t)(it->cursor.sp) >= (uint64_t)frame0->enter_frame.ptr) {
+      if ((uint64_t)(it->cursor.sp) >= (uint64_t)fp_enter(frame0)) {
         if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
           *bt_inner = it;
@@ -377,7 +405,7 @@ ompt_elide_runtime_frame(
 
     // if a frame marker is inside the call stack, set its flag to true
     bool exit0_flag = 
-      interval_contains(low_sp, high_sp, frame0->exit_frame.ptr);
+      interval_contains(low_sp, high_sp, fp_exit(frame0));
 
     /* start from the top of the stack (innermost frame). 
        find the matching frame in the callstack for each of the markers in the
@@ -390,8 +418,8 @@ ompt_elide_runtime_frame(
     it = *bt_inner; 
     if (exit0_flag) {
       for (; it <= *bt_outer; it++) {
-        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(frame0->exit_frame.ptr)) {
-          int offset = frame_in_application(frame0, exit) ? 0 : 1;
+        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(fp_exit(frame0))) {
+          int offset = ff_is_appl(FF(frame0, exit)) ? 0 : 1;
           exit0 = it - offset;
           break;
         }
@@ -414,27 +442,27 @@ ompt_elide_runtime_frame(
     //  application from the inner task's perspective) the two points
     //  are equal. there is nothing to elide at this step.
     //-------------------------------------------------------------------------
-    if ((frame1->enter_frame.ptr == frame0->exit_frame.ptr) &&
-	(frame_in_application(frame0, exit) &&
-	 frame_in_runtime(frame1, enter)))
+    if ((fp_enter(frame1) == fp_exit(frame0)) &&
+	(ff_is_appl(FF(frame0, exit)) &&
+	 ff_is_rt(FF(frame1, enter))))
       continue;
 
 
     bool reenter1_flag = 
-      interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
+      interval_contains(low_sp, high_sp, fp_enter(frame1));
 
 #if 0
     ompt_frame_t *help_frame = region_stack[top_index-i+1].parent_frame;
     if (!ompt_eager_context && !reenter1_flag && help_frame) {
       frame1 = help_frame;
-      reenter1_flag = interval_contains(low_sp, high_sp, frame1->enter_frame.ptr);
+      reenter1_flag = interval_contains(low_sp, high_sp, fp_enter(frame1));
       // printf("THIS ONLY HAPPENS IN MASTER: %d\n", TD_GET(master));
     }
 #endif
 
     if (reenter1_flag) {
       for (; it <= *bt_outer; it++) {
-        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(frame1->enter_frame.ptr)) {
+        if ((uint64_t)(it->cursor.sp) >= (uint64_t)(fp_enter(frame1))) {
           reenter1 = it - 1;
           break;
         }
@@ -534,17 +562,15 @@ ompt_elide_runtime_frame(
     } else {
       /* no idle frame. show the whole stack. */
     }
-#endif
     
     elide_debug_dump("ELIDED INNERMOST FRAMES", *bt_inner, *bt_outer, region_id);
     goto return_label;
+#endif
   }
 
 
  return_label:
-  {
     return;
-  };
 }
 
 
