@@ -136,7 +136,7 @@ fr_enter
   void *ptr = FP(frame, enter);
 #if defined(HOST_CPU_PPC) 
   int flags = FF(frame, enter);
-  if (flags & ompt_frame_framepointer) ptr = *(void **) ptr;
+  if (flags & ompt_frame_framepointer && !(flags & ompt_frame_application)) ptr = *(void **) ptr;
 #endif
   return ptr;
 }
