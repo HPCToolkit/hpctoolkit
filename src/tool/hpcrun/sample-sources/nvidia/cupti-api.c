@@ -290,19 +290,6 @@ cupti_unload_callback_cuda
 }
 
 
-uint32_t
-cupti_context_id_get
-(
-)
-{
-  CUcontext context;
-  uint32_t context_id;
-  cuCtxGetCurrent(&context);
-  cuptiGetContextId(context, &context_id);
-  return context_id;
-}
-
-
 static void
 cupti_correlation_callback_cuda
 (
