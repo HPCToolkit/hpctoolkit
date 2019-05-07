@@ -512,12 +512,13 @@ hpcrun_fmt_doRetainId(uint32_t id)
 //
 // hpcrun node types
 //
-#define NODE_TYPE_REGULAR           0
-#define NODE_TYPE_LEAF              1
-#define NODE_TYPE_ALLOCATION        2
-#define NODE_TYPE_GLOBAL_VARIABLE   4
-#define NODE_TYPE_MEMACCESS         8
-#define NODE_TYPE_ROOT             16
+#define NODE_TYPE_REGULAR             0
+#define NODE_TYPE_LEAF                1
+#define NODE_TYPE_ALLOCATION          2
+#define NODE_TYPE_GLOBAL_VARIABLE     4
+#define NODE_TYPE_MEMACCESS           8
+#define NODE_TYPE_ROOT               16
+#define NODE_TYPE_UNKNOWN_ATTRIBUTE  32
 
 
 #define HPCRUN_FMT_LMId_NULL (0)

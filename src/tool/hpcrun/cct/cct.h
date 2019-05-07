@@ -327,4 +327,7 @@ hpcrun_cct_set_node_variable(cct_node_t *node);
 bool
 hpcrun_cct_is_node_variable(cct_node_t *node);
 
+void
+hpcrun_cct_set_node_unknown_attribute(cct_node_t *root);
+
 #endif // cct_h

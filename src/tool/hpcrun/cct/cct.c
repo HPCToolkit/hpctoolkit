@@ -522,6 +522,13 @@ hpcrun_cct_is_node_root(cct_node_t *node)
   return hpcrun_fmt_node_type_root(node->node_type);
 }
 
+void
+hpcrun_cct_set_node_unknown_attribute(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
+
+
 //***************************************************************************
 //
 // Special purpose mutator:
