@@ -2,6 +2,17 @@
 #include <stdio.h>
 #include <cuda.h>
 
+
+#define CUDA_FN_NAME(fn) fn ## _fn
+
+#define CUDA_FN(fn, args) \
+static CUresult CUDA_FN_NAME(fn) args
+
+CUDA_FN(cuDeviceGetAttribute, (int, int, int));
+
+CUDA_FN(cuCtxGetCurrent, (CUcontext &));
+
+
 #define CUDA_API_DEBUG 0
 
 #if CUDA_API_DEBUG
@@ -22,6 +33,24 @@
 //*******************************************************************************
 // device query
 //*******************************************************************************
+
+int 
+cuda_dynamic_init
+(
+  void
+)
+{
+  // dynamic libraries only availabile in non-static case
+#ifndef HPCRUN_STATIC_LINK
+  Chk_dlopen(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
+
+  Chk_dlsym(cudart, CUDA_FN_NAME(cuDeviceGetAttribute);
+  Chk_dlsym(cudart, CUDA_FN_NAME(cuCtxGetCurrent);
+#endif // ! HPCRUN_STATIC_LINK
+}
+
+
+}
 
 int cuda_device_sm_blocks_query(int major, int minor)
 {
