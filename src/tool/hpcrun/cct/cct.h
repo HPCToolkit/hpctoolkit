@@ -316,6 +316,9 @@ bool
 hpcrun_cct_is_node_memaccess(cct_node_t *node);
 
 void
+hpcrun_cct_set_node_memaccess_root(cct_node_t *root);
+
+void
 hpcrun_cct_set_node_root(cct_node_t *root);
 
 bool
