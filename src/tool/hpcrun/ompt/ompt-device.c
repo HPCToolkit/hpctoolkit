@@ -44,6 +44,11 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
+#include "ompt-device.h"
+
+#if HAVE_CUDA_H
+
 /******************************************************************************
  * global include files
  *****************************************************************************/
@@ -78,11 +83,10 @@
 #include "ompt-state-placeholders.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
-#include "ompt-device.h"
 #include "ompt-device-map.h"
 
 
-#if 0
+
 #if HAVE_CUDA_H
 #include "sample-sources/nvidia/nvidia.h"
 #include "sample-sources/nvidia/cubin-id-map.h"
@@ -90,8 +94,24 @@
 #include "sample-sources/nvidia/cupti-api.h"
 #include "sample-sources/nvidia/cupti-record.h"
 #endif
-#endif
 
+//*****************************************************************************
+// static variables
+//*****************************************************************************
+
+static bool ompt_pc_sampling_enabled = false;
+
+static device_finalizer_fn_entry_t device_finalizer;
+
+
+//*****************************************************************************
+// thread-local variables
+//*****************************************************************************
+
+static __thread cct_node_t *target_node = NULL;
+
+
+#if 0
 
 //*****************************************************************************
 // macros
@@ -126,7 +146,6 @@ static int ompt_elide = 0;
 static int ompt_initialized = 0;
 
 static int ompt_task_full_context = 0;
-
 static int ompt_mutex_blame_requested = 0;
 static int ompt_idle_blame_requested = 0;
 
@@ -142,10 +161,6 @@ static directed_blame_info_t omp_mutex_blame_info;
 // state for undirected blame shifting away from spinning waiting for work
 static undirected_blame_info_t omp_idle_blame_info;
 
-static device_finalizer_fn_entry_t device_finalizer;
-
-// pc sampling
-static bool ompt_pc_sampling_enabled = false;
 
 //-----------------------------------------
 // declare ompt interface function pointers
@@ -171,7 +186,6 @@ FOREACH_OMPT_INQUIRY_FN(ompt_interface_fn)
 //    nested marking.
 //-----------------------------------------
 static __thread int ompt_idle_count;
-static __thread cct_node_t *target_node = NULL;
 
 
 /******************************************************************************
@@ -633,13 +647,10 @@ init_idle_blame_shift
 //-------------------------------------------------
 
 
-#if 0
 // forward declaration
 void prepare_device();
 
 void hpcrun_ompt_device_finalizer(void *args);
-
-#endif
 
 static int
 ompt_initialize
@@ -1110,8 +1121,7 @@ hpcrun_ompt_get_thread_num(int level)
     return -1;
 }
 
-
-#if 0
+#endif
 
 
 static void
@@ -1440,4 +1450,5 @@ prepare_device()
 
   PRINT("ompt_initialize->prepare_device exit\n");
 }
+
 #endif
