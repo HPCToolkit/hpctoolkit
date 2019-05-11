@@ -58,20 +58,6 @@
 #include "ompt-types.h"
 
 
-//*****************************************************************************
-// type declarations
-//*****************************************************************************
-
-enum {
-  ompt_op_none,
-  ompt_op_alloc,
-  ompt_op_copy_in,
-  ompt_op_copy_out,
-  ompt_op_delete,
-  ompt_op_kernel_submit
-} ompt_op_class;
-
-
 
 //*****************************************************************************
 // macros
@@ -84,6 +70,9 @@ enum {
 #define OMPT_REGION_DATA_T_START(ptr) (ompt_region_data_t *)ptr
 #define OMPT_NOTIFICATION_T_START(ptr) (ompt_notification_t *)ptr
 #define OMPT_TRL_EL_T_START(ptr) (ompt_trl_el_t *)ptr
+
+#define ompt_set_callback(e, cb) \
+  ompt_set_callback_internal(e, (ompt_callback_t) cb)
 
 
 
@@ -288,6 +277,14 @@ freelist_add_first
 (
  ompt_base_t *new, 
  ompt_base_t **head
+);
+
+
+ompt_set_result_t 
+ompt_set_callback_internal
+(
+  ompt_callbacks_t event,
+  ompt_callback_t callback
 );
 
 

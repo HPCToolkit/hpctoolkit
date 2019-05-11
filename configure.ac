@@ -4259,6 +4259,7 @@ if test "$OPT_HAVE_CUPTI" = "yes" ; then
 
      [if test -f ${OPT_CUPTI}/include/cupti.h; then
          OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+         AC_DEFINE(HAVE_CUPTI_H, 1, [cupti include file available])
      else
          AC_MSG_ERROR(['${OPT_CUPTI}/include/cupti.h' not found])
      fi])  

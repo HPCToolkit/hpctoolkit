@@ -350,6 +350,7 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
+	ompt/ompt-device.c              \
 	ompt/ompt-defer-write.c         \
 	ompt/ompt-interface.c           \
 	ompt/ompt-queues.c              \

@@ -22946,6 +22946,9 @@ if test "${with_cupti_include+set}" = set; then :
 else
   if test -f ${OPT_CUPTI}/include/cupti.h; then
          OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+
+$as_echo "#define HAVE_CUPTI_H 1" >>confdefs.h
+
      else
          as_fn_error $? "'${OPT_CUPTI}/include/cupti.h' not found" "$LINENO" 5
      fi
