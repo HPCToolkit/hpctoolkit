@@ -47,6 +47,8 @@
 #ifndef __OMPT_DEVICE_H__
 #define __OMPT_DEVICE_H__
 
+#include <include/hpctoolkit-config.h>
+
 #if HAVE_CUPTI_H 
 
 void 
