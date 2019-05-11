@@ -47,9 +47,7 @@
 #ifndef __OMPT_DEVICE_H__
 #define __OMPT_DEVICE_H__
 
-#define HAVE_CUDA_H 1
-
-#if HAVE_CUDA_H 
+#if HAVE_CUPTI_H 
 
 void 
 prepare_device

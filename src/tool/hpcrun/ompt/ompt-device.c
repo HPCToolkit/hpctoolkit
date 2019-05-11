@@ -47,7 +47,7 @@
 
 #include "ompt-device.h"
 
-#if HAVE_CUDA_H
+#if HAVE_CUPTI_H
 
 /******************************************************************************
  * global include files
