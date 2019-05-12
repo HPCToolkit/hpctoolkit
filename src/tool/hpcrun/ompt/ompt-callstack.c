@@ -80,6 +80,8 @@
 // macros
 //******************************************************************************
 
+#define DEREFERENCE_IF_NON_NULL(ptr) (ptr ? *(void **) ptr : 0)
+
 #define OMPT_DEBUG 0
 #define ALLOW_DEFERRED_CONTEXT 0
 
@@ -138,7 +140,7 @@ fp_exit
   int flags = FF(frame, exit);
   // on power: ensure the enter frame pointer is CFA for runtime frame
   if (ff_is_fp(flags)) {
-    ptr = *(void **) ptr;
+    ptr = DEREFERENCE_IF_NON_NULL(ptr);
   }
 #endif
   return ptr;
@@ -156,7 +158,7 @@ fp_enter
   int flags = FF(frame, enter);
   // on power: ensure the enter frame pointer is CFA for runtime frame
   if (ff_is_fp(flags) && ff_is_rt(flags)) {
-    ptr = *(void **) ptr;
+    ptr = DEREFERENCE_IF_NON_NULL(ptr);
   }
 #endif
   return ptr;
