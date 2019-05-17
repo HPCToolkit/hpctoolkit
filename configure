@@ -737,6 +737,8 @@ OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
+MBEDTLS_LIBS
+MBEDTLS_IFLAGS
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
@@ -1007,6 +1009,7 @@ with_libmonitor
 with_libunwind
 enable_libunwind_primary
 with_lzma
+with_mbedtls
 with_papi
 enable_force_papi
 enable_papi_c
@@ -1765,6 +1768,7 @@ Optional Packages:
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   path to libunwind install directory
   --with-lzma=PATH        path to lzma (xz utils) install directory
+  --with-mbedtls=PATH     path to mbedtls install directory
   --with-papi=PATH        path to papi install directory
   --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
   --with-tbb=PATH         path to intel tbb install directory
@@ -19776,6 +19780,7 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_mbedtls_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -19880,6 +19885,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg mbedtls ; then
+    default_mbedtls_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -21000,6 +21008,119 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 
 
 
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-mbedtls=PATH
+#-------------------------------------------------
+
+# mbedtls is a lightweight library that includes libmbedcrypto.a for
+# computing md5 and SHA sums for buffers in memory.
+#
+# Note: we require libmbedcrypto.a to be compiled with -fPIC.
+
+MBEDTLS="$default_mbedtls_prefix"
+MBEDTLS_IFLAGS=
+MBEDTLS_LIBS=
+
+
+# Check whether --with-mbedtls was given.
+if test "${with_mbedtls+set}" = set; then :
+  withval=$with_mbedtls; MBEDTLS="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
+$as_echo_n "checking for mbedtls... " >&6; }
+
+case "$MBEDTLS" in
+  /* )
+    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
+      as_fn_error $? "unable to find md5.h in: $MBEDTLS" "$LINENO" 5
+    fi
+    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    for lib in $multilib_path ; do
+      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	break
+      fi
+    done
+    if test "x$MBEDTLS_LIBS" = x ; then
+      as_fn_error $? "unable to find libmbedcrypto.a in: $MBEDTLS" "$LINENO" 5
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "mbedtls directory must be absolute path: $MBEDTLS" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MBEDTLS" >&5
+$as_echo "$MBEDTLS" >&6; }
+
+#
+# Test if libmbedcrypto.a was compiled with -fPIC
+#
+case "$MBEDTLS" in
+  /* )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if libmbedcrypto.a was compiled with -fPIC" >&5
+$as_echo_n "checking if libmbedcrypto.a was compiled with -fPIC... " >&6; }
+
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
+    LIBS="$MBEDTLS_LIBS"
+
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <sys/types.h>
+#include "mbedtls/md5.h"
+void
+my_md5_hash(char *buf, size_t len)
+{
+    mbedtls_md5_context ctx;
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_update(&ctx, buf, len);
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  mbed_fpic=yes
+else
+  mbed_fpic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mbed_fpic" >&5
+$as_echo "$mbed_fpic" >&6; }
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$mbed_fpic" != yes ; then
+      as_fn_error $? "libmbedcrypto.a must be compiled with -fPIC" "$LINENO" 5
+    fi
+    ;;
+esac
 
 
 
@@ -26098,6 +26219,8 @@ $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   lzma:         ${LZMA}" >&5
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mbedtls:      ${MBEDTLS}" >&5
+$as_echo "$as_me:   mbedtls:      ${MBEDTLS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
 $as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perfmon:      ${perfmon_mesg}" >&5
