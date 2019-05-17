@@ -1,5 +1,5 @@
-#ifndef _HPCTOOLKIT_CUBIN_MD5_MAP_H_
-#define _HPCTOOLKIT_CUBIN_MD5_MAP_H_
+#ifndef _HPCTOOLKIT_CUBIN_HASH_MAP_H_
+#define _HPCTOOLKIT_CUBIN_HASH_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -15,21 +15,21 @@
  * type definitions 
  *****************************************************************************/
 
-typedef struct cubin_md5_map_entry_s cubin_md5_map_entry_t;
+typedef struct cubin_hash_map_entry_s cubin_hash_map_entry_t;
 
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
-cubin_md5_map_entry_t *
-cubin_md5_map_lookup
+cubin_hash_map_entry_t *
+cubin_hash_map_lookup
 (
  uint32_t cubin_id
 );
 
 
 void
-cubin_md5_map_insert
+cubin_hash_map_insert
 (
  uint32_t cubin_id,
  const void *cubin,
@@ -38,9 +38,10 @@ cubin_md5_map_insert
 
 
 unsigned char *
-cubin_md5_map_entry_md5_get
+cubin_hash_map_entry_hash_get
 (
- cubin_md5_map_entry_t *entry
+ cubin_hash_map_entry_t *entry,
+ unsigned int *len
 );
 
 #endif
