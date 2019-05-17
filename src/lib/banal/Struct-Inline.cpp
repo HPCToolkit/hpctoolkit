@@ -63,9 +63,9 @@
 // optional, not required.  So, wrap the symtab calls with sigsetjmp()
 // so that failure does not kill the process.
 //
-// But be careful about overusing sigsetjmp().  There is only one
-// handler per process, so this could break other libraries or the
-// main program.
+//   Note -- (2) is gone.  Symtab doesn't throw asserts very often
+//   anymore, there isn't any reasonable way to continue if it did,
+//   and this is broken for the parallel case.
 //
 // 3. Apologies for the single static buffer.  Ideally, we would read
 // the dwarf info from inside lib/binutils and carry it down into
@@ -76,8 +76,6 @@
 
 //***************************************************************************
 
-#include <setjmp.h>
-#include <signal.h>
 #include <string.h>
 
 #include <list>
@@ -110,17 +108,19 @@ static const string UNKNOWN_PROC ("unknown-proc");
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
 
+#define DEBUG_INLINE_NAMES  0
+
+//***************************************************************************
+
+// Old attempt to catch errors in Symtab and continue.  There isn't
+// any reasonable way to continue, so don't try.
+#if 0
 static struct sigaction old_act_abrt;
 static struct sigaction old_act_segv;
 static sigjmp_buf jbuf;
 static int jbuf_active = 0;
-
 static int num_queries = 0;
 static int num_errors = 0;
-
-#define DEBUG_INLINE_NAMES  0
-
-//***************************************************************************
 
 static void restore_sighandler(void);
 
@@ -158,6 +158,7 @@ restore_sighandler(void)
   sigaction(SIGSEGV, &old_act_segv, NULL);
   jbuf_active = 0;
 }
+#endif
 
 //***************************************************************************
 
@@ -167,32 +168,17 @@ namespace Inline {
 Symtab *
 openSymtab(ElfFile *elfFile)
 {
-  bool ret = false;
+  bool ret = Symtab::openFile(the_symtab, elfFile->getMemory(),
+			      elfFile->getLength(), elfFile->getFileName());
 
-  init_sighandler();
-  num_queries = 0;
-  num_errors = 0;
-
-  if (sigsetjmp(jbuf, 1) == 0) {
-    // normal return
-    jbuf_active = 1;
-    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(),
-			   elfFile->getFileName());
-    if (ret) {
-      the_symtab->parseTypesNow();
-      the_symtab->parseFunctionRanges();
-    }
-  }
-  else {
-    // error return
-    ret = false;
-  }
-  jbuf_active = 0;
-
-  if (! ret) {
+  if (! ret || the_symtab == NULL) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
     the_symtab = NULL;
+    return NULL;
   }
+
+  the_symtab->parseTypesNow();
+  the_symtab->parseFunctionRanges();
 
   return the_symtab;
 }
@@ -206,13 +192,6 @@ closeSymtab()
     ret = Symtab::closeSymtab(the_symtab);
   }
   the_symtab = NULL;
-
-  restore_sighandler();
-
-  if (num_errors > 0) {
-    DIAG_WMsgIf(1, "SymtabAPI had " << num_errors << " errors in "
-		<< num_queries << " queries.");
-  }
 
   return ret;
 }
@@ -296,60 +275,46 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
   }
   nodelist.clear();
 
-  num_queries++;
+  if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL)
+  {
+    bool demangle = analyzeDemangle(addr);
+    ret = true;
 
-  if (sigsetjmp(jbuf, 1) == 0) {
-    //
-    // normal return
-    //
-    jbuf_active = 1;
-    if (the_symtab->getContainingInlinedFunction(addr, func))
-    {
-      bool demangle = analyzeDemangle(addr);
+    parent = func->getInlinedParent();
+    while (parent != NULL) {
+      //
+      // func is inlined iff it has a parent
+      //
+      InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
+      pair <string, Offset> callsite = ifunc->getCallsite();
+      string filenm = callsite.first;
+      if (filenm != "") { realPath->realpath(filenm); }
+      long lineno = callsite.second;
 
-      parent = func->getInlinedParent();
-      while (parent != NULL) {
-	//
-	// func is inlined iff it has a parent
-	//
-	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
-	pair <string, Offset> callsite = ifunc->getCallsite();
-	string filenm = callsite.first;
-	if (filenm != "") { realPath->realpath(filenm); }
-	long lineno = callsite.second;
+      // symtab does not provide mangled and pretty names for
+      // inlined functions, so we have to decide this ourselves
+      string procnm = func->getName();
+      string prettynm = procnm;
 
-	// symtab does not provide mangled and pretty names for
-	// inlined functions, so we have to decide this ourselves
-	string procnm = func->getName();
-	string prettynm = procnm;
-
-        if (procnm == "") {
-	  procnm = UNKNOWN_PROC;
-	  prettynm = UNKNOWN_PROC;
-	}
-	else if (demangle) {
-	  prettynm = BinUtil::demangleProcName(procnm);
-	}
+      if (procnm == "") {
+	procnm = UNKNOWN_PROC;
+	prettynm = UNKNOWN_PROC;
+      }
+      else if (demangle) {
+	prettynm = BinUtil::demangleProcName(procnm);
+      }
 
 #if DEBUG_INLINE_NAMES
-	cout << "raw-inline:  0x" << hex << addr << dec
-	     << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
+      cout << "raw-inline:  0x" << hex << addr << dec
+	   << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
 #endif
 
-	nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
+      nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
 
-	func = parent;
-	parent = func->getInlinedParent();
-      }
-      ret = true;
+      func = parent;
+      parent = func->getInlinedParent();
     }
   }
-  else {
-    // error return
-    num_errors++;
-    ret = false;
-  }
-  jbuf_active = 0;
 
   return ret;
 }
