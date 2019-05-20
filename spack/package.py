@@ -18,6 +18,7 @@ class Hpctoolkit(AutotoolsPackage):
     git      = "https://github.com/HPCToolkit/hpctoolkit.git"
 
     version('develop', branch='master')
+    version('gpu', branch='openmp5-gpu')
     version('2018.12.28', commit='8dbf0d543171ffa9885344f32f23cc6f7f6e39bc')
     version('2018.11.05', commit='d0c43e39020e67095b1f1d8bb89b75f22b12aee9')
 
@@ -33,6 +34,9 @@ class Hpctoolkit(AutotoolsPackage):
     variant('bgq', default=False,
             description='Build for Blue Gene compute nodes, including '
             'hpcprof-mpi.')
+
+    variant('cuda', default=False,
+            description='Support CUDA on NVIDIA GPUs.')
 
     variant('mpi', default=False,
             description='Build hpcprof-mpi, the MPI version of hpcprof.')
@@ -69,6 +73,7 @@ class Hpctoolkit(AutotoolsPackage):
     depends_on('intel-xed', when='target=x86_64')
     depends_on('papi', when='+papi')
     depends_on('libpfm4', when='~papi')
+    depends_on('cuda', when='+cuda')
     depends_on('mpi', when='+mpi')
 
     flag_handler = AutotoolsPackage.build_system_flags
@@ -115,6 +120,10 @@ class Hpctoolkit(AutotoolsPackage):
             ])
         elif '+mpi' in spec:
             args.append('MPICXX=%s' % spec['mpi'].mpicxx)
+
+        if '+cuda' in spec:
+            args.append('--with-cuda=%s' % spec['cuda'].prefix)
+            args.append('--with-cupti=%s/extras/CUPTI' % spec['cuda'].prefix)
 
         if '+all-static' in spec:
             args.append('--enable-all-static')
