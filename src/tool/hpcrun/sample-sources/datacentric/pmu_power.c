@@ -57,9 +57,10 @@
 
 // list of precise events
 
-#define EVNAME_POWER_RMRM	"PM_MRK_DATA_FROM_RMEM"
+#define EVNAME_POWER_RMEM	"PM_MRK_DATA_FROM_RMEM"
 #define EVNAME_POWER_DL4	"PM_MRK_DATA_FROM_DL4"
 #define EVNAME_POWER_LMEM	"PM_MRK_DATA_FROM_LMEM"
+#define EVNAME_POWER_L3MISS	"PM_MRK_DATA_FROM_L3MISS"
 
 
 /**
@@ -69,7 +70,7 @@
  * compatibility with the old ones.
  */
 static const char *evnames[] = {
-	EVNAME_POWER_RMRM,
+	EVNAME_POWER_RMEM,
 	EVNAME_POWER_DL4,
 	EVNAME_POWER_LMEM
 };

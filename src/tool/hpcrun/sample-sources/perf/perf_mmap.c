@@ -115,13 +115,6 @@ static size_t tail_mask  = 0;
 
 
 
-static u64
-perf_mmap_read_head(pe_mmap_t *hdr)
-{
-	u64 head = hdr->data_head;
-	rmb(); // required by the man page to issue a barrier for SMP-capable platforms
-	return head;
-}
 
 /***
  * number of reminder data in the buffer
@@ -129,8 +122,12 @@ perf_mmap_read_head(pe_mmap_t *hdr)
 static int
 num_of_more_perf_data(pe_mmap_t *hdr)
 {
-  u64 head = perf_mmap_read_head(hdr);
-  return (head - hdr->data_tail);
+  // compute bytes available in the circular buffer
+  u64 data_head = hdr->data_head;
+  u64 data_tail = hdr->data_tail;
+  rmb();
+
+  return (data_head - data_tail);
 }
 
 /***
@@ -157,23 +154,25 @@ perf_read(
   if (current_perf_mmap == NULL)
     return -1;
 
-  // front of the circular data buffer
-  char *data = BUFFER_FRONT(current_perf_mmap);
-
   // compute bytes available in the circular buffer
-  u64 data_head = perf_mmap_read_head(current_perf_mmap);
+  u64 data_head = current_perf_mmap->data_head;
+  u64 data_tail = current_perf_mmap->data_tail;
+  rmb();
 
-  size_t bytes_available = data_head - current_perf_mmap->data_tail;
+  size_t bytes_available = data_head - data_tail;
 
   if (bytes_wanted > bytes_available) return -1;
 
   // compute offset of tail in the circular buffer
-  unsigned long tail = BUFFER_OFFSET(current_perf_mmap->data_tail);
+  unsigned long tail = BUFFER_OFFSET(data_tail);
 
   long bytes_at_right = BUFFER_SIZE - tail;
 
   // bytes to copy to the right of tail
   size_t right = bytes_at_right < bytes_wanted ? bytes_at_right : bytes_wanted;
+
+  // front of the circular data buffer
+  char *data = BUFFER_FRONT(current_perf_mmap);
 
   // copy bytes from tail position
   memcpy(buf, data + tail, right);
@@ -185,6 +184,7 @@ perf_read(
   }
 
   // update tail after consuming bytes_wanted
+  rmb();
   current_perf_mmap->data_tail += bytes_wanted;
 
   return 0;
@@ -299,14 +299,14 @@ perf_sample_callchain(pe_mmap_t *current_perf_mmap, perf_mmap_data_t* mmap_data)
 static void
 skip_perf_data(pe_mmap_t *current_perf_mmap, size_t sz)
 {
-  struct perf_event_mmap_page *hdr = current_perf_mmap;
-  u64 data_head = perf_mmap_read_head(current_perf_mmap);
+  u64 data_head = current_perf_mmap->data_head;
+  u64 data_tail = current_perf_mmap->data_tail;
   rmb();
 
-  if ((hdr->data_tail + sz) > data_head)
-     sz = data_head - hdr->data_tail;
+  if ((data_tail + sz) > data_head)
+     sz = data_head - data_tail;
 
-  hdr->data_tail += sz;
+  current_perf_mmap->data_tail += sz;
 }
 #endif
 

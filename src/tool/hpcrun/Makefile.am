@@ -364,31 +364,44 @@ else
 MY_BASE_FILES += sample-sources/perf/perfmon-util-dummy.c
 endif
 
-if OPT_PERF_MEM_DATA_SRC
-MY_BASE_FILES +=  			\
-	sample-sources/datacentric/datacentric.c	
 
+# datacentric plugin requires access to perf's data_src
+# without it, it's useless (unless for page-faults)
+
+if OPT_PERF_MEM_DATA_SRC
+if HOST_CPU_AARCH64
+# temporarily, no support for ARM
+MY_BASE_FILES +=  			 	 \
+	sample-sources/datacentric/datacentric_dummy.c	
+else
 if OPT_IBS_OP
-MY_BASE_FILES +=  			\
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
 	sample-sources/datacentric/ibsop.c
 else 
 if HOST_CPU_X86_64
-MY_BASE_FILES +=  			\
-    utilities/arch/x86-family/cpuid.c    \
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
+	utilities/arch/x86-family/cpuid.c    	 \
 	sample-sources/datacentric/pmu_x86.c
 else 
 if HOST_CPU_PPC
-MY_BASE_FILES +=  			\
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
 	sample-sources/datacentric/pmu_power.c
 else
-MY_BASE_FILES +=  			\
-	sample-sources/datacentric/datadummy.c
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric_dummy.c	
 endif	# HOST_CPU_PPC
 endif	# HOST_CPU_X86_64
 
 endif  # OPT_IBS_OP
+endif  # HOST_CPU_AARCH64
 endif  # OPT_PERF_MEM_DATA_SRC
 
+
+# blocktime plugin only available if the kernel version is 4.3 or newer
+#
 if OPT_ENABLE_KERNEL_4_3
 MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
 else

@@ -39,10 +39,11 @@ const char *NO_THREAD_ROOT   = "<no thread>";
 
 const char *MONITOR_DATA_FIRST_TOUCH = "<first touch>";
 
-const char *DATACENTRIC_ROOT    = "<datacentric>";
-const char *DATACENTRIC_DYNAMIC = "<heap allocation>";
-const char *DATACENTRIC_STATIC  = "<static variable>";
-const char *DATACENTRIC_UNKNOWN = "<unknown attribute>";
+const char *DATACENTRIC_ROOT      = "<datacentric>";
+const char *DATACENTRIC_DYNAMIC   = "<heap allocation>";
+const char *DATACENTRIC_STATIC    = "<static variable>";
+const char *DATACENTRIC_UNKNOWN   = "<unknown attribute>";
+const char *DATACENTRIC_MEMACCESS = "<memory access call-path>";
 
 const int NO_FAKE             = 0;
 const int FAKE_PROCEDURE      = 1;
@@ -109,10 +110,11 @@ static NameMapping renamingTable[] = {
 
   { "monitor_data_first_touch", MONITOR_DATA_FIRST_TOUCH },
 
-  { "DATACENTRIC"             , DATACENTRIC_ROOT },
-  { "DATACENTRIC_Dynamic"     , DATACENTRIC_DYNAMIC },
-  { "DATACENTRIC_Static"      , DATACENTRIC_STATIC },
-  { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN },
+  { "DATACENTRIC"             , DATACENTRIC_ROOT      },
+  { "DATACENTRIC_Dynamic"     , DATACENTRIC_DYNAMIC   },
+  { "DATACENTRIC_Static"      , DATACENTRIC_STATIC    },
+  { "DATACENTRIC_Unknown"     , DATACENTRIC_UNKNOWN   },
+  { "DATACENTRIC_MemoryAccess", DATACENTRIC_MEMACCESS },
 
   { "NO_THREAD",               NO_THREAD_ROOT       }
 };

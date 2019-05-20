@@ -107,10 +107,19 @@ const char *EVNAME_ADDRESS_CENTRIC = "MINOR-FAULTS";
  *****************************************************************************/
 
 
+
 /******************************************************************************
  * data structure
  *****************************************************************************/
 
+enum datacentric_status_e { UNINITIALIZED, INITIALIZED };
+
+
+/******************************************************************************
+ * variables
+ *****************************************************************************/
+
+static enum datacentric_status_e plugin_status = UNINITIALIZED;
 
 
 /******************************************************************************
@@ -122,6 +131,10 @@ const char *EVNAME_ADDRESS_CENTRIC = "MINOR-FAULTS";
 
 static void
 DATACENTRIC_Dynamic(void)
+{}
+
+static void
+DATACENTRIC_MemoryAccess(void)
 {}
 
 //
@@ -143,8 +156,6 @@ DATACENTRIC_Unknown(void)
 /******************************************************************************
  * PRIVATE Function implementation
  *****************************************************************************/
-
-
 
 static cct_node_t*
 datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
@@ -168,6 +179,7 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
 
   cct_node_t *context = hpcrun_cct_insert_addr(root, &addr);
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC
   // assign the start address and the end address metric
   // for this node
   int metric_id      = datacentric_get_metric_addr_start();
@@ -180,6 +192,7 @@ datacentric_create_root_node(cct_node_t *root, uint16_t lm_id,
   metric_id = datacentric_get_metric_addr_end();
   value.p   = (void*)addr_end;
   hpcrun_metric_std_max(metric_id, mset, value);
+#endif
 
   return context;
 }
@@ -206,6 +219,7 @@ datacentric_pre_handler(event_handler_arg_t *args)
   // if the address is known or not. If it's unknown, we will attribute it
   // to "unknown attribute" root node
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC
   if (args->current->id == EVNAME_ADDRESS_CENTRIC) {
 
     // for address centric event, the address has to be known in the database
@@ -218,6 +232,7 @@ datacentric_pre_handler(event_handler_arg_t *args)
       return REJECT_EVENT;  // the address is NOT in the database
                             // or the memory has been handled
   }
+#endif
 
   return ACCEPT_EVENT;
 }
@@ -272,6 +287,7 @@ datacentric_post_handler(event_handler_arg_t *args)
 
   if (info) {
     var_context = info->context;
+    cct_node_t* var_node = NULL;
 
     if (info->magic == DATA_STATIC_MAGIC) {
       // attach this node of static variable to the datacentric root
@@ -282,6 +298,8 @@ datacentric_post_handler(event_handler_arg_t *args)
 
       var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
                       (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+
+      var_node    = var_context;
 
       // mark that this is a special node for global variable
       // hpcprof will treat specially to print the name of the variable to xml file
@@ -294,10 +312,22 @@ datacentric_post_handler(event_handler_arg_t *args)
       cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
       cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
 
-      var_context = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
-
+      var_node = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
       hpcrun_cct_set_node_allocation(var_context);
+
+      // add artificial root for memory-access call-path
+      var_context = hpcrun_insert_special_node(var_node, DATACENTRIC_MemoryAccess);
+
+      hpcrun_cct_set_node_memaccess_root(var_context);
     }
+
+    // record the size of the variable
+    metric_set_t *mset       = hpcrun_reify_metric_set(var_node);
+    const int size_in_bytes  = info->rmemblock - info->memblock;
+    hpcrun_metricVal_t value = {.i = size_in_bytes};
+
+    hpcrun_metric_std_set( datacentric_get_metric_variable_size(), mset, value );
+
     info->status = DATATREE_INFO_HANDLED;
 
   } else {
@@ -305,7 +335,7 @@ datacentric_post_handler(event_handler_arg_t *args)
     cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
     var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
-    hpcrun_cct_set_node_variable(var_context);
+    hpcrun_cct_set_node_unknown_attribute(var_context);
   }
 
   // copy the callpath of the sample to the variable context
@@ -313,6 +343,7 @@ datacentric_post_handler(event_handler_arg_t *args)
 
   metric_set_t *mset = hpcrun_reify_metric_set(node);
 
+#if SUPPORT_FOR_ADDRESS_CENTRIC
   // variable address is store in the database
   // record the interval of this access
 
@@ -327,6 +358,7 @@ datacentric_post_handler(event_handler_arg_t *args)
   metric_id = datacentric_get_metric_addr_end();
   val_addr.p++;
   hpcrun_metric_std_max(metric_id, mset, val_addr);
+#endif
 
   // re-record metric event for this node with the same value as linux_perf
   // the total metric of hpcrun cct and datacentric has to be the same for this metric
@@ -449,6 +481,11 @@ datacentric_register(sample_source_t *self,
   // ------------------------------------------
   datacentric_register_address_centric(self, event, period);
 
+  // ------------------------------------------
+  // mark that data centric has been initialized, ready to be activated
+  // ------------------------------------------
+  plugin_status = INITIALIZED;
+
   return 1;
 }
 
@@ -471,3 +508,11 @@ datacentric_init()
 
   event_custom_register(event_datacentric);
 }
+
+
+int
+datacentric_is_active()
+{
+  return (plugin_status == INITIALIZED);
+}
+

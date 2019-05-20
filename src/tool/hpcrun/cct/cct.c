@@ -510,6 +510,15 @@ hpcrun_cct_is_node_memaccess(cct_node_t *node)
 // theoretically, a root has no parent, but to make it easy
 // we need a fake root and hang it to the invisible parent
 void
+hpcrun_cct_set_node_memaccess_root(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_MEMACCESS_ROOT;
+}
+
+// mark that the node is supposed to be a root
+// theoretically, a root has no parent, but to make it easy
+// we need a fake root and hang it to the invisible parent
+void
 hpcrun_cct_set_node_root(cct_node_t *root)
 {
   root->node_type |= NODE_TYPE_ROOT;
@@ -521,6 +530,13 @@ hpcrun_cct_is_node_root(cct_node_t *node)
 {
   return hpcrun_fmt_node_type_root(node->node_type);
 }
+
+void
+hpcrun_cct_set_node_unknown_attribute(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
+
 
 //***************************************************************************
 //
