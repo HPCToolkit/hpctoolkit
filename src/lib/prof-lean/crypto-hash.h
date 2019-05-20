@@ -47,27 +47,56 @@
 //***************************************************************************
 //
 // File:
-//   $HeadURL$
+//   crypto-hash.h
 //
 // Purpose:
-//   General and helper functions for reading/writing a HPC data
-//   files from/to a binary file.
-//
-//   These routines *must not* allocate dynamic memory; if such memory
-//   is needed, callbacks to the user's allocator should be used.
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
+//   compute a cryptographic hash of a sequence of bytes. this is used
+//   to name information presented to hpcrun in memory (e.g. an NVIDIA cubin) 
+//   that needs to be saved for post-mortem analysis.
 //
 //***************************************************************************
 
 #ifndef _HPCTOOLKIT_CRYPTO_HASH_H_
 #define _HPCTOOLKIT_CRYPTO_HASH_H_
 
-/******************************************************************************
- * interface operations
- *****************************************************************************/
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
 
+//-----------------------------------------------------------------------------
+// function: 
+//   crypto_hash_compute
+//
+// arguments:
+//   input:        
+//     pointer to a vector of bytes that will be crytographically hashed
+//   input_length:        
+//     length in bytes of the input
+//   hash:        
+//     pointer to a vector of bytes of length >= crypto_hash_length()
+//
+// return value:
+//   0: success
+//   non-zero: failure
+//-----------------------------------------------------------------------------
+int 
+crypto_hash_compute
+(
+  const unsigned char *input,
+  size_t input_length,
+  unsigned char *hash
+);
+
+
+//-----------------------------------------------------------------------------
+// function: 
+//   crypto_hash_length
+//
+// arguments: none
+//
+// return value:
+//   number of bytes in the crytographic hash 
+//-----------------------------------------------------------------------------
 unsigned int
 crypto_hash_length
 (
@@ -75,12 +104,47 @@ crypto_hash_length
 );
 
 
-int 
-crypto_hash_compute
+//-----------------------------------------------------------------------------
+// function: 
+//   crypto_hash_to_hexstring
+//
+// arguments:
+//   hash:        
+//     pointer to crytographic hash computed by cryto_hash_compute
+//   hash_string: 
+//     pointer to character buffer where string equivalent of the hash code 
+//     will be written
+//   hash_string_length: 
+//     length of the hash string must be > 2 * crypto_hash_length()
+//
+// return value:
+//   0: success
+//   non-zero: failure
+//-----------------------------------------------------------------------------
+int
+crypto_hash_to_hexstring
 (
-  unsigned char *input,
-  size_t input_length,
-  unsigned char *hash
+  unsigned char *hash,
+  char *hash_string,
+  unsigned int hash_string_length
+);
+
+
+//-----------------------------------------------------------------------------
+// function: 
+//   crypto_hash_self_test
+//
+// arguments:
+//   verbose: if non-zero, it prints individual self test results
+//
+// return value:
+//   0: success
+//   non-zero: failure
+//-----------------------------------------------------------------------------
+int
+crypto_hash_self_test
+(
+  int verbose
 );
 
 #endif

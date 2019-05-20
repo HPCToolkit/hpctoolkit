@@ -102,7 +102,7 @@ MYSOURCES = \
 	generic_val.h  mem_manager.h \
 	randomizer.h randomizer.c 
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -110,7 +110,7 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = 
+MYLIBADD = $(MBEDTLS_LIBS)
 
 MYCLEAN = 
 
