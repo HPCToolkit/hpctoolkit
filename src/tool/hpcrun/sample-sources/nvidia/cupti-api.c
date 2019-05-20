@@ -44,7 +44,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 1
+#define CUPTI_ACTIVITY_DEBUG 0
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
