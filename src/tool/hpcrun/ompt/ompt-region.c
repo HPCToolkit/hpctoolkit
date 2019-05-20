@@ -341,6 +341,7 @@ ompt_parallel_end
 {
   hpcrun_safe_enter();
 
+#if 0
   uint64_t parallel_id = parallel_data->value;
   uint64_t task_id = task_data->value;
 
@@ -351,6 +352,7 @@ ompt_parallel_end
 
   TMSG(DEFER_CTXT, "team end   id=0x%lx task_id=%x ompt_get_parallel_id(0)=0x%lx", parallel_id, task_id,
        parent_region_id);
+#endif
 
   ompt_parallel_end_internal(parallel_data, flag);
 
@@ -364,7 +366,7 @@ ompt_implicit_task_internal_begin
  ompt_data_t *parallel_data,
  ompt_data_t *task_data,
  unsigned int team_size,
- unsigned int thread_num
+ unsigned int index
 )
 {
   task_data->ptr = NULL;
@@ -377,11 +379,11 @@ ompt_implicit_task_internal_begin
   if (!ompt_eager_context_p()) {
     // FIXME vi3: check if this is fine
     // add current region
-    add_region_and_ancestors_to_stack(region_data, thread_num==0);
+    add_region_and_ancestors_to_stack(region_data, index==0);
 
     // FIXME vi3: move this to add_region_and_ancestors_to_stack
     // Memoization process vi3:
-    if (thread_num != 0){
+    if (index != 0){
       not_master_region = region_data;
     }
   }
@@ -394,7 +396,7 @@ ompt_implicit_task_internal_end
  ompt_data_t *parallel_data,
  ompt_data_t *task_data,
  unsigned int team_size,
- unsigned int thread_num
+ unsigned int index
 )
 {
   if (!ompt_eager_context_p()) {
@@ -413,15 +415,21 @@ ompt_implicit_task
  ompt_data_t *parallel_data,
  ompt_data_t *task_data,
  unsigned int team_size,
- unsigned int thread_num
+ unsigned int index,
+ int flags
 )
 {
+  if (flags == ompt_thread_initial && parallel_data == NULL)  {
+    // implicit task for implicit parallel region. nothing to do here.
+    return;
+  }
+
   hpcrun_safe_enter();
 
   if (endpoint == ompt_scope_begin) {
-    ompt_implicit_task_internal_begin(parallel_data, task_data, team_size, thread_num);
+    ompt_implicit_task_internal_begin(parallel_data, task_data, team_size, index);
   } else if (endpoint == ompt_scope_end) {
-    ompt_implicit_task_internal_end(parallel_data, task_data, team_size, thread_num);
+    ompt_implicit_task_internal_end(parallel_data, task_data, team_size, index);
   } else {
     // should never occur. should we add a message to the log?
   }

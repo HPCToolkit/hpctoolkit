@@ -444,16 +444,16 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
 	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-parallel-region-map.c ompt/ompt-task.c \
-	ompt/ompt-thread.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	sample-sources/perf/event_custom.c \
+	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
+	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/timer.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -585,6 +585,7 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	messages/libhpcrun_la-fmt.lo \
 	ompt/libhpcrun_la-ompt-callstack.lo \
 	ompt/libhpcrun_la-ompt-defer.lo \
+	ompt/libhpcrun_la-ompt-device.lo \
 	ompt/libhpcrun_la-ompt-defer-write.lo \
 	ompt/libhpcrun_la-ompt-interface.lo \
 	ompt/libhpcrun_la-ompt-queues.lo \
@@ -787,16 +788,16 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
 	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-parallel-region-map.c ompt/ompt-task.c \
-	ompt/ompt-thread.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	sample-sources/perf/event_custom.c \
+	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
+	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/timer.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
 	sample-sources/perf/perf_event_open.c \
 	sample-sources/perf/perf-util.c \
@@ -935,6 +936,7 @@ am__objects_46 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	messages/libhpcrun_o-fmt.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-callstack.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer.$(OBJEXT) \
+	ompt/libhpcrun_o-ompt-device.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer-write.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-interface.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-queues.$(OBJEXT) \
@@ -1304,6 +1306,8 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -1622,17 +1626,17 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	memory/mem.c memory/mmap.c messages/debug-flag.c \
 	messages/messages-sync.c messages/messages-async.c \
 	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-defer-write.c ompt/ompt-interface.c \
-	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-state-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-parallel-region-map.c ompt/ompt-task.c \
-	ompt/ompt-thread.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c $(am__append_8) \
-	$(am__append_10) $(am__append_11) $(am__append_12) \
-	$(am__append_13)
+	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
+	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
+	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/timer.c \
+	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
+	utilities/unlink.c $(am__append_8) $(am__append_10) \
+	$(am__append_11) $(am__append_12) $(am__append_13)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -2266,6 +2270,8 @@ ompt/libhpcrun_la-ompt-callstack.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-defer.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_la-ompt-device.lo: ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-defer-write.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-interface.lo: ompt/$(am__dirstamp) \
@@ -2799,6 +2805,8 @@ ompt/libhpcrun_o-ompt-callstack.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-defer.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+ompt/libhpcrun_o-ompt-device.$(OBJEXT): ompt/$(am__dirstamp) \
+	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-defer-write.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-interface.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3297,6 +3305,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer-write.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-defer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-parallel-region-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-queues.Plo@am__quote@
@@ -3309,6 +3318,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer-write.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-defer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-queues.Po@am__quote@
@@ -4223,6 +4233,13 @@ ompt/libhpcrun_la-ompt-defer.lo: ompt/ompt-defer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-defer.c' object='ompt/libhpcrun_la-ompt-defer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-defer.lo `test -f 'ompt/ompt-defer.c' || echo '$(srcdir)/'`ompt/ompt-defer.c
+
+ompt/libhpcrun_la-ompt-device.lo: ompt/ompt-device.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-device.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Tpo -c -o ompt/libhpcrun_la-ompt-device.lo `test -f 'ompt/ompt-device.c' || echo '$(srcdir)/'`ompt/ompt-device.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-device.c' object='ompt/libhpcrun_la-ompt-device.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-device.lo `test -f 'ompt/ompt-device.c' || echo '$(srcdir)/'`ompt/ompt-device.c
 
 ompt/libhpcrun_la-ompt-defer-write.lo: ompt/ompt-defer-write.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-defer-write.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-defer-write.Tpo -c -o ompt/libhpcrun_la-ompt-defer-write.lo `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
@@ -5917,6 +5934,20 @@ ompt/libhpcrun_o-ompt-defer.obj: ompt/ompt-defer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-defer.c' object='ompt/libhpcrun_o-ompt-defer.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-defer.obj `if test -f 'ompt/ompt-defer.c'; then $(CYGPATH_W) 'ompt/ompt-defer.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-defer.c'; fi`
+
+ompt/libhpcrun_o-ompt-device.o: ompt/ompt-device.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-device.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Tpo -c -o ompt/libhpcrun_o-ompt-device.o `test -f 'ompt/ompt-device.c' || echo '$(srcdir)/'`ompt/ompt-device.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-device.c' object='ompt/libhpcrun_o-ompt-device.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-device.o `test -f 'ompt/ompt-device.c' || echo '$(srcdir)/'`ompt/ompt-device.c
+
+ompt/libhpcrun_o-ompt-device.obj: ompt/ompt-device.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-device.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Tpo -c -o ompt/libhpcrun_o-ompt-device.obj `if test -f 'ompt/ompt-device.c'; then $(CYGPATH_W) 'ompt/ompt-device.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-device.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-device.c' object='ompt/libhpcrun_o-ompt-device.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-device.obj `if test -f 'ompt/ompt-device.c'; then $(CYGPATH_W) 'ompt/ompt-device.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-device.c'; fi`
 
 ompt/libhpcrun_o-ompt-defer-write.o: ompt/ompt-defer-write.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-defer-write.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-defer-write.Tpo -c -o ompt/libhpcrun_o-ompt-defer-write.o `test -f 'ompt/ompt-defer-write.c' || echo '$(srcdir)/'`ompt/ompt-defer-write.c
