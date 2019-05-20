@@ -5,7 +5,6 @@
 #include <stdio.h>   // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
-#include <openssl/md5.h>
 
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/safe-sampling.h>
@@ -19,7 +18,7 @@
 #include "nvidia.h"
 #include "cuda-state-placeholders.h"
 #include "cubin-id-map.h"
-#include "cubin-md5-map.h"
+#include "cubin-hash-map.h"
 #include "cupti-api.h"
 #include "cupti-device-id-map.h"
 #include "cupti-correlation-id-map.h"
@@ -228,14 +227,15 @@ cupti_load_callback_cuda
  size_t cubin_size
 )
 {
-  // Compute md5 for cubin and store it into a map
-  cubin_md5_map_entry_t *entry = cubin_md5_map_lookup(module_id);
-  unsigned char *md5;
+  // Compute hash for cubin and store it into a map
+  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(module_id);
+  unsigned char *hash;
+  unsigned int hash_len;
   if (entry == NULL) {
-    cubin_md5_map_insert(module_id, cubin, cubin_size);
-    entry = cubin_md5_map_lookup(module_id);
+    cubin_hash_map_insert(module_id, cubin, cubin_size);
+    entry = cubin_hash_map_lookup(module_id);
   }
-  md5 = cubin_md5_map_entry_md5_get(entry);
+  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
 
   // Create file name
   char file_name[PATH_MAX];
@@ -244,11 +244,11 @@ cupti_load_callback_cuda
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&file_name[used], "%s", "/cubins/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < MD5_DIGEST_LENGTH; ++i) {
-    used += sprintf(&file_name[used], "%02x", md5[i]);
+  for (i = 0; i < hash_len; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
   }
   used += sprintf(&file_name[used], "%s", ".cubin");
-  PRINT("module_id %d md5 %s\n", module_id, file_name);
+  PRINT("module_id %d hash %s\n", module_id, file_name);
 
   // Write a file if does not exist
   bool file_flag;
