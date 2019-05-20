@@ -44,7 +44,7 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define CUPTI_ACTIVITY_DEBUG 0
+#define CUPTI_ACTIVITY_DEBUG 1
 
 #if CUPTI_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -519,6 +519,7 @@ cupti_subscriber_callback
     bool is_valid_cuda_op = false;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020: 
