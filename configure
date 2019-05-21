@@ -26180,14 +26180,14 @@ $as_echo "$as_me:   unwinder:     ${unwinder_mesg}" >&6;}
 $as_echo "$as_me:   mpi wrapper?: ${enable_mpi_wrapper}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcrun/lush?: ${opt_enable_lush}" >&5
 $as_echo "$as_me:   hpcrun/lush?: ${opt_enable_lush}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5
-$as_echo "$as_me:   datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcserver?:   ${enable_hpcserver}" >&5
 $as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   hpcstruct:    ${hpcstruct_mesg}" >&5
 $as_echo "$as_me:   hpcstruct:    ${hpcstruct_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perf-events:  ${perf_event_mesg}" >&5
 $as_echo "$as_me:   perf-events:  ${perf_event_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   datacentric-trace?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&5
+$as_echo "$as_me:   datacentric-trace?: ${OPT_ENABLE_DATACENTRIC_TRACE}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5
