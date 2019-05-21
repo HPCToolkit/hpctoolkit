@@ -316,23 +316,29 @@ cupti_correlation_callback_cuda
 
   // Compress callpath
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
-  load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+  static __thread uint16_t libhpcrun_id = 0;
+
+  // The lowest module must be libhpcrun, which is not 0
+  // Update libhpcrun_id only the first time
+  if (libhpcrun_id == 0) {
+    load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+    if (module != NULL && strstr(module->name, "libhpcrun") != NULL) {
+      libhpcrun_id = node_addr->ip_norm.lm_id;
+    }
+  }
 
   // Skip libhpcrun
-  // TODO(keren): which entry function should I use to ignore hpcrun?
-  while (module != NULL && strstr(module->name, "libhpcrun") != NULL) {
+  while (libhpcrun_id != 0 && node_addr->ip_norm.lm_id == libhpcrun_id) {
     //hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
-    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
   }
 
   // Skip libcupti and libcuda
-  while (module != NULL && module_ignore_map_module_lookup(module)) {
+  while (module_ignore_map_module_id_lookup(node_addr->ip_norm.lm_id)) {
     //hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
-    module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
   }
   
   td->overhead++;

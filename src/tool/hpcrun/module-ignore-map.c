@@ -84,6 +84,25 @@ module_ignore_map_init()
 
 
 bool
+module_ignore_map_module_id_lookup(uint16_t module_id)
+{
+  // Read path
+  size_t i;
+  bool result = false;
+  pfq_rwlock_read_lock(&modules_lock);
+  for (i = 0; i < NUM_FNS; ++i) {
+    if (modules[i].empty == false && modules[i].module->id == module_id) {
+      /* current module should be ignored */
+      result = true;
+      break;
+    }
+  }
+  pfq_rwlock_read_unlock(&modules_lock);
+  return result;
+}
+
+
+bool
 module_ignore_map_module_lookup(load_module_t *module)
 {
   return module_ignore_map_lookup(module->dso_info->start_addr, module->dso_info->end_addr);
