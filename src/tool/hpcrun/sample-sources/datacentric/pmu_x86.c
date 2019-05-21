@@ -87,7 +87,6 @@ struct perf_data_src_mem_lvl_s {
   u32 ld_llchit;           /* count of loads that hit LLC */
   u32 lcl_hitm;            /* count of loads with local HITM  */
   u32 rmt_hitm;            /* count of loads with remote HITM */
-  u32 tot_hitm;            /* count of loads with local and remote HITM */
   u32 rmt_hit;             /* count of loads with remote hit clean; */
   u32 lcl_dram;            /* count of loads miss to local DRAM */
   u32 rmt_dram;            /* count of loads miss to remote DRAM */
@@ -102,6 +101,14 @@ struct perf_mem_metric {
   int memstore;
   int memstore_l1_hit;
   int memstore_l1_miss;
+
+  int mem_lcl_hitm;
+  int mem_rmt_hitm;
+
+  int mem_rmt_hit;
+
+  int miss_dram_lcl;
+  int miss_dram_rmt;
 
   int memllc_miss;
 };
@@ -160,14 +167,20 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
     if (lvl & P(LVL, L1 )) data_mem.ld_l1hit++;   // level 1 cache
     if (lvl & P(LVL, L2 )) data_mem.ld_l2hit++;   // level 2 cache
     if (lvl & P(LVL, L3 )) {                      // level 3 cache
-      if (snoop & P(SNOOP, HITM))
+      if (snoop & P(SNOOP, HITM)) {
         data_mem.lcl_hitm++;                      // loads with local HITM
-      else
+        value.i = 1;
+        datacentric_record_metric(metric.mem_lcl_hitm, node, datacentric_node, value);
+      } else {
         data_mem.ld_llchit++;                     // loads that hit LLC
+      }
     }
 
     if (lvl & P(LVL, LOC_RAM)) {
       data_mem.lcl_dram++;                        // loads miss to local DRAM
+      value.i = 1;
+      datacentric_record_metric(metric.miss_dram_lcl, node, datacentric_node, value);
+
       if (snoop & P(SNOOP, HIT))
         data_mem.ld_shared++;                     // shared loads, rmt/lcl DRAM - snp hit
       else
@@ -178,6 +191,9 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
         (lvl & P(LVL, REM_RAM2))) {
 
       data_mem.rmt_dram++;                        // loads miss to remote DRAM
+      value.i = 1;
+      datacentric_record_metric(metric.miss_dram_rmt, node, datacentric_node, value);
+
       if (snoop & P(SNOOP, HIT))
         data_mem.ld_shared++;
       else
@@ -191,11 +207,14 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
   if ((lvl & P(LVL, REM_CCE1)) ||
       (lvl & P(LVL, REM_CCE2))) {
     if (snoop & P(SNOOP, HIT)) {
+      value.i = 1;
+      datacentric_record_metric(metric.mem_rmt_hit, node, datacentric_node, value);
       data_mem.rmt_hit++;
     }
     else if (snoop & P(SNOOP, HITM)) {
+      value.i = 1;
+      datacentric_record_metric(metric.mem_rmt_hitm, node, datacentric_node, value);
       data_mem.rmt_hitm++;
-      data_mem.tot_hitm++;
     }
   }
 
@@ -267,6 +286,30 @@ create_metric_addons()
 
   metric.memstore_l1_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
+
+  // ------------------------------------------
+  // hitm
+  // ------------------------------------------
+  metric.mem_lcl_hitm = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.mem_lcl_hitm, "MEM-hitm-local");
+
+  metric.mem_rmt_hitm = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.mem_rmt_hitm, "MEM-hitm-rmt");
+
+  // ------------------------------------------
+  // Remote hit
+  // ------------------------------------------
+  metric.mem_rmt_hit = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.mem_rmt_hit, "MEM-rmt-hit");
+
+  // ------------------------------------------
+  // DRAM
+  // ------------------------------------------
+  metric.miss_dram_lcl = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.miss_dram_lcl, "DRAM-miss-to-lcl");
+
+  metric.miss_dram_rmt = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.miss_dram_rmt, "DRAM-miss-to-rmt");
 
   // ------------------------------------------
   // Memory load miss metric

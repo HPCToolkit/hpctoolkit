@@ -100,7 +100,7 @@
  * macros 
  *****************************************************************************/
 
-const char *EVNAME_ADDRESS_CENTRIC = "MINOR-FAULTS";
+const char *EVNAME_ADDRESS_CENTRIC = "FAULTS";
 
 /******************************************************************************
  * prototypes and forward declaration
