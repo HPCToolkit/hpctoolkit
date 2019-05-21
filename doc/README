@@ -25,6 +25,12 @@ regenerate the manual using Makefile.latex:
 Note that you run make from the doc/manual source directory.
 Use either no target or target 'all'.
 
+To install missing sty files, download the missing files from CTAN
+and install at local directory. Use kpsewhich command to locate the 
+directory used by latex. On Linux platfom, it's usually at
+
+/home/<user>/texmf/tex/latex/<package>
+
 -----------------------------
 WWW directory and html files
 -----------------------------
@@ -61,17 +67,17 @@ To install the www/html files to the hpctoolkit.org web site:
 
 1. Configure, make and make install as above.
 
-2. The html files for hpctoolkit.org are on kalyke/elara in:
+2. The html files for hpctoolkit.org are on orion/carme in:
 
    /net/www1/sites/hpctoolkit/htdocs/hpctoolkit/
 
 Tar-copy the share/doc/hpctoolkit *install* directory into the live
-web site on kalyke or elara with:
+web site on orion or carme with:
 
    cd install/share/doc
    tar cf hpctk.tar hpctoolkit
 
-   on kalyke/elara ...
+   on orion/carme ...
    cd /net/www1/sites/hpctoolkit/htdocs
    tar xf hpctk.tar
    (ignore 'Cannot utime: Operation not permitted' errors)
