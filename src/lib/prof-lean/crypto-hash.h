@@ -84,7 +84,8 @@ crypto_hash_compute
 (
   const unsigned char *input,
   size_t input_length,
-  unsigned char *hash
+  unsigned char *hash,
+  unsigned int hash_length
 );
 
 

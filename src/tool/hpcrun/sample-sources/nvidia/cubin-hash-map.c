@@ -48,11 +48,13 @@ static cubin_hash_map_entry_t *
 cubin_hash_map_entry_new(uint32_t cubin_id, const void *cubin, size_t size)
 {
   cubin_hash_map_entry_t *e;
-  e = (cubin_hash_map_entry_t *)hpcrun_malloc(sizeof(cubin_hash_map_entry_t) + crypto_hash_length());
+  unsigned int hash_length = crypto_hash_length();
+  e = (cubin_hash_map_entry_t *)
+    hpcrun_malloc(sizeof(cubin_hash_map_entry_t) + hash_length);
   e->cubin_id = cubin_id;
   e->left = NULL;
   e->right = NULL;
-  crypto_hash_compute(cubin, size, e->hash);
+  crypto_hash_compute(cubin, size, e->hash, hash_length);
 
   return e;
 }

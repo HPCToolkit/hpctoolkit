@@ -1861,11 +1861,10 @@ libhpcrun_la_LIBADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 	$(am__append_21)
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
-	-lpthread -lrt -L$(LIBELF_LIB) -lelf -lcrypto \
-	$(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-	$(PERFMON_LDFLAGS_DYN) $(am__append_53) $(am__append_93) \
-	$(am__append_98) $(am__append_110) $(am__append_116) \
-	$(UNW_DYNAMIC_LD_FLAGS)
+	-lpthread -lrt -L$(LIBELF_LIB) -lelf $(LIBUNWIND_LDFLAGS_DYN) \
+	$(LZMA_LDFLAGS_DYN) $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) \
+	$(am__append_53) $(am__append_93) $(am__append_98) \
+	$(am__append_110) $(am__append_116) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic

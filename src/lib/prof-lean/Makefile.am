@@ -110,7 +110,7 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = $(MBEDTLS_LIBS)
+MYLIBADD = 
 
 MYCLEAN = 
 

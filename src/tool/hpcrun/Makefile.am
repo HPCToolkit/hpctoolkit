@@ -681,7 +681,7 @@ endif
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-        $(PERFMON_LDFLAGS_DYN)
+        $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
