@@ -25,6 +25,12 @@ regenerate the manual using Makefile.latex:
 Note that you run make from the doc/manual source directory.
 Use either no target or target 'all'.
 
+To install missing sty files, download the missing files from CTAN
+and install at local directory. Use kpsewhich command to locate the 
+directory used by latex. On Linux platfom, it's usually at
+
+/home/<user>/texmf/tex/latex/<package>
+
 -----------------------------
 WWW directory and html files
 -----------------------------
