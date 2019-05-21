@@ -454,7 +454,7 @@ endif
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cubin-id-map.c               \
-								 sample-sources/nvidia/cubin-md5-map.c              \
+								 sample-sources/nvidia/cubin-hash-map.c              \
 								 sample-sources/nvidia/cubin-symbols.c              \
 								 sample-sources/nvidia/cupti-analysis.c             \
 								 sample-sources/nvidia/cupti-api.c                  \
@@ -679,7 +679,7 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf -lcrypto \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
         $(PERFMON_LDFLAGS_DYN)
 
