@@ -256,13 +256,16 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "GPU_ISAMP") {
+    if (mgr->metric(i)->namePfxBase() == "GPU INST") {
       gpu_isample_index = i;
       break;
     }
   }
   // Skip non-gpu prof
   if (gpu_isample_index == -1) {
+    if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << "Skip non-gpu prof" << std::endl;
+    }
     return;
   }
 
@@ -273,6 +276,10 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // find <target_vma, <Struct::Stmt> > mappings
   StructCallMap struct_call_map; 
   constructStructCallMap(prof.structure()->root(), struct_call_map);
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Number of gpu roots: " << gpu_roots.size() << std::endl;
+  }
 
   for (auto *gpu_root : gpu_roots) {
     if (DEBUG_CALLPATH_CUDACFG) {
