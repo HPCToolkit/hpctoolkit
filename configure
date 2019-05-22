@@ -21488,10 +21488,16 @@ $as_echo_n "checking for kernel blocking in perf events... " >&6; }
 
 
 #include <linux/perf_event.h>
+#include <linux/version.h>
+
 static struct perf_event_attr attr;
 void check_kernel()
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   attr.context_switch = 1;
+#else
+#error "kernel is older than 4.3"
+#endif
 }
 
 _ACEOF
