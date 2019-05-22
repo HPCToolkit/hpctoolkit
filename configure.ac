@@ -1687,6 +1687,7 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_mbedtls_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -1789,6 +1790,9 @@ then
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg mbedtls ; then
+    default_mbedtls_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -2773,6 +2777,94 @@ AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
+
+
+#-------------------------------------------------
+# Option: --with-mbedtls=PATH
+#-------------------------------------------------
+
+# mbedtls is a lightweight library that includes libmbedcrypto.a for
+# computing md5 and SHA sums for buffers in memory.
+#
+# Note: we require libmbedcrypto.a to be compiled with -fPIC.
+
+MBEDTLS="$default_mbedtls_prefix"
+MBEDTLS_IFLAGS=
+MBEDTLS_LIBS=
+
+AC_ARG_WITH([mbedtls],
+  [AS_HELP_STRING([--with-mbedtls=PATH],
+      [path to mbedtls install directory])],
+  [MBEDTLS="$withval"],
+  [])
+
+AC_MSG_CHECKING([for mbedtls])
+
+case "$MBEDTLS" in
+  /* )
+    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
+      AC_MSG_ERROR([unable to find md5.h in: $MBEDTLS])
+    fi
+    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    for lib in $multilib_path ; do
+      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	break
+      fi
+    done
+    if test "x$MBEDTLS_LIBS" = x ; then
+      AC_MSG_ERROR([unable to find libmbedcrypto.a in: $MBEDTLS])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([mbedtls directory must be absolute path: $MBEDTLS])
+    ;;
+esac
+
+AC_MSG_RESULT([$MBEDTLS])
+
+#
+# Test if libmbedcrypto.a was compiled with -fPIC
+#
+case "$MBEDTLS" in
+  /* )
+    AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
+    
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
+    LIBS="$MBEDTLS_LIBS"
+
+    AC_LANG_PUSH([C])
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <sys/types.h>
+#include "mbedtls/md5.h"
+void
+my_md5_hash(char *buf, size_t len)
+{
+    mbedtls_md5_context ctx;
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_update(&ctx, buf, len);
+}
+]])], [mbed_fpic=yes], [mbed_fpic=no])
+
+    AC_MSG_RESULT([$mbed_fpic])
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$mbed_fpic" != yes ; then
+      AC_MSG_ERROR([libmbedcrypto.a must be compiled with -fPIC])
+    fi
+    ;;
+esac
+
+AC_SUBST([MBEDTLS_IFLAGS])
+AC_SUBST([MBEDTLS_LIBS])
 
 
 #-------------------------------------------------
@@ -4259,6 +4351,7 @@ if test "$OPT_HAVE_CUPTI" = "yes" ; then
 
      [if test -f ${OPT_CUPTI}/include/cupti.h; then
          OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+         AC_DEFINE(HAVE_CUPTI_H, 1, [cupti include file available])
      else
          AC_MSG_ERROR(['${OPT_CUPTI}/include/cupti.h' not found])
      fi])  
@@ -4591,6 +4684,7 @@ AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
+AC_MSG_NOTICE([  mbedtls:      ${MBEDTLS}])
 AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
 AC_MSG_NOTICE([  tbb:          ${TBB}])

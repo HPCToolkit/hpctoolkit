@@ -31,6 +31,13 @@ module_ignore_map_lookup
 
 
 bool
+module_ignore_map_id_lookup
+(
+ uint16_t module_id
+);
+
+
+bool
 module_ignore_map_ignore
 (
  void *start, 

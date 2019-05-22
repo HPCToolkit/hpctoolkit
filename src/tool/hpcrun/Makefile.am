@@ -350,6 +350,7 @@ MY_BASE_FILES =				\
 	messages/fmt.c	                \
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
+	ompt/ompt-device.c              \
 	ompt/ompt-defer-write.c         \
 	ompt/ompt-interface.c           \
 	ompt/ompt-queues.c              \
@@ -453,7 +454,7 @@ endif
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
 								 sample-sources/nvidia/cubin-id-map.c               \
-								 sample-sources/nvidia/cubin-md5-map.c              \
+								 sample-sources/nvidia/cubin-hash-map.c              \
 								 sample-sources/nvidia/cubin-symbols.c              \
 								 sample-sources/nvidia/cupti-analysis.c             \
 								 sample-sources/nvidia/cupti-api.c                  \
@@ -678,9 +679,9 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf -lcrypto \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-        $(PERFMON_LDFLAGS_DYN)
+        $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
