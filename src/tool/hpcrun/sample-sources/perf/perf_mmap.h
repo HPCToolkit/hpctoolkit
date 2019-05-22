@@ -59,14 +59,6 @@
 
 
 /******************************************************************************
- *  constants
- *****************************************************************************/
-
-#define BUFFER_FRONT(current_perf_mmap)              ((char *) current_perf_mmap + pagesize)
-#define BUFFER_SIZE               (tail_mask + 1)
-#define BUFFER_OFFSET(tail)       ((tail) & tail_mask)
-
-/******************************************************************************
  *  types
  *****************************************************************************/
 
@@ -82,7 +74,9 @@ void perf_mmap_init();
 pe_mmap_t* set_mmap(int perf_fd);
 void perf_unmmap(pe_mmap_t *mmap);
 
-int read_perf_buffer(event_thread_t *current, perf_mmap_data_t *mmap_info);
+int
+read_perf_buffer(pe_mmap_t *current_perf_mmap,
+    struct perf_event_attr *attr, perf_mmap_data_t *mmap_info);
 
 
 #endif
