@@ -160,6 +160,9 @@
   macro("SYNC:STREAM_WAIT (us)", 3) \
   macro("SYNC:CONTEXT (us)",     4)
 
+#define FORALL_SYNC_TIME(macro) \
+  macro("SYNC:TIME (us)",     5)
+
 #define FORALL_GL(macro) \
   macro("GMEM:LOAD_CACHED_BYTES",             0) \
   macro("GMEM:LOAD_UNCACHED_BYTES",           1) \
@@ -336,7 +339,8 @@ static int info_total_samples_id;
 static int info_sm_full_samples_id;
 static int info_sm_efficiency_id;
 
-static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
+static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)+1];
+static int sync_time_metric_id;
 
 static const long pc_sampling_frequency_default = 10;
 // -1: disabled, 5-31: 2^frequency
@@ -532,6 +536,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         int index = sync_metric_id[activity->data.synchronization.syncKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
+          (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
+
+        metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
+        hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
       break;
@@ -839,6 +847,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metrics);	
   FORALL_SYNC(hide_sync_metrics);	
+  FORALL_SYNC_TIME(declare_sync_metrics);
+  FORALL_SYNC_TIME(hide_sync_metrics);
+  sync_time_metric_id = sync_metric_id[5];
   hpcrun_close_kind(sync_kind);
 
 #define declare_gl_metrics(name, index) \
