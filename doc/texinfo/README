@@ -1,0 +1,36 @@
+This directory replaces some of the *.html.in files in ../www/ with
+texinfo files.  For now, only the build and install directions from
+software-instructions.html.  The advantage of texinfo is that it is
+possible to produce text, html and latex output (almost anything) from
+a single source.  This works well for directions that are mostly text.
+
+Requirements: texinfo (makeinfo) version 6.x or later, and perl
+version 5.x or later.  Texinfo is available as a spack package and
+builds simply and robustly with no prerequisites other than perl.
+
+Update the .html files in two phases.  First, outside of the normal
+build for hpctoolkit, edit the .texi files in this directory and use
+'make install' to copy them to the ../www/ directory.  Then, the
+normal 'make install' for hpctoolkit will copy them to the install
+prefix (in share/doc/hpctoolkit).
+
+  1. edit the .texi files with a text editor.
+
+  2. make (in this directory) -- this uses makeinfo to convert .texi
+  to html.
+
+  3. make install (this directory) -- this copies the .html files to
+  the ../www/ directory.
+
+  4. make install (for hpctoolkit) -- this copies the .html files to
+  the install prefix.
+
+Note: you don't need to rerun hpctoolkit configure after editing the
+texinfo files, just make install.
+
+Note: only developers editing the documentation ever need to run these
+steps.  The .html files are generated from texinfo and we keep the
+generated version in the repository.  This means that normal users who
+clone hpctoolkit already have the generated files and 'make install'
+for hpctoolkit will copy them to the install directory.
+

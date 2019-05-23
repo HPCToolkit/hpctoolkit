@@ -31,6 +31,14 @@ directory used by latex. On Linux platfom, it's usually at
 
 /home/<user>/texmf/tex/latex/<package>
 
+---------------------------------
+Texinfo directory and html files
+---------------------------------
+
+The source for www/software-instructions.html is now in texinfo format
+in the texinfo directory.  See the README file in that directory to
+see how to edit that file.
+
 -----------------------------
 WWW directory and html files
 -----------------------------
