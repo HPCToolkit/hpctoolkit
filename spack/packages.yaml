@@ -30,13 +30,18 @@ packages:
   # Note: the following packages have variants that may need changing
   # for your local system.
   #
-  #   1. dyninst -- use version 9.3.2 for Blue Gene with the default
-  #   gcc 4.4 compilers.
+  #   1. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
+  #     1.66.0 is good for all dyninst revs.
   #
-  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   2. dyninst -- use version 9.3.2 for Blue Gene with the default
+  #   gcc 4.4 compilers.  (not recommended)
+  #
+  #   3. elfutils -- 0.176 doesn't build on Blue Gene, use 0.175.
+  #
+  #   4. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
   #   old Intel systems that don't support transactional memory.
   #
-  #   3. libmonitor -- add '+bgq' on Blue Gene/Q.
+  #   5. libmonitor -- add '+bgq' on Blue Gene/Q.
   #
   #------------------------------------------------------------
 
@@ -67,9 +72,13 @@ packages:
     variants: +libiberty ~nls
 
 
-  # boost -- used by dyninst and now in hpcstruct cuda support.
+  # boost -- used by dyninst and now in hpcstruct.
   #
-  # Dyninst requires >= 1.61 but most any recent version is good.
+  # Dyninst requires >= 1.61.
+  #   1.66.0 is good, works with all dyninst revs.
+  #   1.70.0 requires dyninst >= 10.1.0 (breaks earlier revs).
+  #   1.69.0 requires dyninst >= 10.0.0 (breaks earlier revs).
+  #   1.68.0 breaks the build for hpctoolkit.
   #
   # +atomic, +chrono, etc are for dyninst.
   # +graph, +regex, etc are for toolkit proper.
@@ -104,20 +113,21 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.0.0]
+    version:  [10.1.0, develop]
     variants: +openmp build_type=RelWithDebInfo
 
 
   # elfutils -- used by dyninst for reading ELF sections.
   #
   # Dyninst requires >= 0.173 and we want a recent version for best
-  # support for output from current compilers.
+  # support for output from current compilers.  On Blue Gene, 0.176
+  # doesn't build, so use 0.175.
   #
   # +bzip2, +xz are for reading compressed sections.
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.175]
+    version:  [0.176]
     variants: +bzip2 +xz ~nls
 
 
@@ -129,7 +139,7 @@ packages:
   # support transactional memory (no-op on non-x86).
   #
   intel-tbb:
-    version:  [2018.6]
+    version:  [2019.4]
     variants: +shared +tm
 
 
@@ -142,7 +152,7 @@ packages:
   # +debug adds debug symbols (-g).
   #
   intel-xed:
-    version:  [2018.02.14]
+    version:  [2019.03.01]
     variants: +debug
 
 
@@ -179,7 +189,7 @@ packages:
   # Note: add +bgq on blue gene/q.
   #
   libmonitor:
-    version:  [2018.07.18]
+    version:  [2018.07.18, master]
     variants: +hpctoolkit
 
 
@@ -204,7 +214,7 @@ packages:
   # +xz is for reading compressed symbol tables.
   #
   libunwind:
-    version:  [2018.10.12]
+    version:  [2018.10.12, develop]
     variants: +xz
 
 
@@ -221,7 +231,7 @@ packages:
   # headers.
   #
   papi:
-    version:  [5.6.0]
+    version:  [5.7.0]
 
 
   # xerces -- used in hpcprof to read XML.
@@ -277,7 +287,7 @@ packages:
   #------------------------------------------------------------
 
 
-  # cmake -- dyninst requires cmake >= 3.x.
+  # cmake -- dyninst requires cmake >= 3.4.x.
 
   # Example for a system install.  This example says that cmake 3.11.0
   # is available at /usr/bin/cmake.  Note: the 'paths:' entry is the
