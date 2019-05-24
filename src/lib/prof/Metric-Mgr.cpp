@@ -514,7 +514,7 @@ Mgr::findFirstVisible() const
   Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }
@@ -529,7 +529,7 @@ Mgr::findLastVisible() const
   Metric::ADesc* found = NULL;
   for (int i = m_metrics.size() - 1; i >= 0; --i) { // i may be < 0
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }
