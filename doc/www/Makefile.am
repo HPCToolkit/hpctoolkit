@@ -64,6 +64,8 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
+MY_HTML_FILES = software-instructions.html
+
 MYSOURCES = \
 	index.html \
 	\
@@ -72,7 +74,6 @@ MYSOURCES = \
 	overview.html \
 	publications.html \
 	software.html \
-	software-instructions.html \
 	\
 	info-acks.html \
 	info-people.html
@@ -85,6 +86,7 @@ MYSOURCES_TGT = \
 
 MYDATA = \
 	$(MYSOURCES) \
+	$(MY_HTML_FILES) \
 	\
 	hpctoolkit.org.sitemap.txt \
 	\
