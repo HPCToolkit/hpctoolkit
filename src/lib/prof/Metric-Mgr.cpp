@@ -153,6 +153,8 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   // -------------------------------------------------------
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
+    m->isTemporary(true);
+
     string nm = m->nameGeneric();
 
     StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
@@ -280,7 +282,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = true;
+  bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -376,7 +378,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = true;
+  bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
