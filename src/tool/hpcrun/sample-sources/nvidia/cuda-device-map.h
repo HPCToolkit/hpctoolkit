@@ -47,77 +47,75 @@
 //***************************************************************************
 //
 // File:
-//   module-ignore-map.h
+//   cuda-device-map.h
 //
 // Purpose:
-//   interface definitions for a map of load modules that should be omitted
-//   from call paths for synchronous samples
-//   
+//   interface definitions for map that enables one to look up device 
+//   properties given a device id
 //  
 //***************************************************************************
 
-#ifndef _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
-#define _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
+#ifndef _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
+#define _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
 
-#include <stdbool.h>
-#include <hpcrun/loadmap.h>
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
+
+
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#if 0
+#include <hpcrun/cct/cct.h>
+#include <cuda.h>
+#endif
+
+#include "cuda-api.h"
+
+
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct cuda_device_map_entry_s cuda_device_map_entry_t;
+
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+cuda_device_map_entry_t *
+cuda_device_map_lookup
+(
+ uint32_t id
+);
+
 
 void
-module_ignore_map_init
+cuda_device_map_insert
 (
- void
-);
-
-bool
-module_ignore_map_module_id_lookup
-(
- uint16_t module_id
+ uint32_t device
 );
 
 
-bool
-module_ignore_map_module_lookup
+void
+cuda_device_map_delete
 (
- load_module_t *module
+ uint32_t device
 );
 
 
-bool
-module_ignore_map_inrange_lookup
+cuda_device_property_t *
+cuda_device_map_entry_device_property_get
 (
- void *addr
+ cuda_device_map_entry_t *entry
 );
-
-
-bool
-module_ignore_map_lookup
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_id_lookup
-(
- uint16_t module_id
-);
-
-
-bool
-module_ignore_map_ignore
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_delete
-(
- void *start,
- void *end
-);
-
 
 #endif

@@ -64,6 +64,10 @@
 
 #include <pthread.h>
 
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#endif
+
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
@@ -76,6 +80,7 @@
 
 #include "nvidia.h"
 #include "cuda-state-placeholders.h"
+#include "cuda-api.h"
 #include "cupti-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
@@ -899,6 +904,16 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *sm_efficiency_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
+
+  if (cuda_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+
+  if (cupti_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
 
   // Fetch the event string for the sample source
   // only one event is allowed

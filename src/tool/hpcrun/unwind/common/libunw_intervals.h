@@ -52,7 +52,13 @@
 //
 //***************************************************************************
 
+
+#ifndef __LIBUNW_INTERVALS_H__
+#define __LIBUNW_INTERVALS_H__
+
 #include "binarytree_uwi.h"
+#include "std_unw_cursor.h"
+#include "unwind.h"
 
 void libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context);
 
@@ -65,3 +71,5 @@ step_state libunw_take_step(hpcrun_unw_cursor_t* cursor);
 step_state libunw_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken);
 
 void libunw_uw_recipe_tostr(void* uwr, char str[]);
+
+#endif
