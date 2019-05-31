@@ -51,9 +51,12 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <hpcrun/hpcrun_stats.h>
-#include "x86-unwind-interval.h"
+#include <hpcrun/unwind/common/libunw_intervals.h>
 
 #include <messages/messages.h>
+
+#include "x86-unwind-interval.h"
+
 
 #define STR(s) case s: return #s
 

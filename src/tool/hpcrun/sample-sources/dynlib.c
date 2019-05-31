@@ -44,80 +44,67 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   module-ignore-map.h
-//
-// Purpose:
-//   interface definitions for a map of load modules that should be omitted
-//   from call paths for synchronous samples
-//   
-//  
-//***************************************************************************
 
-#ifndef _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
-#define _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
+//******************************************************************************
+// global includes
+//******************************************************************************
 
-#include <stdbool.h>
-#include <hpcrun/loadmap.h>
+#include <stdio.h> // import NULL
+#include <dlfcn.h>
 
-void
-module_ignore_map_init
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <monitor.h>
+
+#include "dynlib.h"
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+int
+dynlib_open
 (
- void
-);
+  void **handle,
+  const char *libname,
+  int flags
+)
+{
+#ifdef HPCRUN_STATIC_LINK
+  int retval = 1;
+#else
+  *handle = monitor_real_dlopen(libname, flags);
 
-bool
-module_ignore_map_module_id_lookup
-(
- uint16_t module_id
-);
-
-
-bool
-module_ignore_map_module_lookup
-(
- load_module_t *module
-);
-
-
-bool
-module_ignore_map_inrange_lookup
-(
- void *addr
-);
-
-
-bool
-module_ignore_map_lookup
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_id_lookup
-(
- uint16_t module_id
-);
-
-
-bool
-module_ignore_map_ignore
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_delete
-(
- void *start,
- void *end
-);
-
-
+  int retval = (*handle == NULL);
 #endif
+  return retval;
+}
+
+
+
+int 
+dynlib_sym
+(
+   void *handle,
+   const char *fname,
+   void **fn
+)
+{
+#ifdef HPCRUN_STATIC_LINK
+  int retval = 1;
+#else
+  (void) dlerror(); // clear any error that may be pending
+
+  *fn = dlsym(handle, fname);
+  char* e = dlerror();
+
+  int retval = (e != NULL);
+#endif
+  return retval;
+}

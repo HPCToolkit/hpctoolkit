@@ -44,80 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   module-ignore-map.h
-//
-// Purpose:
-//   interface definitions for a map of load modules that should be omitted
-//   from call paths for synchronous samples
-//   
-//  
-//***************************************************************************
+#ifndef __DYNLIB_H__
+#define __DYNLIB_H__
 
-#ifndef _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
-#define _HPCTOOLKIT_MODULE_IGNORE_MAP_H_
+//******************************************************************************
+// macros
+//******************************************************************************
 
-#include <stdbool.h>
-#include <hpcrun/loadmap.h>
+#define dynlib_open_check(retcode, handle, libname, flags) \
+  if (!retcode) retcode |= dynlib_open(handle, #libname, flags)
 
-void
-module_ignore_map_init
+#define dynlib_sym_check(retcode, fn, handle, fname) \
+  if (!retcode) retcode |= dynlib_sym(fn, handle, #fname)
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+int
+dynlib_open
 (
- void
-);
-
-bool
-module_ignore_map_module_id_lookup
-(
- uint16_t module_id
+  void **handle,
+  const char *libname,
+  int flags
 );
 
 
-bool
-module_ignore_map_module_lookup
+int 
+dynlib_sym
 (
- load_module_t *module
+   void **fn,
+   void *handle,
+   const char *fname
 );
 
-
-bool
-module_ignore_map_inrange_lookup
-(
- void *addr
-);
-
-
-bool
-module_ignore_map_lookup
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_id_lookup
-(
- uint16_t module_id
-);
-
-
-bool
-module_ignore_map_ignore
-(
- void *start, 
- void *end
-);
-
-
-bool
-module_ignore_map_delete
-(
- void *start,
- void *end
-);
-
-
-#endif
+#endif // __DYNLIB_H__

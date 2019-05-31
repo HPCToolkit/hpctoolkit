@@ -1,17 +1,88 @@
-#include "module-ignore-map.h"
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2019, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   module-ignore-map.c
+//
+// Purpose:
+//   implementation of a map of load modules that should be omitted
+//   from call paths for synchronous samples
+//   
+//  
+//***************************************************************************
+
+//***************************************************************************
+// system includes
+//***************************************************************************
+
+
 #include <fcntl.h>   // open
 #include <dlfcn.h>  // dlopen
 #include <limits.h>  // PATH_MAX
 
-#include <monitor.h>  // PATH_MAX
 
-#include <hpcrun/loadmap.h>
+
+//***************************************************************************
+// local includes
+//***************************************************************************
+
+#include <monitor.h>  
+
 #include <lib/prof-lean/pfq-rwlock.h>
+#include <hpcrun/loadmap.h>
 
-#define NUM_FNS 3
-static const char *NVIDIA_FNS[NUM_FNS] = {
-  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
-};
+#include "module-ignore-map.h"
+
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
 
 #define MODULE_IGNORE_DEBUG 0
 
@@ -21,18 +92,44 @@ static const char *NVIDIA_FNS[NUM_FNS] = {
 #define PRINT(...)
 #endif
 
+#define NUM_FNS 3
+
+
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
 
 typedef struct module_ignore_entry {
   bool empty;
   load_module_t *module;
 } module_ignore_entry_t;
 
+
+
+//***************************************************************************
+// static data
+//***************************************************************************
+
+static const char *NVIDIA_FNS[NUM_FNS] = {
+  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
+};
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 
 
+
+//***************************************************************************
+// private operations
+//***************************************************************************
+
 static bool
-lm_contains_fn(const char *lm, const char *fn) {
+lm_contains_fn
+(
+ const char *lm, 
+ const char *fn
+) 
+{
   char resolved_path[PATH_MAX];
   bool load_handle = false;
 
@@ -71,8 +168,16 @@ lm_contains_fn(const char *lm, const char *fn) {
 }
 
 
+
+//***************************************************************************
+// interface operations
+//***************************************************************************
+
 void
-module_ignore_map_init()
+module_ignore_map_init
+(
+ void
+)
 {
   size_t i;
   for (i = 0; i < NUM_FNS; ++i) {
@@ -84,7 +189,10 @@ module_ignore_map_init()
 
 
 bool
-module_ignore_map_module_id_lookup(uint16_t module_id)
+module_ignore_map_module_id_lookup
+(
+ uint16_t module_id
+)
 {
   // Read path
   size_t i;
@@ -103,21 +211,32 @@ module_ignore_map_module_id_lookup(uint16_t module_id)
 
 
 bool
-module_ignore_map_module_lookup(load_module_t *module)
+module_ignore_map_module_lookup
+(
+ load_module_t *module
+)
 {
-  return module_ignore_map_lookup(module->dso_info->start_addr, module->dso_info->end_addr);
+  return module_ignore_map_lookup(module->dso_info->start_addr, 
+				  module->dso_info->end_addr);
 }
 
 
 bool
-module_ignore_map_inrange_lookup(void *addr)
+module_ignore_map_inrange_lookup
+(
+ void *addr
+)
 {
   return module_ignore_map_lookup(addr, addr);
 }
 
 
 bool
-module_ignore_map_lookup(void *start, void *end)
+module_ignore_map_lookup
+(
+ void *start, 
+ void *end
+)
 {
   // Read path
   size_t i;
@@ -138,7 +257,11 @@ module_ignore_map_lookup(void *start, void *end)
 
 
 bool
-module_ignore_map_ignore(void *start, void *end)
+module_ignore_map_ignore
+(
+ void *start, 
+ void *end
+)
 {
   // Update path
   // Only one thread could update the flag,
@@ -164,7 +287,11 @@ module_ignore_map_ignore(void *start, void *end)
 
 
 bool
-module_ignore_map_delete(void *start, void *end)
+module_ignore_map_delete
+(
+ void *start, 
+ void *end
+)
 {
   size_t i;
   bool result = false;

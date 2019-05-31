@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-#include "cupti-device-id-map.h"
+#include "cuda-device-map.h"
 #include "cupti-correlation-id-map.h"
 
 /******************************************************************************
@@ -40,10 +40,10 @@ cupti_occupancy_analyze
 {
   *active_warps_per_sm = 0;
   *max_active_warps_per_sm = 0;
-  cupti_device_id_map_entry_t *device = cupti_device_id_map_lookup(kernel->deviceId);
+  cuda_device_map_entry_t *device = cuda_device_map_lookup(kernel->deviceId);
   if (device != NULL) {
-    cupti_device_property_t *device_property =
-      cupti_device_id_map_entry_device_property_get(device);
+    cuda_device_property_t *device_property =
+      cuda_device_map_entry_device_property_get(device);
     uint32_t num_threads_per_warp = device_property->num_threads_per_warp;
     uint32_t sm_threads = device_property->sm_threads;
     uint32_t sm_registers = device_property->sm_registers;
@@ -106,11 +106,11 @@ cupti_sm_efficiency_analyze
     uint32_t device_id = cupti_correlation_id_map_entry_device_id_get(corr);
     uint64_t start = cupti_correlation_id_map_entry_start_get(corr);
     uint64_t end = cupti_correlation_id_map_entry_end_get(corr);
-    cupti_device_id_map_entry_t *device = 
-      cupti_device_id_map_lookup(device_id);
+    cuda_device_map_entry_t *device = 
+      cuda_device_map_lookup(device_id);
     if (device != NULL) {
-      cupti_device_property_t *device_property =
-        cupti_device_id_map_entry_device_property_get(device);
+      cuda_device_property_t *device_property =
+        cuda_device_map_entry_device_property_get(device);
 
       uint64_t sample_period_in_cycles = pc_sampling_record_info->samplingPeriodInCycles;
       // khz to hz to hz/ns
