@@ -358,7 +358,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-region-debug.c        \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-device-map.c          \
-	ompt/ompt-parallel-region-map.c \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\

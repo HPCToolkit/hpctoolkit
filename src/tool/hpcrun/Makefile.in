@@ -444,8 +444,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/timer.c \
@@ -590,7 +589,6 @@ am__objects_12 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-region-debug.lo \
 	ompt/libhpcrun_la-ompt-state-placeholders.lo \
 	ompt/libhpcrun_la-ompt-device-map.lo \
-	ompt/libhpcrun_la-ompt-parallel-region-map.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
 	ompt/libhpcrun_la-ompt-thread.lo \
 	utilities/libhpcrun_la-executable-path.lo \
@@ -788,8 +786,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/timer.c \
@@ -940,7 +937,6 @@ am__objects_46 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region-debug.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-device-map.$(OBJEXT) \
-	ompt/libhpcrun_o-ompt-parallel-region-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
@@ -1624,8 +1620,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-state-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-parallel-region-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c utilities/timer.c \
@@ -2280,8 +2275,6 @@ ompt/libhpcrun_la-ompt-state-placeholders.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-device-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
-ompt/libhpcrun_la-ompt-parallel-region-map.lo: ompt/$(am__dirstamp) \
-	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-task.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-thread.lo: ompt/$(am__dirstamp) \
@@ -2815,8 +2808,6 @@ ompt/libhpcrun_o-ompt-state-placeholders.$(OBJEXT):  \
 	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-device-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
-ompt/libhpcrun_o-ompt-parallel-region-map.$(OBJEXT):  \
-	ompt/$(am__dirstamp) ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-thread.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3298,7 +3289,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-parallel-region-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-queues.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region-debug.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region.Plo@am__quote@
@@ -3311,7 +3301,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-queues.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region-debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region.Po@am__quote@
@@ -4279,13 +4268,6 @@ ompt/libhpcrun_la-ompt-device-map.lo: ompt/ompt-device-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-device-map.c' object='ompt/libhpcrun_la-ompt-device-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-device-map.lo `test -f 'ompt/ompt-device-map.c' || echo '$(srcdir)/'`ompt/ompt-device-map.c
-
-ompt/libhpcrun_la-ompt-parallel-region-map.lo: ompt/ompt-parallel-region-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-parallel-region-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-parallel-region-map.Tpo -c -o ompt/libhpcrun_la-ompt-parallel-region-map.lo `test -f 'ompt/ompt-parallel-region-map.c' || echo '$(srcdir)/'`ompt/ompt-parallel-region-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-parallel-region-map.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-parallel-region-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-parallel-region-map.c' object='ompt/libhpcrun_la-ompt-parallel-region-map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-parallel-region-map.lo `test -f 'ompt/ompt-parallel-region-map.c' || echo '$(srcdir)/'`ompt/ompt-parallel-region-map.c
 
 ompt/libhpcrun_la-ompt-task.lo: ompt/ompt-task.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-task.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-task.Tpo -c -o ompt/libhpcrun_la-ompt-task.lo `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
@@ -6036,20 +6018,6 @@ ompt/libhpcrun_o-ompt-device-map.obj: ompt/ompt-device-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-device-map.c' object='ompt/libhpcrun_o-ompt-device-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-device-map.obj `if test -f 'ompt/ompt-device-map.c'; then $(CYGPATH_W) 'ompt/ompt-device-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-device-map.c'; fi`
-
-ompt/libhpcrun_o-ompt-parallel-region-map.o: ompt/ompt-parallel-region-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-parallel-region-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Tpo -c -o ompt/libhpcrun_o-ompt-parallel-region-map.o `test -f 'ompt/ompt-parallel-region-map.c' || echo '$(srcdir)/'`ompt/ompt-parallel-region-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-parallel-region-map.c' object='ompt/libhpcrun_o-ompt-parallel-region-map.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-parallel-region-map.o `test -f 'ompt/ompt-parallel-region-map.c' || echo '$(srcdir)/'`ompt/ompt-parallel-region-map.c
-
-ompt/libhpcrun_o-ompt-parallel-region-map.obj: ompt/ompt-parallel-region-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-parallel-region-map.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Tpo -c -o ompt/libhpcrun_o-ompt-parallel-region-map.obj `if test -f 'ompt/ompt-parallel-region-map.c'; then $(CYGPATH_W) 'ompt/ompt-parallel-region-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-parallel-region-map.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-parallel-region-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-parallel-region-map.c' object='ompt/libhpcrun_o-ompt-parallel-region-map.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-parallel-region-map.obj `if test -f 'ompt/ompt-parallel-region-map.c'; then $(CYGPATH_W) 'ompt/ompt-parallel-region-map.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-parallel-region-map.c'; fi`
 
 ompt/libhpcrun_o-ompt-task.o: ompt/ompt-task.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-task.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-task.Tpo -c -o ompt/libhpcrun_o-ompt-task.o `test -f 'ompt/ompt-task.c' || echo '$(srcdir)/'`ompt/ompt-task.c
