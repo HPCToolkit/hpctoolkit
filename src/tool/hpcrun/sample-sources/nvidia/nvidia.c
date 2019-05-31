@@ -165,6 +165,9 @@
   macro("SYNC:STREAM_WAIT (us)", 3) \
   macro("SYNC:CONTEXT (us)",     4)
 
+#define FORALL_SYNC_TIME(macro) \
+  macro("SYNC:TIME (us)",     5)
+
 #define FORALL_GL(macro) \
   macro("GMEM:LOAD_CACHED_BYTES",             0) \
   macro("GMEM:LOAD_UNCACHED_BYTES",           1) \
@@ -341,7 +344,8 @@ static int info_total_samples_id;
 static int info_sm_full_samples_id;
 static int info_sm_efficiency_id;
 
-static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)];
+static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)+1];
+static int sync_time_metric_id;
 
 static const long pc_sampling_frequency_default = 10;
 // -1: disabled, 5-31: 2^frequency
@@ -538,6 +542,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
+
+        metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
+        hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){.r =
+          (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
       break;
     }
@@ -705,8 +713,12 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+#ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA) ||
     hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING);
+#else
+  return false;
+#endif
 
 #if 0
     hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
@@ -721,6 +733,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+
 
 #define getindex(name, index) index
 #define declare_stall_metrics(name, index) \
@@ -844,6 +857,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   sync_kind = hpcrun_metrics_new_kind();
   FORALL_SYNC(declare_sync_metrics);	
   FORALL_SYNC(hide_sync_metrics);	
+  FORALL_SYNC_TIME(declare_sync_metrics);
+  FORALL_SYNC_TIME(hide_sync_metrics);
+  sync_time_metric_id = sync_metric_id[5];
   hpcrun_close_kind(sync_kind);
 
 #define declare_gl_metrics(name, index) \
@@ -905,6 +921,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
 
+#ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
     monitor_real_exit(-1);
@@ -914,6 +931,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
   }
+#endif
 
   // Fetch the event string for the sample source
   // only one event is allowed
