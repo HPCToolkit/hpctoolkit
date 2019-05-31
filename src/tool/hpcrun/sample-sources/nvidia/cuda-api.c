@@ -60,7 +60,6 @@
 //*****************************************************************************
 
 #include <dlfcn.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>    // memset
 
@@ -106,17 +105,6 @@
 }
 
 
-//******************************************************************************
-// types
-//******************************************************************************
-
-typedef enum cuda_bind_status {
-  cuda_bind_none,
-  cuda_bind_done,
-  cuda_bind_fail
-} cuda_bind_status_t;
-
-
 
 //******************************************************************************
 // static data
@@ -131,11 +119,6 @@ CUDA_FN
   CUdevice dev
  )
 );
-
-
-static pthread_once_t cuda_initialized = PTHREAD_ONCE_INIT;
-
-static cuda_bind_status_t cuda_bind_status = cuda_bind_none;
 
 
 
@@ -192,15 +175,6 @@ cuda_device_property_query
  cuda_device_property_t *property
 )
 {
-  // bind cuda library only once
-  pthread_once(&cuda_initialized, cuda_bind);
-
-  if (cuda_bind_status == cuda_bind_fail) {
-    // initialization failed
-    memset(property, 0, sizeof(cuda_device_property_t));
-    return -1;
-  }
-
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
