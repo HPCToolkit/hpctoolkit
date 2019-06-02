@@ -46,6 +46,13 @@ typedef struct cupti_memory {
   uint32_t memKind;
 } cupti_memory_t;
 
+typedef struct cupti_memset {
+  uint64_t start;
+  uint64_t end;
+  uint64_t bytes;
+  uint32_t memKind;
+} cupti_memset_t;
+
 // kernel
 typedef struct cupti_kernel {
   uint64_t start;
@@ -107,6 +114,7 @@ typedef struct cupti_activity {
     cupti_pc_sampling_record_info_t pc_sampling_record_info;
     cupti_memcpy_t memcpy;
     cupti_memory_t memory;
+    cupti_memset_t memset;
     cupti_kernel_t kernel;
     cupti_global_access_t global_access;
     cupti_shared_access_t shared_access;

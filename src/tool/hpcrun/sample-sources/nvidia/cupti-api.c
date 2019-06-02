@@ -1107,6 +1107,32 @@ cupti_memcpy2_process
 
 
 static void
+cupti_memset_process
+(
+ CUpti_ActivityMemset *activity
+)
+{
+  cupti_correlation_id_map_entry_t *cupti_entry = cupti_correlation_id_map_lookup(activity->correlationId);
+  if (cupti_entry != NULL) {
+    uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
+    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      cct_node_t *host_op_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_record_t *record = cupti_host_op_map_entry_record_get(host_op_entry);
+      cupti_cupti_activity_apply((CUpti_Activity *)activity, host_op_node, record);
+      //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
+      //cupti_host_op_map_delete(external_id);
+    }
+    cupti_correlation_id_map_delete(activity->correlationId);
+  }
+  PRINT("Memset CorrelationId %u\n", activity->correlationId);
+  PRINT("Memset kind %u\n", activity->memoryKind);
+  PRINT("Memset bytes %u\n", activity->bytes);
+}
+
+
+
+static void
 cupti_memctr_process
 (
  CUpti_ActivityUnifiedMemoryCounter *activity
@@ -1293,6 +1319,9 @@ cupti_activity_process
   case CUPTI_ACTIVITY_KIND_MEMCPY2: 
     cupti_memcpy2_process((CUpti_ActivityMemcpy2 *) activity);
     break;
+
+  case CUPTI_ACTIVITY_KIND_MEMSET:
+    cupti_memset_process((CUpti_ActivityMemset *) activity);
 
   case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
     cupti_memctr_process((CUpti_ActivityUnifiedMemoryCounter *) activity);

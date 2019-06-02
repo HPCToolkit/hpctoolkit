@@ -109,16 +109,28 @@
 #endif
 
 #define FORALL_ME(macro)	  \
-  macro("MEM:UNKNOWN_BYTES",       0) \
-  macro("MEM:PAGEABLE_BYTES",      1) \
-  macro("MEM:PINNED_BYTES",        2) \
-  macro("MEM:DEVICE_BYTES",        3) \
-  macro("MEM:ARRAY_BYTES",         4) \
-  macro("MEM:MANAGED_BYTES",       5) \
-  macro("MEM:DEVICE_STATIC_BYTES", 6)
+  macro("MEM_ALLOC:UNKNOWN_BYTES",       0) \
+  macro("MEM_ALLOC:PAGEABLE_BYTES",      1) \
+  macro("MEM_ALLOC:PINNED_BYTES",        2) \
+  macro("MEM_ALLOC:DEVICE_BYTES",        3) \
+  macro("MEM_ALLOC:ARRAY_BYTES",         4) \
+  macro("MEM_ALLOC:MANAGED_BYTES",       5) \
+  macro("MEM_ALLOC:DEVICE_STATIC_BYTES", 6)
 
 #define FORALL_ME_TIME(macro) \
-  macro("MEM:TIME (us)",           7)
+  macro("MEM_ALLOC:TIME (us)",           7)
+
+#define FORALL_ME_SET(macro)	  \
+  macro("MEM_SET:UNKNOWN_BYTES",       0) \
+  macro("MEM_SET:PAGEABLE_BYTES",      1) \
+  macro("MEM_SET:PINNED_BYTES",        2) \
+  macro("MEM_SET:DEVICE_BYTES",        3) \
+  macro("MEM_SET:ARRAY_BYTES",         4) \
+  macro("MEM_SET:MANAGED_BYTES",       5) \
+  macro("MEM_SET:DEVICE_STATIC_BYTES", 6)
+
+#define FORALL_ME_SET_TIME(macro) \
+  macro("MEM_SET:TIME (us)",           7)
 
 #define FORALL_KE(macro)	  \
   macro("KERNEL:STATIC_MEM_BYTES",  0)       \
@@ -292,6 +304,7 @@ static kind_info_t* ke_kind; // kernel execution
 static kind_info_t* em_kind; // explicit memory copies
 static kind_info_t* im_kind; // implicit memory events
 static kind_info_t* me_kind; // memory allocation and deletion
+static kind_info_t* me_set_kind; // memory set
 static kind_info_t* gl_kind; // global memory accesses
 static kind_info_t* sh_kind; // shared memory accesses
 static kind_info_t* bh_kind; // branches
@@ -310,6 +323,9 @@ static int im_time_metric_id;
 
 static int me_metric_id[NUM_CLAUSES(FORALL_ME)+1];
 static int me_time_metric_id;
+
+static int me_set_metric_id[NUM_CLAUSES(FORALL_ME_SET)+1];
+static int me_set_time_metric_id;
 
 static int gl_metric_id[NUM_CLAUSES(FORALL_GL)];
 
@@ -366,7 +382,8 @@ CUpti_ActivityKind
 data_motion_explicit_activities[] = { 
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY, 
-  //CUPTI_ACTIVITY_KIND_MEMORY,
+// FIXME(keren): memory activity does not have a correlation id
+// CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -390,9 +407,10 @@ CUpti_ActivityKind
 kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
-//  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
-//  CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
-//  CUPTI_ACTIVITY_KIND_BRANCH,
+// FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling
+// CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
+// CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
+// CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };                                   
 
@@ -486,6 +504,20 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
+      }
+      break;
+    }
+    case CUPTI_ACTIVITY_KIND_MEMSET:
+    {
+      PRINT("CUPTI_ACTIVITY_KIND_MEMSET\n");
+      if (activity->data.memset.memKind != 0x7fffffff) {
+        int index = me_set_metric_id[activity->data.memset.memKind];
+        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memset.bytes});
+
+        metrics = hpcrun_reify_metric_set(cct_node, me_set_time_metric_id);
+        hpcrun_metric_std_inc(me_set_time_metric_id, metrics, (cct_metric_data_t){.r =
+          (activity->data.memset.end - activity->data.memset.start) / 1000.0});
       }
       break;
     }
@@ -796,6 +828,25 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_ME_TIME(hide_me_metric_time);
   me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
   hpcrun_close_kind(me_kind);
+
+#define declare_me_set_metrics(name, index) \
+  me_set_metric_id[index] = hpcrun_set_new_metric_info(me_set_kind, name);
+#define hide_me_set_metrics(name, index) \
+  hpcrun_set_display(me_set_metric_id[index], 0, 1);
+
+#define declare_me_set_metric_time(name, index) \
+  me_set_metric_id[index] = hpcrun_set_new_metric_info_and_period(me_set_kind, name, \
+    MetricFlags_ValFmt_Real, 1, metric_property_none);
+#define hide_me_set_metric_time(name, index) \
+  hpcrun_set_display(me_set_metric_id[index], 0, 1);
+
+  me_set_kind = hpcrun_metrics_new_kind();
+  FORALL_ME_SET(declare_me_set_metrics);	
+  FORALL_ME_SET(hide_me_set_metrics);
+  FORALL_ME_SET_TIME(declare_me_set_metric_time);
+  FORALL_ME_SET_TIME(hide_me_set_metric_time);
+  me_set_time_metric_id = me_set_metric_id[FORALL_ME_SET_TIME(getindex)];
+  hpcrun_close_kind(me_set_kind);
 
 #define declare_ke_metrics(name, index) \
   ke_metric_id[index] = hpcrun_set_new_metric_info(ke_kind, name);

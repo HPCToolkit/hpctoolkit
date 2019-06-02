@@ -152,6 +152,16 @@ cupti_activity_node_set
       entry->activity.data.memory.end = activity_mem->end;
       break;
     }
+    case CUPTI_ACTIVITY_KIND_MEMSET:
+    {
+      CUpti_ActivityMemset *activity_memset = (CUpti_ActivityMemset *)activity;
+      entry->activity.kind = CUPTI_ACTIVITY_KIND_MEMORY;
+      entry->activity.data.memset.memKind = activity_memset->memoryKind;
+      entry->activity.data.memset.bytes = activity_memset->bytes;
+      entry->activity.data.memset.start = activity_memset->start;
+      entry->activity.data.memset.end = activity_memset->end;
+      break;
+    }
     default:
       break;
   }
