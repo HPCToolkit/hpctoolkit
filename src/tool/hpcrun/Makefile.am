@@ -358,7 +358,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-region-debug.c        \
 	ompt/ompt-state-placeholders.c  \
 	ompt/ompt-device-map.c          \
-	ompt/ompt-parallel-region-map.c \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
@@ -447,24 +446,24 @@ if OPT_PAPI_CUPTI
 endif
 
 if OPT_ENABLE_CUDA
-    MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c \
-                    sample-sources/nvidia/cuda-state-placeholders.c
+    MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
+	sample-sources/nvidia/cuda-device-map.c			\
+	sample-sources/nvidia/cuda-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c         \
-								 sample-sources/nvidia/cubin-id-map.c               \
-								 sample-sources/nvidia/cubin-hash-map.c              \
-								 sample-sources/nvidia/cubin-symbols.c              \
-								 sample-sources/nvidia/cupti-analysis.c             \
-								 sample-sources/nvidia/cupti-api.c                  \
-								 sample-sources/nvidia/cupti-correlation-id-map.c   \
-								 sample-sources/nvidia/cupti-device-id-map.c        \
-								 sample-sources/nvidia/cupti-function-id-map.c      \
-								 sample-sources/nvidia/cupti-host-op-map.c          \
-								 sample-sources/nvidia/cupti-stack.c        \
-								 sample-sources/nvidia/cupti-node.c         \
-								 sample-sources/nvidia/cupti-record.c 
+MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
+	sample-sources/nvidia/cubin-id-map.c			\
+	sample-sources/nvidia/cubin-hash-map.c			\
+	sample-sources/nvidia/cubin-symbols.c			\
+	sample-sources/nvidia/cupti-analysis.c			\
+	sample-sources/nvidia/cupti-api.c			\
+	sample-sources/nvidia/cupti-correlation-id-map.c	\
+	sample-sources/nvidia/cupti-function-id-map.c		\
+	sample-sources/nvidia/cupti-host-op-map.c		\
+	sample-sources/nvidia/cupti-stack.c			\
+	sample-sources/nvidia/cupti-node.c			\
+	sample-sources/nvidia/cupti-record.c	 
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -818,8 +817,6 @@ if OPT_ENABLE_CUPTI
   libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
   libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
   libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
-  libhpcrun_la_LDFLAGS  += $(CUPTI_LD_FLGS)
-  libhpcrun_la_LDFLAGS  += -L/usr/lib64/nvidia -lcuda
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
@@ -873,7 +870,6 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
-  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 endif
 
 if UNW_LIBUNW

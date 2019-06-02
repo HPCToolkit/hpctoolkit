@@ -44,14 +44,21 @@ typedef enum {
 // interface functions
 //******************************************************************************
 
-extern void
+int
+cupti_bind
+(
+ void
+);
+
+
+void
 cupti_activity_process
 (
  CUpti_Activity *activity
 );
 
 
-extern void 
+void 
 cupti_buffer_alloc 
 (
  uint8_t **buffer, 
@@ -60,31 +67,31 @@ cupti_buffer_alloc
 );
 
 
-extern void
+void
 cupti_callbacks_subscribe
 (
 );
 
 
-extern void
+void
 cupti_callbacks_unsubscribe
 (
 );
 
 
-extern void
+void
 cupti_correlation_enable
 (
 );
 
 
-extern void
+void
 cupti_correlation_disable
 (
 );
 
 
-extern void
+void
 cupti_pc_sampling_enable
 (
  CUcontext context,
@@ -92,14 +99,14 @@ cupti_pc_sampling_enable
 );
 
 
-extern void
+void
 cupti_pc_sampling_disable
 (
  CUcontext context
 );
 
 
-extern cupti_set_status_t 
+cupti_set_status_t 
 cupti_monitoring_set
 (
  CUcontext context,
@@ -108,7 +115,7 @@ cupti_monitoring_set
 );
 
 
-extern void
+void
 cupti_device_timestamp_get
 (
  CUcontext context,
@@ -116,19 +123,19 @@ cupti_device_timestamp_get
 );
 
 
-extern void 
+void 
 cupti_trace_init
 (
 );
 
 
-extern void 
+void 
 cupti_trace_start
 (
 );
 
 
-extern void 
+void 
 cupti_trace_pause
 (
  CUcontext context,
@@ -136,13 +143,13 @@ cupti_trace_pause
 );
 
 
-extern void 
+void 
 cupti_trace_finalize
 (
 );
 
 
-extern void
+void
 cupti_num_dropped_records_get
 (
  CUcontext context,
@@ -151,7 +158,7 @@ cupti_num_dropped_records_get
 );
 
 
-extern bool
+bool
 cupti_buffer_cursor_advance
 (
   uint8_t *buffer,
@@ -160,7 +167,7 @@ cupti_buffer_cursor_advance
 );
 
 
-extern void 
+void 
 cupti_buffer_completion_callback
 (
  CUcontext ctx,
@@ -171,13 +178,13 @@ cupti_buffer_completion_callback
 );
 
 
-extern void
+void
 cupti_metrics_init
 (
 );
 
 
-extern void
+void
 cupti_load_callback_cuda
 (
  int module_id, 
@@ -186,7 +193,7 @@ cupti_load_callback_cuda
 );
 
 
-extern void
+void
 cupti_unload_callback_cuda
 (
  int module_id, 
@@ -199,20 +206,20 @@ cupti_unload_callback_cuda
 // finalizer
 //******************************************************************************
 
-extern void
+void
 cupti_activity_flush
 (
 );
 
 
-extern void
+void
 cupti_device_flush
 (
  void *args
 );
 
 
-extern void
+void
 cupti_device_shutdown
 (
  void *args
@@ -234,7 +241,7 @@ cupti_stop_flag_unset
 // ignores
 //******************************************************************************
 
-extern bool
+bool
 cupti_lm_contains_fn
 (
  const char *lm,
@@ -242,7 +249,7 @@ cupti_lm_contains_fn
 );
 
 
-extern bool
+bool
 cupti_modules_ignore
 (
  load_module_t *module

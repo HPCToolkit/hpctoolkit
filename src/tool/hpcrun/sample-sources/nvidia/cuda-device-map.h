@@ -47,23 +47,22 @@
 //***************************************************************************
 //
 // File:
-//   ompt-device-map.h
+//   cuda-device-map.h
 //
 // Purpose:
-//   interface for map from device id to device data structure
+//   interface definitions for map that enables one to look up device 
+//   properties given a device id
 //  
 //***************************************************************************
 
-
-#ifndef _hpctoolkit_ompt_device_map_h_
-#define _hpctoolkit_ompt_device_map_h_
+#ifndef _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
+#define _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
 
 //*****************************************************************************
 // system includes
 //*****************************************************************************
 
 #include <stdint.h>
-#include <omp-tools.h>
 
 
 
@@ -71,7 +70,12 @@
 // local includes
 //*****************************************************************************
 
+#if 0
 #include <hpcrun/cct/cct.h>
+#include <cuda.h>
+#endif
+
+#include "cuda-api.h"
 
 
 
@@ -79,7 +83,7 @@
 // type definitions 
 //*****************************************************************************
 
-typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
+typedef struct cuda_device_map_entry_s cuda_device_map_entry_t;
 
 
 
@@ -87,41 +91,31 @@ typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
 // interface operations
 //*****************************************************************************
 
-ompt_device_map_entry_t *
-ompt_device_map_lookup
+cuda_device_map_entry_t *
+cuda_device_map_lookup
 (
- uint64_t id
+ uint32_t id
 );
 
 
-void 
-ompt_device_map_insert
+void
+cuda_device_map_insert
 (
- uint64_t device_id, 
- ompt_device_t *ompt_device, 
- const char *type
+ uint32_t device
 );
 
 
-bool 
-ompt_device_map_refcnt_update
+void
+cuda_device_map_delete
 (
- uint64_t device_id, 
- int val
+ uint32_t device
 );
 
 
-uint64_t 
-ompt_device_map_entry_refcnt_get
+cuda_device_property_t *
+cuda_device_map_entry_device_property_get
 (
- ompt_device_map_entry_t *entry
-);
-
-
-ompt_device_t *
-ompt_device_map_entry_device_get
-(
- ompt_device_map_entry_t *entry
+ cuda_device_map_entry_t *entry
 );
 
 #endif

@@ -44,84 +44,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   ompt-device-map.h
-//
-// Purpose:
-//   interface for map from device id to device data structure
-//  
-//***************************************************************************
+#ifndef __DYNLIB_H__
+#define __DYNLIB_H__
 
+//******************************************************************************
+// macros
+//******************************************************************************
 
-#ifndef _hpctoolkit_ompt_device_map_h_
-#define _hpctoolkit_ompt_device_map_h_
+#define dynlib_open_check(retcode, handle, libname, flags) \
+  if (!retcode) retcode |= dynlib_open(handle, #libname, flags)
 
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <stdint.h>
-#include <omp-tools.h>
+#define dynlib_sym_check(retcode, fn, handle, fname) \
+  if (!retcode) retcode |= dynlib_sym(fn, handle, #fname)
 
 
 
-//*****************************************************************************
-// local includes
-//*****************************************************************************
-
-#include <hpcrun/cct/cct.h>
-
-
-
-//*****************************************************************************
-// type definitions 
-//*****************************************************************************
-
-typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
-
-
-
-//*****************************************************************************
+//******************************************************************************
 // interface operations
-//*****************************************************************************
+//******************************************************************************
 
-ompt_device_map_entry_t *
-ompt_device_map_lookup
+int
+dynlib_open
 (
- uint64_t id
+  void **handle,
+  const char *libname,
+  int flags
 );
 
 
-void 
-ompt_device_map_insert
+int 
+dynlib_sym
 (
- uint64_t device_id, 
- ompt_device_t *ompt_device, 
- const char *type
+   void **fn,
+   void *handle,
+   const char *fname
 );
 
-
-bool 
-ompt_device_map_refcnt_update
-(
- uint64_t device_id, 
- int val
-);
-
-
-uint64_t 
-ompt_device_map_entry_refcnt_get
-(
- ompt_device_map_entry_t *entry
-);
-
-
-ompt_device_t *
-ompt_device_map_entry_device_get
-(
- ompt_device_map_entry_t *entry
-);
-
-#endif
+#endif // __DYNLIB_H__

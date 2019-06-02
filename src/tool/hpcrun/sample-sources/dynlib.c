@@ -44,84 +44,67 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   ompt-device-map.h
-//
-// Purpose:
-//   interface for map from device id to device data structure
-//  
-//***************************************************************************
 
+//******************************************************************************
+// global includes
+//******************************************************************************
 
-#ifndef _hpctoolkit_ompt_device_map_h_
-#define _hpctoolkit_ompt_device_map_h_
-
-//*****************************************************************************
-// system includes
-//*****************************************************************************
-
-#include <stdint.h>
-#include <omp-tools.h>
+#include <stdio.h> // import NULL
+#include <dlfcn.h>
 
 
 
-//*****************************************************************************
+//******************************************************************************
 // local includes
-//*****************************************************************************
+//******************************************************************************
 
-#include <hpcrun/cct/cct.h>
+#include <monitor.h>
 
-
-
-//*****************************************************************************
-// type definitions 
-//*****************************************************************************
-
-typedef struct ompt_device_map_entry_s ompt_device_map_entry_t;
+#include "dynlib.h"
 
 
 
-//*****************************************************************************
+//******************************************************************************
 // interface operations
-//*****************************************************************************
+//******************************************************************************
 
-ompt_device_map_entry_t *
-ompt_device_map_lookup
+int
+dynlib_open
 (
- uint64_t id
-);
+  void **handle,
+  const char *libname,
+  int flags
+)
+{
+#ifdef HPCRUN_STATIC_LINK
+  int retval = 1;
+#else
+  *handle = monitor_real_dlopen(libname, flags);
 
-
-void 
-ompt_device_map_insert
-(
- uint64_t device_id, 
- ompt_device_t *ompt_device, 
- const char *type
-);
-
-
-bool 
-ompt_device_map_refcnt_update
-(
- uint64_t device_id, 
- int val
-);
-
-
-uint64_t 
-ompt_device_map_entry_refcnt_get
-(
- ompt_device_map_entry_t *entry
-);
-
-
-ompt_device_t *
-ompt_device_map_entry_device_get
-(
- ompt_device_map_entry_t *entry
-);
-
+  int retval = (*handle == NULL);
 #endif
+  return retval;
+}
+
+
+
+int 
+dynlib_sym
+(
+   void *handle,
+   const char *fname,
+   void **fn
+)
+{
+#ifdef HPCRUN_STATIC_LINK
+  int retval = 1;
+#else
+  (void) dlerror(); // clear any error that may be pending
+
+  *fn = dlsym(handle, fname);
+  char* e = dlerror();
+
+  int retval = (e != NULL);
+#endif
+  return retval;
+}

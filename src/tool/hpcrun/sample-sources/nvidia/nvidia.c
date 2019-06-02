@@ -64,6 +64,10 @@
 
 #include <pthread.h>
 
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#endif
+
 /******************************************************************************
  * libmonitor
  *****************************************************************************/
@@ -76,6 +80,7 @@
 
 #include "nvidia.h"
 #include "cuda-state-placeholders.h"
+#include "cuda-api.h"
 #include "cupti-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
@@ -740,8 +745,12 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+#ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA) ||
     hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING);
+#else
+  return false;
+#endif
 
 #if 0
     hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
@@ -756,6 +765,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+
 
 #define getindex(name, index) index
 #define declare_stall_metrics(name, index) \
@@ -961,6 +971,18 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *sm_efficiency_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
+
+#ifndef HPCRUN_STATIC_LINK
+  if (cuda_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+
+  if (cupti_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
 
   // Fetch the event string for the sample source
   // only one event is allowed
