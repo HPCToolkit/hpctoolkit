@@ -83,7 +83,7 @@
 #define DYN_FN_NAME(f) f ## _fn
 
 #define CHK_DLOPEN(h, lib, flags)		      \
-  void* h = monitor_real_dlopen(lib, flags);          \
+  void* h = dlopen(lib, flags);          \
   if (!h) {					      \
     return -1;					      \
   }                                                   

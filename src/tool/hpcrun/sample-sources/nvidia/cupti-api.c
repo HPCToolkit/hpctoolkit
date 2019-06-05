@@ -88,6 +88,7 @@
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/module-ignore-map.h>
+#include <hpcrun/main.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -473,7 +474,7 @@ cupti_path
   // note: a version of this file with a more specific name may 
   // already be loaded. thus, even if the dlopen fails, we search with
   // dl_iterate_phdr.
-  void *h = dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
+  void *h = monitor_real_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
 
   if (dl_iterate_phdr(cuda_path, buffer)) {
     // invariant: buffer contains CUDA home 
@@ -481,7 +482,7 @@ cupti_path
     path = buffer;
   }
 
-  if (h) dlclose(h);
+  if (h) monitor_real_dlclose(h);
 
   return path;
 }
@@ -496,7 +497,9 @@ cupti_bind
 {
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
+  hpcrun_force_dlopen(true);
   CHK_DLOPEN(cupti, cupti_path(), RTLD_NOW | RTLD_GLOBAL);
+  hpcrun_force_dlopen(false);
 
 #define CUPTI_BIND(fn) \
   CHK_DLSYM(cupti, fn);
