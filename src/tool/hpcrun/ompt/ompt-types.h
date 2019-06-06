@@ -68,14 +68,6 @@
 //******************************************************************************
 // macros
 //******************************************************************************
-
-#define FOREACH_OMPT_PLACEHOLDER_FN(macro)  \
-    macro (ompt_idle)                       \
-    macro (ompt_overhead)                   \
-    macro (ompt_barrier_wait)               \
-    macro (ompt_task_wait)                  \
-    macro (ompt_mutex_wait)
-
 #define task_data_invalid ((void*)~0)
 #define ompt_base_nil ((ompt_base_t*)0)
 #define ompt_base_invalid ((ompt_base_t*)~0)

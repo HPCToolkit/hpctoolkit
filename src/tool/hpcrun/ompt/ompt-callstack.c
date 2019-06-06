@@ -60,7 +60,7 @@
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
-#include "ompt-state-placeholders.h"
+#include "ompt-placeholders.h"
 #include "ompt-thread.h"
 
 #if defined(HOST_CPU_PPC) 
@@ -303,14 +303,14 @@ ompt_elide_runtime_frame(
     case ompt_state_wait_barrier_explicit:
       // collapse barriers on non-master ranks 
       if (hpcrun_ompt_get_thread_num(0) != 0) {
-	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait);
+	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait_state);
 	goto return_label;
       }
       break; 
     case ompt_state_idle:
       // collapse idle state
       TD_GET(omp_task_context) = 0;
-      collapse_callstack(bt, &ompt_placeholders.ompt_idle);
+      collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
       goto return_label;
     default:
       break;
@@ -529,7 +529,7 @@ ompt_elide_runtime_frame(
       //------------------------------------------------------------------------
       *bt_outer = *bt_inner;
       TD_GET(omp_task_context) = 0;
-      collapse_callstack(bt, &ompt_placeholders.ompt_idle);
+      collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
     }
   }
 
@@ -540,7 +540,7 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) {
-      set_frame(*bt_outer, &ompt_placeholders.ompt_idle);
+      set_frame(*bt_outer, &ompt_placeholders.ompt_idle_state);
       *bt_inner = *bt_outer;
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;

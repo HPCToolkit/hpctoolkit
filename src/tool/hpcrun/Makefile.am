@@ -356,7 +356,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-queues.c              \
 	ompt/ompt-region.c              \
 	ompt/ompt-region-debug.c        \
-	ompt/ompt-state-placeholders.c  \
+	ompt/ompt-placeholders.c        \
 	ompt/ompt-device-map.c          \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \

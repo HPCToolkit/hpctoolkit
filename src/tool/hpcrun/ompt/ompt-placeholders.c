@@ -63,7 +63,23 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/hpcrun-initializers.h>
 
-#include "ompt-state-placeholders.h"
+#include "ompt-placeholders.h"
+
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
+
+#define initialize_placeholder(f)               \
+  {                                             \
+    void * fn = (void *) f;			\
+    init_placeholder(&ompt_placeholders.f, fn); \
+  }
+
+#define declare_placeholder_function(fn)	\
+  void fn(void) { }
 
 
 
@@ -84,143 +100,27 @@ static closure_t ompt_placeholder_init_closure;
 
 
 //***************************************************************************
-// private operations
+// placeholder functions
 //***************************************************************************
 
 //----------------------------------------------------------------------------
-// placeholder functions for blame shift reporting
-//----------------------------------------------------------------------------
+// Definitions of placeholder functions used to represent an OpenMP
+// state, operation, or parallel region. These placeholder functions
+// are not meant to be invoked. Metrics associated with a placeholder
+// are associated with the state, operation, or parallel region in a
+// user's application. Metrics associated with a placeholder do not
+// represent resource consumption by HPCToolkit.
+//
+// Placeholder functions are defined as global functions because we
+// have seen optimizers remove names of static functions. We need
+// placeholder names to be preserved so that we can rewrite them into
+// strings that will be visible in hpcviewer and hpctraceviewer.
+// ----------------------------------------------------------------------------
 
-void 
-ompt_idle_state
-(
-  void
-)
-{
-  // this function is a placeholder that represents the calling context of
-  // idle OpenMP worker threads. It is not meant to be invoked.
-}
-
-
-void 
-ompt_overhead_state
-(
-  void
-)
-{
-  // this function is a placeholder that represents the calling context of
-  // threads working in the OpenMP runtime.  It is not meant to be invoked.
-}
+FOREACH_OMPT_PLACEHOLDER_FN(declare_placeholder_function)
 
 
-void 
-ompt_barrier_wait_state
-(
-  void
-)
-{
-  // this function is a placeholder that represents the calling context of
-  // threads waiting for a barrier in the OpenMP runtime. It is not meant 
-  // to be invoked.
-}
 
-
-void 
-ompt_task_wait_state
-(
-  void
-)
-{
-  // this function is a placeholder that represents the calling context of
-  // threads waiting for a task in the OpenMP runtime. It is not meant 
-  // to be invoked.
-}
-
-
-void 
-ompt_mutex_wait_state
-(
-  void
-)
-{
-  // this function is a placeholder that represents the calling context of
-  // threads waiting for a mutex in the OpenMP runtime. It is not meant 
-  // to be invoked.
-}
-
-
-void 
-ompt_region_unresolved
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-
-void 
-ompt_tgt_alloc
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-
-void 
-ompt_tgt_delete
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-
-void 
-ompt_tgt_copyin
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-
-void 
-ompt_tgt_copyout
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-
-void 
-ompt_tgt_kernel
-(
-  void
-)
-{
-  // this function is a placeholder that represents that the calling context 
-  // of an OpenMP region is unresolved. This function is not meant to be
-  // invoked
-}
-
-  
 //***************************************************************************
 // private operations
 //***************************************************************************
@@ -245,15 +145,24 @@ init_placeholder
   void *pc
 )
 {
+  p->pc = canonicalize_placeholder(pc);
+  p->pc_norm = hpcrun_normalize_ip(p->pc, pc_to_lm(p->pc));
+}
+
+
+static void
+ompt_init_placeholders_internal
+(
+ void *arg
+)
+{
   // protect against receiving a sample here. if we do, we may get 
   // deadlock trying to acquire a lock associated with 
   // fnbounds_enclosing_addr
   hpcrun_safe_enter();
-  {
-    void *cpc = canonicalize_placeholder(pc);
-    p->pc = cpc;
-    p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
-  }
+
+  FOREACH_OMPT_PLACEHOLDER_FN(initialize_placeholder)
+
   hpcrun_safe_exit();
 }
 
@@ -262,50 +171,18 @@ init_placeholder
 // interface operations
 //***************************************************************************
 
-
-#define OMPT_PLACEHOLDER_MACRO(f)               \
-  {                                             \
-    void * fn = (void *) ompt_fn_lookup(#f);    \
-    if (!fn) fn = (void *) f ## _state;         \
-    init_placeholder(&ompt_placeholders.f, fn); \
-  }
-
-void
-ompt_init_placeholders_internal
-(
-  void *arg
-)
-{
-  ompt_function_lookup_t ompt_fn_lookup = (ompt_function_lookup_t) arg;
-
-  FOREACH_OMPT_PLACEHOLDER_FN(OMPT_PLACEHOLDER_MACRO)
-
-  // placeholder for unresolved regions 
-  //
-  // this placeholder is used when the context for a parallel region remains 
-  // unresolved at the end of a program execution. this can happen if a 
-  // program execution is interrupted before the region is resolved. 
-  init_placeholder(&ompt_placeholders.region_unresolved, ompt_region_unresolved);
-  init_placeholder(&ompt_placeholders.ompt_op_alloc, ompt_tgt_alloc);
-  init_placeholder(&ompt_placeholders.ompt_op_copy_in, ompt_tgt_copyin);
-  init_placeholder(&ompt_placeholders.ompt_op_copy_out, ompt_tgt_copyout);
-  init_placeholder(&ompt_placeholders.ompt_op_delete, ompt_tgt_delete);
-  init_placeholder(&ompt_placeholders.ompt_op_kernel_submit, ompt_tgt_kernel);
-}
-
-
 // placeholders can only be initialized after fnbounds module is initialized.
 // for this reason, defer placeholder initialization until the end of 
 // hpcrun initialization.
 void
 ompt_init_placeholders
 (
-  ompt_function_lookup_t ompt_fn_lookup
+  void
 )
 {
   // initialize closure for initializer
   ompt_placeholder_init_closure.fn = ompt_init_placeholders_internal; 
-  ompt_placeholder_init_closure.arg = ompt_fn_lookup;
+  ompt_placeholder_init_closure.arg = 0;
 
   // register closure
   hpcrun_initializers_defer(&ompt_placeholder_init_closure);

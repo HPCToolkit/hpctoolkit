@@ -68,7 +68,7 @@
 
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
-#include "ompt-state-placeholders.h"
+#include "ompt-placeholders.h"
 
 #include "sample-sources/nvidia/cupti-api.h"
 #include "sample-sources/nvidia/cupti-record.h"
@@ -374,11 +374,11 @@ ompt_target_callback
   td->overhead--;
 }
 
-#define FOREACH_OMPT_DATA_OP(macro)                                        \
-  macro(op, ompt_target_data_alloc, ompt_op_alloc)                \
-  macro(op, ompt_target_data_transfer_to_device, ompt_op_copy_in)    \
-  macro(op, ompt_target_data_transfer_from_device, ompt_op_copy_out) \
-  macro(op, ompt_target_data_delete, ompt_op_delete)
+#define FOREACH_OMPT_DATA_OP(macro)				     \
+  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
+  macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
+  macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
+  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout) 
 
 void
 ompt_data_op_callback(ompt_id_t target_id,
@@ -388,7 +388,7 @@ ompt_data_op_callback(ompt_id_t target_id,
                       void *device_addr,
                       size_t bytes)
 {
-  ompt_placeholder_t op = ompt_placeholders.ompt_op_none;
+  ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
@@ -410,7 +410,7 @@ ompt_submit_callback(ompt_id_t target_id,
                      ompt_id_t host_op_id)
 {
   PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
-  hpcrun_ompt_op_id_notify(host_op_id, ompt_placeholders.ompt_op_kernel_submit);
+  hpcrun_ompt_op_id_notify(host_op_id, ompt_placeholders.ompt_tgt_kernel);
   PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
 }
 

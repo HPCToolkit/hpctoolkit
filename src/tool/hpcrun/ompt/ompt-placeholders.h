@@ -44,10 +44,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __OMPT_STATE_PLACEHOLDERS_H__
-#define __OMPT_STATE_PLACEHOLDERS_H__
-
-
+#ifndef __OMPT_PLACEHOLDERS_H__
+#define __OMPT_PLACEHOLDERS_H__
 
 //***************************************************************************
 // local include files
@@ -57,6 +55,35 @@
 
 #include "ompt-types.h"
 
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
+#define FOREACH_OMPT_PLACEHOLDER_FN(macro)		\
+  /**** OpenMP state placeholders ****/			\
+  macro (ompt_idle_state)				\
+  macro (ompt_overhead_state)				\
+  macro (ompt_barrier_wait_state)			\
+  macro (ompt_task_wait_state)				\
+  macro (ompt_mutex_wait_state)				\
+							\
+  /**** OpenMP target operation placeholders ****/	\
+  macro (ompt_tgt_alloc)				\
+  macro (ompt_tgt_delete)				\
+  macro (ompt_tgt_copyin)				\
+  macro (ompt_tgt_copyout)				\
+  macro (ompt_tgt_kernel)				\
+  macro (ompt_tgt_none)					\
+  							\
+  /**** OpenMP unresolved parallel region ****/		\
+  /* The placeholder below is used when the context */	\
+  /* for a parallel region remains unresolved at    */	\
+  /* the end of a program execution. This can       */	\
+  /* happen if an execution is interrupted before   */	\
+  /* the region is resolved.                        */	\
+  macro (ompt_region_unresolved)
 
 
 //***************************************************************************
@@ -70,16 +97,9 @@ typedef struct {
 
 
 typedef struct {
-#define declare_ph(f) ompt_placeholder_t f;
-  FOREACH_OMPT_PLACEHOLDER_FN(declare_ph);
-  declare_ph(region_unresolved);
-  declare_ph(ompt_op_none);
-  declare_ph(ompt_op_alloc);
-  declare_ph(ompt_op_copy_in);
-  declare_ph(ompt_op_copy_out);
-  declare_ph(ompt_op_delete);
-  declare_ph(ompt_op_kernel_submit);
-#undef declare_ph 
+#define declare_ompt_ph(f) ompt_placeholder_t f;
+  FOREACH_OMPT_PLACEHOLDER_FN(declare_ompt_ph);
+#undef declare_ompt_ph 
 } ompt_placeholders_t; 
 
 
@@ -99,7 +119,7 @@ extern ompt_placeholders_t ompt_placeholders;
 void
 ompt_init_placeholders
 (
- ompt_function_lookup_t ompt_fn_lookup
+ void
 );
 
 #endif
