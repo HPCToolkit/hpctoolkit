@@ -61,17 +61,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <hpcrun/memory/hpcrun-malloc.h>
+
 #include <gelf.h>
-
-
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "cubin-symbols.h"
-
-
 
 //******************************************************************************
 // macros
@@ -87,8 +85,6 @@
 
 #define CUDA_SYMBOL_DEBUG 0
 
-
-
 //******************************************************************************
 // type definitions
 //******************************************************************************
@@ -97,8 +93,6 @@ typedef struct Elf_SectionVector {
    int nsections;
    Elf_Scn **sections;
 } Elf_SectionVector;
-
-
 
 //******************************************************************************
 // private functions
@@ -122,9 +116,9 @@ countSections
 static Elf_SectionVector *
 newSectionVector(int nsections)
 {
-  Elf_SectionVector *v = (Elf_SectionVector *) malloc(sizeof(Elf_SectionVector));
+  Elf_SectionVector *v = (Elf_SectionVector *) hpcrun_malloc(sizeof(Elf_SectionVector));
   v->nsections = nsections;
-  v->sections = (Elf_Scn **) calloc(nsections, sizeof(Elf_Scn *));
+  v->sections = (Elf_Scn **) hpcrun_malloc(nsections * sizeof(Elf_Scn *));
   return v;
 }
 
@@ -171,9 +165,9 @@ sectionOffset
 Elf_SymbolVector *
 newSymbolsVector(int nsymbols)
 {
-  Elf_SymbolVector *v = (Elf_SymbolVector *) malloc(sizeof(Elf_SymbolVector));
+  Elf_SymbolVector *v = (Elf_SymbolVector *) hpcrun_malloc(sizeof(Elf_SymbolVector));
   v->nsymbols = nsymbols;
-  v->symbols = (unsigned long *) calloc(nsymbols, sizeof(unsigned long));
+  v->symbols = (unsigned long *) hpcrun_malloc(nsymbols * sizeof(unsigned long));
   return v;
 }
 
@@ -211,7 +205,6 @@ relocateSymbolsHelper
 	            // update each function symbol's offset to match the new offset of the
 	            // text section that contains it.
 	            sym.st_value = (Elf64_Addr) s_offset;
-	            gelf_update_sym(datap, i, &sym);
 	            symbol_values->symbols[i] = s_offset;
 	          }
 	        default: break;
@@ -258,7 +251,6 @@ computeSymbolOffsets
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
     symbol_values = relocateSymbols(cubin_elf, sections);
-    free(sections);
   }
   return symbol_values;
 }
