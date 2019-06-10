@@ -179,12 +179,6 @@ cupti_buffer_completion_callback
 
 
 void
-cupti_metrics_init
-(
-);
-
-
-void
 cupti_load_callback_cuda
 (
  int module_id, 

@@ -231,8 +231,6 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
-static kind_info_t *cupti_host_op_kind;
-  
 static __thread bool cupti_stop_flag = false;
 
 static bool cupti_correlation_enabled = false;
@@ -1828,23 +1826,6 @@ cupti_activity_process
     break;
   }
 }
-
-
-
-//******************************************************************************
-// metrics init
-//******************************************************************************
-
-extern void
-cupti_metrics_init
-(
-)
-{
-  cupti_host_op_kind = hpcrun_metrics_new_kind();
-  hpcrun_close_kind(cupti_host_op_kind);
-}
-
-
 
 //******************************************************************************
 // finalizer

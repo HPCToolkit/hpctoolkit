@@ -991,7 +991,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &pc_sampling_frequency, pc_sampling_frequency_default);
   if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
-    cupti_metrics_init();
     cuda_init_placeholders();
     
     // Register hpcrun callbacks
