@@ -113,9 +113,9 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_ACTIVITY_DEBUG 0
+#define CUPTI_API_DEBUG 0
 
-#if CUPTI_ACTIVITY_DEBUG
+#if CUPTI_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define PRINT(...)
@@ -157,7 +157,6 @@
   macro(cuptiGetResultString)				\
   macro(cuptiSubscribe)					\
   macro(cuptiUnsubscribe)
-
 
 
 //******************************************************************************
@@ -550,7 +549,6 @@ cupti_error_report
 } 
 
 
-
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -746,7 +744,7 @@ cupti_subscriber_callback
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) 
-	rd->resourceDescriptor;
+        rd->resourceDescriptor;
       PRINT("loaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 
@@ -755,7 +753,7 @@ cupti_subscriber_callback
 
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) 
-	rd->resourceDescriptor;
+        rd->resourceDescriptor;
       PRINT("unloaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 
@@ -1219,7 +1217,7 @@ cupti_callbacks_subscribe
     (void *) NULL));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (1, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+    (1, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
 		    (1, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
@@ -1375,27 +1373,27 @@ cupti_sample_process
       cupti_function_id_map_lookup(sample->functionId);
     if (entry != NULL) {
       uint32_t function_index = 
-	cupti_function_id_map_entry_function_index_get(entry);
+        cupti_function_id_map_entry_function_index_get(entry);
       uint32_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
       ip_normalized_t ip = 
-	cubin_id_transform(cubin_id, function_index, sample->pcOffset);
+        cubin_id_transform(cubin_id, function_index, sample->pcOffset);
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = 
-	cupti_host_op_map_lookup(external_id);
+        cupti_host_op_map_lookup(external_id);
       if (host_op_entry != NULL) {
         PRINT("external_id %d\n", external_id);
         if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
           cupti_correlation_id_map_delete(sample->correlationId);
         }
         cct_node_t *host_op_node = 
-	  cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+          cupti_host_op_map_entry_host_op_node_get(host_op_entry);
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
           PRINT("frm %d\n", ip);
           cupti_record_t *record = 
-	    cupti_host_op_map_entry_record_get(host_op_entry);
+            cupti_host_op_map_entry_record_get(host_op_entry);
           cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, 
-				     record);
+            record);
         }
       } else {
         PRINT("host_map_entry %d not found\n", external_id);
@@ -1453,14 +1451,14 @@ cupti_sampling_record_info_process
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cupti_record_t *record = 
-	cupti_host_op_map_entry_record_get(host_op_entry);
+        cupti_host_op_map_entry_record_get(host_op_entry);
       cct_node_t *host_op_node = 
-	cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)sri, host_op_node, record);
     }
     // sample record info is the last record for a given correlation id
     if (!cupti_host_op_map_total_samples_update
-	(external_id, sri->totalSamples - sri->droppedSamples)) {
+      (external_id, sri->totalSamples - sri->droppedSamples)) {
       cupti_correlation_id_map_delete(sri->correlationId);
     }
   }
@@ -1503,18 +1501,18 @@ cupti_memcpy_process
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cupti_record_t *record = 
-	cupti_host_op_map_entry_record_get(host_op_entry);
+        cupti_host_op_map_entry_record_get(host_op_entry);
       cct_node_t *host_op_node = 
-	cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, 
-				 host_op_node, record);
+        host_op_node, record);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   } else {
     PRINT("Memcpy copy CorrelationId %u cannot be found\n", 
-	  activity->correlationId);
+      activity->correlationId);
   }
   PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy copy kind %u\n", activity->copyKind);
@@ -1537,11 +1535,11 @@ cupti_memcpy2_process
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = 
-	cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = 
-	cupti_host_op_map_entry_record_get(host_op_entry);
+        cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, 
-				 host_op_node, record);
+        host_op_node, record);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //cupti_host_op_map_delete(external_id);
     }
@@ -1637,11 +1635,11 @@ cupti_kernel_process
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = 
-	cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = 
-	cupti_host_op_map_entry_record_get(host_op_entry);
+        cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, 
-				 host_op_node, record);
+        host_op_node, record);
       // do not delete it because it shares external_id with activity samples
     }
   }
@@ -1665,11 +1663,11 @@ cupti_synchronization_process
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = 
-	cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
       cupti_record_t *record = 
-	cupti_host_op_map_entry_record_get(host_op_entry);
+        cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, 
-				 host_op_node, record);
+        host_op_node, record);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //cupti_host_op_map_delete(external_id);
     }
@@ -1727,20 +1725,20 @@ cupti_instruction_process
       cupti_function_id_map_lookup(function_id);
     if (entry != NULL) {
       uint32_t function_index = 
-	cupti_function_id_map_entry_function_index_get(entry);
+        cupti_function_id_map_entry_function_index_get(entry);
       uint32_t cubin_id = cupti_function_id_map_entry_cubin_id_get(entry);
       ip_normalized_t ip = 
-	cubin_id_transform(cubin_id, function_index, pc_offset);
+        cubin_id_transform(cubin_id, function_index, pc_offset);
       cct_addr_t frm = { .ip_norm = ip };
       cupti_host_op_map_entry_t *host_op_entry = 
-	cupti_host_op_map_lookup(external_id);
+        cupti_host_op_map_lookup(external_id);
       if (host_op_entry != NULL) {
         cct_node_t *host_op_node = 
-	  cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+          cupti_host_op_map_entry_host_op_node_get(host_op_entry);
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
           cupti_record_t *record = 
-	    cupti_host_op_map_entry_record_get(host_op_entry);
+            cupti_host_op_map_entry_record_get(host_op_entry);
           cupti_cupti_activity_apply(activity, cct_child, record);
         }
       }
@@ -1901,6 +1899,6 @@ cupti_activity_handle(cupti_node_t *node)
     cupti_entry_activity_t *activity_entry = 
       (cupti_entry_activity_t *)node->entry;
     cupti_activity_attribute(&(activity_entry->activity), 
-			     activity_entry->cct_node);
+      activity_entry->cct_node);
   }
 }
