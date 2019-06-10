@@ -738,8 +738,6 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-  cupti_stop_flag_set();
-  cupti_record_init();
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -764,6 +762,10 @@ cupti_subscriber_callback
       cupti_enable_activities(rd->context);
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
+    // stop flag is only set if a driver or runtime api called
+    cupti_stop_flag_set();
+    cupti_record_init();
+
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
 
@@ -900,8 +902,13 @@ cupti_subscriber_callback
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
+    // stop flag is only set if a driver or runtime api called
+    cupti_stop_flag_set();
+    cupti_record_init();
+
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
+
     bool is_valid_cuda_op = false;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
