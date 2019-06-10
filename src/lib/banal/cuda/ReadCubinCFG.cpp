@@ -19,6 +19,7 @@
 
 
 #include <lib/binutils/VMAInterval.hpp>
+#include <lib/support/FileUtil.hpp>
 
 
 #include "CudaCFGFactory.hpp"
@@ -73,6 +74,8 @@ dumpCubin
 static void
 parseDotCFG
 (
+ const std::string &search_path,
+ const std::string &elf_filename,
  const std::string &dot_filename, 
  const std::string &cubin,
  int cuda_arch,
@@ -97,6 +100,8 @@ parseDotCFG
 
   // Store functions that are not parsed by nvdisasm
   std::vector<Symbol *> unparsable_function_symbols;
+  // Store functions that are parsed by nvdisasm
+  std::vector<Symbol *> parsed_function_symbols;
   // Remove functions that share the same names
   std::map<std::string, CudaParse::Function *> function_map;
   // Test valid symbols
@@ -106,6 +111,7 @@ parseDotCFG
       const std::string cmd = "nvdisasm -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
       if (system(cmd.c_str()) == 0) {
+        parsed_function_symbols.push_back(symbol);
         // Only parse valid symbols
         CudaParse::GraphReader graph_reader(dot_filename);
         CudaParse::Graph graph;
@@ -234,6 +240,28 @@ parseDotCFG
       std::cout << std::endl;
     }
   }
+
+  // Step 5: create a nvidia directory and dump dot files
+  if (parsed_function_symbols.size() > 0) {
+    const std::string dot_dir = search_path + "/nvidia";
+    int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
+    if (ret != 0 && errno != EEXIST) {
+      std::cout << "WARNING: failed to mkdir: " << dot_dir << std::endl;
+      return;
+    }
+
+    const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
+    std::string cmd = "nvdisasm -cfg -poff -fun ";
+    for (auto *symbol : parsed_function_symbols) {
+      auto index = symbol->getIndex();
+      cmd += std::to_string(index) + ",";
+    }
+    cmd += " " + cubin + " > " + dot_output;
+
+    if (system(cmd.c_str()) != 0) {
+      std::cout << "WARNING: failed to dump static database file: " << dot_output << std::endl;
+    }
+  }
 }
 
 
@@ -253,6 +281,7 @@ getFilename
 bool
 readCubinCFG
 (
+ const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
@@ -272,7 +301,7 @@ readCubinCFG
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
       std::vector<CudaParse::Function *> functions;
-      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
+      parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
       CFGFactory *cfg_fact = new CudaCFGFactory(functions);
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
