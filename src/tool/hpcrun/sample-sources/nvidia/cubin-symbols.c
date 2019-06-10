@@ -145,6 +145,7 @@ elfGetSectionVector
   return NULL;
 }
 
+
 static size_t
 sectionOffset
 (
@@ -201,11 +202,7 @@ relocateSymbolsHelper
 	      switch(symtype) {
 	        case STT_FUNC:
 	          {
-	            int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
-	            // update each function symbol's offset to match the new offset of the
-	            // text section that contains it.
-	            sym.st_value = (Elf64_Addr) s_offset;
-	            symbol_values->symbols[i] = s_offset;
+	            symbol_values->symbols[i] = sectionOffset(sections, section_index(sym.st_shndx));
 	          }
 	        default: break;
 	      }
@@ -214,6 +211,7 @@ relocateSymbolsHelper
   }
   return symbol_values;
 }
+
 
 static Elf_SymbolVector *
 relocateSymbols
@@ -267,8 +265,6 @@ printSymbols
     printf("symbol %d: 0x%lx\n", i, symbols->symbols[i]);
   }
 }
-
-
 
 //******************************************************************************
 // interface functions
