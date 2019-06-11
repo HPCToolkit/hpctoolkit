@@ -104,9 +104,6 @@ typedef struct perf_mmap_data_s {
   u32   header_misc; /* information about the sample */
   u32   header_type; /* either sample record or other */
 
-  // only for PERF_RECORD_SWITCH
-  u64 	context_switch_time;
-
 } perf_mmap_data_t;
 
 
