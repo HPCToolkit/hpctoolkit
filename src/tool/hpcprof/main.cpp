@@ -74,6 +74,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath-CudaCFG.hpp>
+#include <lib/analysis/CallPath-CudaInstruction.hpp>
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
@@ -206,6 +207,8 @@ realmain(int argc, char* const* argv)
 						 args.doNormalizeTy, printProgress);
 
   Analysis::CallPath::transformCudaCFGMain(*prof);
+
+  Analysis::CallPath::overlayCudaInstructionsMain(*prof, args.instructionFiles);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT

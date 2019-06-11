@@ -143,6 +143,7 @@ am__objects_1 = cuda/libHPCbanal_la-CFGParser.lo \
 	cuda/libHPCbanal_la-CudaBlock.lo \
 	cuda/libHPCbanal_la-CudaCodeSource.lo \
 	cuda/libHPCbanal_la-ReadCubinCFG.lo \
+	cuda/libHPCbanal_la-InstructionAnalyzer.lo \
 	libHPCbanal_la-ElfHelper.lo libHPCbanal_la-Fatbin.lo \
 	libHPCbanal_la-InputFile.lo libHPCbanal_la-RelocateCubin.lo \
 	libHPCbanal_la-Struct.lo libHPCbanal_la-Struct-Inline.lo \
@@ -513,6 +514,7 @@ MYSOURCES = \
 	cuda/CudaBlock.cpp  \
 	cuda/CudaCodeSource.cpp  \
 	cuda/ReadCubinCFG.cpp \
+	cuda/InstructionAnalyzer.cpp \
 	ElfHelper.cpp \
 	Fatbin.cpp \
 	InputFile.cpp \
@@ -615,6 +617,8 @@ cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/$(am__dirstamp) \
 	cuda/$(DEPDIR)/$(am__dirstamp)
 cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/$(am__dirstamp) \
 	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-InstructionAnalyzer.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbanal.la: $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_DEPENDENCIES) $(EXTRA_libHPCbanal_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbanal_la_LINK)  $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_LIBADD) $(LIBS)
@@ -644,6 +648,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-InstructionAnalyzer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo@am__quote@
 
 .cpp.o:
@@ -718,6 +723,13 @@ cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/ReadCubinCFG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/ReadCubinCFG.cpp' object='cuda/libHPCbanal_la-ReadCubinCFG.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
+
+cuda/libHPCbanal_la-InstructionAnalyzer.lo: cuda/InstructionAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-InstructionAnalyzer.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-InstructionAnalyzer.Tpo -c -o cuda/libHPCbanal_la-InstructionAnalyzer.lo `test -f 'cuda/InstructionAnalyzer.cpp' || echo '$(srcdir)/'`cuda/InstructionAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-InstructionAnalyzer.Tpo cuda/$(DEPDIR)/libHPCbanal_la-InstructionAnalyzer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/InstructionAnalyzer.cpp' object='cuda/libHPCbanal_la-InstructionAnalyzer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-InstructionAnalyzer.lo `test -f 'cuda/InstructionAnalyzer.cpp' || echo '$(srcdir)/'`cuda/InstructionAnalyzer.cpp
 
 libHPCbanal_la-ElfHelper.lo: ElfHelper.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-ElfHelper.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-ElfHelper.Tpo -c -o libHPCbanal_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp

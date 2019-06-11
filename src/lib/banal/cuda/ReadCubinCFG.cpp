@@ -21,12 +21,13 @@
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 
-
 #include "CudaCFGFactory.hpp"
 #include "CudaFunction.hpp"
 #include "CudaBlock.hpp"
 #include "CudaCodeSource.hpp"
 #include "CFGParser.hpp"
+#include "Instruction.hpp"
+#include "InstructionAnalyzer.hpp"
 #include "GraphReader.hpp"
 #include "ReadCubinCFG.hpp"
 
@@ -74,8 +75,6 @@ dumpCubin
 static void
 parseDotCFG
 (
- const std::string &search_path,
- const std::string &elf_filename,
  const std::string &dot_filename, 
  const std::string &cubin,
  int cuda_arch,
@@ -100,8 +99,6 @@ parseDotCFG
 
   // Store functions that are not parsed by nvdisasm
   std::vector<Symbol *> unparsable_function_symbols;
-  // Store functions that are parsed by nvdisasm
-  std::vector<Symbol *> parsed_function_symbols;
   // Remove functions that share the same names
   std::map<std::string, CudaParse::Function *> function_map;
   // Test valid symbols
@@ -111,7 +108,6 @@ parseDotCFG
       const std::string cmd = "nvdisasm -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
       if (system(cmd.c_str()) == 0) {
-        parsed_function_symbols.push_back(symbol);
         // Only parse valid symbols
         CudaParse::GraphReader graph_reader(dot_filename);
         CudaParse::Graph graph;
@@ -188,7 +184,7 @@ parseDotCFG
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
-      block->insts.push_back(new CudaParse::Inst(i));
+      block->insts.push_back(new CudaParse::Instruction(i));
     }
     function->blocks.push_back(block);
     functions.push_back(function);
@@ -212,7 +208,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Inst(function_size + function->address));
+            block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
@@ -240,9 +236,22 @@ parseDotCFG
       std::cout << std::endl;
     }
   }
+}
 
-  // Step 5: create a nvidia directory and dump dot files
-  if (parsed_function_symbols.size() > 0) {
+
+static void
+analyzeCudaInstruction
+(
+ const std::string &search_path,
+ const std::string &elf_filename,
+ const std::vector<CudaParse::Function *> &functions
+)
+{
+  CudaParse::InstructionAnalyzer instruction_analyzer;
+  CudaParse::InstructionMetrics instruction_metrics;
+  instruction_analyzer.analyze(functions, instruction_metrics);
+  // Create a nvidia directory and dump instruction files
+  if (functions.size() > 0) {
     const std::string dot_dir = search_path + "/nvidia";
     int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
     if (ret != 0 && errno != EEXIST) {
@@ -250,16 +259,9 @@ parseDotCFG
       return;
     }
 
-    const std::string dot_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".dot";
-    std::string cmd = "nvdisasm -cfg -poff -fun ";
-    for (auto *symbol : parsed_function_symbols) {
-      auto index = symbol->getIndex();
-      cmd += std::to_string(index) + ",";
-    }
-    cmd += " " + cubin + " > " + dot_output;
-
-    if (system(cmd.c_str()) != 0) {
-      std::cout << "WARNING: failed to dump static database file: " << dot_output << std::endl;
+    const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
+    if (instruction_analyzer.dump(inst_output, instruction_metrics) != true) {
+      std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
     }
   }
 }
@@ -301,7 +303,10 @@ readCubinCFG
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
       std::vector<CudaParse::Function *> functions;
-      parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
+      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
+      // Analyze Cuda instructions
+      analyzeCudaInstruction(search_path, elfFile->getFileName(), functions);
+      // Dyninst adapter
       CFGFactory *cfg_fact = new CudaCFGFactory(functions);
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);

@@ -5,6 +5,8 @@
 #include <vector>
 #include <deque>
 #include <unordered_map>
+
+#include "Instruction.hpp"
 #include "DotCFG.hpp"
 #include "Graph.hpp"
 
@@ -35,9 +37,9 @@ class CFGParser {
 
   void unite_blocks(const Block *block, bool *visited, size_t parent);
 
-  TargetType get_target_type(const Inst *inst);
+  TargetType get_target_type(const Instruction *inst);
 
-  TargetType get_fallthrough_type(const Inst *inst);
+  TargetType get_fallthrough_type(const Instruction *inst);
 
   void link_dangling_blocks(
     std::set<Block *> &dangling_blocks,
