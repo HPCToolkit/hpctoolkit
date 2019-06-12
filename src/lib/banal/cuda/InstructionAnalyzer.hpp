@@ -14,10 +14,12 @@ struct InstructionStat {
   int pc;
   std::map<int, int> stat; 
 
-  InstructionStat(int pc) : pc(pc) {}
+  explicit InstructionStat(int pc): pc(pc) {}
+
+  InstructionStat() {}
 };
 
-typedef std::set<InstructionStat> InstructionStats;
+typedef std::vector<InstructionStat> InstructionStats;
 
 
 struct InstructionMetrics {
@@ -36,9 +38,9 @@ class InstructionAnalyzer {
  
   void analyze(const std::vector<Function *> &functions, InstructionMetrics &instruction_metrics);
 
-  bool dump(const std::string &file_path, InstructionMetrics &instruction_metrics);
+  bool dump(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
 
-  bool read(const std::string &file_path, InstructionMetrics &instruction_metrics);
+  bool read(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
  
  private:
   void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::vector<std::string> &metric_names);
