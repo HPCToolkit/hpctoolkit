@@ -13,19 +13,21 @@ namespace CudaParse {
 struct InstructionStat {
   int pc;
   std::map<int, int> stat; 
+
+  InstructionStat(int pc) : pc(pc) {}
 };
 
-typedef std::vector<InstructionStat> InstructionStats;
+typedef std::set<InstructionStat> InstructionStats;
 
 
 struct InstructionMetrics {
-  std::vector<std::string> metrics;
+  std::map<std::string, int> metric_names;
   InstructionStats inst_stats;
 };
 
 
 template <InstructionTypes inst_type>
-void analyze_instruction(const Instruction &inst, std::string &metric);
+void analyze_instruction(const Instruction &inst, std::vector<std::string> &metric_names);
 
 
 class InstructionAnalyzer {
@@ -39,7 +41,7 @@ class InstructionAnalyzer {
   bool read(const std::string &file_path, InstructionMetrics &instruction_metrics);
  
  private:
-  void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::string &metric);
+  void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::vector<std::string> &metric_names);
 };
 
 }  // namespace CudaParse

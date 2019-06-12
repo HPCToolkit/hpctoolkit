@@ -4,37 +4,44 @@
 namespace CudaParse {
 
 template <>
-void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_SPECIAL>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_SPECIAL>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_OTHER>(const Instruction &inst, std::string &metric) {
+void analyze_instruction<INS_TYPE_OTHER>(const Instruction &inst,
+  std::vector<std::string> &metric_names) {
 }
 
 
@@ -50,11 +57,24 @@ InstructionAnalyzer::InstructionAnalyzer() {
 
 void InstructionAnalyzer::analyze(const std::vector<Function *> &functions,
   InstructionMetrics &metrics) {
-  std::string metric;
+  std::vector<std::string> metric_names;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
-        analyze_instruction<INS_TYPE_MEMORY>(*inst, metric);
+        metric_names.clear();
+        _dispatcher[inst->type](*inst, metric_names);
+
+        InstructionStat inst_stat(inst->offset);
+        for (auto metric_name : metric_names) {
+          int metric_id = 0;
+          if (metrics.metric_names.find(metric_name) == metrics.metric_names.end()) {
+            metric_id = metrics.metric_names.size();
+            metrics.metric_names[metric_name] = metric_id;
+          } else {
+            metric_id = metrics.metric_names[metric_name];
+          }
+          inst_stat.stat[metric_id] += 1;
+        }
       }
     }
   }

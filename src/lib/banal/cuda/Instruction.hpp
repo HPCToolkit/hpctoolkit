@@ -49,7 +49,7 @@ struct Instruction {
   std::string target;
   std::vector<std::string> modifiers;
   std::vector<std::string> operands;
-  InstructionTypes instruction_type;
+  InstructionTypes type;
   static std::map<std::string, InstructionTypes> opcode_types;
   static std::set<std::string> opcode_call;
   static std::set<std::string> opcode_jump;
