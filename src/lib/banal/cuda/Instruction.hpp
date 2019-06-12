@@ -7,21 +7,32 @@
 #include <string>
 #include <set>
 
-#define INSTRUCTION_DEBUG 1
+#define INSTRUCTION_DEBUG 0
+
+#define FORALL_INS_TYPES(macro) \
+  macro(INS_TYPE_MEMORY, 0)     \
+  macro(INS_TYPE_FLOAT, 1)      \
+  macro(INS_TYPE_INTEGER, 2)    \
+  macro(INS_TYPE_SPECIAL, 3)    \
+  macro(INS_TYPE_TEXTRUE, 4)    \
+  macro(INS_TYPE_CONTROL, 5)    \
+  macro(INS_TYPE_OTHER, 6)      
+
+#define FORALL_INS_COUNT(macro) \
+  macro(INS_TYPE_COUNT, 7)
 
 namespace CudaParse {
 
 // basic instruction types, can be extended
+#define DECLARE_INS_TYPE(TYPE, VALUE) \
+  TYPE = VALUE,
+
 enum InstructionTypes {
-  INS_TYPE_MEMORY = 0,
-  INS_TYPE_FLOAT = 1,
-  INS_TYPE_INTEGER = 2,
-  INS_TYPE_SPECIAL = 3,
-  INS_TYPE_TEXTRUE = 4,
-  INS_TYPE_CONTROL = 5,
-  INS_TYPE_OTHER = 6,
-  INS_TYPE_COUNT = 7
+  FORALL_INS_TYPES(DECLARE_INS_TYPE)
+  FORALL_INS_COUNT(DECLARE_INS_TYPE)
 };
+
+#undef DECLARE_INS_TYPE
 
 
 struct Instruction {
