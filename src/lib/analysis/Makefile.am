@@ -74,6 +74,7 @@ MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
 	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
+	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
 	\
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
 	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
