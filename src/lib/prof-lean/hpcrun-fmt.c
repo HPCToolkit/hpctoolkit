@@ -396,8 +396,6 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE*
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->is_frequency_metric),    fs));
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(aux_info->is_multiplexed),  fs));
   HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(aux_info->threshold_mean),  fs));
-  // disabled temporarily
-  //HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_stdev), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&aux_info->num_samples),     fs));
 
   // These two aren't written into the hpcrun file; hence manually set them.
