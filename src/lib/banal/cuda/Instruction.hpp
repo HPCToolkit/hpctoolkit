@@ -1,9 +1,11 @@
 #ifndef _INSTRUCTION_H_
 #define _INSTRUCTION_H_
 
-#include <string>
-#include <regex>
+#include <map>
 #include <iostream>
+#include <regex>
+#include <string>
+#include <set>
 
 #define INSTRUCTION_DEBUG 1
 
@@ -15,7 +17,7 @@ enum InstructionTypes {
   INS_TYPE_FLOAT = 1,
   INS_TYPE_INTEGER = 2,
   INS_TYPE_SPECIAL = 3,
-  INS_TYPE_TEX = 4,
+  INS_TYPE_TEXTRUE = 4,
   INS_TYPE_CONTROL = 5,
   INS_TYPE_OTHER = 6,
   INS_TYPE_COUNT = 7
@@ -37,6 +39,10 @@ struct Instruction {
   std::vector<std::string> modifiers;
   std::vector<std::string> operands;
   InstructionTypes instruction_type;
+  static std::map<std::string, InstructionTypes> opcode_types;
+  static std::set<std::string> opcode_call;
+  static std::set<std::string> opcode_jump;
+  static std::set<std::string> opcode_sync;
 
   // constructor for dummy instruction
   explicit Instruction(int offset) : offset(offset), dual_first(false), dual_second(false),
@@ -95,24 +101,21 @@ struct Instruction {
               while (std::getline(ops, s, '.')) {
                 if (first_pos) {
                   opcode = s;
-                  if (opcode == "CALL" || opcode == "CAL") { // sm_60
+                  // set short cut
+                  if (opcode_call.find(opcode) != opcode_call.end()) {
                     this->is_call = true;
-                  } else if (opcode == "BRA" || opcode == "BRX" ||
-                    opcode == "JMP" || opcode == "JMX" ||
-                    opcode == "BREAK" || opcode == "JMXU") {
+                  } else if (opcode_jump.find(opcode) != opcode_jump.end()) {
                     this->is_jump = true;
-                  } else if (opcode == "SYNC" || opcode == "BSYNC") { 
-                    // avoid Barrier Set Convergence Synchronization Point
-                    //opcode.find("SSY") != std::string::npos ||
-                    //opcode.find("BSSY") != std::string::npos)
-                    // TODO(Keren): add more sync instructions
+                  } else if (opcode_sync.find(opcode) != opcode_sync.end()) {
                     this->is_sync = true;
                   }
+
                   first_pos = false;
                 } else {
                   modifiers.push_back(s);
                 }
               }
+
               if (INSTRUCTION_DEBUG) {
                 std::cout << "opcode: " << opcode;
                 for (auto &modifier : modifiers) {

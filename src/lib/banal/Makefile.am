@@ -70,6 +70,7 @@ MYSOURCES = \
 	cuda/CudaCodeSource.cpp  \
 	cuda/ReadCubinCFG.cpp \
 	cuda/InstructionAnalyzer.cpp \
+	cuda/Instruction.cpp \
 	ElfHelper.cpp \
 	Fatbin.cpp \
 	InputFile.cpp \
