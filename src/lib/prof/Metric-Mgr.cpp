@@ -290,24 +290,32 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+    doDispPercent = mSrc->doDispPercent();
+    isPercent     = mSrc->isPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
+    isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
+    doDispPercent = false;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -318,8 +326,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, mSrc->isVisible(), true/*isSortKey*/,
-		    mSrc->doDispPercent(), mSrc->isPercent());
+    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
+		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
@@ -370,8 +378,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
-  bool doDispPercent = mSrc->doDispPercent();
-  bool isVisible = mSrc->isVisible();
+  bool doDispPercent = true;
   bool isPercent = false;
   bool isVisible = mSrc->isVisible();
 
