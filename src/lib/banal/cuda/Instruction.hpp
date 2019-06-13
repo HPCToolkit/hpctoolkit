@@ -13,10 +13,9 @@
   macro(INS_TYPE_MEMORY, 0)     \
   macro(INS_TYPE_FLOAT, 1)      \
   macro(INS_TYPE_INTEGER, 2)    \
-  macro(INS_TYPE_SPECIAL, 3)    \
-  macro(INS_TYPE_TEXTRUE, 4)    \
-  macro(INS_TYPE_CONTROL, 5)    \
-  macro(INS_TYPE_OTHER, 6)      
+  macro(INS_TYPE_TEXTRUE, 3)    \
+  macro(INS_TYPE_CONTROL, 4)    \
+  macro(INS_TYPE_OTHER, 5)      
 
 #define FORALL_INS_COUNT(macro) \
   macro(INS_TYPE_COUNT, 7)
@@ -57,10 +56,13 @@ struct Instruction {
 
   // constructor for dummy instruction
   explicit Instruction(int offset) : offset(offset), dual_first(false), dual_second(false),
-  is_call(false), is_jump(false), is_sync(false) {}
+    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_OTHER) {}
 
   Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
   is_call(false), is_jump(false), is_sync(false) {
+    if (INSTRUCTION_DEBUG) {
+      std::cout << inst_str << std::endl;
+    }
     // parse dual
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
@@ -127,6 +129,12 @@ struct Instruction {
                 }
               }
 
+              if (opcode_types.find(opcode) != opcode_types.end()) {
+                type = opcode_types[opcode];
+              } else {
+                type = INS_TYPE_OTHER;
+              }
+
               if (INSTRUCTION_DEBUG) {
                 std::cout << "opcode: " << opcode;
                 for (auto &modifier : modifiers) {
@@ -157,6 +165,17 @@ struct Instruction {
         }
       }
     }
+  }
+
+  std::string to_string() const {
+    std::string ret = predicate + " " + opcode;
+    for (auto &m : modifiers) {
+      ret += "." + m;
+    }
+    for (auto &o : operands) {
+      ret += " " + o;
+    }
+    return ret;
   }
 };
 

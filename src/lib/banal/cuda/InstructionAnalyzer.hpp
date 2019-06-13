@@ -29,7 +29,7 @@ struct InstructionMetrics {
 
 
 template <InstructionTypes inst_type>
-void analyze_instruction(const Instruction &inst, std::vector<std::string> &metric_names);
+void analyze_instruction(const Instruction &inst, std::string &metric_names);
 
 
 class InstructionAnalyzer {
@@ -43,7 +43,7 @@ class InstructionAnalyzer {
   bool read(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
  
  private:
-  void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::vector<std::string> &metric_names);
+  void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::string &metric_names);
 };
 
 }  // namespace CudaParse
