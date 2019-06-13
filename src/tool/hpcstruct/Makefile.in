@@ -162,8 +162,7 @@ am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_3) $(HPCLIB_XML) \
 	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 hpcstruct_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -547,7 +546,7 @@ MYLDFLAGS = \
 	-ldl
 
 MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) \
@@ -558,13 +557,12 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(LZMA_LDFLAGS_DYN) \
 	$(DYNINST_LFLAGS) \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@ \
-	$(TBB_LFLAGS) $(TBB_PROXY_LIB)
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
 
 DOT_LDADD = \
 	$(DYNINST_LFLAGS) \
