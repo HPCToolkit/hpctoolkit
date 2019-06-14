@@ -36,7 +36,6 @@ struct InstructionMetrics {
 template <InstructionTypes inst_type>
 void analyze_instruction(const Instruction &inst, std::string &metric_names);
 
-  bool read(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
 
 class InstructionAnalyzer {
  public:
