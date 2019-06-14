@@ -1,5 +1,5 @@
-#ifndef _INSTRUCTION_H_
-#define _INSTRUCTION_H_
+#ifndef _CUDA_INSTRUCTION_H_
+#define _CUDA_INSTRUCTION_H_
 
 #include <map>
 #include <iostream>
@@ -35,7 +35,7 @@ enum InstructionTypes {
 
 
 struct Instruction {
-  int offset;
+  unsigned int offset;
   bool dual_first;
   bool dual_second;
   // short cut
@@ -55,7 +55,7 @@ struct Instruction {
   static std::set<std::string> opcode_sync;
 
   // constructor for dummy instruction
-  explicit Instruction(int offset) : offset(offset), dual_first(false), dual_second(false),
+  explicit Instruction(unsigned offset) : offset(offset), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_OTHER) {}
 
   Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
@@ -168,7 +168,7 @@ struct Instruction {
   }
 
   std::string to_string() const {
-    std::string ret = predicate + " " + opcode;
+    std::string ret = std::to_string(offset) + ": " + predicate + " " + opcode;
     for (auto &m : modifiers) {
       ret += "." + m;
     }

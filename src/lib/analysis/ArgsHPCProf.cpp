@@ -463,7 +463,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
 
       const std::string nvidia_dir = structs_dir + "/nvidia";
       if (is_directory(nvidia_dir)) {
-        find_files(instructionFiles, nvidia_dir, ".dot");
+        find_files(instructionFiles, nvidia_dir, ".inst");
       }
     }
 

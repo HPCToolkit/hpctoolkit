@@ -1,5 +1,5 @@
-#ifndef _DOT_CFG_H_
-#define _DOT_CFG_H_
+#ifndef _CUDA_DOT_CFG_H_
+#define _CUDA_DOT_CFG_H_
 
 #include <algorithm>
 #include <iostream>

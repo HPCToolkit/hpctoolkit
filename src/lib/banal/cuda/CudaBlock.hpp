@@ -1,5 +1,5 @@
-#ifndef _CUDA_BLOCK_H_
-#define _CUDA_BLOCK_H_
+#ifndef _CUDA_CUDA_BLOCK_H_
+#define _CUDA_CUDA_BLOCK_H_
 
 #include <CFG.h>
 

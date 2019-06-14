@@ -1,22 +1,27 @@
-#ifndef _INSTRUCTION_ANALYZER_H_
-#define _INSTRUCTION_ANALYZER_H_
+#ifndef _CUDA_INSTRUCTION_ANALYZER_H_
+#define _CUDA_INSTRUCTION_ANALYZER_H_
 
 #include <map>
 #include <vector>
 #include <string>
 
 #include "Instruction.hpp"
-#include "DotCFG.hpp"
 
 namespace CudaParse {
 
+class Function;
+
 struct InstructionStat {
-  int pc;
+  unsigned int pc;
   std::map<int, int> stat; 
 
-  explicit InstructionStat(int pc): pc(pc) {}
+  explicit InstructionStat(unsigned int pc): pc(pc) {}
 
   InstructionStat() {}
+
+  bool operator < (InstructionStat &other) const {
+    return this->pc < other.pc;
+  }
 };
 
 typedef std::vector<InstructionStat> InstructionStats;
@@ -31,6 +36,7 @@ struct InstructionMetrics {
 template <InstructionTypes inst_type>
 void analyze_instruction(const Instruction &inst, std::string &metric_names);
 
+  bool read(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
 
 class InstructionAnalyzer {
  public:
@@ -39,8 +45,6 @@ class InstructionAnalyzer {
   void analyze(const std::vector<Function *> &functions, InstructionMetrics &instruction_metrics);
 
   bool dump(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
-
-  bool read(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
  
  private:
   void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::string &metric_names);

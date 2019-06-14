@@ -2,10 +2,11 @@
 
 #include <fstream>
 
+#include "DotCFG.hpp"
+
 #define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
-
 
 template <>
 void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &metric_name) {
@@ -247,74 +248,4 @@ bool InstructionAnalyzer::dump(const std::string &file_path, InstructionMetrics 
   return true;
 }
 
-
-bool InstructionAnalyzer::read(const std::string &file_path, InstructionMetrics &metrics, bool sparse) {
-  std::ifstream ifs(file_path, std::ifstream::in);
-  if ((ifs.rdstate() & std::ifstream::failbit) != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error opening " << file_path << std::endl;
-    }
-    return false;
-  }
-
-  const char sep = sparse ? '\n' : '#'; 
-
-  std::string buf;
-  if (std::getline(ifs, buf) && buf == "<metric names>") {
-    while (std::getline(ifs, buf, sep)) {
-      // (mn,id)#
-      // 01234567
-      //    p  s
-      auto pos = buf.find(",");
-      if (pos != std::string::npos) {
-        auto metric_name = buf.substr(1, pos - 1);
-        auto metric_id = buf.substr(pos + 1, buf.size() - pos - 2);
-        metrics.metric_names[metric_name] = std::stoi(metric_id);
-      }
-    }
-  } else {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error reading metrics " << file_path << std::endl;
-    }
-    return false;
-  }
-  
-  if (std::getline(ifs, buf) && buf == "<inst stats>") {
-    std::string cur_buf;
-    while (std::getline(ifs, buf, sep)) {
-      bool first = true;
-      InstructionStat inst_stat;
-      std::istringstream iss(buf);
-      // (pc,id:mc,...)#
-      while (std::getline(iss, cur_buf, ',')) {
-        if (first) {
-          // (111,
-          // 01234
-          std::string tmp = cur_buf.substr(1);
-          inst_stat.pc = std::stoi(tmp);
-          first = false;
-        } else {
-          // id:mc,
-          // 012345
-          //   p  s
-          auto pos = cur_buf.find(":");
-          if (pos != std::string::npos) {
-            auto metric_id = cur_buf.substr(0, pos);
-            auto metric_count = cur_buf.substr(pos + 1, cur_buf.size() - pos - 2);
-            inst_stat.stat[std::stoi(metric_id)] = std::stoi(metric_count);
-          }
-        }
-      }
-      metrics.inst_stats.emplace_back(inst_stat);
-    }
-  } else {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error reading stats " << file_path << std::endl;
-    }
-    return false;
-  }
-
-  return true;
-}
-
-}
+}  // namespace CudaParse

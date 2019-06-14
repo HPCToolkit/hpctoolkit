@@ -1,5 +1,5 @@
-#ifndef _GRAPH_READER_H_
-#define _GRAPH_READER_H_
+#ifndef _CUDA_GRAPH_READER_H_
+#define _CUDA_GRAPH_READER_H_
 
 #include <unordered_map>
 #include <string>

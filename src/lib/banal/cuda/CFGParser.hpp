@@ -1,5 +1,5 @@
-#ifndef _CFG_PARSER_H_
-#define _CFG_PARSER_H_
+#ifndef _CUDA_CFG_PARSER_H_
+#define _CUDA_CFG_PARSER_H_
 
 #include <string>
 #include <vector>
