@@ -125,12 +125,7 @@ IData::writeMetricsXML(std::ostream& os,
 
       uint desc_id = i-mBegId;
       const Metric::ADesc* adesc = metricMgr->metric(desc_id);
-      const Metric::SampledDesc* mdesc = dynamic_cast<const Metric::SampledDesc*>(adesc);
-      if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
-        mval = xml::MakeAttrNum(val.i);
-      } else{
-        mval = xml::MakeAttrNum(val.r);
-      }
+      mval = adesc->getXMLValue(val);
 
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 

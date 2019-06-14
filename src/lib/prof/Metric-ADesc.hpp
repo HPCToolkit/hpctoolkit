@@ -73,6 +73,7 @@
 #include "Metric-AExprIncr.hpp"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
 
@@ -510,6 +511,11 @@ public:
   void
   ddump() const;
 
+  virtual std::string
+  getXMLValue(hpcrun_metricVal_t val) const
+  {
+    return xml::MakeAttrNum(val.r);
+  }
 
   // -------------------------------------------------------
   // 
@@ -696,6 +702,15 @@ public:
   isUnitsEvents(bool isUnitsEvents)
   { m_isUnitsEvents = isUnitsEvents; }
 
+
+  virtual std::string
+  getXMLValue(hpcrun_metricVal_t val) const
+  {
+    if (flags().fields.valFmt == MetricFlags_ValFmt_Address)
+      return xml::MakeAttrNum(val.i);
+    else
+      return xml::MakeAttrNum(val.r);
+  }
 
   // ------------------------------------------------------------
   // 

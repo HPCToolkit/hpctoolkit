@@ -101,8 +101,7 @@ static __thread u32          pid = 0, tid = 0;  // last pid/tid
  *****************************************************************************/
 
 static void
-blame_kernel_time(cct_node_t *cct_kernel,
-    perf_mmap_data_t *mmap_data)
+blame_kernel_time(cct_node_t *cct_kernel, perf_mmap_data_t *mmap_data)
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
@@ -161,7 +160,7 @@ kernel_block_handler(event_handler_arg_t *args)
     return NOT_MY_EVENT;
   }
 
-  struct perf_event_attr *attr = &(current_event->event->attr);
+  struct perf_event_attr *attr = &(args->current->attr);
 
   if (attr->config == PERF_COUNT_SW_CONTEXT_SWITCHES &&
       attr->type   == PERF_TYPE_SOFTWARE) {
@@ -175,8 +174,8 @@ kernel_block_handler(event_handler_arg_t *args)
 
     if (mmap_data->header_type == PERF_RECORD_SAMPLE) {
       // (1) sample record: store the current cct for further usage
-      cct_kernel = sv.sample_node;
-      return;
+      cct_kernel = args->sample->sample_node;
+      return ACCEPT_EVENT;
     }
 
     if (mmap_data->header_misc == PERF_RECORD_MISC_SWITCH_OUT) {
@@ -189,7 +188,7 @@ kernel_block_handler(event_handler_arg_t *args)
     } else {
       // (3) leaving the kernel, entering the process: compute the block time
       if (cct_kernel != NULL && time_cs_out>0)
-        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        blame_kernel_time(cct_kernel, mmap_data);
 
       time_cs_out  = 0;
       cct_kernel = NULL;
