@@ -371,6 +371,7 @@ static int cupti_enabled_activities = 0;
 static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
+static const size_t DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
 
 //******************************************************************************
 // constants
@@ -387,6 +388,7 @@ CUpti_ActivityKind
 data_motion_explicit_activities[] = { 
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY, 
+  CUPTI_ACTIVITY_KIND_MEMSET, 
 // FIXME(keren): memory activity does not have a correlation id
 // CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
@@ -979,6 +981,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    cupti_device_buffer_config(DEVICE_BUFFER_SIZE);
 
     // Register cupti callbacks
     cupti_trace_init();

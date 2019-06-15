@@ -146,6 +146,7 @@
   macro(cuptiActivityEnable)				\
   macro(cuptiActivityEnableContext)			\
   macro(cuptiActivityFlushAll)				\
+  macro(cuptiActivitySetAttribute)				\
   macro(cuptiActivityGetNextRecord)			\
   macro(cuptiActivityGetNumDroppedRecords)		\
   macro(cuptiActivityPopExternalCorrelationId)		\
@@ -356,6 +357,17 @@ CUPTI_FN
 
 CUPTI_FN
 (
+  cuptiActivitySetAttribute,
+  (
+   CUpti_ActivityAttribute attribute,
+   size_t *value_size,
+   void *value
+  )
+);
+
+
+CUPTI_FN
+(
  cuptiActivityFlushAll,
  (
   uint32_t flag
@@ -455,6 +467,7 @@ cuda_path
   }
   return 0;
 }
+
 
 const char *
 cupti_path
@@ -1040,6 +1053,18 @@ cupti_device_timestamp_get
 }
 
 
+void
+cupti_device_buffer_config
+(
+ size_t size
+)
+{
+  size_t value_size = sizeof(size_t);
+  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &size));
+}
+
+
 void 
 cupti_buffer_alloc 
 (
@@ -1088,24 +1113,27 @@ cupti_buffer_completion_callback
   // handle notifications
   cupti_cupti_notification_apply(cupti_notification_handle);
 
-  // signal advance to return pointer to first record
-  CUpti_Activity *activity = NULL;
-  bool status = false;
-  size_t processed = 0;
-  do {
-    status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
-    if (status) {
-      cupti_activity_process(activity);
-      ++processed;
-    }
-  } while (status);
-  hpcrun_stats_acc_trace_records_add(processed);
+  if (validSize > 0) {
+    // signal advance to return pointer to first record
+    CUpti_Activity *activity = NULL;
+    bool status = false;
+    size_t processed = 0;
+    do {
+      status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
+      if (status) {
+        cupti_activity_process(activity);
+        ++processed;
+      }
+    } while (status);
+    hpcrun_stats_acc_trace_records_add(processed);
 
-  size_t dropped;
-  cupti_num_dropped_records_get(ctx, streamId, &dropped);
-  if (dropped != 0) { 
-    hpcrun_stats_acc_trace_records_dropped_add(dropped);
-  }    
+    size_t dropped;
+    cupti_num_dropped_records_get(ctx, streamId, &dropped);
+    if (dropped != 0) { 
+      hpcrun_stats_acc_trace_records_dropped_add(dropped);
+    }    
+  }
+
   free(buffer);
 }
 
