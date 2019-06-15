@@ -266,7 +266,8 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
     if (MetricComponentsFact::isTimeMetric(m)
 	&& MetricComponentsFact::isDerivedMetric(m, s_sum)
 	&& m->type() == Metric::ADesc::TyIncl
-	&& m->isVisible() /* not a temporary */) {
+	&& m->isVisible()
+	&& !m->isTemporary() /* not a temporary */) {
 
       DIAG_Assert(m->computedType() == Prof::Metric::ADesc::ComputedTy_NonFinal,
 		  DIAG_UnexpectedInput);

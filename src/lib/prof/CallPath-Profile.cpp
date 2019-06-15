@@ -1309,7 +1309,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN");
+			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
@@ -1352,7 +1352,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       Metric::SampledDesc* mSmpl =
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN");
+				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
