@@ -15,10 +15,10 @@
   macro(INS_TYPE_INTEGER, 2)    \
   macro(INS_TYPE_TEXTRUE, 3)    \
   macro(INS_TYPE_CONTROL, 4)    \
-  macro(INS_TYPE_OTHER, 5)      
+  macro(INS_TYPE_MISC, 5)      
 
 #define FORALL_INS_COUNT(macro) \
-  macro(INS_TYPE_COUNT, 7)
+  macro(INS_TYPE_COUNT, 6)
 
 namespace CudaParse {
 
@@ -56,7 +56,7 @@ struct Instruction {
 
   // constructor for dummy instruction
   explicit Instruction(unsigned int offset) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_OTHER) {}
+    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {}
 
   Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
   is_call(false), is_jump(false), is_sync(false) {
@@ -132,7 +132,7 @@ struct Instruction {
               if (opcode_types.find(opcode) != opcode_types.end()) {
                 type = opcode_types[opcode];
               } else {
-                type = INS_TYPE_OTHER;
+                type = INS_TYPE_MISC;
               }
 
               if (INSTRUCTION_DEBUG) {

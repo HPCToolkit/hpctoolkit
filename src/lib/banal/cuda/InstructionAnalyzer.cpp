@@ -43,6 +43,8 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
     } else if (opcode == "ATOMG") {
       scope = ".GLOBAL";
     }
+  } else {
+    ldst = ".OTHER";
   }
 
   width = ".32";
@@ -82,6 +84,8 @@ void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &m
     type = ".MAD";
   } else if (opcode.find("MMA") != std::string::npos) {
     type = ".TENSOR";
+  } else {
+    type = ".OTHER";
   }
 
   metric_name += type + width;
@@ -110,6 +114,8 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
     } else {
       type = ".ADD";
     }
+  } else {
+    type = ".OTHER";
   }
 
   metric_name += type;
@@ -142,6 +148,8 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
     type = ".JMP";
   } else if (opcode.find("BR") != std::string::npos) {
     type = ".BRANCH";
+  } else {
+    type = ".OTHER";
   }
 
   metric_name += type;
@@ -149,8 +157,8 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
 
 
 template <>
-void analyze_instruction<INS_TYPE_OTHER>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "OTHER";
+void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &metric_name) {
+  metric_name = "MISC";
 
   std::string type;
 
@@ -159,7 +167,9 @@ void analyze_instruction<INS_TYPE_OTHER>(const Instruction &inst, std::string &m
   if (opcode.find("I2") != std::string::npos ||
     opcode.find("F2") != std::string::npos || opcode == "FRND") {
     type = ".CONVERT";
-  } 
+  } else {
+    type = ".OTHER";
+  }
 
   metric_name += type;
 }
