@@ -233,7 +233,7 @@ The user can also moving the current selected region to another region by clicki
  \end{itemize}
  \item \textbf{View} menu to enhance appearance which contains two sub menus:
  \begin{itemize}
-   \item \textbf{Show debug info}: to enable/disabe the display of debugging information in the form of `$a(b)$' where $a$ is the maximum depth (this number is shown if the current depth reaches the maximum depth) and $b$ is the number of records on the trace view. 
+   \item \textbf{Show debug info}: to enable/disable the display of debugging information in the form of `$a(b)$' where $a$ is the maximum depth (this number is shown if the current depth reaches the maximum depth) and $b$ is the number of records on the trace view. 
 The number of records can be useful to identify blocking procedures (such as I/O operations). Note: the numbers are displayed only if there's enough space in the process time line.
    \item \textbf{Using midpoint painting}: if checked, the trace painting will use \emph{midpoint} painting algorithm. By using the later, for every samples $S_1$ at time $T_1$, $S_2$ at time $T_2$ and $S_3$ at time $T_3$, \hpctraceviewer{} renders a block from $T_1$ to $\frac{T1+T2}{2}$ to sample $S_1$, and a block from from  $\frac{T1+T2}{2}$ to  $\frac{T2+T3}{2}$ for sample $S_2$, and so forth. 
 If the menu is not checked, then a simpler \emph{rightmost} algorithm is used: it will render a block from  $T_1$ to $T_2$ for sample $S_1$, and a block from $T_2$ to  $T3$ for sample $S_2$, and so forth.
@@ -262,9 +262,6 @@ Some important \hpctraceviewer{} limitations are listed below:
 
 \item \textbf{Handling hybrid MPI and OpenMP applications are not fully supported}.
 	Although it is possible to display trace data from mixed programming models such as MPI and OpenMP, the callpath between threads and processes are not fully consistent; thus it may confuse the user. Note: some MPI runtime spawns helper-threads which makes the trace appears to have more threads than it should be.
-
-\item \textbf{No image print}.
-	At the moment \hpctraceviewer{} does not support saving and printing images of the traces.
 
 \item \textbf{Not scalable on IBM Power7 and BGQ platforms for large database}.
 	Displaying a large database (more than 2 GB of \texttt{experiment.mt} file on IBM Power7 and BGQ is very slow. This is a known issue, and we are working on this.

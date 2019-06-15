@@ -399,6 +399,7 @@ perf_util_attr_init(
   }
 
   attr->disabled       = 1;                 /* the counter will be enabled later  */
+  attr->wakeup_events  = 1;                 /* wake up every samples */
   attr->sample_type    = sample_type;
   attr->exclude_kernel = EXCLUDE;
   attr->exclude_hv     = EXCLUDE;

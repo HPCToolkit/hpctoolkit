@@ -76,4 +76,8 @@ typedef __u64 u64;
 #endif
 
 
+#ifndef u16
+typedef __u16 u16;
+#endif
+
 #endif
