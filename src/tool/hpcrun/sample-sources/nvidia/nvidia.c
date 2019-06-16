@@ -806,7 +806,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_IM(declare_cur_metrics);	
   FORALL_IM(hide_cur_metrics);	
   FORALL_IM_TIME(declare_cur_metrics_real);
-  FORALL_IM_TIME(hide_cur_metrics);
   im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
   close_cur_kind;
 
@@ -820,7 +819,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_EM(declare_cur_metrics);	
   FORALL_EM(hide_cur_metrics);
   FORALL_EM_TIME(declare_cur_metrics_real);
-  FORALL_EM_TIME(hide_cur_metrics);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   close_cur_kind;
 
@@ -834,7 +832,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_ME(declare_cur_metrics);	
   FORALL_ME(hide_cur_metrics);
   FORALL_ME_TIME(declare_cur_metrics_real);
-  FORALL_ME_TIME(hide_cur_metrics);
   me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
   close_cur_kind;
 
@@ -848,7 +845,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_ME_SET(declare_cur_metrics);	
   FORALL_ME_SET(hide_cur_metrics);
   FORALL_ME_SET_TIME(declare_cur_metrics_real);
-  FORALL_ME_SET_TIME(hide_cur_metrics);
   me_set_time_metric_id = me_set_metric_id[FORALL_ME_SET_TIME(getindex)];
   close_cur_kind;
 
@@ -862,7 +858,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_KE(declare_cur_metrics);	
   FORALL_KE(hide_cur_metrics);	
   FORALL_KE_TIME(declare_cur_metrics_real);	
-  FORALL_KE_TIME(hide_cur_metrics);	
   FORALL_KE_OCCUPANCY(declare_cur_metrics_real);
   ke_static_shared_metric_id = ke_metric_id[0];
   ke_dynamic_shared_metric_id = ke_metric_id[1];
@@ -893,7 +888,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_SYNC(declare_cur_metrics_real);	
   FORALL_SYNC(hide_cur_metrics);	
   FORALL_SYNC_TIME(declare_cur_metrics_real);
-  FORALL_SYNC_TIME(hide_cur_metrics);
   sync_time_metric_id = sync_metric_id[5];
   close_cur_kind;
 
