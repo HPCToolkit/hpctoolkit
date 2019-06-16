@@ -82,6 +82,7 @@
 #include "cuda-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
+#include "sanitizer-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -112,6 +113,35 @@
 #else
 #define PRINT(...)
 #endif
+
+#define COUNT_FORALL_CLAUSE(a,b) + 1
+#define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
+
+/******************************************************************************
+ * sanitizer metrics
+ *****************************************************************************/
+
+#if CUPTI_API_VERSION >= 10
+
+#define FORALL_SAN_ME(macro)	  \
+  macro("ADDR_REUSE_DISTANCE",       0) \
+  macro("ADDR_DIVERGENCE_SLOTS",     1) \
+  macro("VALUE_REUSE_DISTANCE",      2) \
+  macro("VALUE_DIVERGENCE_SLOTS",    3)
+
+#define FORALL_SAN_ME_HITS(macro) \
+  macro("TOTAL_HITS",                4)
+
+#endif
+
+static kind_info_t* san_me_kind; // gpu memory redundancy
+
+static int san_me_metric_id[NUM_CLAUSES(FORALL_SAN_ME)+1];
+static int san_me_hits_metric_id;
+
+/******************************************************************************
+ * cupti metrics
+ *****************************************************************************/
 
 #define FORALL_ME(macro)	  \
   macro("MEM_ALLOC:UNKNOWN_BYTES",       0) \
@@ -281,10 +311,6 @@
   macro("GPU STALL",   13)  
 #endif
 
-
-#define COUNT_FORALL_CLAUSE(a,b) + 1
-#define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
-
 #if 0
 #define OMPT_MEMORY_EXPLICIT  "dev_ex_memcpy"
 #define OMPT_MEMORY_IMPLICIT  "dev_im_memcpy"
@@ -295,6 +321,7 @@
 #define OMPT_PC_SAMPLING "nvidia-ompt-pc-sampling"
 #define CUDA_NVIDIA "nvidia-cuda" 
 #define CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
+#define CUDA_SANITIZER "nvidia-cuda-memory-redundancy" 
 
 /******************************************************************************
  * local variables 
@@ -653,6 +680,18 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 }
 
 
+void
+sanitizer_record_attribute(cct_node_t *cct_node)
+{
+  thread_data_t *td = hpcrun_get_thread_data();
+  td->overhead++;
+  hpcrun_safe_enter();
+
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, san_me_hits_metric_id);
+  hpcrun_metric_std_inc(san_me_hits_metric_id, metrics, (cct_metric_data_t){.i = 1});
+}
+
+
 int
 cupti_pc_sampling_frequency_get()
 {
@@ -747,7 +786,8 @@ METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA) ||
-    hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING);
+    hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING) ||
+    hpcrun_ev_is(ev_str, CUDA_SANITIZER);
 #else
   return false;
 #endif
@@ -972,6 +1012,19 @@ METHOD_FN(process_event_list, int lush_metrics)
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
 
+#define declare_san_me_metrics(name, index) \
+  san_me_metric_id[index] = hpcrun_set_new_metric_info(san_me_kind, name);
+#define hide_san_me_metrics(name, index) \
+  hpcrun_set_display(san_me_metric_id[index], 0, 1);
+
+  san_me_kind = hpcrun_metrics_new_kind();
+  FORALL_SAN_ME(declare_san_me_metrics);	
+  FORALL_SAN_ME(hide_san_me_metrics);
+  FORALL_SAN_ME_HITS(declare_san_me_metrics);
+  FORALL_SAN_ME_HITS(hide_san_me_metrics);
+  san_me_hits_metric_id = san_me_metric_id[FORALL_SAN_ME_HITS(getindex)];
+  hpcrun_close_kind(san_me_kind);
+
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
@@ -981,6 +1034,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (cupti_bind()) {
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
+  }
+
+  // TODO(keren)
+  if (sanitizer_bind()) {
   }
 #endif
 
@@ -1016,6 +1073,17 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
       pc_sampling_frequency = -1;
     }
+  } else if (hpcrun_ev_is(nvidia_name, CUDA_SANITIZER)) {
+    cuda_init_placeholders();
+
+    // Register hpcrun callbacks
+    device_finalizer_flush.fn = sanitizer_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+    device_finalizer_shutdown.fn = sanitizer_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    // Register sanitizer callbacks
+    sanitizer_callbacks_subscribe();
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }

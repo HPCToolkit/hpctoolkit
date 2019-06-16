@@ -459,6 +459,7 @@ cuda_path
   return 0;
 }
 
+
 const char *
 cupti_path
 (
@@ -748,7 +749,7 @@ cupti_subscriber_callback
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) 
-	rd->resourceDescriptor;
+        rd->resourceDescriptor;
       PRINT("loaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 
@@ -757,7 +758,7 @@ cupti_subscriber_callback
 
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) 
-	rd->resourceDescriptor;
+        rd->resourceDescriptor;
       PRINT("unloaded module id %d, cubin size %ld, cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 

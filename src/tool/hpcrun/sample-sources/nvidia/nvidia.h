@@ -11,4 +11,6 @@ extern int cupti_pc_sampling_frequency_get();
 
 extern void cupti_enable_activities(CUcontext context);
 
+extern void sanitizer_record_attribute(cct_node_t *cct_node);
+
 #endif

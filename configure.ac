@@ -4397,6 +4397,95 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 #-------------------------------------------------
+# Option: --with-cuda-sanitizer=PATH
+#-------------------------------------------------
+OPT_HAVE_CUDA_SANITIZER=no
+OPT_CUDA_SANITIZER=
+OPT_CUDA_SANITIZER_INCPATH=
+OPT_CUDA_SANITIZER_IFLAGS=
+OPT_CUDA_SANITIZER_LDFLAGS=
+OPT_CUDA_SANITIZER_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_SANITIZER_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_SANITIZER_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+AC_ARG_WITH([cuda-sanitizer],
+  AS_HELP_STRING([--with-cuda-sanitizer=PATH],
+                 [use given CUDA/CUDA-SANITIZER installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_CUDA_SANITIZER=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-sanitizer requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_SANITIZER=${withval}
+   fi])
+
+#
+# Valid cuda-sanitizer library
+#
+if test "$OPT_HAVE_CUDA_SANITIZER" = yes; then
+    OPT_CUDA_SANITIZER_IFLAGS="-I$OPT_CUDA_SANITIZER/include"
+    if test "$OPT_HAVE_CUDA" = no; then
+       cuda_dir=$(dirnmame $(dirname $OPT_CUDA_SANITIZER))/include
+       OPT_CUDA_IFLAGS="-I$cuda_dir"
+    fi
+    OPT_CUDA_SANITIZER_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUDA_SANITIZER_IFLAGS"
+fi
+
+if test "$OPT_HAVE_CUDA_SANITIZER" = "yes" ; then
+ AC_ARG_WITH([cuda-sanitizer-include],
+  AS_HELP_STRING([--with-cuda-sanitizer-include=PATH],
+                 [use given sanitizer include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-sanitizer-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_SANITIZER_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUDA_SANITIZER}/include/sanitizer.h; then
+         OPT_CUDA_SANITIZER_INCPATH=${OPT_CUDA_SANITIZER}/include
+         AC_DEFINE(HAVE_CUDA_SANITIZER_H, 1, [cuda sanitizer include file available])
+     else
+         AC_MSG_ERROR(['${OPT_CUDA_SANITIZER}/include/sanitizer.h' not found])
+     fi])  
+
+  OPT_CUDA_SANITIZER_IFLAGS="-I${OPT_CUDA_SANITIZER_INCPATH} "
+
+  AC_ARG_WITH([cuda-sanitizer-lib],
+  AS_HELP_STRING([--with-cuda-sanitizer-lib=PATH],
+                 [use given cuda-sanitizer lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cuda-sanitizer-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUDA_SANITIZER_LIBPATH=${withval}
+   fi], 
+  
+    [if test -f "${OPT_CUDA_SANITIZER}/libsanitizer-public.so" 
+    then
+      OPT_CUDA_SANITIZER_LIBPATH="${OPT_CUDA_SANITIZER}"
+      break
+    fi
+    if test  -z "${OPT_CUDA_SANITIZER_LIBPATH}" ; then
+      AC_MSG_ERROR([libsanitizer-public.so not found])
+    fi
+   ] )
+
+  OPT_CUDA_SANITIZER_LDFLAGS="-L${OPT_CUDA_SANITIZER_LIBPATH} -Wl,-rpath=${OPT_CUDA_SANITIZER_LIBPATH} -lsanitizer-public "
+
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_CUDA_SANITIZER], [test "$OPT_HAVE_CUDA_SANITIZER" = yes])
+
+AC_SUBST([OPT_CUDA_SANITIZER])
+AC_SUBST([OPT_CUDA_SANITIZER_IFLAGS])
+AC_SUBST([OPT_CUDA_SANITIZER_LDFLAGS])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 

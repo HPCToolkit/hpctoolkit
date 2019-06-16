@@ -644,6 +644,11 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_CUDA_SANITIZER_LDFLAGS
+OPT_CUDA_SANITIZER_IFLAGS
+OPT_CUDA_SANITIZER
+OPT_ENABLE_CUDA_SANITIZER_FALSE
+OPT_ENABLE_CUDA_SANITIZER_TRUE
 OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
 OPT_CUPTI
@@ -1038,6 +1043,9 @@ with_cuda_lib
 with_cupti
 with_cupti_include
 with_cupti_lib
+with_cuda_sanitizer
+with_cuda_sanitizer_include
+with_cuda_sanitizer_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1793,6 +1801,15 @@ Optional Packages:
                           (default is NO)
   --with-cupti-lib=PATH   use given CUPTI lib (absolute path) with hpcrun
                           (default is NO)
+  --with-cuda-sanitizer=PATH
+                          use given CUDA/CUDA-SANITIZER installation (absolute
+                          path) with hpcrun (default is NO)
+  --with-cuda-sanitizer-include=PATH
+                          use given sanitizer include (absolute path) with
+                          hpcrun (default is NO)
+  --with-cuda-sanitizer-lib=PATH
+                          use given cuda-sanitizer lib (absolute path) with
+                          hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -23126,6 +23143,110 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-cuda-sanitizer=PATH
+#-------------------------------------------------
+OPT_HAVE_CUDA_SANITIZER=no
+OPT_CUDA_SANITIZER=
+OPT_CUDA_SANITIZER_INCPATH=
+OPT_CUDA_SANITIZER_IFLAGS=
+OPT_CUDA_SANITIZER_LDFLAGS=
+OPT_CUDA_SANITIZER_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUDA_SANITIZER_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUDA_SANITIZER_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+# Check whether --with-cuda-sanitizer was given.
+if test "${with_cuda_sanitizer+set}" = set; then :
+  withval=$with_cuda_sanitizer; if test $withval != no; then
+     OPT_HAVE_CUDA_SANITIZER=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-sanitizer requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_SANITIZER=${withval}
+   fi
+fi
+
+
+#
+# Valid cuda-sanitizer library
+#
+if test "$OPT_HAVE_CUDA_SANITIZER" = yes; then
+    OPT_CUDA_SANITIZER_IFLAGS="-I$OPT_CUDA_SANITIZER/include"
+    if test "$OPT_HAVE_CUDA" = no; then
+       cuda_dir=$(dirnmame $(dirname $OPT_CUDA_SANITIZER))/include
+       OPT_CUDA_IFLAGS="-I$cuda_dir"
+    fi
+    OPT_CUDA_SANITIZER_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUDA_SANITIZER_IFLAGS"
+fi
+
+if test "$OPT_HAVE_CUDA_SANITIZER" = "yes" ; then
+
+# Check whether --with-cuda-sanitizer-include was given.
+if test "${with_cuda_sanitizer_include+set}" = set; then :
+  withval=$with_cuda_sanitizer_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-sanitizer-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_SANITIZER_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUDA_SANITIZER}/include/sanitizer.h; then
+         OPT_CUDA_SANITIZER_INCPATH=${OPT_CUDA_SANITIZER}/include
+
+$as_echo "#define HAVE_CUDA_SANITIZER_H 1" >>confdefs.h
+
+     else
+         as_fn_error $? "'${OPT_CUDA_SANITIZER}/include/sanitizer.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUDA_SANITIZER_IFLAGS="-I${OPT_CUDA_SANITIZER_INCPATH} "
+
+
+# Check whether --with-cuda-sanitizer-lib was given.
+if test "${with_cuda_sanitizer_lib+set}" = set; then :
+  withval=$with_cuda_sanitizer_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cuda-sanitizer-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUDA_SANITIZER_LIBPATH=${withval}
+   fi
+else
+  if test -f "${OPT_CUDA_SANITIZER}/libsanitizer-public.so"
+    then
+      OPT_CUDA_SANITIZER_LIBPATH="${OPT_CUDA_SANITIZER}"
+      break
+    fi
+    if test  -z "${OPT_CUDA_SANITIZER_LIBPATH}" ; then
+      as_fn_error $? "libsanitizer-public.so not found" "$LINENO" 5
+    fi
+
+fi
+
+
+  OPT_CUDA_SANITIZER_LDFLAGS="-L${OPT_CUDA_SANITIZER_LIBPATH} -Wl,-rpath=${OPT_CUDA_SANITIZER_LIBPATH} -lsanitizer-public "
+
+fi
+
+ if test "$OPT_HAVE_CUDA_SANITIZER" = yes; then
+  OPT_ENABLE_CUDA_SANITIZER_TRUE=
+  OPT_ENABLE_CUDA_SANITIZER_FALSE='#'
+else
+  OPT_ENABLE_CUDA_SANITIZER_TRUE='#'
+  OPT_ENABLE_CUDA_SANITIZER_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -23649,6 +23770,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_CUDA_SANITIZER_TRUE}" && test -z "${OPT_ENABLE_CUDA_SANITIZER_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_CUDA_SANITIZER\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then

@@ -64,6 +64,7 @@
 typedef struct Elf_SymbolVector {
   int nsymbols;
   unsigned long *symbols;
+  char **names;
 } Elf_SymbolVector;
 
 

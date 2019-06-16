@@ -161,6 +161,9 @@ XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
+CUDA_SANITIZER_INC_FLGS = @OPT_CUDA_SANITIZER_IFLAGS@
+CUDA_SANITIZER_LD_FLGS = @OPT_CUDA_SANITIZER_LDFLAGS@
+CUDA_SANITIZER_BASE = @OPT_CUDA_SANITIZER@
 
 MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
@@ -448,12 +451,12 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
+	sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cuda-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
-	sample-sources/nvidia/cubin-id-map.c			\
+MY_CUPTI_FILES = sample-sources/nvidia/cubin-id-map.c			\
 	sample-sources/nvidia/cubin-hash-map.c			\
 	sample-sources/nvidia/cubin-symbols.c			\
 	sample-sources/nvidia/cupti-analysis.c			\
@@ -463,7 +466,11 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-host-op-map.c		\
 	sample-sources/nvidia/cupti-stack.c			\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-record.c	 
+	sample-sources/nvidia/cupti-record.c
+endif
+
+if OPT_ENABLE_CUDA_SANITIZER
+MY_CUDA_SANITIZER_FILES = sample-sources/nvidia/sanitizer-api.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -490,7 +497,8 @@ MY_INCLUDE_DIRS =			\
 	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUDA_IFLAGS)             \
-        $(OPT_CUPTI_IFLAGS)             \
+        $(OPT_CUPTI_IFLAGS)            \
+        $(OPT_CUDA_SANITIZER_IFLAGS)   \
 	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)
 
@@ -820,6 +828,16 @@ if OPT_ENABLE_CUPTI
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
+
+if OPT_ENABLE_CUDA_SANITIZER
+  libhpcrun_la_SOURCES  += $(MY_CUDA_SANITIZER_FILES)
+  libhpcrun_o_SOURCES   += $(MY_CUDA_SANITIZER_FILES)
+  libhpcrun_la_CPPFLAGS += $(CUDA_SANITIZER_INC_FLGS)
+	libhpcrun_la_LDFLAGS  += $(CUDA_SANITIZER_LD_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
+endif
+
 
 if OPT_PAPI_CUPTI
 libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)

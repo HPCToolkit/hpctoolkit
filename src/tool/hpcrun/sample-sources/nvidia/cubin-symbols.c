@@ -60,6 +60,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 
 #include <gelf.h>
 
@@ -171,9 +172,10 @@ sectionOffset
 Elf_SymbolVector *
 newSymbolsVector(int nsymbols)
 {
-  Elf_SymbolVector *v = (Elf_SymbolVector *) malloc(sizeof(Elf_SymbolVector));
+  Elf_SymbolVector *v = (Elf_SymbolVector *) hpcrun_malloc(sizeof(Elf_SymbolVector));
   v->nsymbols = nsymbols;
-  v->symbols = (unsigned long *) calloc(nsymbols, sizeof(unsigned long));
+  v->symbols = (unsigned long *) hpcrun_malloc(nsymbols * sizeof(unsigned long));
+  v->names = (char **) hpcrun_malloc(nsymbols * sizeof(char *));
   return v;
 }
 
@@ -211,8 +213,12 @@ relocateSymbolsHelper
 	            // update each function symbol's offset to match the new offset of the
 	            // text section that contains it.
 	            sym.st_value = (Elf64_Addr) s_offset;
-	            gelf_update_sym(datap, i, &sym);
+	            //gelf_update_sym(datap, i, &sym);
 	            symbol_values->symbols[i] = s_offset;
+              char *s_name = elf_strptr(elf, shdr->sh_link, sym.st_name);
+              int s_len = strlen(s_name);
+              symbol_values->names[i] = (char *)hpcrun_malloc((s_len + 1) * sizeof(char));
+              strncpy(symbol_values->names[i], s_name, s_len);
 	          }
 	        default: break;
 	      }
@@ -258,7 +264,6 @@ computeSymbolOffsets
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
     symbol_values = relocateSymbols(cubin_elf, sections);
-    free(sections);
   }
   return symbol_values;
 }
