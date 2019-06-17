@@ -64,7 +64,9 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
-MY_HTML_FILES = software-instructions.html
+MY_HTML_FILES = \
+	software-instructions.html \
+	spack-issues.html
 
 MYSOURCES = \
 	index.html \

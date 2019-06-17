@@ -58,6 +58,13 @@ Spack documentation is available at:
 @uref{https://spack.readthedocs.io/en/latest/index.html}
 @end example
 
+@noindent
+The current status of using Spack for HPCToolkit is at:
+
+@example
+@uref{http://hpctoolkit.org/spack-issues.html}
+@end example
+
 @c ------------------------------------------------------------
 
 @section Prerequisites
