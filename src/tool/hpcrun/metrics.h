@@ -118,6 +118,8 @@ int hpcrun_get_num_kind_metrics(void);
 
 metric_desc_t* hpcrun_id2metric(int id);
 
+void hpcrun_metrics_data_dump();
+
 // non finalizing
 metric_desc_t* hpcrun_id2metric_linked(int metric_id);
 

@@ -180,7 +180,7 @@ check(int ans)
 
 
 void
-hpcrun_metric_data_dump()
+hpcrun_metrics_data_dump()
 {
   hpcrun_metrics_data_finalize();
 
