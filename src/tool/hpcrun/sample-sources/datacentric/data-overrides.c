@@ -252,9 +252,9 @@ metric_initialize()
   // the end address metric is the maximum of all accessed memory
 
   metric_desc_t *metric_start = hpcrun_set_metric_and_attributes(addr_start_metric_id,  DATACENTRIC_METRIC_PREFIX  "Start",
-      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
+      MetricFlags_ValFmt_Address, 1, metric_property_none, false, false );
   metric_desc_t *metric_end   = hpcrun_set_metric_and_attributes(addr_end_metric_id,  DATACENTRIC_METRIC_PREFIX  "End",
-      MetricFlags_ValFmt_Address, 1, metric_property_none, true, false );
+      MetricFlags_ValFmt_Address, 1, metric_property_none, false, false );
 
   metric_start->formula = (char*) hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(metric_start->formula, "min($%d)", addr_start_metric_id);
@@ -310,7 +310,7 @@ datacentric_initialize(void)
   metric_variable_size = hpcrun_new_metric();
 
   hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true, true );
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   overrides_status = OVERRIDES_INITIALIZED;
 
