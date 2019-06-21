@@ -44,53 +44,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <string>
-using std::string;
+// This file provides a wrapper around libiberty's cplus_demangle() to
+// provide a uniform interface for the options that we want for
+// hpcstruct and hpcprof.  All cases wanting to do demangling should
+// use this file.
+//
+// Libiberty cplus_demangle() does many malloc()s, but does appear to
+// be reentrant and thread-safe.  But not signal safe.
 
-#include <cstdlib> // for 'free'
+//***************************************************************************
 
+#include <string.h>
+
+#include <include/gnu_demangle.h>
 #include <lib/support-lean/demangle.h>
-#include <lib/support/ProcNameMgr.hpp>
 
-#include "BinUtils.hpp"
+#define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 
-//****************************************************************************
 
-namespace BinUtil {
-
-// 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
-// to attempt to demangle it.  If there is an error in demangling,
-// return 'name'; otherwise return the demangled version.
-string
-canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
+// Returns: malloc()ed string for the demangled name, or else NULL if
+// 'name' is not a mangled name.
+//
+// Note: the caller is resposible for calling free() on the result.
+//
+char *
+hpctoolkit_demangle(const char * name)
 {
-  if (name.empty()) {
-    return name; 
+  if (name == NULL) {
+    return NULL;
   }
 
-  string bestname = demangleProcName(name.c_str());
-  if (procNameMgr) {
-    bestname = procNameMgr->canonicalize(bestname);
+  if (strncmp(name, "_Z", 2) != 0) {
+    return NULL;
   }
-  
-  return bestname;
+
+  return cplus_demangle(name, DEMANGLE_FLAGS);
 }
-
-
-// Returns the demangled function name (if possible) or the original name.
-string
-demangleProcName(const std::string& name)
-{
-  string ans = name;
-
-  char *str = hpctoolkit_demangle(name.c_str());
-
-  if (str != NULL) {
-    ans = str;
-    free(str);
-  }
-
-  return ans;
-}
-
-} // namespace BinUtil

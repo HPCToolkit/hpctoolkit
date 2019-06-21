@@ -61,19 +61,18 @@ using std::endl;
 #include <streambuf>
 #include <new>
 
+#include <include/hpctoolkit-config.h>
+
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
 #include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
-
-#include <include/hpctoolkit-config.h>
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -88,6 +87,7 @@ static int
 realmain(int argc, char* argv[]);
 
 
+#if 0
 static void
 hpctoolkit_demangler_error(char *error_string, const char *demangler_library_filename)
 {
@@ -121,6 +121,7 @@ hpctoolkit_demangler_init(const char *demangler_library_filename, const char *de
     hpctoolkit_demangler_error(dlerror(), demangler_library_filename);
   } 
 }
+#endif
 
 //****************************** Main Program *******************************
 
@@ -190,6 +191,7 @@ realmain(int argc, char* argv[])
 
   opts.show_time = args.show_time;
 
+#if 0
   // ------------------------------------------------------------
   // Set the demangler before reading the executable 
   // ------------------------------------------------------------
@@ -202,6 +204,7 @@ realmain(int argc, char* argv[])
     hpctoolkit_demangler_init(demangle_library, demangle_function);
     opts.ourDemangle = true;
   }
+#endif
 
   // ------------------------------------------------------------
   // Build and print the program structure tree

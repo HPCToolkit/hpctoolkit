@@ -107,7 +107,7 @@ static const string UNKNOWN_PROC ("unknown-proc");
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
 
-#define DEBUG_INLINE_NAMES  0
+#define DEBUG_INLINE_SEQNS  0
 
 //***************************************************************************
 
@@ -197,6 +197,7 @@ closeSymtab()
 
 //***************************************************************************
 
+#if 0
 // Lookup the Module (comp unit) containing 'vma' to see if it is from
 // a source file that mangles function names.  A full Symtab Function
 // already does this, but inlined functions do not, so we have to
@@ -257,6 +258,7 @@ analyzeDemangle(VMA vma)
 
   return false;
 }
+#endif
 
 
 // Returns nodelist as a list of InlineNodes for the inlined sequence
@@ -276,7 +278,6 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 
   if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL)
   {
-    bool demangle = analyzeDemangle(addr);
     ret = true;
 
     parent = func->getInlinedParent();
@@ -293,22 +294,17 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
       // symtab does not provide mangled and pretty names for
       // inlined functions, so we have to decide this ourselves
       string procnm = func->getName();
-      string prettynm = procnm;
+      string prettynm =
+	  (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
 
-      if (procnm == "") {
-	procnm = UNKNOWN_PROC;
-	prettynm = UNKNOWN_PROC;
-      }
-      else if (demangle) {
-	prettynm = BinUtil::demangleProcName(procnm);
-      }
-
-#if DEBUG_INLINE_NAMES
-      cout << "raw-inline:  0x" << hex << addr << dec
-	   << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
+#if DEBUG_INLINE_SEQNS
+      cout << "\n0x" << hex << addr << dec
+	   << "  l=" << lineno << "  file:  " << filenm << "\n"
+	   << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
+	   << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
 #endif
 
-      nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
+      nodelist.push_front(InlineNode(filenm, prettynm, lineno));
 
       func = parent;
       parent = func->getInlinedParent();

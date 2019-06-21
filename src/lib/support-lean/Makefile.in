@@ -140,7 +140,8 @@ am__DEPENDENCIES_1 =
 libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCsupport_lean_la-timer.lo \
 	libHPCsupport_lean_la-OSUtil.lo \
-	libHPCsupport_lean_la-compress_lzma.lo
+	libHPCsupport_lean_la-compress_lzma.lo \
+	libHPCsupport_lean_la-demangle.lo
 am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
 libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -225,6 +226,10 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
+
+#############################################################################
+# Common settings
+#############################################################################
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
@@ -314,10 +319,6 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
-
-#############################################################################
-# Common settings
-#############################################################################
 LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
@@ -494,10 +495,10 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c \
-	\
-	compress_lzma.c
+	compress_lzma.c  \
+	demangle.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)  -I$(LZMA_INC)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) -I$(LZMA_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = 
@@ -577,6 +578,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-demangle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
 
 .c.o:
@@ -620,6 +622,13 @@ libHPCsupport_lean_la-compress_lzma.lo: compress_lzma.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress_lzma.c' object='libHPCsupport_lean_la-compress_lzma.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
+
+libHPCsupport_lean_la-demangle.lo: demangle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-demangle.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-demangle.Tpo -c -o libHPCsupport_lean_la-demangle.lo `test -f 'demangle.c' || echo '$(srcdir)/'`demangle.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-demangle.Tpo $(DEPDIR)/libHPCsupport_lean_la-demangle.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='demangle.c' object='libHPCsupport_lean_la-demangle.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-demangle.lo `test -f 'demangle.c' || echo '$(srcdir)/'`demangle.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
