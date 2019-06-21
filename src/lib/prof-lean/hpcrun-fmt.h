@@ -521,6 +521,7 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_ROOT               16
 #define NODE_TYPE_UNKNOWN_ATTRIBUTE  32
 
+#define BITS_RESERVED_NODE_TYPE      7
 
 #define HPCRUN_FMT_LMId_NULL (0)
 
@@ -538,7 +539,7 @@ hpcrun_fmt_doRetainId(uint32_t id)
 
 typedef struct hpcrun_fmt_cct_node_t {
 
-  uint16_t node_type; // see hpcrun node type above
+  uint32_t node_type; // see hpcrun node type above
 
   // id and parent id.  0 is reserved as a NULL value
   uint32_t id;
