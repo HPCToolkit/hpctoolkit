@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -115,9 +115,9 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj)
     map <Block *, int>::iterator mit;
     int num;
 
-    *dotFile << "--------------------------------------------------\n"
-	     << "Procedure: '" << func->name() << "'\n\n"
-	     << "digraph " << func->name() << " {\n"
+    *dotFile << "// --------------------------------------------------\n"
+	     << "// Procedure: '" << func->name() << "'\n\n"
+	     << "digraph \"" << func->name() << "\" {\n"
 	     << "  1 [ label=\"start\" shape=\"diamond\" ];\n";
 
     const ParseAPI::Function::blocklist & blist = func->blocks();
@@ -130,7 +130,7 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj)
 
       blockNum[block] = num;
       *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << dec << "\" ];\n";
+	       << "\\n0x" << block->end() << dec << "\" ];\n";
     }
     int endNum = num + 1;
     *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";

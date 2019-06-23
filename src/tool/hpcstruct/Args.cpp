@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -298,7 +298,7 @@ Args::printUsage(std::ostream& os) const
 void
 Args::printError(std::ostream& os, const char* msg) const
 {
-  os << getCmd() << ": " << msg << endl
+  os << "ERROR: " << msg << "\n"
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
@@ -312,7 +312,8 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string&
 Args::getCmd() const
 {
-  return parser.getCmd();
+  static const std::string command = std::string("hpcstruct");
+  return command;
 }
 
 

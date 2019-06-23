@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -51,6 +51,9 @@
 #include "cct.h"
 #include "cct_ctxt.h"
 
+#include <hpcrun/cct2metrics.h> // need to be placed after cct.h
+
+
 //
 // Data type not opaque : FIXME ??
 //
@@ -72,6 +75,8 @@ typedef struct cct_bundle_t {
 
   cct_node_t* special_idle_node;  // node to signify "idle" resource (used by trace facility).
 
+  cct_node_t* special_no_thread_node; // trace node when outside the thread
+
   cct_ctxt_t* ctxt;               // creation context for bundle
 
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away
@@ -85,11 +90,14 @@ extern void hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt);
 //
 // IO for cct bundle
 //
-extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* x);
+extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* x,
+                                    cct2metrics_t* cct2metrics_map);
 
 //
 // utility functions
 //
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
 extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
+extern cct_node_t* hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct);
+
 #endif // CCT_BUNDLE_H

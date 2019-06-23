@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,7 @@
 #include "handling_sample.h"
 
 #include "thread_data.h"
+#include "trace.h"
 
 #include <lush/lush-pthread.h>
 #include <messages/messages.h>
@@ -357,6 +358,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));
 #endif

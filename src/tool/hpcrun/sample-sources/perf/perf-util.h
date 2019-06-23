@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -103,9 +103,6 @@ typedef struct perf_mmap_data_s {
   // header information in the buffer
   u32   header_misc; /* information about the sample */
   u32   header_type; /* either sample record or other */
-
-  // only for PERF_RECORD_SWITCH
-  u64 	context_switch_time;
 
 } perf_mmap_data_t;
 

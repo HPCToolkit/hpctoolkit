@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -75,5 +75,9 @@ typedef __u32 u32;
 typedef __u64 u64;
 #endif
 
+
+#ifndef u16
+typedef __u16 u16;
+#endif
 
 #endif

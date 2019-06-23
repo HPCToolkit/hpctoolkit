@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -259,6 +259,7 @@ typedef struct {
   FILE* fs;
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
+  cct2metrics_t* cct2metrics_map;
 } write_arg_t;
 
 
@@ -291,8 +292,9 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
   tmp->num_metrics = my_arg->num_metrics;
-  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
-			       my_arg->num_metrics);
+  metric_set_t* ms = hpcrun_get_metric_set_specific(&(my_arg->cct2metrics_map), node);
+
+  hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -583,7 +585,7 @@ hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
 // Writing operation
 //
 int
-hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
+hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
@@ -600,6 +602,10 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
     .fs          = fs,
     .flags       = flags,
     .tmp_node    = &tmp_node,
+
+    // multithreaded code: add personalized cct2metrics_map for multithreading programs
+    // this is to allow a thread to write the profile data of another thread.
+    .cct2metrics_map = cct2metrics_map
   };
   
   hpcrun_metricVal_t metrics[num_metrics];

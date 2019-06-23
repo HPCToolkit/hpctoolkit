@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -786,7 +786,7 @@ Analysis::CallPath::pruneBySummaryMetrics(Prof::CallPath::Profile& prof,
   const Prof::Metric::Mgr& mMgrGbl = *(prof.metricMgr());
   for (uint mId = 0; mId < mMgrGbl.size(); ++mId) {
     const Prof::Metric::ADesc* m = mMgrGbl.metric(mId);
-    if (m->isVisible()
+    if (m->isVisible() && !m->isTemporary()
 	&& m->type() == Prof::Metric::ADesc::TyIncl
 	&& (m->nameBase().find("Sum") != string::npos)) {
       ivalset.insert(VMAInterval(mId, mId + 1)); // [ )

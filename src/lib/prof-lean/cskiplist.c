@@ -10,7 +10,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -329,7 +329,7 @@ cskl_links_tostr(int max_height, char str[], int max_cskl_str_len)
   int str_len;
   str[0] = '\0';
   for (int i = 0; i < max_height; i++) {
-	str_len = strlen(str);
+    str_len = strlen(str);
     strncat(str, " |", max_cskl_str_len - str_len - 1);
   }
   str_len = strlen(str);
@@ -680,7 +680,7 @@ void cskl_levels_tostr (int height, int max_height, char str[],
 {
   int str_len;
   str[0] = '\0';
-  strcat(str, " +");
+  if (height > 0) strcat(str, " +");
   for (int i = 1; i < height; i++) {
 	str_len = strlen(str);
     strncat(str, "-+", max_cskl_str_len - str_len - 1);
@@ -713,18 +713,29 @@ cskl_tostr(cskiplist_t *cskl, cskl_node_tostr node_tostr, char csklstr[], int ma
   csklnode_t *right = cskl->right_sentinel;
 
   int temp_len = max_cskl_str_len/2;
+
+  // allocate and clear a buffer
   char temp_buff[temp_len];
+
   int str_len = 0;
 
-  for (; ; node = node->nexts[0]) {
-    cskl_links_tostr(max_height, temp_buff, temp_len - 1);
-    strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
-    str_len = strlen(csklstr);
+  int dolinks = 0;
+  for (; ; node = node->nexts[0], dolinks = 1) {
+    if (dolinks) {
+      temp_buff[0] = 0;
+      cskl_links_tostr(max_height, temp_buff, temp_len - 1);
+      strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
+      str_len = strlen(csklstr);
+    }
+
     cskl_levels_tostr(node->height, max_height, csklstr + str_len, max_cskl_str_len - str_len - 1);
     str_len = strlen(csklstr);
+
+    temp_buff[0] = 0;
     node_tostr(node->val, node->height, max_height, temp_buff, temp_len - 1);  // abstract function
     strncat(csklstr, temp_buff, max_cskl_str_len - str_len - 1);
     str_len = strlen(csklstr);
+
     if (node == right) break;
   }
   strncat(csklstr, "\n", max_cskl_str_len - str_len - 1);
@@ -765,12 +776,16 @@ cskl_dump(cskiplist_t *cskl, cskl_node_tostr node_tostr)
   csklnode_t *node = cskl->left_sentinel;
   csklnode_t *right = cskl->right_sentinel;
 
-  char nodestr[NODE_STR_LEN];
 
   for (; ; node = node->nexts[0]) {
     cskl_links_dump(node, max_height);
+
+    char nodestr[NODE_STR_LEN];
+    nodestr[0] = 0;
+
     node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
     printf("%s", nodestr);
+
     if (node == right) break;
   }
   printf("\n");
@@ -811,7 +826,10 @@ cskl_print(cskiplist_t *cskl, cskl_node_tostr node_tostr)
   for (node = cskl->left_sentinel; node; node = node->nexts[0]) {
     cskl_links_print(node, max_height);
 
+    // allocate and clear a buffer
     char nodestr[NODE_STR_LEN];
+    nodestr[0] = 0;
+
     node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
     printf("%s", nodestr);
   }
@@ -847,8 +865,12 @@ cskl_check_node_dump
     }
     printf(" ");
     
-    char nodestr[NODE_STR_LEN];
     cskl_links_dump(node, max_height);
+
+    // allocate and clear a buffer
+    char nodestr[NODE_STR_LEN];
+    nodestr[0] = 0;
+
     node_tostr(node->val, node->height, max_height, nodestr, NODE_STR_LEN -1);
     printf("%s", nodestr);
   }

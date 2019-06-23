@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -562,6 +562,22 @@ getFileName(Struct::ANode* strct)
   return nm;
 }
 
+static std::string
+getFilenameKey(Struct::LM *lm, const char *filename)
+{
+  std::string lm_name;
+  if (lm) {
+    // use pretty_name for the key to unify different names of vmlinux 
+    // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+    lm_name = lm->pretty_name();
+  } else {
+    lm_name = "";
+  }
+  std::string key = lm_name + ":" + filename;
+
+  return key;
+}
+
 // writing XML dictionary in the header part of experiment.xml
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
@@ -598,13 +614,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // (exception for unknown-file)
       // ---------------------------------------
       Struct::LM *lm = strct->ancestorLM();
-      std::string lm_name;
-      if (lm) {
-        // use pretty_name for the key to unify different names of vmlinux 
-        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
-        lm_name = lm->pretty_name();
-      }
-      std::string key = lm_name + ":" + nm;
+      std::string key = getFilenameKey(lm, nm); 
 
       if (m_mapFiles.find(key) == m_mapFiles.end()) {
         //  the filename is not in the list. Add it.
@@ -637,22 +647,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // -------------------------------------------------------
         std::string completProcName;
 
-        Struct::File *file = strct->ancestorFile();
-        uint file_id       = (file != NULL ? file->id() : 0);
         Struct::LM *lm     = strct->ancestorLM();
         if (lm) {
           uint lm_id = lm->id();
           SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
           if (sf) {
             lm_id = sf->id();
-
-            // if we haven't set fake_file_id, we need to set it with
-            //   the file id of this struct.
-            //   otherwise, we just reuse the fake_file_id to make it consistent
-            //   across different lm
-
-            sf->fileId(file_id);
-            file_id = sf->fileId();
           }
 
           char buffer[MAX_PREFIX_CHARS];
@@ -661,9 +661,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         }
 
         // we need to allow the same function name from a different file
-        char buffer[MAX_PREFIX_CHARS];
-        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
-        completProcName.append(buffer);
+        const char *fn = getFileName(strct);
+        completProcName.append(fn);
+        completProcName.append(":");
 
         const char *lnm;
 
@@ -685,7 +685,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
           lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
-        if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+
+        // make sure the triple <load_module_id, filename, proc_name> is unique
+        //
+        std::map<std::string, uint>::iterator it = m_mapProcs.find(completProcName);
+
+        if (it == m_mapProcs.end()) 
         {
           // the proc is not in dictionary. Add it into the map.
           m_mapProcs[completProcName] = id;
@@ -1314,7 +1319,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN");
+			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
@@ -1357,7 +1362,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       Metric::SampledDesc* mSmpl =
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN");
+				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
