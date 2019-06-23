@@ -62,15 +62,14 @@
 //*****************************************************************************
 
 typedef struct cuda_device_property {
-  int sm_count;
-  int sm_clock_rate;
-  int sm_shared_memory;
-  int sm_registers;
-  int sm_threads;
-  int sm_blocks;
-  int num_threads_per_warp;
+  uint32_t sm_count;
+  uint32_t sm_clock_rate;
+  uint32_t sm_shared_memory;
+  uint32_t sm_registers;
+  uint32_t sm_threads;
+  uint32_t sm_blocks;
+  uint32_t num_threads_per_warp;
 } cuda_device_property_t;
-
 
 
 //*****************************************************************************
