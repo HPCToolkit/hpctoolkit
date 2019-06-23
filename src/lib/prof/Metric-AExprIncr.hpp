@@ -853,8 +853,8 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual int
-  hasAccum() const
+  virtual uint
+  numAccum() const
   { return 2; }
 
   virtual bool

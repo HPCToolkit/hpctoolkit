@@ -129,28 +129,21 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
 }
 
 /***********************************************************************
- * this function is called when a cycle or time event occurs, OR a
- *  context switch event occurs.
+ * Warning: There is a bug in Linux kernel concerning monitoring context switch
+ *   by 1st-party profiler. For 1st party profiler (or self-profiler), it's
+ *   impossible to get the duration time during the context-switch to the kernel
+ *   if sleep or any clock routine is used. The reason is that the kernel doesn't
+ *   deliver context-switch IN, only context-switch OUT.
+ *   For more details see https://www.mail-archive.com/linux-kernel@vger.kernel.org/msg1424933.html
  *
- * to compute kernel blocking time:
+ *   Blocktime event depends on context-switch event. If the kernel fails to
+ *   deliver context-switch IN, then we are screwed, the result is completely incorrect.
+ *
+ *   Another solution is to use approximate blocktime (original code).
+ *
+ * to compute approximate kernel blocking time:
  *  time_outside_kernel - time_inside_kernel
  *
- * algorithm:
- *  if this is the first time entering kernel (time_cs_out == 0) then
- *    set time_cs_out
- *    store the cct to cct_kernel
- *  else
- *    if we are outside the kernel, then:
- *      compute the blocking time
- *      blame the time to the kernel cct
- *
- *    else if we are still inside the kernel with different cct_kernel:
- *      compute the time
- *      blame the time to the old cct_kernel
- *      set time_cs_out to the current time
- *      set cct_kernel with the new cct
- *    end if
- *  end if
  ***********************************************************************/
 void
 kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
@@ -167,57 +160,38 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     return;
   }
 
-  if (mmap_data->context_switch_time > 0) {
-    // ----------------------------------------------------------------
-    // when PERF_RECORD_SWITCH (context switch out) occurs:
-    //  if this is the first time, (time_cs_out is zero), then freeze the
-    //    cs time and the current cct
-    // ----------------------------------------------------------------
+  struct perf_event_attr *attr = &(current_event->event->attr);
 
-    if (time_cs_out == 0) {
-      // ----------------------------------------------------------------
-      // this is the first time we enter the kernel (leaving the current process)
-      // needs to store the time to compute the blocking time in
-      //  the next step when leaving the kernel
-      // ----------------------------------------------------------------
-      time_cs_out = mmap_data->context_switch_time;
+  if (attr->config == PERF_COUNT_SW_CONTEXT_SWITCHES &&
+      attr->type   == PERF_TYPE_SOFTWARE) {
+
+    // context switch event contains 3 records:
+    //  (1) sample record (time, period, cct)
+    //  (2) context-switch out (time)
+    //  (3) context-switch in  (time)
+    //
+    // compute the blocktime = context_switch_IN - context_switch_OUT
+
+    if (mmap_data->header_type == PERF_RECORD_SAMPLE) {
+      // (1) sample record: store the current cct for further usage
+      cct_kernel = sv.sample_node;
+      return;
+    }
+
+    if (mmap_data->header_misc == PERF_RECORD_MISC_SWITCH_OUT) {
+      // (2) leaving the process, entering the kernel: store the time
+      time_cs_out = mmap_data->time;
       cpu = mmap_data->cpu;
       pid = mmap_data->pid;
       tid = mmap_data->tid;
-    }
-  } else {
 
-    // ----------------------------------------------------------------
-    // when PERF_SAMPLE_RECORD occurs:
-    // check whether we were previously in the kernel or not (time_cs_out > 0)
-    // if we were in the kernel, then we blame the different time to the
-    //   cct kernel
-    // ----------------------------------------------------------------
-
-    if (current_event->event->attr.config == PERF_COUNT_SW_CONTEXT_SWITCHES) {
-
-      if (cct_kernel != NULL && time_cs_out > 0) {
-        // corner case : context switch within a context switch !
+    } else {
+      // (3) leaving the kernel, entering the process: compute the block time
+      if (cct_kernel != NULL && time_cs_out>0)
         blame_kernel_time(current_event, cct_kernel, mmap_data);
-        time_cs_out  = 0;
-      }
-      // context switch inside the kernel:  record the new cct
-      cct_kernel  = sv.sample_node;
 
-    } else if (cct_kernel != NULL) {
-      // other event than cs occurs (it can be cycles, clocks or others)
-
-      if ((mmap_data->time > 0) && (time_cs_out > 0) && (mmap_data->nr==0)) {
-#if KERNEL_BLOCKING_DEBUG
-        unsigned int cpumode = mmap_data->header_misc & PERF_RECORD_MISC_CPUMODE_MASK;
-        assert(cpumode == PERF_RECORD_MISC_USER);
-#endif
-
-        blame_kernel_time(current_event, cct_kernel, mmap_data);
-        // important: need to reset the value to inform that we are leaving the kernel
-        cct_kernel   = NULL;
-        time_cs_out  = 0;
-      }
+      time_cs_out  = 0;
+      cct_kernel = NULL;
     }
   }
 }

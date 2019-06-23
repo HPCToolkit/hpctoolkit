@@ -64,6 +64,10 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
+MY_HTML_FILES = \
+	software-instructions.html \
+	spack-issues.html
+
 MYSOURCES = \
 	index.html \
 	\
@@ -72,7 +76,6 @@ MYSOURCES = \
 	overview.html \
 	publications.html \
 	software.html \
-	software-instructions.html \
 	\
 	info-acks.html \
 	info-people.html
@@ -85,6 +88,7 @@ MYSOURCES_TGT = \
 
 MYDATA = \
 	$(MYSOURCES) \
+	$(MY_HTML_FILES) \
 	\
 	hpctoolkit.org.sitemap.txt \
 	\
@@ -136,7 +140,8 @@ MY_VARSRCS = \
 MY_PUBS = $(abs_top_srcdir)/doc/manual/texmf/bibtex/bib/pubs.bib
 
 # Note: bib2xhtml supports 'pdf' and 'url' fields.
-BIB2XHTML_ROOT = /opt/tallent/bib2xhtml
+BIB2XHTML_ROOT = /projects/pkgs-src/bib2xhtml-v3.0-56-gd8f4
+#BIB2XHTML_ROOT = /opt/tallent/bib2xhtml
 BIB2XHTML = $(BIB2XHTML_ROOT)/bib2xhtml
 
 hpc: $(MYSOURCES_IN) $(MYSOURCES_TGT)
