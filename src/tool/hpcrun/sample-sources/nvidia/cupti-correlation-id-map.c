@@ -42,7 +42,7 @@ static cupti_correlation_id_map_entry_t *
 cupti_correlation_id_map_entry_new(uint32_t correlation_id, uint64_t external_id)
 {
   cupti_correlation_id_map_entry_t *e;
-  e = (cupti_correlation_id_map_entry_t *)hpcrun_malloc(sizeof(cupti_correlation_id_map_entry_t));
+  e = (cupti_correlation_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_correlation_id_map_entry_t));
   e->correlation_id = correlation_id;
   e->external_id = external_id;
   e->left = NULL;

@@ -4,6 +4,7 @@
 #include <lib/prof-lean/stdatomic.h>
 #include "cupti-node.h"
 
+
 // stack type
 typedef struct cupti_stack {
   _Atomic(cupti_node_t *) head;

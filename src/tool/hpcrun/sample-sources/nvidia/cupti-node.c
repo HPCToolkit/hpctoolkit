@@ -176,8 +176,8 @@ cupti_activity_node_new
  cupti_node_t *next
 )
 {
-  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
-  node->entry = (cupti_entry_activity_t *)hpcrun_malloc(sizeof(cupti_entry_activity_t));
+  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc_safe(sizeof(cupti_node_t));
+  node->entry = (cupti_entry_activity_t *)hpcrun_malloc_safe(sizeof(cupti_entry_activity_t));
   cupti_activity_node_set(node, activity, cct_node, next);
   return node;
 }
@@ -211,8 +211,8 @@ cupti_notification_node_new
  cupti_node_t *next
 )
 {
-  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
-  cupti_entry_notification_t *entry = (cupti_entry_notification_t *)hpcrun_malloc(sizeof(cupti_entry_notification_t));
+  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc_safe(sizeof(cupti_node_t));
+  cupti_entry_notification_t *entry = (cupti_entry_notification_t *)hpcrun_malloc_safe(sizeof(cupti_entry_notification_t));
   node->entry = entry;
   cupti_notification_node_set(node, host_op_id, cct_node, record, next);
   return node;

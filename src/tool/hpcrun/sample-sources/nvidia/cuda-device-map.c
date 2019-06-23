@@ -108,7 +108,7 @@ cuda_device_map_entry_new
 )
 {
   cuda_device_map_entry_t *e = (cuda_device_map_entry_t *) 
-    hpcrun_malloc(sizeof(cuda_device_map_entry_t));
+    hpcrun_malloc_safe(sizeof(cuda_device_map_entry_t));
 
   e->device = device;
   e->left = NULL;

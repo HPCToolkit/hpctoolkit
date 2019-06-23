@@ -691,7 +691,7 @@ cupti_enable_activities
     cupti_pc_sampling_enable(context, pc_sampling_frequency);
   }
 
-  cupti_correlation_enable(context);
+  cupti_correlation_enable();
 
   PRINT("Exit cupti_enable_activities\n");
 }
@@ -872,7 +872,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_occupancy_metric_id = ke_metric_id[10];
 
   metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);
-  char *ke_occupancy_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  char *ke_occupancy_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(ke_occupancy_buffer, "$%d/$%d", ke_active_warps_per_sm_metric_id, ke_max_active_warps_per_sm_metric_id);
   ke_occupancy_metric->formula = ke_occupancy_buffer;
 
@@ -943,7 +943,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   info_sm_efficiency_id = info_metric_id[4];
 
   metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
-  char *sm_efficiency_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
 

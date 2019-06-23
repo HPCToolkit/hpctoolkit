@@ -35,7 +35,7 @@ cupti_record_init()
     cupti_stack_init(&cupti_record.cupti_free_activity_stack);
     cupti_record_initialized = true;
 
-    cupti_record_list_t *curr_cupti_record_list_head = hpcrun_malloc(sizeof(cupti_record_list_t));
+    cupti_record_list_t *curr_cupti_record_list_head = hpcrun_malloc_safe(sizeof(cupti_record_list_t));
     cupti_record_list_t *old_head = atomic_load(&cupti_record_list_head);
     atomic_store(&curr_cupti_record_list_head->next, old_head);
     curr_cupti_record_list_head->record = &cupti_record;
