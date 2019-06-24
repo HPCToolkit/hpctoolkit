@@ -232,7 +232,6 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
-static __thread bool cupti_identity_flag = false;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -752,13 +751,6 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-  // do not invoke callbacks for cupti thread itself
-  // so cupti_stop_flag is not set for cupti thread,
-  // which means cuptiActivityFlush will not be called by cupti thread
-  if (cupti_identity_flag) {
-    return;
-  }
-
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -1084,11 +1076,7 @@ cupti_buffer_alloc
  size_t *maxNumRecords
 )
 {
-  // mark identity flag
-  // do not invoke callbacks for cupti threads when it invokes cuda apis
-  // buffer alloc is always executed before buffer complete
-  cupti_identity_flag = true;
-
+  // cupti client call this function
   int retval = posix_memalign((void **) buffer,
     (size_t) HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT,
     (size_t) HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE); 

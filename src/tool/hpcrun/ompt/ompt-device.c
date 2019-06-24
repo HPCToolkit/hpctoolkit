@@ -339,6 +339,7 @@ ompt_target_callback
   // If a thread creates a target region, we init records
   // and it must be flushed in the finalizer
   cupti_stop_flag_set();
+  // TODO(Keren) ignore cupti thread callback
   cupti_record_init();
 
   // process cupti records

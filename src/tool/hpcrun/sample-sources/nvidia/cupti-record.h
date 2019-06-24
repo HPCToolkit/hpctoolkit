@@ -64,7 +64,7 @@ cupti_worker_record_init
 
 
 void
-cupti_cupti_record_init
+cupti_record_init
 (
 );
 
