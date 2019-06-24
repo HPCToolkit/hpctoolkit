@@ -372,6 +372,7 @@ static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
 static const size_t DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
+static const size_t DEVICE_SEMAPHORE_SIZE = 65536 * 16;
 
 //******************************************************************************
 // constants
@@ -976,7 +977,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    cupti_device_buffer_config(DEVICE_BUFFER_SIZE);
+    cupti_device_buffer_config(DEVICE_BUFFER_SIZE, DEVICE_SEMAPHORE_SIZE);
 
     // Register cupti callbacks
     cupti_trace_init();

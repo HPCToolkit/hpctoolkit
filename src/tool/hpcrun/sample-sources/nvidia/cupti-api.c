@@ -1064,12 +1064,15 @@ cupti_device_timestamp_get
 void
 cupti_device_buffer_config
 (
- size_t size
+ size_t buf_size,
+ size_t sem_size
 )
 {
   size_t value_size = sizeof(size_t);
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &size));
+    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
+  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+    (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
 }
 
 
@@ -1123,6 +1126,7 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  fprintf(stderr, "buf flush back\n");
   // handle notifications
   cupti_cupti_notification_apply(cupti_notification_handle);
 
@@ -1796,7 +1800,6 @@ cupti_instruction_process
 }
 
 
-
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1919,7 +1922,6 @@ cupti_device_shutdown(void *args)
   cupti_worker_activity_apply(cupti_activity_handle);
   cupti_callbacks_unsubscribe();
 }
-
 
 
 //******************************************************************************
