@@ -111,56 +111,6 @@ static Symtab *the_symtab = NULL;
 
 //***************************************************************************
 
-// Old attempt to catch errors in Symtab and continue.  There isn't
-// any reasonable way to continue, so don't try.
-#if 0
-static struct sigaction old_act_abrt;
-static struct sigaction old_act_segv;
-static sigjmp_buf jbuf;
-static int jbuf_active = 0;
-static int num_queries = 0;
-static int num_errors = 0;
-
-static void restore_sighandler(void);
-
-static void
-banal_sighandler(int sig)
-{
-  if (jbuf_active) {
-    siglongjmp(jbuf, 1);
-  }
-
-  // caught a signal, but it didn't come from symtab
-  restore_sighandler();
-  DIAG_Die("banal caught unexpected signal " << sig);
-}
-
-static void
-init_sighandler(void)
-{
-  struct sigaction act;
-
-  memset(&act, 0, sizeof(act));
-  act.sa_handler = banal_sighandler;
-  act.sa_flags = 0;
-  sigemptyset(&act.sa_mask);
-
-  jbuf_active = 0;
-  sigaction(SIGABRT, &act, &old_act_abrt);
-  sigaction(SIGSEGV, &act, &old_act_segv);
-}
-
-static void
-restore_sighandler(void)
-{
-  sigaction(SIGABRT, &old_act_abrt, NULL);
-  sigaction(SIGSEGV, &old_act_segv, NULL);
-  jbuf_active = 0;
-}
-#endif
-
-//***************************************************************************
-
 namespace Inline {
 
 // These functions return true on success.
@@ -196,70 +146,6 @@ closeSymtab()
 }
 
 //***************************************************************************
-
-#if 0
-// Lookup the Module (comp unit) containing 'vma' to see if it is from
-// a source file that mangles function names.  A full Symtab Function
-// already does this, but inlined functions do not, so we have to
-// decide this ourselves.
-//
-// Returns: true if 'vma' is from a C++ module (mangled names).
-//
-static string cplus_exts[] = {
-  ".C", ".cc", ".cpp", ".cxx", ".c++",
-  ".CC", ".CPP", ".CXX", ".hpp", ".hxx", ""
-};
-
-static bool
-analyzeDemangle(VMA vma)
-{
-  if (the_symtab == NULL) {
-    return false;
-  }
-
-  // find module (comp unit) containing vma
-  set <Module *> modSet;
-  the_symtab->findModuleByOffset(modSet, vma);
-
-  if (modSet.empty()) {
-    return false;
-  }
-
-  Module * mod = *(modSet.begin());
-  if (mod == NULL) {
-    return false;
-  }
-
-  // languages that need demangling
-  supportedLanguages lang = mod->language();
-  if (lang == lang_CPlusPlus || lang == lang_GnuCPlusPlus) {
-    return true;
-  }
-  if (lang != lang_Unknown) {
-    return false;
-  }
-
-  // if language is unknown, then try file name
-  string filenm = mod->fileName();
-  long file_len = filenm.length();
-
-  if (filenm == "") {
-    return false;
-  }
-
-  for (auto i = 0; cplus_exts[i] != ""; i++) {
-    string ext = cplus_exts[i];
-    long len = ext.length();
-
-    if (file_len > len && filenm.compare(file_len - len, len, ext) == 0) {
-      return true;
-    }
-  }
-
-  return false;
-}
-#endif
-
 
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is

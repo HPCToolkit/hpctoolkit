@@ -66,7 +66,6 @@ using std::endl;
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-#include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
@@ -78,50 +77,9 @@ using std::endl;
 #include <omp.h>
 #endif
 
-
-//**************************** Support Functions ****************************
-
-#define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
-
 static int
 realmain(int argc, char* argv[]);
 
-
-#if 0
-static void
-hpctoolkit_demangler_error(char *error_string, const char *demangler_library_filename)
-{
-  std::cerr << "WARNING: Unable to open user-specified C++ demangler library '" 
-            << demangler_library_filename << "'" << std::endl; 
-
-  std::cerr << "         Dynamic library error: '" << error_string <<  "'" 
-            << std::endl; 
-
-  std::cerr << "         Using default demangler instead." << std::endl;
-}
-
-
-static void
-hpctoolkit_demangler_init(const char *demangler_library_filename, const char *demangler_function)
-{
-  if (demangler_library_filename) {
-    static void *demangler_library_handle =
-      dlopen(demangler_library_filename, RTLD_LAZY | RTLD_LOCAL);
-
-    if (demangler_library_handle) {
-      dlerror(); // clear error condition before calling dlsym
-
-      demangler_t demangle_fn = (demangler_t) 
-        dlsym(demangler_library_handle, demangler_function);
-      if (demangle_fn) {
-        hpctoolkit_demangler_set(demangle_fn);
-        return; 
-      }
-    }
-    hpctoolkit_demangler_error(dlerror(), demangler_library_filename);
-  } 
-}
-#endif
 
 //****************************** Main Program *******************************
 
@@ -191,21 +149,6 @@ realmain(int argc, char* argv[])
 
   opts.show_time = args.show_time;
 
-#if 0
-  // ------------------------------------------------------------
-  // Set the demangler before reading the executable 
-  // ------------------------------------------------------------
-  if (!args.demangle_library.empty()) {
-    const char* demangle_library = args.demangle_library.c_str();
-    const char* demangle_function = CXX_DEMANGLER_FN_NAME;
-    if (!args.demangle_function.empty()) {
-      demangle_function = args.demangle_function.c_str();
-    }
-    hpctoolkit_demangler_init(demangle_library, demangle_function);
-    opts.ourDemangle = true;
-  }
-#endif
-
   // ------------------------------------------------------------
   // Build and print the program structure tree
   // ------------------------------------------------------------
@@ -235,16 +178,6 @@ realmain(int argc, char* argv[])
     gaps_rdbuf = gapsFile->rdbuf();
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
-
-#if 0
-  ProcNameMgr* procNameMgr = NULL;
-  if (args.lush_agent == "agent-c++") {
-    procNameMgr = new CppNameMgr;
-  }
-  else if (args.lush_agent == "agent-cilk") {
-    procNameMgr = new CilkNameMgr;
-  }
-#endif
 
   BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
 			       args.searchPathStr, opts);

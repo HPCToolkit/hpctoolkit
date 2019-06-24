@@ -1048,44 +1048,6 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 
 //----------------------------------------------------------------------
 
-#if 0
-// funcNamePrefer -- ordering of mangled (link) and typed names to
-// make the choice in getFuncNames() deterministic (strict prefer).
-//
-// Prefer:
-//   1. longer typed name (longer has more info)
-//   2. longer link name
-//   3. alphabetically lower typed name (arbitrary)
-//   4. alphabetically lower link name
-//
-static bool
-funcNamePrefer(string & typea, string & linka, string & typeb, string & linkb)
-{
-  size_t lena = typea.length();
-  size_t lenb = typeb.length();
-
-  if (lena > lenb) { return true; }
-  if (lena < lenb) { return false; }
-
-  lena = linka.length();
-  lenb = linkb.length();
-
-  if (lena > lenb) { return true; }
-  if (lena < lenb) { return false; }
-
-  int comp = typea.compare(typeb);
-
-  if (comp < 0 ) { return true; }
-  if (comp > 0 ) { return false; }
-
-  comp = linka.compare(linkb);
-
-  if (comp < 0 ) { return true; }
-
-  return false;
-}
-#endif
-
 // getFuncNames -- helper for makeSkeleton() to select the pretty
 // (demangled) and link (mangled) names for a SymtabAPI::Function.
 //
