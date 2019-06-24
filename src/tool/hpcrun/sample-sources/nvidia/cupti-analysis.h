@@ -3,7 +3,7 @@
 
 #include <cupti_activity.h>
 
-extern void
+void
 cupti_occupancy_analyze
 (
  CUpti_ActivityKernel4 *activity,
@@ -15,7 +15,7 @@ cupti_occupancy_analyze
 ); 
 
 
-extern void
+void
 cupti_sm_efficiency_analyze
 (
  CUpti_ActivityPCSamplingRecordInfo *pc_sampling_record_info,

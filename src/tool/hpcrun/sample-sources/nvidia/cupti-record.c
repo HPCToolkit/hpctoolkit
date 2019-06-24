@@ -15,7 +15,8 @@ static __thread cupti_record_t cupti_record =
   .cupti_notification_stack = { .head = {NULL}}, 
   .cupti_free_notification_stack = { .head = {NULL}}, 
   .cupti_activity_stack = { .head = {NULL}}, 
-  .cupti_free_activity_stack = { .head = {NULL}} 
+  .cupti_free_activity_stack = { .head = {NULL}},
+  .cupti_buffer_stack = { .head = {NULL}}
 };
 
 static __thread bool cupti_record_initialized = false;

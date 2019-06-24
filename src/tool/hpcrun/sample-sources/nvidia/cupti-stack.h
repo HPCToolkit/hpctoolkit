@@ -15,28 +15,28 @@ typedef void (*cupti_stack_fn_t)(cupti_node_t *node);
 
 
 // generic functions
-extern void
+void
 cupti_stack_init
 (
  cupti_stack_t *stack
 );
 
 
-extern cupti_node_t *
+cupti_node_t *
 cupti_stack_head
 (
  cupti_stack_t *stack
 );
 
 
-extern cupti_node_t *
+cupti_node_t *
 cupti_stack_pop
 (
  cupti_stack_t *stack
 );
 
 
-extern void
+void
 cupti_stack_push
 (
  cupti_stack_t *stack,
@@ -44,7 +44,7 @@ cupti_stack_push
 );
 
 
-extern void
+void
 cupti_stack_apply
 (
  cupti_stack_t *stack,
@@ -53,7 +53,7 @@ cupti_stack_apply
 );
 
 
-extern void
+void
 cupti_stack_steal
 (
  cupti_stack_t *stack,

@@ -1126,7 +1126,6 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
-  fprintf(stderr, "buf flush back\n");
   // handle notifications
   cupti_cupti_notification_apply(cupti_notification_handle);
 
