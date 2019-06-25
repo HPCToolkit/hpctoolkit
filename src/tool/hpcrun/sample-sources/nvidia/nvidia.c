@@ -173,8 +173,8 @@
 #define FORALL_SYNC(macro) \
   macro("SYNC:UNKNOWN (us)",     0) \
   macro("SYNC:EVENT (us)",       1) \
-  macro("SYNC:STREAM (us)",      2) \
-  macro("SYNC:STREAM_WAIT (us)", 3) \
+  macro("SYNC:STREAM_WAIT (us)", 2) \
+  macro("SYNC:STREAM (us)",      3) \
   macro("SYNC:CONTEXT (us)",     4)
 
 #define FORALL_SYNC_TIME(macro) \
