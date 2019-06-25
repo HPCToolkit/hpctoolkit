@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2015, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,13 +45,16 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// File: trampoline.c
+// File: trampoline_eager.c
 //
-// Purpose: architecture independent support for counting returns of sampled
-//          frames using trampolines
+// Purpose: unwind optimization & iteration-based analysis on PPC. 
+//
+// Implemented by marking the last bit of RA on the stack / in the register.
+// Currently only supports PPC. May be extended to architectures that ignore
+// the last bit of RA.
 //
 // Modification History:
-//   2009/09/15 - created - Mike Fagan and John Mellor-Crummey
+//   2005/11/07 - created - Lai Wei and John Mellor-Crummey
 //******************************************************************************
 
 //******************************************************************************
@@ -73,6 +76,15 @@
 #include <sample-sources/retcnt.h>
 #include <monitor.h>
 
+extern bool hpcrun_get_retain_recursion_mode();
+
+//******************************************************************************
+// external declarations
+//******************************************************************************
+
+extern void hpcrun_trampoline();
+extern void hpcrun_trampoline_end();
+
 
 //******************************************************************************
 // interface operations
@@ -86,9 +98,11 @@ hpcrun_trampoline_bt_dump(void)
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
        td->cached_bt_end - td->cached_bt, td->cached_frame_count);
   for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
-    TMSG(TRAMP, "ra loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+              f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
+
 
 void
 hpcrun_init_trampoline_info(void)
@@ -102,14 +116,58 @@ hpcrun_init_trampoline_info(void)
   td->tramp_cct_node  = NULL;
 }
 
+static bool hpcrun_trampoline_update(void* addr) 
+{
+  thread_data_t* td = hpcrun_get_thread_data();
 
-// returns true if address is inside the assembly language trampoline code;
-// returns false if at first address of trampoline code or outside.
+  if (!td->tramp_present) return false; 
+
+  frame_t* frame = td->tramp_frame;
+  cct_node_t* node = td->tramp_cct_node;
+  size_t count = td->cached_frame_count;
+  uint32_t dLCA = 0;
+
+  // Locate which frame is marked
+  while (count > 0) {
+    if (frame->ra_loc != NULL) {
+      if (frame->ra_val == addr) break;
+	}
+    
+    cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+    if (  !hpcrun_get_retain_recursion_mode()
+       && frame != td->cached_bt
+       && frame != td->cached_bt_end-1
+       && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
+       && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
+       )
+      parent = node;
+    else
+      dLCA++;
+    node = parent;
+    
+    frame++;
+    count--;
+  }
+
+  // Check if valid
+  if (count == 0) return false;
+  if (node == NULL) return false;
+
+  // Update corresponding values
+  TMSG(TRAMP, "Marked addr located at node %p, cached frame count reduced from %d to %d", 
+          node, td->cached_frame_count, count);
+  td->tramp_frame = frame;
+  td->tramp_cct_node = node;
+  td->cached_frame_count = count;
+  td->dLCA += dLCA;
+  return true;
+}
+
+
 bool
 hpcrun_trampoline_interior(void* addr)
 {
-  return ((void*)hpcrun_trampoline < addr 
-	  && addr <= (void*)hpcrun_trampoline_end);
+  return false;
 }
 
 
@@ -117,129 +175,74 @@ hpcrun_trampoline_interior(void* addr)
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
-  return (addr == hpcrun_trampoline);
+  bool ret = ((unsigned long)addr & 1 == 1);
+  if (ret) {
+    // update trampoline statuses according to addr.
+    ret = hpcrun_trampoline_update(addr);
+    if (!ret) EMSG("Marked addr for trampoline found but failed to locate corresponding frame");
+  }
+  return ret;
 }
 
-
-static bool
-ok_to_advance(void* target, void* current)
-{
-  return (target > current) && (target < monitor_stack_bottom());
-}
-
-static cct_node_t*
-hpcrun_trampoline_advance(void)
-{
-  thread_data_t* td = hpcrun_get_thread_data();
-  cct_node_t* node = td->tramp_cct_node;
-  void* current_frame_sp = td->tramp_frame->ra_loc;
-  if (! td->cached_frame_count ) return NULL;
-
-  TMSG(TRAMP, "Advance from node %p...", node);
-  cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
-  TMSG(TRAMP, " ... to node %p", parent);
-  td->tramp_frame++;
-  TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
-       td->cached_frame_count - 1);
-  (td->cached_frame_count)--;
-  if ( ! td->cached_frame_count ) {
-    TMSG(TRAMP, "**cached frame count = 0");
-  }
-  else if (! ok_to_advance (td->tramp_frame->ra_loc, current_frame_sp) ) {
-    EMSG("Encountered bad advance of trampoline ( target > stack_bottom or target < current\n"
-	 "%p(target) %p(current) %p(bottom)",
-	 td->tramp_frame->ra_loc, current_frame_sp, monitor_stack_bottom());
-  }
-  else if (! parent) {
-    TMSG(TRAMP, "No parent node, trampoline self-removes");
-  }
-  else {
-    TMSG(TRAMP, "... Trampoline advanced to %p", parent);
-    hpcrun_trampoline_insert(parent);
-    return parent;
-  }
-  TMSG(TRAMP,"*** trampoline self-removes ***");
-  hpcrun_init_trampoline_info();
-  return NULL;
-}
 
 void 
 hpcrun_trampoline_insert(cct_node_t* node)
 {
-  TMSG(TRAMP, "insert into node %p", node);
+  TMSG(TRAMP, "Mark start at node %p", node);
   thread_data_t* td = hpcrun_get_thread_data();
   if (! td->tramp_frame) {
     TMSG(TRAMP, " **No tramp frame: init tramp info");
     hpcrun_init_trampoline_info();
     return;
   }
-  void* addr        = td->tramp_frame->ra_loc;
-  if (! addr) {
-    TMSG(TRAMP, " **Tramp frame ra loc = NULL");
-    hpcrun_init_trampoline_info();
-    return;
-  }
 
-  TMSG(TRAMP, "Stack addr for retn addr = %p", addr);
-  // save location where trampoline was placed
-  td->tramp_loc       = addr;
-
-  TMSG(TRAMP, "Actual return addr @ %p = %p", addr, *((void**) addr));
-  // save the return address overwritten with trampoline address 
-  td->tramp_retn_addr = *((void**) addr);
-
-  *((void**)addr) = hpcrun_trampoline;
   td->tramp_cct_node = node;
   td->tramp_present = true;
+
+  frame_t* frame = td->tramp_frame;
+
+  while (frame < td->cached_bt_end) {
+    void* ra_loc = frame->ra_loc;
+    if (!node) {
+      TMSG(TRAMP, "**Tramp frame CCT node = NULL: init tramp info.");
+      hpcrun_init_trampoline_info();
+      return;
+    }
+    if (ra_loc) {
+      void* ra = *((void**) ra_loc);
+      if ((unsigned long)ra & 1 == 1) {
+          frame->ra_val = ra; // ra_val of the first RA marked frame may have been reset. Take a copy of the value of marked RA
+		  break; // RA has already been marked
+	  }
+
+      *((void**) ra_loc) = (void*)((unsigned long)ra | 1);
+      frame->ra_val = *((void**) ra_loc); // Take a copy of the value of marked RA
+      TMSG(TRAMP, "Marked return addr @ %p = %p", ra_loc, frame->ra_val);
+
+      hpcrun_retcnt_inc(node, 1); // Increasing return count eagerly.
+    } else {
+      TMSG(TRAMP, "Tramp frame ra loc = NULL, skip marking this frame");
+    }
+    
+    cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+    if (  !hpcrun_get_retain_recursion_mode()
+       && frame != td->cached_bt
+       && frame != td->cached_bt_end-1
+       && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
+       && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
+       )
+      parent = node;
+    node = parent;
+    frame++;
+  }
+
+  TMSG(TRAMP, "#%d frames are marked", frame - td->tramp_frame);
 }
+
 
 void
 hpcrun_trampoline_remove(void)
 {
-  thread_data_t* td = hpcrun_get_thread_data();
-  if (td->tramp_present){
-    TMSG(TRAMP, "removing live trampoline from %p", td->tramp_loc);
-    TMSG(TRAMP, "confirm trampoline @ location: ra@tramp loc = %p == %p (tramp)",
-	 *((void**)td->tramp_loc), hpcrun_trampoline);
-    if (*((void**)td->tramp_loc) != hpcrun_trampoline) {
-      EMSG("INTERNAL ERROR: purported trampoline location does NOT have a trampoline:"
-	   " loc %p: %p != %p", td->tramp_loc, *((void**)td->tramp_loc), hpcrun_trampoline);
-    }
-    else {
-      *((void**)td->tramp_loc) = td->tramp_retn_addr;
-    }
-  }
   hpcrun_init_trampoline_info();
 }
 
-void*
-hpcrun_trampoline_handler(void)
-{
-  // probably not possible to get here from inside our code.
-  hpcrun_safe_enter();
-
-  TMSG(TRAMP, "Trampoline fired!");
-  thread_data_t* td = hpcrun_get_thread_data();
-
-  // get the address where we need to return
-  void* ra = td->tramp_retn_addr;
-
-  TMSG(TRAMP, " --real return addr returned to hpcrun_trampoline = %p", ra);
-  hpcrun_retcnt_inc(td->tramp_cct_node, 1);
-
-  TMSG(TRAMP, "About to advance trampoline ...");
-#if OLD_TRAMP_ADV
-  cct_node_tt* n = hpcrun_trampoline_advance();
-  TMSG(TRAMP, "... Trampoline advanced to %p", n);
-  if (n)
-    hpcrun_trampoline_insert(n);
-  else {
-    EMSG("NULL trampoline advance !!, trampoline removed");
-    hpcrun_trampoline_remove();
-  }
-#endif
-  hpcrun_trampoline_advance();
-  hpcrun_safe_exit();
-
-  return ra; // our assembly code caller will return to ra
-}

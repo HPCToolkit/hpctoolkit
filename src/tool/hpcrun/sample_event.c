@@ -300,8 +300,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     ret.trace_node = func_proxy;
 
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId);
+    hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId, td->prev_dLCA);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 

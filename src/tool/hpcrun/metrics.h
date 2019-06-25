@@ -136,7 +136,10 @@ int hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
 
 int hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
 					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+
 int hpcrun_set_new_metric_info(kind_info_t *kind, const char* name);
+
+void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 

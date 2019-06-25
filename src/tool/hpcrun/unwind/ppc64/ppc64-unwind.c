@@ -220,7 +220,7 @@ hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 void*
 hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 {
-  return NULL;
+  return cursor->ra_loc;
 }
 
 
@@ -231,6 +231,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
   cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
+  cursor->ra_loc    = NULL;
 
   cursor->flags     = UnwFlg_StackTop;
   bitree_uwi_t* intvl = NULL;
@@ -240,9 +241,11 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
 	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
 	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
+              cursor->ra_loc = &(ctxt->uc_mcontext.regs->link);
 	    }
 	    else {
 	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+              cursor->ra_loc = &(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
 	    }
 	  }
   }
@@ -278,6 +281,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   void** nxt_sp = NULL;
   void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
+  void*  ra_loc = NULL;
   unwind_interval* nxt_intvl = NULL;
   
   if (!intvl) {
@@ -334,15 +338,18 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   //-----------------------------------------------------------
   if (UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
     nxt_pc = cursor->ra;
-
+    ra_loc = cursor->ra_loc;
+    
     // consistency check: interior frames should not have type RATy_Reg
     if (isInteriorFrm) {
       nxt_pc = getNxtPCFromSP(nxt_sp);
+      ra_loc = (void*)getNxtPCLocFromSP(nxt_sp); 
       TMSG(UNW, "warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
     }
   }
   else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
     nxt_pc = getNxtPCFromSP(nxt_sp);
+    ra_loc = (void*)getNxtPCLocFromSP(nxt_sp);
   }
   else {
     // assert(0);
@@ -374,7 +381,8 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 	  // Sanity check SP: Once in a while SP is clobbered.
 	  if (isPossibleParentSP(nxt_sp, try_sp)) {
 		nxt_pc = getNxtPCFromSP(try_sp);
-		bool found2 = uw_recipe_map_lookup(nxt_pc - 1, NATIVE_UNWINDER, &(cursor->unwr_info));
+    ra_loc = (void*)getNxtPCLocFromSP(try_sp);
+		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
 		}
@@ -408,6 +416,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   save_registers(cursor, nxt_pc, nxt_fp, nxt_sp, nxt_ra);
+  cursor->ra_loc    = ra_loc;
   cursor->flags     = UnwFlg_NULL;
 
   compute_normalized_ips(cursor);

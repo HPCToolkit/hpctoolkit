@@ -63,6 +63,7 @@ typedef struct frame_t {
   ip_normalized_t ip_norm;
   ip_normalized_t the_function;     // enclosing function of ip_norm
   void* ra_loc;
+  void* ra_val;
   lush_lip_t* lip;
 } frame_t;
 

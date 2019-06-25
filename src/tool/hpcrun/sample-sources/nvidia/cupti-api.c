@@ -232,6 +232,7 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
+static __thread int64_t cupti_prev_external_id = -1;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -686,15 +687,13 @@ cupti_correlation_callback_cuda
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  td->overhead++;
   hpcrun_safe_enter();
 
   cct_node_t *node = 
     hpcrun_sample_callpath(&uc, zero_metric_id, 
-			   zero_metric_incr, 0, 1, NULL).sample_node; 
+      zero_metric_incr, 0, 1, NULL).sample_node; 
 
   hpcrun_safe_exit();
-  td->overhead--;
 
   // Compress callpath
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
@@ -1514,6 +1513,13 @@ cupti_correlation_process
 {
   uint32_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
+  //TODO(Keren): enable later
+  //if (cupti_prev_external_id == -1) {
+  //  cupti_prev_external_id = external_id;
+  //} else if (cupti_prev_external_id != external_id) {
+  //  cupti_host_op_map_delete(cupti_prev_external_id);
+  //  cupti_prev_external_id = external_id;
+  //}
   if (cupti_correlation_id_map_lookup(correlation_id) == NULL) {
     cupti_correlation_id_map_insert(correlation_id, external_id);
   } else {
