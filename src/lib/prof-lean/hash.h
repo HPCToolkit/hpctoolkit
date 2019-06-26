@@ -1,8 +1,11 @@
 // -*-Mode: C++;-*- // technically C99
 
+#ifndef _hpctoolkit_hash_h_
+#define _hpctoolkit_hash_h_
+
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
+// $HeadURL: $
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -44,22 +47,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef hpcrun_trace_h
-#define hpcrun_trace_h
-#include<stdint.h>
-#include "files.h"
-#include "core_profile_trace_data.h"
-
-#include <include/uint.h>
-void trace_other_close(void *thread_data);
-
-void hpcrun_trace_init();
-void hpcrun_trace_open(core_profile_trace_data_t * cptd);
-void hpcrun_trace_append(core_profile_trace_data_t * cptd, uint call_path_id, uint metric_id, uint32_t dLCA);
-void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
-void hpcrun_trace_close(core_profile_trace_data_t * cptd);
-
-int hpcrun_trace_isactive();
-#endif // hpcrun_trace_h
+//******************************************************************************
+//
+// map for recording directed blame for locks, critical sections, ...
+//
+//******************************************************************************
 
 
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
+
+#include <stdint.h>
+
+typedef struct {
+  uint64_t key;
+  uint64_t value;
+} hash_entry_t;
+
+
+typedef struct {
+  size_t size;
+  hash_entry_t *hash_entries;
+} hash_table_t;
+
+/***************************************************************************
+ * interface operations
+ ***************************************************************************/
+
+typedef void *(*hash_malloc_fn)(size_t size);
+
+hash_table_t *hash_new(size_t size, hash_malloc_fn fn);
+
+void hash_insert(hash_table_t *hash_table, uint64_t key, uint64_t value);
+
+hash_entry_t *hash_lookup(hash_table_t *hash_table, uint64_t key);
+
+#endif // _hpctoolkit_hash_h_

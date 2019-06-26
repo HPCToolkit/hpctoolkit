@@ -2,7 +2,7 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
+// $HeadURL: $
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -44,22 +44,62 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef hpcrun_trace_h
-#define hpcrun_trace_h
-#include<stdint.h>
-#include "files.h"
-#include "core_profile_trace_data.h"
+//
+// directed blame shifting for locks, critical sections, ...
+//
 
-#include <include/uint.h>
-void trace_other_close(void *thread_data);
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
 
-void hpcrun_trace_init();
-void hpcrun_trace_open(core_profile_trace_data_t * cptd);
-void hpcrun_trace_append(core_profile_trace_data_t * cptd, uint call_path_id, uint metric_id, uint32_t dLCA);
-void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
-void hpcrun_trace_close(core_profile_trace_data_t * cptd);
+#include <string.h>
+#include <assert.h>
 
-int hpcrun_trace_isactive();
-#endif // hpcrun_trace_h
+/******************************************************************************
+ * local includes
+ *****************************************************************************/
+
+#include "hash.h"
+
+/***************************************************************************
+ * private operations
+ ***************************************************************************/
+
+#define HASH(key, size) (key < size ? key : key % size);
+
+/***************************************************************************
+ * interface operations
+ ***************************************************************************/
+
+hash_table_t*
+hash_new(size_t size, hash_malloc_fn fn)
+{
+  hash_table_t *hash_table = (hash_table_t *)fn(sizeof(hash_table_t));
+  hash_entry_t *hash_entries = (hash_entry_t *)fn(size * sizeof(hash_entry_t));
+  memset(hash_entries, 0, size * sizeof(hash_entry_t));
+  hash_table->size = size;
+  hash_table->hash_entries = hash_entries;
+  return hash_table;
+}
 
 
+void
+hash_insert(hash_table_t *hash_table, uint64_t key, uint64_t value)
+{
+  size_t index = HASH(key, hash_table->size);
+  hash_entry_t *hash_entry = &(hash_table->hash_entries[index]);
+  hash_entry->key = key;
+  hash_entry->value = value;
+}
+
+
+hash_entry_t *
+hash_lookup(hash_table_t *hash_table, uint64_t key)
+{
+  size_t index = HASH(key, hash_table->size);
+  hash_entry_t *hash_entry = &(hash_table->hash_entries[index]);
+  if (hash_entry->key == 0) {
+    return NULL;
+  }
+  return hash_entry;
+}

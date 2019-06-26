@@ -87,6 +87,7 @@
 #include <lib/prof-lean/cskiplist.h>
 #include <lib/prof-lean/mcs-lock.h>
 #include <lib/prof-lean/binarytree.h>
+#include <lib/prof-lean/hash.h>
 #include "binarytree_uwi.h"
 #include "segv_handler.h"
 #include <messages/messages.h>
@@ -655,9 +656,21 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   unwr_info->interval.start = 0;
   unwr_info->interval.end   = 0;
 
-  // check if addr is already in the range of an interval key in the map
-  ilmstat_btuwi_pair_t* ilm_btui =
-    uw_recipe_map_inrange_find((uintptr_t)addr, uw);
+  thread_data_t *td = hpcrun_get_thread_data();
+  hash_entry_t *e = hash_lookup(td->uw_hash_table, (uintptr_t)addr);
+  ilmstat_btuwi_pair_t* ilm_btui = NULL;
+
+  if (e == NULL) {
+    // check if addr is already in the range of an interval key in the map
+    ilm_btui = uw_recipe_map_inrange_find((uintptr_t)addr, uw);
+
+    // if we find ilm_btui, replace it in the hash table
+    if (ilm_btui != NULL) {
+      hash_insert(td->uw_hash_table, (uint64_t)addr, (uint64_t)ilm_btui);
+    }
+  } else {
+    ilm_btui = (ilmstat_btuwi_pair_t *)e->value;
+  }
 
   if (!ilm_btui) {
 	load_module_t *lm;
@@ -677,7 +690,6 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 	ilm_btui =
 		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
 			DEFERRED, my_alloc);
-
 	
 	csklnode_t *node = cskl_insert(addr2recipe_map[uw], ilm_btui, my_alloc);
 	if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
@@ -687,6 +699,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 	  ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
 	}
 	// ilm_btui is now in the map.
+  hash_insert(td->uw_hash_table, (uint64_t)addr, (uint64_t)ilm_btui);
   }
 #if UW_RECIPE_MAP_DEBUG
   assert(ilm_btui != NULL);

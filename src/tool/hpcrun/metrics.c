@@ -407,12 +407,6 @@ hpcrun_set_new_metric_info(kind_info_t *kind, const char* name)
 
 
 //
-// Metric set interface
-//
-
-
-
-//
 // return an lvalue from metric_set_t*
 //
 cct_metric_data_t*

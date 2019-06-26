@@ -73,6 +73,8 @@
 #include "backtrace_info.h"
 #include "../../thread_data.h"
 
+extern bool hpcrun_get_retain_recursion_mode();
+
 //***************************************************************************
 // local constants & macros
 //***************************************************************************
@@ -230,7 +232,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 	// we have encountered a trampoline in the middle of an unwind.
 	bt->has_tramp = true;
 	// no need to unwind further. the outer frames are already known.
-
+        TMSG(TRAMP, "--CURRENT UNWIND FINDS TRAMPOLINE @ (sp:%p, bp:%p", cursor.sp, cursor.bp);
 	bt->fence = FENCE_TRAMP;
 	ret = STEP_STOP;
 	break;
@@ -278,13 +280,15 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       // FIXME: For the moment, ignore skipInner issues with trampolines.
       //        Eventually, this will need to be addressed
       //
-      TMSG(TRAMP, "WARNING: backtrace detects skipInner != 0 (skipInner = %d)", 
+      EMSG("WARNING: backtrace detects skipInner != 0 (skipInner = %d) when TRAMP is on.", 
 	   skipInner);
     }
-    TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
-    // adjust the returned backtrace according to the skipInner
-    bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
-    TMSG(BT, "* AFTER Skip inner correction, bt_beg = %p", bt_beg);
+    else {
+      TMSG(BT, "* BEFORE Skip inner correction, bt_beg = %p", bt_beg);
+      // adjust the returned backtrace according to the skipInner
+      bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
+      TMSG(BT, "* AFTER Skip inner correction, bt_beg = %p", bt_beg);
+    }
   }
 
   bt->begin = bt_beg;         // returned backtrace begin
@@ -328,6 +332,13 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
     if (tramp_found) {
       TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
       TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
+      
+      bool middle_of_recursion = 
+             td->tramp_frame != td->cached_bt
+          && td->tramp_frame != td->cached_bt_end-1
+          && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
+          && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function));
+      
       //
       // join current backtrace fragment to previous trampoline-marked prefix
       // and make this new conjoined backtrace the cached-backtrace
@@ -347,16 +358,54 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       memmove(td->cached_bt + n_cached_frames, prefix,
 	      sizeof(frame_t) * old_frame_count);
 
-      // put the new suffix in place
-      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * n_cached_frames);
+      // put the new suffix in place and update tramp_frame at the same time.
+      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
 
       // update the length of the conjoined backtrace
       td->cached_bt_end = td->cached_bt + n_cached_frames + old_frame_count;
       // maintain invariants
       td->cached_frame_count = n_cached_frames + old_frame_count;
       td->tramp_frame = td->cached_bt + n_cached_frames;
-      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
-	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
+      
+      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
+	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
+      
+      // When recursive frames are merged in CCT, special handling is needed.
+      if (!hpcrun_get_retain_recursion_mode()) {
+        // Locate the last frame on btbuf that refers to the same function as tramp_frame.
+        frame_t* recursion_last = td->tramp_frame;
+        while ( (recursion_last < td->cached_bt_end-1)
+                && ip_normalized_eq(&(recursion_last->the_function), &((recursion_last+1)->the_function)) ) {
+          recursion_last++;
+        }
+        
+        /* if the last frame isn't tramp_frame itself, tramp_frame is in a chain of recursive frames, 
+         * special handling is needed for correct insertion of frames into CCT.
+         * 
+         * In CCT, all recursive frames are represented with two CCT nodes:
+         * 
+         *   bar() -- parent of recursive function, where insertion of backtrace takes place.
+         *     |
+         *    r() -- upper CCT node of the recursive function, where we want tramp_cct_node points to.
+         *     |
+         *    r() -- lower CCT node of the recursive function
+        */
+        if (recursion_last != td->tramp_frame) {
+          // First, make sure that tramp_cct_node points to the upper CCT node of the recursive function.
+          
+          // if tramp_frame is the first recursive frame, tramp_cct_node is pointing to the lower CCT node of the recursive function.
+          if (!middle_of_recursion) 
+            // points tramp_cct_node to the upper CCT node of the recursive function.
+            td->tramp_cct_node = (td->tramp_cct_node) ? hpcrun_cct_parent(td->tramp_cct_node) : NULL;
+          
+          // Second, make sure that there are at least two frames for the recursive function on backtrace
+          // by inserting the last recursive frame into backtrace.
+          hpcrun_ensure_btbuf_avail();
+          memcpy(td->btbuf_cur, recursion_last, sizeof(frame_t));
+          bt->begin = td->btbuf_beg;
+          bt->last = td->btbuf_cur++;
+        }
+      }
     }
     else {
       TMSG(TRAMP, "No tramp found: cached backtrace size = %d", new_frame_count);
@@ -367,6 +416,8 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
       td->cached_bt_end = td->cached_bt + n_cached_frames;
       td->cached_frame_count = n_cached_frames;
+      // dLCA set to HPCRUN_FMT_DLCA_NULL when tramp failed.
+      td->dLCA = HPCTRACE_FMT_DLCA_NULL;
     }
     if (ENABLED(TRAMP)) {
       TMSG(TRAMP, "Dump cached backtrace from backtrace construction");

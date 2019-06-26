@@ -998,6 +998,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }
+
+  ENABLE(USE_TRAMP);
 }
 
 static void

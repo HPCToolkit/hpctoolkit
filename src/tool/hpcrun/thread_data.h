@@ -70,6 +70,7 @@
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
+#include <lib/prof-lean/hash.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -225,6 +226,7 @@ typedef struct thread_data_t {
 
 
   backtrace_t bt;     // backtrace used for unwinding
+  hash_table_t *uw_hash_table;
 
   // ----------------------------------------
   // trampoline
@@ -239,6 +241,9 @@ typedef struct thread_data_t {
   frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
   cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 
+  uint32_t prev_dLCA; // distance to LCA in the CCT for the previous sample
+  uint32_t dLCA; // distance to LCA in the CCT
+  
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
