@@ -90,6 +90,7 @@
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
 
 #include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
@@ -101,8 +102,6 @@
 using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
-
-static const string UNKNOWN_PROC ("unknown-proc");
 
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;

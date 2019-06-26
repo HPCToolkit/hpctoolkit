@@ -44,10 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// Funnel default names through one place for consistency.
+
 #ifndef __DICTIONARY_H__
 #define __DICTIONARY_H__
 
 #define GUARD_NAME  "<inline>"
 
+#define UNKNOWN_FILE  "<unknown file>"
+#define UNKNOWN_PROC  "<unknown procedure>"
+#define UNKNOWN_LINK  "_unknown_procedure_"
+
+#define UNKNOWN_LOAD_MODULE  "<unknown load module>"
+
+#define PARTIAL_CALL_PATHS   "<partial call paths>"
 
 #endif

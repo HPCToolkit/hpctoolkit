@@ -85,6 +85,7 @@
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
 
 #include <boost/atomic.hpp>
 
@@ -149,10 +150,10 @@ static int merge_irred_loops = 1;
 // variables
 //******************************************************************************
 
-// Copied from lib/prof/Struct-Tree.cpp
-static const string & unknown_file = "<unknown file>";
-static const string & unknown_proc = "<unknown proc>";
-static const string & unknown_link = "_unknown_proc_";
+// Copied from lib/support/dictionary.h
+static const string & unknown_file = UNKNOWN_FILE;
+static const string & unknown_proc = UNKNOWN_PROC;
+static const string & unknown_link = UNKNOWN_LINK;
 
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
