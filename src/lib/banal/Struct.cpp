@@ -1085,45 +1085,8 @@ makeVariables(ostream * outFile)
   Output::printFileEnd(outFile, &file);
 }
 
-//----------------------------------------------------------------------
-// funcNamePrefer -- ordering of mangled (link) and typed names to
-// make the choice in getFuncNames() deterministic (strict prefer).
-//
-// Prefer:
-//   1. longer typed name (longer has more info)
-//   2. longer link name
-//   3. alphabetically lower typed name (arbitrary)
-//   4. alphabetically lower link name
-//
-static bool
-funcNamePrefer(string & typea, string & linka, string & typeb, string & linkb)
-{
-  size_t lena = typea.length();
-  size_t lenb = typeb.length();
-
-  if (lena > lenb) { return true; }
-  if (lena < lenb) { return false; }
-
-  lena = linka.length();
-  lenb = linkb.length();
-
-  if (lena > lenb) { return true; }
-  if (lena < lenb) { return false; }
-
-  int comp = typea.compare(typeb);
-
-  if (comp < 0 ) { return true; }
-  if (comp > 0 ) { return false; }
-
-  comp = linka.compare(linkb);
-
-  if (comp < 0 ) { return true; }
-
-  return false;
-}
-
 // getFuncNames -- helper for makeSkeleton() to select the pretty
-// (typed) and link (mangled) names for a SymtabAPI::Function.
+// (demangled) and link (mangled) names for a SymtabAPI::Function.
 //
 // Some functions have multiple symbols with different names for the
 // same address (global and weak syms).  We sort the symbol names to
@@ -1134,31 +1097,28 @@ funcNamePrefer(string & typea, string & linka, string & typeb, string & linkb)
 // values, so don't overwrite them unless there is at least one valid
 // name.
 //
+// Note: we now use symtab only for mangled names and do all the
+// demangling ourselves.
+//
 static void
-getFuncNames(SymtabAPI::Function * sym_func, string & prettynm,
-	     string & linknm, bool ourDemangle)
+getFuncNames(SymtabAPI::Function * sym_func, string & prettynm, string & linknm)
 {
-  auto typed_begin = sym_func->typed_names_begin();
-  auto typed_end =   sym_func->typed_names_end();
+  auto mangled_begin = sym_func->mangled_names_begin();
   auto mangled_end = sym_func->mangled_names_end();
 
-  auto typed_it =    typed_begin;
-  auto mangled_it =  sym_func->mangled_names_begin();
+  for (auto mit = mangled_begin; mit != mangled_end; ++mit) {
+    string new_mangled = *mit;
 
-  while (typed_it != typed_end && mangled_it != mangled_end) {
-    string new_mangled = *mangled_it;
-    string new_typed =
-      (ourDemangle) ? BinUtil::demangleProcName(new_mangled) : *typed_it;
-
-    if (typed_it == typed_begin
-	|| funcNamePrefer(new_typed, new_mangled, prettynm, linknm))
+    // sort by: longer mangled name (more info), or else by
+    // alphabetically lower name (arbitrary).
+    if (mit == mangled_begin
+	|| (new_mangled.length() > linknm.length())
+	|| (new_mangled.length() == linknm.length()
+	    && new_mangled.compare(linknm) < 0))
     {
-      prettynm = new_typed;
       linknm = new_mangled;
+      prettynm = BinUtil::demangleProcName(linknm);
     }
-
-    ++typed_it;
-    ++mangled_it;
   }
 }
 
@@ -1264,7 +1224,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	//
 	DEBUG_SKEL("(case 1)\n");
 
-	getFuncNames(sym_func, prettynm, linknm, opts.ourDemangle);
+	getFuncNames(sym_func, prettynm, linknm);
 	if (is_shared) {
 	  prettynm += " (" + basename + ")";
 	}

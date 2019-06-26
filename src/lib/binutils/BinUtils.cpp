@@ -44,19 +44,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include <iostream>
 #include <string>
 using std::string;
 
 #include <cstdlib> // for 'free'
-#include <cstring> // for 'strlen', 'strcpy'
 
-#include <hpctoolkit-config.h>
-
-#include <cxxabi.h>
+#include <lib/support-lean/demangle.h>
+#include <lib/support/ProcNameMgr.hpp>
 
 #include "BinUtils.hpp"
-#include "Demangler.hpp"
 
 //****************************************************************************
 
@@ -85,20 +81,16 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 string
 demangleProcName(const std::string& name)
 {
-  string bestname = name;
+  string ans = name;
 
-  //----------------------------------------------------------
-  // demangle using the API for the C++ demangler
-  //----------------------------------------------------------
-  int status;
-  char *str = hpctoolkit_demangle(name.c_str(), 0, 0, &status);
+  char *str = hpctoolkit_demangle(name.c_str());
 
-  if (str) {
-    bestname = str;
+  if (str != NULL) {
+    ans = str;
     free(str);
   }
 
-  return bestname;
+  return ans;
 }
 
 } // namespace BinUtil

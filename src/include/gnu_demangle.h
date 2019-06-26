@@ -48,16 +48,13 @@
 // smooth out some quirks in the header file, some real, some
 // historical.
 //
-// Files that want to use <libiberty/demangle.h> should probably
-// include this file instead.
+// Files that want to use <libiberty/demangle.h> should include this
+// file instead.
 //
-// Nothing uses this anymore.  We've replaced cplus_demangle() with
-// abi::__cxa_demangle().  But if you do want to use cplus_demangle(),
-// then reactivate this file.
+// We now use cplus_demangle() from libiberty again.  It has better
+// options for custom demangling than abi::__cxa_demangle().
 
 //***************************************************************************
-
-#if 0
 
 #ifndef gnu_demangle_h
 #define gnu_demangle_h
@@ -73,5 +70,4 @@
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
 
-#endif
 #endif
