@@ -153,7 +153,7 @@ sanitizer_stream_map_delete
 
 
 void
-sanitizer_stream_map_process_all
+sanitizer_stream_map_process
 (
  sanitizer_stream_map_entry_t **root,
  sanitizer_record_fn_t fn
@@ -164,7 +164,7 @@ sanitizer_stream_map_process_all
 
 
 void
-sanitizer_stream_map_process
+sanitizer_stream_map_stream_process
 (
  sanitizer_stream_map_entry_t **root,
  CUstream stream,

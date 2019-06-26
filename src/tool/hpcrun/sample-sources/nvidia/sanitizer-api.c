@@ -699,6 +699,7 @@ sanitizer_subscribe_callback
         {
           // single thread
           // TODO
+          PRINT("stream destroy starting\n");
           break;
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_CREATION_FINISHED:
@@ -711,6 +712,7 @@ sanitizer_subscribe_callback
         {
           // single thread
           // TODO
+          PRINT("context destroy starting\n");
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
@@ -840,6 +842,7 @@ sanitizer_device_flush(void *args)
 {
   if (sanitizer_stop_flag) {
     sanitizer_stop_flag_unset();
+    sanitizer_context_map_process(sanitizer_buffer_dispatch);
   }
 }
 

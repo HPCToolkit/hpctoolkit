@@ -129,6 +129,20 @@ sanitizer_context_map_lookup_internal(CUcontext context)
 }
 
 
+static void 
+sanitizer_context_map_process_helper
+(
+ sanitizer_context_map_entry_t *entry,
+ sanitizer_record_fn_t fn
+) 
+{
+  if (entry) {
+    sanitizer_stream_map_process(&entry->streams, fn);
+    sanitizer_context_map_process_helper(entry->left, fn);
+    sanitizer_context_map_process_helper(entry->right, fn);
+  } 
+}
+
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -164,6 +178,16 @@ sanitizer_context_map_insert(CUcontext context, CUstream stream, cstack_node_t *
 
 
 void
+sanitizer_context_map_process
+(
+ sanitizer_record_fn_t fn
+)
+{
+  sanitizer_context_map_process_helper(sanitizer_context_map_root, fn);
+}
+
+
+void
 sanitizer_context_map_context_process
 (
  CUcontext context,
@@ -172,7 +196,7 @@ sanitizer_context_map_context_process
 {
   sanitizer_context_map_entry_t *entry = NULL;
   if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    sanitizer_stream_map_process_all(&entry->streams, fn);
+    sanitizer_stream_map_process(&entry->streams, fn);
   }
 }
 
@@ -187,6 +211,6 @@ sanitizer_context_map_stream_process
 {
   sanitizer_context_map_entry_t *entry = NULL;
   if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    sanitizer_stream_map_process(&entry->streams, stream, fn);
+    sanitizer_stream_map_stream_process(&entry->streams, stream, fn);
   }
 }

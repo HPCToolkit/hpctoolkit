@@ -43,6 +43,13 @@ sanitizer_context_map_insert
 
 
 void
+sanitizer_context_map_process
+(
+ sanitizer_record_fn_t fn
+);
+
+
+void
 sanitizer_context_map_context_process
 (
  CUcontext context,
