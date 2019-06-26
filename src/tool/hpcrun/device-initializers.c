@@ -10,7 +10,6 @@
 static void
 device_notify_map(void *start, void *end)
 {
-  // TODO(Keren): improve the mechanism by inserting every module into the map and avoiding dlopen test
   module_ignore_map_ignore(start, end);
 }
 

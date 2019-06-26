@@ -262,13 +262,14 @@ cupti_modules_ignore
 void
 cupti_notification_handle
 (
- cupti_node_t *node
+ cstack_node_t *node
 );
+
 
 void
 cupti_activity_handle
 (
- cupti_node_t *node
+ cstack_node_t *node
 );
 
 #endif

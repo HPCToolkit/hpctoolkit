@@ -57,6 +57,8 @@
 #ifndef _HPCTOOLKIT_CUDA_API_H_
 #define _HPCTOOLKIT_CUDA_API_H_
 
+#include <link.h>
+
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
@@ -84,6 +86,14 @@ cuda_bind
  void
 );
 
+// returns 0 on success
+int
+cuda_path
+(
+ struct dl_phdr_info *info,
+ size_t size, 
+ void *data
+);
 
 // returns 0 on success
 int 

@@ -62,7 +62,6 @@
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <limits.h>    // PATH_MAX
-// #include <pthread.h>
 #include <stdio.h>     // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
@@ -432,35 +431,7 @@ CUPTI_FN
 //******************************************************************************
 
 #ifndef HPCRUN_STATIC_LINK
-int
-cuda_path
-(
- struct dl_phdr_info *info,
- size_t size, 
- void *data
-)
-{
-  char *buffer = (char *) data;
-  const char *suffix = strstr(info->dlpi_name, "libcudart"); 
-  if (suffix) {
-    // CUDA library organization after 9.0
-    suffix = strstr(info->dlpi_name, "targets"); 
-    if (!suffix) {
-      // CUDA library organization in 9.0 or earlier
-      suffix = strstr(info->dlpi_name, "lib64"); 
-    }
-  }
-  if (suffix){
-    int len = suffix - info->dlpi_name;
-    strncpy(buffer, info->dlpi_name, len);
-    buffer[len] = 0;
-    return 1;
-  }
-  return 0;
-}
-
-
-const char *
+static const char *
 cupti_path
 (
   void
@@ -599,12 +570,12 @@ cupti_load_callback_cuda
 )
 {
   // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(module_id);
+  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin);
   unsigned char *hash;
   unsigned int hash_len;
   if (entry == NULL) {
-    cubin_hash_map_insert(module_id, cubin, cubin_size);
-    entry = cubin_hash_map_lookup(module_id);
+    cubin_hash_map_insert(cubin, cubin_size);
+    entry = cubin_hash_map_lookup(cubin);
   }
   hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
 
@@ -1901,9 +1872,9 @@ cupti_device_shutdown(void *args)
 //******************************************************************************
 
 void
-cupti_notification_handle(cupti_node_t *node)
+cupti_notification_handle(cstack_node_t *node)
 {
-  if (node->type == CUPTI_ENTRY_TYPE_NOTIFICATION) {
+  if (node->type == CSTACK_TYPE_CUPTI_NOTIFICATION) {
     cupti_entry_notification_t *notification_entry = 
       (cupti_entry_notification_t *)node->entry;
     PRINT("Insert external id %d\n", notification_entry->host_op_id);
@@ -1915,9 +1886,9 @@ cupti_notification_handle(cupti_node_t *node)
 
 
 void
-cupti_activity_handle(cupti_node_t *node)
+cupti_activity_handle(cstack_node_t *node)
 {
-  if (node->type == CUPTI_ENTRY_TYPE_ACTIVITY) {
+  if (node->type == CSTACK_TYPE_CUPTI_ACTIVITY) {
     cupti_entry_activity_t *activity_entry = 
       (cupti_entry_activity_t *)node->entry;
     cupti_activity_attribute(&(activity_entry->activity), 

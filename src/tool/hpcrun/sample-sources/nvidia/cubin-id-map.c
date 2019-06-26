@@ -152,10 +152,14 @@ cubin_id_map_delete
  uint32_t cubin_id
 )
 {
+  spinlock_lock(&cubin_id_map_lock);
+
   cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, cubin_id);
   if (cubin_id_map_root && cubin_id_map_root->cubin_id == cubin_id) {
     cubin_id_map_delete_root();
   }
+  
+  spinlock_unlock(&cubin_id_map_lock);
 }
 
 

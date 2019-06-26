@@ -4,18 +4,7 @@
 #include <cupti_activity.h>
 #include <hpcrun/cct2metrics.h>
 
-typedef enum {
-  CUPTI_ENTRY_TYPE_ACTIVITY = 1,
-  CUPTI_ENTRY_TYPE_NOTIFICATION = 2,
-  CUPTI_ENTRY_TYPE_COUNT = 3
-} cupti_entry_type_t;
-
-// generic entry
-typedef struct cupti_node {
-  struct cupti_node *next;
-  void *entry;
-  cupti_entry_type_t type;
-} cupti_node_t;
+#include "cstack.h"
 
 // pc sampling
 typedef struct cupti_pc_sampling {
@@ -137,43 +126,43 @@ typedef struct cupti_entry_notification {
 } cupti_entry_notification_t;
 
 // activity allocator
-extern cupti_node_t *
+extern cstack_node_t *
 cupti_activity_node_new
 (
  CUpti_Activity *activity,
  cct_node_t *cct_node,
- cupti_node_t *next
+ cstack_node_t *next
 );
 
 
 extern void
 cupti_activity_node_set
 (
- cupti_node_t *cupti_node,
+ cstack_node_t *cupti_node,
  CUpti_Activity *activity,
  cct_node_t *cct_node,
- cupti_node_t *next
+ cstack_node_t *next
 );
 
 // notification allocator
-extern cupti_node_t *
+extern cstack_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
- cupti_node_t *next
+ cstack_node_t *next
 );
 
 
 extern void
 cupti_notification_node_set
 (
- cupti_node_t *cupti_node,
+ cstack_node_t *cupti_node,
  uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
- cupti_node_t *next
+ cstack_node_t *next
 );
 
 #endif

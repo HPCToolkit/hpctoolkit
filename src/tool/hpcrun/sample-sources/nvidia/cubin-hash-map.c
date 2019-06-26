@@ -24,7 +24,7 @@
  *****************************************************************************/
 
 struct cubin_hash_map_entry_s {
-  uint32_t cubin_id;
+  const void *cubin;
   struct cubin_hash_map_entry_s *left;
   struct cubin_hash_map_entry_s *right;
   unsigned char hash[0];
@@ -45,13 +45,13 @@ static spinlock_t cubin_hash_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static cubin_hash_map_entry_t *
-cubin_hash_map_entry_new(uint32_t cubin_id, const void *cubin, size_t size)
+cubin_hash_map_entry_new(const void *cubin, size_t size)
 {
   cubin_hash_map_entry_t *e;
   unsigned int hash_length = crypto_hash_length();
   e = (cubin_hash_map_entry_t *)
     hpcrun_malloc(sizeof(cubin_hash_map_entry_t) + hash_length);
-  e->cubin_id = cubin_id;
+  e->cubin = cubin;
   e->left = NULL;
   e->right = NULL;
   crypto_hash_compute(cubin, size, e->hash, hash_length);
@@ -61,30 +61,45 @@ cubin_hash_map_entry_new(uint32_t cubin_id, const void *cubin, size_t size)
 
 
 static cubin_hash_map_entry_t *
-cubin_hash_map_splay(cubin_hash_map_entry_t *root, uint32_t key)
+cubin_hash_map_splay(cubin_hash_map_entry_t *root, const void *key)
 {
-  REGULAR_SPLAY_TREE(cubin_hash_map_entry_s, root, key, cubin_id, left, right);
+  REGULAR_SPLAY_TREE(cubin_hash_map_entry_s, root, key, cubin, left, right);
   return root;
 }
 
 
 static void
-__attribute__ ((unused))
 cubin_hash_map_delete_root()
 {
-  TMSG(DEFER_CTXT, "cubin_id %d: delete", cubin_hash_map_root->cubin_id);
+  TMSG(DEFER_CTXT, "cubin %p: delete", cubin_hash_map_root->cubin);
 
   if (cubin_hash_map_root->left == NULL) {
     cubin_hash_map_root = cubin_hash_map_root->right;
   } else {
     cubin_hash_map_root->left = 
       cubin_hash_map_splay(cubin_hash_map_root->left, 
-			   cubin_hash_map_root->cubin_id);
+			   cubin_hash_map_root->cubin);
     cubin_hash_map_root->left->right = cubin_hash_map_root->right;
     cubin_hash_map_root = cubin_hash_map_root->left;
   }
 }
 
+
+void
+cubin_hash_map_delete
+(
+ const void *cubin
+)
+{
+  spinlock_lock(&cubin_hash_map_lock);
+
+  cubin_hash_map_root = cubin_hash_map_splay(cubin_hash_map_root, cubin);
+  if (cubin_hash_map_root && cubin_hash_map_root->cubin == cubin) {
+    cubin_hash_map_delete_root();
+  }
+
+  spinlock_unlock(&cubin_hash_map_lock);
+}
 
 
 /******************************************************************************
@@ -92,51 +107,51 @@ cubin_hash_map_delete_root()
  *****************************************************************************/
 
 cubin_hash_map_entry_t *
-cubin_hash_map_lookup(uint32_t id)
+cubin_hash_map_lookup(const void *cubin)
 {
   cubin_hash_map_entry_t *result = NULL;
   spinlock_lock(&cubin_hash_map_lock);
 
-  cubin_hash_map_root = cubin_hash_map_splay(cubin_hash_map_root, id);
-  if (cubin_hash_map_root && cubin_hash_map_root->cubin_id == id) {
+  cubin_hash_map_root = cubin_hash_map_splay(cubin_hash_map_root, cubin);
+  if (cubin_hash_map_root && cubin_hash_map_root->cubin == cubin) {
     result = cubin_hash_map_root;
   }
 
   spinlock_unlock(&cubin_hash_map_lock);
 
-  TMSG(DEFER_CTXT, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(DEFER_CTXT, "cubin map lookup: cubin=0x%lx (record %p)", cubin, result);
   return result;
 }
 
 
 void
-cubin_hash_map_insert(uint32_t cubin_id, const void *cubin, size_t size)
+cubin_hash_map_insert(const void *cubin, size_t size)
 {
   spinlock_lock(&cubin_hash_map_lock);
 
   if (cubin_hash_map_root != NULL) {
     cubin_hash_map_root = 
-      cubin_hash_map_splay(cubin_hash_map_root, cubin_id);
+      cubin_hash_map_splay(cubin_hash_map_root, cubin);
 
-    if (cubin_id < cubin_hash_map_root->cubin_id) {
-      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin_id, cubin, size);
+    if (cubin < cubin_hash_map_root->cubin) {
+      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin, size);
       entry->left = entry->right = NULL;
       entry->left = cubin_hash_map_root->left;
       entry->right = cubin_hash_map_root;
       cubin_hash_map_root->left = NULL;
       cubin_hash_map_root = entry;
-    } else if (cubin_id > cubin_hash_map_root->cubin_id) {
-      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin_id, cubin, size);
+    } else if (cubin > cubin_hash_map_root->cubin) {
+      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin, size);
       entry->left = entry->right = NULL;
       entry->left = cubin_hash_map_root;
       entry->right = cubin_hash_map_root->right;
       cubin_hash_map_root->right = NULL;
       cubin_hash_map_root = entry;
     } else {
-      // cubin_id already present
+      // cubin already present
     }
   } else {
-      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin_id, cubin, size);
+      cubin_hash_map_entry_t *entry = cubin_hash_map_entry_new(cubin, size);
       entry->left = entry->right = NULL;
       cubin_hash_map_root = entry;
   }

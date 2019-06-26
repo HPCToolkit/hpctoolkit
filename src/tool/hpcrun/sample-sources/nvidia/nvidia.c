@@ -83,6 +83,7 @@
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "sanitizer-api.h"
+#include "sanitizer-record.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -321,7 +322,7 @@ static int san_me_hits_metric_id;
 #define OMPT_PC_SAMPLING "nvidia-ompt-pc-sampling"
 #define CUDA_NVIDIA "nvidia-cuda" 
 #define CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
-#define CUDA_SANITIZER "nvidia-cuda-memory-redundancy" 
+#define CUDA_SANITIZER "nvidia-cuda-memory"
 
 /******************************************************************************
  * local variables 
@@ -681,14 +682,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
 
 
 void
-sanitizer_record_attribute(cct_node_t *cct_node)
+sanitizer_activity_attribute(sanitizer_activity_t *activity, cct_node_t *cct_node)
 {
-  thread_data_t *td = hpcrun_get_thread_data();
-  td->overhead++;
-  hpcrun_safe_enter();
-
-  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, san_me_hits_metric_id);
-  hpcrun_metric_std_inc(san_me_hits_metric_id, metrics, (cct_metric_data_t){.i = 1});
+  //metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, san_me_hits_metric_id);
+  //hpcrun_metric_std_inc(san_me_hits_metric_id, metrics, (cct_metric_data_t){.i = 1});
 }
 
 
@@ -1038,6 +1035,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // TODO(keren)
   if (sanitizer_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA SANITIZER library %s\n", dlerror());
+    monitor_real_exit(-1);
   }
 #endif
 
@@ -1084,6 +1083,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     // Register sanitizer callbacks
     sanitizer_callbacks_subscribe();
+
+    // Init record
+    sanitizer_record_init();
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }

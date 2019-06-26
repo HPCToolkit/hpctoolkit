@@ -1,0 +1,196 @@
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
+
+#include <assert.h>
+#include <cuda.h>
+
+/******************************************************************************
+ * local includes
+ *****************************************************************************/
+
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/splay-macros.h>
+
+#include <hpcrun/messages/messages.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
+
+#include "sanitizer-stream-map.h"
+
+/******************************************************************************
+ * type definitions 
+ *****************************************************************************/
+
+struct sanitizer_stream_map_entry_s {
+  CUstream stream;
+  cstack_t *notifications;
+  struct sanitizer_stream_map_entry_s *left;
+  struct sanitizer_stream_map_entry_s *right;
+}; 
+
+
+/******************************************************************************
+ * private operations
+ *****************************************************************************/
+
+static sanitizer_stream_map_entry_t *
+sanitizer_stream_map_splay
+(
+ sanitizer_stream_map_entry_t *root,
+ CUstream key
+)
+{
+  REGULAR_SPLAY_TREE(sanitizer_stream_map_entry_s, root, key, stream, left, right);
+  return root;
+}
+
+
+static void
+sanitizer_stream_map_delete_root
+(
+ sanitizer_stream_map_entry_t **root
+)
+{
+  if ((*root)->left == NULL) {
+    *root = (*root)->right;
+  } else {
+    (*root)->left = sanitizer_stream_map_splay((*root)->left, (*root)->stream);
+    (*root)->left->right = (*root)->right;
+    *root = (*root)->left;
+  }
+}
+
+
+static void 
+sanitizer_stream_map_process_helper
+(
+ sanitizer_stream_map_entry_t *entry,
+ sanitizer_record_fn_t fn
+) 
+{
+  if (entry) {
+    fn(entry->notifications);
+    sanitizer_stream_map_process_helper(entry->left, fn);
+    sanitizer_stream_map_process_helper(entry->right, fn);
+  } 
+}
+
+
+/******************************************************************************
+ * interface operations
+ *****************************************************************************/
+
+sanitizer_stream_map_entry_t *
+sanitizer_stream_map_lookup
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+)
+{
+  sanitizer_stream_map_entry_t *result = NULL;
+
+  *root = sanitizer_stream_map_splay(*root, stream);
+  if ((*root) && (*root)->stream == stream) {
+    result = *root;
+  }
+
+  return result;
+}
+
+void
+sanitizer_stream_map_insert
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream,
+ cstack_node_t *notification
+)
+{
+  sanitizer_stream_map_entry_t *entry = NULL;
+
+  if (*root != NULL) {
+    *root = sanitizer_stream_map_splay(*root, stream);
+
+    if (stream < (*root)->stream) {
+      entry = sanitizer_stream_map_entry_new(stream);
+      entry->left = entry->right = NULL;
+      entry->left = (*root)->left;
+      entry->right = *root;
+      (*root)->left = NULL;
+      *root = entry;
+    } else if (stream > (*root)->stream) {
+      entry = sanitizer_stream_map_entry_new(stream);
+      entry->left = entry->right = NULL;
+      entry->left = *root;
+      entry->right = (*root)->right;
+      (*root)->right = NULL;
+      *root = entry;
+    } else {
+      // stream already present
+      entry = (*root);
+    }
+  } else {
+    entry = sanitizer_stream_map_entry_new(stream);
+    entry->left = entry->right = NULL;
+    *root = entry;
+  }
+
+  cstack_push(entry->notifications, notification);
+}
+
+
+void
+sanitizer_stream_map_delete
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+)
+{
+  *root = sanitizer_stream_map_splay(*root, stream);
+  if (*root && (*root)->stream == stream) {
+    sanitizer_stream_map_delete_root(root);
+  }
+}
+
+
+void
+sanitizer_stream_map_process_all
+(
+ sanitizer_stream_map_entry_t **root,
+ sanitizer_record_fn_t fn
+)
+{
+  sanitizer_stream_map_process_helper(*root, fn);
+}
+
+
+void
+sanitizer_stream_map_process
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream,
+ sanitizer_record_fn_t fn
+)
+{
+  sanitizer_stream_map_entry_t *entry = NULL;
+
+  if ((entry = sanitizer_stream_map_lookup(root, stream)) != NULL) {
+    fn(entry->notifications);
+  }
+}
+
+
+sanitizer_stream_map_entry_t *
+sanitizer_stream_map_entry_new(CUstream stream)
+{
+  sanitizer_stream_map_entry_t *e;
+  e = (sanitizer_stream_map_entry_t *)
+    hpcrun_malloc(sizeof(sanitizer_stream_map_entry_t));
+  e->stream = stream;
+  e->notifications = (cstack_t *)hpcrun_malloc(sizeof(cstack_t));
+  e->left = NULL;
+  e->right = NULL;
+
+  cstack_init(e->notifications);
+
+  return e;
+}

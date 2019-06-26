@@ -2,19 +2,22 @@
 #define _HPCTOOLKIT_CUPTI_RECORD_H_
 
 #include <lib/prof-lean/stdatomic.h>
+#include <hpcrun/cct/cct.h>
 #include <cupti_activity.h>
-#include "cupti-stack.h"
+
+#include "cstack.h"
+#include "cupti-node.h"
 
 // record type
 typedef struct cupti_record {
-  cupti_stack_t worker_notification_stack;
-  cupti_stack_t worker_free_notification_stack;
-  cupti_stack_t worker_activity_stack;
-  cupti_stack_t worker_free_activity_stack;
-  cupti_stack_t cupti_notification_stack;
-  cupti_stack_t cupti_free_notification_stack;
-  cupti_stack_t cupti_activity_stack;
-  cupti_stack_t cupti_free_activity_stack;
+  cstack_t worker_notification_stack;
+  cstack_t worker_free_notification_stack;
+  cstack_t worker_activity_stack;
+  cstack_t worker_free_activity_stack;
+  cstack_t cupti_notification_stack;
+  cstack_t cupti_free_notification_stack;
+  cstack_t cupti_activity_stack;
+  cstack_t cupti_free_activity_stack;
 } cupti_record_t;
 
 // a list of thread records
@@ -27,7 +30,7 @@ typedef struct cupti_record_list {
 extern void
 cupti_worker_activity_apply
 (
- cupti_stack_fn_t fn
+ cstack_fn_t fn
 );
 
 
@@ -51,7 +54,7 @@ cupti_cupti_activity_apply
 extern void
 cupti_cupti_notification_apply
 (
- cupti_stack_fn_t fn
+ cstack_fn_t fn
 );
 
 // getters

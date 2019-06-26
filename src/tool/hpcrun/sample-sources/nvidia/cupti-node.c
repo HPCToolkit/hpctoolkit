@@ -14,16 +14,16 @@
 void
 cupti_activity_node_set
 (
- cupti_node_t *cupti_node,
+ cstack_node_t *cupti_node,
  CUpti_Activity *activity, 
  cct_node_t *cct_node,
- cupti_node_t *next
+ cstack_node_t *next
 )
 {
   cupti_entry_activity_t *entry = (cupti_entry_activity_t *)(cupti_node->entry);
   entry->cct_node = cct_node;
   cupti_node->next = next;
-  cupti_node->type = CUPTI_ENTRY_TYPE_ACTIVITY;
+  cupti_node->type = CSTACK_TYPE_CUPTI_ACTIVITY;
   switch (activity->kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
@@ -168,15 +168,15 @@ cupti_activity_node_set
 }
 
 
-cupti_node_t *
+cstack_node_t *
 cupti_activity_node_new
 (
  CUpti_Activity *activity, 
  cct_node_t *cct_node,
- cupti_node_t *next
+ cstack_node_t *next
 )
 {
-  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
+  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc(sizeof(cstack_node_t));
   node->entry = (cupti_entry_activity_t *)hpcrun_malloc(sizeof(cupti_entry_activity_t));
   cupti_activity_node_set(node, activity, cct_node, next);
   return node;
@@ -186,11 +186,11 @@ cupti_activity_node_new
 void
 cupti_notification_node_set
 (
- cupti_node_t *cupti_node,
+ cstack_node_t *cupti_node,
  uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
- cupti_node_t *next
+ cstack_node_t *next
 )
 {
   cupti_entry_notification_t *entry = (cupti_entry_notification_t *)(cupti_node->entry);
@@ -198,20 +198,20 @@ cupti_notification_node_set
   entry->cct_node = cct_node;
   entry->record = record;
   cupti_node->next = next;
-  cupti_node->type = CUPTI_ENTRY_TYPE_NOTIFICATION;
+  cupti_node->type = CSTACK_TYPE_CUPTI_NOTIFICATION;
 }
 
 
-cupti_node_t *
+cstack_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
  cct_node_t *cct_node,
  void *record,
- cupti_node_t *next
+ cstack_node_t *next
 )
 {
-  cupti_node_t *node = (cupti_node_t *)hpcrun_malloc(sizeof(cupti_node_t));
+  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc(sizeof(cstack_node_t));
   cupti_entry_notification_t *entry = (cupti_entry_notification_t *)hpcrun_malloc(sizeof(cupti_entry_notification_t));
   node->entry = entry;
   cupti_notification_node_set(node, host_op_id, cct_node, record, next);

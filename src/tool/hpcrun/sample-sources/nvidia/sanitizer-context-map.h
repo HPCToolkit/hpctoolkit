@@ -1,5 +1,5 @@
-#ifndef _HPCTOOLKIT_CUBIN_HASH_MAP_H_
-#define _HPCTOOLKIT_CUBIN_HASH_MAP_H_
+#ifndef _HPCTOOLKIT_SANITIZER_CONTEXT_MAP_H_
+#define _HPCTOOLKIT_SANITIZER_CONTEXT_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -11,43 +11,58 @@
  * local includes
  *****************************************************************************/
 
+#include <cuda.h>
+
+#include "cstack.h"
+#include "sanitizer-record.h"
+
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
-typedef struct cubin_hash_map_entry_s cubin_hash_map_entry_t;
+typedef struct sanitizer_context_map_entry_s sanitizer_context_map_entry_t;
 
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
-cubin_hash_map_entry_t *
-cubin_hash_map_lookup
+sanitizer_context_map_entry_t *
+sanitizer_context_map_lookup
 (
- const void *cubin
+ CUcontext context
 );
 
 
 void
-cubin_hash_map_insert
+sanitizer_context_map_insert
 (
- const void *cubin,
- size_t size
+ CUcontext context,
+ CUstream stream,
+ cstack_node_t *notification
 );
 
 
 void
-cubin_hash_map_delete
+sanitizer_context_map_context_process
 (
- const void *cubin
+ CUcontext context,
+ sanitizer_record_fn_t fn
 );
 
 
-unsigned char *
-cubin_hash_map_entry_hash_get
+void
+sanitizer_context_map_stream_process
 (
- cubin_hash_map_entry_t *entry,
- unsigned int *len
+ CUcontext context,
+ CUstream stream,
+ sanitizer_record_fn_t fn
+);
+
+
+void
+sanitizer_context_map_delete
+(
+ CUcontext context
 );
 
 #endif

@@ -2,11 +2,19 @@
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <limits.h>    // PATH_MAX
-// #include <pthread.h>
 #include <stdio.h>     // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
+#include <string.h>    // strstr
+
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+#include <link.h>          // dl_iterate_phdr
+#include <linux/limits.h>  // PATH_MAX
 #include <string.h>        // strstr
+#endif
 
 #include <sanitizer.h>
 
@@ -23,15 +31,20 @@
 #include <hpcrun/sample-sources/libdl.h>
 
 #include "nvidia.h"
+#include "cstack.h"
 
-#include "cuda-device-map.h"
+#include "cuda-api.h"
 #include "cuda-state-placeholders.h"
 
-#include "cubin-id-map.h"
+#include "cubin-module-map.h"
 #include "cubin-hash-map.h"
 
 #include "sanitizer-api.h"
+#include "sanitizer-record.h"
 #include "sanitizer-node.h"
+#include "sanitizer-stream-map.h"
+#include "sanitizer-context-map.h"
+
 
 #define SANITIZER_API_DEBUG 1
 
@@ -43,24 +56,265 @@
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
-static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
-static cct_node_t *host_op_node;
-static CUstream stream;
-static uint32_t cubin_id = 0;
-static uint32_t function_index = 0;
-static Elf_SymbolVector *elf_vector = NULL;
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
-static __thread bool sanitizer_stop_flag = false;
+#define SANITIZER_BUFFER_SIZE 64 * 1024
 
-bool
-sanitizer_bind()
-{
-  return false;
+#define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
+
+#define SANITIZER_FN(fn, args) \
+  static SanitizerResult (*SANITIZER_FN_NAME(fn)) args
+
+#define HPCRUN_SANITIZER_CALL(fn, args) \
+{      \
+  SanitizerResult status = SANITIZER_FN_NAME(fn) args;	\
+  if (status != SANITIZER_SUCCESS) {		\
+    sanitizer_error_report(status, #fn);		\
+  }						\
 }
+
+#define DISPATCH_CALLBACK(fn, args) if (fn) fn args
+
+#define FORALL_SANITIZER_ROUTINES(macro)   \
+  macro(sanitizerSubscribe)                \
+  macro(sanitizerUnsubscribe)              \
+  macro(sanitizerEnableAllDomains)         \
+  macro(sanitizerEnableDomain)             \
+  macro(sanitizerAlloc)                    \
+  macro(sanitizerMemset)                   \
+  macro(sanitizerMemcpyDeviceToHost)       \
+  macro(sanitizerMemcpyHostToDeviceAsync)  \
+  macro(sanitizerSetCallbackData)          \
+  macro(sanitizerAddPatchesFromFile)       \
+  macro(sanitizerPatchInstructions)        \
+  macro(sanitizerPatchModule)              \
+  macro(sanitizerGetResultString)          \
+  macro(sanitizerUnpatchModule)
+
+
+// only subscribe by the main thread
+static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
+
+static __thread bool sanitizer_stop_flag = false;
+static __thread uint32_t sanitizer_thread_id = 0;
+static atomic_uint sanitizer_global_thread_id = ATOMIC_VAR_INIT(0);
+
+static __thread sanitizer_buffer_t buffer_reset = {
+ .cur_index = 0,
+ .max_index = SANITIZER_BUFFER_SIZE
+};
+static __thread sanitizer_memory_buffer_t *memory_buffer_host = NULL;
+static __thread sanitizer_buffer_t *buffer_host = NULL;
+
+//----------------------------------------------------------
+// sanitizer function pointers for late binding
+//----------------------------------------------------------
+
+
+SANITIZER_FN
+(
+ sanitizerSubscribe,
+ (
+  Sanitizer_SubscriberHandle* subscriber,
+  Sanitizer_CallbackFunc callback,
+  void* userdata
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerUnsubscribe,
+ (
+  Sanitizer_SubscriberHandle subscriber
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerEnableAllDomains,
+ (
+  uint32_t enable,
+  Sanitizer_SubscriberHandle subscriber
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerEnableDomain,
+ (
+  uint32_t enable,
+  Sanitizer_SubscriberHandle subscriber,
+  Sanitizer_CallbackDomain domain
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerAlloc,
+ (
+  void** devPtr,
+  size_t size
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerMemset,
+ (
+  void* devPtr,
+  int value,
+  size_t count,
+  CUstream stream
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerMemcpyDeviceToHost,
+ (
+  void* dst,
+  void* src,
+  size_t count,
+  CUstream stream
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerMemcpyHostToDeviceAsync,
+ (
+  void* dst,
+  void* src,
+  size_t count,
+  CUstream stream
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerSetCallbackData,
+ (
+  CUstream stream,
+  const void* userdata
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerAddPatchesFromFile,
+ (
+  const char* filename,
+  CUcontext ctx
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerPatchInstructions,
+ (
+  const Sanitizer_InstructionId instructionId,
+  CUmodule module,
+  const char* deviceCallbackName
+ ) 
+);
+
+
+SANITIZER_FN
+(
+ sanitizerPatchModule,
+ (
+  CUmodule module
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerUnpatchModule,
+ (
+  CUmodule module
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerGetResultString,
+ (
+  SanitizerResult result,
+  const char **str
+ )
+);
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static void
+sanitizer_error_callback // __attribute__((unused))
+(
+ const char *type, 
+ const char *fn, 
+ const char *error_string
+)
+{
+  PRINT("%s: function %s failed with error %s\n", type, fn, error_string);
+  exit(-1);
+} 
+
+
+static void
+sanitizer_error_report
+(
+ SanitizerResult error, 
+ const char *fn
+)
+{
+  const char *error_string;
+  SANITIZER_FN_NAME(sanitizerGetResultString)(error, &error_string);
+  sanitizer_error_callback("Sanitizer result error", fn, error_string);
+} 
+
+#ifndef HPCRUN_STATIC_LINK
+static const char *
+sanitizer_path
+(
+ void
+)
+{
+  const char *path = "libsanitizer-public.so";
+
+  static char buffer[PATH_MAX];
+  buffer[0] = 0;
+
+  // open an NVIDIA library to find the CUDA path with dl_iterate_phdr
+  // note: a version of this file with a more specific name may 
+  // already be loaded. thus, even if the dlopen fails, we search with
+  // dl_iterate_phdr.
+  void *h = monitor_real_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
+
+  if (dl_iterate_phdr(cuda_path, buffer)) {
+    // invariant: buffer contains CUDA home 
+    strcat(buffer, "extras/Sanitizer/libsanitizer-public.so");
+    path = buffer;
+  }
+
+  if (h) monitor_real_dlclose(h);
+
+  return path;
+}
+
+#endif
 
 static bool
 sanitizer_write_cubin
@@ -97,18 +351,19 @@ sanitizer_write_cubin
 static void
 sanitizer_load_callback
 (
- CUmodule module, 
+ CUcontext context,
+ CUmodule cubin_module, 
  const void *cubin, 
  size_t cubin_size
 )
 {
   // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin_id);
+  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin);
   unsigned char *hash;
   unsigned int hash_len;
   if (entry == NULL) {
-    cubin_hash_map_insert(cubin_id, cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin_id);
+    cubin_hash_map_insert(cubin, cubin_size);
+    entry = cubin_hash_map_lookup(cubin);
   }
   hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
 
@@ -134,113 +389,140 @@ sanitizer_load_callback
     char device_file[PATH_MAX]; 
     sprintf(device_file, "%s", file_name);
     uint32_t hpctoolkit_module_id;
-    load_module_t *module = NULL;
+    load_module_t *load_module = NULL;
     hpcrun_loadmap_lock();
-    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+    if ((load_module = hpcrun_loadmap_findByName(device_file)) == NULL) {
       hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
     } else {
-      hpctoolkit_module_id = module->id;
+      hpctoolkit_module_id = load_module->id;
     }
     hpcrun_loadmap_unlock();
-    //cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
-    //if (entry == NULL) {
-    elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
-    cubin_id_map_insert(cubin_id, hpctoolkit_module_id, elf_vector);
-    //}
+    cubin_module_map_entry_t *entry = cubin_module_map_lookup(cubin_module);
+    if (entry == NULL) {
+      Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
+      cubin_module_map_insert(cubin_module, hpctoolkit_module_id, elf_vector);
+    }
   }
 
-  sanitizerAddPatchesFromFile("/home/kz21/Codes/hpctoolkit-gpu-samples/memory.fatbin", 0);
-  sanitizerPatchInstructions(SANITIZER_INSTRUCTION_MEMORY_ACCESS, module, "MemoryAccessCallback");
-  sanitizerPatchModule(module);
+  // patch binary
+  HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "MemoryAccessCallback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchModule, (cubin_module));
 }
 
 
 static void
 sanitizer_unload_callback
 (
- int module_id, 
+ const void *module,
  const void *cubin, 
  size_t cubin_size
 )
 {
-  //cubin_id_map_delete(module_id);
+  cubin_hash_map_delete(cubin);
+  cubin_module_map_delete(module);
 }
-
-
-#define SANITIZER_BUFFER_SIZE 10240
-static sanitizer_memory_t sanitizer_memory_reset = {
- .cur_index = 0,
- .max_index = SANITIZER_BUFFER_SIZE,
-};
-static sanitizer_memory_record_t *sanitizer_memory_host_records = NULL;
-static sanitizer_memory_t *sanitizer_memory_host = NULL;
-static sanitizer_memory_t *sanitizer_memory_device = NULL;
-
 
 //******************************************************************************
 // record handlers
 //******************************************************************************
 
 static void
-sanitizer_record_process
+sanitizer_memory_process
 (
+ CUmodule module,
+ CUstream stream,
+ uint32_t function_index,
+ cct_node_t *host_op_node,
+ void *buffers,
+ size_t num_buffers
 )
 {
-  if (sanitizer_memory_host == NULL) {
-    sanitizer_memory_host = (sanitizer_memory_t *) hpcrun_malloc(sizeof(sanitizer_memory_t));
-    sanitizer_memory_host_records = (sanitizer_memory_record_t *) hpcrun_malloc(
-      sizeof(sanitizer_memory_record_t) * SANITIZER_BUFFER_SIZE);
+  if (memory_buffer_host == NULL) {
+    // first time copy back, allocate memory
+    memory_buffer_host = (sanitizer_memory_buffer_t *)
+      hpcrun_malloc(SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t));
   }
+  HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+    (memory_buffer_host, buffers, sizeof(sanitizer_memory_buffer_t) * num_buffers, stream));
 
-  size_t num_records = 0;
-  sanitizerMemcpyDeviceToHost(sanitizer_memory_host, sanitizer_memory_device,
-    sizeof(sanitizer_memory_t), stream);
+  // do analysis here
+  sanitizer_activity_t activity;
+  activity.type = SANITIZER_ACTIVITY_TYPE_MEMORY;
 
-  num_records = MIN2(sanitizer_memory_host->cur_index, sanitizer_memory_host->max_index);
-  PRINT("num_records %d\n", num_records);
-  sanitizerMemcpyDeviceToHost(sanitizer_memory_host_records, sanitizer_memory_host->records,
-    sizeof(sanitizer_memory_record_t) * num_records, stream);
-
+  // attribute properties back to cct tree
   size_t i;
-  for (i = 0; i < num_records; ++i) {
-     sanitizer_memory_record_t *record = &(sanitizer_memory_host_records[i]);
-     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, record->pc - sanitizer_memory_host_records[0].pc + 0xE0);
-     PRINT("pc %p\n", record->pc - sanitizer_memory_host_records[0].pc + 0xE0);
+  // XXX(Keren): tricky change offset here
+  uint64_t pc_offset = 0x0;
+  for (i = 0; i < num_buffers; ++i) {
+     sanitizer_memory_buffer_t *memory_buffer = &(memory_buffer_host[i]);
+     ip_normalized_t ip = cubin_module_transform(module, function_index,
+       memory_buffer->pc - memory_buffer_host[0].pc + pc_offset);
      cct_addr_t frm = { .ip_norm = ip };
      cct_node_t *cct_child = NULL;
      if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
-       sanitizer_record_attribute(cct_child);
+       //sanitizer_activity_attribute(&activity, cct_child);
      }
+     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u\n",
+       memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
+       memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
+       memory_buffer->pc, memory_buffer->size, memory_buffer->flags);
   }
 }
+
+
+static void
+sanitizer_buffer_process
+(
+ cstack_node_t *node
+)
+{
+  sanitizer_entry_notification_t *notification = node->entry;
+  cct_node_t *host_op_node = notification->host_op_node;
+  CUmodule module = notification->module;
+  CUstream stream = notification->stream;
+  uint32_t function_index = notification->function_index;
+  sanitizer_activity_type_t type = notification->type;
+  cstack_node_t *buffer_device = notification->buffer_device;
+  sanitizer_entry_buffer_t *buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
+
+  // first time copy back, allocate memory
+  if (buffer_host == NULL) {
+    buffer_host = (sanitizer_buffer_t *) hpcrun_malloc(sizeof(sanitizer_buffer_t));
+  }
+  HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+    (buffer_host, buffer_device_entry->buffer, sizeof(sanitizer_buffer_t), stream));
+  size_t num_buffers = MIN2(buffer_host->cur_index, buffer_host->max_index);
+  PRINT("sanitizer_memory_process->num_buffers %lu\n", num_buffers);
+
+  switch (type) {
+    case SANITIZER_ACTIVITY_TYPE_MEMORY:
+      {
+        sanitizer_memory_process(module, stream, function_index, host_op_node, 
+          buffer_host->buffers, num_buffers);
+        sanitizer_buffer_device_push(SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device);
+        break;
+      }
+    default:
+      break;
+  }
+}
+
+
+static void
+sanitizer_buffer_dispatch
+(
+ cstack_t *stack
+)
+{
+  sanitizer_notification_apply(stack, sanitizer_buffer_process);
+}
+
 
 //******************************************************************************
 // callbacks
 //******************************************************************************
-
-static void
-sanitizer_kernel_launch_callback
-(
- Sanitizer_LaunchData *ld
-)
-{
-  // alloc memory array
-  if (sanitizer_memory_device == NULL) {
-    sanitizer_memory_record_t *records;
-    sanitizerAlloc((void**)&(records), sizeof(sanitizer_memory_record_t) *
-      SANITIZER_BUFFER_SIZE);
-    sanitizerMemset(records, 0, sizeof(sanitizer_memory_record_t) *
-      SANITIZER_BUFFER_SIZE, stream);
-    sanitizer_memory_reset.records = records;
-    sanitizerAlloc((void**)&sanitizer_memory_device, sizeof(sanitizer_memory_t));
-  }
-  // reset memory array
-  sanitizerMemcpyHostToDeviceAsync(sanitizer_memory_device, &sanitizer_memory_reset,
-    sizeof(sanitizer_memory_t), stream);
-
-  sanitizerSetCallbackData(stream, sanitizer_memory_device);
-}
-
 
 static cct_node_t *
 sanitizer_correlation_callback
@@ -253,16 +535,15 @@ sanitizer_correlation_callback
   ucontext_t uc;
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
+
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  td->overhead++;
   hpcrun_safe_enter();
 
   cct_node_t *node = 
     hpcrun_sample_callpath(&uc, zero_metric_id, 
-			   zero_metric_incr, 0, 1, NULL).sample_node; 
+      zero_metric_incr, 0, 1, NULL).sample_node; 
 
   hpcrun_safe_exit();
-  td->overhead--;
 
   // Compress callpath
   cct_addr_t* node_addr = hpcrun_cct_addr(node);
@@ -291,7 +572,6 @@ sanitizer_correlation_callback
     node_addr = hpcrun_cct_addr(node);
   }
   
-  td->overhead++;
   hpcrun_safe_enter();
 
   // Insert the corresponding cuda state node
@@ -301,9 +581,78 @@ sanitizer_correlation_callback
   cct_node_t* cct_child = hpcrun_cct_insert_addr(node, &frm);
 
   hpcrun_safe_exit();
-  td->overhead--;
 
   return cct_child;
+}
+
+
+static void
+sanitizer_kernel_launch_callback
+(
+ CUcontext context,
+ CUmodule module,
+ CUstream stream,
+ const char *function_name
+)
+{
+  // look up function index
+  cubin_module_map_entry_t *entry = cubin_module_map_lookup(module);
+  bool find = false;
+  uint32_t function_index = 0;
+  if (entry != NULL) {
+    Elf_SymbolVector *elf_vector = cubin_module_map_entry_elf_vector_get(entry);
+    size_t i;
+    for (i = 0; i < elf_vector->nsymbols; ++i) {
+      if (elf_vector->names[i] != NULL) {
+        if (strcmp(elf_vector->names[i], function_name) == 0) {
+          find = true;
+          function_index = i;
+          PRINT("function_index %d\n", function_index);
+          break;
+        }
+      }
+    }
+  }
+
+  if (find == false) {
+    PRINT("function not found %s\n", function_name);
+    return;
+  }
+
+  // TODO(keren): add other instrumentation mode, do not allow two threads sharing a stream
+  // allocate a device memory buffer
+  cstack_node_t *buffer_device = sanitizer_buffer_device_pop(SANITIZER_ACTIVITY_TYPE_MEMORY);
+  sanitizer_entry_buffer_t *buffer_device_entry = NULL;
+
+  if (buffer_device == NULL) {
+    buffer_device = sanitizer_buffer_node_new(NULL);
+    buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
+    // allocate buffer
+    void *memory_buffer_device = NULL;
+    HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&(buffer_device_entry->buffer), sizeof(sanitizer_buffer_t)));
+    HPCRUN_SANITIZER_CALL(sanitizerAlloc,
+      (&memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t)));
+    HPCRUN_SANITIZER_CALL(sanitizerMemset,
+      (memory_buffer_device, 0, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t), stream));
+    buffer_reset.buffers = memory_buffer_device;
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
+      (buffer_device_entry->buffer, &buffer_reset, sizeof(sanitizer_buffer_t), stream));
+  } else {
+    buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
+    // reset buffer
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
+      (buffer_device_entry->buffer, &buffer_reset, sizeof(uint32_t) * 2, stream));
+  }
+
+  HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, buffer_device_entry->buffer));
+
+  // get cct_node
+  cuda_placeholder_t cuda_state = cuda_placeholders.cuda_kernel_state;
+  cct_node_t *host_op_node = sanitizer_correlation_callback(cuda_state);
+
+  // correlte record with stream
+  sanitizer_notification_insert(context, module, stream, function_index,
+    SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device, sanitizer_thread_id, host_op_node);
 }
 
 //-------------------------------------------------------------
@@ -319,64 +668,158 @@ sanitizer_subscribe_callback
  const void* cbdata
 )
 {
-  // XXX(keren): assume single thread, single context, and single stream
+  if (!sanitizer_stop_flag) {
+    sanitizer_thread_id = atomic_fetch_add(&sanitizer_global_thread_id, 1);
+    sanitizer_stop_flag_set();
+  }
+  // XXX(keren): assume single thread per stream
   if (domain == SANITIZER_CB_DOMAIN_RESOURCE) {
-    if (cbid == SANITIZER_CBID_RESOURCE_MODULE_LOADED) {
-      Sanitizer_ResourceModuleData* rd = (Sanitizer_ResourceModuleData*)cbdata;
-      sanitizer_load_callback(rd->module, rd->pCubin, rd->cubinSize);
-    } else if (cbid == SANITIZER_CBID_RESOURCE_MODULE_UNLOAD) {
-      Sanitizer_ResourceModuleData* rd = (Sanitizer_ResourceModuleData*)cbdata;
-      sanitizer_unload_callback(rd->module, rd->pCubin, rd->cubinSize);
+    switch (cbid) {
+      case SANITIZER_CBID_RESOURCE_MODULE_LOADED:
+        {
+          // single thread
+          Sanitizer_ResourceModuleData *md = (Sanitizer_ResourceModuleData *)cbdata;
+          sanitizer_load_callback(md->context, md->module, md->pCubin, md->cubinSize);
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_MODULE_UNLOAD_STARTING:
+        {
+          // single thread
+          Sanitizer_ResourceModuleData *md = (Sanitizer_ResourceModuleData *)cbdata;
+          sanitizer_unload_callback(md->module, md->pCubin, md->cubinSize);
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_STREAM_CREATED:
+        {
+          // single thread
+          // TODO
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_STREAM_DESTROY_STARTING:
+        {
+          // single thread
+          // TODO
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_CONTEXT_CREATION_FINISHED:
+        {
+          // single thread
+          // TODO
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_CONTEXT_DESTROY_STARTING:
+        {
+          // single thread
+          // TODO
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
+        {
+          //TODO
+          break;
+        }
+      case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
+        {
+          //TODO
+          break;
+        }
+      default:
+        {
+          break;
+        }
     }
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
-    sanitizer_stop_flag_set();
+    Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
-      Sanitizer_LaunchData* ld = (Sanitizer_LaunchData*)cbdata;
-      stream = ld->stream;
-      size_t i;
-      for (i = 0; i < elf_vector->nsymbols; ++i) {
-        if (elf_vector->names[i] != NULL) {
-          if (strcmp(elf_vector->names[i], ld->functionName) == 0) {
-            function_index = i;
-            PRINT("function_index %d\n", function_index);
-            break;
-          }
-        }
-      }
-      sanitizer_kernel_launch_callback(ld);
-      cuda_placeholder_t cuda_state = cuda_placeholders.cuda_kernel_state;
-      host_op_node = sanitizer_correlation_callback(cuda_state);
+      // multi-thread
+      sanitizer_kernel_launch_callback(ld->context, ld->module, ld->stream, ld->functionName);
     }
+  } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
+    // TODO(keren): variable correaltion and sync data
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
-    sanitizer_stop_flag_set();
+    Sanitizer_SynchronizeData *sd = (Sanitizer_SynchronizeData*)cbdata;
     if (cbid == SANITIZER_CBID_SYNCHRONIZE_STREAM_SYNCHRONIZED) {
-      //sanitizer_record_process();
+      // multi-thread
+      sanitizer_context_map_stream_process(sd->context, sd->stream, sanitizer_buffer_dispatch);
     } else if (cbid == SANITIZER_CBID_SYNCHRONIZE_CONTEXT_SYNCHRONIZED) {
-      //sanitizer_record_process();
+      // multi-thread
+      sanitizer_context_map_context_process(sd->context, sanitizer_buffer_dispatch);
     }
   }
+}
+
+
+//******************************************************************************
+// interfaces
+//******************************************************************************
+
+bool
+sanitizer_bind()
+{
+#ifndef HPCRUN_STATIC_LINK
+  // dynamic libraries only availabile in non-static case
+  hpcrun_force_dlopen(true);
+  CHK_DLOPEN(sanitizer, sanitizer_path(), RTLD_NOW | RTLD_GLOBAL);
+  hpcrun_force_dlopen(false);
+
+#define SANITIZER_BIND(fn) \
+  CHK_DLSYM(sanitizer, fn);
+
+  FORALL_SANITIZER_ROUTINES(SANITIZER_BIND)
+
+#undef SANITIZER_BIND
+
+  return 0;
+#else
+  return -1;
+#endif // ! HPCRUN_STATIC_LINK
 }
 
 
 void
 sanitizer_callbacks_subscribe() 
 {
-  sanitizerSubscribe(&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL);
-  sanitizerEnableAllDomains(1, sanitizer_subscriber_handle);
+  HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
+    (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RESOURCE));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_SYNCHRONIZE));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_LAUNCH));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMCPY));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMSET));
 }
 
 
 void
 sanitizer_callbacks_unsubscribe() 
 {
-  sanitizerUnsubscribe(sanitizer_subscriber_handle);
-  sanitizerEnableAllDomains(0, sanitizer_subscriber_handle);
+  HPCRUN_SANITIZER_CALL(sanitizerUnsubscribe, (sanitizer_subscriber_handle));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RESOURCE));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_SYNCHRONIZE));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_LAUNCH));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMCPY));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMSET));
 }
 
-
-//******************************************************************************
-// finalizer
-//******************************************************************************
 
 void
 sanitizer_stop_flag_set()
@@ -397,7 +840,6 @@ sanitizer_device_flush(void *args)
 {
   if (sanitizer_stop_flag) {
     sanitizer_stop_flag_unset();
-    //sanitizer_record_process();
   }
 }
 
@@ -405,6 +847,5 @@ sanitizer_device_flush(void *args)
 void
 sanitizer_device_shutdown(void *args)
 {
-  sanitizer_record_process();
-  //sanitizer_callbacks_unsubscribe();
+  sanitizer_callbacks_unsubscribe();
 }
