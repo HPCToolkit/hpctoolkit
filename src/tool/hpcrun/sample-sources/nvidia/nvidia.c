@@ -999,7 +999,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     ompt_pc_sampling_enable();
   }
 
-  //ENABLE(USE_TRAMP);
+  ENABLE(USE_TRAMP);
 }
 
 static void
