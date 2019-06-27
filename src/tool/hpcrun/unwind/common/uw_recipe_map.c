@@ -662,6 +662,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   thread_data_t *td = hpcrun_get_thread_data();
   uw_hash_entry_t *e = uw_hash_lookup(td->uw_hash_table, addr);
   ilmstat_btuwi_pair_t* ilm_btui = NULL;
+  bool btuwi_update = true;
 
   if (e == NULL) {
     // check if addr is already in the range of an interval key in the map
@@ -673,6 +674,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     }
   } else {
     ilm_btui = (ilmstat_btuwi_pair_t *)e->ilm_btui;
+    // if we find ilm_btui, we do not need to update btuwi
+    btuwi_update = false;
   }
 
   if (!ilm_btui) {
@@ -707,7 +710,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 #if UW_RECIPE_MAP_DEBUG
   assert(ilm_btui != NULL);
 #endif
-
+  
   tree_stat_t oldstat = DEFERRED;
   if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,
 					      memory_order_release, memory_order_relaxed)) {
@@ -732,6 +735,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
        fcn_start, fcn_end, btuwi_stat.error);
       }
       ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
+      // I am going to update my btuwi by searching the binary tree
+      btuwi_update = true;
       atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
 
       td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
@@ -740,6 +745,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
       td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
       EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
       atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
+      // I am going to switch an unwinder because it does not help
+      uw_hash_delete(td->uw_hash_table, addr);
       return false;
     }
   }
@@ -748,6 +755,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
       oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
     if (oldstat == NEVER) {
       // addr is in the range of some poisoned load module
+      // I am going to switch an unwinder because it does not help
+      uw_hash_delete(td->uw_hash_table, addr);
       return false;
     }
   }
@@ -755,7 +764,12 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
 
   bitree_uwi_t *btuwi = ilm_btui->btuwi;
-  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
+  if (btuwi_update) {
+    unwr_info->btuwi = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
+    uw_hash_btuwi_insert(td->uw_hash_table, addr, unwr_info->btuwi);
+  } else {
+    unwr_info->btuwi = (bitree_uwi_t *)e->btuwi;
+  }
   unwr_info->treestat = READY;
   unwr_info->lm         = ilm_btui->lm;
   unwr_info->interval   = ilm_btui->interval;

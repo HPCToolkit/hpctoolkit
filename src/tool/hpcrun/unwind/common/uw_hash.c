@@ -95,6 +95,26 @@ uw_hash_insert(uw_hash_table_t *uw_hash_table,
 }
 
 
+void
+uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
+  void *key, ilmstat_btuwi_pair_t *ilm_btui)
+{
+  size_t index = UW_HASH(key, uw_hash_table->size);
+  uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
+  uw_hash_entry->ilm_btui = ilm_btui;
+}
+
+
+void
+uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
+  void *key, bitree_uwi_t *btuwi)
+{
+  size_t index = UW_HASH(key, uw_hash_table->size);
+  uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
+  uw_hash_entry->btuwi = btuwi;
+}
+
+
 uw_hash_entry_t *
 uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key)
 {
@@ -127,5 +147,7 @@ uw_hash_delete(uw_hash_table_t *uw_hash_table, void *key)
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
   if (uw_hash_entry->key == key) {
     uw_hash_entry->key = NULL;
+    uw_hash_entry->ilm_btui = NULL;
+    uw_hash_entry->btuwi = NULL;
   }
 }
