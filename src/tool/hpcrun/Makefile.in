@@ -497,7 +497,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
-	unwind/common/uw_recipe_map.c \
+	unwind/common/uw_hash.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -663,6 +663,7 @@ am__objects_38 = $(am__objects_37) \
 	unwind/common/libhpcrun_la-interval_t.lo \
 	unwind/common/libhpcrun_la-libunw_intervals.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
+	unwind/common/libhpcrun_la-uw_hash.lo \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
 am__objects_39 = $(am__objects_38) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
@@ -837,7 +838,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
-	unwind/common/uw_recipe_map.c \
+	unwind/common/uw_hash.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -1004,6 +1005,7 @@ am__objects_70 = $(am__objects_69) \
 	unwind/common/libhpcrun_o-interval_t.$(OBJEXT) \
 	unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
+	unwind/common/libhpcrun_o-uw_hash.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
 am__objects_71 = $(am__objects_70) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
@@ -1528,6 +1530,7 @@ UNW_COMMON_FILES = \
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
 	unwind/common/stack_troll.c			\
+	unwind/common/uw_hash.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
@@ -2516,6 +2519,8 @@ unwind/common/libhpcrun_la-libunw_intervals.lo:  \
 unwind/common/libhpcrun_la-stack_troll.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
+unwind/common/libhpcrun_la-uw_hash.lo: unwind/common/$(am__dirstamp) \
+	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-uw_recipe_map.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
@@ -2966,6 +2971,9 @@ unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-stack_troll.$(OBJEXT):  \
+	unwind/common/$(am__dirstamp) \
+	unwind/common/$(DEPDIR)/$(am__dirstamp)
+unwind/common/libhpcrun_o-uw_hash.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT):  \
@@ -3440,6 +3448,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-libunw_intervals.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-stack_troll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-unw-throw.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-uw_hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_la-uw_recipe_map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-binarytree_uwi.Po@am__quote@
@@ -3448,6 +3457,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-libunw_intervals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-stack_troll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-unw-throw.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-uw_recipe_map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-libunw-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-libunw-unwind.Po@am__quote@
@@ -4685,6 +4695,13 @@ unwind/common/libhpcrun_la-stack_troll.lo: unwind/common/stack_troll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/stack_troll.c' object='unwind/common/libhpcrun_la-stack_troll.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_la-stack_troll.lo `test -f 'unwind/common/stack_troll.c' || echo '$(srcdir)/'`unwind/common/stack_troll.c
+
+unwind/common/libhpcrun_la-uw_hash.lo: unwind/common/uw_hash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-uw_hash.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-uw_hash.Tpo -c -o unwind/common/libhpcrun_la-uw_hash.lo `test -f 'unwind/common/uw_hash.c' || echo '$(srcdir)/'`unwind/common/uw_hash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_la-uw_hash.Tpo unwind/common/$(DEPDIR)/libhpcrun_la-uw_hash.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/uw_hash.c' object='unwind/common/libhpcrun_la-uw_hash.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_la-uw_hash.lo `test -f 'unwind/common/uw_hash.c' || echo '$(srcdir)/'`unwind/common/uw_hash.c
 
 unwind/common/libhpcrun_la-uw_recipe_map.lo: unwind/common/uw_recipe_map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-uw_recipe_map.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-uw_recipe_map.Tpo -c -o unwind/common/libhpcrun_la-uw_recipe_map.lo `test -f 'unwind/common/uw_recipe_map.c' || echo '$(srcdir)/'`unwind/common/uw_recipe_map.c
@@ -6743,6 +6760,20 @@ unwind/common/libhpcrun_o-stack_troll.obj: unwind/common/stack_troll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/stack_troll.c' object='unwind/common/libhpcrun_o-stack_troll.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-stack_troll.obj `if test -f 'unwind/common/stack_troll.c'; then $(CYGPATH_W) 'unwind/common/stack_troll.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/stack_troll.c'; fi`
+
+unwind/common/libhpcrun_o-uw_hash.o: unwind/common/uw_hash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-uw_hash.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Tpo -c -o unwind/common/libhpcrun_o-uw_hash.o `test -f 'unwind/common/uw_hash.c' || echo '$(srcdir)/'`unwind/common/uw_hash.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/uw_hash.c' object='unwind/common/libhpcrun_o-uw_hash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-uw_hash.o `test -f 'unwind/common/uw_hash.c' || echo '$(srcdir)/'`unwind/common/uw_hash.c
+
+unwind/common/libhpcrun_o-uw_hash.obj: unwind/common/uw_hash.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-uw_hash.obj -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Tpo -c -o unwind/common/libhpcrun_o-uw_hash.obj `if test -f 'unwind/common/uw_hash.c'; then $(CYGPATH_W) 'unwind/common/uw_hash.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/uw_hash.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Tpo unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/common/uw_hash.c' object='unwind/common/libhpcrun_o-uw_hash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/common/libhpcrun_o-uw_hash.obj `if test -f 'unwind/common/uw_hash.c'; then $(CYGPATH_W) 'unwind/common/uw_hash.c'; else $(CYGPATH_W) '$(srcdir)/unwind/common/uw_hash.c'; fi`
 
 unwind/common/libhpcrun_o-uw_recipe_map.o: unwind/common/uw_recipe_map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-uw_recipe_map.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-uw_recipe_map.Tpo -c -o unwind/common/libhpcrun_o-uw_recipe_map.o `test -f 'unwind/common/uw_recipe_map.c' || echo '$(srcdir)/'`unwind/common/uw_recipe_map.c

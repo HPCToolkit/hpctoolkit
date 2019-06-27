@@ -67,10 +67,10 @@
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>
+#include <unwind/common/uw_hash.h>
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
-#include <lib/prof-lean/hash.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -226,7 +226,7 @@ typedef struct thread_data_t {
 
 
   backtrace_t bt;     // backtrace used for unwinding
-  hash_table_t *uw_hash_table;
+  uw_hash_table_t *uw_hash_table;
 
   // ----------------------------------------
   // trampoline

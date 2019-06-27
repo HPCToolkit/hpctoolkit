@@ -1,8 +1,11 @@
 // -*-Mode: C++;-*- // technically C99
 
+#ifndef _hpctoolkit_uw_hash_h_
+#define _hpctoolkit_uw_hash_h_
+
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
+// $HeadURL: $
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -44,29 +47,46 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
 
-#ifndef _UW_RECIPE_MAP_H_
-#define _UW_RECIPE_MAP_H_
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
 
-#include "unwindr_info.h"
+#include <stdint.h>
 
-typedef struct ilmstat_btuwi_pair_s ilmstat_btuwi_pair_t;
+#include <lib/prof-lean/binarytree.h>
 
-void
-uw_recipe_map_init(void);
+#include "unwind-interval.h"
+#include "uw_recipe_map.h"
 
 
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
+typedef struct {
+  void *key;
+  ilmstat_btuwi_pair_t *ilm_btui;
+  bitree_uwi_t *btuwi; 
+} uw_hash_entry_t;
 
-#endif  /* !_UW_RECIPE_MAP_H_ */
+
+typedef struct {
+  size_t size;
+  uw_hash_entry_t *uw_hash_entries;
+} uw_hash_table_t;
+
+/***************************************************************************
+ * interface operations
+ ***************************************************************************/
+
+typedef void *(*uw_hash_malloc_fn)(size_t size);
+
+uw_hash_table_t *uw_hash_new(size_t size, uw_hash_malloc_fn fn);
+
+void uw_hash_insert(uw_hash_table_t *uw_hash_table,
+  void *key, ilmstat_btuwi_pair_t *ilm_btui, bitree_uwi_t *btuwi);
+
+uw_hash_entry_t *uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key);
+
+void uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end);
+
+void uw_hash_delete(uw_hash_table_t *uw_hash_table, void *key);
+
+#endif // _hpctoolkit_uw_hash_h_

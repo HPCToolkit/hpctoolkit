@@ -81,13 +81,13 @@
 #include <memory/hpcrun-malloc.h>
 #include <main.h>
 #include "thread_data.h"
+#include "uw_hash.h"
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>
 #include <lib/prof-lean/cskiplist.h>
 #include <lib/prof-lean/mcs-lock.h>
 #include <lib/prof-lean/binarytree.h>
-#include <lib/prof-lean/hash.h>
 #include "binarytree_uwi.h"
 #include "segv_handler.h"
 #include <messages/messages.h>
@@ -582,6 +582,9 @@ uw_recipe_map_notify_unmap(void *start, void *end)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
     uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end, uw);
 
+  thread_data_t *td = hpcrun_get_thread_data();
+  uw_hash_delete_range(td->uw_hash_table, start, end);
+
   uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
 }
 
@@ -657,7 +660,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   unwr_info->interval.end   = 0;
 
   thread_data_t *td = hpcrun_get_thread_data();
-  hash_entry_t *e = hash_lookup(td->uw_hash_table, (uintptr_t)addr);
+  uw_hash_entry_t *e = uw_hash_lookup(td->uw_hash_table, addr);
   ilmstat_btuwi_pair_t* ilm_btui = NULL;
 
   if (e == NULL) {
@@ -666,10 +669,10 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 
     // if we find ilm_btui, replace it in the hash table
     if (ilm_btui != NULL) {
-      hash_insert(td->uw_hash_table, (uint64_t)addr, (uint64_t)ilm_btui);
+      uw_hash_insert(td->uw_hash_table, addr, ilm_btui, NULL);
     }
   } else {
-    ilm_btui = (ilmstat_btuwi_pair_t *)e->value;
+    ilm_btui = (ilmstat_btuwi_pair_t *)e->ilm_btui;
   }
 
   if (!ilm_btui) {
@@ -699,7 +702,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 	  ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
 	}
 	// ilm_btui is now in the map.
-  hash_insert(td->uw_hash_table, (uint64_t)addr, (uint64_t)ilm_btui);
+  uw_hash_insert(td->uw_hash_table, addr, ilm_btui, NULL);
   }
 #if UW_RECIPE_MAP_DEBUG
   assert(ilm_btui != NULL);
