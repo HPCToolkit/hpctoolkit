@@ -355,7 +355,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
-  td->uw_hash_table = uw_hash_new(1023, hpcrun_malloc);
+  td->uw_hash_table = uw_hash_new(255, hpcrun_malloc);
 
   // ----------------------------------------
   // trampoline
