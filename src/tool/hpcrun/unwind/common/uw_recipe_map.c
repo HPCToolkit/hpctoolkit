@@ -676,6 +676,9 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
         if (unwr_info->btuwi != NULL) {
           uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
         }
+      } else {
+        // reset oldstat to deferred
+        oldstat = DEFERRED;
       }
     }
   } else {
