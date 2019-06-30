@@ -659,33 +659,40 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   unwr_info->interval.start = 0;
   unwr_info->interval.end   = 0;
 
-  thread_data_t *td = hpcrun_get_thread_data();
-  uw_hash_entry_t *e = uw_hash_lookup(td->uw_hash_table, addr);
-  ilmstat_btuwi_pair_t* ilm_btui = NULL;
   tree_stat_t oldstat = DEFERRED;
+  ilmstat_btuwi_pair_t* ilm_btui = NULL;
+  uw_hash_entry_t *e = NULL;
+  thread_data_t *td = hpcrun_get_thread_data();
 
-  if (e == NULL) {
-    // check if addr is already in the range of an interval key in the map
-    ilm_btui = uw_recipe_map_inrange_find((uintptr_t)addr, uw);
+  // With -e cputime, sometimes addr is 0
+  if (addr != NULL) {
+    e = uw_hash_lookup(td->uw_hash_table, addr);
 
-    // if we find ilm_btui, replace it in the hash table
-    if (ilm_btui != NULL) {
-      oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
-      if (oldstat == READY) {
-        unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
-        if (unwr_info->btuwi != NULL) {
-          uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+    if (e == NULL) {
+      // check if addr is already in the range of an interval key in the map
+      ilm_btui = uw_recipe_map_inrange_find((uintptr_t)addr, uw);
+
+      // if we find ilm_btui, replace it in the hash table
+      if (ilm_btui != NULL) {
+        oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
+        if (oldstat == READY) {
+          unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
+          if (unwr_info->btuwi != NULL) {
+            uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+          }
+        } else {
+          // reset oldstat to deferred
+          oldstat = DEFERRED;
         }
-      } else {
-        // reset oldstat to deferred
-        oldstat = DEFERRED;
       }
+    } else {
+      ilm_btui = e->ilm_btui;
+      unwr_info->btuwi = e->btuwi;
+      // if we find ilm_btui, we do not need to update btuwi
+      oldstat = READY;
     }
   } else {
-    ilm_btui = e->ilm_btui;
-    unwr_info->btuwi = e->btuwi;
-    // if we find ilm_btui, we do not need to update btuwi
-    oldstat = READY;
+    TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
   }
 
   if (oldstat != READY) {
@@ -768,9 +775,11 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     }
 
     // I am going to update my btuwi by searching the binary tree
-    unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
-    if (unwr_info->btuwi != NULL) {
-      uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+    if (addr != NULL) {
+      unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
+      if (unwr_info->btuwi != NULL) {
+        uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+      }
     }
   } 
 
