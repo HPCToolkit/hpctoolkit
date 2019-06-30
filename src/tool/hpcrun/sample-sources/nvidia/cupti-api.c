@@ -232,7 +232,7 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
-static __thread int64_t cupti_prev_external_id = -1;
+static __thread bool cupti_enter_runtime_api = false;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -696,7 +696,8 @@ cupti_correlation_callback_cuda
   hpcrun_safe_exit();
 
   // Compress callpath
-  cct_addr_t* node_addr = hpcrun_cct_addr(node);
+  // Highest cupti node
+  cct_addr_t *node_addr = hpcrun_cct_addr(node);
   static __thread uint16_t libhpcrun_id = 0;
 
   // The lowest module must be libhpcrun, which is not 0
@@ -726,16 +727,16 @@ cupti_correlation_callback_cuda
   hpcrun_safe_enter();
 
   // Insert the corresponding cuda state node
-  cct_addr_t frm;
-  memset(&frm, 0, sizeof(cct_addr_t));
-  frm.ip_norm = cuda_state.pc_norm;
-  cct_node_t* cct_child = hpcrun_cct_insert_addr(node, &frm);
+  cct_addr_t frm_api;
+  memset(&frm_api, 0, sizeof(cct_addr_t));
+  frm_api.ip_norm = cuda_state.pc_norm;
+  cct_node_t* cct_api = hpcrun_cct_insert_addr(node, &frm_api);
 
   hpcrun_safe_exit();
   td->overhead--;
 
   // Generate notification entry
-  cupti_worker_notification_apply(*id, cct_child);
+  cupti_worker_notification_apply(*id, cct_api);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -774,6 +775,10 @@ cupti_subscriber_callback
       cupti_enable_activities(rd->context);
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
+    if (cupti_enter_runtime_api) {
+      return;
+    }
+
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
     cupti_record_init();
@@ -898,19 +903,19 @@ cupti_subscriber_callback
     }
     if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
-        uint64_t correlation_id;
+        uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
@@ -1017,14 +1022,16 @@ cupti_subscriber_callback
     }
     if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
+        cupti_enter_runtime_api = true;
         uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
+        cupti_enter_runtime_api = false;
         uint64_t correlation_id = 0;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
@@ -1513,13 +1520,6 @@ cupti_correlation_process
 {
   uint32_t correlation_id = ec->correlationId;
   uint64_t external_id = ec->externalId;
-  //TODO(Keren): enable later
-  //if (cupti_prev_external_id == -1) {
-  //  cupti_prev_external_id = external_id;
-  //} else if (cupti_prev_external_id != external_id) {
-  //  cupti_host_op_map_delete(cupti_prev_external_id);
-  //  cupti_prev_external_id = external_id;
-  //}
   if (cupti_correlation_id_map_lookup(correlation_id) == NULL) {
     cupti_correlation_id_map_insert(correlation_id, external_id);
   } else {
