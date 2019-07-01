@@ -293,37 +293,36 @@ See the spack docs on 'Compiler Configuration'.
 7 Spack Install
 ===============
 
-First, make sure that you have your 'config.yaml', 'packages.yaml' and
-'compilers.yaml' files in place and edited for your system.  You can see
-how spack will build hpctoolkit with 'spack spec' and 'spack graph'.
+First, set up your 'config.yaml', 'packages.yaml' and 'compilers.yaml'
+files as above and edit them for your system.  You can see how spack
+will build hpctoolkit with 'spack spec' and 'spack graph'.
 
      spack spec hpctoolkit
      spack graph hpctoolkit
 
-Then, there are two ways to install hpctoolkit.  The 'one button' method
-uses spack to install everything.
+Then, the "one button" method uses spack to install everything.
 
      spack install hpctoolkit
 
-Alternatively, especially for developers, you can use spack to install
-hpctoolkit's dependencies and then build hpctoolkit with the traditional
-'configure ; make ; make install' method.  Of course, if you already
-used the one-button method, then the spack install tree also contains
-all of hpctoolkit's prereqs.
+8 Manual Install
+================
+
+The manual method uses spack to build hpctoolkit's prerequisites and
+then uses the traditional autotools 'configure && make && make install'
+to install hpctoolkit.  This method is primarily for developers who want
+to compile hpctoolkit, edit the source code and recompile, etc.  This
+method is also useful if you need some configure option that is not
+available through spack.
+
+   First, use spack to build hpctoolkit's prerequisites as above.  You
+can either build some version of hpctoolkit as before (which will pull
+in the prerequisites), or else use '--only dependencies' to avoid
+building hpctoolkit itself.
 
      spack install --only dependencies hpctoolkit
 
-Then, run hpctoolkit configure with '--with-spack' instead of
-'--with-externals'.  The '--with-spack' option passes the prerequisite
-paths to hpctoolkit in place of all of the individual '--with-pkg'
-options (as did externals).
-
-   Spack installs its packages in subdirectories of 'install_tree' named
-by architecture (platform, OS, machine type) and compiler (family,
-version).  The argument to '--with-spack' should be the directory
-containing all of the individual install directories (normally two
-directories down from the install root).  For example, on my Fedora 26
-build machine, I would use:
+Then, configure and build hpctoolkit as follows.  Hpctoolkit uses
+automake and so allows for parallel make.
 
      configure  \
         --prefix=/path/to/hpctoolkit/install/prefix  \
@@ -332,16 +331,38 @@ build machine, I would use:
      make -j <num>
      make install
 
-Note: if your spack install tree has multiple versions or variants for
-the same package, then '--with-spack' will select the most recent one by
-directory time stamp (and issue a warning).  If this is not what you
-want, then you will need to specify the correct version with a
-'--with-pkg' option.
+The argument to '--with-spack' should be the directory containing all of
+the individual package directories, normally two directories down from
+the top-level 'install_tree' and named by the platform and compiler.
+This option replaces the old '--with-externals'.  The following are
+other options that may be useful.  For the full list of options, see
+'configure -h'.
 
-8 Advanced Options
+  1. '--enable-all-static' - build hpcprof-mpi statically linked for the
+     compute nodes.
+
+  2. '--enable-bgq' - configure for Blue Gene/Q back end.
+
+  3. '--enable-develop' - compile with optimization turned off for
+     debugging.
+
+  4. '--with-package=path' - specify the install prefix for some
+     prerequisite package, mostly for developers who want to use a
+     custom, non-spack version of some package.
+
+  5. 'MPICXX=compiler' - specify the MPI C++ compiler for hpcprof-mpi,
+     may be a compiler name or full path.
+
+Note: if your spack install tree has multiple versions or variants for
+the same package, then '--with-spack' will select the one with the most
+recent directory time stamp (and issue a warning).  If this is not what
+you want, then you will need to specify the correct version with a
+'--with-package' option.
+
+9 Advanced Options
 ==================
 
-8.1 MPI
+9.1 MPI
 -------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
@@ -355,7 +376,7 @@ and add this to 'packages.yaml'.  The MPI module should be built with
 the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
 C++ libraries in sync).
 
-8.2 PAPI vs Perfmon
+9.2 PAPI vs Perfmon
 -------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI
@@ -375,11 +396,11 @@ automatically detect this, so if you build hpctoolkit with a recent
 enough version of PAPI, then both the PAPI and perfmon interfaces will
 be available.
 
-9 Platform Specific Notes
-=========================
+10 Platform Specific Notes
+==========================
 
-9.1 Blue Gene
--------------
+10.1 Blue Gene
+--------------
 
 Blue Gene systems are being phased out, without a next generation
 replacement, but are still supported by hpctoolkit (for now).  Blue Gene
@@ -475,8 +496,8 @@ to the following.
          --enable-all-static  \
          MPICXX=mpicxx
 
-9.2 Cray
---------
+10.2 Cray
+---------
 
 Cray systems, like Blue Gene, have separate front and back-end
 architecture types.  For example, on theta at ANL, the front-end arch is
@@ -561,7 +582,7 @@ to the following.
          --enable-all-static  \
          MPICXX=CC
 
-10 Hpcviewer and Hpctraceviewer
+11 Hpcviewer and Hpctraceviewer
 ===============================
 
 We provide binary distributions for hpcviewer and hpctraceviewer on
@@ -572,7 +593,7 @@ then view the results on another machine.
    All versions of the viewers require Java version 8 (not 9 or later).
 The Linux versions also require GTK+ version 2.x.
 
-10.1 Spack Install
+11.1 Spack Install
 ------------------
 
 The spack install is available on Linux x86_64, big-endian power7
@@ -581,7 +602,8 @@ hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
 
    On x86_64, use the following command.  Hpcviewer requires jdk 1.8,
 but the latest 1.8 version, 1.8.0_202 does not download properly due to
-licensing issues, however 1.8.0_141-b15 seems to work.
+licensing issues, however 1.8.0_141-b15 seems to work.  Alternatively,
+you could manually download jdk 1.8.0_202 and copy it to a spack mirror.
 
      spack install hpcviewer ^jdk@1.8.0_141-b15
 
@@ -589,7 +611,7 @@ On powerpc (big and little-endian), use the IBM version of Java.
 
      spack install hpcviewer ^ibm-java
 
-10.2 Manual Install
+11.2 Manual Install
 -------------------
 
 Binary distributions of the viewers for all supported platforms are
@@ -608,10 +630,72 @@ and unpack the zip files in the desired directory.  Due to Apple's
 security precautions, on MacOS, you will need to use curl or wget
 instead of a web browser.
 
-11 Common Problems
+12 Spack Mirrors
+================
+
+A spack mirror allows you to download and save a source tar file in
+advance.  This is useful if your system is behind a firewall, or if you
+need to manually agree to a license, or if you just don't want to keep
+downloading the same file over and over.
+
+   A mirror has a simple directory structure and is easy to set up.
+Create a top-level directory with subdirectories named after the spack
+packages and copy the tar files into their package's subdirectory.  For
+example,
+
+     my-mirror/
+        boost/
+           boost-1.66.0.tar.bz2      (from boost_1_66_0.tar.bz2)
+           boost-1.70.0.tar.bz2
+        dyninst/
+           dyninst-10.1.0.tar.gz     (from git checkout)
+        ibm-java/
+           ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-x86_64-archive.bin)
+        intel-xed/
+           intel-xed-2019.03.01.tar.gz    (from git checkout)
+           mbuild-2019.03.01.tar.gz       (resource from git checkout)
+        jdk/
+           jdk-1.8.0_202.tar.gz      (from jdk-8u202-linux-x64.tar.gz)
+
+Note: the names of the files in the spack mirror always follow the same,
+specific format, regardless of the actual name of the tar file.  Version
+is the spack name for the version (from 'spack info'), and extension is
+the same extension as the tar file ('tar.gz', 'tar.bz2', etc) or else
+'None' for other types of files.
+
+     <name> - <version> . <extension>
+
+For example, the boost 1.66.0 tar file is actually named
+'boost_1_66_0.tar.bz2' but is stored in the mirror as
+'boost-1.66.0.tar.bz2' and 'jdk-8u202-linux-x64.tar.gz' is renamed to
+'jdk-1.8.0_202.tar.gz'.
+
+   For packages that use a snapshot from a git repository (tag or commit
+hash), clone the repository, checkout the desired version, make a tar
+file and gzip the file.  (You may exclude the '.git' subdirectory.)  But
+note that spack refuses to use a cached file for the head of a branch
+because it is a moving target.
+
+   Finally, after creating the mirror directory, add it to spack with
+'spack mirror add'.  For example,
+
+     spack mirror add my-mirror file:///home/krentel/spack/my-mirror
+     spack mirror list
+     my-mirror    file:///home/krentel/spack/mirror
+
+Note: by default, spack stores downloaded files inside the spack
+repository at 'spack/var/spack/cache'.  This directory is a full spack
+mirror, so instead of creating a separate directory tree, you could just
+copy the files into the 'cache' directory.
+
+   For more information on mirrors, see:
+
+     <https://spack.readthedocs.io/en/latest/mirrors.html>
+
+13 Common Problems
 ==================
 
-11.1 Unable to fetch tar file
+13.1 Unable to fetch tar file
 -----------------------------
 
 Spack is somewhat fragile for how it downloads tar files and will often
@@ -627,17 +711,12 @@ packages with many dependencies.  For example:
      ==> Error: FetchError: All fetchers failed for m4-1.4.18-vorbvkcjfac43b7vuswsvnm6xe7w7or5
 
 There are two workarounds.  First, assuming the problem is temporary,
-simply wait 10 minutes or an hour and try again.
+simply wait 10 minutes or an hour and try again.  Second, you could
+manually download the file(s) by some other means and copy them to
+spack's cache directory 'spack/var/spack/cache/<package>' or to a spack
+mirror.
 
-   Second, you could set up a spack mirror.  A mirror allows you to
-download a tar file ahead of time and put it in a directory where spack
-can find it without having to fetch it over a network.  A mirror is also
-useful for files with license issues (eg, jdk 1.8.0_202 as above), or on
-a secure machine without direct access to the internet.  See:
-
-     <https://spack.readthedocs.io/en/latest/mirrors.html>
-
-11.2 New releases break the build
+13.2 New releases break the build
 ---------------------------------
 
 Normally, HPCToolkit should build and work correctly with the latest
@@ -649,4 +728,37 @@ build.
 
    The solution is to use 'packages.yaml' to specify an earlier version
 until the rest of the code adapts to the change.
+
+13.3 Failure to load modules
+----------------------------
+
+Spack is quite aggressive about compiling with a clean environment and
+will unload modules unless they are specifically required by some config
+file ('compilers.yaml' or 'packages.yaml').  This can result in a
+situation where you think some compiler or build tool is available from
+your environment but spack removes it during the build.
+
+   In this example, I am using modules for 'GCC/6.4.0' and
+'CMake/3.8.2'.  Spack finds the gcc 6.4.0 compiler and I added
+'cmake@3.8.2' to 'packages.yaml'.  But I failed to add the 'modules:'
+field for gcc 6.4.0 in 'compilers.yaml'.  As a result, the build fails
+with:
+
+     cmake: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by cmake)
+     cmake: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by cmake)
+     cmake: /usr/lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by cmake)
+     ==> Error: ProcessError: Command exited with status 1:
+
+The problem is that cmake 3.8.2 was built with g++ 6.4.0, but spack is
+running cmake without the GCC/6.4.0 libraries and so the build fails as
+above.  One way to confirm this is to rerun 'spack install --dirty'
+which then succeeds.  The '--dirty' option tells spack not to unload
+your modules.  Whenever the build fails with a mismatched library as
+above and especially when '--dirty' fixes the problem, this is a clear
+sign that spack is missing a module during the build.
+
+   Although '--dirty' may make the build succeed, there should be no
+case where this is necessary.  The correct solution is to fill in the
+'modules:' field in 'compilers.yaml' or some other config file.  See the
+section on Compilers above.
 
