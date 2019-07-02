@@ -200,6 +200,7 @@ arg_ok()
 preload_list=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
+HPCRUN_CONTROL_KNOBS=
 
 while test "x$1" != x
 do
@@ -217,6 +218,12 @@ do
 	-dd | --dynamic-debug )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
+	    shift
+	    ;;
+
+  -ck | --control-knob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
 	    ;;
 

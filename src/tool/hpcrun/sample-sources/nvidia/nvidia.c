@@ -95,6 +95,7 @@
 #include <hpcrun/module-ignore-map.h>
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/control-knob.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -105,7 +106,7 @@
 /******************************************************************************
  * macros
  *****************************************************************************/
-#define NVIDIA_DEBUG 0
+#define NVIDIA_DEBUG 1
 
 #if NVIDIA_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -371,8 +372,8 @@ static int cupti_enabled_activities = 0;
 static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
-static const size_t DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
-static const size_t DEVICE_SEMAPHORE_SIZE = 65536 * 16;
+static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
+static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 
 //******************************************************************************
 // constants
@@ -977,7 +978,19 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    cupti_device_buffer_config(DEVICE_BUFFER_SIZE, DEVICE_SEMAPHORE_SIZE);
+    // Get control knobs
+    int device_buffer_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+    int device_semaphore_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
+    if (device_buffer_size == 0) {
+      device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
+    }
+    if (device_semaphore_size == 0) {
+      device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
+    }
+
+    PRINT("Device buffer size %d\n", device_buffer_size);
+    PRINT("Device semaphore size %d\n", device_semaphore_size);
+    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
     // Register cupti callbacks
     cupti_trace_init();

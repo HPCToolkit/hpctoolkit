@@ -313,6 +313,8 @@ MY_BASE_FILES =				\
 	thread_data.c			\
 	thread_use.c			\
 	thread_finalize.c		\
+	control-knob.c   \
+	control-knob.h   \
 	hpcrun_flag_stacks.c \
 	device-finalizers.c \
 	device-initializers.c \
