@@ -235,9 +235,11 @@ typedef struct thread_data_t {
   void*   tramp_retn_addr; // return address that the trampoline replaced
   void*   tramp_loc;       // current (stack) location of the trampoline
   size_t  cached_frame_count; // (sanity check) length of cached frame list
-  frame_t* cached_bt;         // the latest backtrace (start)
-  frame_t* cached_bt_end;     // the latest backtrace (end)
-  frame_t* cached_bt_buf_end; // the end of the cached backtrace buffer
+
+  frame_t* cached_bt_buf_beg;  // the begin of the cached backtrace buffer
+  frame_t* cached_bt_frame_beg;  // the begin of cached frames
+  frame_t* cached_bt_buf_frame_end;  // the end of the cached backtrace buffer & end of cached frames
+  
   frame_t* tramp_frame;       // (cached) frame assoc. w/ cur. trampoline loc.
   cct_node_t* tramp_cct_node; // cct node associated with the trampoline
 

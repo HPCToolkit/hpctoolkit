@@ -334,8 +334,8 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
       
       bool middle_of_recursion = 
-             td->tramp_frame != td->cached_bt
-          && td->tramp_frame != td->cached_bt_end-1
+             td->tramp_frame != td->cached_bt_frame_beg
+          && td->tramp_frame != td->cached_bt_buf_frame_end-1
           && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
           && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function));
       
@@ -343,10 +343,10 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       // join current backtrace fragment to previous trampoline-marked prefix
       // and make this new conjoined backtrace the cached-backtrace
       //
-      frame_t* prefix = td->tramp_frame;
-      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
-	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
-      size_t old_frame_count = td->cached_bt_end - prefix;
+      TMSG(TRAMP, "Check: tramp ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p",
+       td->tramp_frame->ra_loc, *((void**) td->tramp_frame->ra_loc), hpcrun_trampoline, td->tramp_retn_addr);
+
+      size_t old_frame_count = td->cached_bt_buf_frame_end - td->tramp_frame;
       TMSG(TRAMP, "Check: Old frame count = %d ?= %d (computed frame count)",
 	   old_frame_count, td->cached_frame_count);
 
@@ -354,27 +354,22 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       hpcrun_cached_bt_adjust_size(n_cached_frames + old_frame_count);
       TMSG(TRAMP, "cached trace size = (new frames) %d + (old frames) %d = %d",
 	   n_cached_frames, old_frame_count, n_cached_frames + old_frame_count);
-      // put the old prefix in place
-      memmove(td->cached_bt + n_cached_frames, prefix,
-	      sizeof(frame_t) * old_frame_count);
 
-      // put the new suffix in place and update tramp_frame at the same time.
-      memcpy(td->cached_bt, bt_beg, sizeof(frame_t) * new_frame_count);
-
-      // update the length of the conjoined backtrace
-      td->cached_bt_end = td->cached_bt + n_cached_frames + old_frame_count;
-      // maintain invariants
+      // the old suffix is already in place
+      // update pointers and put the new prefix in place.
       td->cached_frame_count = n_cached_frames + old_frame_count;
-      td->tramp_frame = td->cached_bt + n_cached_frames;
-      
-      TMSG(TRAMP, "Check: tramp prefix ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
-	   prefix->ra_loc, *((void**) prefix->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
+      td->cached_bt_frame_beg = td->cached_bt_buf_frame_end - td->cached_frame_count;
+      memcpy(td->cached_bt_frame_beg, bt_beg, sizeof(frame_t) * new_frame_count);
+      td->tramp_frame = td->cached_bt_frame_beg + n_cached_frames;
+
+      TMSG(TRAMP, "Check: tramp ra_loc = %p, addr@ra_loc = %p (?= %p tramp), retn_addr = %p, dLCA = %d",
+	   td->tramp_frame->ra_loc, *((void**) td->tramp_frame->ra_loc), hpcrun_trampoline, td->tramp_retn_addr, td->dLCA);
       
       // When recursive frames are merged in CCT, special handling is needed.
       if (!hpcrun_get_retain_recursion_mode()) {
         // Locate the last frame on btbuf that refers to the same function as tramp_frame.
         frame_t* recursion_last = td->tramp_frame;
-        while ( (recursion_last < td->cached_bt_end-1)
+        while ( (recursion_last < td->cached_bt_buf_frame_end-1)
                 && ip_normalized_eq(&(recursion_last->the_function), &((recursion_last+1)->the_function)) ) {
           recursion_last++;
         }
@@ -412,9 +407,9 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       hpcrun_cached_bt_adjust_size(new_frame_count);
       size_t n_cached_frames = new_frame_count - 1;
       TMSG(TRAMP, "Confirm: ra_loc(last bt frame) = %p", (bt_beg + n_cached_frames)->ra_loc);
-      memmove(td->cached_bt, bt_beg, sizeof(frame_t) * n_cached_frames);
-
-      td->cached_bt_end = td->cached_bt + n_cached_frames;
+      
+      td->cached_bt_frame_beg = td->cached_bt_buf_frame_end - n_cached_frames;
+      memcpy(td->cached_bt_frame_beg, bt_beg, sizeof(frame_t) * n_cached_frames);
       td->cached_frame_count = n_cached_frames;
       // dLCA set to HPCRUN_FMT_DLCA_NULL when tramp failed.
       td->dLCA = HPCTRACE_FMT_DLCA_NULL;

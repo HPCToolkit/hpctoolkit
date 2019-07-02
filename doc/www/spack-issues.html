@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- -*- coding: utf-8 -*- -->
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	  "http://www.w3.org/TR/html4/loose.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=utf-8" -->
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+
+  <title>Current Spack Issues for HPCToolkit</title>
+</head>
+
+<body>
+
+<!-- HPCToolkit Image (height = 71 pixels) -->
+<img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" />
+<div style="position: relative; margin-top: 60px; width: 100%; text-align: right;">
+<p style="margin: 0px; font-size: small;">
+  [ <a href="index.html">Home</a>
+  | <a href="overview.html">Overview</a>
+  | <a href="publications.html">Publications</a> ]
+  &bull;
+  [ <a href="examples.html">Examples</a> ]
+  &bull;
+  [ <a href="software.html">Software/Downloads</a>
+  | <a href="documentation.html">Documentation/Questions</a> ]
+  &bull;
+  [ <a href="info-people.html">People</a> |
+    <a href="info-acks.html">Acks</a> ]
+</p>
+</div>
+<div style="width: 100%;">
+  <hr />
+</div>
+
+<h1 class="settitle" align="center">Current Spack Issues for HPCToolkit</h1>
+
+<a name="SEC_Contents"></a>
+<h2 class="contents-heading">Table of Contents</h2>
+
+<div class="contents">
+<ul class="no-bullet">
+<li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
+<li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a></li>
+<li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
+<ul class="no-bullet">
+  <li><a name="toc-_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer" href="#g_t_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer">3.1 (2019-06-06) intel-xed and hpcviewer</a></li>
+</ul></li>
+<li><a name="toc-General-Problems" href="#General-Problems">4 General Problems</a>
+<ul class="no-bullet">
+  <li><a name="toc-Unable-to-fetch" href="#Unable-to-fetch">4.1 Unable to fetch</a></li>
+  <li><a name="toc-New-version-breaks-the-build" href="#New-version-breaks-the-build">4.2 New version breaks the build</a></li>
+  <li><a name="toc-Spack-core-breaks-the-build" href="#Spack-core-breaks-the-build">4.3 Spack core breaks the build</a></li>
+</ul></li>
+<li><a name="toc-Long-Term-Issues" href="#Long-Term-Issues">5 Long Term Issues</a>
+<ul class="no-bullet">
+  <li><a name="toc-Boost-1_002e68_002e0" href="#Boost-1_002e68_002e0">5.1 Boost 1.68.0</a></li>
+  <li><a name="toc-Elfutils-0_002e176" href="#Elfutils-0_002e176">5.2 Elfutils 0.176</a></li>
+</ul></li>
+
+</ul>
+</div>
+
+
+<a name="Introduction"></a>
+<h3 class="section">1 Introduction</h3>
+
+<p>Spack is a moving target and receives multiple commits per day.
+Normally, HPCToolkit will build and run successfully with the latest
+version of all of its prerequisite packages, but sometimes not.  This
+page covers the current known issues where HPCToolkit fails to build
+with the latest version of spack.
+</p>
+<p>Report problems to <code>hpctoolkit-forum at rice dot edu</code>.  But before
+reporting a problem, first try the versions recommended in the
+<code>packages.yaml</code> file in the <code>spack</code> subdirectory of the
+hpctoolkit repository.  And always check the latest version of this file
+on the hpctoolkit web site.
+</p>
+<div class="example">
+<pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
+</pre></div>
+
+<p>Last revised: June 17, 2019.
+</p>
+
+<a name="Current-Issues"></a>
+<h3 class="section">2 Current Issues</h3>
+
+<p>No known issues at this time.
+</p>
+
+<a name="Recently-Resolved-Issues"></a>
+<h3 class="section">3 Recently Resolved Issues</h3>
+
+<a name="g_t_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer"></a>
+<h4 class="subsection">3.1 (2019-06-06) intel-xed and hpcviewer</h4>
+
+<p>Packages that use a spack resource (a second tar file) are currently
+broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
+platforms).
+</p>
+<p><b>Fixed:</b> This is now fixed in spack develop in commit
+<code>aca1bfdb6a64</code> on 2019-06-13.
+</p>
+
+<a name="General-Problems"></a>
+<h3 class="section">4 General Problems</h3>
+
+<p>These are general problems that arise from time to time.
+</p>
+<a name="Unable-to-fetch"></a>
+<h4 class="subsection">4.1 Unable to fetch</h4>
+
+<p>Sometimes spack fails to download the source file(s) for some package
+and dies with a message similar to this.
+</p>
+<div class="example">
+<pre class="example">==&gt; Fetching from https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.gz failed.
+==&gt; Error: FetchError: All fetchers failed for m4-1.4.18-vorbvkcjfac43b7vuswsvnm6xe7w7or5
+</pre></div>
+
+<p>This problem is usually temporary and the solution is to either wait a
+few minutes or an hour and try again, or else download the file manually
+and put it into a spack mirror.
+</p>
+<a name="New-version-breaks-the-build"></a>
+<h4 class="subsection">4.2 New version breaks the build</h4>
+
+<p>Sometimes the latest version of some package breaks the build.  This has
+happened a couple of times where a new version of Boost has broken the
+build for Dyninst.  The solution is to revert the package to an earlier
+version until the rest of the code catches up.
+</p>
+<a name="Spack-core-breaks-the-build"></a>
+<h4 class="subsection">4.3 Spack core breaks the build</h4>
+
+<p>Sometimes but rarely, something in the spack core will change or break
+the code in some <code>package.py</code> file.  The solution is to look
+through the spack git log and revert the repository to a recent commit
+before the breakage.
+</p>
+
+<a name="Long-Term-Issues"></a>
+<h3 class="section">5 Long Term Issues</h3>
+
+<a name="Boost-1_002e68_002e0"></a>
+<h4 class="subsection">5.1 Boost 1.68.0</h4>
+
+<p>Avoid boost version 1.68.0, it breaks the build for hpctoolkit.  Version
+1.70.0 works with the latest version of dyninst (10.1.0), or else 1.66.0
+is good and works with all versions of dyninst.
+</p>
+<a name="Elfutils-0_002e176"></a>
+<h4 class="subsection">5.2 Elfutils 0.176</h4>
+
+<p>Elfutils 0.176 requires glibc 2.16 or later (for <code>aligned_alloc</code>)
+and won&rsquo;t work with an older glibc, including RedHat or CentOS 6.x and
+Blue Gene.  On systems with an old glibc, use version 0.175.
+</p>
+<hr>
+
+
+
+<div style="width: 100%; font-size: small;">
+  <hr />
+  <p style="margin: 0px; font-size: small;">
+    &copy;2000-2018 <a href="http://www.rice.edu">Rice University</a>
+    &bull;
+    <a href="http://www.cs.rice.edu">Rice Computer Science</a>
+  </p>
+  <a href="http://validator.w3.org/check/referer">
+    <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>
+  <a href="http://jigsaw.w3.org/css-validator/check/referer">
+    <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a>
+</div>
+
+</body>
+</html>

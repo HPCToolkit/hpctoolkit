@@ -178,7 +178,7 @@ hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_p
 
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id, uint32_t dLCA)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -187,11 +187,11 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint met
     uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
-    //// mark the leaf of a call path recorded in a trace record for retention
-    //// so that the call path associated with the trace record can be recovered.
-    //hpcrun_cct_retain(node);
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(node);
 
-    //int32_t call_path_id = hpcrun_cct_persistent_id(node);
+    int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
     hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
   }
@@ -239,6 +239,8 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
+    if (dLCA > HPCTRACE_FMT_DLCA_NULL)
+      dLCA = HPCTRACE_FMT_DLCA_NULL;
     HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;

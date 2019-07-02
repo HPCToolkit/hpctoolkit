@@ -7,13 +7,14 @@
 
 MAKEINFO = makeinfo
 
-BASE_FILES = software-instructions
-
-README = README.Install
-README_SOURCE = software-instructions.texi
+BASE_FILES = software-instructions spack-issues
 
 HTML_FILES = $(addsuffix .html,$(BASE_FILES))
 TEMP_FILES = $(addsuffix .temp,$(BASE_FILES))
+TEXT_FILES = $(addsuffix .txt,$(BASE_FILES))
+
+README_INSTALL = ../../README.Install
+README_ISSUES =  ../../spack/spack-issues.txt
 
 FILTER = ./filter-html.pl
 
@@ -24,16 +25,14 @@ FILTER = ./filter-html.pl
 # Don't automatically delete intermediate files.
 .SECONDARY: $(TEMP_FILES)
 
-all: $(HTML_FILES) $(README)
+all: $(HTML_FILES) $(TEXT_FILES)
 
 install: all
 	for f in $(HTML_FILES) ; do  \
 		cp -f "$$f" "../www/$$f" ;  \
 	done
-	cp -f $(README) ../../$(README)
-
-$(README): $(README_SOURCE)
-	$(MAKEINFO) --plaintext  $< -o $@
+	cp -f software-instructions.txt $(README_INSTALL)
+	cp -f spack-issues.txt $(README_ISSUES)
 
 %.temp: %.texi
 	$(MAKEINFO) --html --no-split $< -o $@
@@ -41,6 +40,9 @@ $(README): $(README_SOURCE)
 %.html: %.temp
 	$(FILTER) $< >$@
 
+%.txt: %.texi
+	$(MAKEINFO) --plaintext  $< -o $@
+
 clean:
-	rm -f $(TEMP_FILES) $(HTML_FILES) $(README)
+	rm -f $(TEMP_FILES) $(HTML_FILES) $(TEXT_FILES)
 

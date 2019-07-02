@@ -42,6 +42,10 @@ your own needs.
 
      <https://spack.readthedocs.io/en/latest/index.html>
 
+The current status of using Spack for HPCToolkit is at:
+
+     <http://hpctoolkit.org/spack-issues.html>
+
 2 Prerequisites
 ===============
 

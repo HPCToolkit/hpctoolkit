@@ -435,10 +435,15 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
      * is needed to get location of IP.
      */
     unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
-    save_registers(cursor, pc, bp, sp, 
+
+    // sanity check to avoid infinite unwind loop
+    if (sp <= cursor->sp) {
+      cursor->libunw_status = LIBUNW_UNAVAIL;
+      unw_res = STEP_ERROR;
+    }
+    else
+     save_registers(cursor, pc, bp, sp, 
             ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
-    TMSG(UNW, "unw_step: pc=%p, ra_loc=%p, sp=%p, bp=%p", 
-        cursor->pc_unnorm, cursor->ra_loc, cursor->sp, cursor->bp);
     
     // if PC is trampoline, must skip libunw_find_step() to avoid trolling.
     if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))
