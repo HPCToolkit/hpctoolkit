@@ -54,7 +54,7 @@
 // the last bit of RA.
 //
 // Modification History:
-//   2005/11/07 - created - Lai Wei and John Mellor-Crummey
+//   2015/11/07 - created - Lai Wei and John Mellor-Crummey
 //******************************************************************************
 
 //******************************************************************************
@@ -96,8 +96,8 @@ hpcrun_trampoline_bt_dump(void)
   thread_data_t* td = hpcrun_get_thread_data();
 
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
-       td->cached_bt_end - td->cached_bt, td->cached_frame_count);
-  for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
+       td->cached_bt_buf_frame_end - td->cached_bt_frame_beg, td->cached_frame_count);
+  for (frame_t* f = td->cached_bt_frame_beg; f < td->cached_bt_buf_frame_end; f++) {
       TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
               f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
@@ -135,8 +135,8 @@ static bool hpcrun_trampoline_update(void* addr)
     
     cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
     if (  !hpcrun_get_retain_recursion_mode()
-       && frame != td->cached_bt
-       && frame != td->cached_bt_end-1
+       && frame != td->cached_bt_frame_beg
+       && frame != td->cached_bt_buf_frame_end-1
        && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
        && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
        )
@@ -201,7 +201,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
 
   frame_t* frame = td->tramp_frame;
 
-  while (frame < td->cached_bt_end) {
+  while (frame < td->cached_bt_buf_frame_end) {
     void* ra_loc = frame->ra_loc;
     if (!node) {
       TMSG(TRAMP, "**Tramp frame CCT node = NULL: init tramp info.");
@@ -226,8 +226,8 @@ hpcrun_trampoline_insert(cct_node_t* node)
     
     cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
     if (  !hpcrun_get_retain_recursion_mode()
-       && frame != td->cached_bt
-       && frame != td->cached_bt_end-1
+       && frame != td->cached_bt_frame_beg
+       && frame != td->cached_bt_buf_frame_end-1
        && ip_normalized_eq(&(frame->the_function), &((frame-1)->the_function))
        && ip_normalized_eq(&(frame->the_function), &((frame+1)->the_function))
        )
