@@ -435,9 +435,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	hpcrun_flag_stacks.c device-finalizers.c device-initializers.c \
-	addr_to_module.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	control-knob.c control-knob.h hpcrun_flag_stacks.c \
+	device-finalizers.c device-initializers.c addr_to_module.c \
+	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -567,6 +568,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-thread_finalize.lo \
+	libhpcrun_la-control-knob.lo \
 	libhpcrun_la-hpcrun_flag_stacks.lo \
 	libhpcrun_la-device-finalizers.lo \
 	libhpcrun_la-device-initializers.lo \
@@ -780,9 +782,10 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	hpcrun_flag_stacks.c device-finalizers.c device-initializers.c \
-	addr_to_module.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	control-knob.c control-knob.h hpcrun_flag_stacks.c \
+	device-finalizers.c device-initializers.c addr_to_module.c \
+	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -914,6 +917,7 @@ am__objects_50 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-thread_data.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) \
 	libhpcrun_o-thread_finalize.$(OBJEXT) \
+	libhpcrun_o-control-knob.$(OBJEXT) \
 	libhpcrun_o-hpcrun_flag_stacks.$(OBJEXT) \
 	libhpcrun_o-device-finalizers.$(OBJEXT) \
 	libhpcrun_o-device-initializers.$(OBJEXT) \
@@ -1618,9 +1622,10 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	hpcrun_flag_stacks.c device-finalizers.c device-initializers.c \
-	addr_to_module.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	control-knob.c control-knob.h hpcrun_flag_stacks.c \
+	device-finalizers.c device-initializers.c addr_to_module.c \
+	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
+	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
 	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
 	lush/lush-backtrace.c lush/lush.h lush/lush.c \
 	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
@@ -3191,6 +3196,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-closure-registry.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-control-knob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-device-finalizers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-device-initializers.Plo@am__quote@
@@ -3230,6 +3236,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-closure-registry.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-control-knob.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-custom-init-static.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-device-finalizers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-device-initializers.Po@am__quote@
@@ -4037,6 +4044,13 @@ libhpcrun_la-thread_finalize.lo: thread_finalize.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_finalize.c' object='libhpcrun_la-thread_finalize.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-thread_finalize.lo `test -f 'thread_finalize.c' || echo '$(srcdir)/'`thread_finalize.c
+
+libhpcrun_la-control-knob.lo: control-knob.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-control-knob.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-control-knob.Tpo -c -o libhpcrun_la-control-knob.lo `test -f 'control-knob.c' || echo '$(srcdir)/'`control-knob.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-control-knob.Tpo $(DEPDIR)/libhpcrun_la-control-knob.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='control-knob.c' object='libhpcrun_la-control-knob.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-control-knob.lo `test -f 'control-knob.c' || echo '$(srcdir)/'`control-knob.c
 
 libhpcrun_la-hpcrun_flag_stacks.lo: hpcrun_flag_stacks.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_flag_stacks.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_flag_stacks.Tpo -c -o libhpcrun_la-hpcrun_flag_stacks.lo `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
@@ -5542,6 +5556,20 @@ libhpcrun_o-thread_finalize.obj: thread_finalize.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='thread_finalize.c' object='libhpcrun_o-thread_finalize.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-thread_finalize.obj `if test -f 'thread_finalize.c'; then $(CYGPATH_W) 'thread_finalize.c'; else $(CYGPATH_W) '$(srcdir)/thread_finalize.c'; fi`
+
+libhpcrun_o-control-knob.o: control-knob.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-control-knob.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-control-knob.Tpo -c -o libhpcrun_o-control-knob.o `test -f 'control-knob.c' || echo '$(srcdir)/'`control-knob.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-control-knob.Tpo $(DEPDIR)/libhpcrun_o-control-knob.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='control-knob.c' object='libhpcrun_o-control-knob.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-control-knob.o `test -f 'control-knob.c' || echo '$(srcdir)/'`control-knob.c
+
+libhpcrun_o-control-knob.obj: control-knob.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-control-knob.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-control-knob.Tpo -c -o libhpcrun_o-control-knob.obj `if test -f 'control-knob.c'; then $(CYGPATH_W) 'control-knob.c'; else $(CYGPATH_W) '$(srcdir)/control-knob.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-control-knob.Tpo $(DEPDIR)/libhpcrun_o-control-knob.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='control-knob.c' object='libhpcrun_o-control-knob.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-control-knob.obj `if test -f 'control-knob.c'; then $(CYGPATH_W) 'control-knob.c'; else $(CYGPATH_W) '$(srcdir)/control-knob.c'; fi`
 
 libhpcrun_o-hpcrun_flag_stacks.o: hpcrun_flag_stacks.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_flag_stacks.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Tpo -c -o libhpcrun_o-hpcrun_flag_stacks.o `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
