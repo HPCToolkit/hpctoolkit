@@ -432,7 +432,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     TMSG(TRAMP, "--NEW SAMPLE--: Remove old trampoline");
     hpcrun_trampoline_remove();
     if (!bt.partial_unwind) {
-      td->tramp_frame = td->cached_bt;
+      td->tramp_frame = td->cached_bt_frame_beg;
       td->prev_dLCA = td->dLCA;
       td->dLCA = 0;
       TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");

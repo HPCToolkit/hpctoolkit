@@ -85,8 +85,8 @@ hpcrun_trampoline_bt_dump(void)
   thread_data_t* td = hpcrun_get_thread_data();
 
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
-       td->cached_bt_end - td->cached_bt, td->cached_frame_count);
-  for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
+       td->cached_bt_buf_frame_end - td->cached_bt_frame_beg, td->cached_frame_count);
+  for (frame_t* f = td->cached_bt_frame_beg; f < td->cached_bt_buf_frame_end; f++) {
       //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
       //      f->cursor.pc_unnorm, f->cursor.ra_loc, 
       //      f->cursor.sp, f->cursor.bp);
@@ -147,8 +147,8 @@ hpcrun_trampoline_advance(void)
   // Recursive frames may be merged in CCT.
   // Therefore, revert to current CCT node when corresponding recursive frame is merged.
   if (  !hpcrun_get_retain_recursion_mode()
-     && td->tramp_frame != td->cached_bt
-     && td->tramp_frame != td->cached_bt_end-1
+     && td->tramp_frame != td->cached_bt_frame_beg
+     && td->tramp_frame != td->cached_bt_buf_frame_end-1
      && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
      && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function))
      )
