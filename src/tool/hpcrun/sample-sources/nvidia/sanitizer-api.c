@@ -409,7 +409,13 @@ sanitizer_load_callback
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "MemoryAccessCallback"));
+    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_BARRIER, cubin_module, "sanitizer_barrier_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_BLOCK_ENTER, cubin_module, "sanitizer_block_enter_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_BLOCK_EXIT, cubin_module, "sanitizer_block_exit_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchModule, (cubin_module));
 }
 
@@ -631,7 +637,7 @@ sanitizer_kernel_launch_callback
     buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
     // allocate buffer
     void *memory_buffer_device = NULL;
-    void *prev_buffer_device = NULL;
+    void **prev_buffer_device = NULL;
     void *hash_buffer_device = NULL;
 
     // sanitizer_buffer
@@ -641,14 +647,14 @@ sanitizer_kernel_launch_callback
     // sanitizer_buffer_t->block_hash_locks
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&hash_buffer_device,
       SANITIZER_BLOCK_HASH_SIZE * sizeof(int)));
-    HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0,
+    HPCRUN_SANITIZER_CALL(sanitizerMemset, (hash_buffer_device, 0,
       SANITIZER_BLOCK_HASH_SIZE * sizeof(int), stream));
 
     // sanitizer_buffer_t->prev_buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&prev_buffer_device,
-      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(sanitizer_memory_buffer_t)));
-    HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0,
-      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(sanitizer_memory_buffer_t), stream));
+      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(void *)));
+    HPCRUN_SANITIZER_CALL(sanitizerMemset, (prev_buffer_device, 0,
+      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(void *), stream));
 
     // sanitizer_buffer_t->buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
