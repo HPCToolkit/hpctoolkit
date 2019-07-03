@@ -607,7 +607,7 @@ sanitizer_kernel_launch_callback
         if (strcmp(elf_vector->names[i], function_name) == 0) {
           find = true;
           function_index = i;
-          PRINT("function_index %d\n", function_index);
+          PRINT("function %s function_index %d\n", function_name, function_index);
           break;
         }
       }
