@@ -116,7 +116,7 @@ hpcrun_init_trampoline_info(void)
   td->tramp_cct_node  = NULL;
 }
 
-static bool hpcrun_trampoline_update(void* addr) 
+bool hpcrun_trampoline_update(frame_t* stop_frame)
 {
   thread_data_t* td = hpcrun_get_thread_data();
 
@@ -129,9 +129,8 @@ static bool hpcrun_trampoline_update(void* addr)
 
   // Locate which frame is marked
   while (count > 0) {
-    if (frame->ra_loc != NULL) {
-      if (frame->ra_val == addr) break;
-	}
+    if (frame->ra_loc == stop_frame->ra_loc) 
+      break;
     
     cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
     if (  !hpcrun_get_retain_recursion_mode()
@@ -175,13 +174,7 @@ hpcrun_trampoline_interior(void* addr)
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
-  bool ret = ((unsigned long)addr & 1 == 1);
-  if (ret) {
-    // update trampoline statuses according to addr.
-    ret = hpcrun_trampoline_update(addr);
-    if (!ret) EMSG("Marked addr for trampoline found but failed to locate corresponding frame");
-  }
-  return ret;
+  return ((unsigned long)addr & 1 == 1);
 }
 
 
