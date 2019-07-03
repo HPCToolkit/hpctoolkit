@@ -57,6 +57,8 @@
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
 #define SANITIZER_BUFFER_SIZE 64 * 1024
+#define SANITIZER_MAX_BLOCK_THREADS 1024
+#define SANITIZER_BLOCK_HASH_SIZE 4095
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -629,11 +631,33 @@ sanitizer_kernel_launch_callback
     buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
     // allocate buffer
     void *memory_buffer_device = NULL;
+    void *prev_buffer_device = NULL;
+    void *hash_buffer_device = NULL;
+
+    // sanitizer_buffer
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&(buffer_device_entry->buffer), sizeof(sanitizer_buffer_t)));
+    HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0, sizeof(sanitizer_buffer_t), stream));
+
+    // sanitizer_buffer_t->block_hash_locks
+    HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&hash_buffer_device,
+      SANITIZER_BLOCK_HASH_SIZE * sizeof(int)));
+    HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0,
+      SANITIZER_BLOCK_HASH_SIZE * sizeof(int), stream));
+
+    // sanitizer_buffer_t->prev_buffers
+    HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&prev_buffer_device,
+      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(sanitizer_memory_buffer_t)));
+    HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0,
+      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(sanitizer_memory_buffer_t), stream));
+
+    // sanitizer_buffer_t->buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
       (&memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset,
       (memory_buffer_device, 0, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t), stream));
+
+    buffer_reset.block_hash_locks = hash_buffer_device;
+    buffer_reset.prev_buffers = prev_buffer_device;
     buffer_reset.buffers = memory_buffer_device;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (buffer_device_entry->buffer, &buffer_reset, sizeof(sanitizer_buffer_t), stream));

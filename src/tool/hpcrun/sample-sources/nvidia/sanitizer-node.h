@@ -7,9 +7,7 @@
 
 #include "cstack.h"
 
-#define MAX_BLOCK_THREADS 1024
 #define MAX_ACCESS_SIZE 128
-#define BLOCK_HASH_SIZE 4095
 
 typedef enum {
   SANITIZER_ACTIVITY_TYPE_MEMORY = 0,
@@ -32,8 +30,8 @@ typedef struct sanitizer_memory_buffer {
 typedef struct sanitizer_buffer {
   uint32_t cur_index;
   uint32_t max_index;
-  int block_hash_locks[BLOCK_HASH_SIZE];
-  sanitizer_memory_buffer_t *prev_memory_buffer[BLOCK_HASH_SIZE * MAX_BLOCK_THREADS];
+  int *block_hash_locks;
+  void *prev_buffers;
   void *buffers;
 } sanitizer_buffer_t;
 
