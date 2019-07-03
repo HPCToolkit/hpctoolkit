@@ -330,6 +330,11 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
       TMSG(BACKTRACE, "tramp stop: conjoining backtraces");
       TMSG(TRAMP, " FOUND TRAMP: constructing cached backtrace");
       
+      if (!hpcrun_trampoline_update(bt_last)) {
+          EMSG("ERROR: trampoline update failed. Drop the sample.");
+          hpcrun_unw_drop();
+      }
+      
       bool middle_of_recursion = 
              td->tramp_frame != td->cached_bt_frame_beg
           && td->tramp_frame != td->cached_bt_buf_frame_end-1

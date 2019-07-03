@@ -232,6 +232,11 @@ hpcrun_trampoline_remove(void)
   hpcrun_init_trampoline_info();
 }
 
+bool hpcrun_trampoline_update(frame_t* stop_frame)
+{
+  return true;
+}
+
 void*
 hpcrun_trampoline_handler(void)
 {
