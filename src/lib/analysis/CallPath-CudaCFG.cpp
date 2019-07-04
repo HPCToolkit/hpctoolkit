@@ -103,6 +103,7 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 
 #include <vector>
+#include <queue>
 #include <iostream>
 
 
@@ -125,7 +126,7 @@ typedef std::map<VMA, Prof::CCT::ANode *> ProfProcMap;
 
 typedef std::map<Prof::CCT::ANode *, std::map<Prof::CCT::ANode *, double> > IncomingSamplesMap;
 
-static int gpu_isample_index = -1;
+static std::vector<size_t> gpu_inst_index;
 
 // Static functions
 static void
@@ -257,12 +258,14 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
     if (mgr->metric(i)->namePfxBase() == "GPU INST") {
-      gpu_isample_index = i;
-      break;
+      gpu_inst_index.push_back(i);
+    }
+    if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << "Metric " << i << ":" << mgr->metric(i)->name() << std::endl;
     }
   }
   // Skip non-gpu prof
-  if (gpu_isample_index == -1) {
+  if (gpu_inst_index.size() == 0) {
     if (DEBUG_CALLPATH_CUDACFG) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }
@@ -395,9 +398,15 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
   }
 
   // Step2: Add call->proc
+  std::queue<std::pair<VMA, Prof::CCT::ANode *> > prof_procs;
   for (auto &entry : prof_proc_map) {
+    prof_procs.push(entry);
+  }
+
+  while (prof_procs.empty() == false) {
+    auto &entry = prof_procs.front();
+    prof_procs.pop();
     auto vma = entry.first;
-    auto *proc = entry.second;
     for (auto *struct_call : struct_call_map[vma]) {
       Prof::CCT::ANode *prof_call = NULL;
       if (prof_call_map.find(vma) != prof_call_map.end()) {
@@ -414,22 +423,38 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
         Prof::Struct::ANode *scope = struct_call->ancestor(Prof::Struct::ANode::TyLoop,
           Prof::Struct::ANode::TyAlien,
           Prof::Struct::ANode::TyProc);
+        // Ancester does not exist
         if (struct_prof_map.find(scope) == struct_prof_map.end()) {
           auto *struct_proc = struct_call->ancestorProc();
+          // Update prof->proc queue and map
+          auto vma = struct_proc->vmaSet().begin()->beg();
           auto *frm_proc = new Prof::CCT::ProcFrm(NULL, struct_proc);
+          std::pair<VMA, Prof::CCT::ANode *> new_entry(vma, frm_proc);
+          // Add new entry
+          prof_procs.push(new_entry);
+          // Add vma->proc
+          prof_proc_map[vma] = frm_proc;
+          // Add struct->proc
           struct_prof_map[struct_proc] = frm_proc;
           constructFrame(struct_proc, frm_proc, frm_proc, struct_prof_map); 
         }
+        // Now the corresponding prof node exists
         Prof::CCT::ANode *frm_scope = struct_prof_map[scope];
         prof_call = new Prof::CCT::Call(frm_scope, 0);
         auto *struct_code = dynamic_cast<Prof::Struct::ACodeNode *>(struct_call);
         prof_call->structure(struct_code);
         // Add a gpu_isample
-        prof_call->demandMetric(gpu_isample_index) = 1.0;
+        prof_call->demandMetric(gpu_inst_index[0]) = 1.0;
         // Add to prof_call_map
         prof_call_map[vma].push_back(prof_call);
       }
     }
+  }
+
+  // Update call graph
+  for (auto &entry : prof_proc_map) {
+    auto vma = entry.first;
+    auto *proc = entry.second;
     for (auto *call : prof_call_map[vma]) {
       // prof_call_map has been filled out
       cct_graph->addEdge(call, proc);
@@ -589,14 +614,14 @@ gatherIncomingSamples(CCTGraph *cct_graph, IncomingSamplesMap &node_map, bool fi
     if ((find_recursion && isSCCNode(node)) || (!find_recursion && getProcStmt(node) != NULL)) {
       if (cct_graph->incoming_nodes(node) != cct_graph->incoming_nodes_end()) {
         std::vector<Prof::CCT::ANode *> &vec = cct_graph->incoming_nodes(node)->second;
-        if (gpu_isample_index == -1) {
+        if (gpu_inst_index.size() == 0) {
           for (auto *neighbor : vec) {
             // By default, set it to one
             node_map[node][neighbor] = 1.0;
           }
         } else {
           for (auto *neighbor : vec) {
-            node_map[node][neighbor] = std::max(neighbor->demandMetric(gpu_isample_index), 1.0);
+            node_map[node][neighbor] = std::max(neighbor->demandMetric(gpu_inst_index[0]), 1.0);
           }
         }
       }
