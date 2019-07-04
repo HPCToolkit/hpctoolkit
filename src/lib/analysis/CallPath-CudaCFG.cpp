@@ -107,7 +107,7 @@ using std::string;
 #include <iostream>
 
 
-#define DEBUG_CALLPATH_CUDACFG 1
+#define DEBUG_CALLPATH_CUDACFG 0
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -247,10 +247,9 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
       auto *stmt = getProcStmt(n); 
       auto *p_stmt = n->parent()->structure();
       std::cout << stmt->ancestorFile()->name() << ": " << dynamic_cast<Prof::CCT::AProcNode *>(n)->procName() <<
-        " (" << stmt->vmaSet().begin()->beg() << ") called from " <<
+        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec << ") called from " <<
         dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
-        " node " << n->parent() <<
-      std::endl;
+        " node " << n->parent() << std::endl;
     }
   }
 }
@@ -258,6 +257,11 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
 
 void
 transformCudaCFGMain(Prof::CallPath::Profile& prof) {
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "-------------------------------------------------" << std::endl;
+    std::cout << "Step 0: Check if prof has GPU metrics" << std::endl;
+    std::cout << "-------------------------------------------------" << std::endl;
+  }
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
@@ -292,9 +296,22 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
   for (auto *gpu_root : gpu_roots) {
     if (DEBUG_CALLPATH_CUDACFG) {
+      auto *strct = gpu_root->structure();
+      auto line = dynamic_cast<Prof::Struct::ACodeNode *>(strct)->begLine();
+      auto *p_strct = strct->ancestor(Prof::Struct::ANode::TyProc);
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Current gpu root " << p_strct->name() << " line " << line << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+    }
+    if (DEBUG_CALLPATH_CUDACFG) {
       debugProfTree(gpu_root);
     }
 
+    if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Step 1: Construct call graph" << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+    }
     // Construct a call map for a target
     CCTGraph *cct_graph = new CCTGraph();
     constructCallGraph(gpu_root, cct_graph, struct_call_map);
@@ -310,7 +327,9 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     if (findRecursion(cct_graph, cct_groups)) {
       find_recursion = true;
       if (DEBUG_CALLPATH_CUDACFG) {
-        std::cout << "Find recursive calls" << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
+        std::cout << "Step 1.1: Construct call graph for recursive calls" << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
       }
       CCTGraph *old_cct_graph = cct_graph;
       cct_graph = new CCTGraph();
@@ -328,7 +347,9 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
     // Copy from every gpu_root to leafs
     if (DEBUG_CALLPATH_CUDACFG) {
-      std::cout << "Construct calling context tree" << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Step 2: Construct calling context tree" << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
     }
     constructCallingContext(cct_graph, incoming_samples);
 
@@ -393,10 +414,26 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
   ProfProcMap prof_proc_map;  // <proc_vma, CCT::ProcFrm>
   Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
     IteratorStack::PreOrder);
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Existing call nodes metrics" << std::endl;
+    std::cout << "  ";
+    for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+      std::cout << "  " << gpu_inst_index[i];
+    }
+    std::cout << std::endl;
+  }
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
     if (getCudaCallStmt(n) != NULL) {  // call
       auto *stmt = getCudaCallStmt(n);
       prof_call_map[stmt->target()].push_back(n);
+
+      if (DEBUG_CALLPATH_CUDACFG) {
+        std::cout << dynamic_cast<Prof::Struct::ACodeNode *>(stmt)->begLine();
+        for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+          std::cout << "  " << n->demandMetric(gpu_inst_index[i]);
+        }
+        std::cout << std::endl;
+      }
     } else if (getProcStmt(n) != NULL) {  // proc
       auto *stmt = getProcStmt(n);
       auto vma = stmt->vmaSet().begin()->beg();
