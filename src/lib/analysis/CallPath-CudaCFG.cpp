@@ -107,7 +107,7 @@ using std::string;
 #include <iostream>
 
 
-#define DEBUG_CALLPATH_CUDACFG 0
+#define DEBUG_CALLPATH_CUDACFG 1
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -257,11 +257,13 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "GPU INST") {
+    if (mgr->metric(i)->namePfxBase() == "GPU INST" &&
+      mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
+      // Assume exclusive metrics index is i+1
       gpu_inst_index.push_back(i);
-    }
-    if (DEBUG_CALLPATH_CUDACFG) {
-      std::cout << "Metric " << i << ":" << mgr->metric(i)->name() << std::endl;
+      if (DEBUG_CALLPATH_CUDACFG) {
+        std::cout << "Metric " << i << ":" << mgr->metric(i)->name() << std::endl;
+      }
     }
   }
   // Skip non-gpu prof
@@ -276,7 +278,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   std::set<Prof::CCT::ANode *> gpu_roots;
   findGPURoots(prof.cct()->root(), prof.structure()->root(), gpu_roots);
 
-  // find <target_vma, <Struct::Stmt> > mappings
+  // Find <target_vma, <Struct::Stmt> > mappings
   StructCallMap struct_call_map; 
   constructStructCallMap(prof.structure()->root(), struct_call_map);
 
@@ -407,47 +409,41 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
     auto &entry = prof_procs.front();
     prof_procs.pop();
     auto vma = entry.first;
+    auto *proc = entry.second;
+    // If there is at least one call node, do not bother
+    if (prof_call_map.find(vma) != prof_call_map.end()) {
+      continue;
+    }
+    // If there is no call node for the procedure, we manually assign every procedure a call sample
     for (auto *struct_call : struct_call_map[vma]) {
-      Prof::CCT::ANode *prof_call = NULL;
-      if (prof_call_map.find(vma) != prof_call_map.end()) {
-        for (auto *call : prof_call_map[vma]) {
-          if (call->structure() == struct_call) {
-            prof_call = call;
-            break;
-          }
-        }
+      // Create a scope frame
+      Prof::Struct::ANode *scope = struct_call->ancestor(Prof::Struct::ANode::TyLoop,
+        Prof::Struct::ANode::TyAlien,
+        Prof::Struct::ANode::TyProc);
+      // Ancester does not exist
+      if (struct_prof_map.find(scope) == struct_prof_map.end()) {
+        auto *struct_proc = struct_call->ancestorProc();
+        // Update prof->proc queue and map
+        auto vma = struct_proc->vmaSet().begin()->beg();
+        auto *frm_proc = new Prof::CCT::ProcFrm(NULL, struct_proc);
+        std::pair<VMA, Prof::CCT::ANode *> new_entry(vma, frm_proc);
+        // Add new entry
+        prof_procs.push(new_entry);
+        // Add vma->proc
+        prof_proc_map[vma] = frm_proc;
+        // Add struct->proc
+        struct_prof_map[struct_proc] = frm_proc;
+        constructFrame(struct_proc, frm_proc, frm_proc, struct_prof_map); 
       }
-      // If the call node has not been sampled, we manually assign it sample one
-      if (prof_call == NULL) {
-        // Create a scope frame
-        Prof::Struct::ANode *scope = struct_call->ancestor(Prof::Struct::ANode::TyLoop,
-          Prof::Struct::ANode::TyAlien,
-          Prof::Struct::ANode::TyProc);
-        // Ancester does not exist
-        if (struct_prof_map.find(scope) == struct_prof_map.end()) {
-          auto *struct_proc = struct_call->ancestorProc();
-          // Update prof->proc queue and map
-          auto vma = struct_proc->vmaSet().begin()->beg();
-          auto *frm_proc = new Prof::CCT::ProcFrm(NULL, struct_proc);
-          std::pair<VMA, Prof::CCT::ANode *> new_entry(vma, frm_proc);
-          // Add new entry
-          prof_procs.push(new_entry);
-          // Add vma->proc
-          prof_proc_map[vma] = frm_proc;
-          // Add struct->proc
-          struct_prof_map[struct_proc] = frm_proc;
-          constructFrame(struct_proc, frm_proc, frm_proc, struct_prof_map); 
-        }
-        // Now the corresponding prof node exists
-        Prof::CCT::ANode *frm_scope = struct_prof_map[scope];
-        prof_call = new Prof::CCT::Call(frm_scope, 0);
-        auto *struct_code = dynamic_cast<Prof::Struct::ACodeNode *>(struct_call);
-        prof_call->structure(struct_code);
-        // Add a gpu_isample
-        prof_call->demandMetric(gpu_inst_index[0]) = 1.0;
-        // Add to prof_call_map
-        prof_call_map[vma].push_back(prof_call);
-      }
+      // Now the corresponding prof node exists
+      Prof::CCT::ANode *frm_scope = struct_prof_map[scope];
+      auto *prof_call = new Prof::CCT::Call(frm_scope, 0);
+      auto *struct_code = dynamic_cast<Prof::Struct::ACodeNode *>(struct_call);
+      prof_call->structure(struct_code);
+      // Add a gpu_isample
+      prof_call->demandMetric(gpu_inst_index[0]) = 1.0;
+      // Add to prof_call_map
+      prof_call_map[vma].push_back(prof_call);
     }
   }
 
