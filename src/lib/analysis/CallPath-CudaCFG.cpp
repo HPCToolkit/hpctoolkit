@@ -507,6 +507,7 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
   }
 
   // Complexity: O(TN), N procs, each time at least 1 metric gets updated, each node has T metric slots
+  // Specific Complexity: O(TN * N), for each iteration, a node may be called from at most N places
   while (prof_procs.empty() == false) {
     auto &entry = prof_procs.front();
     prof_procs.pop();
