@@ -506,7 +506,7 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
     prof_procs.push(entry);
   }
 
-  // Complexity: O(n^2), can be increase by using topological sort to O(nlogn)
+  // Complexity: O(TN), N procs, each time at least 1 metric gets updated, each node has T metric slots
   while (prof_procs.empty() == false) {
     auto &entry = prof_procs.front();
     prof_procs.pop();
