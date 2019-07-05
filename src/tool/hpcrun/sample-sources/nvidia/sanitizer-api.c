@@ -57,8 +57,7 @@
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
 #define SANITIZER_BUFFER_SIZE 64 * 1024
-#define SANITIZER_MAX_BLOCK_THREADS 1024
-#define SANITIZER_BLOCK_HASH_SIZE 4095
+#define SANITIZER_THREAD_HASH_SIZE (128 * 1024 - 1)
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -409,9 +408,9 @@ sanitizer_load_callback
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
-  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_BARRIER, cubin_module, "sanitizer_barrier_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_BLOCK_ENTER, cubin_module, "sanitizer_block_enter_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -472,10 +471,10 @@ sanitizer_memory_process
      if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
        //sanitizer_activity_attribute(&activity, cct_child);
      }
-     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u\n",
+     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u, address %p\n",
        memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
        memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
-       memory_buffer->pc, memory_buffer->size, memory_buffer->flags);
+       memory_buffer->pc, memory_buffer->size, memory_buffer->flags, memory_buffer->address);
   }
 }
 
@@ -638,23 +637,25 @@ sanitizer_kernel_launch_callback
     // allocate buffer
     void *memory_buffer_device = NULL;
     void **prev_buffer_device = NULL;
-    void *hash_buffer_device = NULL;
+    uint32_t *hash_buffer_device = NULL;
 
     // sanitizer_buffer
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&(buffer_device_entry->buffer), sizeof(sanitizer_buffer_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0, sizeof(sanitizer_buffer_t), stream));
 
-    // sanitizer_buffer_t->block_hash_locks
+    // sanitizer_buffer_t->thread_has_locks
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&hash_buffer_device,
-      SANITIZER_BLOCK_HASH_SIZE * sizeof(int)));
+      SANITIZER_THREAD_HASH_SIZE * sizeof(uint32_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (hash_buffer_device, 0,
-      SANITIZER_BLOCK_HASH_SIZE * sizeof(int), stream));
+      SANITIZER_THREAD_HASH_SIZE * sizeof(uint32_t), stream));
+
+    PRINT("Allocate hash_buffer_device %p\n", hash_buffer_device);
 
     // sanitizer_buffer_t->prev_buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&prev_buffer_device,
-      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(void *)));
+      SANITIZER_THREAD_HASH_SIZE * sizeof(void *)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (prev_buffer_device, 0,
-      SANITIZER_BLOCK_HASH_SIZE * SANITIZER_MAX_BLOCK_THREADS * sizeof(void *), stream));
+      SANITIZER_THREAD_HASH_SIZE * sizeof(void *), stream));
 
     // sanitizer_buffer_t->buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
@@ -662,7 +663,7 @@ sanitizer_kernel_launch_callback
     HPCRUN_SANITIZER_CALL(sanitizerMemset,
       (memory_buffer_device, 0, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t), stream));
 
-    buffer_reset.block_hash_locks = hash_buffer_device;
+    buffer_reset.thread_hash_locks = hash_buffer_device;
     buffer_reset.prev_buffers = prev_buffer_device;
     buffer_reset.buffers = memory_buffer_device;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,

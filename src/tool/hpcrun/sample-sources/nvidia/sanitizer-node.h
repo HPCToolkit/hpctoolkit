@@ -30,7 +30,7 @@ typedef struct sanitizer_memory_buffer {
 typedef struct sanitizer_buffer {
   uint32_t cur_index;
   uint32_t max_index;
-  int *block_hash_locks;
+  uint32_t *thread_hash_locks;
   void **prev_buffers;
   void *buffers;
 } sanitizer_buffer_t;
