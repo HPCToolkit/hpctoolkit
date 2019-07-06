@@ -7,7 +7,7 @@
 
 #include "cstack.h"
 
-#define MAX_ACCESS_SIZE (16 + 1)
+#define MAX_ACCESS_SIZE (16)
 
 typedef enum {
   SANITIZER_ACTIVITY_TYPE_MEMORY = 0,

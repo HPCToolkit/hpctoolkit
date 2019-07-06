@@ -56,7 +56,7 @@
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
-#define SANITIZER_BUFFER_SIZE 64 * 1024
+#define SANITIZER_BUFFER_SIZE (64 * 1024)
 #define SANITIZER_THREAD_HASH_SIZE (128 * 1024 - 1)
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
