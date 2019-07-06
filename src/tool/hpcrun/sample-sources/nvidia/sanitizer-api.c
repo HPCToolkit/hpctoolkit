@@ -471,10 +471,16 @@ sanitizer_memory_process
      if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
        //sanitizer_activity_attribute(&activity, cct_child);
      }
-     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u, address %p\n",
+     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u, address %p,",
        memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
        memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
        memory_buffer->pc, memory_buffer->size, memory_buffer->flags, memory_buffer->address);
+     size_t j;
+     PRINT(" value ");
+     for (j = 0; j < memory_buffer->size; ++j) { 
+       PRINT("%02x", memory_buffer->value[j]);
+     }
+     PRINT("\n");
   }
 }
 
@@ -666,11 +672,14 @@ sanitizer_kernel_launch_callback
     buffer_reset.thread_hash_locks = hash_buffer_device;
     buffer_reset.prev_buffers = prev_buffer_device;
     buffer_reset.buffers = memory_buffer_device;
+    buffer_reset.block_sampling_frequency = sanitizer_block_sampling_frequency_get();
+    PRINT("Sampling frequency %d\n", sanitizer_block_sampling_frequency_get());
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (buffer_device_entry->buffer, &buffer_reset, sizeof(sanitizer_buffer_t), stream));
   } else {
     buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
     // reset buffer
+    buffer_reset.block_sampling_frequency = sanitizer_block_sampling_frequency_get();
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (buffer_device_entry->buffer, &buffer_reset, sizeof(uint32_t) * 2, stream));
   }
@@ -765,7 +774,11 @@ sanitizer_subscribe_callback
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       // multi-thread
+      // gaurantee that each time only a single callback data is associated with a stream
+      sanitizer_context_map_stream_lock(ld->context, ld->stream);
       sanitizer_kernel_launch_callback(ld->context, ld->module, ld->stream, ld->functionName);
+    } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
+      sanitizer_context_map_stream_unlock(ld->context, ld->stream);
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data

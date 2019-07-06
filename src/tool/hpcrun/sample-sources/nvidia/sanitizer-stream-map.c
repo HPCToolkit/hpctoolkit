@@ -23,6 +23,7 @@
 
 struct sanitizer_stream_map_entry_s {
   CUstream stream;
+  spinlock_t lock;
   cstack_t *notifications;
   struct sanitizer_stream_map_entry_s *left;
   struct sanitizer_stream_map_entry_s *right;
@@ -179,6 +180,36 @@ sanitizer_stream_map_stream_process
 }
 
 
+void
+sanitizer_stream_map_stream_lock
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+)
+{
+  sanitizer_stream_map_entry_t *entry = NULL;
+
+  if ((entry = sanitizer_stream_map_lookup(root, stream)) != NULL) {
+    spinlock_lock(&(entry->lock));
+  }
+}
+
+
+void
+sanitizer_stream_map_stream_unlock
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+)
+{
+  sanitizer_stream_map_entry_t *entry = NULL;
+
+  if ((entry = sanitizer_stream_map_lookup(root, stream)) != NULL) {
+    spinlock_unlock(&(entry->lock));
+  }
+}
+
+
 sanitizer_stream_map_entry_t *
 sanitizer_stream_map_entry_new(CUstream stream)
 {
@@ -191,6 +222,7 @@ sanitizer_stream_map_entry_new(CUstream stream)
   e->right = NULL;
 
   cstack_init(e->notifications);
+  spinlock_init(&(e->lock));
 
   return e;
 }

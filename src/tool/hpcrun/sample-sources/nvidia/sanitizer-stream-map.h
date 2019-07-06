@@ -67,6 +67,22 @@ sanitizer_stream_map_stream_process
 );
 
 
+void
+sanitizer_stream_map_stream_lock
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+);
+
+
+void
+sanitizer_stream_map_stream_unlock
+(
+ sanitizer_stream_map_entry_t **root,
+ CUstream stream
+);
+
+
 sanitizer_stream_map_entry_t *
 sanitizer_stream_map_entry_new
 (

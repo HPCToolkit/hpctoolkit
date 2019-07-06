@@ -67,6 +67,22 @@ sanitizer_context_map_stream_process
 
 
 void
+sanitizer_context_map_stream_lock
+(
+ CUcontext context,
+ CUstream stream
+);
+
+
+void
+sanitizer_context_map_stream_unlock
+(
+ CUcontext context,
+ CUstream stream
+);
+
+
+void
 sanitizer_context_map_delete
 (
  CUcontext context

@@ -214,3 +214,31 @@ sanitizer_context_map_stream_process
     sanitizer_stream_map_stream_process(&entry->streams, stream, fn);
   }
 }
+
+
+void
+sanitizer_context_map_stream_lock
+(
+ CUcontext context,
+ CUstream stream
+)
+{
+  sanitizer_context_map_entry_t *entry = NULL;
+  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
+    sanitizer_stream_map_stream_lock(&entry->streams, stream);
+  }
+}
+
+
+void
+sanitizer_context_map_stream_unlock
+(
+ CUcontext context,
+ CUstream stream
+)
+{
+  sanitizer_context_map_entry_t *entry = NULL;
+  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
+    sanitizer_stream_map_stream_unlock(&entry->streams, stream);
+  }
+}
