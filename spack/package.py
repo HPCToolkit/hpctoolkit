@@ -18,7 +18,7 @@ class Hpctoolkit(AutotoolsPackage):
     git      = "https://github.com/HPCToolkit/hpctoolkit.git"
 
     version('develop', branch='master')
-    version('gpu', branch='openmp5-gpu')
+    version('gpu', branch='master-gpu')
     version('2018.12.28', commit='8dbf0d543171ffa9885344f32f23cc6f7f6e39bc')
     version('2018.11.05', commit='d0c43e39020e67095b1f1d8bb89b75f22b12aee9')
 
@@ -124,6 +124,7 @@ class Hpctoolkit(AutotoolsPackage):
         if '+cuda' in spec:
             args.append('--with-cuda=%s' % spec['cuda'].prefix)
             args.append('--with-cupti=%s/extras/CUPTI' % spec['cuda'].prefix)
+            args.append('--with-cuda-sanitizer=%s/extras/Sanitizer' % spec['cuda'].prefix)
 
         if '+all-static' in spec:
             args.append('--enable-all-static')
