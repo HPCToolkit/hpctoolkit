@@ -12,6 +12,8 @@ extern void sanitizer_activity_attribute(sanitizer_activity_t *activity, cct_nod
 
 extern int cupti_pc_sampling_frequency_get();
 
+extern int sanitizer_block_sampling_frequency_get();
+
 extern void cupti_enable_activities(CUcontext context);
 
 #endif

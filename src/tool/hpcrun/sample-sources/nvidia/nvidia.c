@@ -392,8 +392,10 @@ static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)+1];
 static int sync_time_metric_id;
 
 static const long pc_sampling_frequency_default = 10;
+static const long block_sampling_frequency_default = 0;
 // -1: disabled, 5-31: 2^frequency
-static long pc_sampling_frequency = -1;
+static long pc_sampling_frequency = 0;
+static long block_sampling_frequency = 0;
 static int cupti_enabled_activities = 0;
 // event name, which can be either nvidia-ompt or nvidia-cuda
 static char nvidia_name[128];
@@ -696,6 +698,13 @@ cupti_pc_sampling_frequency_get()
 }
 
 
+int
+sanitizer_block_sampling_frequency_get()
+{
+  return block_sampling_frequency;
+}
+
+
 void
 cupti_enable_activities
 (
@@ -720,7 +729,7 @@ cupti_enable_activities
 
   FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
 
-  if (pc_sampling_frequency != -1) {
+  if (pc_sampling_frequency != 0) {
     PRINT("pc sampling enabled\n");
     cupti_pc_sampling_enable(context, pc_sampling_frequency);
   }
@@ -1040,13 +1049,16 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 #endif
 
-  // Fetch the event string for the sample source
-  // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
+  long sample_frequency;
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
-    &pc_sampling_frequency, pc_sampling_frequency_default);
+    &sample_frequency, 0);
+  // Fetch the event string for the sample source
+  // only one event is allowed
   if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
+    pc_sampling_frequency = sample_frequency == 0 ?
+      pc_sampling_frequency_default : sample_frequency;
     cupti_metrics_init();
     cuda_init_placeholders();
     
@@ -1068,11 +1080,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
     cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
     cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-    if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
-      pc_sampling_frequency = -1;
-    }
   } else if (hpcrun_ev_is(nvidia_name, CUDA_SANITIZER)) {
+    block_sampling_frequency = sample_frequency == 0 ?
+      block_sampling_frequency_default : sample_frequency;
     cuda_init_placeholders();
 
     // Register hpcrun callbacks
@@ -1087,6 +1097,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     // Init record
     sanitizer_record_init();
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
+    pc_sampling_frequency = sample_frequency == 0 ?
+      pc_sampling_frequency_default : sample_frequency;
+
     ompt_pc_sampling_enable();
   }
 }
