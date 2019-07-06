@@ -144,8 +144,8 @@
   macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
   macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
   macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KERNEL:BLOCK_THREADS", 5)           \
-  macro("KERNEL:BLOCK_REGISTERS", 6)         \
+  macro("KERNEL:THREAD_REGISTERS", 5)       \
+  macro("KERNEL:BLOCK_THREADS", 6)           \
   macro("KERNEL:BLOCK_SHARED_MEMORY", 7)     \
   macro("KERNEL:COUNT ", 8)                  \
 
@@ -347,8 +347,8 @@ static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_active_warps_per_sm_metric_id;
 static int ke_max_active_warps_per_sm_metric_id;
+static int ke_thread_registers_id;
 static int ke_block_threads_id;
-static int ke_block_registers_id;
 static int ke_block_shared_memory_id;
 static int ke_count_metric_id;
 static int ke_time_metric_id;
@@ -496,6 +496,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(info_dropped_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
 
+      // It is fine to use set here because sampling cycle is changed during execution
       metrics = hpcrun_reify_metric_set(cct_node, info_period_in_cycles_id);
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
@@ -557,16 +558,16 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
 
+      metrics = hpcrun_reify_metric_set(cct_node, ke_thread_registers_id);
+      hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.threadRegisters});
+
       metrics = hpcrun_reify_metric_set(cct_node, ke_block_threads_id);
-      hpcrun_metric_std_set(ke_block_threads_id, metrics,
+      hpcrun_metric_std_inc(ke_block_threads_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_registers_id);
-      hpcrun_metric_std_set(ke_block_registers_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.blockRegisters});
-
       metrics = hpcrun_reify_metric_set(cct_node, ke_block_shared_memory_id);
-      hpcrun_metric_std_set(ke_block_shared_memory_id, metrics,
+      hpcrun_metric_std_inc(ke_block_shared_memory_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
@@ -777,7 +778,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(CUDA,"nevents = %d", nevents);
 
-
 #define getindex(name, index) index
 
 #define declare_cur_metrics(name, index) \
@@ -788,7 +788,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 #define hide_cur_metrics(name, index) \
-  hpcrun_set_display(cur_metrics[index], 0, 1);
+  hpcrun_set_display(cur_metrics[index], 0);
 
 #define create_cur_kind cur_kind = hpcrun_metrics_new_kind()
 #define close_cur_kind hpcrun_close_kind(cur_kind)
@@ -874,13 +874,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_local_metric_id = ke_metric_id[2];
   ke_active_warps_per_sm_metric_id = ke_metric_id[3];
   ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
-  ke_block_threads_id = ke_metric_id[5];
-  ke_block_registers_id = ke_metric_id[6];
+  ke_thread_registers_id = ke_metric_id[5];
+  ke_block_threads_id = ke_metric_id[6];
   ke_block_shared_memory_id = ke_metric_id[7];
   ke_count_metric_id = ke_metric_id[8];
   ke_time_metric_id = ke_metric_id[9];
   ke_occupancy_metric_id = ke_metric_id[10];
 
+  hpcrun_set_percent(ke_occupancy_metric_id, 1);
   metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);
   char *ke_occupancy_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(ke_occupancy_buffer, "$%d/$%d", ke_active_warps_per_sm_metric_id, ke_max_active_warps_per_sm_metric_id);
@@ -952,6 +953,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   info_sm_full_samples_id = info_metric_id[3];
   info_sm_efficiency_id = info_metric_id[4];
 
+  hpcrun_set_percent(info_sm_efficiency_id, 1);
   metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
   char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
