@@ -469,16 +469,23 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
+      int frequency_factor = 1;
+      if (frequency_factor != -1) {
+        frequency_factor = (1 << pc_sampling_frequency);
+      }
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.latencySamples * frequency_factor});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.samples});
+        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.samples * frequency_factor});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_lat_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
+        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.latencySamples * frequency_factor});
       }
       break;
     }
@@ -790,6 +797,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define cur_metrics stall_metric_id
 
   create_cur_kind;
+  // GPU INST must be the first kind for sample apportion
   FORALL_GPU_INST(declare_cur_metrics);
   FORALL_GPU_INST_LAT(declare_cur_metrics);
   FORALL_STL(declare_cur_metrics);	
