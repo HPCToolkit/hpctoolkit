@@ -193,6 +193,7 @@ UNW_COMMON_FILES = \
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
 	unwind/common/stack_troll.c			\
+	unwind/common/uw_hash.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
@@ -312,6 +313,8 @@ MY_BASE_FILES =				\
 	thread_data.c			\
 	thread_use.c			\
 	thread_finalize.c		\
+	control-knob.c   \
+	control-knob.h   \
 	hpcrun_flag_stacks.c \
 	device-finalizers.c \
 	device-initializers.c \
@@ -328,8 +331,8 @@ MY_BASE_FILES =				\
 	cct/cct-node-vector.c     \
 	\
 	cct2metrics.c                   \
-	\
-	trampoline/common/trampoline.c  \
+##	\
+##	trampoline/common/trampoline.c  \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
@@ -367,6 +370,14 @@ MY_BASE_FILES =				\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
+
+if HOST_CPU_PPC
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_eager.c
+else
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_lazy.c
+endif
 
 if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  \

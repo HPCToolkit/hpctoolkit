@@ -126,6 +126,9 @@ record_partial_unwind(
     return NULL;
   }
 
+  if (bt_last < bt_beg)
+    bt_last = bt_beg;
+  
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
@@ -300,8 +303,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     ret.trace_node = func_proxy;
 
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId);
+    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 

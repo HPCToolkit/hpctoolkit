@@ -344,7 +344,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   // step 2: get the dummy node that marks the end of the thread trace
 
   cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
-  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0);
+  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, HPCTRACE_FMT_DLCA_NULL);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

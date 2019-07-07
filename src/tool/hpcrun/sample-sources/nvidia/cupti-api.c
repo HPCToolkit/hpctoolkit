@@ -121,7 +121,7 @@
 #define PRINT(...)
 #endif
 
-#define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (64 * 1024)
+#define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
 
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
@@ -146,6 +146,7 @@
   macro(cuptiActivityEnable)				\
   macro(cuptiActivityEnableContext)			\
   macro(cuptiActivityFlushAll)				\
+  macro(cuptiActivitySetAttribute)				\
   macro(cuptiActivityGetNextRecord)			\
   macro(cuptiActivityGetNumDroppedRecords)		\
   macro(cuptiActivityPopExternalCorrelationId)		\
@@ -231,6 +232,7 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
+static __thread bool cupti_enter_runtime_api = false;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -356,6 +358,17 @@ CUPTI_FN
 
 CUPTI_FN
 (
+  cuptiActivitySetAttribute,
+  (
+   CUpti_ActivityAttribute attribute,
+   size_t *value_size,
+   void *value
+  )
+);
+
+
+CUPTI_FN
+(
  cuptiActivityFlushAll,
  (
   uint32_t flag
@@ -455,6 +468,7 @@ cuda_path
   }
   return 0;
 }
+
 
 const char *
 cupti_path
@@ -673,18 +687,17 @@ cupti_correlation_callback_cuda
   getcontext(&uc);
   thread_data_t *td = hpcrun_get_thread_data();
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  td->overhead++;
   hpcrun_safe_enter();
 
   cct_node_t *node = 
     hpcrun_sample_callpath(&uc, zero_metric_id, 
-			   zero_metric_incr, 0, 1, NULL).sample_node; 
+      zero_metric_incr, 0, 1, NULL).sample_node; 
 
   hpcrun_safe_exit();
-  td->overhead--;
 
   // Compress callpath
-  cct_addr_t* node_addr = hpcrun_cct_addr(node);
+  // Highest cupti node
+  cct_addr_t *node_addr = hpcrun_cct_addr(node);
   static __thread uint16_t libhpcrun_id = 0;
 
   // The lowest module must be libhpcrun, which is not 0
@@ -714,16 +727,16 @@ cupti_correlation_callback_cuda
   hpcrun_safe_enter();
 
   // Insert the corresponding cuda state node
-  cct_addr_t frm;
-  memset(&frm, 0, sizeof(cct_addr_t));
-  frm.ip_norm = cuda_state.pc_norm;
-  cct_node_t* cct_child = hpcrun_cct_insert_addr(node, &frm);
+  cct_addr_t frm_api;
+  memset(&frm_api, 0, sizeof(cct_addr_t));
+  frm_api.ip_norm = cuda_state.pc_norm;
+  cct_node_t* cct_api = hpcrun_cct_insert_addr(node, &frm_api);
 
   hpcrun_safe_exit();
   td->overhead--;
 
   // Generate notification entry
-  cupti_worker_notification_apply(*id, cct_child);
+  cupti_worker_notification_apply(*id, cct_api);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -762,6 +775,10 @@ cupti_subscriber_callback
       cupti_enable_activities(rd->context);
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
+    if (cupti_enter_runtime_api) {
+      return;
+    }
+
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
     cupti_record_init();
@@ -886,19 +903,19 @@ cupti_subscriber_callback
     }
     if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
-        uint64_t correlation_id;
+        uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
@@ -1005,14 +1022,16 @@ cupti_subscriber_callback
     }
     if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
+        cupti_enter_runtime_api = true;
         uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+          cb_id);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
+        cupti_enter_runtime_api = false;
         uint64_t correlation_id = 0;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
@@ -1040,6 +1059,21 @@ cupti_device_timestamp_get
 }
 
 
+void
+cupti_device_buffer_config
+(
+ size_t buf_size,
+ size_t sem_size
+)
+{
+  size_t value_size = sizeof(size_t);
+  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
+  HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
+    (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
+}
+
+
 void 
 cupti_buffer_alloc 
 (
@@ -1048,6 +1082,7 @@ cupti_buffer_alloc
  size_t *maxNumRecords
 )
 {
+  // cupti client call this function
   int retval = posix_memalign((void **) buffer,
     (size_t) HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT,
     (size_t) HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE); 
@@ -1088,24 +1123,27 @@ cupti_buffer_completion_callback
   // handle notifications
   cupti_cupti_notification_apply(cupti_notification_handle);
 
-  // signal advance to return pointer to first record
-  CUpti_Activity *activity = NULL;
-  bool status = false;
-  size_t processed = 0;
-  do {
-    status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
-    if (status) {
-      cupti_activity_process(activity);
-      ++processed;
-    }
-  } while (status);
-  hpcrun_stats_acc_trace_records_add(processed);
+  if (validSize > 0) {
+    // signal advance to return pointer to first record
+    CUpti_Activity *activity = NULL;
+    bool status = false;
+    size_t processed = 0;
+    do {
+      status = cupti_buffer_cursor_advance(buffer, validSize, &activity);
+      if (status) {
+        cupti_activity_process(activity);
+        ++processed;
+      }
+    } while (status);
+    hpcrun_stats_acc_trace_records_add(processed);
 
-  size_t dropped;
-  cupti_num_dropped_records_get(ctx, streamId, &dropped);
-  if (dropped != 0) { 
-    hpcrun_stats_acc_trace_records_dropped_add(dropped);
-  }    
+    size_t dropped;
+    cupti_num_dropped_records_get(ctx, streamId, &dropped);
+    if (dropped != 0) { 
+      hpcrun_stats_acc_trace_records_dropped_add(dropped);
+    }    
+  }
+
   free(buffer);
 }
 
@@ -1755,7 +1793,6 @@ cupti_instruction_process
 }
 
 
-
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1878,7 +1915,6 @@ cupti_device_shutdown(void *args)
   cupti_worker_activity_apply(cupti_activity_handle);
   cupti_callbacks_unsubscribe();
 }
-
 
 
 //******************************************************************************

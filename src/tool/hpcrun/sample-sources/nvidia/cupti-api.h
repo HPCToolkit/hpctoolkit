@@ -150,6 +150,14 @@ cupti_trace_finalize
 
 
 void
+cupti_device_buffer_config
+(
+ size_t buf_size,
+ size_t sem_size
+);
+
+
+void
 cupti_num_dropped_records_get
 (
  CUcontext context,

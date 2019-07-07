@@ -713,9 +713,19 @@ writeXML_help(std::ostream& os, const char* entry_nm,
            << " n" << MakeAttrStr(nm);
 
     if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
-    } 
+      os << " f" << MakeAttrNum(1); 
+    }
 
+    if (type == 3) { // Procedure
+       Struct::ACodeNode *proc = dynamic_cast<Struct::ACodeNode *>(strct);
+	   if (proc) {
+	      const VMAIntervalSet &vma = proc->vmaSet();
+	      VMA addr = vma.begin()->beg();
+	      // print vma of procs for trace analysis
+	      os << " v=\"" << StrUtil::toStr(addr, 16) << "\"";
+	   }	
+	}
+  
     os << "/>\n";
   }
 }
@@ -1309,7 +1319,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
+			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show, false,
+            mdesc.flags.fields.showPercent);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
@@ -1352,7 +1363,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       Metric::SampledDesc* mSmpl =
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
+				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show,
+        false, mdesc.flags.fields.showPercent);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);

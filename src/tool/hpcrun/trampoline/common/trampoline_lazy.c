@@ -73,6 +73,7 @@
 #include <sample-sources/retcnt.h>
 #include <monitor.h>
 
+extern bool hpcrun_get_retain_recursion_mode();
 
 //******************************************************************************
 // interface operations
@@ -84,9 +85,13 @@ hpcrun_trampoline_bt_dump(void)
   thread_data_t* td = hpcrun_get_thread_data();
 
   TMSG(TRAMP, "Num frames cached = %d ?= %d (cached_counter)",
-       td->cached_bt_end - td->cached_bt, td->cached_frame_count);
-  for (frame_t* f = td->cached_bt; f < td->cached_bt_end; f++) {
-    TMSG(TRAMP, "ra loc = %p, ra@loc = %p", f->ra_loc, *((void**) f->ra_loc));
+       td->cached_bt_buf_frame_end - td->cached_bt_frame_beg, td->cached_frame_count);
+  for (frame_t* f = td->cached_bt_frame_beg; f < td->cached_bt_buf_frame_end; f++) {
+      //TMSG(TRAMP, "cursor pc=%p, cursor ra_loc=%p, cursor sp=%p, cursor bp=%p", 
+      //      f->cursor.pc_unnorm, f->cursor.ra_loc, 
+      //      f->cursor.sp, f->cursor.bp);
+      TMSG(TRAMP, "frame ra_loc = %p, ra@loc = %p", f->ra_loc, 
+              f->ra_loc == NULL ? NULL : *((void**) f->ra_loc));
   }
 }
 
@@ -96,6 +101,8 @@ hpcrun_init_trampoline_info(void)
   thread_data_t* td   = hpcrun_get_thread_data();
 
   TMSG(TRAMP, "INIT called, tramp state zeroed");
+  TMSG(TRAMP, "TRAMPOLINE addr = %p", hpcrun_trampoline);
+
   td->tramp_present   = false;
   td->tramp_retn_addr = NULL;
   td->tramp_loc       = NULL;
@@ -137,8 +144,21 @@ hpcrun_trampoline_advance(void)
 
   TMSG(TRAMP, "Advance from node %p...", node);
   cct_node_t* parent = (node) ? hpcrun_cct_parent(node) : NULL;
+  // Recursive frames may be merged in CCT.
+  // Therefore, revert to current CCT node when corresponding recursive frame is merged.
+  if (  !hpcrun_get_retain_recursion_mode()
+     && td->tramp_frame != td->cached_bt_frame_beg
+     && td->tramp_frame != td->cached_bt_buf_frame_end-1
+     && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame-1)->the_function))
+     && ip_normalized_eq(&(td->tramp_frame->the_function), &((td->tramp_frame+1)->the_function))
+     )
+    parent = node;
+  else
+    td->dLCA++;
   TMSG(TRAMP, " ... to node %p", parent);
+  
   td->tramp_frame++;
+  
   TMSG(TRAMP, "cached frame count reduced from %d to %d", td->cached_frame_count,
        td->cached_frame_count - 1);
   (td->cached_frame_count)--;
@@ -210,6 +230,11 @@ hpcrun_trampoline_remove(void)
     }
   }
   hpcrun_init_trampoline_info();
+}
+
+bool hpcrun_trampoline_update(frame_t* stop_frame)
+{
+  return true;
 }
 
 void*

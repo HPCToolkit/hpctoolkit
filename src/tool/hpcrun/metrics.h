@@ -118,11 +118,15 @@ int hpcrun_get_num_kind_metrics(void);
 
 metric_desc_t* hpcrun_id2metric(int id);
 
+void hpcrun_metrics_data_dump();
+
 // non finalizing
 metric_desc_t* hpcrun_id2metric_linked(int metric_id);
 
 // non finalizing
-void hpcrun_set_display(int metric_id, uint8_t show, uint8_t show_percent);
+void hpcrun_set_display(int metric_id, uint8_t show);
+
+void hpcrun_set_percent(int metric_id, uint8_t show_percent);
 
 metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
@@ -134,7 +138,10 @@ int hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
 
 int hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
 					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+
 int hpcrun_set_new_metric_info(kind_info_t *kind, const char* name);
+
+void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 

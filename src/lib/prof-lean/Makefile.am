@@ -100,7 +100,7 @@ MYSOURCES = \
 	queues.h queues.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
-	randomizer.h randomizer.c 
+	randomizer.h randomizer.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 

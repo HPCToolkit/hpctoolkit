@@ -1,8 +1,11 @@
 // -*-Mode: C++;-*- // technically C99
 
+#ifndef _hpctoolkit_uw_hash_h_
+#define _hpctoolkit_uw_hash_h_
+
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
+// $HeadURL: $
 // $Id$
 //
 // --------------------------------------------------------------------------
@@ -44,22 +47,52 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef hpcrun_trace_h
-#define hpcrun_trace_h
-#include<stdint.h>
-#include "files.h"
-#include "core_profile_trace_data.h"
 
-#include <include/uint.h>
-void trace_other_close(void *thread_data);
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
 
-void hpcrun_trace_init();
-void hpcrun_trace_open(core_profile_trace_data_t * cptd);
-void hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA);
-void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
-void hpcrun_trace_close(core_profile_trace_data_t * cptd);
+#include <stdint.h>
 
-int hpcrun_trace_isactive();
-#endif // hpcrun_trace_h
+#include <lib/prof-lean/binarytree.h>
+
+#include "unwind-interval.h"
+#include "uw_recipe_map.h"
 
 
+typedef struct {
+  void *key;
+  ilmstat_btuwi_pair_t *ilm_btui;
+  bitree_uwi_t *btuwi; 
+} uw_hash_entry_t;
+
+
+typedef struct {
+  size_t size;
+  uw_hash_entry_t *uw_hash_entries;
+} uw_hash_table_t;
+
+/***************************************************************************
+ * interface operations
+ ***************************************************************************/
+
+typedef void *(*uw_hash_malloc_fn)(size_t size);
+
+uw_hash_table_t *uw_hash_new(size_t size, uw_hash_malloc_fn fn);
+
+void uw_hash_insert(uw_hash_table_t *uw_hash_table,
+  void *key, ilmstat_btuwi_pair_t *ilm_btui, bitree_uwi_t *btuwi);
+
+void uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
+  void *key, ilmstat_btuwi_pair_t *ilm_btui);
+
+void uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
+  void *key, bitree_uwi_t *btuwi);
+
+uw_hash_entry_t *uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key);
+
+void uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end);
+
+void uw_hash_delete(uw_hash_table_t *uw_hash_table, void *key);
+
+#endif // _hpctoolkit_uw_hash_h_

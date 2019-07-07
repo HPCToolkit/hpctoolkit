@@ -95,6 +95,7 @@
 #include <hpcrun/module-ignore-map.h>
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/control-knob.h>
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
@@ -143,8 +144,8 @@
   macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
   macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
   macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KERNEL:BLOCK_THREADS", 5)           \
-  macro("KERNEL:BLOCK_REGISTERS", 6)         \
+  macro("KERNEL:THREAD_REGISTERS", 5)       \
+  macro("KERNEL:BLOCK_THREADS", 6)           \
   macro("KERNEL:BLOCK_SHARED_MEMORY", 7)     \
   macro("KERNEL:COUNT ", 8)                  \
 
@@ -173,8 +174,8 @@
 #define FORALL_SYNC(macro) \
   macro("SYNC:UNKNOWN (us)",     0) \
   macro("SYNC:EVENT (us)",       1) \
-  macro("SYNC:STREAM (us)",      2) \
-  macro("SYNC:STREAM_WAIT (us)", 3) \
+  macro("SYNC:STREAM_WAIT (us)", 2) \
+  macro("SYNC:STREAM (us)",      3) \
   macro("SYNC:CONTEXT (us)",     4)
 
 #define FORALL_SYNC_TIME(macro) \
@@ -346,8 +347,8 @@ static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_active_warps_per_sm_metric_id;
 static int ke_max_active_warps_per_sm_metric_id;
+static int ke_thread_registers_id;
 static int ke_block_threads_id;
-static int ke_block_registers_id;
 static int ke_block_shared_memory_id;
 static int ke_count_metric_id;
 static int ke_time_metric_id;
@@ -371,6 +372,8 @@ static int cupti_enabled_activities = 0;
 static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
+static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
+static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 
 //******************************************************************************
 // constants
@@ -466,16 +469,23 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
+      int frequency_factor = 1;
+      if (frequency_factor != -1) {
+        frequency_factor = (1 << pc_sampling_frequency);
+      }
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.latencySamples * frequency_factor});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.samples});
+        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.samples * frequency_factor});
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_lat_metric_id);
-        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i = activity->data.pc_sampling.latencySamples});
+        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
+          activity->data.pc_sampling.latencySamples * frequency_factor});
       }
       break;
     }
@@ -486,6 +496,7 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(info_dropped_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
 
+      // It is fine to use set here because sampling cycle is changed during execution
       metrics = hpcrun_reify_metric_set(cct_node, info_period_in_cycles_id);
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
@@ -547,16 +558,16 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
 
+      metrics = hpcrun_reify_metric_set(cct_node, ke_thread_registers_id);
+      hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.threadRegisters});
+
       metrics = hpcrun_reify_metric_set(cct_node, ke_block_threads_id);
-      hpcrun_metric_std_set(ke_block_threads_id, metrics,
+      hpcrun_metric_std_inc(ke_block_threads_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_registers_id);
-      hpcrun_metric_std_set(ke_block_registers_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.blockRegisters});
-
       metrics = hpcrun_reify_metric_set(cct_node, ke_block_shared_memory_id);
-      hpcrun_metric_std_set(ke_block_shared_memory_id, metrics,
+      hpcrun_metric_std_inc(ke_block_shared_memory_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
@@ -690,7 +701,7 @@ cupti_enable_activities
     cupti_pc_sampling_enable(context, pc_sampling_frequency);
   }
 
-  cupti_correlation_enable(context);
+  cupti_correlation_enable();
 
   PRINT("Exit cupti_enable_activities\n");
 }
@@ -767,7 +778,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(CUDA,"nevents = %d", nevents);
 
-
 #define getindex(name, index) index
 
 #define declare_cur_metrics(name, index) \
@@ -778,7 +788,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 #define hide_cur_metrics(name, index) \
-  hpcrun_set_display(cur_metrics[index], 0, 1);
+  hpcrun_set_display(cur_metrics[index], 0);
 
 #define create_cur_kind cur_kind = hpcrun_metrics_new_kind()
 #define close_cur_kind hpcrun_close_kind(cur_kind)
@@ -787,6 +797,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define cur_metrics stall_metric_id
 
   create_cur_kind;
+  // GPU INST must be the first kind for sample apportion
   FORALL_GPU_INST(declare_cur_metrics);
   FORALL_GPU_INST_LAT(declare_cur_metrics);
   FORALL_STL(declare_cur_metrics);	
@@ -805,7 +816,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_IM(declare_cur_metrics);	
   FORALL_IM(hide_cur_metrics);	
   FORALL_IM_TIME(declare_cur_metrics_real);
-  FORALL_IM_TIME(hide_cur_metrics);
   im_time_metric_id = im_metric_id[FORALL_IM_TIME(getindex)];
   close_cur_kind;
 
@@ -819,7 +829,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_EM(declare_cur_metrics);	
   FORALL_EM(hide_cur_metrics);
   FORALL_EM_TIME(declare_cur_metrics_real);
-  FORALL_EM_TIME(hide_cur_metrics);
   em_time_metric_id = em_metric_id[FORALL_EM_TIME(getindex)];
   close_cur_kind;
 
@@ -833,7 +842,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_ME(declare_cur_metrics);	
   FORALL_ME(hide_cur_metrics);
   FORALL_ME_TIME(declare_cur_metrics_real);
-  FORALL_ME_TIME(hide_cur_metrics);
   me_time_metric_id = me_metric_id[FORALL_ME_TIME(getindex)];
   close_cur_kind;
 
@@ -847,7 +855,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_ME_SET(declare_cur_metrics);	
   FORALL_ME_SET(hide_cur_metrics);
   FORALL_ME_SET_TIME(declare_cur_metrics_real);
-  FORALL_ME_SET_TIME(hide_cur_metrics);
   me_set_time_metric_id = me_set_metric_id[FORALL_ME_SET_TIME(getindex)];
   close_cur_kind;
 
@@ -861,22 +868,22 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_KE(declare_cur_metrics);	
   FORALL_KE(hide_cur_metrics);	
   FORALL_KE_TIME(declare_cur_metrics_real);	
-  FORALL_KE_TIME(hide_cur_metrics);	
   FORALL_KE_OCCUPANCY(declare_cur_metrics_real);
   ke_static_shared_metric_id = ke_metric_id[0];
   ke_dynamic_shared_metric_id = ke_metric_id[1];
   ke_local_metric_id = ke_metric_id[2];
   ke_active_warps_per_sm_metric_id = ke_metric_id[3];
   ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
-  ke_block_threads_id = ke_metric_id[5];
-  ke_block_registers_id = ke_metric_id[6];
+  ke_thread_registers_id = ke_metric_id[5];
+  ke_block_threads_id = ke_metric_id[6];
   ke_block_shared_memory_id = ke_metric_id[7];
   ke_count_metric_id = ke_metric_id[8];
   ke_time_metric_id = ke_metric_id[9];
   ke_occupancy_metric_id = ke_metric_id[10];
 
+  hpcrun_set_percent(ke_occupancy_metric_id, 1);
   metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);
-  char *ke_occupancy_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  char *ke_occupancy_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(ke_occupancy_buffer, "$%d/$%d", ke_active_warps_per_sm_metric_id, ke_max_active_warps_per_sm_metric_id);
   ke_occupancy_metric->formula = ke_occupancy_buffer;
 
@@ -892,7 +899,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   FORALL_SYNC(declare_cur_metrics_real);	
   FORALL_SYNC(hide_cur_metrics);	
   FORALL_SYNC_TIME(declare_cur_metrics_real);
-  FORALL_SYNC_TIME(hide_cur_metrics);
   sync_time_metric_id = sync_metric_id[5];
   close_cur_kind;
 
@@ -947,8 +953,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   info_sm_full_samples_id = info_metric_id[3];
   info_sm_efficiency_id = info_metric_id[4];
 
+  hpcrun_set_percent(info_sm_efficiency_id, 1);
   metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
-  char *sm_efficiency_buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
+  char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
   sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
   sm_efficiency_metric->formula = sm_efficiency_buffer;
 
@@ -980,6 +987,20 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    // Get control knobs
+    int device_buffer_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+    int device_semaphore_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
+    if (device_buffer_size == 0) {
+      device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
+    }
+    if (device_semaphore_size == 0) {
+      device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
+    }
+
+    PRINT("Device buffer size %d\n", device_buffer_size);
+    PRINT("Device semaphore size %d\n", device_semaphore_size);
+    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
     // Register cupti callbacks
     cupti_trace_init();

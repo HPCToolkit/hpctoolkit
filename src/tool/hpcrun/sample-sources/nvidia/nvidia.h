@@ -5,10 +5,10 @@
 #include <cupti.h>
 #include "cupti-node.h"
 
-extern void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
+void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
 
-extern int cupti_pc_sampling_frequency_get();
+int cupti_pc_sampling_frequency_get();
 
-extern void cupti_enable_activities(CUcontext context);
+void cupti_enable_activities(CUcontext context);
 
 #endif

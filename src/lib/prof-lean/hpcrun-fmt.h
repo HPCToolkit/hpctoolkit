@@ -587,17 +587,26 @@ static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.01";              // 5 bytes
 static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
-
+// Use of bit fields is not recommended as the order of fields 
+// is compiler and architecture dependent.
+/*
 typedef struct hpctrace_hdr_flags_bitfield {
   bool isDataCentric : 1;
-  uint64_t unused    : 63;
+  bool isLCARecorded : 1;
+  uint64_t unused    : 62;
 } hpctrace_hdr_flags_bitfield;
+*/
 
+// Substitute bit fields with macros
+#define HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS 0U
+#define HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS 1U
 
-typedef union hpctrace_hdr_flags_t {
-  hpctrace_hdr_flags_bitfield fields;
-  uint64_t                    bits; // for reading/writing
-} hpctrace_hdr_flags_t;
+#define HPCTRACE_HDR_FLAGS_GET_BIT(flag, pos) \
+  ((flag >> pos) & 1U)
+#define HPCTRACE_HDR_FLAGS_SET_BIT(flag, pos, value) \
+  flag ^= (-value ^ flag) & (1ULL << pos)
+
+typedef uint64_t hpctrace_hdr_flags_t;
 
 extern const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL;
 
@@ -649,10 +658,35 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 // [hpctrace] trace record/datum
 //***************************************************************************
 
-#define HPCRUN_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+// Time and dLCA is stored in one 64-bit integer
+
+// Time in microseconds is stored in lower HPCTRACE_FMT_TIME_BITS bits,
+// supporting up to year 2540 AD.
+#define HPCTRACE_FMT_TIME_BITS 54 // Use 54 bits to store timestamp, which is enough for next 500+ years.
+#define HPCTRACE_FMT_TIME_MAX ((1ULL << HPCTRACE_FMT_TIME_BITS) - 1) // 54 bits of 1s
+#define HPCTRACE_FMT_GET_TIME(bits) \
+  (bits & HPCTRACE_FMT_TIME_MAX)
+#define HPCTRACE_FMT_SET_TIME(bits, time) \
+  bits = (bits & (~HPCTRACE_FMT_TIME_MAX)) | (time & HPCTRACE_FMT_TIME_MAX)
+
+// dLCA = distance of previous sample's leaf call frame to 
+// the Least Common Ancestor (LCA) with this sample in the CCT.
+// dLCA is only valid when trampoline is used. 
+// dLCA is stored in higher HPCTRACE_FMT_DLCA_BITS bits, supporting up to 1023.
+#define HPCTRACE_FMT_DLCA_BITS 10 // Use 10 bits to store dLCA.
+#define HPCTRACE_FMT_DLCA_NULL ((1ULL << HPCTRACE_FMT_DLCA_BITS) - 1) // 10 bits of 1s
+#define HPCTRACE_FMT_GET_DLCA(bits) \
+  ((bits >> HPCTRACE_FMT_TIME_BITS) & HPCTRACE_FMT_DLCA_NULL)
+#define HPCTRACE_FMT_SET_DLCA(bits, dLCA) \
+  bits = (bits & (~(HPCTRACE_FMT_DLCA_NULL << HPCTRACE_FMT_TIME_BITS))) \
+         | ((((uint64_t)dLCA) & HPCTRACE_FMT_DLCA_NULL) << HPCTRACE_FMT_TIME_BITS)
+
+#define HPCTRACE_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+
+typedef uint64_t hpctrace_fmt_time_dLCA_composite_t;
 
 typedef struct hpctrace_fmt_datum_t {
-  uint64_t time; // microseconds
+  hpctrace_fmt_time_dLCA_composite_t comp; // composite field that stores both time and dLCA
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
   uint32_t metricId;
 } hpctrace_fmt_datum_t;

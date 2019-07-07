@@ -114,6 +114,7 @@
 #include "device-initializers.h"
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
+#include "control-knob.h"
 #include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
@@ -858,6 +859,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_registered_sources_init();
 
   messages_init();
+
+  control_knob_init();  
 
   hpcrun_do_custom_init();
 

@@ -103,6 +103,7 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 
 #include <vector>
+#include <queue>
 #include <iostream>
 
 
@@ -123,9 +124,13 @@ typedef std::map<Prof::Struct::ANode *, Prof::CCT::ANode *> StructProfMap;
 
 typedef std::map<VMA, Prof::CCT::ANode *> ProfProcMap;
 
-typedef std::map<Prof::CCT::ANode *, std::map<Prof::CCT::ANode *, double> > IncomingSamplesMap;
+typedef std::map<Prof::CCT::ANode *, std::set<int> > ProfInstMap;
 
-static int gpu_isample_index = -1;
+typedef std::map<Prof::CCT::ANode *, std::map<Prof::CCT::ANode *, std::map<int, double> > > IncomingInstMap;
+
+typedef std::map<int, double> AdjustFactor;
+
+static std::vector<size_t> gpu_inst_index;
 
 // Static functions
 static void
@@ -150,17 +155,17 @@ mergeSCCNodes(CCTGraph *cct_graph, CCTGraph *old_cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups);
 
 static void
-gatherIncomingSamples(CCTGraph *cct_graph, IncomingSamplesMap &node_map, bool find_recursion);
+gatherIncomingSamples(CCTGraph *cct_graph, IncomingInstMap &node_map, bool find_recursion);
 
 static void
-constructCallingContext(CCTGraph *cct_graph, IncomingSamplesMap &incoming_samples);
+constructCallingContext(CCTGraph *cct_graph, IncomingInstMap &incoming_samples);
 
 static void
-copyPath(IncomingSamplesMap &incoming_samples,
+copyPath(IncomingInstMap &incoming_samples,
   CCTGraph *cct_graph,
   Prof::CCT::ANode *cur, 
   Prof::CCT::ANode *prev,
-  double adjust_factor);
+  AdjustFactor adjust_factor);
 
 static void
 deleteTree(Prof::CCT::ANode *prof_root);
@@ -210,6 +215,16 @@ getProcStmt(Prof::CCT::ANode *node) {
 
 
 static inline void
+debugGPUInst() {
+  std::cout << "I: ";
+  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+    std::cout << "  " << gpu_inst_index[i];
+  }
+  std::cout << std::endl;
+}
+
+
+static inline void
 debugCallGraph(CCTGraph *cct_graph) {
   for (auto it = cct_graph->edgeBegin(); it != cct_graph->edgeEnd(); ++it) {
     std::string from, to;
@@ -227,7 +242,19 @@ debugCallGraph(CCTGraph *cct_graph) {
     } else if (getCudaCallStmt(it->to)) {
       to = "(C)";
     }
-    std::cout << std::dec << it->from->id()  << from << "->" << it->to->id() << to << std::endl;
+    std::cout << std::dec << it->from->id() << from << "->" << it->to->id() << to << std::endl;
+  }
+  
+  debugGPUInst();
+  for (auto it = cct_graph->nodeBegin(); it != cct_graph->nodeEnd(); ++it) {
+    Prof::CCT::ANode *n = *it;
+    if (getCudaCallStmt(n) != NULL) {
+      std::cout << std::dec << n->id() << "(C)";
+      for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+        std::cout << "  " << n->demandMetric(gpu_inst_index[i]);
+      }
+      std::cout << std::endl;
+    }
   }
 }
 
@@ -242,10 +269,9 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
       auto *stmt = getProcStmt(n); 
       auto *p_stmt = n->parent()->structure();
       std::cout << stmt->ancestorFile()->name() << ": " << dynamic_cast<Prof::CCT::AProcNode *>(n)->procName() <<
-        " (" << stmt->vmaSet().begin()->beg() << ") called from " <<
+        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec << ") called from " <<
         dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
-        " node " << n->parent() <<
-      std::endl;
+        " node " << n->parent() << std::endl;
     }
   }
 }
@@ -253,27 +279,37 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
 
 void
 transformCudaCFGMain(Prof::CallPath::Profile& prof) {
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << std::endl;
+    std::cout << "-------------------------------------------------" << std::endl;
+    std::cout << "Step 0: Check if prof has GPU metrics" << std::endl;
+    std::cout << "-------------------------------------------------" << std::endl;
+  }
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "GPU INST") {
-      gpu_isample_index = i;
-      break;
+    if (mgr->metric(i)->namePfxBase() == "GPU INST" &&
+      mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
+      // Assume exclusive metrics index is i+1
+      gpu_inst_index.push_back(i);
     }
   }
   // Skip non-gpu prof
-  if (gpu_isample_index == -1) {
+  if (gpu_inst_index.size() == 0) {
     if (DEBUG_CALLPATH_CUDACFG) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }
     return;
+  }
+  if (DEBUG_CALLPATH_CUDACFG) {
+    debugGPUInst();
   }
 
   // Find the parents of gpu global functions
   std::set<Prof::CCT::ANode *> gpu_roots;
   findGPURoots(prof.cct()->root(), prof.structure()->root(), gpu_roots);
 
-  // find <target_vma, <Struct::Stmt> > mappings
+  // Find <target_vma, <Struct::Stmt> > mappings
   StructCallMap struct_call_map; 
   constructStructCallMap(prof.structure()->root(), struct_call_map);
 
@@ -283,14 +319,29 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
   for (auto *gpu_root : gpu_roots) {
     if (DEBUG_CALLPATH_CUDACFG) {
+      auto *strct = gpu_root->structure();
+      auto line = dynamic_cast<Prof::Struct::ACodeNode *>(strct)->begLine();
+      auto *p_strct = strct->ancestor(Prof::Struct::ANode::TyProc);
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Current gpu root " << p_strct->name() << " line " << line << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+    }
+    if (DEBUG_CALLPATH_CUDACFG) {
       debugProfTree(gpu_root);
     }
 
+    if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Step 1: Construct call graph" << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+    }
     // Construct a call map for a target
     CCTGraph *cct_graph = new CCTGraph();
     constructCallGraph(gpu_root, cct_graph, struct_call_map);
 
     if (DEBUG_CALLPATH_CUDACFG) {
+      std::cout << std::endl;
       std::cout << "Call graph before merging SCCs" << std::endl;
       debugCallGraph(cct_graph);
     }
@@ -301,7 +352,10 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     if (findRecursion(cct_graph, cct_groups)) {
       find_recursion = true;
       if (DEBUG_CALLPATH_CUDACFG) {
-        std::cout << "Find recursive calls" << std::endl;
+        std::cout << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
+        std::cout << "Step 1.1: Construct call graph for recursive calls" << std::endl;
+        std::cout << "-------------------------------------------------" << std::endl;
       }
       CCTGraph *old_cct_graph = cct_graph;
       cct_graph = new CCTGraph();
@@ -314,12 +368,15 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     }
 
     // Record input samples for each node
-    IncomingSamplesMap incoming_samples;
+    IncomingInstMap incoming_samples;
     gatherIncomingSamples(cct_graph, incoming_samples, find_recursion);
 
     // Copy from every gpu_root to leafs
     if (DEBUG_CALLPATH_CUDACFG) {
-      std::cout << "Construct calling context tree" << std::endl;
+      std::cout << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
+      std::cout << "Step 2: Construct calling context tree" << std::endl;
+      std::cout << "-------------------------------------------------" << std::endl;
     }
     constructCallingContext(cct_graph, incoming_samples);
 
@@ -373,6 +430,10 @@ constructStructCallMap(Prof::Struct::ANode *struct_root, StructCallMap &struct_c
 
 static void
 constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallMap &struct_call_map) {
+  // In this function, we only have flat samples without call stacks
+  // struct_prof_map maps structs to unique ccts
+  // prof_inst_map records samples withint the procedures exclusively 
+  
   // Step1: Iterate over all proc nodes in the prof
   // TODO(Keren): multiple global function calls under a single target
   StructProfMap struct_prof_map;  // <Struct, CCT>
@@ -380,10 +441,22 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
   ProfProcMap prof_proc_map;  // <proc_vma, CCT::ProcFrm>
   Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
     IteratorStack::PreOrder);
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Existing call nodes metrics" << std::endl;
+    debugGPUInst();
+  }
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
     if (getCudaCallStmt(n) != NULL) {  // call
       auto *stmt = getCudaCallStmt(n);
       prof_call_map[stmt->target()].push_back(n);
+
+      if (DEBUG_CALLPATH_CUDACFG) {
+        std::cout << dynamic_cast<Prof::Struct::ACodeNode *>(stmt)->begLine();
+        for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+          std::cout << "  " << n->demandMetric(gpu_inst_index[i]);
+        }
+        std::cout << std::endl;
+      }
     } else if (getProcStmt(n) != NULL) {  // proc
       auto *stmt = getProcStmt(n);
       auto vma = stmt->vmaSet().begin()->beg();
@@ -394,49 +467,136 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
     }
   }
 
-  // Step2: Add call->proc
+  // Step2: Count instructions for each kernel launched from different threads
+  ProfInstMap prof_inst_map;
   for (auto &entry : prof_proc_map) {
-    auto vma = entry.first;
     auto *proc = entry.second;
-    for (auto *struct_call : struct_call_map[vma]) {
-      Prof::CCT::ANode *prof_call = NULL;
-      if (prof_call_map.find(vma) != prof_call_map.end()) {
-        for (auto *call : prof_call_map[vma]) {
-          if (call->structure() == struct_call) {
-            prof_call = call;
-            break;
-          }
+    // Iterate children
+    Prof::CCT::ANodeChildIterator it(proc, NULL/*filter*/);
+    for (Prof::CCT::ANode *n = NULL; (n = it.current()); ++it) {
+      // Thread (Process) list
+      for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+        if (n->hasMetricSlow(gpu_inst_index[i])) {
+          prof_inst_map[proc].insert(i);
         }
       }
-      // If the call node has not been sampled, we manually assign it sample one
-      if (prof_call == NULL) {
+    }
+  }
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << std::endl;
+    std::cout << "Proc inst before inst make up" << std::endl;
+    for (auto &entry : prof_proc_map) {
+      auto *proc = entry.second;
+      std::cout << dynamic_cast<Prof::CCT::AProcNode *>(proc)->procName();
+      for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+        if (prof_inst_map[proc].find(i) != prof_inst_map[proc].end()) {
+          std::cout << " T ";
+        } else {
+          std::cout << " F ";
+        }
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  // Step3: Add call->proc
+  std::queue<std::pair<VMA, Prof::CCT::ANode *> > prof_procs;
+  for (auto &entry : prof_proc_map) {
+    prof_procs.push(entry);
+  }
+
+  // Complexity: O(TN), N procs, each time at least 1 metric gets updated, each node has T metric slots
+  // Specific Complexity: O(TN * N), for each iteration, a node may be called from at most N places
+  while (prof_procs.empty() == false) {
+    auto &entry = prof_procs.front();
+    prof_procs.pop();
+    auto vma = entry.first;
+    auto *proc = entry.second;
+    // If there is at least one call node, do not bother.
+    // If there is no call node for the procedure, we manually make up one
+    if (prof_call_map.find(vma) == prof_call_map.end()) {
+      for (auto *struct_call : struct_call_map[vma]) {
         // Create a scope frame
         Prof::Struct::ANode *scope = struct_call->ancestor(Prof::Struct::ANode::TyLoop,
           Prof::Struct::ANode::TyAlien,
           Prof::Struct::ANode::TyProc);
+        // Ancester does not exist
         if (struct_prof_map.find(scope) == struct_prof_map.end()) {
           auto *struct_proc = struct_call->ancestorProc();
+          // Update prof->proc queue and map
+          auto frm_vma = struct_proc->vmaSet().begin()->beg();
           auto *frm_proc = new Prof::CCT::ProcFrm(NULL, struct_proc);
+          // Add frm_vma->proc
+          prof_proc_map[frm_vma] = frm_proc;
+          // Add struct->proc
           struct_prof_map[struct_proc] = frm_proc;
           constructFrame(struct_proc, frm_proc, frm_proc, struct_prof_map); 
         }
+        // Now the corresponding prof node exists
         Prof::CCT::ANode *frm_scope = struct_prof_map[scope];
-        prof_call = new Prof::CCT::Call(frm_scope, 0);
+        auto *prof_call = new Prof::CCT::Call(frm_scope, 0);
         auto *struct_code = dynamic_cast<Prof::Struct::ACodeNode *>(struct_call);
         prof_call->structure(struct_code);
-        // Add a gpu_isample
-        prof_call->demandMetric(gpu_isample_index) = 1.0;
         // Add to prof_call_map
         prof_call_map[vma].push_back(prof_call);
       }
     }
+    for (auto *prof_call : prof_call_map[vma]) {
+      // Add gpu call insts
+      for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+        if (prof_inst_map[proc].find(i) != prof_inst_map[proc].end()) {
+          auto *frm_proc = prof_call->ancestorProcFrm();
+          auto *struct_proc = frm_proc->structure();
+          auto frm_vma = struct_proc->vmaSet().begin()->beg();
+          // Inclusive
+          prof_call->demandMetric(gpu_inst_index[i]) = 1.0;
+          // XXX(Keren): Is adding exclusive necessary here?
+          prof_call->demandMetric(gpu_inst_index[i] + 1) = 1.0;
+          // The proc has not been added
+          if (prof_inst_map[frm_proc].find(i) == prof_inst_map[frm_proc].end()) {
+            prof_inst_map[prof_call->ancestorProcFrm()].insert(i);
+            // Add a new entry
+            std::pair<VMA, Prof::CCT::ANode *> new_entry(frm_vma, frm_proc);
+            prof_procs.push(new_entry);
+            if (DEBUG_CALLPATH_CUDACFG) {
+              std::cout << frm_proc->procName() << " add "
+                << dynamic_cast<Prof::CCT::AProcNode *>(proc)->procName() << " "
+                << i << std::endl;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Proc inst after call inst make up" << std::endl;
+    for (auto &entry : prof_proc_map) {
+      auto *proc = entry.second;
+      std::cout << dynamic_cast<Prof::CCT::AProcNode *>(proc)->procName();
+      for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+        if (prof_inst_map[proc].find(i) != prof_inst_map[proc].end()) {
+          std::cout << " T ";
+        } else {
+          std::cout << " F ";
+        }
+      }
+      std::cout << std::endl;
+    }
+  }
+
+  // Update call graph
+  for (auto &entry : prof_proc_map) {
+    auto vma = entry.first;
+    auto *proc = entry.second;
     for (auto *call : prof_call_map[vma]) {
       // prof_call_map has been filled out
       cct_graph->addEdge(call, proc);
     }
   }
 
-  // Step3: Add proc->call
+  // Step4: Add proc->call
   for (auto &entry : prof_call_map) {
     for (auto *call : entry.second) {
       // Prune call nodes that has been sampled but maps to a function that does not contain samples
@@ -456,6 +616,10 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
 static bool
 findRecursion(CCTGraph *cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups) {
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << std::endl;
+    std::cout << "Finding recursion in cct graphs" << std::endl;
+  }
   std::unordered_map<int, int> graph_index_converter;
   std::unordered_map<int, Prof::CCT::ANode *> graph_index_reverse_converter;
   int start_index = 0;
@@ -484,7 +648,7 @@ findRecursion(CCTGraph *cct_graph,
     }
 
     if (from_id == to_id) {
-      std::cout << "Self recursion" << std::endl;
+      std::cout << "Self recursion found" << std::endl;
     }
     add_edge(from_id, to_id, G);
   }
@@ -512,7 +676,7 @@ findRecursion(CCTGraph *cct_graph,
 }
 
 
-void
+static void
 mergeSCCNodes(CCTGraph *cct_graph, CCTGraph *old_cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups) {
   // Map node to group
@@ -582,21 +746,16 @@ findGPURoots(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root, std:
 
 
 static void
-gatherIncomingSamples(CCTGraph *cct_graph, IncomingSamplesMap &node_map, bool find_recursion) {
+gatherIncomingSamples(CCTGraph *cct_graph, IncomingInstMap &node_map, bool find_recursion) {
   // Gather call and scc samples
   for (auto it = cct_graph->nodeBegin(); it != cct_graph->nodeEnd(); ++it) {
     Prof::CCT::ANode *node = *it;
     if ((find_recursion && isSCCNode(node)) || (!find_recursion && getProcStmt(node) != NULL)) {
       if (cct_graph->incoming_nodes(node) != cct_graph->incoming_nodes_end()) {
         std::vector<Prof::CCT::ANode *> &vec = cct_graph->incoming_nodes(node)->second;
-        if (gpu_isample_index == -1) {
-          for (auto *neighbor : vec) {
-            // By default, set it to one
-            node_map[node][neighbor] = 1.0;
-          }
-        } else {
-          for (auto *neighbor : vec) {
-            node_map[node][neighbor] = std::max(neighbor->demandMetric(gpu_isample_index), 1.0);
+        for (auto *neighbor : vec) {
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            node_map[node][neighbor][i] = neighbor->demandMetric(gpu_inst_index[i]);
           }
         }
       }
@@ -606,7 +765,13 @@ gatherIncomingSamples(CCTGraph *cct_graph, IncomingSamplesMap &node_map, bool fi
 
 
 static void
-constructCallingContext(CCTGraph *cct_graph, IncomingSamplesMap &incoming_samples) {
+constructCallingContext(CCTGraph *cct_graph, IncomingInstMap &incoming_samples) {
+  // Init adjust factor for each thread
+  AdjustFactor adjust_factor;
+  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+    adjust_factor[i] = 1.0;
+  }
+
   for (auto it = cct_graph->nodeBegin(); it != cct_graph->nodeEnd(); ++it) {
     Prof::CCT::ANode *root = *it;
     // global functions, dynamic parallelism will invoke cpu function
@@ -618,15 +783,15 @@ constructCallingContext(CCTGraph *cct_graph, IncomingSamplesMap &incoming_sample
             auto *new_node = root->clone();
             auto *parent = n->parent();  
             new_node->link(parent);
-            copyPath(incoming_samples, cct_graph, n, new_node, 1.0);
+            copyPath(incoming_samples, cct_graph, n, new_node, adjust_factor);
           } else {
             auto *parent = n->parent();  
-            copyPath(incoming_samples, cct_graph, n, parent, 1.0);
+            copyPath(incoming_samples, cct_graph, n, parent, adjust_factor);
           }
         }
       } else {
         auto *parent = root->parent(); 
-        copyPath(incoming_samples, cct_graph, root, parent, 1.0);
+        copyPath(incoming_samples, cct_graph, root, parent, adjust_factor);
       }
       deleteTree(root);
     }
@@ -644,10 +809,10 @@ constructCallingContext(CCTGraph *cct_graph, IncomingSamplesMap &incoming_sample
 
 
 static void
-copyPath(IncomingSamplesMap &incoming_samples,
+copyPath(IncomingInstMap &incoming_samples,
   CCTGraph *cct_graph, 
   Prof::CCT::ANode *cur, Prof::CCT::ANode *prev,
-  double adjust_factor) {
+  AdjustFactor adjust_factor) {
   bool isSCC = isSCCNode(cur);
   bool isCall = getCudaCallStmt(cur) == NULL ? false : true;
   // Copy node
@@ -667,23 +832,68 @@ copyPath(IncomingSamplesMap &incoming_samples,
   }
   
   // Adjust metrics
-  for (size_t i = 0; i < new_node->numMetrics(); ++i) {
-    new_node->metric(i) *= adjust_factor;
+  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+    size_t start = gpu_inst_index[i];
+    size_t end = new_node->numMetrics();
+    if (i != gpu_inst_index.size() - 1) {
+      end = std::min(gpu_inst_index[i + 1], end);
+    }
+    for (size_t j = start; j < end; ++j) {
+      new_node->demandMetric(j) *= adjust_factor[i];
+    }
   }
 
   if (isCall) {
     // Case 1: Call node, skip to the procedure
     auto edge_iterator = cct_graph->outgoing_nodes(cur);
     if (edge_iterator != cct_graph->outgoing_nodes_end()) {  // some calls won't have outgoing edges
-      for (auto *n : edge_iterator->second) {
-        double sum_samples = 0.0;
-        for (auto &neighor : incoming_samples[n]) {
-          sum_samples += neighor.second;
-        }
-        double cur_samples = incoming_samples[n][cur];
-        adjust_factor *= cur_samples / sum_samples;
+      for (auto *n : edge_iterator->second) { 
         if (DEBUG_CALLPATH_CUDACFG) {
-          std::cout << "Lay over a call" << std::endl;
+          std::cout << std::endl;
+          std::cout << "Before lay over a call: " << cur->id() << std::endl;
+          debugGPUInst();
+          std::vector<double> sum_samples(gpu_inst_index.size());
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            for (auto &neighor : incoming_samples[n]) {
+              sum_samples[i] += neighor.second[i];
+            }
+          }
+          std::cout << "Adj: ";
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            std::cout << adjust_factor[i] << " ";
+          }
+          std::cout << std::endl;
+          std::cout << "Sum: ";
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            std::cout << sum_samples[i] << " ";
+          }
+          std::cout << std::endl;
+          std::cout << "Cur: ";
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            std::cout << incoming_samples[n][cur][i] << " ";
+          }
+          std::cout << std::endl;
+        }
+
+        for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+          double sum_samples = 0.0;
+          for (auto &neighor : incoming_samples[n]) {
+            sum_samples += neighor.second[i];
+          }
+          double cur_samples = incoming_samples[n][cur][i];
+          if (sum_samples != 0) {
+            adjust_factor[i] *= cur_samples / sum_samples;
+          }
+        }
+
+        if (DEBUG_CALLPATH_CUDACFG) {
+          std::cout << "After lay over a call: " << cur->id() << std::endl;
+          debugGPUInst();
+          std::cout << "Adj: ";
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            std::cout << adjust_factor[i] << " ";
+          }
+          std::cout << std::endl;
         }
         copyPath(incoming_samples, cct_graph, n, new_node, adjust_factor);
       }
@@ -693,7 +903,8 @@ copyPath(IncomingSamplesMap &incoming_samples,
     auto edge_iterator = cct_graph->outgoing_nodes(cur);
     for (auto *n : edge_iterator->second) {
       if (DEBUG_CALLPATH_CUDACFG) {
-        std::cout << "Lay over a SCC" << std::endl;
+        std::cout << std::endl;
+        std::cout << "Lay over a SCC: " << cur->id() << std::endl;
       }
       // Keep scc in frame
       if (cct_graph->outgoing_nodes_size(cur) > 1 && OUTPUT_SCC_FRAME) {
@@ -704,7 +915,8 @@ copyPath(IncomingSamplesMap &incoming_samples,
     }
   } else if (!cur->isLeaf()) {
     if (DEBUG_CALLPATH_CUDACFG) {
-      std::cout << "Not a call or SCC" << std::endl;
+      std::cout << std::endl;
+      std::cout << "Not a call or SCC: " << cur->id() << std::endl;
     }
     // Case 3: Iterate through children
     Prof::CCT::ANodeChildIterator it(cur, NULL/*filter*/);

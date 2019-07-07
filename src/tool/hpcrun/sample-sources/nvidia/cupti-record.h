@@ -15,6 +15,7 @@ typedef struct cupti_record {
   cupti_stack_t cupti_free_notification_stack;
   cupti_stack_t cupti_activity_stack;
   cupti_stack_t cupti_free_activity_stack;
+  cupti_stack_t cupti_buffer_stack;
 } cupti_record_t;
 
 // a list of thread records
@@ -24,14 +25,14 @@ typedef struct cupti_record_list {
 } cupti_record_list_t;
 
 // apply functions
-extern void
+void
 cupti_worker_activity_apply
 (
  cupti_stack_fn_t fn
 );
 
 
-extern void
+void
 cupti_worker_notification_apply
 (
  uint64_t host_op_id,
@@ -39,7 +40,7 @@ cupti_worker_notification_apply
 );
 
 
-extern void
+void
 cupti_cupti_activity_apply
 (
  CUpti_Activity *activity,
@@ -48,7 +49,7 @@ cupti_cupti_activity_apply
 );
 
 
-extern void
+void
 cupti_cupti_notification_apply
 (
  cupti_stack_fn_t fn
@@ -56,13 +57,18 @@ cupti_cupti_notification_apply
 
 // getters
 // called in target_callback before all events
-extern void
+void
+cupti_worker_record_init
+(
+);
+
+
+void
 cupti_record_init
 (
 );
 
 
-extern
 cupti_record_t *
 cupti_record_get
 (
