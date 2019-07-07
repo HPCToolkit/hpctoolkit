@@ -77,7 +77,7 @@ void ompt_callstack_init
 
 
 cct_node_t *
-ompt_region_context
+ompt_region_context_eager
 (
  uint64_t region_id, 
  ompt_scope_endpoint_t se_type,
@@ -108,7 +108,7 @@ ompt_record_thread_type
 
 
 void
-ompt_region_context_end_region_not_eager
+ompt_region_context_lazy
 (
  uint64_t region_id,
  ompt_scope_endpoint_t se_type,
