@@ -43,7 +43,9 @@ class InstructionAnalyzer {
  
   void analyze(const std::vector<Function *> &functions, InstructionMetrics &instruction_metrics);
 
-  bool dump(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
+  static bool dump(const std::string &file_path, InstructionMetrics &instruction_metrics, bool sparse = false);
+  
+  static bool read(const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse = false);
  
  private:
   void (*_dispatcher[INS_TYPE_COUNT])(const Instruction &inst, std::string &metric_names);

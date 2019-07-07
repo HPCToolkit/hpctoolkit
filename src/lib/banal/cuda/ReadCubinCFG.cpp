@@ -260,7 +260,7 @@ analyzeCudaInstruction
     }
 
     const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
-    if (instruction_analyzer.dump(inst_output, instruction_metrics) != true) {
+    if (CudaParse::InstructionAnalyzer::dump(inst_output, instruction_metrics) != true) {
       std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
     }
   }

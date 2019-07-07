@@ -55,8 +55,6 @@ namespace CallPath {
 
 static int gpu_isample_index = -1;
 
-static bool read_inst_metrics(const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse = false);
-
 // find call and stmt
 static inline bool
 isStmt(Prof::CCT::ANode *node) {
@@ -109,7 +107,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
       std::cout << "Read instruction file " << file << std::endl;
     }
     // Merge metrics
-    read_inst_metrics(file, inst_metrics);
+    CudaParse::InstructionAnalyzer::read(file, inst_metrics);
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;
     }
@@ -203,8 +201,15 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
   }
 }
 
+}  // namespace CallPath
 
-bool read_inst_metrics(const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse) {
+}  // namespace Analysis
+
+
+namespace CudaParse {
+
+bool InstructionAnalyzer::read(
+  const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse) {
   std::ifstream ifs(file_path, std::ifstream::in);
   if ((ifs.rdstate() & std::ifstream::failbit) != 0) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -291,7 +296,4 @@ bool read_inst_metrics(const std::string &file_path, CudaParse::InstructionMetri
   return true;
 }
 
-
-}
-
-}
+}  // CudaParse
