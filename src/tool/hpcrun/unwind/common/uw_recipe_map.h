@@ -54,6 +54,7 @@
 
 #include "unwindr_info.h"
 
+typedef struct ilmstat_btuwi_pair_s ilmstat_btuwi_pair_t;
 
 void
 uw_recipe_map_init(void);

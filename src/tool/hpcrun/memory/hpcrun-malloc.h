@@ -87,6 +87,7 @@ extern "C" {
 //---------------------------------------------------------------------------
 void* hpcrun_malloc(size_t size);
 void* hpcrun_malloc_freeable(size_t size);
+void* hpcrun_malloc_safe(size_t size);
 
 #else
 #define hpcrun_malloc malloc

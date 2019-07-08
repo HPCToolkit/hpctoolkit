@@ -74,7 +74,6 @@
 #include <include/uint.h>
 
 #include "pfq-rwlock.h"
-#include "spinlock.h"
 
 
 //*************************** Forward Declarations **************************
@@ -138,8 +137,6 @@ typedef struct BalancedTree
   size_t nodeDataSz; // size of BalancedTreeNode_t.data
 
   pfq_rwlock_t rwlock;
-  spinlock_t spinlock;
-  
 } BalancedTree_t;
 
 

@@ -405,9 +405,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   some_overflow = 0;
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
-    int metric_id = hpcrun_new_metric(); /* weight */
     metric_desc_properties_t prop = metric_property_none;
-    METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
     // blame shifting needs to know if there is a cycles metric
@@ -432,21 +430,22 @@ METHOD_FN(process_event_list, int lush_metrics)
       some_overflow = 1;
     }
 
-    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      MetricFlags_ValFmt_Int,
-				      self->evl.events[i].thresh, prop);
+    int metric_id = /* weight */
+      hpcrun_set_new_metric_info_and_period(strdup(buffer),
+					    MetricFlags_ValFmt_Int,
+					    self->evl.events[i].thresh, prop);
+    METHOD_CALL(self, store_metric_id, i, metric_id);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
+      int mid_idleness =
+	hpcrun_set_new_metric_info_and_period("idleness",
+					      MetricFlags_ValFmt_Real,
+					      self->evl.events[i].thresh, prop);
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
-      int mid_idleness = hpcrun_new_metric();
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
-
-      hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
-					MetricFlags_ValFmt_Real,
-					self->evl.events[i].thresh, prop);
     }
   }
 

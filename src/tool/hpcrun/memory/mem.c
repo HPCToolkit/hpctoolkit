@@ -72,6 +72,7 @@
 #include "newmem.h"
 #include "sample_event.h"
 #include "thread_data.h"
+#include "safe-sampling.h"
 
 #include <messages/messages.h>
 
@@ -341,6 +342,21 @@ hpcrun_malloc(size_t size)
   total_non_freeable += size;
   TMSG(MALLOC, "%s: size = %ld, addr = %p", __func__, size, addr);
   return addr;
+}
+
+
+void *
+hpcrun_malloc_safe(size_t size)
+{
+  int unsafe = hpcrun_safe_enter();
+
+  void *m = hpcrun_malloc(size);
+
+  if (unsafe) {
+    hpcrun_safe_exit();
+  }
+
+  return m;
 }
 
 //

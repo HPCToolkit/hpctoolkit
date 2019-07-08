@@ -129,6 +129,9 @@ public:
 
   bool traceAnalysis;
   
+  // Static analysis files
+  std::vector<std::string> instructionFiles;
+
   // Group files
   std::vector<std::string> groupFiles;
 

@@ -88,7 +88,7 @@
 #define CUDA_FATBIN_MAGIC 	0x466243b1
 #define CUDA_FATBIN_VERSION 	1
 
-
+#define DEBUG_WRITE_FATBIN 0
 
 //******************************************************************************
 // type definitions
@@ -241,6 +241,14 @@ findCubinSections
 // interface functions
 //******************************************************************************
 
+#ifdef DYNINST_USE_CUDA
+void
+writeCubins(
+ ElfFileVector *elfFileVector
+);
+#endif
+
+
 bool
 findCubins
 (
@@ -256,6 +264,9 @@ findCubins
   if (sections) {
     success = findCubinSections(elfFile, elfFile->getMemory(), elf,
 			     sections, elfFileVector);
+    if (DEBUG_WRITE_FATBIN) {
+      writeCubins(elfFileVector);
+    }
   }
   return success;
 }

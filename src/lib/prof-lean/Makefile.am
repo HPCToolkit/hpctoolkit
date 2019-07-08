@@ -96,11 +96,13 @@ MYSOURCES = \
 	\
 	binarytree.h binarytree.c \
 	cskiplist.h cskiplist.c \
+	crypto-hash.h crypto-hash.c \
+	queues.h queues.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
-	randomizer.h randomizer.c 
+	randomizer.h randomizer.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

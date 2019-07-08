@@ -1347,6 +1347,26 @@ Call::toStringMe(uint oFlags) const
 }
 
 
+string 
+SCC::toStringMe(uint oFlags) const
+{
+  uint file_id = getFileIdFromMap(fileId());
+  string fnm = xml::MakeAttrNum(file_id);
+  string self = ANode::toStringMe(oFlags) + " f" + fnm;
+
+  int dbg_level = Diagnostics_GetDiagnosticFilterLevel();
+  if (dbg_level > 2) {
+    VMAIntervalSet &vma = m_strct->vmaSet();
+    self += " v=\"" + vma.toString() + "\"";
+  }
+  if ((oFlags & CCT::Tree::OFlg_StructId) && structure() != NULL) {
+    self += " str" + xml::MakeAttrNum(structure()->m_origId);
+  }
+
+  return self;
+}
+
+
 string
 Stmt::toStringMe(uint oFlags) const
 {

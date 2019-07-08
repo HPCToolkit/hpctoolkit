@@ -79,6 +79,11 @@ static atomic_long trolled = ATOMIC_VAR_INIT(0);
 static atomic_long frames_total = ATOMIC_VAR_INIT(0);
 static atomic_long trolled_frames = ATOMIC_VAR_INIT(0);
 
+static atomic_long acc_trace_records = ATOMIC_VAR_INIT(0);
+static atomic_long acc_trace_records_dropped = ATOMIC_VAR_INIT(0);
+static atomic_long acc_samples = ATOMIC_VAR_INIT(0);
+static atomic_long acc_samples_dropped = ATOMIC_VAR_INIT(0);
+
 //***************************************************************************
 // interface operations
 //***************************************************************************
@@ -90,13 +95,20 @@ hpcrun_stats_reinit(void)
   atomic_store_explicit(&num_samples_attempted, 0, memory_order_relaxed);
   atomic_store_explicit(&num_samples_blocked_async, 0, memory_order_relaxed);
   atomic_store_explicit(&num_samples_blocked_dlopen, 0, memory_order_relaxed);
-  atomic_store_explicit(&num_samples_dropped, 0, memory_order_relaxed);
   atomic_store_explicit(&num_samples_segv, 0, memory_order_relaxed);
+
   atomic_store_explicit(&num_unwind_intervals_total, 0, memory_order_relaxed);
   atomic_store_explicit(&num_unwind_intervals_suspicious, 0, memory_order_relaxed);
+
   atomic_store_explicit(&trolled, 0, memory_order_relaxed);
   atomic_store_explicit(&frames_total, 0, memory_order_relaxed);
   atomic_store_explicit(&trolled_frames, 0, memory_order_relaxed);
+
+  atomic_store_explicit(&acc_trace_records, 0, memory_order_relaxed);
+  atomic_store_explicit(&acc_trace_records_dropped, 0, memory_order_relaxed);
+
+  atomic_store_explicit(&acc_samples, 0, memory_order_relaxed);
+  atomic_store_explicit(&acc_samples_dropped, 0, memory_order_relaxed);
 }
 
 
@@ -180,7 +192,7 @@ hpcrun_stats_num_samples_blocked_dlopen(void)
 
 
 //-----------------------------
-// samples dropped
+// cpu samples dropped
 //-----------------------------
 
 void
@@ -189,11 +201,85 @@ hpcrun_stats_num_samples_dropped_inc(void)
   atomic_fetch_add_explicit(&num_samples_dropped, 1L, memory_order_relaxed);
 }
 
+
 long
 hpcrun_stats_num_samples_dropped(void)
 {
   return atomic_load_explicit(&num_samples_dropped, memory_order_relaxed);
 }
+
+
+//-----------------------------
+// acc samples recorded
+//-----------------------------
+
+void
+hpcrun_stats_acc_samples_add(long value)
+{
+  atomic_fetch_add_explicit(&acc_samples, value, memory_order_relaxed);
+}
+
+
+long
+hpcrun_stats_acc_samples(void)
+{
+  return atomic_load_explicit(&acc_samples, memory_order_relaxed);
+}
+
+
+//-----------------------------
+// acc samples dropped
+//-----------------------------
+
+void
+hpcrun_stats_acc_samples_dropped_add(long value)
+{
+  atomic_fetch_add_explicit(&acc_samples_dropped, value, memory_order_relaxed);
+}
+
+
+long
+hpcrun_stats_acc_samples_dropped(void)
+{
+  return atomic_load_explicit(&acc_samples_dropped, memory_order_relaxed);
+}
+
+
+//-----------------------------
+// acc trace records
+//-----------------------------
+
+void
+hpcrun_stats_acc_trace_records_add(long value)
+{
+  atomic_fetch_add_explicit(&acc_trace_records, value, memory_order_relaxed);
+}
+
+
+long
+hpcrun_stats_acc_trace_records(void)
+{
+  return atomic_load_explicit(&acc_trace_records, memory_order_relaxed);
+}
+
+
+//-----------------------------
+// acc trace records dropped
+//-----------------------------
+
+void
+hpcrun_stats_acc_trace_records_dropped_add(long value)
+{
+  atomic_fetch_add_explicit(&acc_trace_records_dropped, value, memory_order_relaxed);
+}
+
+
+long
+hpcrun_stats_acc_trace_records_dropped(void)
+{
+  return atomic_load_explicit(&acc_trace_records_dropped, memory_order_relaxed);
+}
+
 
 //----------------------------
 // partial unwinds
@@ -338,29 +424,48 @@ hpcrun_stats_num_samples_yielded(void)
 void
 hpcrun_stats_print_summary(void)
 {
-  long blocked = atomic_load_explicit(&num_samples_blocked_async, memory_order_relaxed) +
-    atomic_load_explicit(&num_samples_blocked_dlopen, memory_order_relaxed);
-  long errant = atomic_load_explicit(&num_samples_dropped, memory_order_relaxed);
-  long soft = atomic_load_explicit(&num_samples_dropped, memory_order_relaxed) -
-    atomic_load_explicit(&num_samples_segv, memory_order_relaxed);
-  long valid = atomic_load_explicit(&num_samples_attempted, memory_order_relaxed);
-  if (ENABLED(NO_PARTIAL_UNW)) {
-    valid = atomic_load_explicit(&num_samples_attempted, memory_order_relaxed) - errant;
-  }
+  long cpu_blocked_async  = atomic_load_explicit(&num_samples_blocked_async, memory_order_relaxed);
+  long cpu_blocked_dlopen = atomic_load_explicit(&num_samples_blocked_dlopen, memory_order_relaxed);
+  long cpu_blocked = cpu_blocked_async + cpu_blocked_dlopen;
+
+  long cpu_dropped = atomic_load_explicit(&num_samples_dropped, memory_order_relaxed);
+  long cpu_segv = atomic_load_explicit(&num_samples_segv, memory_order_relaxed);
+  long cpu_valid = atomic_load_explicit(&num_samples_attempted, memory_order_relaxed);
+  long cpu_yielded = atomic_load_explicit(&num_samples_yielded, memory_order_relaxed);
+  long cpu_total = atomic_load_explicit(&num_samples_total, memory_order_relaxed);
+
+  long cpu_trolled = atomic_load_explicit(&trolled, memory_order_relaxed);
+
+  long cpu_frames = atomic_load_explicit(&frames_total, memory_order_relaxed);
+  long cpu_frames_trolled = atomic_load_explicit(&trolled_frames, memory_order_relaxed);
+
+  long cpu_intervals_total = atomic_load_explicit(&num_unwind_intervals_total, memory_order_relaxed);
+  long cpu_intervals_susp = atomic_load_explicit(&num_unwind_intervals_suspicious, memory_order_relaxed);
+
+  long acc_samp = atomic_load_explicit(&acc_samples, memory_order_relaxed);
+  long acc_samp_dropped = atomic_load_explicit(&acc_samples_dropped, memory_order_relaxed);
+
+  long acc_trace = atomic_load_explicit(&acc_trace_records, memory_order_relaxed);
+  long acc_trace_dropped = atomic_load_explicit(&acc_trace_records_dropped, memory_order_relaxed);
 
   hpcrun_memory_summary();
 
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
        "errors: %ld (segv: %ld, soft: %ld)",
-       blocked, num_samples_blocked_async, num_samples_blocked_dlopen,
-       errant, num_samples_segv, soft);
+       cpu_blocked, cpu_blocked_async, cpu_blocked_dlopen, 
+       cpu_dropped, cpu_segv, cpu_dropped - cpu_segv);
 
-  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
+  AMSG("SUMMARY: cpu samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
        "         frames: %ld (trolled: %ld)\n"
-       "         intervals: %ld (suspicious: %ld)",
-       num_samples_total, valid, blocked, errant, trolled, num_samples_yielded,
-       frames_total, trolled_frames,
-       num_unwind_intervals_total,  num_unwind_intervals_suspicious);
+       "         intervals: %ld (suspicious: %ld)\n"
+       "         accelerator trace records: %ld (processed: %ld, dropped: %ld)\n"
+       "         accelerator samples: %ld (recorded: %ld, dropped: %ld)",
+       cpu_total, cpu_valid, cpu_blocked, cpu_dropped, cpu_trolled, cpu_yielded,
+       cpu_frames, cpu_frames_trolled,
+       cpu_intervals_total, cpu_intervals_susp,
+       acc_trace + acc_trace_dropped, acc_trace, acc_trace_dropped,
+       acc_samp + acc_samp_dropped, acc_samp, acc_samp_dropped
+       );
 
   if (hpcrun_get_disabled()) {
     AMSG("SAMPLING HAS BEEN DISABLED");

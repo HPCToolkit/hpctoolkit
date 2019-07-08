@@ -110,7 +110,6 @@ BalancedTree_init(BalancedTree_t* tree,
   tree->nodeDataSz = nodeDataSz;
 
   pfq_rwlock_init(&tree->rwlock);
-  spinlock_unlock(&tree->spinlock);
 }
 
 

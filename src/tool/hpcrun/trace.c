@@ -143,7 +143,8 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     hpcrun_trace_file_validate(fd >= 0, "open");
     cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
     ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
-			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
+			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED,
+                              hpcrun_malloc);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
@@ -255,7 +256,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
     
-    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
+    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
 }
 

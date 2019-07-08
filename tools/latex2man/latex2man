@@ -2,7 +2,7 @@
 # Project: 	Documentation Tools
 # Descr:	Latex -->  MAN-page (groff -man), HTML and TexInfo;
 # Language:	PERL (>= 5.0)
-# Author:	Dr. Jürgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
+# Author:	Dr. Jï¿½rgen Vollmer, Juergen.Vollmer@informatik-vollmer.de
 # $Id: latex2man,v 1.151 2008/11/11 07:21:14 vollmer Exp $
 #
 # Copyright (C) 1998 Dr. Juergen Vollmer
@@ -73,7 +73,7 @@ usage: latex2man [-t transfile]  [-HTML] [-C name] [-h] [-V] infile outfile.
   -h:            Help.
   -V:            Version.
 
-  Copyright (C) 1998 Dr. Jürgen Vollmer, Viktoriastr. 15, D-76133 Karlsruhe
+  Copyright (C) 1998 Dr. Jï¿½rgen Vollmer, Viktoriastr. 15, D-76133 Karlsruhe
   email: Juergen.Vollmer@informatik-vollmer.de
   License:
     This program can be redistributed and/or modified under the terms
@@ -191,13 +191,13 @@ sub NL;
 # Translation for LaTeX macros for MAN
 
 # translation of special characters
-$manLetterCode{'ä'} = 'ä';
-$manLetterCode{'ö'} = 'ö';
-$manLetterCode{'ü'} = 'ü';
-$manLetterCode{'Ä'} = 'Ä';
-$manLetterCode{'Ö'} = 'Ö';
-$manLetterCode{'Ü'} = 'Ü';
-$manLetterCode{'ß'} = 'ß';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
+$manLetterCode{'ï¿½'} = 'ï¿½';
 
 # LaTeX macros without arguments
 $manMacro{'LaTeX'} 	= 'LaTeX';
@@ -321,13 +321,13 @@ $manMacro2a{'HTMLhref'}		= '';
 # Translation for LaTeX macros for HTML
 
 # translation of special characters
-$htmlLetterCode{'ä'} = '&auml;';
-$htmlLetterCode{'ö'} = '&ouml;';
-$htmlLetterCode{'ü'} = '&uuml;';
-$htmlLetterCode{'Ä'} = '&Auml;';
-$htmlLetterCode{'Ö'} = '&Ouml;';
-$htmlLetterCode{'Ü'} = '&Uuml;';
-$htmlLetterCode{'ß'} = '&szlig;';
+$htmlLetterCode{'ï¿½'} = '&auml;';
+$htmlLetterCode{'ï¿½'} = '&ouml;';
+$htmlLetterCode{'ï¿½'} = '&uuml;';
+$htmlLetterCode{'ï¿½'} = '&Auml;';
+$htmlLetterCode{'ï¿½'} = '&Ouml;';
+$htmlLetterCode{'ï¿½'} = '&Uuml;';
+$htmlLetterCode{'ï¿½'} = '&szlig;';
 
 # LaTeX macros without arguments
 $htmlMacro{'LaTeX'} 	= 'LaTeX';
@@ -469,13 +469,13 @@ $htmlMacro2a{'URL'}		= '<a href ="';
 # Translation for LaTeX macros for TexInfo
 
 # translation of special characters
-$texiLetterCode{'ä'} = '@"a';
-$texiLetterCode{'ö'} = '@"o';
-$texiLetterCode{'ü'} = '@"u';
-$texiLetterCode{'Ä'} = '@"A';
-$texiLetterCode{'Ö'} = '@"O';
-$texiLetterCode{'Ü'} = '@"U';
-$texiLetterCode{'ß'} = '@ss{}';
+$texiLetterCode{'ï¿½'} = '@"a';
+$texiLetterCode{'ï¿½'} = '@"o';
+$texiLetterCode{'ï¿½'} = '@"u';
+$texiLetterCode{'ï¿½'} = '@"A';
+$texiLetterCode{'ï¿½'} = '@"O';
+$texiLetterCode{'ï¿½'} = '@"U';
+$texiLetterCode{'ï¿½'} = '@ss{}';
 
 # LaTeX macros without arguments
 $texiMacro{'LaTeX'} 	 = 'LaTeX';
@@ -1450,7 +1450,7 @@ sub Print
 
     if (!$inside_verb) {
 	# transform special characters
-	$x =~ s/([äöüÄÖÜß])/$LetterCode->{"$1"}/go;
+	$x =~ s/([ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½])/$LetterCode->{"$1"}/go;
     }
 
     my @parts = split /\\n/, $x, -1;
@@ -1607,13 +1607,13 @@ while (<SRC>) {
     s/{(\\ss)}/\1/g;
 
     # normalize special characters
-    s/\\"a/ä/g;
-    s/\\"o/ö/g;
-    s/\\"u/ü/g;
-    s/\\"A/Ä/g;
-    s/\\"O/Ö/g;
-    s/\\"U/Ü/g;
-    s/\\ss/ß/g;
+    s/\\"a/ï¿½/g;
+    s/\\"o/ï¿½/g;
+    s/\\"u/ï¿½/g;
+    s/\\"A/ï¿½/g;
+    s/\\"O/ï¿½/g;
+    s/\\"U/ï¿½/g;
+    s/\\ss/ï¿½/g;
 
     if (/^\s*\\rcsInfo \$(.*)\$/) {
 	my ($rcs_id,$rcs_file,$rcs_revision,

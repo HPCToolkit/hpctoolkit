@@ -644,8 +644,9 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
-OPT_CUPTI
+OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
+OPT_CUPTI
 OPT_ENABLE_CUPTI_FALSE
 OPT_ENABLE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
@@ -737,6 +738,8 @@ OPT_PAPI_LIBPATH
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
+MBEDTLS_LIBS
+MBEDTLS_IFLAGS
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
@@ -950,7 +953,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -1008,6 +1010,7 @@ with_libmonitor
 with_libunwind
 enable_libunwind_primary
 with_lzma
+with_mbedtls
 with_papi
 enable_force_papi
 enable_papi_c
@@ -1033,6 +1036,8 @@ with_cuda
 with_cuda_include
 with_cuda_lib
 with_cupti
+with_cupti_include
+with_cupti_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1098,7 +1103,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1351,15 +1355,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1497,7 +1492,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1650,7 +1645,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1777,6 +1771,7 @@ Optional Packages:
   --with-libmonitor=PATH  path to libmonitor install directory
   --with-libunwind=PATH   path to libunwind install directory
   --with-lzma=PATH        path to lzma (xz utils) install directory
+  --with-mbedtls=PATH     path to mbedtls install directory
   --with-papi=PATH        path to papi install directory
   --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
   --with-tbb=PATH         path to intel tbb install directory
@@ -1793,6 +1788,11 @@ Optional Packages:
                           (default is NO)
   --with-cupti=PATH       use given CUDA/CUPTI installation (absolute path)
                           with hpcrun (default is NO)
+  --with-cupti-include=PATH
+                          use given CUPTI include (absolute path) with hpcrun
+                          (default is NO)
+  --with-cupti-lib=PATH   use given CUPTI lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -6950,7 +6950,7 @@ linux* | k*bsd*-gnu | kopensolaris*-gnu | gnu*)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-netbsd* | netbsdelf*-gnu)
+netbsd*)
   if echo __ELF__ | $CC -E - | $GREP __ELF__ > /dev/null; then
     lt_cv_deplibs_check_method='match_pattern /lib[^/]+(\.so\.[0-9]+\.[0-9]+|_pic\.a)$'
   else
@@ -10654,9 +10654,6 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
   openbsd* | bitrig*)
     with_gnu_ld=no
     ;;
-  linux* | k*bsd*-gnu | gnu*)
-    link_all_deplibs=no
-    ;;
   esac
 
   ld_shlibs=yes
@@ -10911,7 +10908,7 @@ _LT_EOF
       fi
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
 	wlarc=
@@ -11581,7 +11578,6 @@ $as_echo "$lt_cv_irix_exported_symbol" >&6; }
 	if test yes = "$lt_cv_irix_exported_symbol"; then
           archive_expsym_cmds='$CC -shared $pic_flag $libobjs $deplibs $compiler_flags $wl-soname $wl$soname `test -n "$verstring" && func_echo_all "$wl-set_version $wl$verstring"` $wl-update_registry $wl$output_objdir/so_locations $wl-exports_file $wl$export_symbols -o $lib'
 	fi
-	link_all_deplibs=no
       else
 	archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags -soname $soname `test -n "$verstring" && func_echo_all "-set_version $verstring"` -update_registry $output_objdir/so_locations -o $lib'
 	archive_expsym_cmds='$CC -shared $libobjs $deplibs $compiler_flags -soname $soname `test -n "$verstring" && func_echo_all "-set_version $verstring"` -update_registry $output_objdir/so_locations -exports_file $export_symbols -o $lib'
@@ -11603,7 +11599,7 @@ $as_echo "$lt_cv_irix_exported_symbol" >&6; }
       esac
       ;;
 
-    netbsd* | netbsdelf*-gnu)
+    netbsd*)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
       else
@@ -12716,18 +12712,6 @@ fi
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-  ;;
-
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
   ;;
 
 netbsd*)
@@ -15624,7 +15608,7 @@ lt_prog_compiler_static_CXX=
 	    ;;
 	esac
 	;;
-      netbsd* | netbsdelf*-gnu)
+      netbsd*)
 	;;
       *qnx* | *nto*)
         # QNX uses GNU C++, but need to define -shared option too, otherwise
@@ -15998,9 +15982,6 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
       exclude_expsyms_CXX='[_]+GLOBAL_OFFSET_TABLE_|[_]+GLOBAL__[FID]_.*|[_]+head_[A-Za-z0-9_]+_dll|[A-Za-z0-9_]+_dll_iname'
       ;;
     esac
-    ;;
-  linux* | k*bsd*-gnu | gnu*)
-    link_all_deplibs_CXX=no
     ;;
   *)
     export_symbols_cmds_CXX='$NM $libobjs $convenience | $global_symbol_pipe | $SED '\''s/.* //'\'' | sort | uniq > $export_symbols'
@@ -16693,18 +16674,6 @@ fi
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-  ;;
-
-netbsdelf*-gnu)
-  version_type=linux
-  need_lib_prefix=no
-  need_version=no
-  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
-  soname_spec='${libname}${release}${shared_ext}$major'
-  shlibpath_var=LD_LIBRARY_PATH
-  shlibpath_overrides_runpath=no
-  hardcode_into_libs=yes
-  dynamic_linker='NetBSD ld.elf_so'
   ;;
 
 netbsd*)
@@ -19819,6 +19788,7 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_mbedtls_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -19923,6 +19893,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg mbedtls ; then
+    default_mbedtls_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -20111,7 +20084,7 @@ BOOST_COPY=no
 # dyninst would use (but no more).  But copy-libs won't fail on a
 # missing library, so it doesn't have to be exact.
 
-BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer serialization'
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer serialization graph regex'
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
 $as_echo_n "checking for boost... " >&6; }
@@ -21043,6 +21016,119 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 
 
 
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-mbedtls=PATH
+#-------------------------------------------------
+
+# mbedtls is a lightweight library that includes libmbedcrypto.a for
+# computing md5 and SHA sums for buffers in memory.
+#
+# Note: we require libmbedcrypto.a to be compiled with -fPIC.
+
+MBEDTLS="$default_mbedtls_prefix"
+MBEDTLS_IFLAGS=
+MBEDTLS_LIBS=
+
+
+# Check whether --with-mbedtls was given.
+if test "${with_mbedtls+set}" = set; then :
+  withval=$with_mbedtls; MBEDTLS="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for mbedtls" >&5
+$as_echo_n "checking for mbedtls... " >&6; }
+
+case "$MBEDTLS" in
+  /* )
+    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
+      as_fn_error $? "unable to find md5.h in: $MBEDTLS" "$LINENO" 5
+    fi
+    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    for lib in $multilib_path ; do
+      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	break
+      fi
+    done
+    if test "x$MBEDTLS_LIBS" = x ; then
+      as_fn_error $? "unable to find libmbedcrypto.a in: $MBEDTLS" "$LINENO" 5
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "mbedtls directory must be absolute path: $MBEDTLS" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MBEDTLS" >&5
+$as_echo "$MBEDTLS" >&6; }
+
+#
+# Test if libmbedcrypto.a was compiled with -fPIC
+#
+case "$MBEDTLS" in
+  /* )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if libmbedcrypto.a was compiled with -fPIC" >&5
+$as_echo_n "checking if libmbedcrypto.a was compiled with -fPIC... " >&6; }
+
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
+    LIBS="$MBEDTLS_LIBS"
+
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <sys/types.h>
+#include "mbedtls/md5.h"
+void
+my_md5_hash(char *buf, size_t len)
+{
+    mbedtls_md5_context ctx;
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_update(&ctx, buf, len);
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  mbed_fpic=yes
+else
+  mbed_fpic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $mbed_fpic" >&5
+$as_echo "$mbed_fpic" >&6; }
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$mbed_fpic" != yes ; then
+      as_fn_error $? "libmbedcrypto.a must be compiled with -fPIC" "$LINENO" 5
+    fi
+    ;;
+esac
 
 
 
@@ -22853,9 +22939,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 
 # Check whether --with-cuda was given.
@@ -22937,9 +23020,16 @@ fi
 #-------------------------------------------------
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
+OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
 OPT_CUPTI_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
+fi
 
 
 # Check whether --with-cupti was given.
@@ -22957,12 +23047,6 @@ fi
 #
 # Valid cupti library
 #
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      as_fn_error $? "--with-cupti=$OPT_CUPTI invalid! No cupti.h" "$LINENO" 5
-   fi
-fi
-
 if test "$use_papi_c_cupti" != no; then
    if test "$OPT_HAVE_CUPTI" = yes; then
        OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
@@ -22976,6 +23060,58 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+
+# Check whether --with-cupti-include was given.
+if test "${with_cupti_include+set}" = set; then :
+  withval=$with_cupti_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_CUPTI}/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+
+$as_echo "#define HAVE_CUPTI_H 1" >>confdefs.h
+
+     else
+         as_fn_error $? "'${OPT_CUPTI}/include/cupti.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
+
+
+# Check whether --with-cupti-lib was given.
+if test "${with_cupti_lib+set}" = set; then :
+  withval=$with_cupti_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-cupti-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi
+else
+  for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUPTI}/${lib}/libcupti.so"
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
+      break
+    fi
+  done
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       as_fn_error $? "libcupti.so not found" "$LINENO" 5
+     fi
+
+fi
+
+
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -Wl,-rpath=${OPT_CUPTI_LIBPATH} -lcupti "
+
+fi
+
  if test "$OPT_HAVE_CUPTI" = yes; then
   OPT_ENABLE_CUPTI_TRUE=
   OPT_ENABLE_CUPTI_FALSE='#'
@@ -22983,6 +23119,7 @@ else
   OPT_ENABLE_CUPTI_TRUE='#'
   OPT_ENABLE_CUPTI_FALSE=
 fi
+
 
 
 
@@ -25285,6 +25422,7 @@ $as_echo X"$file" |
     cat <<_LT_EOF >> "$cfgfile"
 #! $SHELL
 # Generated automatically by $as_me ($PACKAGE) $VERSION
+# Libtool was configured on host `(hostname || uname -n) 2>/dev/null | sed 1q`:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 
 # Provide generalized library-building support services.
@@ -26142,6 +26280,8 @@ $as_echo "$as_me:   libmonitor:   ${LIBMONITOR}" >&6;}
 $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   lzma:         ${LZMA}" >&5
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   mbedtls:      ${MBEDTLS}" >&5
+$as_echo "$as_me:   mbedtls:      ${MBEDTLS}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
 $as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perfmon:      ${perfmon_mesg}" >&5
