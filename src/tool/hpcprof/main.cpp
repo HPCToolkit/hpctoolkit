@@ -203,12 +203,13 @@ realmain(int argc, char* const* argv)
 
   bool printProgress = true;
 
+  // Static instruction overlay should be down before stmt coalesce 
+  Analysis::CallPath::overlayCudaInstructionsMain(*prof, args.instructionFiles);
+
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
 
   Analysis::CallPath::transformCudaCFGMain(*prof);
-
-  Analysis::CallPath::overlayCudaInstructionsMain(*prof, args.instructionFiles);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT

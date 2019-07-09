@@ -113,7 +113,7 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_API_DEBUG 0
+#define CUPTI_API_DEBUG 1
 
 #if CUPTI_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)

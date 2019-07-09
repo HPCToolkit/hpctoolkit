@@ -33,6 +33,7 @@ cupti_occupancy_analyze
  CUpti_ActivityKernel4 *kernel,
  uint32_t *active_warps_per_sm,
  uint32_t *max_active_warps_per_sm,
+ uint32_t *schedulers_per_sm,
  uint32_t *thread_registers,
  uint32_t *block_threads,
  uint32_t *block_shared_memory
@@ -50,6 +51,7 @@ cupti_occupancy_analyze
     uint32_t sm_shared_memory = device_property->sm_shared_memory;
     uint32_t sm_blocks = device_property->sm_blocks;
 
+    *schedulers_per_sm = device_property->sm_schedulers;
     *thread_registers = kernel->registersPerThread;
     *block_threads = kernel->blockX * kernel->blockY * kernel->blockZ;
     *block_shared_memory = kernel->dynamicSharedMemory + kernel->staticSharedMemory;

@@ -144,16 +144,17 @@
   macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
   macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
   macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KERNEL:THREAD_REGISTERS", 5)       \
-  macro("KERNEL:BLOCK_THREADS", 6)           \
-  macro("KERNEL:BLOCK_SHARED_MEMORY", 7)     \
-  macro("KERNEL:COUNT ", 8)                  \
+  macro("KERNEL:SCHEDULERS_PER_SM", 5)       \
+  macro("KERNEL:THREAD_REGISTERS", 6)        \
+  macro("KERNEL:BLOCK_THREADS", 7)           \
+  macro("KERNEL:BLOCK_SHARED_MEMORY", 8)     \
+  macro("KERNEL:COUNT ", 9)                  \
 
 #define FORALL_KE_TIME(macro) \
-  macro("KERNEL:TIME (us)", 9)
+  macro("KERNEL:TIME (us)", 10)
 
 #define FORALL_KE_OCCUPANCY(macro) \
-  macro("KERNEL:OCCUPANCY", 10)
+  macro("KERNEL:OCCUPANCY", 11)
 
 #define FORALL_EM(macro) \
   macro("XDMOV:INVALID",       0)	\
@@ -347,6 +348,7 @@ static int ke_dynamic_shared_metric_id;
 static int ke_local_metric_id;
 static int ke_active_warps_per_sm_metric_id;
 static int ke_max_active_warps_per_sm_metric_id;
+static int ke_schedulers_per_sm_metric_id;
 static int ke_thread_registers_id;
 static int ke_block_threads_id;
 static int ke_block_shared_memory_id;
@@ -469,15 +471,21 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
-      int frequency_factor = 1;
+      int64_t frequency_factor = 1;
       if (frequency_factor != -1) {
         frequency_factor = (1 << pc_sampling_frequency);
+        PRINT("frequency_factor %ld\n", frequency_factor);
       }
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
-          activity->data.pc_sampling.latencySamples * frequency_factor});
+        if (activity->data.pc_sampling.stallReason == CUPTI_ACTIVITY_PC_SAMPLING_STALL_NONE) {
+          hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
+            activity->data.pc_sampling.samples * frequency_factor});
+        } else {
+          hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
+            activity->data.pc_sampling.latencySamples * frequency_factor});
+        }
 
         metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
@@ -557,6 +565,11 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metrics = hpcrun_reify_metric_set(cct_node, ke_max_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
+
+      // Schedulers per sm does not change
+      metrics = hpcrun_reify_metric_set(cct_node, ke_schedulers_per_sm_metric_id);
+      hpcrun_metric_std_inc(ke_schedulers_per_sm_metric_id, metrics,
+        (cct_metric_data_t){.i = activity->data.kernel.schedulersPerSM});
 
       metrics = hpcrun_reify_metric_set(cct_node, ke_thread_registers_id);
       hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
@@ -874,12 +887,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   ke_local_metric_id = ke_metric_id[2];
   ke_active_warps_per_sm_metric_id = ke_metric_id[3];
   ke_max_active_warps_per_sm_metric_id = ke_metric_id[4];
-  ke_thread_registers_id = ke_metric_id[5];
-  ke_block_threads_id = ke_metric_id[6];
-  ke_block_shared_memory_id = ke_metric_id[7];
-  ke_count_metric_id = ke_metric_id[8];
-  ke_time_metric_id = ke_metric_id[9];
-  ke_occupancy_metric_id = ke_metric_id[10];
+  ke_schedulers_per_sm_metric_id = ke_metric_id[5];
+  ke_thread_registers_id = ke_metric_id[6];
+  ke_block_threads_id = ke_metric_id[7];
+  ke_block_shared_memory_id = ke_metric_id[8];
+  ke_count_metric_id = ke_metric_id[9];
+  ke_time_metric_id = ke_metric_id[10];
+  ke_occupancy_metric_id = ke_metric_id[11];
 
   hpcrun_set_percent(ke_occupancy_metric_id, 1);
   metric_desc_t* ke_occupancy_metric = hpcrun_id2metric_linked(ke_occupancy_metric_id);

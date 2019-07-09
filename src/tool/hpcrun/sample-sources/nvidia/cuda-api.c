@@ -163,6 +163,22 @@ cuda_device_sm_blocks_query
 }
 
 
+static int 
+cuda_device_sm_schedulers_query
+(
+ int major, 
+ int minor
+)
+{
+  switch(major) {
+  case 7:
+    return 4;
+  default:
+    // TODO(Keren): add more devices
+    return 8;
+  }
+}
+
 
 //******************************************************************************
 // interface operations 
@@ -206,6 +222,8 @@ cuda_device_property_query
     (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
+
+  property->sm_schedulers = cuda_device_sm_schedulers_query(major, minor);
 
   return 0;
 }
