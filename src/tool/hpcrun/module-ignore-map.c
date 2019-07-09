@@ -144,7 +144,7 @@ lm_contains_fn
   PRINT("query fn = %s\n", fn);
   PRINT("handle = %p\n", handle);
   bool result = false;
-  if (handle) {
+  if (handle && lm_real) {
     void *fp = dlsym(handle, fn);
     PRINT("fp = %p\n", fp);
     if (fp) {
