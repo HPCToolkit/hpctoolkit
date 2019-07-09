@@ -32,7 +32,6 @@ sanitizer_notification_insert
  uint32_t function_index, 
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device,
- uint32_t thread_id,
  cct_node_t *host_op_node
 )
 {

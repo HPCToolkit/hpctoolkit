@@ -41,6 +41,14 @@ cubin_module_map_insert
 
 
 void
+cubin_module_map_insert_hash
+(
+ const void *module,
+ unsigned char *hash
+);
+
+
+void
 cubin_module_map_delete
 (
  const void *module
@@ -58,6 +66,14 @@ Elf_SymbolVector *
 cubin_module_map_entry_elf_vector_get
 (
  cubin_module_map_entry_t *entry
+);
+
+
+unsigned char *
+cubin_module_map_entry_hash_get
+(
+ cubin_module_map_entry_t *entry,
+ unsigned int *len
 );
 
 

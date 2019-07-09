@@ -57,6 +57,8 @@
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
 #define SANITIZER_BUFFER_SIZE (64 * 1024)
+// Each record at most 128 bytes?
+#define SANITIZER_TRACE_SIZE (SANITIZER_BUFFER_SIZE * 128)
 #define SANITIZER_THREAD_HASH_SIZE (128 * 1024 - 1)
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
@@ -92,7 +94,7 @@
 
 
 // only subscribe by the main thread
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+static spinlock_t cubin_files_lock = SPINLOCK_UNLOCKED;
 static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
 
 static __thread bool sanitizer_stop_flag = false;
@@ -105,6 +107,7 @@ static __thread sanitizer_buffer_t buffer_reset = {
 };
 static __thread sanitizer_memory_buffer_t *memory_buffer_host = NULL;
 static __thread sanitizer_buffer_t *buffer_host = NULL;
+static __thread char *sanitizer_trace = NULL;
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
@@ -382,9 +385,9 @@ sanitizer_load_callback
 
   // Write a file if does not exist
   bool file_flag;
-  spinlock_lock(&files_lock);
+  spinlock_lock(&cubin_files_lock);
   file_flag = sanitizer_write_cubin(file_name, cubin, cubin_size);
-  spinlock_unlock(&files_lock);
+  spinlock_unlock(&cubin_files_lock);
 
   if (file_flag) {
     char device_file[PATH_MAX]; 
@@ -402,6 +405,7 @@ sanitizer_load_callback
     if (entry == NULL) {
       Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
       cubin_module_map_insert(cubin_module, hpctoolkit_module_id, elf_vector);
+      cubin_module_map_insert_hash(cubin_module, hash);
     }
   }
 
@@ -435,6 +439,50 @@ sanitizer_unload_callback
 // record handlers
 //******************************************************************************
 
+static bool
+sanitizer_write_trace
+(
+  unsigned char *hash,
+  unsigned int hash_len,
+  char *trace,
+  size_t trace_size
+)
+{
+  // Write a file if does not exist, otherwise append
+  // FIXME(Keren): multiple processes
+  // Create file name
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/cubins/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < hash_len; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
+  }
+  used += sprintf(&file_name[used], "%s", ".trace.");
+  used += sprintf(&file_name[used], "%u", sanitizer_thread_id);
+
+  int fd;
+  errno = 0;
+  fd = open(file_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
+  if (fd >= 0) {
+    // Success
+    if (write(fd, trace, trace_size) != trace_size) {
+      close(fd);
+      return false;   
+    } else {
+      close(fd);
+      return true;
+    }
+  } else {
+    // Failure to open is a fatal error.
+    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
+    return false;
+  }
+}
+
+
 static void
 sanitizer_memory_process
 (
@@ -454,33 +502,39 @@ sanitizer_memory_process
   HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
     (memory_buffer_host, buffers, sizeof(sanitizer_memory_buffer_t) * num_buffers, stream));
 
-  // do analysis here
-  sanitizer_activity_t activity;
-  activity.type = SANITIZER_ACTIVITY_TYPE_MEMORY;
+  if (sanitizer_trace == NULL) {
+    // first time to allocate trace buffer
+    sanitizer_trace = (char *)
+      hpcrun_malloc(SANITIZER_TRACE_SIZE * sizeof(unsigned char));
+  }
 
-  // attribute properties back to cct tree
-  size_t i;
   // XXX(Keren): tricky change offset here
-  uint64_t pc_offset = 0x0;
+  size_t used = 0;
+  size_t i = 0;
   for (i = 0; i < num_buffers; ++i) {
-     sanitizer_memory_buffer_t *memory_buffer = &(memory_buffer_host[i]);
-     ip_normalized_t ip = cubin_module_transform(module, function_index,
-       memory_buffer->pc - memory_buffer_host[0].pc + pc_offset);
-     cct_addr_t frm = { .ip_norm = ip };
-     cct_node_t *cct_child = NULL;
-     if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
-       //sanitizer_activity_attribute(&activity, cct_child);
-     }
-     PRINT("<%u, %u, %u>, <%u, %u, %u>: pc %p, size %u, flags %u, address %p,",
-       memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
-       memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
-       memory_buffer->pc, memory_buffer->size, memory_buffer->flags, memory_buffer->address);
-     size_t j;
-     PRINT(" value ");
-     for (j = 0; j < memory_buffer->size; ++j) { 
-       PRINT("%02x", memory_buffer->value[j]);
-     }
-     PRINT("\n");
+    sanitizer_memory_buffer_t *memory_buffer = &(memory_buffer_host[i]);
+    used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|%p|",
+      memory_buffer->pc, memory_buffer->block_ids.x, memory_buffer->block_ids.y,
+      memory_buffer->block_ids.z, memory_buffer->thread_ids.x,
+      memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
+      memory_buffer->address);
+    size_t j;
+    used += sprintf(&sanitizer_trace[used], "0x");
+    for (j = 0; j < memory_buffer->size; ++j) { 
+      used += sprintf(&sanitizer_trace[used], "%02x", memory_buffer->value[j]);
+    }
+    used += sprintf(&sanitizer_trace[used], "\n");
+  }
+
+  cubin_module_map_entry_t *entry = cubin_module_map_lookup(module);
+  unsigned int hash_len = 0;
+  unsigned char *hash = cubin_module_map_entry_hash_get(entry, &hash_len);
+
+  if (entry != NULL) {
+    PRINT("Write file size %lu\n", used);
+    if (sanitizer_write_trace(hash, hash_len, sanitizer_trace, used) == false) {
+      PRINT("Write file error\n");
+    }
   }
 }
 
@@ -692,7 +746,7 @@ sanitizer_kernel_launch_callback
 
   // correlte record with stream
   sanitizer_notification_insert(context, module, stream, function_index,
-    SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device, sanitizer_thread_id, host_op_node);
+    SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device, host_op_node);
 }
 
 //-------------------------------------------------------------

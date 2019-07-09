@@ -10,6 +10,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-macros.h>
+#include <lib/prof-lean/crypto-hash.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
@@ -31,6 +32,7 @@ struct cubin_module_map_entry_s {
   const void *module;
   uint32_t hpctoolkit_module_id;
   Elf_SymbolVector *elf_vector;
+  unsigned char *hash;
   struct cubin_module_map_entry_s *left;
   struct cubin_module_map_entry_s *right;
 }; 
@@ -147,6 +149,25 @@ cubin_module_map_insert(const void *module, uint32_t hpctoolkit_module_id, Elf_S
 
 
 void
+cubin_module_map_insert_hash(const void *module, unsigned char *hash)
+{
+  spinlock_lock(&cubin_module_map_lock);
+
+  if (cubin_module_map_root != NULL) {
+    cubin_module_map_root = 
+      cubin_module_map_splay(cubin_module_map_root, module);
+
+    if (module == cubin_module_map_root->module) {
+      // cubin_module already present
+      cubin_module_map_root->hash = hash;
+    }
+  }
+
+  spinlock_unlock(&cubin_module_map_lock);
+}
+
+
+void
 cubin_module_map_delete
 (
  const void *module
@@ -174,6 +195,14 @@ Elf_SymbolVector *
 cubin_module_map_entry_elf_vector_get(cubin_module_map_entry_t *entry)
 {
   return entry->elf_vector;
+}
+
+
+unsigned char *
+cubin_module_map_entry_hash_get(cubin_module_map_entry_t *entry, unsigned int *len)
+{
+  *len = crypto_hash_length();
+  return entry->hash;
 }
 
 
