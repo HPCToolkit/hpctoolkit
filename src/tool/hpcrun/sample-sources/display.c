@@ -87,7 +87,7 @@ sanitize
 	char *result = out;
 	while (*in != 0) {
  	  // filter out unprintable characters
-	  if (isprint(*in)) *out++ = *in++;
+          if (isprint(*in)) *out++ = *in++;
           else in++;
 	}
 	*out = 0;
@@ -113,7 +113,8 @@ printw(FILE *output, const char *name, const char *desc_unsanitized)
     if (lines == 0) {
       fprintf(output, "%s\n", name);
     } else {
-      for (int i=0; i<lines; i++) {
+      int i;
+      for (i = 0; i < lines; i++) {
         strncpy(sdesc, line[i], len[i]);
         sdesc[len[i]] = '\0';
         const char *name_ptr = " ";
