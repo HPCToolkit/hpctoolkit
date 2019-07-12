@@ -154,6 +154,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
 
+#define LCA_TRACE
 #if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
     ENABLE(USE_TRAMP);
