@@ -154,7 +154,7 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
 
-#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
     ENABLE(USE_TRAMP);
 #else
@@ -235,13 +235,18 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     }
     
     hpctrace_fmt_datum_t trace_datum;
-    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
     if (dLCA > HPCTRACE_FMT_DLCA_NULL)
       dLCA = HPCTRACE_FMT_DLCA_NULL;
+
+#if defined(LCA_TRACE)
+    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
     HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
+#else
+    trace_datum.comp = microtime;
+#endif
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
@@ -250,7 +255,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
     
-#if defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC)    
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
 #else
     HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
