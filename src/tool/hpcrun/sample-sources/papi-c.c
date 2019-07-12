@@ -77,6 +77,7 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+#include "display.h"
 #include "papi-c-extended-info.h"
 
 #include <hpcrun/hpcrun_options.h>
@@ -183,46 +184,6 @@ thread_count_scaling_for_component(int cidx)
   return 0;
 }
 
-//-----------------------------------------------------------
-// function print_desc
-//   wrap lines for native event descriptions to contain 
-//   four white space followed by BUFLEN characters
-//-----------------------------------------------------------
-static void 
-print_desc(char *s)
-{
-#define BUFLEN 68 
-  char buffer[BUFLEN];
-  char *s_end = s + strlen(s);
-  while (s < s_end) {
-    int i;
-    char *cur = s;
-           
-    //-------------------------------------------------
-    // peel off at most the next BUFLEN characters from
-    // the string. break the text at last white 
-    // space if a word will extend beyond the boundary. 
-    //-------------------------------------------------
-    int last_blank = BUFLEN-1;
-    for(i=0;i<BUFLEN; i++) {
-      buffer[i] = *cur;
-      if (*cur == ' ') {
-	// remember last white space
-	last_blank = i;
-      }
-      if (*cur == '\n'|| *cur == 0) { 
-	// break at newline or end of string
-	last_blank = i;
-	break;
-      }
-      cur++;
-    }
-    buffer[last_blank] = 0;
-    s += last_blank + 1;
-
-    printf("      %s\n", buffer);
-  }
-}
 
 /******************************************************************************
  * sample source registration
@@ -775,8 +736,7 @@ METHOD_FN(display_events)
       memset(&info, 0, sizeof(info));
       if (PAPI_get_event_info(ev, &info) == PAPI_OK) {
 	cmp_event_count++;
-	printf("%-48s\n", info.symbol); 
-        print_desc(info.long_descr);
+        display_event_info(stdout, info.symbol, info.long_descr);
         printf("---------------------------------------------------------------------------\n");
       }
       ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_EVENTS, cidx);
