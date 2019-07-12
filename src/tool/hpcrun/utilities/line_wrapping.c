@@ -48,7 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
- 
+
  
 /*
   Splits s into multiple lines of width w. Returns the number of
@@ -61,8 +61,8 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
 {
   int allocated; /* lines allocated */
   int lines; /* lines used */
-  char ** line;
-  int * len;
+  char **line = NULL;
+  int *len = NULL;
   int tl; /* total length of the string */
   int l; /* length of current line */
   int p; /* offset (from s) of current line */
@@ -85,12 +85,13 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
     if we need more we will realloc later.
   */
   allocated = (tl / w) * 1.5 + 1;
- 
+
   line = (char **) malloc(sizeof(char *) * allocated);
   len = (int *) malloc(sizeof(int) * allocated);
  
-  if (line == NULL || len == NULL)
-    return 0;
+  if (line == NULL || len == NULL) {
+    goto cleanup;
+  }
  
   /*
     p will be an offset from the start of the string and the start of
@@ -196,7 +197,7 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
       len = (int *) realloc(len, sizeof(int) * allocated);
  
       if (line == NULL || len == NULL)
-	return 0;
+	goto cleanup;
     }
  
     /*
@@ -216,8 +217,13 @@ int strwrap(char * s, int w, char *** line_ret, int ** len_ret)
  
   *line_ret = line;
   *len_ret = len;
- 
+
   return lines;
+
+cleanup:
+  if (line) free(line);
+  if (len) free(len);
+  return 0;
 }
  
  
