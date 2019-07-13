@@ -61,6 +61,7 @@
 
 
 typedef struct {
+  unwinder_t uw; 
   void *key;
   ilmstat_btuwi_pair_t *ilm_btui;
   bitree_uwi_t *btuwi; 
@@ -80,7 +81,7 @@ typedef void *(*uw_hash_malloc_fn)(size_t size);
 
 uw_hash_table_t *uw_hash_new(size_t size, uw_hash_malloc_fn fn);
 
-void uw_hash_insert(uw_hash_table_t *uw_hash_table,
+void uw_hash_insert(uw_hash_table_t *uw_hash_table, unwinder_t uw,
   void *key, ilmstat_btuwi_pair_t *ilm_btui, bitree_uwi_t *btuwi);
 
 void uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
@@ -89,7 +90,7 @@ void uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
 void uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
   void *key, bitree_uwi_t *btuwi);
 
-uw_hash_entry_t *uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key);
+uw_hash_entry_t *uw_hash_lookup(uw_hash_table_t *uw_hash_table, unwinder_t uw, void *key);
 
 void uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end);
 

@@ -55,17 +55,25 @@
 #include <string.h>
 #include <assert.h>
 
+
+
 /******************************************************************************
  * local includes
  *****************************************************************************/
 
 #include "uw_hash.h"
 
+
+
 /***************************************************************************
- * private operations
+ * macros
  ***************************************************************************/
 
 #define UW_HASH(key, size) (key < size ? key : key % size);
+
+#define DISABLE_HASHING 0
+
+
 
 /***************************************************************************
  * interface operations
@@ -84,11 +92,16 @@ uw_hash_new(size_t size, uw_hash_malloc_fn fn)
 
 
 void
-uw_hash_insert(uw_hash_table_t *uw_hash_table,
+uw_hash_insert(uw_hash_table_t *uw_hash_table, unwinder_t uw,
   void *key, ilmstat_btuwi_pair_t *ilm_btui, bitree_uwi_t *btuwi)
 {
+#if DISABLE_HASHING
+  return;
+#endif
+
   size_t index = UW_HASH(((size_t)key), uw_hash_table->size);
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
+  uw_hash_entry->uw = uw;
   uw_hash_entry->key = key;
   uw_hash_entry->ilm_btui = ilm_btui;
   uw_hash_entry->btuwi = btuwi;
@@ -99,6 +112,10 @@ void
 uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
   void *key, ilmstat_btuwi_pair_t *ilm_btui)
 {
+#if DISABLE_HASHING
+  return;
+#endif
+
   size_t index = UW_HASH(((size_t)key), uw_hash_table->size);
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
   uw_hash_entry->ilm_btui = ilm_btui;
@@ -109,6 +126,10 @@ void
 uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
   void *key, bitree_uwi_t *btuwi)
 {
+#if DISABLE_HASHING
+  return;
+#endif
+
   size_t index = UW_HASH(((size_t)key), uw_hash_table->size);
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
   uw_hash_entry->btuwi = btuwi;
@@ -116,11 +137,15 @@ uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
 
 
 uw_hash_entry_t *
-uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key)
+uw_hash_lookup(uw_hash_table_t *uw_hash_table, unwinder_t uw, void *key)
 {
+#if DISABLE_HASHING
+  return NULL;
+#endif
+
   size_t index = UW_HASH(((size_t)key), uw_hash_table->size);
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
-  if (uw_hash_entry->key != key) {
+  if (uw_hash_entry->key != key || uw_hash_entry->uw != uw) {
     return NULL;
   }
   return uw_hash_entry;
@@ -130,6 +155,10 @@ uw_hash_lookup(uw_hash_table_t *uw_hash_table, void *key)
 void
 uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end)
 {
+#if DISABLE_HASHING
+  return;
+#endif
+
   size_t i;
   for (i = 0; i < uw_hash_table->size; ++i) {
     void *key = uw_hash_table->uw_hash_entries[i].key;
@@ -143,11 +172,13 @@ uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end)
 void
 uw_hash_delete(uw_hash_table_t *uw_hash_table, void *key)
 {
+#if DISABLE_HASHING
+  return;
+#endif
+
   size_t index = UW_HASH(((size_t)key), uw_hash_table->size);
   uw_hash_entry_t *uw_hash_entry = &(uw_hash_table->uw_hash_entries[index]);
   if (uw_hash_entry->key == key) {
     uw_hash_entry->key = NULL;
-    uw_hash_entry->ilm_btui = NULL;
-    uw_hash_entry->btuwi = NULL;
   }
 }
