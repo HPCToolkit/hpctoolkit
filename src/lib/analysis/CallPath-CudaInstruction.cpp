@@ -168,8 +168,10 @@ gatherStmts(Prof::LoadMap::LMId_t lm_id, CudaParse::InstructionStats &inst_stats
   auto inst_pc_front = inst_stats.front().pc;
   auto inst_pc_back = inst_stats.back().pc;
 
-  std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
-    ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
+  if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+    std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
+      ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
+  }
 
   // Get all the stmt nodes
   Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
