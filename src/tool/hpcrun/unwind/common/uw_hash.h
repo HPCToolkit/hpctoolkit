@@ -108,22 +108,6 @@ uw_hash_insert
   bitree_uwi_t *btuwi
 );
 
-void 
-uw_hash_ilm_btui_insert
-(
-  uw_hash_table_t *uw_hash_table,
-  void *key, 
-  ilmstat_btuwi_pair_t *ilm_btui
-);
-
-void 
-uw_hash_btuwi_insert
-(
-  uw_hash_table_t *uw_hash_table,
-  void *key, 
-  bitree_uwi_t *btuwi
-);
-
 uw_hash_entry_t *
 uw_hash_lookup
 (
