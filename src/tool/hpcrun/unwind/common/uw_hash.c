@@ -44,58 +44,62 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//
-// directed blame shifting for locks, critical sections, ...
-//
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <string.h>
-#include <assert.h>
-
-
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
+//**************************************************************************
+// local includes
+//**************************************************************************
 
 #include "uw_hash.h"
 
 
 
-/***************************************************************************
- * macros
- ***************************************************************************/
+//**************************************************************************
+// macros
+//**************************************************************************
 
 #define UW_HASH(key, size) (key < size ? key : key % size);
 
-#define DISABLE_HASHING 0
+#define DISABLE_HASHTABLE 0
 
 
 
-/***************************************************************************
- * interface operations
- ***************************************************************************/
+//**************************************************************************
+// interface operations
+//**************************************************************************
 
 uw_hash_table_t*
-uw_hash_new(size_t size, uw_hash_malloc_fn fn)
+uw_hash_new
+(
+  size_t size, 
+  uw_hash_malloc_fn fn
+)
 {
-  uw_hash_table_t *uw_hash_table = (uw_hash_table_t *)fn(sizeof(uw_hash_table_t));
-  uw_hash_entry_t *uw_hash_entries = (uw_hash_entry_t *)fn(size * sizeof(uw_hash_entry_t));
+  uw_hash_table_t *uw_hash_table = 
+    (uw_hash_table_t *)fn(sizeof(uw_hash_table_t));
+
+  uw_hash_entry_t *uw_hash_entries = 
+    (uw_hash_entry_t *)fn(size * sizeof(uw_hash_entry_t));
+
   memset(uw_hash_entries, 0, size * sizeof(uw_hash_entry_t));
+
   uw_hash_table->size = size;
   uw_hash_table->uw_hash_entries = uw_hash_entries;
+
   return uw_hash_table;
 }
 
 
 void
-uw_hash_insert(uw_hash_table_t *uw_hash_table, unwinder_t uw,
-  void *key, ilmstat_btuwi_pair_t *ilm_btui, bitree_uwi_t *btuwi)
+uw_hash_insert
+(
+  uw_hash_table_t *uw_hash_table, 
+  unwinder_t uw,
+  void *key, 
+  ilmstat_btuwi_pair_t *ilm_btui, 
+  bitree_uwi_t *btuwi
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return;
 #endif
 
@@ -109,10 +113,14 @@ uw_hash_insert(uw_hash_table_t *uw_hash_table, unwinder_t uw,
 
 
 void
-uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
-  void *key, ilmstat_btuwi_pair_t *ilm_btui)
+uw_hash_ilm_btui_insert
+(
+  uw_hash_table_t *uw_hash_table,
+  void *key, 
+  ilmstat_btuwi_pair_t *ilm_btui
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return;
 #endif
 
@@ -123,10 +131,14 @@ uw_hash_ilm_btui_insert(uw_hash_table_t *uw_hash_table,
 
 
 void
-uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
-  void *key, bitree_uwi_t *btuwi)
+uw_hash_btuwi_insert
+(
+  uw_hash_table_t *uw_hash_table,
+  void *key, 
+  bitree_uwi_t *btuwi
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return;
 #endif
 
@@ -137,9 +149,14 @@ uw_hash_btuwi_insert(uw_hash_table_t *uw_hash_table,
 
 
 uw_hash_entry_t *
-uw_hash_lookup(uw_hash_table_t *uw_hash_table, unwinder_t uw, void *key)
+uw_hash_lookup
+(
+  uw_hash_table_t *uw_hash_table, 
+  unwinder_t uw, 
+  void *key
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return NULL;
 #endif
 
@@ -153,9 +170,14 @@ uw_hash_lookup(uw_hash_table_t *uw_hash_table, unwinder_t uw, void *key)
 
 
 void
-uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end)
+uw_hash_delete_range
+(
+  uw_hash_table_t *uw_hash_table, 
+  void *start, 
+  void *end
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return;
 #endif
 
@@ -170,9 +192,13 @@ uw_hash_delete_range(uw_hash_table_t *uw_hash_table, void *start, void *end)
 
 
 void
-uw_hash_delete(uw_hash_table_t *uw_hash_table, void *key)
+uw_hash_delete
+(
+  uw_hash_table_t *uw_hash_table, 
+  void *key
+)
 {
-#if DISABLE_HASHING
+#if DISABLE_HASHTABLE
   return;
 #endif
 
