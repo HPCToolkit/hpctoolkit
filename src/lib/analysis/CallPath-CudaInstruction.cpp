@@ -217,11 +217,11 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, CudaParse::Instruction
       }
       ++cur_stmt_index;
     }
-    if (inst_stat.pc != vma_stmts[cur_stmt_index].lm_ip) {
-      continue;
-    }
     if (cur_stmt_index == vma_stmts.size()) {
       break;
+    }
+    if (inst_stat.pc != vma_stmts[cur_stmt_index].lm_ip) {
+      continue;
     }
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
