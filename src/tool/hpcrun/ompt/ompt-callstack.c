@@ -665,7 +665,7 @@ ompt_adjust_calling_context
 
 
 cct_node_t *
-ompt_region_context
+ompt_region_context_eager
 (
   uint64_t region_id, 
   ompt_scope_endpoint_t se_type, 
@@ -690,7 +690,7 @@ ompt_region_context
 
 
 void
-ompt_region_context_end_region_not_eager
+ompt_region_context_lazy
 (
   uint64_t region_id,
   ompt_scope_endpoint_t se_type, 
@@ -719,7 +719,7 @@ ompt_parallel_begin_context
 {
   cct_node_t *context = NULL;
   if (ompt_eager_context) {
-    context = ompt_region_context(region_id, ompt_scope_begin,
+    context = ompt_region_context_eager(region_id, ompt_scope_begin,
                                   adjust_callsite);
   }
   return context;
