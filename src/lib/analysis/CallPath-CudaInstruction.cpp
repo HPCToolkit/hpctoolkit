@@ -168,8 +168,10 @@ gatherStmts(Prof::LoadMap::LMId_t lm_id, CudaParse::InstructionStats &inst_stats
   auto inst_pc_front = inst_stats.front().pc;
   auto inst_pc_back = inst_stats.back().pc;
 
-  std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
-    ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
+  if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+    std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
+      ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
+  }
 
   // Get all the stmt nodes
   Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
@@ -215,11 +217,11 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, CudaParse::Instruction
       }
       ++cur_stmt_index;
     }
-    if (inst_stat.pc != vma_stmts[cur_stmt_index].lm_ip) {
-      continue;
-    }
     if (cur_stmt_index == vma_stmts.size()) {
       break;
+    }
+    if (inst_stat.pc != vma_stmts[cur_stmt_index].lm_ip) {
+      continue;
     }
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
