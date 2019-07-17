@@ -308,6 +308,14 @@ ompt_implicit_task_internal_begin
   task_data->ptr = NULL;
 
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
+
+  if (region_data == NULL) {
+    // there are no parallel region callbacks for the initial task.
+    // region_data == NULL indicates that this is an initial task. 
+    // do nothing for initial tasks.
+    return;
+  }
+
   cct_node_t *prefix = region_data->call_path;
 
   task_data->ptr = prefix;
