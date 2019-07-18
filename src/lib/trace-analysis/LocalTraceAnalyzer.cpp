@@ -519,7 +519,7 @@ namespace TraceAnalysis {
             print_msg(MSG_PRIO_MAX, "ERROR: rewrite trace file #%d failed.\n", i);
             return false;
           }
-          print_msg(MSG_PRIO_MAX, "Clock sync for trace file #%d successful, offset = %ld.\n", i, clockDiff[i-begIdx]);
+          print_msg(MSG_PRIO_LOW, "Clock sync for trace file #%d successful, offset = %ld.\n", i, clockDiff[i-begIdx]);
         }
       
       return true;

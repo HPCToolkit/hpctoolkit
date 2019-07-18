@@ -211,7 +211,7 @@ namespace TraceAnalysis {
       metrics->derivedLabel = node->getDerivedSemanticLabel();
       if (metrics->derivedLabel == SEMANTIC_LABEL_ANY)
         metrics->derivedLabel = metrics->originalLabel;
-      metrics->derivedLabel |= parentDerivedLabel;
+      //metrics->derivedLabel |= parentDerivedLabel;
 
       double imb, comm, excImb;
       double samplePeriod = node->getDuration() / node->getNumSamples();
@@ -223,11 +223,18 @@ namespace TraceAnalysis {
         comm = node->getPerfLossMetric().getAvgDurationInc(node->getWeight());
       }
       else if ((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION) {
-        // imb(S) = avg(S) - min(S);
-        imb = node->getPerfLossMetric().getAvgDurationInc(node->getWeight()) - node->getPerfLossMetric().getMinDurationInc() - samplePeriod;
-        excImb = 0; //TODO
-        // comm(S) = min(S);
-        comm = node->getPerfLossMetric().getMinDurationInc();
+        if (parentDerivedLabel == SEMANTIC_LABEL_COMPUTATION) {
+          // imb(S) = avg(S) - min(S);
+          imb = node->getPerfLossMetric().getAvgDurationInc(node->getWeight()) - node->getPerfLossMetric().getMinDurationInc() - samplePeriod;
+          excImb = 0; //TODO
+          // comm(S) = min(S);
+          comm = node->getPerfLossMetric().getMinDurationInc();
+        }
+        else {
+          imb = 0;
+          excImb = 0;
+          comm = node->getPerfLossMetric().getAvgDurationInc(node->getWeight()) - samplePeriod;
+        }
       }
       else {
         // imb(C) = max(C) - avg(C);

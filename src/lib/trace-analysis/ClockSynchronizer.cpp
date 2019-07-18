@@ -113,7 +113,7 @@ namespace TraceAnalysis {
       else {
         const TCTACFGNode* cfgNode = (const TCTACFGNode*) node;
         if ((cfgNode->getOriginalSemanticLabel() & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) {
-          if (cfgNode->getDuration() >= repRoot->getDuration() * 0.1 * MIN_SYNC_COMM_IR) {
+          if (cfgNode->getDuration() >= repRoot->getDuration() * MIN_SYNC_COMM_IR) {
             callpathsWithSync[cfgNode->id] = cfgNode;
             print_msg(MSG_PRIO, "Sync call path found: %s", cfgNode->toString(0, 0, 0).c_str());
             return true;

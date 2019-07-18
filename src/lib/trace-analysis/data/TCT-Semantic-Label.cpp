@@ -75,6 +75,9 @@ namespace TraceAnalysis {
   // An array of such rules
   const FUNC_TO_LABEL_RULE FUNC_TO_LABEL_RULE_ARRAY[] = {
     {regex("(.*)"), SEMANTIC_LABEL_COMPUTATION, 0, false},
+
+    {regex("hypre_NewCommPkgCreate", icase | optimize), SEMANTIC_LABEL_SYNC, 2, true},
+
     //  *********  Calls to MPI  *********
     {regex("P?MPI_(.+)", icase | optimize), SEMANTIC_LABEL_COMMUNICATION, 1,  false},
     

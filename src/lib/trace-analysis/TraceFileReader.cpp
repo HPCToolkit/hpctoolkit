@@ -160,7 +160,8 @@ namespace TraceAnalysis {
     CallPathSample* cp = new CallPathSample(HPCTRACE_FMT_GET_TIME(trace.comp) - minTime, HPCTRACE_FMT_GET_DLCA(trace.comp),
             cctVisitor.getLeafFrame(trace.cpId));
     
-    if (cp->getDepth() == 0 || cp->getFrameAtDepth(0).name == "<partial call paths>") {
+    if (cp->getDepth() <= 1 || cp->getFrameAtDepth(0).name != "<program root>"
+        || cp->getFrameAtDepth(1).name != "main") {
       delete cp;
       cp = readNextSample(); 
       if (cp != NULL)
