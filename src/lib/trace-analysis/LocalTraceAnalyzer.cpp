@@ -210,7 +210,9 @@ namespace TraceAnalysis {
         TCTACFGNode* parent = (TCTACFGNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id.id == node->id.id) {
-            if (parent->getChild(i)->id.procID == node->id.procID) { // duplicate occurrence
+            if (parent->getChild(i)->id.procID == node->id.procID // duplicate occurrence
+                || parent->getChild(i)->getNumSamples() > ITER_CHILD_DUR_ACC // tail call but duration of the function who makes the tail call is significant
+                ) { 
               bool printError = false; //(i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
               if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
               if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
@@ -239,7 +241,7 @@ namespace TraceAnalysis {
               if (printError) print_msg(MSG_PRIO_NORMAL, "\n");
               return true;
             }
-            else { // tail call
+            else { // tail call but duration of the function who makes the tail call is NOT significant
               print_msg(MSG_PRIO_NORMAL, "WARNING: tail call detected. Under parent %s%s, %s%s is a tail call of %s%s:\n", 
                   parent->getName().c_str(), parent->id.toString().c_str(), 
                   node->getName().c_str(), node->id.toString().c_str(), 
