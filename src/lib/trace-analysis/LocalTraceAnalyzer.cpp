@@ -210,33 +210,59 @@ namespace TraceAnalysis {
         TCTACFGNode* parent = (TCTACFGNode*)activeStack.back();
         for (int i = parent->getNumChild()-1; i >= 0; i--)
           if (parent->getChild(i)->id.id == node->id.id) {
-            bool printError = false; //(i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
-            if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
-            if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
-            
-            // if conflict is detected, remove parent's children starting after i
-            while (parent->getNumChild() > i+1) {
-              TCTANode* child = parent->removeChild(parent->getNumChild()-1);
-              if (printError) print_msg(MSG_PRIO_NORMAL, "Deleting child %s:\n", child->id.toString().c_str());
-              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+            if (parent->getChild(i)->id.procID == node->id.procID) { // duplicate occurrence
+              bool printError = false; //(i != parent->getNumChild() - 1) && parent->getName().find("<unknown procedure>") == string::npos;
+              if (printError) print_msg(MSG_PRIO_NORMAL, "ERROR: Conflict detected. Node %s has two occurrence of %s:\n", parent->id.toString().c_str(), node->id.toString().c_str());
+              if (printError) print_msg(MSG_PRIO_NORMAL, "%s", parent->toString(parent->getDepth()+1, -LONG_MAX, 0).c_str());
+
+              // if conflict is detected, remove parent's children starting after i
+              while (parent->getNumChild() > i+1) {
+                TCTANode* child = parent->removeChild(parent->getNumChild()-1);
+                if (printError) print_msg(MSG_PRIO_NORMAL, "Deleting child %s:\n", child->id.toString().c_str());
+                if (printError) print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+                delete child;
+              }
+
+              // replace node with the i-th child, re-push it onto stack, 
+              // and remove it from the parent (as it will be re-added later when popped from stack).
+              delete node;
+              node = parent->removeChild(i);
+              pushOneNode(node, node->getTime().getStartTimeExclusive(), node->getTime().getStartTimeInclusive(), nodeStartSample[node->id.id]);
+
+              // if node is a loop, push the latest iteration onto stack.
+              if (node->type == TCTANode::Loop) {
+                TCTLoopNode* loop = (TCTLoopNode*) node;
+                TCTANode* iter = loop->popLastChild();
+                pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive(), iterStartSample[iter->id.id]);
+              }
+
+              if (printError) print_msg(MSG_PRIO_NORMAL, "\n");
+              return true;
+            }
+            else { // tail call
+              print_msg(MSG_PRIO_NORMAL, "WARNING: tail call detected. Under parent %s%s, %s%s is a tail call of %s%s:\n", 
+                  parent->getName().c_str(), parent->id.toString().c_str(), 
+                  node->getName().c_str(), node->id.toString().c_str(), 
+                  parent->getChild(i)->getName().c_str(), parent->getChild(i)->id.toString().c_str()
+                  );
+              
+              // In case of a tail call, we don't expect to delete any extra child of the parent node.
+              while (parent->getNumChild() > i+1) {
+                TCTANode* child = parent->removeChild(parent->getNumChild()-1);
+                print_msg(MSG_PRIO_MAX, "ERROR: deleting unrelated child %s for tail call:\n", child->id.toString().c_str());
+                print_msg(MSG_PRIO_MAX, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+                delete child;
+              }
+              
+              TCTANode* child = parent->removeChild(i);
+              print_msg(MSG_PRIO_NORMAL, "WARNING: deleting child %s for tail call:\n", child->id.toString().c_str());
+              print_msg(MSG_PRIO_NORMAL, "%s", child->toString(child->getDepth()+1, -LONG_MAX, 0).c_str());
+              
+              pushOneNode(node, child->getTime().getStartTimeExclusive(), child->getTime().getStartTimeInclusive(), nodeStartSample[node->id.id]);
               delete child;
+              
+              return true;
             }
-            
-            // replace node with the i-th child, re-push it onto stack, 
-            // and remove it from the parent (as it will be re-added later when popped from stack).
-            delete node;
-            node = parent->removeChild(i);
-            pushOneNode(node, node->getTime().getStartTimeExclusive(), node->getTime().getStartTimeInclusive(), nodeStartSample[node->id.id]);
-
-            // if node is a loop, push the latest iteration onto stack.
-            if (node->type == TCTANode::Loop) {
-              TCTLoopNode* loop = (TCTLoopNode*) node;
-              TCTANode* iter = loop->popLastChild();
-              pushOneNode(iter, iter->getTime().getStartTimeExclusive(), iter->getTime().getStartTimeInclusive(), iterStartSample[iter->id.id]);
-            }
-
-            if (printError) print_msg(MSG_PRIO_NORMAL, "\n");
-            return true;
           }
       }
       return false;
