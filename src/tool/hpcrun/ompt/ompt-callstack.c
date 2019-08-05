@@ -252,6 +252,7 @@ set_frame
   f->cursor.pc_unnorm = ph->pc;
   f->ip_norm = ph->pc_norm;
   f->the_function = ph->pc_norm;
+  f->ra_loc = NULL;
 }
 
 
@@ -272,8 +273,11 @@ collapse_callstack
 }
 
 
+#define REGULAR_ELIDE_ON
+#define STATE_SLIDE_ON
+
 static void
-ompt_elide_runtime_frame(
+ompt_elide_runtime_frame_no_trampoline(
   backtrace_info_t *bt, 
   uint64_t region_id, 
   int isSync
@@ -303,14 +307,18 @@ ompt_elide_runtime_frame(
     case ompt_state_wait_barrier_explicit:
       // collapse barriers on non-master ranks 
       if (hpcrun_ompt_get_thread_num(0) != 0) {
-	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait_state);
-	goto return_label;
+        #if defined(STATE_SLIDE_ON)
+        collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait_state);
+        #endif
+        goto return_label;
       }
       break; 
     case ompt_state_idle:
       // collapse idle state
       TD_GET(omp_task_context) = 0;
+      #if defined(STATE_SLIDE_ON)
       collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
+      #endif
       goto return_label;
     default:
       break;
@@ -373,7 +381,9 @@ ompt_elide_runtime_frame(
       if ((uint64_t)(it->cursor.sp) >= (uint64_t)fp_enter(frame0)) {
         if (isSync) {
           // for synchronous samples, elide runtime frames at top of stack
+          #if defined(REGULAR_ELIDE_ON)
           *bt_inner = it;
+          #endif
         }
         found = 1;
         break;
@@ -430,7 +440,9 @@ ompt_elide_runtime_frame(
 
     if (exit0_flag && omp_task_context) {
       TD_GET(omp_task_context) = omp_task_context;
+      #if defined(REGULAR_ELIDE_ON)
       *bt_outer = exit0 - 1;
+      #endif
       break;
     }
 
@@ -493,10 +505,12 @@ ompt_elide_runtime_frame(
 
       //------------------------------------
       // The prefvous version DON'T DELETE
+      #if defined(REGULAR_ELIDE_ON)
       memmove(*bt_inner+(reenter1-exit0+1), *bt_inner,
 	      (exit0 - *bt_inner)*sizeof(frame_t));
 
       *bt_inner = *bt_inner + (reenter1 - exit0 + 1);
+      #endif
 
       exit0 = reenter1 = NULL;
       // --------------------------------
@@ -504,12 +518,15 @@ ompt_elide_runtime_frame(
     } else if (exit0 && !reenter1) {
       // corner case: reenter1 is in the team master's stack, not mine. eliminate all
       // frames below the exit frame.
+      #if defined(REGULAR_ELIDE_ON)
       *bt_outer = exit0 - 1;
+      #endif
       break;
     }
   }
 
   if (*bt_outer != bt_outer_at_entry) {
+    #if defined(REGULAR_ELIDE_ON)
     bt->bottom_frame_elided = true;
     bt->partial_unwind = false;
     if (*bt_outer < *bt_inner) {
@@ -531,6 +548,7 @@ ompt_elide_runtime_frame(
       TD_GET(omp_task_context) = 0;
       collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
     }
+    #endif
   }
 
   elide_debug_dump("ELIDED", *bt_inner, *bt_outer, region_id);
@@ -540,10 +558,12 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) {
+      #if defined(REGULAR_ELIDE_ON)
       set_frame(*bt_outer, &ompt_placeholders.ompt_idle_state);
       *bt_inner = *bt_outer;
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
+      #endif
       goto return_label;
     }
 
@@ -573,6 +593,70 @@ ompt_elide_runtime_frame(
 
  return_label:
     return;
+}
+
+static void
+ompt_elide_runtime_frame_with_trampoline(
+  backtrace_info_t *bt, 
+  uint64_t region_id, 
+  int isSync
+) {
+  thread_data_t* td = hpcrun_get_thread_data();
+  
+  if (ENABLED(USE_TRAMP) && !bt->partial_unwind) {
+    if (bt->has_tramp) {
+      // when the current sample is in the same task region as the previous sample
+      if (td->tramp_region_id == hpcrun_ompt_get_parallel_info_id(0)) {
+        //EMSG("Sample #%d -- has tramp, same region %p, context %p", td->tramp_dbg_count++, td->tramp_region_id, td->tramp_omp_task_context);
+        size_t orig_bt_size = bt->last - bt->begin + 1;
+        ompt_elide_runtime_frame_no_trampoline(bt, region_id, isSync);
+        td->omp_task_context = td->tramp_omp_task_context;
+        size_t elided_bt_size = bt->last - bt->begin + 1;
+        
+        if (elided_bt_size != orig_bt_size) { // check if any frame has been elided; if so, update cached buffer accordingly
+          td->cached_bt_frame_beg = td->cached_bt_frame_beg + orig_bt_size - elided_bt_size;
+          memcpy(td->cached_bt_frame_beg, bt->begin, sizeof(frame_t) * elided_bt_size);
+          td->cached_frame_count = td->cached_bt_buf_frame_end - td->cached_bt_frame_beg;
+        }
+
+        return;
+      }
+      else { // when in a different omp_task_context, reconstruct the full calling context on backtrace buffer
+        int copy_count = td->cached_frame_count;
+        //EMSG("Sample #%d -- has tramp, diff region, %p -> %p", td->tramp_dbg_count, td->tramp_region_id, hpcrun_ompt_get_parallel_info_id(0));        
+        // make sure there is enough space in backtrace buffer
+        td->btbuf_cur = td->btbuf_end;
+        while (td->btbuf_cur - td->btbuf_beg < copy_count) {
+          hpcrun_ensure_btbuf_avail();
+          td->btbuf_cur = td->btbuf_end;
+        }
+        
+        memcpy(td->btbuf_beg, td->cached_bt_frame_beg, sizeof(frame_t) * copy_count);
+        td->btbuf_cur = td->btbuf_beg + copy_count;
+        
+        bt->begin = td->btbuf_beg;
+        bt->last = td->btbuf_cur - 1;
+        bt->has_tramp = false;
+        bt->fence = FENCE_NONE;
+      }
+    }
+
+    ompt_elide_runtime_frame_no_trampoline(bt, region_id, isSync);
+    
+    //EMSG("Sample #%d -- no tramp, region %p, context %p", td->tramp_dbg_count++, hpcrun_ompt_get_parallel_info_id(0), td->omp_task_context);
+
+    td->tramp_omp_task_context = td->omp_task_context;
+    td->tramp_region_id = hpcrun_ompt_get_parallel_info_id(0);
+
+    // update cached buffer
+    if (bt->last - bt->begin + 1 != td->cached_frame_count) {
+      td->cached_frame_count = bt->last - bt->begin + 1;
+      td->cached_bt_frame_beg = td->cached_bt_buf_frame_end - td->cached_frame_count;
+      memcpy(td->cached_bt_frame_beg, bt->begin, sizeof(frame_t) * td->cached_frame_count);
+    }
+  }
+  else
+    ompt_elide_runtime_frame_no_trampoline(bt, region_id, isSync);
 }
 
 
@@ -745,7 +829,7 @@ ompt_backtrace_finalize
   }
   uint64_t region_id = TD_GET(region_id);
 
-  ompt_elide_runtime_frame(bt, region_id, isSync);
+  ompt_elide_runtime_frame_with_trampoline(bt, region_id, isSync);
 
   if(!isSync && !ompt_eager_context_p() && !bt->collapsed){
     register_to_all_regions();
@@ -758,8 +842,8 @@ ompt_backtrace_finalize
 // interface operations
 //******************************************************************************
 
-cct_node_t *
-ompt_cct_cursor_finalize
+static cct_node_t *
+ompt_cct_cursor_finalize_no_trampoline
 (
  cct_bundle_t *cct, 
  backtrace_info_t *bt, 
@@ -844,7 +928,24 @@ ompt_cct_cursor_finalize
 
   return cct_cursor;
 }
-
+  
+cct_node_t *
+ompt_cct_cursor_finalize_with_trampoline
+(
+ cct_bundle_t *cct, 
+ backtrace_info_t *bt, 
+ cct_node_t *cct_cursor
+) {
+  if (ENABLED(USE_TRAMP) && !bt->partial_unwind) {
+    if (bt->has_tramp)
+      return cct_cursor;
+    else {
+      return ompt_cct_cursor_finalize_no_trampoline(cct, bt, cct_cursor);
+    }
+  }
+  
+  return ompt_cct_cursor_finalize_no_trampoline(cct, bt, cct_cursor);
+}
 
 void
 ompt_callstack_init_deferred
@@ -877,7 +978,7 @@ ompt_callstack_init
   ompt_finalizer.next = 0;
   ompt_finalizer.fn = ompt_backtrace_finalize;
   cct_backtrace_finalize_register(&ompt_finalizer);
-  cct_cursor_finalize_register(ompt_cct_cursor_finalize);
+  cct_cursor_finalize_register(ompt_cct_cursor_finalize_with_trampoline);
 
   // initialize closure for initializer
   ompt_callstack_init_closure.fn = 

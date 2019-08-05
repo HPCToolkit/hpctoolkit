@@ -407,7 +407,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   if (ENABLED(CHECK_MAIN)) {
     if ( bt.fence == FENCE_MAIN &&
 	 ! bt.partial_unwind &&
-	 ! tramp_found &&
+	 ! bt.has_tramp &&
 	 (bt.last == bt.begin || 
 	  ! hpcrun_inbounds_main(hpcrun_frame_get_unnorm(bt.last - 1)))) {
       hpcrun_bt_dump(TD_GET(btbuf_cur), "WRONG MAIN");
@@ -430,7 +430,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
-					 tramp_found,
+					 bt.has_tramp,
 					 metricId, metricIncr, data);
 
   if (!ompt_eager_context_p()) {
@@ -450,7 +450,10 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     TMSG(TRAMP, "--NEW SAMPLE--: Remove old trampoline");
     hpcrun_trampoline_remove();
     if (!bt.partial_unwind) {
-      td->tramp_frame = td->cached_bt_frame_beg;
+      if (td->cached_frame_count)
+        td->tramp_frame = td->cached_bt_frame_beg;
+      else
+        td->tramp_frame = NULL;
       td->prev_dLCA = td->dLCA;
       td->dLCA = 0;
       TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");

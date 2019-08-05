@@ -369,7 +369,15 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   td->cached_bt_buf_frame_end = td->cached_bt_frame_beg;
   td->tramp_frame       = NULL;
   td->tramp_cct_node    = NULL;
+  
+  td->tramp_region_id   = 0;
+  td->tramp_omp_task_context = NULL;
+  
+  td->prev_dLCA         = HPCTRACE_FMT_DLCA_NULL;
+  td->dLCA              = HPCTRACE_FMT_DLCA_NULL;
 
+  td->tramp_dbg_count   = 1;
+  
   // ----------------------------------------
   // exception stuff
   // ----------------------------------------
