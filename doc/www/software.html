@@ -23,35 +23,42 @@
 <!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="examples.html">Examples</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   &bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
 <!-- ********************************************************************** -->
 
-<h1>Obtaining and Building HPCToolkit Software</h1>
+<h1>Downloading and Installing HPCToolkit</h1>
 
-<h2><a href="software-instructions.html">Prerequisites &amp; Instructions</a></h2>
+<h2><a href="software-instructions.html">Build Instructions</a></h2>
 
 <h2><a href="spack-issues.html">Current Spack Issues</a></h2>
 
 
 <h2>Source code for HPCToolkit</h2>
 
-To build HPCToolkit from source, you need to download and build both
-the hpctoolkit project and hpctoolkit-externals (prereqs for hpctoolkit).
-As of August 2015, the
-<a href="https://github.com/HPCToolkit">HPCToolkit repositories</a>
-are now hosted in git on
-<a href="https://github.com">GitHub</a>.
+<p>To build HPCToolkit, you should clone the HPCToolkit and Spack
+repositories and follow the
+<a href="software-instructions.html">build instructions</a> as above.
+We now use Spack for building HPCToolkit's prerequisites (replacing
+the old hpctoolkit externals).
+</p>
+
+<p>You can install HPCToolkit with the &quot;One Button&quot;
+<code>spack install hpctoolkit</code> method, or else use spack to
+install the prerequisites and then build hpctoolkit with the
+traditional <code>configure ; make ; make install</code> method.  Both
+the hpctoolkit and spack repositories are available on GitHub.
+</p>
 
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
-  <td><a href="https://github.com/HPCToolkit/hpctoolkit">hpctoolkit</a>
-  </td>
-  <td><code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
-  </td>
+    <td><a href="https://github.com/HPCToolkit/hpctoolkit">hpctoolkit</a>
+    </td>
+    <td><code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
+    </td>
   </tr>
   <tr>
-  <td><a href="https://github.com/HPCToolkit/hpctoolkit-externals">hpctoolkit-externals</a>
-  </td>
-  <td><code>git clone https://github.com/HPCToolkit/hpctoolkit-externals.git</code>
-  </td>
+    <td><a href="https://github.com/spack/spack">spack</a>
+    </td>
+    <td><code>git clone https://github.com/spack/spack.git</code>
+    </td>
   </tr>
   </table>
 </ul>
@@ -130,7 +137,7 @@ See the README (<a href="https://github.com/HPCToolkit/hpcviewer/blob/master/REA
 </p>
 
 
-<p>[<span class="lastupdated">Page last updated: 2019/06/17</span>]
+<p>[<span class="lastupdated">Page last updated: 2019/07/01</span>]
 </p>
 
 <!-- ********************************************************************** -->

@@ -823,6 +823,7 @@ OPENMP_FLAG
 HPCRUN_LIBCXX_PATH
 cxx_c11_flag
 CXX11_FLAG
+HPCLINK_CC
 ans
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
@@ -18839,6 +18840,71 @@ if test_is_gnu "$CXX" ; then : ; else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
 fi
+
+
+#-------------------------------------------------
+# Find base CC compiler, outside of spack
+#-------------------------------------------------
+
+# Hpclink needs the CC compiler for the fnbounds array, but the spack
+# wrapper won't run outside of spack.  So, if we're being built by
+# spack, then find the base compiler for hpclink.
+
+HPCLINK_CC="$CC_PATH"
+
+echo "$CC_PATH" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+if test $? -eq 0 ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: found spack compiler wrapper" >&5
+$as_echo "$as_me: found spack compiler wrapper" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if base compiler works: $SPACK_CC" >&5
+$as_echo_n "checking if base compiler works: $SPACK_CC... " >&6; }
+
+  ORIG_CC="$CC"
+  CC="$SPACK_CC"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+unsigned long addrs[] = {
+  0x400400, 0x400410
+};
+unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CC="$ORIG_CC"
+
+  if test "$ans" = yes ; then HPCLINK_CC="$SPACK_CC"
+  else HPCLINK_CC=gcc
+  fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: hpclink compiler: $HPCLINK_CC" >&5
+$as_echo "$as_me: hpclink compiler: $HPCLINK_CC" >&6;}
+
+
 
 
 #-------------------------------------------------
