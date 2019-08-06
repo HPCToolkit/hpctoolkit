@@ -519,7 +519,8 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_MEMACCESS           8
 #define NODE_TYPE_MEMACCESS_ROOT     10
 #define NODE_TYPE_ROOT               16
-#define NODE_TYPE_UNKNOWN_ATTRIBUTE  32
+#define NODE_TYPE_VARIABLE           32
+#define NODE_TYPE_UNKNOWN_ATTRIBUTE  64
 
 #define BITS_RESERVED_NODE_TYPE      7
 

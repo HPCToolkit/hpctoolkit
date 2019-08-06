@@ -102,10 +102,10 @@ struct perf_mem_metric {
   int memstore_l1_hit;
   int memstore_l1_miss;
 
-  int mem_lcl_hitm;
-  int mem_rmt_hitm;
+  int mem_lcl_hitm;     /* count of loads with local HITM  */
+  int mem_rmt_hitm;     /* count of loads with remote HITM */
 
-  int mem_rmt_hit;
+  int mem_rmt_hit;      /* count of loads with remote hit clean; */
 
   int miss_dram_lcl;
   int miss_dram_rmt;
