@@ -873,6 +873,7 @@ endef
 
 install-exec-local:
 	@echo "Installing launch script hash ..."
+	@$(mkinstalldirs) "$(BASE_LIBS_DIR)"
 	rm -f "$(hash_file)"
 	echo "$(hash_value)" > "$(hash_file)"
 	@echo "Copying external package libraries ..."
