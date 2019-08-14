@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [develop],
+AC_INIT([hpctoolkit], [2019.08-release],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -148,7 +148,7 @@ git_version='unknown (not a git repo)'
 mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
 if echo "$mesg" | grep -i commit >/dev/null ; then
   git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
-  git_hash=`expr "$git_hash" : '\(........\)'`
+  git_hash=`expr "$git_hash" : '\(................\)'`
   git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
 
   mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
