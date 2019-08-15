@@ -182,8 +182,73 @@ Contents:
 ------------------------------------------------------------
 
 ----------------------------------------
-HPCToolkit upcoming
+HPCToolkit 2019.08 + some earlier
 ----------------------------------------
+
+Enhancements
+
+Build
+
+Replaced hpctoolkit-externals with building prerequisites from spack.
+See: http://hpctoolkit.org/software-instructions.html
+or README.Install
+
+Moved to using Dyninst 10 to provide better binary analysis used by
+hpcstruct.
+
+Hpcrun
+
+Hpcrun can now tag some metrics to be hidden by default in
+hpcviewer. This support was added to enable the full accounting for
+the myriad GPU instructions stall reasons to be hidden by default.
+
+Launch scripts are more robust for finding the install directory, and
+provide an option for identifying the git version (branch and commit).
+
+Hpcstruct
+
+Hpcstruct now exploits threaded parallelism to analyze large
+application binaries quickly.  Use 'hpcstruct -j num binary' to
+specify number of threads.
+
+Improved handling of irreducible loops.
+
+Hpcviewer
+
+Hide metric columns if it doesn’t have metric values.
+
+Using raw metric values in copying to clipboard and exporting to CSV
+files, instead of exporting the displayed format of the value.
+
+Bug fixes
+
+hpcprof:
+
+Fixed bug so that inlined procedures are now merged in bottom-up and
+flat views. Previously, an internal buffer overflow prevented fusion
+of some instances of inlined procedures in bottom-up and flat views.
+
+Hpcrun
+
+Fixed handling of dynamic thread allocation. 
+
+Fixed handling of precise ip modifier. Using Linux perf convention to
+force hpcrun to enable precise-ip attribute (:p for slightly precise,
+:pp for mostly precise, :ppp for exactly precise).
+
+Fixed handling of memory barrier when manipulating buffer of events
+recorded by Linux perf. Incorrect memory barrier handling caused some
+event records to be handled incorrectly.
+
+Fixed kernel blocking sample-source. Context-switch attribute is now
+supported on Linux kernel 4.3 or newer. It is also available on RedHat
+3.x or newer, which has a backport of the kernel support.
+
+Hpcviewer
+
+Fixed filtering nodes on Flat view.
+
+----------
 
 Merged the 'banal' branch into master.  This fully replaces hpcstruct
 and the banal code with the new inline tree format.  However, the

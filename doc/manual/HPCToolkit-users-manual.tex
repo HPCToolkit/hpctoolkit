@@ -116,7 +116,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2019.07}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2019.08}
 %\subtitle{}
 
 \author{
@@ -933,7 +933,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpcviewer{}'s User Interface}
+\chapter{\hpcviewer{} User Interface}
 \label{chpt:hpcviewer-interface}
 
 \input{hpcviewer}
@@ -942,7 +942,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpctraceviewer{}'s User Interface}
+\chapter{\hpctraceviewer{} User Interface}
 \label{chpt:hpctraceviewer-interface}
 
 \input{hpctraceviewer}
@@ -954,15 +954,8 @@ To isolate code that is an impediment to scalable performance, one can use the {
 \chapter{Monitoring MPI Applications}
 \label{chpt:mpi-apps}
 
-This chapter describes how to use \HPCToolkit{} with MPI programs.
-
-% ===========================================================================
-% ===========================================================================
-
-\section{Introduction}
-
-\HPCToolkit{}'s measurement tools collect data on each process and thread of an MPI program.
-\HPCToolkit{} can be used with pure MPI programs as well as hybrid programs that use OpenMP or Pthreads for multithreaded parallelism.
+\HPCToolkit{}'s measurement subsystem can measure each process and thread in an execution of an MPI program.
+\HPCToolkit{} can be used with pure MPI programs as well as hybrid programs that use multithreading, e.g. OpenMP or Pthreads, within MPI processes.
 
 \HPCToolkit{} supports C, C++ and Fortran MPI programs.
 It has been successfully tested with MPICH, MVAPICH and OpenMPI and should work with almost all MPI implementations.
@@ -987,6 +980,8 @@ For a dynamically linked application binary \texttt{app}, use a command line sim
 %
 Observe that the MPI launcher (\texttt{mpirun}, \texttt{mpiexec}, \etc{}) is used to launch \hpcrun{}, which is then used to launch the application program.
 
+\vspace{1ex}
+
 \question{How do I compile and run a statically linked MPI program?}
 
 \answer{}
@@ -1010,6 +1005,7 @@ export HPCRUN_EVENT_LIST="CYCLES@f200"
 \end{quote}
 See the Chapter~\ref{chpt:statically-linked-apps} for more information.
 
+\vspace{1ex}
 
 \question{What files does \hpcrun{} produce for an MPI program?}
 
@@ -1047,6 +1043,8 @@ Technically, the smaller \mytt{.hpcrun} files imply only a smaller calling-conte
 But in this case, the helper threads are not doing much work.
 
 
+\vspace{1ex}
+
 \question{Do I need to include anything special in the source code?}
 
 \answer{}
@@ -1076,12 +1074,14 @@ Other communicators are allowed, but the first call should use \mytt{MPI_COMM_WO
 Also, the call to \mytt{MPI_Comm_rank()} should be unconditional, that is all processes should make this call.
 Actually, the call to \mytt{MPI_Comm_size()} is not necessary (for \hpcrun{}), although most MPI programs normally call both \mytt{MPI_Comm_size()} and \mytt{MPI_Comm_rank()}.
 
+\vspace{1ex}
 
 \question{What MPI implementations are supported?}
 
 \answer{}
 Although the matrix of all possible MPI variants, versions, compilers, architectures and systems is very large, \HPCToolkit{} has been tested successfully with MPICH, MVAPICH and OpenMPI and should work with most MPI implementations.
 
+\vspace{1ex}
 
 \question{What languages are supported?}
 
@@ -1175,7 +1175,7 @@ aprun -n 64 ./app arg ...
 \end{verbatim}
 \end{quote}
 
-Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene system, you would use the \texttt{--env} option to pass environment variables.
+Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/Q system, you would use the \texttt{--env} option to pass environment variables.
 For example, you might submit a job with:
 \begin{quote}
 \begin{verbatim}
@@ -1400,7 +1400,7 @@ There are three likely reasons why \hpcviewer{} might run slowly.
 First, you may be running \hpcviewer{} on a remote system with low bandwidth, high latency or an otherwise unsatisfactory network connection to your desktop.
 If any of these conditions are true, \hpcviewer{}'s otherwise snappy GUI can become sluggish if not downright unresponsive.
 The solution is to install \hpcviewer{} on your local system, copy the database onto your local system, and run \hpcviewer{} locally.
-We almost always run \hpcviewer{} on our local workstations or laptops for this reason.
+We almost always run \hpcviewer{} on our local desktops or laptops for this reason.
 
 Second, \HPCToolkit{}'s database may contain too many metrics.
 This can happen if you use \hpcprof{} to build a database for several threads with several metrics each, resulting in too many metrics total.
@@ -1701,7 +1701,7 @@ export MONITOR_DEBUG=1
 Broadly speaking, there are two levels at which a user can test \hpcrun{}.
 The first level is tracing \hpcrun{}'s application control, that is, running \hpcrun{} without an asynchronous sample source.
 The second level is tracing \hpcrun{} with a sample source.
-The key difference between the two is that the former uses the \texttt{--event NONE} or \mytt{HPCRUN_EVENT_LIST="NONE"} option (shown below) whereas the latter does not (which enables the default WALLCLOCK sample source).
+The key difference between the two is that the former uses the \texttt{--event NONE} or \mytt{HPCRUN_EVENT_LIST="NONE"} option (shown below) whereas the latter does not (which enables the default CPUTIME sample source).
 With this in mind, to collect a debug trace for either of these levels, use commands similar to the following:
 %
 \begin{itemize}
@@ -1751,14 +1751,14 @@ Note that \hpcrun{} is easiest to debug if you configure and build \HPCToolkit{}
   To debug \hpcrun{} with controlled sampling signals, launch as follows:
 \begin{quote}
 \begin{verbatim}
-hpcrun --debug --event WALLCLOCK@0 app [app-arguments]
+hpcrun --debug --event REALTIME@0 app [app-arguments]
 \end{verbatim}
 \end{quote}
 or
 \begin{quote}
 \begin{verbatim}
 export HPCRUN_WAIT=1
-export HPCRUN_EVENT_LIST="WALLCLOCK@0"
+export HPCRUN_EVENT_LIST="REALTIME@0"
 app [app-arguments]
 \end{verbatim}
 \end{quote}
