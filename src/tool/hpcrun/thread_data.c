@@ -355,16 +355,18 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
+  td->uw_hash_table = uw_hash_new(1023, hpcrun_malloc);
+
   // ----------------------------------------
   // trampoline
   // ----------------------------------------
   td->tramp_present     = false;
   td->tramp_retn_addr   = NULL;
   td->tramp_loc         = NULL;
-  td->cached_bt         = hpcrun_malloc(sizeof(frame_t)
+  td->cached_bt_buf_beg = hpcrun_malloc(sizeof(frame_t)
 					* CACHED_BACKTRACE_SIZE);
-  td->cached_bt_end     = td->cached_bt;          
-  td->cached_bt_buf_end = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->cached_bt_frame_beg = td->cached_bt_buf_beg + CACHED_BACKTRACE_SIZE;         
+  td->cached_bt_buf_frame_end = td->cached_bt_frame_beg;
   td->tramp_frame       = NULL;
   td->tramp_cct_node    = NULL;
 
@@ -410,16 +412,17 @@ void
 hpcrun_cached_bt_adjust_size(size_t n)
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  if ((td->cached_bt_buf_end - td->cached_bt) >= n) {
+  if ((td->cached_bt_buf_frame_end - td->cached_bt_buf_beg) >= n) {
     return; // cached backtrace buffer is already big enough
   }
 
   frame_t* newbuf = hpcrun_malloc(n * sizeof(frame_t));
-  memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
-  size_t idx            = td->cached_bt_end - td->cached_bt;
-  td->cached_bt         = newbuf;
-  td->cached_bt_buf_end = newbuf+n;
-  td->cached_bt_end     = newbuf + idx;
+  size_t frameSize = td->cached_bt_buf_frame_end - td->cached_bt_frame_beg;
+  memcpy(newbuf + n - frameSize, td->cached_bt_frame_beg, 
+      (void*)td->cached_bt_buf_frame_end - (void*)td->cached_bt_frame_beg);
+  td->cached_bt_buf_beg = newbuf;
+  td->cached_bt_buf_frame_end = newbuf+n;
+  td->cached_bt_frame_beg = newbuf + n - frameSize;
 }
 
 

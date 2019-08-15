@@ -70,9 +70,9 @@ typedef struct cuda_device_property {
   int sm_registers;
   int sm_threads;
   int sm_blocks;
+  int sm_schedulers;
   int num_threads_per_warp;
 } cuda_device_property_t;
-
 
 
 //*****************************************************************************

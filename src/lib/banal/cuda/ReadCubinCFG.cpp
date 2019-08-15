@@ -19,13 +19,15 @@
 
 
 #include <lib/binutils/VMAInterval.hpp>
-
+#include <lib/support/FileUtil.hpp>
 
 #include "CudaCFGFactory.hpp"
 #include "CudaFunction.hpp"
 #include "CudaBlock.hpp"
 #include "CudaCodeSource.hpp"
 #include "CFGParser.hpp"
+#include "Instruction.hpp"
+#include "InstructionAnalyzer.hpp"
 #include "GraphReader.hpp"
 #include "ReadCubinCFG.hpp"
 
@@ -182,7 +184,7 @@ parseDotCFG
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
-      block->insts.push_back(new CudaParse::Inst(i));
+      block->insts.push_back(new CudaParse::Instruction(i));
     }
     function->blocks.push_back(block);
     functions.push_back(function);
@@ -206,7 +208,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Inst(function_size + function->address));
+            block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
@@ -237,6 +239,34 @@ parseDotCFG
 }
 
 
+static void
+analyzeCudaInstruction
+(
+ const std::string &search_path,
+ const std::string &elf_filename,
+ const std::vector<CudaParse::Function *> &functions
+)
+{
+  CudaParse::InstructionAnalyzer instruction_analyzer;
+  CudaParse::InstructionMetrics instruction_metrics;
+  instruction_analyzer.analyze(functions, instruction_metrics);
+  // Create a nvidia directory and dump instruction files
+  if (functions.size() > 0) {
+    const std::string dot_dir = search_path + "/nvidia";
+    int ret = mkdir(dot_dir.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
+    if (ret != 0 && errno != EEXIST) {
+      std::cout << "WARNING: failed to mkdir: " << dot_dir << std::endl;
+      return;
+    }
+
+    const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
+    if (CudaParse::InstructionAnalyzer::dump(inst_output, instruction_metrics) != true) {
+      std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
+    }
+  }
+}
+
+
 std::string
 getFilename
 (
@@ -253,6 +283,7 @@ getFilename
 bool
 readCubinCFG
 (
+ const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
@@ -273,6 +304,9 @@ readCubinCFG
     } else {
       std::vector<CudaParse::Function *> functions;
       parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
+      // Analyze Cuda instructions
+      analyzeCudaInstruction(search_path, elfFile->getFileName(), functions);
+      // Dyninst adapter
       CFGFactory *cfg_fact = new CudaCFGFactory(functions);
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);

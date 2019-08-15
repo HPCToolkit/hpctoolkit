@@ -125,7 +125,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.1.0]
+    version:  [10.1.0, develop]
     variants: +openmp build_type=RelWithDebInfo
 
 

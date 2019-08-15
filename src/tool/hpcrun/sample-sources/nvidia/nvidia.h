@@ -6,14 +6,14 @@
 #include "cupti-node.h"
 #include "sanitizer-node.h"
 
-extern void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
+void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
 
-extern void sanitizer_activity_attribute(sanitizer_activity_t *activity, cct_node_t *cct_node);
+int cupti_pc_sampling_frequency_get();
 
-extern int cupti_pc_sampling_frequency_get();
+void cupti_enable_activities(CUcontext context);
 
-extern int sanitizer_block_sampling_frequency_get();
+void sanitizer_activity_attribute(sanitizer_activity_t *activity, cct_node_t *cct_node);
 
-extern void cupti_enable_activities(CUcontext context);
+int sanitizer_block_sampling_frequency_get();
 
 #endif

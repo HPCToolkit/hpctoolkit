@@ -107,7 +107,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -120,7 +121,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -136,7 +138,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false)
   {
     nameFromString(nameBase);
   }
@@ -153,7 +156,8 @@ public:
       m_computedTy(x.m_computedTy),
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
-      m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type)
+      m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
+	  m_isTemporary(false)
   { }
 
   ADesc&
@@ -179,6 +183,8 @@ public:
       m_isMultiplexed = x.m_isMultiplexed;
       m_period_mean   = x.m_period_mean;
       m_sampling_type = x.m_sampling_type;
+
+      m_isTemporary   = x.m_isTemporary;
     }
     return *this;
   }
@@ -409,6 +415,14 @@ public:
   { return m_isPercent; }
 
 
+  bool
+  isTemporary() const
+  { return m_isTemporary; }
+
+  void
+  isTemporary(bool x)
+  { m_isTemporary = x; }
+
   // ------------------------------------------------------------
   // computed type
   // ------------------------------------------------------------
@@ -568,6 +582,8 @@ private:
   bool  m_isMultiplexed;
   float m_period_mean;
   enum SamplingType_e m_sampling_type;
+
+  bool m_isTemporary;
 };
 
 

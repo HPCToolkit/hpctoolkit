@@ -51,8 +51,9 @@ typedef struct cupti_kernel {
   int32_t localMemoryTotal;
   uint32_t activeWarpsPerSM;
   uint32_t maxActiveWarpsPerSM;
+  uint32_t schedulersPerSM;
+  uint32_t threadRegisters;
   uint32_t blockThreads;
-  uint32_t blockRegisters;
   uint32_t blockSharedMemory;
 } cupti_kernel_t;
 
@@ -126,7 +127,7 @@ typedef struct cupti_entry_notification {
 } cupti_entry_notification_t;
 
 // activity allocator
-extern cstack_node_t *
+cstack_node_t *
 cupti_activity_node_new
 (
  CUpti_Activity *activity,
@@ -135,7 +136,7 @@ cupti_activity_node_new
 );
 
 
-extern void
+void
 cupti_activity_node_set
 (
  cstack_node_t *cupti_node,
@@ -145,7 +146,7 @@ cupti_activity_node_set
 );
 
 // notification allocator
-extern cstack_node_t *
+cstack_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
@@ -155,7 +156,7 @@ cupti_notification_node_new
 );
 
 
-extern void
+void
 cupti_notification_node_set
 (
  cstack_node_t *cupti_node,

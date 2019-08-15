@@ -1,5 +1,5 @@
-#ifndef _CUDA_CODE_SOURCE_H_
-#define _CUDA_CODE_SOURCE_H_
+#ifndef _CUDA_CUDA_CODE_SOURCE_H_
+#define _CUDA_CUDA_CODE_SOURCE_H_
 
 #include <dyn_regs.h>
 #include <CodeSource.h>

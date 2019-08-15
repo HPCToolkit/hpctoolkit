@@ -15,9 +15,9 @@ sanitizer_notification_node_new
  cstack_node_t *buffer_device
 )
 {
-  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc(sizeof(cstack_node_t));
+  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc_safe(sizeof(cstack_node_t));
   sanitizer_entry_notification_t *entry = (sanitizer_entry_notification_t *)
-    hpcrun_malloc(sizeof(sanitizer_entry_notification_t));
+    hpcrun_malloc_safe(sizeof(sanitizer_entry_notification_t));
   node->entry = entry;
   node->type = CSTACK_TYPE_SANITIZER_NOTIFICATION;
   sanitizer_notification_node_set(node, module, stream, function_index, host_op_node,
@@ -54,9 +54,9 @@ sanitizer_buffer_node_new
  void *buffer
 )
 {
-  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc(sizeof(cstack_node_t));
+  cstack_node_t *node = (cstack_node_t *)hpcrun_malloc_safe(sizeof(cstack_node_t));
   sanitizer_entry_buffer_t *entry = (sanitizer_entry_buffer_t *)
-    hpcrun_malloc(sizeof(sanitizer_entry_buffer_t));
+    hpcrun_malloc_safe(sizeof(sanitizer_entry_buffer_t));
   node->entry = entry;
   node->type = CSTACK_TYPE_SANITIZER_BUFFER;
   sanitizer_buffer_node_set(node, buffer);

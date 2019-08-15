@@ -153,6 +153,8 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
   // -------------------------------------------------------
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
+    m->isTemporary(true);
+
     string nm = m->nameGeneric();
 
     StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
@@ -278,8 +280,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
-  bool doDispPercent = mSrc->doDispPercent();
-  bool isPercent = mSrc->isPercent();
+  bool doDispPercent = true;
+  bool isPercent = false;
   bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
@@ -376,7 +378,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
   bool isPercent = false;
-  bool isVisible = true;
+  bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -514,7 +516,7 @@ Mgr::findFirstVisible() const
   Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }
@@ -529,7 +531,7 @@ Mgr::findLastVisible() const
   Metric::ADesc* found = NULL;
   for (int i = m_metrics.size() - 1; i >= 0; --i) { // i may be < 0
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }

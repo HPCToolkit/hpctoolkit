@@ -51,7 +51,7 @@ static cupti_host_op_map_entry_t *
 cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node, cupti_record_t *record)
 {
   cupti_host_op_map_entry_t *e;
-  e = (cupti_host_op_map_entry_t *)hpcrun_malloc(sizeof(cupti_host_op_map_entry_t));
+  e = (cupti_host_op_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_host_op_map_entry_t));
   e->host_op_id = host_op_id;
   e->samples = 0;
   e->total_samples = 0;

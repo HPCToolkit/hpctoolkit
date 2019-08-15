@@ -50,7 +50,7 @@ static cubin_id_map_entry_t *
 cubin_id_map_entry_new(uint32_t cubin_id, Elf_SymbolVector *vector)
 {
   cubin_id_map_entry_t *e;
-  e = (cubin_id_map_entry_t *)hpcrun_malloc(sizeof(cubin_id_map_entry_t));
+  e = (cubin_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cubin_id_map_entry_t));
   e->cubin_id = cubin_id;
   e->left = NULL;
   e->right = NULL;

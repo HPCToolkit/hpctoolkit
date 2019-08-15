@@ -418,6 +418,11 @@ PGMDocHandler::startElement(const XMLCh* const GCC_ATTR_UNUSED uri,
     string node_id = getAttr(attributes, attrId);
     loopNode->m_origId = atoi(node_id.c_str());
 
+    string vma = getAttr(attributes, attrVMA);
+    if (!vma.empty()) {
+      loopNode->vmaSet().fromString(vma.c_str());
+    }
+
     DIAG_DevMsgIf(DBG, "PGMDocHandler: " << loopNode->toStringMe());
 
     curStrct = loopNode;

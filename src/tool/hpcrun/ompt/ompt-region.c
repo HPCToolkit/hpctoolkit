@@ -192,12 +192,10 @@ ompt_parallel_end_internal
     region_stack_el_t *stack_el = &region_stack[top_index + 1];
     ompt_notification_t *notification = stack_el->notification;
     if (notification->unresolved_cct) {
-      // FIXME vi3: consider to combine this if with next
-      // calling hpcrun_sample_callpath (by calling ompt_region_context and
-      // ompt_region_context_end_region_not_eager) twice is obviously overhead
       ending_region = region_data;
-      cct_node_t *prefix = ompt_region_context(region_data->region_id, ompt_scope_end,
-                                               flags & ompt_parallel_invoker_program);
+      ompt_region_context_lazy(region_data->region_id, ompt_scope_end,
+                               flags & ompt_parallel_invoker_program);
+      cct_node_t *prefix = region_data->call_path;
       // if combined this if branch with branch of next if
       // we will remove this line
       tmp_end_region_resolve(notification, prefix);
@@ -215,8 +213,8 @@ ompt_parallel_end_internal
         // but do not insert them in any tree
         ending_region = region_data;
         // need to provide call path, because master did not take a sample inside region
-        ompt_region_context_end_region_not_eager(region_data->region_id, ompt_scope_end,
-                                     flags & ompt_parallel_invoker_program);
+        ompt_region_context_lazy(region_data->region_id, ompt_scope_end,
+                                 flags & ompt_parallel_invoker_program);
         ending_region = NULL;
       }
 
@@ -310,6 +308,14 @@ ompt_implicit_task_internal_begin
   task_data->ptr = NULL;
 
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
+
+  if (region_data == NULL) {
+    // there are no parallel region callbacks for the initial task.
+    // region_data == NULL indicates that this is an initial task. 
+    // do nothing for initial tasks.
+    return;
+  }
+
   cct_node_t *prefix = region_data->call_path;
 
   task_data->ptr = prefix;

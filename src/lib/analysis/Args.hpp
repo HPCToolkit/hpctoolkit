@@ -127,6 +127,9 @@ public:
   // Structure files
   std::vector<std::string> structureFiles;
 
+  // Static analysis files
+  std::vector<std::string> instructionFiles;
+
   // Group files
   std::vector<std::string> groupFiles;
 

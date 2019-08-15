@@ -50,7 +50,7 @@ static cupti_function_id_map_entry_t *
 cupti_function_id_map_entry_new(uint64_t function_id, uint64_t function_index, uint64_t cubin_id)
 {
   cupti_function_id_map_entry_t *e;
-  e = (cupti_function_id_map_entry_t *)hpcrun_malloc(sizeof(cupti_function_id_map_entry_t));
+  e = (cupti_function_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_function_id_map_entry_t));
   e->function_id = function_id;
   e->function_index = function_index;
   e->cubin_id = cubin_id;

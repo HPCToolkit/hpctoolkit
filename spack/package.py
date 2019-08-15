@@ -53,7 +53,7 @@ class Hpctoolkit(AutotoolsPackage):
             'the hardware performance counters.')
 
     boost_libs = '+atomic +graph +regex +serialization'  \
-        '+shared +multithreaded'
+        '+shared +multithreaded visibility=global'
 
     depends_on('binutils+libiberty~nls')
     depends_on('boost' + boost_libs)

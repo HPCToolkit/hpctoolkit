@@ -105,6 +105,7 @@
 //****************************************************************************
 // macros
 //****************************************************************************
+#include <trampoline/common/trampoline.h>
 
 #define DECREMENT_PC(pc) pc = ((char *)pc) - 1
 
@@ -420,21 +421,34 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   }
 
   if (cursor->libunw_status == LIBUNW_READY) {
-    void *pc, **bp, **sp;
-
     unw_res = libunw_take_step(cursor);
-
+    // libunw_take_step() only updates PC.
+    // Here, we need to update bp, sp, ra_loc.
+    void *pc, *bp, *sp;
+    unw_save_loc_t ip_loc;
     unw_get_reg(&cursor->uc, UNW_REG_IP, (unw_word_t *)&pc);
     unw_get_reg(&cursor->uc, UNW_REG_SP, (unw_word_t *)&sp);
     unw_get_reg(&cursor->uc, UNW_TDEP_BP, (unw_word_t *)&bp);
+    
+    /** libunwind version after Mar 6, 2018 
+     * (commission 7f04c2032f1a2328072f3a3733abf74a72188458)
+     * is needed to get location of IP.
+     */
+    unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
+
     // sanity check to avoid infinite unwind loop
     if (sp <= cursor->sp) {
       cursor->libunw_status = LIBUNW_UNAVAIL;
       unw_res = STEP_ERROR;
     }
     else
-      save_registers(cursor, pc, bp, sp, (void **)(sp - 1));
-
+     save_registers(cursor, pc, bp, sp, 
+            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
+    
+    // if PC is trampoline, must skip libunw_find_step() to avoid trolling.
+    if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))
+        return STEP_OK;
+    
     if (unw_res == STEP_OK) {
       libunw_finalize_cursor(cursor, decrement_pc);
     }

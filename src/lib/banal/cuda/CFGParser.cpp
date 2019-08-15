@@ -22,7 +22,7 @@ static void debug_blocks(const std::vector<Block *> &blocks) {
 }
 
 
-TargetType CFGParser::get_target_type(const Inst *inst) {
+TargetType CFGParser::get_target_type(const Instruction *inst) {
   TargetType type;
   if (inst->predicate.find("@") != std::string::npos) {
     type = TargetType::COND_TAKEN;
@@ -35,7 +35,7 @@ TargetType CFGParser::get_target_type(const Inst *inst) {
 }
 
 
-TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
+TargetType CFGParser::get_fallthrough_type(const Instruction *inst) {
   TargetType type;
   if (inst->is_call) {
     type = TargetType::CALL_FT;
@@ -232,7 +232,7 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
     std::deque<std::string> inst_strings;
     parse_inst_strings(vertex->label, inst_strings);
     for (auto &inst_string : inst_strings) {
-      block->insts.push_back(new Inst(inst_string));
+      block->insts.push_back(new Instruction(inst_string));
     }
 
     blocks.push_back(block);
@@ -379,7 +379,7 @@ void CFGParser::split_blocks(
     std::vector<size_t> split_inst_index;
     // Step 1: filter out all branch instructions
     for (size_t i = 0; i < block->insts.size(); ++i) {
-      Inst *inst = block->insts[i];
+      Instruction *inst = block->insts[i];
       if (inst->is_call) {
         split_inst_index.push_back(i);
         continue;
@@ -412,7 +412,7 @@ void CFGParser::split_blocks(
         intervals.push_back(std::pair<size_t, size_t>(prev_inst_index, index));
         prev_inst_index = index + 1;
       }
-      std::vector<Inst *> insts = block->insts;
+      std::vector<Instruction *> insts = block->insts;
       if (prev_inst_index < insts.size()) {
         intervals.push_back(std::pair<size_t, size_t>(prev_inst_index, insts.size() - 1));
       }

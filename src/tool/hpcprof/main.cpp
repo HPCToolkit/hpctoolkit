@@ -74,6 +74,7 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath-CudaCFG.hpp>
+#include <lib/analysis/CallPath-CudaInstruction.hpp>
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
 
@@ -201,6 +202,9 @@ realmain(int argc, char* const* argv)
   prof->structure(structure);
 
   bool printProgress = true;
+
+  // Static instruction overlay should be down before stmt coalesce 
+  Analysis::CallPath::overlayCudaInstructionsMain(*prof, args.instructionFiles);
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);

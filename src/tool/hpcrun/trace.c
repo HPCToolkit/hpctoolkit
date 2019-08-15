@@ -90,7 +90,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime);
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime);
 
 
 //*********************************************************************
@@ -149,11 +149,18 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
 
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
+    ENABLE(USE_TRAMP);
+#else
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
+#endif
+    
     ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
   }
@@ -165,13 +172,13 @@ void
 hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
 {
 	if (tracing && hpcrun_sample_prob_active()) {
-        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, microtime);
+        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, microtime);
 	}
 }
 
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -186,7 +193,7 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
 
     int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
-    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, microtime);
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
   }
 }
 
@@ -216,7 +223,7 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 // private operations
 //*********************************************************************
 
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime)
 {
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = microtime;
@@ -228,16 +235,30 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     }
     
     hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
+    if (dLCA > HPCTRACE_FMT_DLCA_NULL)
+      dLCA = HPCTRACE_FMT_DLCA_NULL;
+
+#if defined(LCA_TRACE)
+    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
+    HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
+#else
+    trace_datum.comp = microtime;
+#endif
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
+#endif
+    
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
+#else
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
 #endif
     
     int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, cptd->trace_outbuf);

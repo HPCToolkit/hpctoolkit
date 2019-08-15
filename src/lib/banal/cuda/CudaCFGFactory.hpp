@@ -1,5 +1,5 @@
-#ifndef _CUDA_CFG_FACTORY_H_
-#define _CUDA_CFG_FACTORY_H_
+#ifndef _CUDA_CUDA_CFG_FACTORY_H_
+#define _CUDA_CUDA_CFG_FACTORY_H_
 
 #include <CFGFactory.h>
 #include <unordered_map>
