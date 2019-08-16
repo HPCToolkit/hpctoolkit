@@ -98,6 +98,10 @@ struct perf_mem_metric {
   int memload;
   int memload_miss;
 
+  int memld_fbhit;
+  int memld_l1hit;
+  int memld_l2hit;
+
   int memstore;
   int memstore_l1_hit;
   int memstore_l1_miss;
@@ -110,7 +114,8 @@ struct perf_mem_metric {
   int miss_dram_lcl;
   int miss_dram_rmt;
 
-  int memllc_miss;
+  int memllc_hit;      /* llc hit */
+  int memllc_miss;     /* llc mis  (derived metrics) */
 };
 
 
@@ -163,22 +168,30 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
 
     if (lvl & P(LVL, UNC)) data_mem.ld_uncache++; // uncached memory
     if (lvl & P(LVL, IO))  data_mem.ld_io++;      // I/O memory
-    if (lvl & P(LVL, LFB)) data_mem.ld_fbhit++;   // life fill buffer
-    if (lvl & P(LVL, L1 )) data_mem.ld_l1hit++;   // level 1 cache
-    if (lvl & P(LVL, L2 )) data_mem.ld_l2hit++;   // level 2 cache
+    if (lvl & P(LVL, LFB)) {
+      data_mem.ld_fbhit++;                        // life fill buffer
+      datacentric_record_metric(metric.memld_fbhit, node, datacentric_node, value);
+    }
+    if (lvl & P(LVL, L1 )) {
+      data_mem.ld_l1hit++;                        // level 1 cache
+      datacentric_record_metric(metric.memld_l1hit, node, datacentric_node, value);
+    }
+    if (lvl & P(LVL, L2 )) {
+      data_mem.ld_l2hit++;                        // level 2 cache
+      datacentric_record_metric(metric.memld_l2hit, node, datacentric_node, value);
+    }
     if (lvl & P(LVL, L3 )) {                      // level 3 cache
       if (snoop & P(SNOOP, HITM)) {
         data_mem.lcl_hitm++;                      // loads with local HITM
-        value.i = 1;
         datacentric_record_metric(metric.mem_lcl_hitm, node, datacentric_node, value);
       } else {
         data_mem.ld_llchit++;                     // loads that hit LLC
+        datacentric_record_metric(metric.memllc_hit, node, datacentric_node, value);
       }
     }
 
     if (lvl & P(LVL, LOC_RAM)) {
       data_mem.lcl_dram++;                        // loads miss to local DRAM
-      value.i = 1;
       datacentric_record_metric(metric.miss_dram_lcl, node, datacentric_node, value);
 
       if (snoop & P(SNOOP, HIT))
@@ -191,7 +204,6 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
         (lvl & P(LVL, REM_RAM2))) {
 
       data_mem.rmt_dram++;                        // loads miss to remote DRAM
-      value.i = 1;
       datacentric_record_metric(metric.miss_dram_rmt, node, datacentric_node, value);
 
       if (snoop & P(SNOOP, HIT))
@@ -207,32 +219,19 @@ datacentric_record_load_mem(cct_node_t *node, cct_node_t *datacentric_node,
   if ((lvl & P(LVL, REM_CCE1)) ||
       (lvl & P(LVL, REM_CCE2))) {
     if (snoop & P(SNOOP, HIT)) {
-      value.i = 1;
       datacentric_record_metric(metric.mem_rmt_hit, node, datacentric_node, value);
       data_mem.rmt_hit++;
     }
     else if (snoop & P(SNOOP, HITM)) {
-      value.i = 1;
       datacentric_record_metric(metric.mem_rmt_hitm, node, datacentric_node, value);
       data_mem.rmt_hitm++;
     }
   }
 
   // ---------------------------------------------------
-  // llc miss
-  // ---------------------------------------------------
-  u64 llc_miss =  data_mem.lcl_dram + data_mem.rmt_dram +
-                  data_mem.rmt_hit  + data_mem.rmt_hitm ;
-  if (llc_miss > 0) {
-    value.i = llc_miss;
-    datacentric_record_metric(metric.memllc_miss, node, datacentric_node, value);
-  }
-
-  // ---------------------------------------------------
   // load miss
   // ---------------------------------------------------
   if ((lvl & P(LVL, MISS))) {
-    value.i = 1;
     datacentric_record_metric(metric.memload_miss, node, datacentric_node, value);
   }
 }
@@ -274,6 +273,15 @@ create_metric_addons()
   // ------------------------------------------
   metric.memload = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memload, "MEM-Load");
+
+  metric.memld_fbhit = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.memld_fbhit, "MEM-Load-FBhit");
+
+  metric.memld_l1hit = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.memld_l1hit, "MEM-Load-L1hit");
+
+  metric.memld_l2hit = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.memld_l2hit, "MEM-Load-L2hit");
 
   // ------------------------------------------
   // Memory store metric
@@ -318,10 +326,21 @@ create_metric_addons()
   hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
 
   // ------------------------------------------
-  // Memory llc load metric
+  // last level cache (llc)
   // ------------------------------------------
+
+  metric.memllc_hit = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.memllc_hit, "MEM-LLC-hit");
+  /**
+   * llc_miss =
+   *   = miss_dram_lcl + miss_dram_rmt + mem_rmt_hit + mem_rmt_hitm
+   */
   metric.memllc_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
+
+  char *buffer = hpcrun_malloc(sizeof(char)*20);
+  sprintf(buffer, "%d+%d+%d+%d", metric.miss_dram_lcl, metric.miss_dram_rmt,
+      metric.mem_rmt_hit, metric.mem_rmt_hitm);
 }
 
 
