@@ -456,37 +456,57 @@ read_perf_buffer(pe_mmap_t *current_perf_mmap,
 
   if (hdr.type == PERF_RECORD_SAMPLE) {
       parse_record_buffer(data_head, &data_tail, current_perf_mmap, attr, mmap_info);
+  }
+
+  else if (hdr.type == PERF_RECORD_THROTTLE ||
+           hdr.type == PERF_RECORD_UNTHROTTLE) {
+    // lost samples due to a throttle/unthrottle
+
+    TMSG(LINUX_PERF, "%d throttle/unthrottle %d: % bytes", attr->config, hdr.type, hdr.size);
+  }
+
+  else if (hdr.type == PERF_RECORD_LOST) {
+    u64 id;
+    u64 lost;
+
+    perf_read_u64(data_head, &data_tail, current_perf_mmap, &id);
+    perf_read_u64(data_head, &data_tail, current_perf_mmap, &lost);
+
+    TMSG(LINUX_PERF, "%d lost record, id %d: %d, %d bytes", attr->config, id, lost, hdr.size);
+  }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
-  } else if (hdr.type == PERF_RECORD_SWITCH) {
+  else if (hdr.type == PERF_RECORD_SWITCH) {
       // only available since kernel 4.3
 
     parse_sample_id_buffer(data_head, &data_tail, current_perf_mmap, attr, mmap_info);
 
     TMSG(LINUX_PERF, "%d context switch %d, time: %u", attr->config, hdr.misc, mmap_info->time);
-
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
-  } else if (hdr.type == PERF_RECORD_LOST_SAMPLES) {
-     u64 lost_samples;
-     perf_read_u64(current_perf_mmap, &lost_samples);
-     TMSG(LINUX_PERF, "[%d] lost samples %d",
-    		 current->fd, lost_samples);
-     skip_perf_data(current_perf_mmap, hdr.size-sizeof(lost_samples))
+  }
 #endif
 
-  } else {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
+  else if (hdr.type == PERF_RECORD_LOST_SAMPLES) {
+     u64 lost_samples;
+     perf_read_u64(data_head, &data_tail, current_perf_mmap, &lost_samples);
+
+     TMSG(LINUX_PERF, "[%d] lost samples %d: %d bytes",
+         current_perf_mmap->index, lost_samples, hdr.size);
+  }
+#endif
+
+  else {
       // not a PERF_RECORD_SAMPLE nor PERF_RECORD_SWITCH
       // skip it
       TMSG(LINUX_PERF, "[%d] skip header %d  %d : %d bytes",
-    		  attr->config,
-    		  hdr.type, hdr.misc, hdr.size);
+    		  attr->config, hdr.type, hdr.misc, hdr.size);
   }
 
   // update tail after consuming a record
   rmb();  // memory fence before writing data_tail
   current_perf_mmap->data_tail += hdr.size;
 
-  return (data_tail-current_perf_mmap->data_tail);
+  return (data_head-current_perf_mmap->data_tail);
 }
 
 //----------------------------------------------------------
