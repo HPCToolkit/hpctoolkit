@@ -51,7 +51,7 @@ cubin_hash_map_entry_new(const void *cubin, size_t size)
   unsigned int hash_length = crypto_hash_length();
   e = (cubin_hash_map_entry_t *)
   hpcrun_malloc_safe(sizeof(cubin_hash_map_entry_t) + hash_length);
-  e->cubin_id = cubin_id;
+  e->cubin = cubin;
   e->left = NULL;
   e->right = NULL;
   crypto_hash_compute(cubin, size, e->hash, hash_length);
