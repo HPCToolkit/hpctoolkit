@@ -103,10 +103,10 @@ typedef struct perf_mmap_data_s {
   u64    abi;        /* if PERF_SAMPLE_REGS_USER */
   u64    *regs;
                      /* if PERF_SAMPLE_REGS_USER */
-  u64    stack_size;             /* if PERF_SAMPLE_STACK_USER */
-  char   *stack_data; /* if PERF_SAMPLE_STACK_USER */
-  u64    stack_dyn_size;         /* if PERF_SAMPLE_STACK_USER &&
-                                     size != 0 */
+  u64    stack_size;                       /* if PERF_SAMPLE_STACK_USER */
+  char   stack_data[MAX_CALLCHAIN_FRAMES]; /* if PERF_SAMPLE_STACK_USER */
+  u64    stack_dyn_size;                   /* if PERF_SAMPLE_STACK_USER &&
+                                               size != 0 */
   u64    weight;     /* if PERF_SAMPLE_WEIGHT */
   u64    data_src;   /* if PERF_SAMPLE_DATA_SRC */
   u64    transaction;/* if PERF_SAMPLE_TRANSACTION */

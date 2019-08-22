@@ -443,6 +443,7 @@ perf_util_attr_init(
 #if KERNEL_SAMPLING_ENABLED
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+    attr->sample_max_stack         = MAX_CALLCHAIN_FRAMES;
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
