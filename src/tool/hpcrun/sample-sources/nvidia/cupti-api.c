@@ -113,7 +113,7 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_API_DEBUG 0
+#define CUPTI_API_DEBUG 1
 
 #if CUPTI_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -232,7 +232,7 @@ static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
-static __thread bool cupti_enter_runtime_api = false;
+static __thread bool cupti_runtime_api_flag = false;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -775,10 +775,6 @@ cupti_subscriber_callback
       cupti_enable_activities(rd->context);
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
-    if (cupti_enter_runtime_api) {
-      return;
-    }
-
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
     cupti_record_init();
@@ -901,7 +897,8 @@ cupti_subscriber_callback
       default:
         break;
     }
-    if (is_valid_cuda_op) {
+    // If we have a valid operation and is not in the interval of a runtime api
+    if (is_valid_cuda_op && !cupti_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
@@ -1022,7 +1019,7 @@ cupti_subscriber_callback
     }
     if (is_valid_cuda_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
-        cupti_enter_runtime_api = true;
+        cupti_runtime_api_flag_set();
         uint64_t correlation_id = 0;
         cupti_correlation_callback(&correlation_id, cuda_state);
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, 
@@ -1031,7 +1028,7 @@ cupti_subscriber_callback
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
-        cupti_enter_runtime_api = false;
+        cupti_runtime_api_flag_unset();
         uint64_t correlation_id = 0;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
           (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
@@ -1898,6 +1895,20 @@ void
 cupti_stop_flag_set()
 {
   cupti_stop_flag = true;
+}
+
+
+void
+cupti_runtime_api_flag_unset()
+{
+  cupti_runtime_api_flag = false;
+}
+
+
+void
+cupti_runtime_api_flag_set()
+{
+  cupti_runtime_api_flag = true;
 }
 
 
