@@ -41,7 +41,7 @@ typedef struct sanitizer_buffer {
 typedef struct sanitizer_entry_notification {
   CUmodule module;
   CUstream stream;
-  uint32_t function_index;
+  uint64_t function_addr;
   cct_node_t *host_op_node;
   sanitizer_activity_type_t type;
   cstack_node_t *buffer_device;
@@ -73,7 +73,7 @@ sanitizer_notification_node_new
 (
  CUmodule module,
  CUstream stream,
- uint32_t function_index,
+ uint64_t function_addr,
  cct_node_t *host_op_node,
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device
@@ -86,7 +86,7 @@ sanitizer_notification_node_set
  cstack_node_t *node,
  CUmodule module,
  CUstream stream,
- uint32_t function_index,
+ uint64_t function_addr,
  cct_node_t *host_op_node,
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device

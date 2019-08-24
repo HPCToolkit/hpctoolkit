@@ -9,7 +9,7 @@ sanitizer_notification_node_new
 (
  CUmodule module,
  CUstream stream,
- uint32_t function_index,
+ uint64_t function_addr,
  cct_node_t *host_op_node,
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device
@@ -20,7 +20,7 @@ sanitizer_notification_node_new
     hpcrun_malloc_safe(sizeof(sanitizer_entry_notification_t));
   node->entry = entry;
   node->type = CSTACK_TYPE_SANITIZER_NOTIFICATION;
-  sanitizer_notification_node_set(node, module, stream, function_index, host_op_node,
+  sanitizer_notification_node_set(node, module, stream, function_addr, host_op_node,
     type, buffer_device);
   return node;
 }
@@ -32,7 +32,7 @@ sanitizer_notification_node_set
  cstack_node_t *node,
  CUmodule module,
  CUstream stream,
- uint32_t function_index,
+ uint64_t function_addr,
  cct_node_t *host_op_node,
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device
@@ -41,7 +41,7 @@ sanitizer_notification_node_set
   sanitizer_entry_notification_t *entry = (sanitizer_entry_notification_t *)node->entry;
   entry->module = module;
   entry->stream = stream;
-  entry->function_index = function_index;
+  entry->function_addr = function_addr;
   entry->host_op_node = host_op_node;
   entry->type = type;
   entry->buffer_device = buffer_device;

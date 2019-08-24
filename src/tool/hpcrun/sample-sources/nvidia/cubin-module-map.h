@@ -35,6 +35,7 @@ void
 cubin_module_map_insert
 (
  const void *module,
+ const void *cubin,
  uint32_t hpctoolkit_module_id, 
  Elf_SymbolVector *vector
 );

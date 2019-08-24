@@ -19,7 +19,7 @@ sanitizer_notification_insert
  CUcontext context,
  CUmodule module,
  CUstream stream,
- uint32_t function_index, 
+ uint64_t function_addr, 
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device,
  cct_node_t *host_op_node

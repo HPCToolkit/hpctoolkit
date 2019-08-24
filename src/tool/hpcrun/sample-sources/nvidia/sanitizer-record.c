@@ -29,7 +29,7 @@ sanitizer_notification_insert
  CUcontext context,
  CUmodule module,
  CUstream stream,
- uint32_t function_index, 
+ uint64_t function_addr, 
  sanitizer_activity_type_t type,
  cstack_node_t *buffer_device,
  cct_node_t *host_op_node
@@ -37,10 +37,10 @@ sanitizer_notification_insert
 {
   cstack_node_t *node = cstack_pop(&free_notification_stack);
   if (node == NULL) {
-    node = sanitizer_notification_node_new(module, stream, function_index,
+    node = sanitizer_notification_node_new(module, stream, function_addr,
       host_op_node, type, buffer_device);
   } else {
-    sanitizer_notification_node_set(node, module, stream, function_index,
+    sanitizer_notification_node_set(node, module, stream, function_addr,
       host_op_node, type, buffer_device);
   }
   sanitizer_context_map_insert(context, stream, node);

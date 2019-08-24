@@ -61,6 +61,10 @@
 #define SANITIZER_TRACE_SIZE (SANITIZER_BUFFER_SIZE * 128)
 #define SANITIZER_THREAD_HASH_SIZE (128 * 1024 - 1)
 
+#define CUFUNCTION_SYMBOL_INDEX_OFFSET (16)
+#define CUFUNCTION_FUNCTION_RECORD_OFFSET (16*8+8)
+#define FUNCTION_RECORD_FUNCTION_ADDR_OFFSET (16*3)
+
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
 #define SANITIZER_FN(fn, args) \
@@ -404,7 +408,7 @@ sanitizer_load_callback
     cubin_module_map_entry_t *entry = cubin_module_map_lookup(cubin_module);
     if (entry == NULL) {
       Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
-      cubin_module_map_insert(cubin_module, hpctoolkit_module_id, elf_vector);
+      cubin_module_map_insert(cubin_module, cubin, hpctoolkit_module_id, elf_vector);
       cubin_module_map_insert_hash(cubin_module, hash);
     }
   }
@@ -490,7 +494,7 @@ sanitizer_memory_process
 (
  CUmodule module,
  CUstream stream,
- uint32_t function_index,
+ uint64_t function_addr,
  cct_node_t *host_op_node,
  void *buffers,
  size_t num_buffers
@@ -516,9 +520,9 @@ sanitizer_memory_process
   for (i = 0; i < num_buffers; ++i) {
     sanitizer_memory_buffer_t *memory_buffer = &(memory_buffer_host[i]);
     used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|%p|",
-      memory_buffer->pc, memory_buffer->block_ids.x, memory_buffer->block_ids.y,
-      memory_buffer->block_ids.z, memory_buffer->thread_ids.x,
-      memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
+      memory_buffer->pc - function_addr,
+      memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
+      memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
       memory_buffer->address);
     size_t j;
     used += sprintf(&sanitizer_trace[used], "0x");
@@ -554,7 +558,7 @@ sanitizer_buffer_process
   cct_node_t *host_op_node = notification->host_op_node;
   CUmodule module = notification->module;
   CUstream stream = notification->stream;
-  uint32_t function_index = notification->function_index;
+  uint64_t function_addr = notification->function_addr;
   sanitizer_activity_type_t type = notification->type;
   cstack_node_t *buffer_device = notification->buffer_device;
   sanitizer_entry_buffer_t *buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
@@ -571,7 +575,7 @@ sanitizer_buffer_process
   switch (type) {
     case SANITIZER_ACTIVITY_TYPE_MEMORY:
       {
-        sanitizer_memory_process(module, stream, function_index, host_op_node, 
+        sanitizer_memory_process(module, stream, function_addr, host_op_node, 
           buffer_host->buffers, num_buffers);
         sanitizer_buffer_device_push(SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device);
         break;
@@ -663,33 +667,16 @@ sanitizer_kernel_launch_callback
 (
  CUcontext context,
  CUmodule module,
- CUstream stream,
- const char *function_name
+ CUfunction function,
+ CUstream stream
 )
 {
-  // look up function index
-  cubin_module_map_entry_t *entry = cubin_module_map_lookup(module);
-  bool find = false;
-  uint32_t function_index = 0;
-  if (entry != NULL) {
-    Elf_SymbolVector *elf_vector = cubin_module_map_entry_elf_vector_get(entry);
-    size_t i;
-    for (i = 0; i < elf_vector->nsymbols; ++i) {
-      if (elf_vector->names[i] != NULL) {
-        if (strcmp(elf_vector->names[i], function_name) == 0) {
-          find = true;
-          function_index = i;
-          PRINT("function %s function_index %d\n", function_name, function_index);
-          break;
-        }
-      }
-    }
-  }
-
-  if (find == false) {
-    PRINT("function not found %s\n", function_name);
-    return;
-  }
+  // look up function addr
+  uint64_t function_ptr = (uint64_t)function;
+  uint32_t function_index = *((uint32_t *)(function_ptr + CUFUNCTION_SYMBOL_INDEX_OFFSET));
+  ip_normalized_t function_ip = cubin_module_transform(module, function_index, 0);
+  uint64_t function_record = *((uint64_t *)(function_ptr + CUFUNCTION_FUNCTION_RECORD_OFFSET));
+  uint64_t function_addr = *((uint64_t *)(function_record + FUNCTION_RECORD_FUNCTION_ADDR_OFFSET));
 
   // TODO(keren): add other instrumentation mode, do not allow two threads sharing a stream
   // allocate a device memory buffer
@@ -749,13 +736,19 @@ sanitizer_kernel_launch_callback
 
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, buffer_device_entry->buffer));
 
-  // get cct_node
+  // get a place holder cct node
   cuda_placeholder_t cuda_state = cuda_placeholders.cuda_kernel_state;
   cct_node_t *host_op_node = sanitizer_correlation_callback(cuda_state);
 
+  // insert a function cct node
+  cct_addr_t frm;
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = function_ip;
+  cct_node_t *host_function_node = hpcrun_cct_insert_addr(host_op_node, &frm);
+
   // correlte record with stream
-  sanitizer_notification_insert(context, module, stream, function_index,
-    SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device, host_op_node);
+  sanitizer_notification_insert(context, module, stream, function_addr,
+    SANITIZER_ACTIVITY_TYPE_MEMORY, buffer_device, host_function_node);
 }
 
 //-------------------------------------------------------------
@@ -842,7 +835,7 @@ sanitizer_subscribe_callback
       // multi-thread
       // gaurantee that each time only a single callback data is associated with a stream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
-      sanitizer_kernel_launch_callback(ld->context, ld->module, ld->stream, ld->functionName);
+      sanitizer_kernel_launch_callback(ld->context, ld->module, ld->function, ld->stream);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
     }
