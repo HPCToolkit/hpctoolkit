@@ -412,9 +412,11 @@ sanitizer_load_callback
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_BARRIER, cubin_module, "sanitizer_barrier_callback"));
-  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_SHFL, cubin_module, "sanitizer_shfl_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_BARRIER, cubin_module, "sanitizer_barrier_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_BLOCK_ENTER, cubin_module, "sanitizer_block_enter_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -522,6 +524,9 @@ sanitizer_memory_process
     used += sprintf(&sanitizer_trace[used], "0x");
     for (j = 0; j < memory_buffer->size; ++j) { 
       used += sprintf(&sanitizer_trace[used], "%02x", memory_buffer->value[j]);
+    }
+    if (SANITIZER_API_DEBUG) {
+      used += sprintf(&sanitizer_trace[used], "|%u", memory_buffer->flags);
     }
     used += sprintf(&sanitizer_trace[used], "\n");
   }
@@ -709,7 +714,7 @@ sanitizer_kernel_launch_callback
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (hash_buffer_device, 0,
       SANITIZER_THREAD_HASH_SIZE * sizeof(uint32_t), stream));
 
-    PRINT("Allocate hash_buffer_device %p\n", hash_buffer_device);
+    PRINT("Allocate hash_buffer_device %p, size %zu\n", hash_buffer_device, SANITIZER_THREAD_HASH_SIZE * sizeof(uint32_t));
 
     // sanitizer_buffer_t->prev_buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&prev_buffer_device,
@@ -717,11 +722,15 @@ sanitizer_kernel_launch_callback
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (prev_buffer_device, 0,
       SANITIZER_THREAD_HASH_SIZE * sizeof(void *), stream));
 
+    PRINT("Allocate prev_buffer_device %p, size %zu\n", prev_buffer_device, SANITIZER_THREAD_HASH_SIZE * sizeof(void *));
+
     // sanitizer_buffer_t->buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
       (&memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset,
       (memory_buffer_device, 0, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t), stream));
+
+    PRINT("Allocate memory_buffer_device %p, size %zu\n", memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t));
 
     buffer_reset.thread_hash_locks = hash_buffer_device;
     buffer_reset.prev_buffers = prev_buffer_device;
@@ -793,7 +802,7 @@ sanitizer_subscribe_callback
         {
           // single thread
           // TODO
-          PRINT("stream destroy starting\n");
+          PRINT("Stream destroy starting\n");
           break;
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_CREATION_FINISHED:
@@ -806,17 +815,19 @@ sanitizer_subscribe_callback
         {
           // single thread
           // TODO
-          PRINT("context destroy starting\n");
+          PRINT("Context destroy starting\n");
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
         {
-          //TODO
+          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          PRINT("Allocate memory address %p, size %zu\n", md->address, md->size);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
         {
-          //TODO
+          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          PRINT("Free memory address %p, size %zu\n", md->address, md->size);
           break;
         }
       default:
@@ -827,6 +838,7 @@ sanitizer_subscribe_callback
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
+      PRINT("Launch kernel %s <%d, %d>:<%d, %d, %d>\n", ld->functionName, ld->gridDim_x, ld->gridDim_y, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
       // multi-thread
       // gaurantee that each time only a single callback data is associated with a stream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
