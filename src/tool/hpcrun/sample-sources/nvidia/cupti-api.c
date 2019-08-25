@@ -143,24 +143,24 @@
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
-#define FORALL_CUPTI_ROUTINES(macro)			\
-  macro(cuptiActivityConfigurePCSampling)		\
-  macro(cuptiActivityDisable)				\
-  macro(cuptiActivityDisableContext)			\
-  macro(cuptiActivityEnable)				\
-  macro(cuptiActivityEnableContext)			\
-  macro(cuptiActivityFlushAll)				\
-  macro(cuptiActivitySetAttribute)      \
-  macro(cuptiActivityGetNextRecord)			\
-  macro(cuptiActivityGetNumDroppedRecords)		\
-  macro(cuptiActivityPopExternalCorrelationId)		\
-  macro(cuptiActivityPushExternalCorrelationId)		\
-  macro(cuptiActivityRegisterCallbacks)			\
-  macro(cuptiDeviceGetTimestamp)			\
-  macro(cuptiEnableDomain)				\
-  macro(cuptiFinalize)					\
-  macro(cuptiGetResultString)				\
-  macro(cuptiSubscribe)					\
+#define FORALL_CUPTI_ROUTINES(macro)             \
+  macro(cuptiActivityConfigurePCSampling)        \
+  macro(cuptiActivityDisable)                    \
+  macro(cuptiActivityDisableContext)             \
+  macro(cuptiActivityEnable)                     \
+  macro(cuptiActivityEnableContext)              \
+  macro(cuptiActivityFlushAll)                   \
+  macro(cuptiActivitySetAttribute)               \
+  macro(cuptiActivityGetNextRecord)              \
+  macro(cuptiActivityGetNumDroppedRecords)       \
+  macro(cuptiActivityPopExternalCorrelationId)   \
+  macro(cuptiActivityPushExternalCorrelationId)  \
+  macro(cuptiActivityRegisterCallbacks)          \
+  macro(cuptiDeviceGetTimestamp)                 \
+  macro(cuptiEnableDomain)                       \
+  macro(cuptiFinalize)                           \
+  macro(cuptiGetResultString)                    \
+  macro(cuptiSubscribe)                          \
   macro(cuptiUnsubscribe)
 
 
