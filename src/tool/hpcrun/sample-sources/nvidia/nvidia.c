@@ -1021,6 +1021,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }
+
+  // Init cubin id map
+  cubin_id_map_init();
 }
 
 static void

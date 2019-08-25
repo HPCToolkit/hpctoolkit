@@ -69,4 +69,10 @@ cubin_id_transform
  int64_t offset
 );
 
+
+void
+cubin_id_map_init
+(
+);
+
 #endif
