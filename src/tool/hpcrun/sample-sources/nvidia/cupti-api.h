@@ -189,7 +189,7 @@ cupti_buffer_completion_callback
 void
 cupti_load_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -198,7 +198,7 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );

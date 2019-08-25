@@ -124,6 +124,10 @@
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
 
+#define CUFUNCTION_SYMBOL_INDEX_OFFSET (16)
+#define CUFUNCTION_MODULE_PTR_OFFSET (16 * 2)
+#define CUMODULE_MODULE_ID_OFFSET (0)
+
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
 #define CUPTI_FN(fn, args) \
@@ -146,7 +150,7 @@
   macro(cuptiActivityEnable)				\
   macro(cuptiActivityEnableContext)			\
   macro(cuptiActivityFlushAll)				\
-  macro(cuptiActivitySetAttribute)				\
+  macro(cuptiActivitySetAttribute)      \
   macro(cuptiActivityGetNextRecord)			\
   macro(cuptiActivityGetNumDroppedRecords)		\
   macro(cuptiActivityPopExternalCorrelationId)		\
@@ -181,14 +185,15 @@ typedef CUptiResult (*cupti_activity_enable_t)
 
 typedef void (*cupti_correlation_callback_t)
 (
- uint64_t *id,
- cuda_placeholder_t cuda_state
+ uint64_t id,
+ cuda_placeholder_t cuda_state,
+ bool is_kernel_op
 );
 
 
 typedef void (*cupti_load_callback_t)
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -217,8 +222,9 @@ cupti_error_callback_dummy
 static void 
 cupti_correlation_callback_dummy
 (
- uint64_t *id,
- cuda_placeholder_t cuda_state
+ uint64_t id,
+ cuda_placeholder_t cuda_state,
+ bool is_kernel_op
 );
 
 
@@ -233,6 +239,7 @@ static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
+static __thread ip_normalized_t cupti_kernel_ip;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -529,11 +536,11 @@ cupti_bind
 static void 
 cupti_correlation_callback_dummy // __attribute__((unused))
 (
- uint64_t *id,
- cuda_placeholder_t cuda_state
+ uint64_t id,
+ cuda_placeholder_t cuda_state,
+ bool is_kernel_op
 )
 {
-  *id = 0;
 }
 
 
@@ -602,7 +609,7 @@ cupti_write_cubin
 void
 cupti_load_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 )
@@ -662,7 +669,7 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 )
@@ -674,13 +681,11 @@ cupti_unload_callback_cuda
 static void
 cupti_correlation_callback_cuda
 (
- uint64_t *id,
- cuda_placeholder_t cuda_state
+ uint64_t correlation_id,
+ cuda_placeholder_t cuda_state,
+ bool is_kernel_op
 )
 {
-  *id = atomic_fetch_add(&cupti_correlation_id, 1);
-  
-  PRINT("enter cupti_correlation_callback_cuda %u\n", *id);
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here
   ucontext_t uc;
@@ -727,18 +732,38 @@ cupti_correlation_callback_cuda
   hpcrun_safe_enter();
 
   // Insert the corresponding cuda state node
-  cct_addr_t frm_api;
-  memset(&frm_api, 0, sizeof(cct_addr_t));
-  frm_api.ip_norm = cuda_state.pc_norm;
-  cct_node_t* cct_api = hpcrun_cct_insert_addr(node, &frm_api);
+  cct_addr_t api_frm;
+  memset(&api_frm, 0, sizeof(cct_addr_t));
+  api_frm.ip_norm = cuda_state.pc_norm;
+  cct_node_t *cct_api = hpcrun_cct_insert_addr(node, &api_frm);
+
+  if (is_kernel_op) {
+    cct_addr_t kernel_frm;
+    memset(&kernel_frm, 0, sizeof(cct_addr_t));
+    kernel_frm.ip_norm = cupti_kernel_ip;
+    cct_api = hpcrun_cct_insert_addr(cct_api, &kernel_frm);
+  }
 
   hpcrun_safe_exit();
   td->overhead--;
-
-  // Generate notification entry
-  cupti_worker_notification_apply(*id, cct_api);
+  
+  cupti_worker_notification_apply(correlation_id, cct_api);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
+}
+
+
+static ip_normalized_t
+cupti_kernel_ip_resolve
+(
+ uint64_t function_ptr
+)
+{
+  uint32_t function_index = *(uint32_t *)(function_ptr + CUFUNCTION_SYMBOL_INDEX_OFFSET);
+  uint64_t module_ptr = *(uint64_t *)(function_ptr + CUFUNCTION_MODULE_PTR_OFFSET);
+  uint32_t module_id = *(uint32_t *)(module_ptr); 
+  ip_normalized_t ip = cubin_id_transform(module_id, function_index, 0);
+  return ip;
 }
 
 
@@ -760,8 +785,7 @@ cupti_subscriber_callback
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 
       DISPATCH_CALLBACK(cupti_load_callback, (mrd->moduleId, mrd->pCubin, 
-					      mrd->cubinSize));
-
+        mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *) 
         rd->resourceDescriptor;
@@ -769,8 +793,7 @@ cupti_subscriber_callback
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
 
       DISPATCH_CALLBACK(cupti_unload_callback, 
-			(mrd->moduleId, mrd->pCubin, mrd->cubinSize));
-
+        (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
       cupti_enable_activities(rd->context);
     }
@@ -782,7 +805,8 @@ cupti_subscriber_callback
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
 
-    bool is_valid_cuda_op = false;
+    bool is_valid_op = false;
+    bool is_kernel_op = false;
     switch (cb_id) {
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -792,7 +816,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
         {
           cuda_state = cuda_placeholders.cuda_sync_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
           break;
         }
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
@@ -804,7 +828,7 @@ cupti_subscriber_callback
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
       //  {
       //    cuda_state = cuda_placeholders.cuda_memalloc_state;
-      //    is_valid_cuda_op = true;
+      //    is_valid_op = true;
       //    break;
       //  }
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
@@ -876,7 +900,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
         {
           cuda_state = cuda_placeholders.cuda_memcpy_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
           break;
         }
       case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
@@ -891,28 +915,38 @@ cupti_subscriber_callback
           // Process previous activities
           cupti_worker_activity_apply(cupti_activity_handle);
           cuda_state = cuda_placeholders.cuda_kernel_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
+          // XXX(Keren): cannot parse this kind of kernel launch
+          if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
+            is_kernel_op = true;
+            // CUfunction is the first param
+            uint64_t function_ptr = *(uint64_t *)((CUfunction)cd->functionParams);
+            cupti_kernel_ip = cupti_kernel_ip_resolve(function_ptr);
+          }
           break;
         }
       default:
         break;
     }
     // If we have a valid operation and is not in the interval of a runtime api
-    if (is_valid_cuda_op && !cupti_runtime_api_flag) {
+    if (is_valid_op && !cupti_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
-        uint64_t correlation_id = 0;
-        cupti_correlation_callback(&correlation_id, cuda_state);
+        // A driver API might be implemented by other driver APIs, so we get an id
+        // and unwind when the API is entered
+        uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
+        cupti_correlation_callback(correlation_id, cuda_state, is_kernel_op);
+
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
-        PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, 
-          cb_id);
+                         (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+
+        PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-        PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, 
-          cb_id);
+                         (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+
+        PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) { 
@@ -923,7 +957,8 @@ cupti_subscriber_callback
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
     cuda_placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
 
-    bool is_valid_cuda_op = false;
+    bool is_valid_op = false;
+    bool is_kernel_op = false;
     switch (cb_id) {
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_v3020:
@@ -932,7 +967,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020: 
         {
           cuda_state = cuda_placeholders.cuda_sync_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
           break;
         }
       // FIXME(Keren): do not support memory allocate and free for 
@@ -944,7 +979,7 @@ cupti_subscriber_callback
       //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
       //  {
       //    cuda_state = cuda_placeholders.cuda_memalloc_state;
-      //    is_valid_cuda_op = true;
+      //    is_valid_op = true;
       //    break;
       //  }
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:  
@@ -995,7 +1030,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000: 
         {
           cuda_state = cuda_placeholders.cuda_memcpy_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
           break;
         }
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
@@ -1011,29 +1046,34 @@ cupti_subscriber_callback
           // Process previous activities
           cupti_worker_activity_apply(cupti_activity_handle);
           cuda_state = cuda_placeholders.cuda_kernel_state;
-          is_valid_cuda_op = true;
+          is_valid_op = true;
+          is_kernel_op = true;
           break;
         }
       default:
         break;
     }
-    if (is_valid_cuda_op) {
+    if (is_valid_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         cupti_runtime_api_flag_set();
-        uint64_t correlation_id = 0;
-        cupti_correlation_callback(&correlation_id, cuda_state);
-        PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, 
-          cb_id);
+        // A runtime API must be implemented by driver APIs.
+        // For kernel launch APIs, we wait for the driver API to find the corresponding
+        // function ip
+        uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+                         (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
+
+        PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
       if (cd->callbackSite == CUPTI_API_EXIT) {
         cupti_runtime_api_flag_unset();
+
         uint64_t correlation_id = 0;
         HPCRUN_CUPTI_CALL(cuptiActivityPopExternalCorrelationId,
-          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
-        PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, 
-	      cb_id);
+                         (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, &correlation_id));
+        cupti_correlation_callback(correlation_id, cuda_state, is_kernel_op);
+
+        PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
     }
   }
@@ -1065,9 +1105,9 @@ cupti_device_buffer_config
 {
   size_t value_size = sizeof(size_t);
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-    (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
+                   (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-    (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
+                   (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
 }
 
 
@@ -1215,8 +1255,8 @@ cupti_trace_start
 )
 {
   HPCRUN_CUPTI_CALL(cuptiActivityRegisterCallbacks,
-		    (cupti_activity_enabled.buffer_request, 
-		     cupti_activity_enabled.buffer_complete));
+		               (cupti_activity_enabled.buffer_request, 
+		                cupti_activity_enabled.buffer_complete));
 }
 
 
@@ -1238,7 +1278,7 @@ cupti_num_dropped_records_get
 )
 {
   HPCRUN_CUPTI_CALL(cuptiActivityGetNumDroppedRecords, 
-		    (context, streamId, dropped));
+		               (context, streamId, dropped));
 }
 
 
@@ -1255,17 +1295,17 @@ cupti_callbacks_subscribe
   cupti_unload_callback = cupti_unload_callback_cuda;
   cupti_correlation_callback = cupti_correlation_callback_cuda;
   HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_subscriber,
-    (CUpti_CallbackFunc) cupti_subscriber_callback,
-    (void *) NULL));
+                   (CUpti_CallbackFunc) cupti_subscriber_callback,
+                   (void *) NULL));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-    (1, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+                   (1, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (1, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
+                   (1, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (1, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
+                   (1, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 }
 
 
@@ -1281,13 +1321,13 @@ cupti_callbacks_unsubscribe
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
+		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
+		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 }
 
 
@@ -1302,7 +1342,7 @@ cupti_correlation_enable
   // For unknown reasons, external correlation ids do not return using 
   // cuptiActivityEnableContext
   HPCRUN_CUPTI_CALL(cuptiActivityEnable, 
-		    (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
+		               (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
   PRINT("exit cupti_correlation_enable\n");
 }
@@ -1315,7 +1355,7 @@ cupti_correlation_disable
 {
   if (cupti_correlation_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisable, 
-		      (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
+		                 (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
     cupti_correlation_enabled = false;
   }
@@ -1339,7 +1379,7 @@ cupti_pc_sampling_enable
   HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 
   HPCRUN_CUPTI_CALL(cuptiActivityEnableContext, 
-		    (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+		              (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
   PRINT("exit cupti_pc_sampling_enable\n");
 }
@@ -1353,7 +1393,7 @@ cupti_pc_sampling_disable
 {
   if (cupti_pc_sampling_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisableContext, 
-		      (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+		                 (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
     cupti_pc_sampling_enabled = false;
   }
