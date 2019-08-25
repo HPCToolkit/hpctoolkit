@@ -133,12 +133,12 @@
 #define CUPTI_FN(fn, args) \
   static CUptiResult (*CUPTI_FN_NAME(fn)) args
 
-#define HPCRUN_CUPTI_CALL(fn, args) \
-{      \
-  CUptiResult status = CUPTI_FN_NAME(fn) args;	\
-  if (status != CUPTI_SUCCESS) {		\
-    cupti_error_report(status, #fn);		\
-  }						\
+#define HPCRUN_CUPTI_CALL(fn, args)  \
+{  \
+  CUptiResult status = CUPTI_FN_NAME(fn) args;  \
+  if (status != CUPTI_SUCCESS) {  \
+    cupti_error_report(status, #fn);  \
+  }  \
 }
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
@@ -655,8 +655,7 @@ cupti_load_callback_cuda
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
-    PRINT("module_id %d -> hpctoolkit_module_id %d\n", module_id, 
-	  hpctoolkit_module_id);
+    PRINT("module_id %d -> hpctoolkit_module_id %d\n", module_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(module_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -1142,8 +1141,7 @@ cupti_buffer_cursor_advance
   CUpti_Activity **current
 )
 {
-  return (CUPTI_FN_NAME(cuptiActivityGetNextRecord)
-	  (buffer, size, current) == CUPTI_SUCCESS);
+  return (CUPTI_FN_NAME(cuptiActivityGetNextRecord)(buffer, size, current) == CUPTI_SUCCESS);
 }
 
 
@@ -1255,8 +1253,8 @@ cupti_trace_start
 )
 {
   HPCRUN_CUPTI_CALL(cuptiActivityRegisterCallbacks,
-		               (cupti_activity_enabled.buffer_request, 
-		                cupti_activity_enabled.buffer_complete));
+                   (cupti_activity_enabled.buffer_request, 
+                    cupti_activity_enabled.buffer_complete));
 }
 
 
@@ -1278,7 +1276,7 @@ cupti_num_dropped_records_get
 )
 {
   HPCRUN_CUPTI_CALL(cuptiActivityGetNumDroppedRecords, 
-		               (context, streamId, dropped));
+                   (context, streamId, dropped));
 }
 
 
@@ -1321,13 +1319,13 @@ cupti_callbacks_unsubscribe
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
+                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
+                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain, 
-		               (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
+                   (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
 }
 
 
@@ -1342,7 +1340,7 @@ cupti_correlation_enable
   // For unknown reasons, external correlation ids do not return using 
   // cuptiActivityEnableContext
   HPCRUN_CUPTI_CALL(cuptiActivityEnable, 
-		               (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
+                   (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
   PRINT("exit cupti_correlation_enable\n");
 }
@@ -1355,7 +1353,7 @@ cupti_correlation_disable
 {
   if (cupti_correlation_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisable, 
-		                 (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
+                     (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
     cupti_correlation_enabled = false;
   }
@@ -1379,7 +1377,7 @@ cupti_pc_sampling_enable
   HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
 
   HPCRUN_CUPTI_CALL(cuptiActivityEnableContext, 
-		              (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+                   (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
   PRINT("exit cupti_pc_sampling_enable\n");
 }
@@ -1393,7 +1391,7 @@ cupti_pc_sampling_disable
 {
   if (cupti_pc_sampling_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisableContext, 
-		                 (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+                     (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
     cupti_pc_sampling_enabled = false;
   }
