@@ -749,7 +749,8 @@ cupti_correlation_callback_cuda
     cct_addr_t kernel_frm;
     memset(&kernel_frm, 0, sizeof(cct_addr_t));
     kernel_frm.ip_norm = cupti_kernel_ip;
-    cct_api = hpcrun_cct_insert_addr(cct_api, &kernel_frm);
+    cct_node_t *cct_kernel = hpcrun_cct_insert_addr(cct_api, &kernel_frm);
+    hpcrun_cct_retain(cct_kernel);
   }
 
   hpcrun_safe_exit();
