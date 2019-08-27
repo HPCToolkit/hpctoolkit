@@ -294,5 +294,6 @@ computeCubinFunctionOffsets
 		  }
 	  }
   }
+
   return symbols;
 }

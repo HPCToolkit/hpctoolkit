@@ -113,7 +113,7 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_API_DEBUG 1
+#define CUPTI_API_DEBUG 0
 
 #if CUPTI_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -123,10 +123,6 @@
 
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
-
-#define CUFUNCTION_SYMBOL_INDEX_OFFSET (16)
-#define CUFUNCTION_MODULE_PTR_OFFSET (16 * 2)
-#define CUMODULE_MODULE_ID_OFFSET (0)
 
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -204,6 +200,19 @@ typedef struct {
   CUpti_BuffersCallbackCompleteFunc buffer_complete;
 } cupti_activity_buffer_state_t;
 
+
+// DRIVER_UPDATE_CHECK(Keren): cufunc and cumod fields are reverse engineered
+typedef struct {
+  uint32_t unknown_field1[4]; 
+  uint32_t function_index;
+  uint32_t unknown_field2[3]; 
+  CUmodule cumod;
+} hpctoolkit_cufunc_st_t;
+
+
+typedef struct {
+  uint32_t module_id;
+} hpctoolkit_cumod_st_t;
 
 
 //******************************************************************************
@@ -740,7 +749,8 @@ cupti_correlation_callback_cuda
     cct_addr_t kernel_frm;
     memset(&kernel_frm, 0, sizeof(cct_addr_t));
     kernel_frm.ip_norm = cupti_kernel_ip;
-    cct_api = hpcrun_cct_insert_addr(cct_api, &kernel_frm);
+    cct_node_t *cct_kernel = hpcrun_cct_insert_addr(cct_api, &kernel_frm);
+    hpcrun_cct_retain(cct_kernel);
   }
 
   hpcrun_safe_exit();
@@ -755,12 +765,13 @@ cupti_correlation_callback_cuda
 static ip_normalized_t
 cupti_kernel_ip_resolve
 (
- uint64_t function_ptr
+ CUfunction function
 )
 {
-  uint32_t function_index = *(uint32_t *)(function_ptr + CUFUNCTION_SYMBOL_INDEX_OFFSET);
-  uint64_t module_ptr = *(uint64_t *)(function_ptr + CUFUNCTION_MODULE_PTR_OFFSET);
-  uint32_t module_id = *(uint32_t *)(module_ptr); 
+  hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)(function);
+  hpctoolkit_cumod_st_t *cumod = cufunc->cumod;
+  uint32_t function_index = cufunc->function_index;
+  uint32_t module_id = cumod->module_id;
   ip_normalized_t ip = cubin_id_transform(module_id, function_index, 0);
   return ip;
 }
@@ -919,7 +930,7 @@ cupti_subscriber_callback
           if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
             is_kernel_op = true;
             // CUfunction is the first param
-            uint64_t function_ptr = *(uint64_t *)((CUfunction)cd->functionParams);
+            CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
             cupti_kernel_ip = cupti_kernel_ip_resolve(function_ptr);
           }
           break;
