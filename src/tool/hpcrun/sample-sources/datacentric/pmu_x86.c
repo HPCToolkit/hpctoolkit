@@ -59,6 +59,8 @@
 #include "pmu_x86.h"
 
 
+#define MAX_FORMULA_CHAR  100
+
 /******************************************************************************
  * data structure
  *****************************************************************************/
@@ -124,6 +126,13 @@ struct perf_mem_metric {
  *****************************************************************************/
 
 static struct perf_mem_metric metric;
+
+static char formula_llc_miss[MAX_FORMULA_CHAR];
+static char formula_percent_l1_hit[MAX_FORMULA_CHAR];
+static char formula_percent_l2_hit[MAX_FORMULA_CHAR];
+static char formula_percent_l3_hit[MAX_FORMULA_CHAR];
+
+static char FORMAT_PERCENT[] = "6.2f \%";
 
 /******************************************************************************
  * PRIVATE Function implementation
@@ -275,13 +284,66 @@ create_metric_addons()
   hpcrun_set_metric_info(metric.memload, "MEM-Load");
 
   metric.memld_fbhit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memld_fbhit, "MEM-Load-FBhit");
+  hpcrun_set_metric_and_attributes(metric.memld_fbhit,  "MEM-Load-FBhit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   metric.memld_l1hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memld_l1hit, "MEM-Load-L1hit");
+  hpcrun_set_metric_and_attributes(metric.memld_l1hit,  "MEM-Load-L1hit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   metric.memld_l2hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memld_l2hit, "MEM-Load-L2hit");
+  hpcrun_set_metric_and_attributes(metric.memld_l2hit,  "MEM-Load-L2hit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
+
+  // ------------------------------------------
+  // percent of cache l1 and l2 hit
+  // ------------------------------------------
+
+  int percent_l1_hit = hpcrun_new_metric();
+  metric_desc_t* metric_l1_hit_desc = hpcrun_set_metric_and_attributes(percent_l1_hit,  "% Load L1 Hit",
+                      MetricFlags_ValFmt_Real, 1, metric_property_none, true /* disable show*/, false );
+
+  snprintf(formula_percent_l1_hit, MAX_FORMULA_CHAR, "100 * $%d / $%d", metric.memld_l1hit, metric.memload);
+  metric_l1_hit_desc->formula = formula_percent_l1_hit;
+  metric_l1_hit_desc->format  = FORMAT_PERCENT;
+
+  int percent_l2_hit = hpcrun_new_metric();
+  metric_desc_t* metric_l2_hit_desc = hpcrun_set_metric_and_attributes(percent_l2_hit,  "% Load L2 Hit",
+                      MetricFlags_ValFmt_Real, 1, metric_property_none, true /* disable show*/, false );
+
+  snprintf(formula_percent_l2_hit, MAX_FORMULA_CHAR, "100 * $%d / ($%d-$%d)",
+                                      metric.memld_l2hit, metric.memload, metric.memld_l1hit);
+  metric_l2_hit_desc->formula = formula_percent_l2_hit;
+  metric_l2_hit_desc->format  = FORMAT_PERCENT;
+
+  // ------------------------------------------
+  // last level cache (llc) hit
+  // ------------------------------------------
+
+  metric.memllc_hit = hpcrun_new_metric();
+  hpcrun_set_metric_and_attributes(metric.memllc_hit,  "MEM-LLC-hit",
+        MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
+
+  // ------------------------------------------
+  // hitm local
+  // ------------------------------------------
+
+  metric.mem_lcl_hitm = hpcrun_new_metric();
+  hpcrun_set_metric_info(metric.mem_lcl_hitm, "MEM-hitm-local");
+
+  // ------------------------------------------
+  // percent l3 hit
+  // ------------------------------------------
+
+  int percent_llc_hit = hpcrun_new_metric();
+  metric_desc_t* metric_llc_hit_desc = hpcrun_set_metric_and_attributes(percent_llc_hit,  "% Load LLC Hit",
+                      MetricFlags_ValFmt_Real, 1, metric_property_none, true /* disable show*/, false );
+
+  snprintf(formula_percent_l3_hit, MAX_FORMULA_CHAR, "100 * ($%d+$%d) / ($%d-$%d-$%d)",
+                                      metric.mem_lcl_hitm, metric.memllc_hit,
+                                      metric.memload, metric.memld_l1hit, metric.memld_l2hit);
+  metric_llc_hit_desc->formula = formula_percent_l3_hit;
+  metric_llc_hit_desc->format  = FORMAT_PERCENT;
 
   // ------------------------------------------
   // Memory store metric
@@ -294,12 +356,6 @@ create_metric_addons()
 
   metric.memstore_l1_miss = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
-
-  // ------------------------------------------
-  // hitm
-  // ------------------------------------------
-  metric.mem_lcl_hitm = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.mem_lcl_hitm, "MEM-hitm-local");
 
   metric.mem_rmt_hitm = hpcrun_new_metric();
   hpcrun_set_metric_info(metric.mem_rmt_hitm, "MEM-hitm-rmt");
@@ -326,21 +382,21 @@ create_metric_addons()
   hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
 
   // ------------------------------------------
-  // last level cache (llc)
+  // llc miss
   // ------------------------------------------
 
-  metric.memllc_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memllc_hit, "MEM-LLC-hit");
   /**
    * llc_miss =
    *   = miss_dram_lcl + miss_dram_rmt + mem_rmt_hit + mem_rmt_hitm
    */
   metric.memllc_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
 
-  char *buffer = hpcrun_malloc(sizeof(char)*20);
-  sprintf(buffer, "%d+%d+%d+%d", metric.miss_dram_lcl, metric.miss_dram_rmt,
-      metric.mem_rmt_hit, metric.mem_rmt_hitm);
+  metric_desc_t* metric_desc = hpcrun_set_metric_info(metric.memllc_miss, "MEM-LLC-miss");
+
+  snprintf(formula_llc_miss, MAX_FORMULA_CHAR, "$%d+$%d+$%d+$%d",
+                            metric.miss_dram_lcl, metric.miss_dram_rmt,
+                            metric.mem_rmt_hit, metric.mem_rmt_hitm);
+  metric_desc->formula = formula_llc_miss;
 }
 
 

@@ -269,6 +269,25 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
   return firstId;
 }
 
+void
+Mgr::computeMetricsPerGroup()
+{
+  Metric::ADesc* m     = m_metrics[0];
+  std::string baseName = m->nameBase();
+  m_numMetricsPerGroup = 1;
+
+  for(uint i=1; i<m_metrics.size(); i++) {
+    m = m_metrics[i];
+
+    if (baseName.compare(m->nameBase()) == 0) {
+      m_numMetricsPerGroup++;
+    } else {
+      break;
+    }
+  }
+}
+
+
 
 Metric::DerivedDesc*
 Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
@@ -337,6 +356,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->sampling_type(mSrc->sampling_type());
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
+  m->formula      (mSrc->formula());
 
   insert(m);
   expr->accumId(0, m->id());

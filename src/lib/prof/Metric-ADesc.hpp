@@ -109,7 +109,7 @@ public:
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_formula(NULL)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -123,7 +123,7 @@ public:
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_formula(NULL)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -140,7 +140,7 @@ public:
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_formula(NULL)
   {
     nameFromString(nameBase);
   }
@@ -158,7 +158,7 @@ public:
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
       m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_formula(x.m_formula)
   { }
 
   ADesc&
@@ -186,6 +186,7 @@ public:
       m_sampling_type = x.m_sampling_type;
 
       m_isTemporary   = x.m_isTemporary;
+      m_formula       = x.m_formula;
     }
     return *this;
   }
@@ -424,6 +425,22 @@ public:
   isTemporary(bool x)
   { m_isTemporary = x; }
 
+  void
+  formula(const char *str_formula)
+  {
+    if (str_formula == NULL || str_formula[0] == '\0') return;
+
+    int len = strlen(str_formula);
+    m_formula = new char[len];
+    strcpy(m_formula, str_formula);
+  }
+
+  char*
+  formula() const
+  {
+    return m_formula;
+  }
+
   // ------------------------------------------------------------
   // computed type
   // ------------------------------------------------------------
@@ -590,6 +607,8 @@ private:
   enum SamplingType_e m_sampling_type;
 
   bool m_isTemporary;
+
+  char *m_formula;
 };
 
 

@@ -255,6 +255,14 @@ public:
   ddump() const;
 
 public:
+  void
+  computeMetricsPerGroup();
+
+  int
+  numMetricsPerGroup() const {
+    return m_numMetricsPerGroup;
+  }
+
 
 private:
   bool
@@ -281,6 +289,8 @@ private:
 
   // profile file name to Metric::SampledDesc table
   StringToADescVecMap m_fnameToFMetricMap;
+
+  int m_numMetricsPerGroup = 0;
 };
 
 //****************************************************************************
