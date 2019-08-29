@@ -175,6 +175,7 @@ cuda_device_property_query
  cuda_device_property_t *property
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -208,4 +209,7 @@ cuda_device_property_query
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
 
   return 0;
+#else
+  return -1;
+#endif
 }
