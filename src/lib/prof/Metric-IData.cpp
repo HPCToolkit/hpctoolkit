@@ -142,8 +142,10 @@ IData::writeMetricsXML(std::ostream& os,
       if (formula != NULL) {
         varMap.setMetrics(&m_metrics);
         double result = eval.Eval(formula, &varMap);
+
         if (eval.GetErr() == EEE_NO_ERROR) {
-          val.r = result;
+          val.r        = result;
+          m_metrics[i] = val;
         }
       }
     }
