@@ -745,7 +745,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
 
-  m_mMgr->computeMetricsPerGroup();
+//  m_mMgr->computeMetricsPerGroup();
 
   // -------------------------------------------------------
   //

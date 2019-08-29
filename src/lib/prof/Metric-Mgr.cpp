@@ -148,6 +148,8 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 
   uint threshold = (needMultiOccurance) ? 2 : 1;
 
+  m_numMetricsPerGroup = needAllStats ? 22 : 2;
+
   // -------------------------------------------------------
   // collect like metrics
   // -------------------------------------------------------
@@ -243,6 +245,8 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
     srcEndId = m_metrics.size();
   }
 
+  m_numMetricsPerGroup = needAllStats ? 22 : 2;
+
   uint firstId = Mgr::npos;
 
   for (uint i = srcBegId; i < srcEndId; ++i) {
@@ -267,24 +271,6 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
   computePartners();
  
   return firstId;
-}
-
-void
-Mgr::computeMetricsPerGroup()
-{
-  Metric::ADesc* m     = m_metrics[0];
-  std::string baseName = m->nameBase();
-  m_numMetricsPerGroup = 1;
-
-  for(uint i=1; i<m_metrics.size(); i++) {
-    m = m_metrics[i];
-
-    if (baseName.compare(m->nameBase()) == 0) {
-      m_numMetricsPerGroup++;
-    } else {
-      break;
-    }
-  }
 }
 
 
