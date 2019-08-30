@@ -166,7 +166,7 @@ read(const Util::StringVec& profileFiles, const Util::UIntVec* groupMap,
     // add the directory into the set of directories
     prof->addDirectory(profileFiles[i]);
   }
-  prof->metricMgr()->mergePerfEventStatistics_finalize(profileFiles.size());
+  prof->metricMgr()->mergePerfEventStatistics_finalize((int)profileFiles.size());
   
   return prof;
 }
