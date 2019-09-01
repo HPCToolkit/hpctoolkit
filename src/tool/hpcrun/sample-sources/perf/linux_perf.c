@@ -826,7 +826,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(LINUX_PERF,"checking event spec = %s",event);
 
-    perf_skid_parse_event(event, &name);
+    int precise_ip = perf_skid_parse_event(event, &name);
     int period_type = hpcrun_extract_ev_thresh(name, strlen(name), name, &threshold,
         default_threshold.threshold_num);
 
@@ -839,14 +839,8 @@ METHOD_FN(process_event_list, int lush_metrics)
       continue;
     }
 
-    // remove precise_ip modifier from event's name when necessary
-    size_t precise_ip_pos = exist_precise_ip_modifier(name);
-    if (precise_ip_pos > 0) {
-    	name[precise_ip_pos] = '\0';
-    }
-
-    event_info_t *event = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
-    struct perf_event_attr *event_attr = &event->attr;
+    event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+    struct perf_event_attr *event_attr = &event_info->attr;
 
     int ispmu = perf_get_pmu_support(name, event_attr);
     if (ispmu < 0)
@@ -862,8 +856,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     // ------------------------------------------------------------
     perf_util_attr_init(name, event_attr, is_period, threshold, 0);
 
-    if (precise_ip_pos>0) {
-    	perf_skid_set_max_precise_ip(event_attr);
+    if (precise_ip>0 && precise_ip <= PERF_EVENT_AUTODETECT_SKID) {
+
+      if (precise_ip == PERF_EVENT_AUTODETECT_SKID) {
+        perf_skid_set_max_precise_ip(event_attr);
+      }
+    	event_attr->precise_ip             = precise_ip;
     }
     // ------------------------------------------------------------
     // initialize the property of the metric
@@ -895,11 +893,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (metric_desc == NULL) {
       EMSG("error: unable to create metric #%d: %s", index, name);
     } else {
-      metric_desc->is_frequency_metric = (event->attr.freq == 1);
+      metric_desc->is_frequency_metric = (event_info->attr.freq == 1);
     }
 
     int index = METHOD_CALL(self, store_event_and_info,
-                         event_attr->config, threshold, metric, event);;
+                         event_attr->config, threshold, metric, event_info);;
     if (index < 0) {
       EMSG("error: cannot create event %s (%d)", name, event_attr->config);
     }

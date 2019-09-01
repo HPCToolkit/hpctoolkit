@@ -632,8 +632,8 @@ ANode::computeMetricsMe(const Metric::Mgr& mMgr, uint mBegId, uint mEndId,
       const Metric::AExpr* expr = mm->expr();
       expr->evalNF(*this);
       if (doFinal) {
-	double val = expr->eval(*this);
-	demandMetric(mId, numMetrics/*size*/) = val;
+        double val = expr->eval(*this);
+        demandMetric(mId, numMetrics/*size*/) = val;
       }
     }
   }
@@ -704,24 +704,24 @@ ANode::pruneByMetrics(const Metric::Mgr& mMgr, const VMAIntervalSet& ivalset,
     bool isImportant = false;
 
     for (VMAIntervalSet::const_iterator it1 = ivalset.begin();
-	 it1 != ivalset.end(); ++it1) {
+        it1 != ivalset.end(); ++it1) {
       const VMAInterval& ival = *it1;
       uint mBegId = (uint)ival.beg(), mEndId = (uint)ival.end();
 
       for (uint mId = mBegId; mId < mEndId; ++mId) {
-	const Prof::Metric::ADesc* m = mMgr.metric(mId);
-	if (m->type() != Metric::ADesc::TyIncl) {
-	  continue;
-	}
-	numIncl++;
-	
-	double total = root->metric(mId); // root->metric(m->partner()->id());
-	
-	double pct = x->metric(mId) * 100 / total;
-	if (pct >= thresholdPct) {
-	  isImportant = true;
-	  break;
-	}
+        const Prof::Metric::ADesc* m = mMgr.metric(mId);
+        if (m->type() != Metric::ADesc::TyIncl) {
+          continue;
+        }
+        numIncl++;
+
+        double total = root->metric(mId); // root->metric(m->partner()->id());
+
+        double pct = x->metric(mId) * 100 / total;
+        if (pct >= thresholdPct) {
+          isImportant = true;
+          break;
+        }
       }
       if (isImportant) { break; }
     }

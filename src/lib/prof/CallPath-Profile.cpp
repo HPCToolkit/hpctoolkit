@@ -745,6 +745,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
 
+//  m_mMgr->computeMetricsPerGroup();
+
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
@@ -1332,6 +1334,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->nameSfx(m_sfx);
     }
     m->flags(mdesc.flags);
+    m->formula(mdesc.formula);
     
     // ----------------------------------------
     // 1b. Update the additional perf event attributes
@@ -1364,6 +1367,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
         mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
+      mSmpl->formula(mdesc.formula);
       mSmpl->isVisible(mdesc.flags.fields.show);
       mSmpl->doDispPercent(mdesc.flags.fields.showPercent);
 
@@ -1479,7 +1483,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
-  ExprEval eval;
+  //ExprEval eval;
   DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
@@ -1501,19 +1505,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // FIXME: we don't check the validity of the formula (yet).
     //        If hpcrun has incorrect formula, the result can be anything
     // ------------------------------------------
-    metric_desc_t* m_lst = metricTbl.lst;
+    /*metric_desc_t* m_lst = metricTbl.lst;
     VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
 
-    for (uint i = 0; i < numMetricsSrc; i++) {
-      char *expr = (char*) m_lst[i].formula;
+    for (uint metricID = 0; metricID < numMetricsSrc; metricID++) {
+      char *expr = (char*) m_lst[metricID].formula;
       if (expr == NULL || strlen(expr)==0) continue;
 
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
         // the formula syntax looks "correct". Update the the metric value
-      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+      	hpcrun_fmt_metric_set_value(m_lst[metricID], &nodeFmt.metrics[metricID], res);
       }
-    }
+    }*/
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
