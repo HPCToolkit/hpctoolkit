@@ -168,7 +168,8 @@ hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,  ompt_placeholder_t ph)
   cct_node_t* cct_child = hpcrun_cct_insert_addr(target_node, &frm);
 
   // inform the worker about the placeholder
-  cupti_worker_notification_apply(host_op_id, cct_child);
+  // FIXME(Keren): NULL func node does not work for OMPT
+  cupti_worker_notification_apply(host_op_id, cct_child, NULL);
 }
 
 

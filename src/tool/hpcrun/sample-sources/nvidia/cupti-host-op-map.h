@@ -37,6 +37,7 @@ cupti_host_op_map_insert
 (
  uint64_t host_op_id,
  cct_node_t *host_op_node,
+ cct_node_t *host_func_node,
  cupti_record_t *record
 );
 
@@ -66,6 +67,13 @@ cupti_host_op_map_delete
 
 cct_node_t *
 cupti_host_op_map_entry_host_op_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_host_func_node_get
 (
  cupti_host_op_map_entry_t *entry
 );

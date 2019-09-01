@@ -133,7 +133,8 @@ typedef struct cupti_entry_activity {
 // notification entry
 typedef struct cupti_entry_notification {
   uint64_t host_op_id;
-  cct_node_t *cct_node;
+  cct_node_t *api_node;
+  cct_node_t *func_node;
   void *record;
 } cupti_entry_notification_t;
 
@@ -161,7 +162,8 @@ cupti_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
- cct_node_t *cct_node,
+ cct_node_t *api_node,
+ cct_node_t *func_node,
  void *record,
  cupti_node_t *next
 );
@@ -172,7 +174,8 @@ cupti_notification_node_set
 (
  cupti_node_t *cupti_node,
  uint64_t host_op_id,
- cct_node_t *cct_node,
+ cct_node_t *api_node,
+ cct_node_t *func_node,
  void *record,
  cupti_node_t *next
 );

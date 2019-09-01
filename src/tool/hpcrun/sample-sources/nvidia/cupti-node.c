@@ -188,14 +188,16 @@ cupti_notification_node_set
 (
  cupti_node_t *cupti_node,
  uint64_t host_op_id,
- cct_node_t *cct_node,
+ cct_node_t *api_node,
+ cct_node_t *func_node,
  void *record,
  cupti_node_t *next
 )
 {
   cupti_entry_notification_t *entry = (cupti_entry_notification_t *)(cupti_node->entry);
   entry->host_op_id = host_op_id;
-  entry->cct_node = cct_node;
+  entry->api_node = api_node;
+  entry->func_node = func_node;
   entry->record = record;
   cupti_node->next = next;
   cupti_node->type = CUPTI_ENTRY_TYPE_NOTIFICATION;
@@ -206,7 +208,8 @@ cupti_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
- cct_node_t *cct_node,
+ cct_node_t *api_node,
+ cct_node_t *func_node,
  void *record,
  cupti_node_t *next
 )
@@ -214,6 +217,6 @@ cupti_notification_node_new
   cupti_node_t *node = (cupti_node_t *)hpcrun_malloc_safe(sizeof(cupti_node_t));
   cupti_entry_notification_t *entry = (cupti_entry_notification_t *)hpcrun_malloc_safe(sizeof(cupti_entry_notification_t));
   node->entry = entry;
-  cupti_notification_node_set(node, host_op_id, cct_node, record, next);
+  cupti_notification_node_set(node, host_op_id, api_node, func_node, record, next);
   return node;
 }

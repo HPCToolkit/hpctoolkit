@@ -187,6 +187,8 @@ relocateSymbolsHelper
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
     if (nsymbols <= 0) return NULL;
+  } else {
+    return NULL;
   }
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {

@@ -110,6 +110,7 @@
 // static data
 //******************************************************************************
 
+#ifndef HPCRUN_STATIC_LINK
 CUDA_FN
 (
  cuDeviceGetAttribute, 
@@ -119,7 +120,7 @@ CUDA_FN
   CUdevice dev
  )
 );
-
+#endif
 
 
 //******************************************************************************
@@ -145,6 +146,7 @@ cuda_bind
 }
 
 
+#ifndef HPCRUN_STATIC_LINK
 static int 
 cuda_device_sm_blocks_query
 (
@@ -161,7 +163,7 @@ cuda_device_sm_blocks_query
     return 8;
   }
 }
-
+#endif
 
 
 //******************************************************************************

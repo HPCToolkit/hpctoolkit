@@ -55,7 +55,7 @@ cupti_record_get()
 
 
 void
-cupti_worker_notification_apply(uint64_t host_op_id, cct_node_t *cct_node)
+cupti_worker_notification_apply(uint64_t host_op_id, cct_node_t *api_node, cct_node_t *func_node)
 {
   cupti_stack_t *worker_notification_stack = &(cupti_record.worker_notification_stack);
   cupti_stack_t *worker_free_notification_stack = &(cupti_record.worker_free_notification_stack);
@@ -66,9 +66,9 @@ cupti_worker_notification_apply(uint64_t host_op_id, cct_node_t *cct_node)
     node = cupti_stack_pop(worker_free_notification_stack);
   }
   if (node == NULL) {
-    node = cupti_notification_node_new(host_op_id, cct_node, &cupti_record, NULL);
+    node = cupti_notification_node_new(host_op_id, api_node, func_node, &cupti_record, NULL);
   } else {
-    cupti_notification_node_set(node, host_op_id, cct_node, &cupti_record, NULL);
+    cupti_notification_node_set(node, host_op_id, api_node, func_node, &cupti_record, NULL);
   } 
   cupti_stack_push(worker_notification_stack, node);
 }

@@ -36,7 +36,8 @@ void
 cupti_worker_notification_apply
 (
  uint64_t host_op_id,
- cct_node_t *cct_node
+ cct_node_t *api_node,
+ cct_node_t *func_node
 );
 
 

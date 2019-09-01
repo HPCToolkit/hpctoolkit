@@ -79,6 +79,7 @@
  *****************************************************************************/
 
 #include "nvidia.h"
+#include "cubin-id-map.h"
 #include "cuda-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
