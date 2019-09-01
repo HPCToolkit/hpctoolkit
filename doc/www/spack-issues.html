@@ -44,10 +44,15 @@
 <div class="contents">
 <ul class="no-bullet">
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
-<li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a></li>
+<li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
+<ul class="no-bullet">
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.1 (2019-08-28) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cuda-modules" href="#g_t_00282019_002d08_002d28_0029-Cuda-modules">2.2 (2019-08-28) Cuda modules</a></li>
+  <li><a name="toc-_00282019_002d08_002d19_0029-Build_002dstage-not-writable" href="#g_t_00282019_002d08_002d19_0029-Build_002dstage-not-writable">2.3 (2019-08-19) Build-stage not writable</a></li>
+</ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer" href="#g_t_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer">3.1 (2019-06-06) intel-xed and hpcviewer</a></li>
+  <li><a name="toc-_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer" href="#g_t_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer">3.1 (2019-06-06) Intel-xed and hpcviewer</a></li>
 </ul></li>
 <li><a name="toc-General-Problems" href="#General-Problems">4 General Problems</a>
 <ul class="no-bullet">
@@ -84,20 +89,120 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: June 17, 2019.
+<p>Last revised: Sept 1, 2019.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
-<p>No known issues at this time.
+<a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
+<h4 class="subsection">2.1 (2019-08-28) Cray front-end compilers</h4>
+
+<p><code>Spack compiler find</code> is currently broken for detecting the
+front-end compilers on Cray that HPCToolkit uses.  Normally, you would
+load a module for gcc and run <code>spack compiler find</code> and spack would
+add that compiler to <code>compilers.yaml</code>, but this currently does not
+work.
+</p>
+<p><b>Workaround:</b> If you have a working <code>compiler:</code> entry for a
+front-end GNU compiler on Cray, then that will continue to work.  If
+not, then you will have to add one manually.  For example, this is an
+entry for the <code>gcc/7.3.0</code> module on theta at ANL.  Note that the
+front-end operating_system is something like <code>sles12</code> (not
+<code>cnl6</code>), and the front-end target is <code>x86_64</code> (not
+<code>mic_knl</code>).
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    environment: {}
+    extra_rpaths: []
+    flags: {}
+    modules:
+    - PrgEnv-gnu/6.0.4
+    - gcc/7.3.0
+    - cray-mpich/7.7.3
+    operating_system: sles12
+    paths:
+      cc:  /opt/gcc/7.3.0/bin/gcc
+      cxx: /opt/gcc/7.3.0/bin/g++
+      f77: /opt/gcc/7.3.0/bin/gfortran
+      fc:  /opt/gcc/7.3.0/bin/gfortran
+    spec: gcc@7.3.0
+    target: x86_64
+</pre></div>
+
+
+<a name="g_t_00282019_002d08_002d28_0029-Cuda-modules"></a>
+<h4 class="subsection">2.2 (2019-08-28) Cuda modules</h4>
+
+<p>Sometimes spack misreads the <code>module:</code> entry for an external
+package in <code>packages.yaml</code>.  This is infrequent and we haven&rsquo;t
+identified a clear pattern, but this has happened with the cuda modules
+on cori at NERSC.
+</p>
+<p>For example, with the <code>cuda/10.1.168</code> module for the gpu version of
+hpctoolkit on cori, you would use the following entry in
+<code>packages.yaml</code>.
+</p>
+<div class="example">
+<pre class="example">cuda:
+  modules:
+    cuda@10.1.168:  cuda/10.1.168
+</pre></div>
+
+<p>This entry is supposed to work, but doesn&rsquo;t.  The correct cuda prefix is
+actually <code>/usr/common/software/cuda/10.1.168</code>, but spack misreads
+this as <code>/usr</code>.  When this happens, hpctoolkit fails with error
+messages showing that spack incorrectly uses the <code>/usr</code> path.
+For example,
+</p>
+<div class="example">
+<pre class="example">==&gt; cuda@10.1.168 : has external module in cuda/10.1.168
+==&gt; cuda@10.1.168 : is actually installed in /usr
+
+.../configure --prefix='...' ... '--with-cuda=/usr'
+&gt;&gt; 208    configure: error: '/usr/include/cuda.h' not found
+</pre></div>
+
+<p><b>Workaround:</b> In <code>packages.yaml</code>, replace the <code>modules:</code>
+entry with a <code>paths:</code> prefix.
+</p>
+<div class="example">
+<pre class="example">cuda:
+  paths:
+    cuda@10.1.168:  /usr/common/software/cuda/10.1.168
+</pre></div>
+
+
+<a name="g_t_00282019_002d08_002d19_0029-Build_002dstage-not-writable"></a>
+<h4 class="subsection">2.3 (2019-08-19) Build-stage not writable</h4>
+
+<p>Spack has been reworking the build directory structure and the value for
+<code>build-stage</code> in <code>config.yaml</code> is currently broken.
+</p>
+<div class="example">
+<pre class="example">build_stage:
+  - $tempdir/spack-stage
+</pre></div>
+
+<p>The problem with this value is that the first user to run spack on this
+machine will create the directory, owned by that user and thus not
+writable by any other user.  For every other user, spack install will
+fail with:
+</p>
+<div class="example">
+<pre class="example">==&gt; Error: No accessible stage paths in:
+</pre></div>
+
+<p><b>Workaround:</b> Change <code>build-stage</code> in <code>config.yaml</code> to
+another directory that you can write to.
 </p>
 
 <a name="Recently-Resolved-Issues"></a>
 <h3 class="section">3 Recently Resolved Issues</h3>
 
-<a name="g_t_00282019_002d06_002d06_0029-intel_002dxed-and-hpcviewer"></a>
-<h4 class="subsection">3.1 (2019-06-06) intel-xed and hpcviewer</h4>
+<a name="g_t_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer"></a>
+<h4 class="subsection">3.1 (2019-06-06) Intel-xed and hpcviewer</h4>
 
 <p>Packages that use a spack resource (a second tar file) are currently
 broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
