@@ -402,6 +402,10 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+
+    // some metrics (like ratio) don't display the percent
+    // we should respect the original metric description here
+    doDispPercent = mSrc->doDispPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
