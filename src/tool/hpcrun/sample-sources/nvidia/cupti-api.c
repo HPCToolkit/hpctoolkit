@@ -774,6 +774,7 @@ cupti_kernel_ip_resolve
   uint32_t function_index = cufunc->function_index;
   uint32_t cubin_id = cumod->cubin_id;
   ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, 0);
+  PRINT("Decode function_index %u cubin_id %u\n", function_index, cubin_id);
   return ip;
 }
 
@@ -1725,12 +1726,12 @@ cupti_kernel_process
     cupti_host_op_map_entry_t *host_op_entry = 
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node = 
-        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cct_node_t *host_func_node = 
+        cupti_host_op_map_entry_host_func_node_get(host_op_entry);
       cupti_record_t *record = 
         cupti_host_op_map_entry_record_get(host_op_entry);
       cupti_cupti_activity_apply((CUpti_Activity *)activity, 
-        host_op_node, record);
+        host_func_node, record);
       // do not delete it because it shares external_id with activity samples
     }
   }
