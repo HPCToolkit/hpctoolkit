@@ -773,9 +773,9 @@ cupti_kernel_ip_resolve
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)cufunc->cumod;
   uint32_t function_index = cufunc->function_index;
   uint32_t cubin_id = cumod->cubin_id;
-  ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, 0);
+  ip_normalized_t ip_norm = cubin_id_transform(cubin_id, function_index, 0);
   PRINT("Decode function_index %u cubin_id %u\n", function_index, cubin_id);
-  return ip;
+  return ip_norm;
 }
 
 
@@ -1070,7 +1070,7 @@ cupti_subscriber_callback
         cupti_runtime_api_flag_set();
         // A runtime API must be implemented by driver APIs.
         // For kernel launch APIs, we wait for the driver API to find the corresponding
-        // function ip
+        // function ip_norm
         uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
         HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
                          (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, correlation_id));
@@ -1447,11 +1447,11 @@ cupti_sample_process
 #else
   CUpti_ActivityPCSampling2 *sample = (CUpti_ActivityPCSampling2 *)record;
 #endif
-  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+  PRINT("source %u, functionId %u, pc 0x%p, corr %u, "
    "samples %u, latencySamples %u, stallReason %u\n",
    sample->sourceLocatorId,
    sample->functionId,
-   sample->pcOffset,
+   (void *)sample->pcOffset,
    sample->correlationId,
    sample->samples,
    sample->latencySamples,
@@ -1465,30 +1465,35 @@ cupti_sample_process
     cupti_host_op_map_entry_t *host_op_entry = 
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      PRINT("external_id %d\n", external_id);
+      PRINT("external_id %lu\n", external_id);
       // Delete a host op node if all the samples with the node are processed
       if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
         cupti_correlation_id_map_delete(sample->correlationId);
       }
-      // Function node has the start pc of the function
-      cct_node_t *func_node = 
-        cupti_host_op_map_entry_host_func_node_get(host_op_entry);
-      cct_addr_t *func_addr = hpcrun_cct_addr(func_node);
-      ip_normalized_t ip = {
-        .lm_id = func_addr->ip_norm.lm_id,
-        .lm_ip = func_addr->ip_norm.lm_ip + sample->pcOffset
-      };
-      cct_addr_t frm = { .ip_norm = ip };
-      cct_node_t *cct_child = NULL;
-      if ((cct_child = hpcrun_cct_insert_addr(func_node, &frm)) != NULL) {
-        PRINT("frm %d\n", ip);
-        cupti_record_t *record = 
-          cupti_host_op_map_entry_record_get(host_op_entry);
-        cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, 
-          record);
+      cupti_function_id_map_entry_t *function_entry =
+        cupti_function_id_map_lookup(sample->functionId);
+      if (function_entry != NULL) {
+        // Function node has the start pc of the function
+        cct_node_t *cct_node = 
+          cupti_host_op_map_entry_host_func_node_get(host_op_entry);
+        if (cct_node == NULL) {
+          // Function node cannot be recorded (OMPT), use operation node
+          cct_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        }
+        ip_normalized_t ip_norm =
+          cupti_function_id_map_entry_ip_norm_get(function_entry);
+        ip_norm.lm_ip += sample->pcOffset;
+        cct_addr_t frm = { .ip_norm = ip_norm };
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
+          cupti_record_t *record = 
+            cupti_host_op_map_entry_record_get(host_op_entry);
+          cupti_cupti_activity_apply((CUpti_Activity *)sample, cct_child, 
+            record);
+        }
       }
     } else {
-      PRINT("host_map_entry %d not found\n", external_id);
+      PRINT("host_op_map_entry %lu not found\n", external_id);
     }
   }
 }
@@ -1508,7 +1513,6 @@ cupti_source_locator_process
 
 
 static void
-__attribute__ ((unused))
 cupti_function_process
 (
  CUpti_ActivityFunction *af
@@ -1520,7 +1524,8 @@ cupti_function_process
     af->moduleId,
     af->functionIndex,
     af->name);
-  cupti_function_id_map_insert(af->id, af->functionIndex, af->moduleId);
+  ip_normalized_t ip_norm = cubin_id_transform(af->moduleId, af->functionIndex, 0);
+  cupti_function_id_map_insert(af->id, ip_norm);
 }
 
 
@@ -1574,7 +1579,7 @@ cupti_correlation_process
     cupti_correlation_id_map_external_id_replace(correlation_id, external_id);
   }
   PRINT("External CorrelationId %lu\n", external_id);
-  PRINT("CorrelationId %lu\n", correlation_id);
+  PRINT("CorrelationId %u\n", correlation_id);
 }
 
 
@@ -1608,7 +1613,7 @@ cupti_memcpy_process
   }
   PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy copy bytes %u\n", activity->bytes);
+  PRINT("Memcpy copy bytes %lu\n", activity->bytes);
 }
 
 
@@ -1639,7 +1644,7 @@ cupti_memcpy2_process
   }
   PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
   PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy2 copy bytes %u\n", activity->bytes);
+  PRINT("Memcpy2 copy bytes %lu\n", activity->bytes);
 }
 
 
@@ -1664,7 +1669,7 @@ cupti_memset_process
   }
   PRINT("Memset CorrelationId %u\n", activity->correlationId);
   PRINT("Memset kind %u\n", activity->memoryKind);
-  PRINT("Memset bytes %u\n", activity->bytes);
+  PRINT("Memset bytes %lu\n", activity->bytes);
 }
 
 
@@ -1787,20 +1792,24 @@ cupti_instruction_process
 {
   uint32_t correlation_id = 0;
   uint32_t pc_offset = 0;
+  uint32_t function_id = 0;
   if (activity->kind == CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS) {
     CUpti_ActivityGlobalAccess3 *global_access = 
       (CUpti_ActivityGlobalAccess3 *)activity;
     correlation_id = global_access->correlationId;
     pc_offset = global_access->pcOffset;
+    function_id = global_access->functionId;
   } else if (activity->kind == CUPTI_ACTIVITY_KIND_SHARED_ACCESS) {
     CUpti_ActivitySharedAccess *shared_access = 
       (CUpti_ActivitySharedAccess *)activity;
     correlation_id = shared_access->correlationId;
     pc_offset = shared_access->pcOffset;
+    function_id = shared_access->functionId;
   } else if (activity->kind == CUPTI_ACTIVITY_KIND_BRANCH) {
     CUpti_ActivityBranch2 *branch = (CUpti_ActivityBranch2 *)activity;
     correlation_id = branch->correlationId;
     pc_offset = branch->pcOffset;
+    function_id = branch->functionId;
     PRINT("Branch instruction\n");
   }
   cupti_correlation_id_map_entry_t *cupti_entry = 
@@ -1808,30 +1817,34 @@ cupti_instruction_process
   if (cupti_entry != NULL) {
     uint64_t external_id = 
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    PRINT("external_id %d\n", external_id);
+    PRINT("external_id %lu\n", external_id);
     cupti_host_op_map_entry_t *host_op_entry = 
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node = 
-        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-      // Function node has the start pc of the function
-      cct_node_t *func_node = 
-        cupti_host_op_map_entry_host_func_node_get(host_op_entry);
-      cct_addr_t *func_addr = hpcrun_cct_addr(func_node);
-      ip_normalized_t ip = {
-        .lm_id = func_addr->ip_norm.lm_id,
-        .lm_ip = func_addr->ip_norm.lm_ip + pc_offset
-      };
-      cct_addr_t frm = { .ip_norm = ip };
-      cct_node_t *cct_child = NULL;
-      if ((cct_child = hpcrun_cct_insert_addr(host_op_node, &frm)) != NULL) {
-        cupti_record_t *record = 
-          cupti_host_op_map_entry_record_get(host_op_entry);
-        cupti_cupti_activity_apply(activity, cct_child, record);
+      cupti_function_id_map_entry_t *function_entry =
+        cupti_function_id_map_lookup(function_id);
+      if (function_entry != NULL) {
+        // Function node has the start pc of the function
+        cct_node_t *cct_node = 
+          cupti_host_op_map_entry_host_func_node_get(host_op_entry);
+        if (cct_node == NULL) {
+          // Function node cannot be recorded (OMPT), use operation node
+          cct_node = cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        }
+        ip_normalized_t ip_norm =
+          cupti_function_id_map_entry_ip_norm_get(function_entry);
+        ip_norm.lm_ip += pc_offset;
+        cct_addr_t frm = { .ip_norm = ip_norm };
+        cct_node_t *cct_child = NULL;
+        if ((cct_child = hpcrun_cct_insert_addr(cct_node, &frm)) != NULL) {
+          cupti_record_t *record = 
+            cupti_host_op_map_entry_record_get(host_op_entry);
+          cupti_cupti_activity_apply(activity, cct_child, record);
+        }
       }
     }
   }
-  PRINT("Instruction CorrelationId %u\n", correlation_id);
+  PRINT("Instruction correlationId %u\n", correlation_id);
 }
 
 
@@ -1849,7 +1862,11 @@ cupti_activity_process
 
   // unused functions
   case CUPTI_ACTIVITY_KIND_SOURCE_LOCATOR:
+    break;
+
   case CUPTI_ACTIVITY_KIND_FUNCTION:
+    cupti_function_process(
+      (CUpti_ActivityFunction *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
@@ -1981,7 +1998,7 @@ cupti_notification_handle(cupti_node_t *node)
   if (node->type == CUPTI_ENTRY_TYPE_NOTIFICATION) {
     cupti_entry_notification_t *notification_entry = 
       (cupti_entry_notification_t *)node->entry;
-    PRINT("Insert external id %d\n", notification_entry->host_op_id);
+    PRINT("Insert external id %lu\n", notification_entry->host_op_id);
     cupti_host_op_map_insert
       (notification_entry->host_op_id, notification_entry->api_node, 
        notification_entry->func_node, notification_entry->record);

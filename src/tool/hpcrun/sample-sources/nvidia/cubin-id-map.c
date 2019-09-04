@@ -178,7 +178,7 @@ cubin_id_map_entry_elf_vector_get(cubin_id_map_entry_t *entry)
 // looking up elf symbols inside a cubin
 //--------------------------------------------------------------------------
 ip_normalized_t
-cubin_id_transform(uint32_t cubin_id, uint32_t function_index, int64_t offset)
+cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
