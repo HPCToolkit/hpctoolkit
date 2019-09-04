@@ -443,7 +443,9 @@ perf_util_attr_init(
 #if KERNEL_SAMPLING_ENABLED
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
     attr->sample_max_stack         = MAX_CALLCHAIN_FRAMES;
+#endif
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
