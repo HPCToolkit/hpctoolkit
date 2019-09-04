@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -96,13 +96,15 @@ MYSOURCES = \
 	\
 	binarytree.h binarytree.c \
 	cskiplist.h cskiplist.c \
+	crypto-hash.h crypto-hash.c \
+	queues.h queues.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
 	procmaps.h procmaps.c \
 	randomizer.h randomizer.c \
 	vdso.h vdso.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -113,6 +115,22 @@ endif
 MYLIBADD =
 
 MYCLEAN =
+
+#############################################################################
+# zlib
+#############################################################################
+
+if OPT_USE_ZLIB
+#MYSOURCES += \
+#	compress.h compress.c
+
+#MYLIBADD   += -L$(ZLIB_LIB) -lz
+#MYCFLAGS   += -I$(ZLIB_INC) 
+
+else
+#MYSOURCES += \
+#	compress.h compress_dummy.c
+endif
 
 #############################################################################
 # Automake rules

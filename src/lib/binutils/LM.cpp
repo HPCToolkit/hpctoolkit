@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,19 +79,13 @@ using std::endl;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
-#include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/EmptyISA.hpp>
-#include <lib/isa/IA64ISA.hpp>
-#include <lib/isa/MipsISA.hpp>
-#include <lib/isa/PowerISA.hpp>
-#include <lib/isa/SparcISA.hpp>
-#include <lib/isa/x86ISA.hpp>
-#include <lib/isa/x86ISABinutils.hpp>
-#include <lib/isa/x86ISAXed.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
+
+#include <include/linux_info.h>
 
 #include "LM.hpp"
 #include "Seg.hpp"
@@ -99,8 +93,6 @@ using std::endl;
 #include "Proc.hpp"
 #include "SimpleSymbolsFactories.hpp"
 #include "Dbg-LM.hpp"
-
-
 
 //***************************************************************************
 // macros
@@ -115,7 +107,6 @@ using std::endl;
 #define NORETURNS_LOOKUP_LOCAL_NOISY 0
 
 
-
 //***************************************************************************
 // private data 
 //***************************************************************************
@@ -125,7 +116,6 @@ static const char *noreturn_table[] = {
   // that don't return
 #include "names.cpp"
 };
-
 
 
 //***************************************************************************
@@ -355,8 +345,8 @@ BinUtil::LM::LM(bool useBinutils)
     m_bfdDynSymTab(NULL), m_bfdSynthTab(NULL),
     m_bfdSymTabSort(NULL), m_bfdSymTabSz(0), m_bfdDynSymTabSz(0),
     m_bfdSymTabSortSz(0), m_bfdSynthTabSz(0), m_noreturns(0), 
-    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils), 
-    simpleSymbols(0)
+    m_realpathMgr(RealPathMgr::singleton()), m_useBinutils(useBinutils),
+    m_simpleSymbols(0)
 {
 }
 
@@ -404,7 +394,8 @@ BinUtil::LM::~LM()
 void
 BinUtil::LM::open(const char* filenm)
 {
-  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
+  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm),
+	      "Cannot open a different file!");
   
   if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
@@ -448,91 +439,25 @@ BinUtil::LM::open(const char* filenm)
   else {
     m_type = TypeNULL;
   }
-  
-#if defined(HAVE_HPC_GNUBINUTILS)
-  if (bfd_get_arch(m_bfd) == bfd_arch_alpha) {
-    m_txtBeg = bfd_ecoff_get_text_start(m_bfd);
-    m_txtEnd = bfd_ecoff_get_text_end(m_bfd);
-    m_begVMA = m_txtBeg;
-  } 
-  else {
-    // Currently, this is ELF specific
-    m_txtBeg = bfd_get_start_address(m_bfd); // entry point
-    m_begVMA = bfd_get_first_addr(m_bfd);     
-  }
-#else
+
   m_txtBeg = bfd_get_start_address(m_bfd); // entry point
   m_begVMA = m_txtBeg;
-#endif /* HAVE_HPC_GNUBINUTILS */
-  
+
   // -------------------------------------------------------
   // 3. Configure ISA.  
   // -------------------------------------------------------
 
-  // Create a new ISA (this may not be necessary, but it is cheap)
-  ISA* newisa = NULL;
-  switch (bfd_get_arch(m_bfd)) {
-    case bfd_arch_i386: // x86 and x86_64
-      if (m_useBinutils) {
-        newisa = new x86ISABinutils(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
-      } else {
-        newisa = new x86ISAXed(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
-      }
-      break;
-#ifdef bfd_mach_k1om
-    case bfd_arch_k1om: // Intel MIC, 64-bit only
-      if (m_useBinutils) {
-         newisa = new x86ISABinutils(true);
-      } else {
-         newisa = new x86ISAXed(true);
-      }
-      break;
-#endif
-    case bfd_arch_powerpc:
-      newisa = new PowerISA;
-      break;
+  // We no longer use binutils to crack instructions on any platform,
+  // so EmptyISA is a stub until we remove binutils entirely.
 
-    // semi-supported platforms
-#ifdef ENABLE_BINUTILS_IA64
-    case bfd_arch_ia64:
-      newisa = new IA64ISA;
-      break;
-#endif
-
-    // old, unsupported platforms
-#if 0
-    case bfd_arch_alpha:
-      newisa = new AlphaISA;
-      break;
-    case bfd_arch_mips:
-      newisa = new MipsISA;
-      break;
-    case bfd_arch_sparc:
-      newisa = new SparcISA;
-      break;
-#endif
-    default:
-      newisa = new EmptyISA;
-      break;
+  if (! isa) {
+    isa = new EmptyISA;
   }
-
-  // Sanity check.  Test to make sure the new LM is using the
-  // same ISA type.
-  if (!isa) {
-    isa = newisa;
-  }
-  else {
-    delete newisa;
-    // typeid(*isa).m_name()
-    DIAG_Assert(typeid(*newisa) == typeid(*isa),
-		"Cannot simultaneously open LMs with different ISAs!");
-  }
-
 }
 
 
 void
-BinUtil::LM::read(LM::ReadFlg readflg)
+BinUtil::LM::read(const std::set<std::string> &directorySet, LM::ReadFlg readflg)
 {
   // Internal sanity check.
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
@@ -540,9 +465,12 @@ BinUtil::LM::read(LM::ReadFlg readflg)
   m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
   SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(m_name.c_str());
-  if (sf) {
-    simpleSymbols = sf->create();
-    simpleSymbols->parse(m_name.c_str());
+  if (sf){
+    m_simpleSymbols = sf->create();
+    if (! m_simpleSymbols->parse(directorySet, m_name.c_str())) {
+      // Warning: we cannot parse the load module. 
+      // this is not a problem, so we can safely ignore the case
+    }
     return;
   }
 
@@ -550,7 +478,6 @@ BinUtil::LM::read(LM::ReadFlg readflg)
   readSegs();
   computeNoReturns();
 }
-
 
 
 // relocate: Internally, all operations are performed on non-relocated
@@ -595,12 +522,12 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (simpleSymbols) {
-    STATUS = simpleSymbols->findEnclosingFunction(vma, func);  
+  if (m_simpleSymbols) {
+    STATUS = m_simpleSymbols->findEnclosingFunction(vma, func);
     return STATUS;
   }
 
-  if (!m_bfdSymTab) { 
+  if (m_bfdSymTabSortSz == 0) { 
     return STATUS; 
   }
   
@@ -624,9 +551,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   // Obtain the source line information.
   const char *bfd_func = NULL, *bfd_file = NULL;
   uint bfd_line = 0;
+
   bfd_boolean fnd = 
-    bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTab,
+    bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTabSort,
 			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
+
   if (fnd) {
     STATUS = (bfd_file && bfd_func && SrcFile::isValid(bfd_line));
     
@@ -932,12 +861,18 @@ BinUtil::LM::readSymbolTables()
     DIAG_Msg(2, "'" << name() << "': No synthetic symbols found.");
   }
 
-  m_bfdSymTabSort = new asymbol*[m_bfdSymTabSz + m_bfdSynthTabSz + 1];
-  memcpy(m_bfdSymTabSort, m_bfdSymTab, m_bfdSymTabSz * sizeof(asymbol *));
-  for (int i = 0; i < m_bfdSynthTabSz; i++) {
-    m_bfdSymTabSort[m_bfdSymTabSz + i] = &m_bfdSynthTab[i];
+  m_bfdSymTabSort = new asymbol*[m_bfdSymTabSz + m_bfdDynSymTabSz + m_bfdSynthTabSz + 1];
+  int sort_offset = 0;
+  for (int i = 0; i < m_bfdSymTabSz; i++) {
+    m_bfdSymTabSort[sort_offset++] = m_bfdSymTab[i];
   }
-  m_bfdSymTabSortSz = m_bfdSymTabSz + m_bfdSynthTabSz;
+  for (int i = 0; i < m_bfdDynSymTabSz; i++) {
+    m_bfdSymTabSort[sort_offset++] = m_bfdDynSymTab[i];
+  }
+  for (int i = 0; i < m_bfdSynthTabSz; i++) {
+    m_bfdSymTabSort[sort_offset++] = &m_bfdSynthTab[i];
+  }
+  m_bfdSymTabSortSz = m_bfdSymTabSz + m_bfdDynSymTabSz + m_bfdSynthTabSz;
   m_bfdSymTabSort[m_bfdSymTabSortSz] = NULL;
 
   // -------------------------------------------------------
@@ -1165,6 +1100,15 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
     }
   }
 
+  o << p << "--------------- Symbol Table Dump (Dynamic) ----------------\n";
+
+  if (m_bfdDynSymTabSz) {
+    for (int i = 0; i < m_bfdDynSymTabSz; i++) {
+      dumpASymbol(o, m_bfdDynSymTab[i], p1);
+    }
+  }
+
+
   o << p << "--------------- Symbol Table Dump (Synthetic) -------------\n";
 
   if (m_bfdSynthTabSz) {
@@ -1175,6 +1119,7 @@ BinUtil::LM::dumpSymTab(std::ostream& o, const char* pre) const
 
   o << p << "-----------------------------------------------------------\n";
 }
+
 
 
 static void
@@ -1189,8 +1134,6 @@ dumpSymFlag(std::ostream& o,
     hasPrinted = true;			\
   }
 }
-
-
 
 
 //***************************************************************************

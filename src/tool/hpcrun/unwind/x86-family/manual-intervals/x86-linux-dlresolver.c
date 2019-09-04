@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -87,8 +87,8 @@ static int matches(char *ins, int len, const char *sig)
 }
 
 
-static int 
-adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
+int 
+x86_adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *stat)
 {
 
   if (matches(ins, len, dl_runtime_resolve_signature_1) ||
@@ -96,20 +96,10 @@ adjust_dl_runtime_resolve_unwind_intervals(char *ins, int len, btuwi_status_t *s
 	// one of the signatures matched
 	unwind_interval *ui = stat->first;
 	while(ui) {
-	  UWI_RECIPE(ui)->sp_ra_pos += 16;
+	  UWI_RECIPE(ui)->reg.sp_ra_pos += 16;
 	  ui = UWI_NEXT(ui);
 	}
 	return 1;
   } 
   return 0;
 }
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_dl_runtime_resolve_unwind_intervals);
-}
-
-

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,7 @@
 class VdsoSymbols : public SimpleSymbols {
 public:
   VdsoSymbols();
-  bool parse(const char *pathname);
+  bool parse(const std::set<std::string> &directorySet, const char *pathname);
 };
 
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,11 +47,12 @@
 #include <stdbool.h>
 
 #include "cct_bundle.h"
+#include "../unresolved.h"
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <cct/cct_addr.h>
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
-
+#include <hpcrun/unresolved.h>
 
 //
 // Private Operations
@@ -66,7 +67,11 @@ GPU_IDLE(void)
 {
 }
 
+void
+NO_THREAD(void)
+{
 
+}
 
 //
 // Interface procedures
@@ -87,6 +92,7 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   // If there is a creation context (ie, this is a pthread),
   // then the creation context gets special treatment.
   //
+
   // If the -dd flag ATTACH_THREAD_CTXT is *set*, then
   // attach all thread-stopped call paths
   // to the call context prefix node instead of the top of the tree.
@@ -98,13 +104,16 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
     hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
+  bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
+  bundle->special_no_thread_node = hpcrun_cct_new_special(NO_THREAD);
 }
 //
 // Write to file for cct bundle: 
 //
 int 
-hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
+hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl,
+                         cct2metrics_t* cct2metrics_map)
 {
   if (!fs) { return HPCRUN_ERR; }
 
@@ -118,12 +127,14 @@ hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t* bndl)
   hpcrun_cct_insert_node(partial_insert, bndl->partial_unw_root);
 
   //
-  // 
+  // attach unresolved root
   //
+  // FIXME: show UNRESOLVED TREE
+//  hpcrun_cct_insert_node(partial_insert, bndl->unresolved_root);
 
   // write out newly constructed cct
 
-  return hpcrun_cct_fwrite(bndl->top, fs, flags);
+  return hpcrun_cct_fwrite(cct2metrics_map, bndl->top, fs, flags);
 }
 
 //
@@ -145,10 +156,21 @@ hpcrun_empty_cct(cct_bundle_t* cct)
 
 cct_node_t*
 hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
-{
   // attach special node to root if not already attached
+{
   if (! hpcrun_cct_parent(cct->special_idle_node))
     hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
 
   return cct->special_idle_node;
+}
+
+
+cct_node_t*
+hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct)
+  // attach special node to root if not already attached
+{
+  if (! hpcrun_cct_parent(cct->special_no_thread_node))
+    hpcrun_cct_insert_node(cct->top, cct->special_no_thread_node);
+
+  return cct->special_no_thread_node;
 }

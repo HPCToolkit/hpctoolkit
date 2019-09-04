@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -80,6 +80,7 @@ binding_xlate
   case dso_symbol_bind_weak:   return SimpleSymbolBinding_Weak;
   case dso_symbol_bind_other:  return SimpleSymbolBinding_Other;
   }
+  return SimpleSymbolBinding_Other;
 }
 
 
@@ -115,7 +116,7 @@ VdsoSymbols::VdsoSymbols
 
 
 bool
-VdsoSymbols::parse(const char *pathname)
+VdsoSymbols::parse(const std::set<std::string> &directorySet, const char *pathname)
 {
   int success = (pathname ? 
                  dso_symbols(pathname, note_symbol, this) : 

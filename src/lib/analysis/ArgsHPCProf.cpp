@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,8 @@ using std::endl;
 using std::string;
 
 //*************************** User Include Files ****************************
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include <include/hpctoolkit-config.h>
 
@@ -277,6 +279,37 @@ ArgsHPCProf::printError(std::ostream& os, const std::string& msg) const
 }
 
 
+static inline bool is_directory(const std::string &path) {
+  struct stat statbuf;
+  if (stat(path.c_str(), &statbuf) != 0)
+    return 0;
+  return S_ISDIR(statbuf.st_mode);
+}
+
+
+static inline void find_files(std::vector<std::string> &files,
+  const std::string &prefix, const std::string &suffix) {
+  DIR *dir;
+  struct dirent *ent;
+
+  if ((dir = opendir(prefix.c_str())) != NULL) {
+    /* append files within the directory */
+    while ((ent = readdir(dir)) != NULL) {
+      auto file_name = std::string(ent->d_name);
+      std::size_t found = file_name.find(suffix);
+      if (found != std::string::npos) {
+        auto path_name = prefix + "/" + file_name;
+        if (!is_directory(path_name)) {
+          files.push_back(path_name);
+        }
+      }
+    }
+  }
+
+  closedir(dir);
+}
+
+
 void
 ArgsHPCProf::parse(int argc, const char* const argv[])
 {
@@ -422,8 +455,17 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     profileFiles.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
       profileFiles[i] = parser.getArg(i);
-    }
+      const std::string structs_dir = profileFiles[i] + "/structs";
+      // parse structs directory
+      if (is_directory(structs_dir)) {
+        find_files(structureFiles, structs_dir, ".hpcstruct");
+      }
 
+      const std::string nvidia_dir = structs_dir + "/nvidia";
+      if (is_directory(nvidia_dir)) {
+        find_files(instructionFiles, nvidia_dir, ".dot");
+      }
+    }
 
     // For now, parse first file name to determine name of database
     if (!isDbDirSet) {
@@ -498,8 +540,8 @@ ArgsHPCProf::parseArg_metric(const std::string& value, const char* errTag)
 std::string
 ArgsHPCProf::makeDBDirName(const std::string& profileArg)
 {
-  static const string str1 = "hpctoolkit-";
-  static const string str2 = "-measurements";
+  static const string hpctk = "hpctoolkit-";
+  static const string meas = "-measurements";
 
   string db_dir = "";
   
@@ -507,29 +549,48 @@ ArgsHPCProf::makeDBDirName(const std::string& profileArg)
   //   <path>/[pfx]hpctoolkit-<nm>-measurements[sfx]/<file>.hpcrun
 
   const string& fnm = profileArg;
-  size_t pos1 = fnm.find(str1);
-  size_t pos2 = fnm.find(str2);
-  if (pos1 < pos2 && pos2 != string::npos) {
+  size_t pos_hpctk = -1;
+  size_t pos_meas = string::npos;
+
+  // Find the last "hpctoolkit-" string that is followed
+  // by a "-measurements" string (with overlap possible).
+  for (;;) {
+    size_t pos1, pos2;
+    // find next "hpctoolkit-"
+    pos1 = fnm.find(hpctk, pos_hpctk + 1);
+    if (pos1 == string::npos)
+      break;
+    // find next "'measurements" after "hpctoolkit"
+    pos2 = fnm.find(meas, pos1 + hpctk.length() - 1);
+    if (pos2 == string::npos)
+      break;
+    pos_hpctk = pos1;
+    pos_meas = pos2;
+  }
+    
+  // If both strings are found, and have no '/ between them,
+  // assemble db_dir.
+  if (fnm.find_first_of("/", pos_hpctk + hpctk.length()) > pos_meas) {
     // ---------------------------------
     // prefix
     // ---------------------------------
-    size_t pfx_a   = fnm.find_last_of('/', pos1);
+    size_t pfx_a   = fnm.find_last_of('/', pos_hpctk);
     size_t pfx_beg = (pfx_a == string::npos) ? 0 : pfx_a + 1; // [inclusive
-    size_t pfx_end = pos1;                                    // exclusive)
+    size_t pfx_end = pos_hpctk;                               // exclusive)
     string pfx = fnm.substr(pfx_beg, pfx_end - pfx_beg);
 
     // ---------------------------------
     // nm (N.B.: can have 'negative' length with fnm='hpctoolkit-measurements')
     // ---------------------------------
-    size_t nm_beg = pos1 + str1.length();            // [inclusive
-    size_t nm_end = (nm_beg > pos2) ? nm_beg : pos2; // exclusive)
+    size_t nm_beg = pos_hpctk + hpctk.length();              // [inclusive
+    size_t nm_end = (nm_beg > pos_meas) ? nm_beg : pos_meas; // exclusive)
     string nm = fnm.substr(nm_beg, nm_end - nm_beg);
     
     // ---------------------------------
     // suffix
     // ---------------------------------
     string sfx;
-    size_t sfx_beg = pos2 + str2.length();            // [inclusive
+    size_t sfx_beg = pos_meas + meas.length();        // [inclusive
     size_t sfx_end = fnm.find_first_of('/', sfx_beg); // exclusive)
     if (sfx_end == string::npos) {
       sfx_end = fnm.size();

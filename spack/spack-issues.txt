@@ -1,0 +1,88 @@
+1 Introduction
+==============
+
+Spack is a moving target and receives multiple commits per day.
+Normally, HPCToolkit will build and run successfully with the latest
+version of all of its prerequisite packages, but sometimes not.  This
+page covers the current known issues where HPCToolkit fails to build
+with the latest version of spack.
+
+   Report problems to 'hpctoolkit-forum at rice dot edu'.  But before
+reporting a problem, first try the versions recommended in the
+'packages.yaml' file in the 'spack' subdirectory of the hpctoolkit
+repository.  And always check the latest version of this file on the
+hpctoolkit web site.
+
+     <http://hpctoolkit.org/spack-issues.html>
+
+Last revised: June 17, 2019.
+
+2 Current Issues
+================
+
+No known issues at this time.
+
+3 Recently Resolved Issues
+==========================
+
+3.1 (2019-06-06) intel-xed and hpcviewer
+----------------------------------------
+
+Packages that use a spack resource (a second tar file) are currently
+broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
+platforms).
+
+Fixed: This is now fixed in spack develop in commit 'aca1bfdb6a64' on
+2019-06-13.
+
+4 General Problems
+==================
+
+These are general problems that arise from time to time.
+
+4.1 Unable to fetch
+-------------------
+
+Sometimes spack fails to download the source file(s) for some package
+and dies with a message similar to this.
+
+     ==> Fetching from https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.gz failed.
+     ==> Error: FetchError: All fetchers failed for m4-1.4.18-vorbvkcjfac43b7vuswsvnm6xe7w7or5
+
+This problem is usually temporary and the solution is to either wait a
+few minutes or an hour and try again, or else download the file manually
+and put it into a spack mirror.
+
+4.2 New version breaks the build
+--------------------------------
+
+Sometimes the latest version of some package breaks the build.  This has
+happened a couple of times where a new version of Boost has broken the
+build for Dyninst.  The solution is to revert the package to an earlier
+version until the rest of the code catches up.
+
+4.3 Spack core breaks the build
+-------------------------------
+
+Sometimes but rarely, something in the spack core will change or break
+the code in some 'package.py' file.  The solution is to look through the
+spack git log and revert the repository to a recent commit before the
+breakage.
+
+5 Long Term Issues
+==================
+
+5.1 Boost 1.68.0
+----------------
+
+Avoid boost version 1.68.0, it breaks the build for hpctoolkit.  Version
+1.70.0 works with the latest version of dyninst (10.1.0), or else 1.66.0
+is good and works with all versions of dyninst.
+
+5.2 Elfutils 0.176
+------------------
+
+Elfutils 0.176 requires glibc 2.16 or later (for 'aligned_alloc') and
+won't work with an older glibc, including RedHat or CentOS 6.x and Blue
+Gene.  On systems with an old glibc, use version 0.175.
+

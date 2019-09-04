@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -85,9 +85,11 @@ static void
 hpcrun_loadmap_notify_map(void *start, void *end)
 {
   loadmap_notify_t * n = notification_recipients;
-  while (n) {
-     n->map(start, end);
-     n = n->next;
+  while (n) { 
+    if (n->map) {
+      n->map(start, end);
+    }
+    n = n->next;
   }
 }
 
@@ -97,8 +99,10 @@ hpcrun_loadmap_notify_unmap(void *start, void *end)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) {
-     n->unmap(start, end);
-     n = n->next;
+    if (n->unmap) {
+      n->unmap(start, end);
+    }
+    n = n->next;
   }
 }
 
@@ -214,6 +218,7 @@ hpcrun_loadModule_new(const char* name)
 
   return x;
 }
+
 
 
 //***************************************************************************
@@ -444,9 +449,10 @@ hpcrun_loadmap_map(dso_info_t* dso)
                 dso->name, lm->dso_info->start_addr, lm->dso_info->end_addr);
 #endif
 
-        hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
-                                  lm->dso_info->end_addr);
   }
+
+  hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
+			    lm->dso_info->end_addr);
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
        dso->name, s_loadmap_ptr->size, msg);
@@ -494,6 +500,16 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 #endif
 
   hpcrun_loadmap_notify_unmap(start_addr, end_addr);
+}
+
+
+// used only to add a load module for the kernel 
+uint16_t 
+hpcrun_loadModule_add(const char* name)
+{
+  load_module_t *lm = hpcrun_loadModule_new(name);
+  hpcrun_loadmap_pushFront(lm);
+  return lm->id;
 }
 
 

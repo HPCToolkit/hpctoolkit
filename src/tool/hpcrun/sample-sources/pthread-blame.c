@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -226,7 +226,7 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
     TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
 	 metric_incr, state2str(pthread_blame.state),
 	 hpcrun_cct_persistent_id(node));
-    metric_set_t* metrics = hpcrun_reify_metric_set(node);
+    metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
     hpcrun_metric_std_inc(wait_metric,
 			  metrics,
 			  (cct_metric_data_t) {.i = metric_incr});
@@ -283,8 +283,9 @@ pthread_directed_blame_accept(void* obj)
     ucontext_t uc;
     getcontext(&uc);
     hpcrun_safe_enter();
-    hpcrun_sample_callpath(&uc, get_blame_metric_id(), blame, 
-                           SKIP_ONE_FRAME, 1);
+    hpcrun_sample_callpath(&uc, get_blame_metric_id(), 
+	(hpcrun_metricVal_t) {.i=blame}, 
+        SKIP_ONE_FRAME, 1, NULL);
     hpcrun_safe_exit();
   }
 }
@@ -355,15 +356,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   blame_shift_register(&bs_entry);
 
-  blame_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blame_metric_id, PTHREAD_BLAME_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  blockwait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(blockwait_metric_id, PTHREAD_BLOCKWAIT_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
-  spinwait_metric_id = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(spinwait_metric_id, PTHREAD_SPINWAIT_METRIC,
-				    MetricFlags_ValFmt_Int, 1, metric_property_none);
+  kind_info_t *pthr_kind = hpcrun_metrics_new_kind();
+  blame_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLAME_METRIC);
+  blockwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLOCKWAIT_METRIC);
+  spinwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_SPINWAIT_METRIC);
+  hpcrun_close_kind(pthr_kind);
   metric_id_set = true;
 
   // create & initialize blame table (once per process)
@@ -400,5 +397,6 @@ METHOD_FN(display_events)
 
 #define ss_name directed_blame
 #define ss_cls SS_SOFTWARE
+#define ss_sort_order  90
 
 #include "ss_obj.h"

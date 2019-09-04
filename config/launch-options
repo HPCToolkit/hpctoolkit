@@ -1,0 +1,12 @@
+# Early options that every launch script supports.
+
+case "$1" in
+    -V | -version | --version )
+        cat <<EOF
+${prog_name}: A member of HPCToolkit, version $VERSION
+git branch:  $git_version
+install dir: $HPCTOOLKIT
+EOF
+	exit 0
+	;;
+esac

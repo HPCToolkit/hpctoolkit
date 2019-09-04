@@ -3,8 +3,14 @@
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
-/* Binutils has support for ia64 */
-#undef ENABLE_BINUTILS_IA64
+/* dyninst uses Instruction::Ptr */
+#undef DYNINST_INSTRUCTION_PTR
+
+/* dyninst supports cuda */
+#undef DYNINST_USE_CUDA
+
+/* dyninst built with libdw */
+#undef DYNINST_USE_LIBDW
 
 /* Support for CLOCK_THREAD_CPUTIME_ID */
 #undef ENABLE_CLOCK_CPUTIME
@@ -12,8 +18,14 @@
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
 
+/* Build with openmp support */
+#undef ENABLE_OPENMP
+
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
+
+/* cupti include file available */
+#undef HAVE_CUPTI_H
 
 /* Define to 1 if you have the <cxxabi.h> header file. */
 #undef HAVE_CXXABI_H
@@ -21,17 +33,11 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
-/* HPCToolkit patched binutils */
-#undef HAVE_HPC_GNUBINUTILS
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
-
-/* Monitor library */
-#undef HAVE_MONITOR
 
 /* HOST OS: 32 and 64 bit OS libraries */
 #undef HAVE_OS_MULTILIB
@@ -117,7 +123,7 @@
 /* HOST platform: MIPS64LE_LINUX */
 #undef HOST_PLATFORM_MIPS64LE_LINUX
 
-/* IBM BlueGene/P support */
+/* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
 /* HPCToolkit version */
@@ -158,9 +164,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* Use new symtabAPI getName iterator */
-#undef SYMTAB_NEW_NAME_ITERATOR
 
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -62,14 +62,40 @@
 class LinuxKernelSymbols : public SimpleSymbols {
 public:
   LinuxKernelSymbols();
-  bool parse(const char *pathname);
+  bool parse(const std::set<std::string> &directorySet, const char *pathname);
 };
 
+enum init_status_e {UNINITIALIZED, INITIALIZED};
 
 class LinuxKernelSymbolsFactory : public SimpleSymbolsFactory {
 public:
+  LinuxKernelSymbolsFactory():m_kernelSymbol(NULL), m_id(0), m_fileId(0),
+    m_id_status(UNINITIALIZED), m_fileId_status(UNINITIALIZED)
+  {}
+  ~LinuxKernelSymbolsFactory() {
+    if (m_kernelSymbol) {
+      delete m_kernelSymbol;
+    }
+  }
+
+  const char *unified_name();
+
   bool match(const char *pathname);
   SimpleSymbols *create();
+
+  void id(uint _id);
+  uint id();
+
+  void fileId(uint _id);
+  uint fileId();
+
+private:
+  LinuxKernelSymbols *m_kernelSymbol;
+  uint m_id;
+  uint m_fileId;
+
+  enum init_status_e m_id_status;
+  enum init_status_e m_fileId_status;
 };
      
 #endif

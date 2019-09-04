@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+ZLIB_LIB = @ZLIB_LIB@
+ZLIB_INC = @ZLIB_INC@
+
 MYSOURCES = \
 	Args.cpp \
 	BaseDataFile.cpp \
@@ -90,11 +93,10 @@ MYSOURCES = \
 	main.cpp
 
 
-
 MYMPIFLAGS = -DMPICH_IGNORE_CXX_SEEK 
 
-MYCFLAGS   = @HOST_CFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS)  $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(MYMPIFLAGS) $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(MYMPIFLAGS) $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 MYLDFLAGS  = -lz
 

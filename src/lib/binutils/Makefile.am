@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -77,19 +77,35 @@ MYSOURCES = \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
+	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
+	SimpleSymbols.hpp SimpleSymbols.cpp\
+	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
+	\
 	Dbg-LM.hpp Dbg-LM.cpp \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	SimpleSymbols.hpp SimpleSymbols.cpp \
-	SimpleSymbolsFactories.hpp SimpleSymbolsFactories.cpp \
 	dso_symbols.h dso_symbols.cpp \
-	VdsoSymbols.hpp VdsoSymbols.cpp \
-	LinuxKernelSymbols.hpp LinuxKernelSymbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) -I@BOOST_INC@ -I@SYMTABAPI_INC@ @GNUBINUTILS_IFLAGS@
+#	VdsoSymbols.hpp VdsoSymbols.cpp 
+
+#############################################################################
+# Flags
+#############################################################################
+
+BOOST_IFLAGS   = @BOOST_IFLAGS@
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+TBB_IFLAGS     = @TBB_IFLAGS@
+
+
+MYCFLAGS       = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS     = @HOST_CXXFLAGS@ \
+                 $(HPC_IFLAGS) \
+                 $(BOOST_IFLAGS) \
+                 $(TBB_IFLAGS) \
+                 $(DYNINST_IFLAGS) \
+                 @BINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -100,6 +116,7 @@ endif
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
+
 
 #############################################################################
 # Automake rules

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,6 +84,9 @@
 
 #include "sample_source_obj.h"
 #include "common.h"
+#include "sample-filters.h"
+#include "itimer.h"
+#include "ss-errno.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -93,6 +96,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -105,6 +109,8 @@
 #include <lib/support-lean/timer.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
+
+
 
 /******************************************************************************
  * macros
@@ -258,6 +264,7 @@ hpcrun_delete_real_timer(thread_data_t *td)
 #ifdef ENABLE_CLOCK_REALTIME
   if (td->timer_init) {
     ret = timer_delete(td->timerid);
+    td->timerid = NULL;
   }
   td->timer_init = false;
 #endif
@@ -265,12 +272,30 @@ hpcrun_delete_real_timer(thread_data_t *td)
   return ret;
 }
 
+// While handling a sample, the shutdown signal handler may asynchronously 
+// delete a thread's timer and set it to NULL. Calling timer_settime on a 
+// deleted timer will return an error. Calling timer_settime on a NULL
+// timer will SEGV. For that reason, calling timer_settime(td->timerid, ...) 
+// is unsafe as td->timerid can be set to NULL immediately before it is 
+// loaded as an argument.  To avoid a SEGV, copy the timer into a local 
+// variable, test it, and only call timer_settime with a non-NULL timer. 
+static int
+hpcrun_settime(thread_data_t *td, struct itimerspec *spec)
+{
+  if (!td->timer_init) return -1; // fail: timer not initialized
+
+  timer_t mytimer = td->timerid;
+  if (mytimer == NULL) return -1; // fail: timer deleted
+
+  return timer_settime(mytimer, 0, spec, NULL);
+}
+
 static int
 hpcrun_start_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
-    return timer_settime(td->timerid, 0, &itspec_start, NULL);
+    return hpcrun_settime(td, &itspec_start);
   }
 #endif
 
@@ -282,10 +307,14 @@ hpcrun_stop_timer(thread_data_t *td)
 {
 #ifdef ENABLE_CLOCK_REALTIME
   if (use_realtime || use_cputime) {
-    if (! td->timer_init) {
-      return 0;
-    }
-    return timer_settime(td->timerid, 0, &itspec_stop, NULL);
+    int ret = hpcrun_settime(td, &itspec_stop);
+
+    // If timer is invalid, it is not active; treat it as stopped
+    // and ignore any error code that may have been returned by
+    // hpcrun_settime
+    if ((!td->timer_init) || (!td->timerid)) return 0;
+
+    return ret;
   }
 #endif
 
@@ -321,6 +350,18 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
   }
 
   ret = hpcrun_start_timer(td);
+
+  if (use_realtime || use_cputime) {
+    if ((!td->timer_init) || (!td->timerid)) {
+      // When multiple threads are present, a thread might receive a shutdown
+      // signal while handling a sample. When a shutdown signal is received,
+      // the thread's timer is deleted and set to uninitialized.
+      // In this circumstance, restarting the timer will fail and that
+      // is appropriate. Return without futher action or reporting an error.
+      return;
+    }
+  }
+
   if (ret != 0) {
     if (safe) {
       TMSG(ITIMER_CTL, "setitimer failed to start!!");
@@ -381,10 +422,9 @@ METHOD_FN(start)
     }
   }
 
-  // itimer is process-wide, so reopen the signal at start time
-  if (use_itimer) {
-    monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
-  }
+  // Since we block a thread's timer signal when stopping, we
+  // must unblock it when starting.
+  monitor_real_pthread_sigmask(SIG_UNBLOCK, &timer_mask, NULL);
 
   hpcrun_restart_timer(self, 1);
 }
@@ -393,6 +433,12 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(ITIMER_CTL, "thread fini action");
+
+  // Delete the realtime timer to avoid a timer leak.
+  if (use_realtime || use_cputime) {
+    thread_data_t *td = hpcrun_get_thread_data();
+    hpcrun_delete_real_timer(td);
+  }
 }
 
 static void
@@ -400,11 +446,13 @@ METHOD_FN(stop)
 {
   TMSG(ITIMER_CTL, "stop %s", the_event_name);
 
-  // itimer is process-wide, so it's worth blocking the signal in the
-  // current thread at stop time.
-  if (use_itimer) {
-    monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
-  }
+  // We have observed thread-centric profiling signals 
+  // (e.g., REALTIME) being delivered to a thread even after 
+  // we have stopped the thread's timer.  During thread
+  // finalization, this can cause a catastrophic error. 
+  // For that reason, we always block the thread's timer 
+  // signal when stopping. 
+  monitor_real_pthread_sigmask(SIG_BLOCK, &timer_mask, NULL);
 
   thread_data_t *td = hpcrun_get_thread_data();
   int rc = hpcrun_stop_timer(td);
@@ -420,13 +468,6 @@ METHOD_FN(shutdown)
 {
   METHOD_CALL(self, stop); // make sure stop has been called
   TMSG(ITIMER_CTL, "shutdown %s", the_event_name);
-
-  // delete the realtime timer to avoid a timer leak
-  if (use_realtime || use_cputime) {
-    thread_data_t *td = hpcrun_get_thread_data();
-    hpcrun_delete_real_timer(td);
-  }
-
   self->state = UNINIT;
 }
 
@@ -549,23 +590,23 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_time);
+  kind_info_t *timer_kind = hpcrun_metrics_new_kind();
+  int metric_id =
+    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Int,
+					  sample_period, metric_property_time);
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
+					    MetricFlags_ValFmt_Real,
+					    sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
-
-    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_time);
   }
+  hpcrun_close_kind(timer_kind);
 
   event = next_tok();
   if (more_tok()) {
@@ -626,6 +667,7 @@ METHOD_FN(display_events)
 
 #define ss_name itimer
 #define ss_cls SS_HARDWARE
+#define ss_sort_order  20
 
 #include "ss_obj.h"
 
@@ -637,14 +679,19 @@ METHOD_FN(display_events)
 static int
 itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   static bool metrics_finalized = false;
   sample_source_t *self = &_itimer_obj;
 
   // if sampling is suppressed for this thread, restart timer, & exit
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_thread_suppress_sample || sample_filters_apply()) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
-    return 0;
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
@@ -659,13 +706,15 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     if (! hpcrun_is_sampling_disabled()) {
       hpcrun_restart_timer(self, 0);
     }
-    // tell monitor the signal has been handled.
-    return 0;
+
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
   }
 
   // Ensure metrics are finalized.
   if (!metrics_finalized) {
-    hpcrun_finalize_metrics();
+    hpcrun_get_num_kind_metrics();
     metrics_finalized = true;
   }
 
@@ -682,12 +731,17 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
+  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_incr,
-					    0/*skipInner*/, 0/*isSync*/);
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
+					    0/*skipInner*/, 0/*isSync*/, NULL);
+
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
+  if(sv.sample_node) {
+    blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
   }
@@ -697,5 +751,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   hpcrun_safe_exit();
 
-  return 0; /* tell monitor that the signal has been handled */
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }

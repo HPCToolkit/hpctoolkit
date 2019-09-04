@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -208,7 +208,7 @@ hpcrun_fmt_epochHdr_fread(hpcrun_fmt_epochHdr_t* ehdr, FILE* fs,
 extern int
 hpcrun_fmt_epochHdr_fwrite(FILE* out, epoch_flags_t flags,
 			   uint64_t measurementGranularity,
-			   uint32_t raToCallsiteOfst, ...);
+			   ...);
 
 extern int
 hpcrun_fmt_epochHdr_fprint(hpcrun_fmt_epochHdr_t* ehdr, FILE* out);
@@ -357,6 +357,8 @@ hpcrun_metricVal_isZero(hpcrun_metricVal_t x)
 }
 
 
+
+
 // --------------------------------------------------------------------------
 // metric_desc_t
 // --------------------------------------------------------------------------
@@ -375,17 +377,10 @@ typedef struct metric_desc_t {
   char* formula;
   char* format;
 
+  bool is_frequency_metric;
 } metric_desc_t;
 
 extern const metric_desc_t metricDesc_NULL;
-
-
-typedef struct metric_list_t {
-  struct metric_list_t* next;
-  metric_desc_t val;
-  int id;
-} metric_list_t;
-
 
 
 HPCFMT_List_declare(metric_desc_t);
@@ -396,32 +391,50 @@ HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
 
 extern int
-hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, FILE* in,
+hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
 			   double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, FILE* out);
+hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* out);
 
 extern int
-hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, FILE* out);
+hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metrics, metric_aux_info_t *aux_info, FILE* out);
 
 extern void
 hpcrun_fmt_metricTbl_free(metric_tbl_t* metric_tbl, hpcfmt_free_fn dealloc);
 
 
 extern int
-hpcrun_fmt_metricDesc_fread(metric_desc_t* x, FILE* infs,
+hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* infs,
 			    double fmtVersion, hpcfmt_alloc_fn alloc);
 
 extern int
-hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, FILE* outfs);
+hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, FILE* outfs, const char* pre);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 
+// ---------------------------------------------------------
+// metric get and set
+// ---------------------------------------------------------
+
+double 
+hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric);
+
+void
+hpcrun_fmt_metric_set_value(metric_desc_t metric_desc, 
+   hpcrun_metricVal_t *metric, double value);
+
+void
+hpcrun_fmt_metric_set_value_int( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, int value);
+
+void
+hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
+   hpcrun_metricVal_t *metric, double value);
 
 //***************************************************************************
 // loadmap
@@ -574,17 +587,26 @@ static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.01";              // 5 bytes
 static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
-
+// Use of bit fields is not recommended as the order of fields 
+// is compiler and architecture dependent.
+/*
 typedef struct hpctrace_hdr_flags_bitfield {
   bool isDataCentric : 1;
-  uint64_t unused    : 63;
+  bool isLCARecorded : 1;
+  uint64_t unused    : 62;
 } hpctrace_hdr_flags_bitfield;
+*/
 
+// Substitute bit fields with macros
+#define HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS 0U
+#define HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS 1U
 
-typedef union hpctrace_hdr_flags_t {
-  hpctrace_hdr_flags_bitfield fields;
-  uint64_t                    bits; // for reading/writing
-} hpctrace_hdr_flags_t;
+#define HPCTRACE_HDR_FLAGS_GET_BIT(flag, pos) \
+  ((flag >> pos) & 1U)
+#define HPCTRACE_HDR_FLAGS_SET_BIT(flag, pos, value) \
+  flag ^= (-value ^ flag) & (1ULL << pos)
+
+typedef uint64_t hpctrace_hdr_flags_t;
 
 extern const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL;
 
@@ -636,10 +658,35 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 // [hpctrace] trace record/datum
 //***************************************************************************
 
-#define HPCRUN_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+// Time and dLCA is stored in one 64-bit integer
+
+// Time in microseconds is stored in lower HPCTRACE_FMT_TIME_BITS bits,
+// supporting up to year 2540 AD.
+#define HPCTRACE_FMT_TIME_BITS 54 // Use 54 bits to store timestamp, which is enough for next 500+ years.
+#define HPCTRACE_FMT_TIME_MAX ((1ULL << HPCTRACE_FMT_TIME_BITS) - 1) // 54 bits of 1s
+#define HPCTRACE_FMT_GET_TIME(bits) \
+  (bits & HPCTRACE_FMT_TIME_MAX)
+#define HPCTRACE_FMT_SET_TIME(bits, time) \
+  bits = (bits & (~HPCTRACE_FMT_TIME_MAX)) | (time & HPCTRACE_FMT_TIME_MAX)
+
+// dLCA = distance of previous sample's leaf call frame to 
+// the Least Common Ancestor (LCA) with this sample in the CCT.
+// dLCA is only valid when trampoline is used. 
+// dLCA is stored in higher HPCTRACE_FMT_DLCA_BITS bits, supporting up to 1023.
+#define HPCTRACE_FMT_DLCA_BITS 10 // Use 10 bits to store dLCA.
+#define HPCTRACE_FMT_DLCA_NULL ((1ULL << HPCTRACE_FMT_DLCA_BITS) - 1) // 10 bits of 1s
+#define HPCTRACE_FMT_GET_DLCA(bits) \
+  ((bits >> HPCTRACE_FMT_TIME_BITS) & HPCTRACE_FMT_DLCA_NULL)
+#define HPCTRACE_FMT_SET_DLCA(bits, dLCA) \
+  bits = (bits & (~(HPCTRACE_FMT_DLCA_NULL << HPCTRACE_FMT_TIME_BITS))) \
+         | ((((uint64_t)dLCA) & HPCTRACE_FMT_DLCA_NULL) << HPCTRACE_FMT_TIME_BITS)
+
+#define HPCTRACE_FMT_MetricId_NULL (INT_MAX) // for Java, no UINT32_MAX
+
+typedef uint64_t hpctrace_fmt_time_dLCA_composite_t;
 
 typedef struct hpctrace_fmt_datum_t {
-  uint64_t time; // microseconds
+  hpctrace_fmt_time_dLCA_composite_t comp; // composite field that stores both time and dLCA
   uint32_t cpId; // call path id (CCT leaf id); cf. HPCRUN_FMT_CCTNodeId_NULL
   uint32_t metricId;
 } hpctrace_fmt_datum_t;
@@ -709,6 +756,15 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
+
+// --------------------------------------------------------------------------
+// additional sampling info
+// --------------------------------------------------------------------------
+
+typedef struct sampling_info_s {
+  uint64_t  sample_clock;
+  void     *sample_data;
+} sampling_info_t;
 
 
 //***************************************************************************

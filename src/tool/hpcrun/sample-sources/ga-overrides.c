@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -263,7 +263,7 @@ extern global_array_t *GA;
     getcontext(&uc);							\
 									\
     hpcrun_ga_metricId_dataDesc_t* ga_desc = NULL;			\
-    uint dataMetricId = HPCRUN_FMT_MetricId_NULL;			\
+    uint dataMetricId = HPCTRACE_FMT_MetricId_NULL;			\
 									\
     if (g_a != G_A_NULL) {						\
       int idx = ga_getDataIdx(g_a);					\
@@ -276,12 +276,13 @@ extern global_array_t *GA;
     /* N.B.: when tracing, this call generates a trace record */	\
     /* TODO: should return a 'metric_set_t*' */				\
     sample_val_t smplVal =						\
-      hpcrun_sample_callpath(&uc, dataMetricId, 0/*metricIncr*/,	\
-			     0/*skipInner*/, 1/*isSync*/);		\
+      hpcrun_sample_callpath(&uc, dataMetricId, 			\
+               (hpcrun_metricVal_t) {.i=0},     \
+			     0/*skipInner*/, 1/*isSync*/, NULL);	\
     									\
     /* namespace: g_a, ga_desc, dataMetricId, smplVal, metricVec */	\
-    metric_set_t* metricVec =						\
-      metricVec = hpcrun_get_metric_set(smplVal.sample_node);		\
+    metric_data_list_t* metricVec =					\
+      metricVec = hpcrun_get_metric_data_list(smplVal.sample_node);	\
     do1;								\
     do2;								\
     do3;								\
@@ -295,7 +296,7 @@ extern global_array_t *GA;
 #define doMetric(metricIdExpr, metricIncr, type)			\
 {									\
   int mId = (metricIdExpr); /* eval only once */			\
-  if (mId >= 0 && mId != HPCRUN_FMT_MetricId_NULL) {			\
+  if (mId >= 0 && mId != HPCTRACE_FMT_MetricId_NULL) {			\
     /*TMSG(GA, "doMetric: %d", nbytes); */				\
     hpcrun_metric_std_inc(mId, metricVec,				\
 	   (cct_metric_data_t){.type = metricIncr * hpcrun_ga_period}); \

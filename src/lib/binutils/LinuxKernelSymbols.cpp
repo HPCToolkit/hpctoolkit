@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,8 @@
 //******************************************************************************
 
 #include <string.h>
+#include <sys/stat.h>
+
 #include <iostream>
 
 
@@ -59,6 +61,37 @@
 
 #include <include/linux_info.h>
 #include "LinuxKernelSymbols.hpp"
+
+#include "../support-lean/compress.h"
+
+
+
+//******************************************************************************
+// local operations
+//******************************************************************************
+
+static std::string
+getKernelFilename(const std::set<std::string> &directorySet, std::string virtual_name)
+{
+  std::string path;
+  
+  // remove the fake symbol < and >
+  std::string fname = virtual_name.substr( 1, virtual_name.size()-2 );
+
+  // check if any of the directory in the set has vmlinux.xxxx file
+  std::set<std::string>::iterator it;
+  for(it = directorySet.begin(); it != directorySet.end(); ++it) {
+    std::string dir  = *it;
+    path = dir + "/" + KERNEL_SYMBOLS_DIRECTORY + "/" + fname;
+
+    struct stat buffer;
+
+    if (stat(path.c_str(), &buffer) == 0) {
+      return path;
+    }
+  }
+  return path;
+}
 
 
 
@@ -75,17 +108,53 @@ LinuxKernelSymbols::LinuxKernelSymbols
 
 
 bool
-LinuxKernelSymbols::parse(const char *pathname)
+LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char *pathname)
 {
+  std::string virtual_path(pathname);
+  std::string real_path = getKernelFilename(directorySet, virtual_path);
+
+  if (real_path.empty()) {
+    std::cerr << "Warning: cannot find kernel symbols file " << pathname << 
+       " ds: "<< directorySet.size() << std::endl;
+    perror("LinuxKernelSymbols");
+    return false;
+  }
+
+  FILE *fp_in = fopen(real_path.c_str(), "r");
+  if (fp_in == NULL) {
+    // there is nothing critical if we cannot open pseudo load module.
+    // we just cannot find the address. 
+    return false;
+  }
+
+  FILE *fp_deflate = tmpfile();
+  if (fp_deflate == NULL) {
+    std::cerr << "Error: cannot create temporary file" << std::endl;
+    return false;
+  }
+
+  FILE *fp_out = fp_deflate;
+
+  enum compress_e decomp_status = compress_inflate(fp_in, fp_deflate);
+
+  // if the decompression is not needed (zlib doesn't exist) we just
+  // read the original copied kallsyms
+  if (decomp_status == COMPRESS_NONE) {
+    fp_out = fp_in;
+    fclose(fp_deflate);
+  }
+
   SimpleSymbolBinding binding;
-  FILE *fp = fopen(pathname, "r");
+  FILE *fp = fp_out;
 
   if (fp) {
+    rewind(fp);
     size_t len = 4096;
     char *line = (char *) malloc(len);
 
     for(;;) {
-      if (getline(&line, &len, fp) == EOF) break; // read a line from the file
+      if (getline(&line, &len, fp) == EOF)
+        break; // read a line from the file
 
       // parse the line into 3 or 4 parts
       char type;
@@ -101,7 +170,7 @@ LinuxKernelSymbols::parse(const char *pathname)
       case 't':
       case 'T':
         // if module is non-empty, append it to name
-	if (strlen(module) > 0) {
+        if (strlen(module) > 0) {
            strcat(name, " ");
            strcat(name, module);
         }
@@ -114,12 +183,13 @@ LinuxKernelSymbols::parse(const char *pathname)
         add((uint64_t) addr, SimpleSymbolKind_Function, binding, name);
         break;
       default:
-	break;
+        break;
       }
     }
     fclose(fp);
+    if (fp != fp_in)
+      fclose(fp_in);
   }
-
   coalesce(chooseHighestBinding);
 
   return count() > 0;
@@ -127,24 +197,65 @@ LinuxKernelSymbols::parse(const char *pathname)
 
 
 bool
-LinuxKernelSymbolsFactory::match
-(
- const char *pathname
-)
+LinuxKernelSymbolsFactory::match(const char *pathname)
 {
-  const char *slash = strrchr(pathname, '/');
-  const char *basename = (slash ? slash + 1 : pathname);
-  return strcmp(basename, LINUX_KERNEL_NAME) == 0;
+  if (pathname == NULL)
+    return false;
+
+  bool prefix_correct = pathname[0] == '<';
+  bool suffix_correct = pathname[strlen(pathname)-1] == '>';
+  bool name_correct   = 0<=strncmp(pathname+1, LINUX_KERNEL_NAME_REAL, strlen(LINUX_KERNEL_NAME_REAL));
+
+  return prefix_correct && suffix_correct && name_correct;
 }
 
 
 SimpleSymbols *
-LinuxKernelSymbolsFactory::create
-(
- void
-)
+LinuxKernelSymbolsFactory::create(void)
 {
-  return new LinuxKernelSymbols;
+  if (m_kernelSymbol) {
+    return m_kernelSymbol;
+  }
+  m_kernelSymbol = new LinuxKernelSymbols;
+  return m_kernelSymbol;
+}
+
+void
+LinuxKernelSymbolsFactory::id(uint _id)
+{
+  // only accept the first ID, and throw the others
+  if (m_id_status == UNINITIALIZED) {
+    m_id = _id;
+    m_id_status = INITIALIZED;
+  }
+}
+
+uint
+LinuxKernelSymbolsFactory::id()
+{
+  return m_id;
+}
+
+void
+LinuxKernelSymbolsFactory::fileId(uint _id)
+{
+  // only accept the first ID, and throw the others
+  if (m_fileId_status == UNINITIALIZED) {
+    m_fileId = _id;
+    m_fileId_status = INITIALIZED;
+  }
+}
+
+uint
+LinuxKernelSymbolsFactory::fileId()
+{
+  return m_fileId;
+}
+
+const char*
+LinuxKernelSymbolsFactory::unified_name()
+{
+  return LINUX_KERNEL_NAME;
 }
 
 

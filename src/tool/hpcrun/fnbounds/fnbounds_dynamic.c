@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -457,7 +457,7 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
   if (vdso_segment_p(incoming_filename)) { 
-    strcpy(filename, hpcrun_files_directory_pathname());
+    strcpy(filename, hpcrun_files_output_directory());
     strcat(filename, "/" VDSO_SEGMENT_NAME_SHORT);
     pathname_for_query = VDSO_SEGMENT_NAME_SHORT;
   } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
@@ -530,7 +530,7 @@ fnbounds_get_loadModule(void *ip)
     if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
       dso = fnbounds_compute(module_name, mstart, mend);
       if (dso) {
-	lm = hpcrun_loadmap_map(dso);
+        lm = hpcrun_loadmap_map(dso);
       }
     }
   }

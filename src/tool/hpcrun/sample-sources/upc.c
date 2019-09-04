@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,8 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-
+#include "ss-errno.h"
+ 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -186,13 +187,19 @@ trim_event_desc(char *desc)
 static int
 hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   int64_t counter, threshold;
   int ev, k;
 
   
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_thread_suppress_sample) {
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
+  }
 
   BGP_UPC_Stop();
 
@@ -211,7 +218,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     if (counter >= threshold) {
       if (safe) {
 	hpcrun_sample_callpath(context, myself->evl.events[k].metric_id,
-			       1, 0, 0);
+			       1, 0, 0, NULL);
       }
       BGP_UPC_Set_Counter_Value(ev, 0);
       BGP_UPC_Set_Counter_Threshold_Value(ev, threshold);
@@ -226,8 +233,9 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     hpcrun_safe_exit();
   }
 
-  // Tell monitor this was our signal.
-  return 0;
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 
 // Note: Must run BGP_UPC_Initialize() in every process,
@@ -291,12 +299,12 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_pre_allocate_metrics(nevents);
 
   for (k = 0; k < nevents; k++) {
-    metric_id = hpcrun_new_metric();
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(name),
-				      MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
+    metric_id = 
+      hpcrun_set_new_metric_info_and_period(strdup(name),
+					    MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);

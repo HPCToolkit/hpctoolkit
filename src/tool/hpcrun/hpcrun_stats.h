@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,36 @@ long hpcrun_stats_num_samples_blocked_dlopen(void);
 
 void hpcrun_stats_num_samples_dropped_inc(void);
 long hpcrun_stats_num_samples_dropped(void);
+
+
+//-----------------------------
+// acc samples recorded
+//-----------------------------
+void hpcrun_stats_acc_samples_add(long value);
+long hpcrun_stats_acc_samples(void);
+
+
+//-----------------------------
+// acc samples dropped
+//-----------------------------
+//
+void hpcrun_stats_acc_samples_dropped_add(long value);
+long hpcrun_stats_acc_samples_dropped(void);
+
+
+//-----------------------------
+// acc trace records 
+//-----------------------------
+void hpcrun_stats_acc_trace_records_add(long value);
+long hpcrun_stats_acc_trace_records(void);
+
+
+//-----------------------------
+// acc trace records dropped
+//-----------------------------
+//
+void hpcrun_stats_acc_trace_records_dropped_add(long value);
+long hpcrun_stats_acc_trace_records_dropped(void);
 
 
 //-----------------------------

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -91,6 +91,7 @@ using namespace Prof;
 #include <lib/binutils/Insn.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/FileUtil.hpp>
 
 
 //*************************** Forward Declarations ***************************
@@ -119,19 +120,17 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   procnm = BinUtil::canonicalizeProcName(procnm);
   
   if (filenm.empty()) {
-    std::ostringstream s;
-    s << Prof::Struct::Tree::UnknownFileNm
-      << " [" << fileBasename(lm->name().c_str()) << "]";
-    filenm = s.str();
+    filenm = Prof::Struct::Tree::UnknownFileNm
+      + " [" + FileUtil::basename(lm->name().c_str()) + "]";
   }
   if (procnm.empty()) {
-    std::ostringstream s;
-    s << Prof::Struct::Tree::UnknownProcNm
-      << "0x"
-      << std::hex
-      << vma
-      << " [" << fileBasename(lm->name().c_str()) << "]";
-    procnm = s.str();
+    std::stringstream buf;
+
+    buf << Prof::Struct::Tree::UnknownProcNm
+	<< " 0x" << std::hex << vma << std::dec
+	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
+
+    procnm = buf.str();
   }
   
   Prof::Struct::File* fileStrct = Prof::Struct::File::demand(lmStrct, filenm);

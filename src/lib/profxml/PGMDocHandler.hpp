@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -250,6 +250,7 @@ private:
   const XMLCh *const elemAlien;
   const XMLCh *const elemLoop;
   const XMLCh *const elemStmt;
+  const XMLCh *const elemCall;
   const XMLCh *const elemGroup;
 
   // attribute names
@@ -260,6 +261,8 @@ private:
   const XMLCh *const attrLnName;
   const XMLCh *const attrLine;
   const XMLCh *const attrVMA;
+  const XMLCh *const attrTarget;
+  const XMLCh *const attrDevice;
 };
 
 

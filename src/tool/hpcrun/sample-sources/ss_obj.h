@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
+#include "sample_sources_registered.h"
+
 #undef _TPx
 #undef _T3
 #undef _make_id
@@ -60,6 +63,10 @@
 #undef obj_name
 #undef ss_str
 #undef reg_fn_name
+
+#ifndef ss_sort_order
+#define ss_sort_order  50
+#endif
 
 #include "ss-obj-name.h"
 
@@ -99,6 +106,7 @@ sample_source_t obj_name() = {
   .name = ss_str,
   .cls  = ss_cls,
   .state = UNINIT,
+  .sort_order = ss_sort_order,
 };
 
 
@@ -106,10 +114,8 @@ sample_source_t obj_name() = {
  * constructor 
  *****************************************************************************/
 
-static void reg_fn_name(void) __attribute__ ((constructor));
-
-static void
-reg_fn_name(void)
+void
+SS_OBJ_CONSTRUCTOR(ss_name)(void)
 {
   hpcrun_ss_register(&obj_name());
 }

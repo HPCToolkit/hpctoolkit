@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -51,18 +51,71 @@
 
 #include "sample_sources_registered.h"
 #include <sample-sources/sample_source_obj.h>
+#include <sample-sources/ss-obj-name.h>
 
 #include <messages/messages.h>
 
-static sample_source_t* registered_sample_sources         = NULL;
-static sample_source_t** registered_sample_sources_insert = &registered_sample_sources;
 
+//------------------------------------------------------------------------------
+// external declarations 
+//------------------------------------------------------------------------------
+
+// external declarations for each of the sample source constructors
+#define SAMPLE_SOURCE_DECL_MACRO(name) void SS_OBJ_CONSTRUCTOR(name)(void);
+#include <sample-sources/ss-list.h>
+#undef SAMPLE_SOURCE_DECL_MACRO
+
+
+
+//------------------------------------------------------------------------------
+// local variables
+//------------------------------------------------------------------------------
+
+static sample_source_t* registered_sample_sources = NULL;
+
+
+
+//------------------------------------------------------------------------------
+// interface operations 
+//------------------------------------------------------------------------------
+
+static void 
+hpcrun_sample_sources_register(void)
+{
+  if (registered_sample_sources != NULL) return; // don't re-register after a fork
+
+// invoke each of the sample source constructors
+#define SAMPLE_SOURCE_DECL_MACRO(name) SS_OBJ_CONSTRUCTOR(name)();
+#include <sample-sources/ss-list.h>
+#undef SAMPLE_SOURCE_DECL_MACRO
+
+}
+
+
+
+//------------------------------------------------------------------------------
+// interface operations 
+//------------------------------------------------------------------------------
+
+// insert by order of 'sort_order', low to high
 void
 hpcrun_ss_register(sample_source_t* src)
 {
-  *registered_sample_sources_insert  = src;
-  src->next_reg                      = NULL;
-  registered_sample_sources_insert   = &(src->next_reg);
+  if (registered_sample_sources == NULL
+      || src->sort_order < registered_sample_sources->sort_order) {
+    src->next_reg = registered_sample_sources;
+    registered_sample_sources = src;
+    return;
+  }
+
+  sample_source_t *prev = registered_sample_sources;
+  for (sample_source_t *curr = prev->next_reg; ; prev = curr, curr = curr->next_reg) {
+    if (curr == NULL || src->sort_order < curr->sort_order) {
+      prev->next_reg = src;
+      src->next_reg = curr;
+      break;
+    }
+  }
 }
 
 
@@ -86,6 +139,8 @@ hpcrun_source_can_process(char *event)
 void
 hpcrun_registered_sources_init(void)
 {
+  hpcrun_sample_sources_register(); // ensure all sample sources are registered
+
   for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
     METHOD_CALL(ss, init);
     TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
@@ -95,16 +150,9 @@ hpcrun_registered_sources_init(void)
 void
 hpcrun_display_avail_events(void)
 {
-  // Special hack to put WALLCLOCK first.
-  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
-    if (strcasecmp(ss->name, "itimer") == 0) {
-      METHOD_CALL(ss, display_events);
-    }
+  for (sample_source_t* ss = registered_sample_sources; ss; ss = ss->next_reg) {
+    METHOD_CALL(ss, display_events);
   }
-  for (sample_source_t* ss=registered_sample_sources; ss; ss = ss->next_reg){
-    if (strcasecmp(ss->name, "itimer") != 0) {
-      METHOD_CALL(ss, display_events);
-    }
-  }
+
   exit(0);
 }

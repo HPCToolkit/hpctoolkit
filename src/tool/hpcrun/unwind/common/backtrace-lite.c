@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,6 @@
 //***************************************************************************
 
 #include <stdbool.h>
-#include <assert.h>
 
 #include <sys/types.h>
 #include <ucontext.h>
@@ -94,21 +93,23 @@ hpcrun_backtrace_lite(void** buffer, int size, ucontext_t* context)
   hpcrun_unw_init_cursor(&cursor, context);
 
   int my_size = 0;
+  int first_step = 1;
   while (my_size < size) {
     int ret;
 
-    unw_word_t ip = 0;
+    void *ip = 0;
     ret = hpcrun_unw_get_ip_reg(&cursor, &ip);
     if (ret < 0) { /* ignore error */ }
 
     buffer[my_size] = ip; // my_size < size
     my_size++;
 
-    ret = hpcrun_unw_step(&cursor);
+    ret = hpcrun_unw_step(&cursor, first_step);
     if (ret <= 0) {
       // N.B. (ret < 0) indicates an unwind error, which we ignore
       break;
     }
+    first_step = 0;
   }
   
   return my_size;

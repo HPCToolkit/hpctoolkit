@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,8 +55,9 @@ static char pgi_mp_pexit_signature[] = {
   0x48, 0x83, 0x7c, 0x24, 0x08, 0x01,    	// cmpq   $0x1,0x8(%rsp)
 };
 
-static int 
-adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
+
+int 
+x86_adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
 {
   int siglen = sizeof(pgi_mp_pexit_signature);
 
@@ -66,9 +67,10 @@ adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
 
     // this won't fix all of the intervals, but it will fix the one we care about.
     while(ui) {
-      if (UWI_RECIPE(ui)->ra_status == RA_SP_RELATIVE){
-    	UWI_RECIPE(ui)->sp_ra_pos = 0xb0;
-    	UWI_RECIPE(ui)->sp_bp_pos = 0;
+      x86recipe_t *xr = UWI_RECIPE(ui);
+      if (xr->ra_status == RA_SP_RELATIVE){
+    	xr->reg.sp_ra_pos = 0xb0;
+    	xr->reg.sp_bp_pos = 0;
       }
       ui = UWI_NEXT(ui);
     }
@@ -76,13 +78,3 @@ adjust_pgi_mp_pexit_intervals(char *ins, int len, btuwi_status_t *stat)
   } 
   return 0;
 }
-
-
-static void 
-__attribute__ ((constructor))
-register_unwind_interval_fixup_function(void)
-{
-  add_x86_unwind_interval_fixup_function(adjust_pgi_mp_pexit_intervals);
-}
-
-

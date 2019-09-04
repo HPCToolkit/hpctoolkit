@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,7 @@
 #include "write_data.h"
 #include "loadmap.h"
 #include "sample_prob.h"
+#include "cct/cct_bundle.h"
 
 #include <messages/messages.h>
 
@@ -89,13 +90,7 @@ static epoch_flags_t epoch_flags = {
 
 static const uint64_t default_measurement_granularity = 1;
 
-static const uint32_t default_ra_to_callsite_distance =
-#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
-  8 // move past branch delay slot
-#else
-  1 // probably sufficient all architectures without a branch-delay slot
-#endif
-  ;
+
 
 //*****************************************************************************
 // local utilities
@@ -141,7 +136,6 @@ static const uint32_t default_ra_to_callsite_distance =
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-
   FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
@@ -210,7 +204,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
 
 static int
-write_epochs(FILE* fs, epoch_t* epoch)
+write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
 {
   uint32_t num_epochs = 0;
 
@@ -259,7 +253,6 @@ write_epochs(FILE* fs, epoch_t* epoch)
     TMSG(DATA_WRITE,"epoch flags = %"PRIx64"", epoch_flags.bits);
     hpcrun_fmt_epochHdr_fwrite(fs, epoch_flags,
 			       default_measurement_granularity,
-			       default_ra_to_callsite_distance,
 			       "TODO:epoch-name","TODO:epoch-value",
 			       NULL);
 
@@ -267,10 +260,15 @@ write_epochs(FILE* fs, epoch_t* epoch)
     // == metrics ==
     //
 
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-    hpcrun_fmt_metricTbl_fwrite(metric_tbl, fs);
+    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
 
     TMSG(DATA_WRITE, "Done writing metric data");
 
@@ -302,7 +300,7 @@ write_epochs(FILE* fs, epoch_t* epoch)
     //
 
     cct_bundle_t* cct      = &(s->csdata);
-    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct);
+    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map);
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
@@ -328,19 +326,21 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
   if (fs == NULL)
     return;
 
-  write_epochs(fs, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch);
   hpcrun_epoch_reset();
 }
 
 int
 hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
+  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)
     return HPCRUN_ERR;
 
-  write_epochs(fs, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);

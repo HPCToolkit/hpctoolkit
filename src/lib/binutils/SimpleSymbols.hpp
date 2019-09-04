@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@
 
 #include <string>
 #include <stdint.h>
-
+#include <set>
 
 
 //******************************************************************************
@@ -117,6 +117,8 @@ SimpleSymbolsCoalesceCallback chooseHighestBinding;
 class SimpleSymbols {
 public:
   SimpleSymbols(const char *name);
+  virtual ~SimpleSymbols() {}
+
   const std::string& name();
 
   // simply add the element as presented. there is no attempt to incrementally
@@ -133,7 +135,7 @@ public:
   // wrapper around find to support name query only
   bool findEnclosingFunction(uint64_t vma, std::string &fnName);
 
-  virtual bool parse(const char *pathname) = 0;
+  virtual bool parse(const std::set<std::string> &directorySet, const char *pathname) = 0;
 
   // invoke the coalesce method to collapse a pair of symbols at the same
   // address into one. for n symbols at the same address, there will be
@@ -156,6 +158,13 @@ public:
   virtual bool match(const char *pathname) = 0;
   virtual SimpleSymbols *create() = 0;
 
+  virtual void id(uint _id) = 0;
+  virtual uint id() = 0;
+
+  virtual void fileId(uint _id) = 0;
+  virtual uint fileId() = 0;
+
+  virtual const char* unified_name() = 0;
 };
 
 #endif

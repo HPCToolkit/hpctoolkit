@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,7 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
+
 #############################################################################
 # Local settings
 #############################################################################
@@ -76,19 +77,13 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
-
-MY_LIB_Dyninst = -L$(SYMTABAPI_LIB)  -lparseAPI -linstructionAPI \
-	$(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L@LIBELF_LIB@ -lelf
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@LZMA_LDFLAGS_DYN@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -104,9 +99,11 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	-L@LIBELF_LIB@ -lelf \
+	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
-	$(MY_LIB_Dyninst) \
-	@GNUBINUTILS_LDLIBS@ \
+	$(DYNINST_LFLAGS) \
+	@XERCES_LDLIBS@ \
+	@BINUTILS_LIBS@ \
 	@HOST_HPCPROF_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY

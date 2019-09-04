@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2017, Rice University
+dnl Copyright ((c)) 2002-2019, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -76,42 +76,37 @@ dnl           produce code (rarely needed). Defaults to host.
 dnl--------------------------------------------------------------------------
 
 m4_include(config/hpc-cxxutils.m4)
-m4_include(config/hpc-mpiutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2017.06],
+AC_INIT([hpctoolkit], [develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2017, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2019, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 
-AC_MSG_NOTICE([*** INFO: from user: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: from user: CC='${CC}' CFLAGS='${CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: from user: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: from user: CC='${CC}'  CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: from user: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: from user: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: from user: MPIF77='${MPIF77}'])
 
 # NOTE: please update config/README.version
 AC_PREREQ(2.69)
-AM_INIT_AUTOMAKE(1.15)
+AM_INIT_AUTOMAKE(1.15.1)
 LT_PREREQ([2.4.6])
 
 AM_MAINTAINER_MODE()
 
 AC_CANONICAL_BUILD()
 AC_CANONICAL_HOST()
-
-MPICC_ORIG=${MPICC}
-MPICXX_ORIG=${MPICXX}
-MPIF77_ORIG=${MPIF77}
 
 #----------------------------------------------------------------------------
 # Setup
@@ -140,11 +135,39 @@ fi
 libdir='${exec_prefix}/lib'
 
 #-------------------------------------------------
-# SVN version
+# Git version
 #-------------------------------------------------
 
-# Git does not provide linear rev numbers, so we can't append this to
-# the package version (sigh).
+# If this is a git repo, then try to identify the branch name and the
+# date and hash of the last commit.
+
+AC_MSG_CHECKING([for git version])
+
+git_version='unknown (not a git repo)'
+
+mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
+if echo "$mesg" | grep -i commit >/dev/null ; then
+  git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
+  git_hash=`expr "$git_hash" : '\(........\)'`
+  git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
+
+  mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
+  if echo "$mesg" | grep -i branch >/dev/null ; then
+    git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
+
+  elif echo "$mesg" | grep -i detach >/dev/null ; then
+    # detached commits don't have a branch name
+    git_branch=detached
+
+  else
+    git_branch=unknown
+  fi
+
+  git_version="$git_branch at $git_date ($git_hash)"
+fi
+
+AC_MSG_RESULT([$git_version])
+
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
 	  ["${PACKAGE_VERSION}"],
@@ -169,14 +192,32 @@ fi
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
-# HPC_LT_LDFLAGS, HPCPROFMPI_LT_LDFLAGS: pass libtool link mode flags
+# enable-all-static
 #-------------------------------------------------
 
-AC_ARG_VAR([HPC_LT_LDFLAGS],
-           [pass libtool link mode flags to hpcstruct, hpcprof*, hpclump])
+# Add '-all-static' to LDFLAGS for hpcprof-mpi.  This is needed when
+# using an MPI compiler that builds a static hpcprof-mpi for the
+# compute nodes.
+#
+# The old way was to set HPCPROFMPI_LT_LDFLAGS='-all-static', the new
+# way is to use --enable-all-static.
 
 AC_ARG_VAR([HPCPROFMPI_LT_LDFLAGS],
-           [pass libtool link mode flags to hpcprof-mpi (before HPC_LT_LDFLAGS)])
+  [old method to add ldflags to hpcprof-mpi, now use --enable-all-static
+  to build a static binary for the compute nodes])
+
+AC_ARG_ENABLE([all-static],
+  [AS_HELP_STRING([--enable-all-static],
+      [needed when building a static hpcprof-mpi for the compute nodes
+      (default no)])],
+  [],
+  [enable_all_static=no])
+
+if test "x$enable_all_static" = xyes ; then
+  HPCPROFMPI_LT_LDFLAGS="$HPCPROFMPI_LT_LDFLAGS -all-static"
+fi
+
+AC_MSG_NOTICE([HPCPROFMPI_LT_LDFLAGS: $HPCPROFMPI_LT_LDFLAGS])
 
 
 #-------------------------------------------------
@@ -266,15 +307,13 @@ AC_ARG_VAR([LD],
     [ld program for binaries produced by CC, only needed if
      autoconf fails to find a suitable program])
 
-HPC_PROG_MPICXX(HPC_MPICXX_LIST)
-
 AC_PROG_INSTALL()
 
-AC_MSG_NOTICE([*** INFO: post autoconf tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}'  ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: CC='${CC}' CFLAGS='${CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: post autoconf tests: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post autoconf tests: MPIF77='${MPIF77}'])
 
 
 #-------------------------------------------------
@@ -822,6 +861,82 @@ fi
 
 
 #-------------------------------------------------
+# Utilities for compiler versions and paths
+#-------------------------------------------------
+
+# These tests only use GNU syntax.  Intel, Clang, etc use a different
+# format, but we don't really build with those.
+
+find_version()
+{
+  ans='unknown non-gnu'
+
+  # strip any compiler flags, 'gcc -m64'
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo "$version" | grep -i copyright >/dev/null
+  if test $? -eq 0 ; then
+    ans=`echo "$version" | head -1`
+  fi
+
+  echo "$ans"
+}
+
+find_path()
+{
+  ans=
+  base=`echo $1 | awk '{ print $1 }'`
+  case "$base" in
+    /* ) ans="$base" ;;
+    * )  AC_PATH_PROG([ans], [$base], [no]) ;;
+  esac
+  if test "x$ans" = xno ; then
+    ans=unknown
+  fi
+
+  echo "$ans"
+}
+
+test_is_gnu()
+{
+  base=`echo $1 | awk '{ print $1 }'`
+  version=`$base --version 2>/dev/null`
+  echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
+
+  return $?
+}
+
+
+#-------------------------------------------------
+# C, C++ compiler versions and paths
+#-------------------------------------------------
+
+warn_non_gcc=no
+
+CC_VERSION=`find_version "$CC"`
+CC_PATH=`find_path "$CC"`
+
+AC_MSG_NOTICE([C compiler: $CC_VERSION])
+AC_MSG_NOTICE([C path: $CC_PATH])
+
+if test_is_gnu "$CC" ; then : ; else
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C compiler.])
+fi
+
+CXX_VERSION=`find_version "$CXX"`
+CXX_PATH=`find_path "$CXX"`
+
+AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+AC_MSG_NOTICE([C++ path: $CXX_PATH])
+
+if test_is_gnu "$CXX" ; then : ; else
+  warn_non_gcc=yes
+  AC_MSG_WARN([Not using the GNU C++ compiler.])
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
@@ -840,7 +955,7 @@ cxx_c11_flag=
 ORIG_CXXFLAGS="$CXXFLAGS"
 AC_LANG_PUSH([C++])
 
-AC_MSG_CHECKING([CXXFLAGS for C++11 standard])
+AC_MSG_CHECKING([for CXX flag for C++11])
 
 for opt in $c11_list
 do
@@ -882,6 +997,180 @@ CXXFLAGS="$ORIG_CXXFLAGS"
 HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 
 AC_SUBST([cxx_c11_flag])
+
+#-------------------------------------------------
+
+# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
+# hpcfnbounds.
+#
+# Try --print-file-name first.  If that doesn't work, then try ldd.
+# If --print-file-name works, then its answer is more reliable because
+# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
+# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
+#
+# Of course, --print-file-name and libstdc++.so are GNU-specific.
+# (Intel icc seems to support both, but computes an answer based on
+# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
+# here?
+
+libcxx_file=`${CXX} -print-file-name=libstdc++.so`
+
+case "$libcxx_file" in
+  /* ) ;;
+  * )
+    src="hpc_hello.$$.cc"
+    obj="hpc_hello.$$.out"
+    rm -f "$src" "$obj"
+    cat <<"EOF" >"$src"
+main(){}
+EOF
+    ${CXX} -o "$obj" "$src"
+    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
+    rm -f "$src" "$obj"
+    ;;
+esac
+
+libcxx_dir=`dirname $libcxx_file`
+libcxx_base=`basename $libcxx_file`
+HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
+
+case "$HPCRUN_LIBCXX_PATH" in
+  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
+  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
+esac
+
+AC_SUBST([HPCRUN_LIBCXX_PATH])
+
+
+#-------------------------------------------------
+# CXXFLAGS for OpenMP
+#-------------------------------------------------
+
+# Find a CC/CXX flag for openmp, normally -fopenmp for gcc/g++.
+# We could add an ARG_VAR variable for this, but that's probably not
+# necessary.
+
+openmp_flag=no
+
+flag_list='-fopenmp -openmp -qopenmp -qsmp=omp'
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+AC_LANG_PUSH([C++])
+
+AC_MSG_CHECKING([for CXX flag for openmp])
+
+for flag in $flag_list
+do
+  CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <iostream>
+#include <omp.h>
+void myprint(int len)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < len; i++) {
+    std::cout << i << "\n";
+  }
+}
+]])], [ans=yes], [ans=no])
+  if test "$ans" = yes ; then
+    openmp_flag="$flag"
+    break
+  fi
+done
+
+AC_MSG_RESULT([$openmp_flag])
+
+AC_LANG_POP
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# If unable to verify an openmp flag, then -fopenmp probably works.
+if test "x$openmp_flag" = xno ; then
+  AC_MSG_WARN([unable to find flag for openmp, using -fopenmp])
+  openmp_flag='-fopenmp'
+fi
+
+OPENMP_FLAG="$openmp_flag"
+
+AC_SUBST([OPENMP_FLAG])
+
+#-------------------------------------------------
+
+# Find the openmp library and its directory.  We add the directory to
+# the launch script for hpcstruct when using openmp.
+
+openmp_lib_list='libgomp libiomp libomp libxlsmp'
+
+src="conftest.$$.cpp"
+obj="conftest.$$.bin"
+
+rm -f "$src" "$obj"
+
+cat <<EOF >"$src"
+#include <iostream>
+#include <omp.h>
+int main(int argc, char **argv)
+{
+  int i;
+#pragma omp parallel for
+  for (i = 0; i < argc; i++) {
+    std::cout << i << "\n";
+  }
+}
+EOF
+
+openmp_lib_name=no
+
+AC_MSG_CHECKING([for openmp library])
+
+$CXX -g $CXXFLAGS $openmp_flag "$src" -o "$obj" >/dev/null 2>&1
+
+if test $? -eq 0 && test -f "$obj" ; then
+  for lib in $openmp_lib_list ; do
+    base=`ldd "$obj" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib"`
+    if test "x$base" != x ; then
+      openmp_lib_name="$base"
+      break
+    fi
+  done
+else
+  AC_MSG_WARN([unable to compile openmp with $openmp_flag])
+fi
+
+AC_MSG_RESULT([$openmp_lib_name])
+
+if test "$openmp_lib_name" = no ; then
+  AC_MSG_WARN([unable to find openmp library])
+fi
+
+openmp_lib_dir=
+
+if test "$openmp_lib_name" != no ; then
+  AC_MSG_CHECKING([for openmp library directory])
+
+  name=`$CXX -print-file-name="$openmp_lib_name" 2>/dev/null`
+  if test ! -f "$name" ; then
+    name=`ldd "$obj" 2>/dev/null | grep -e "$openmp_lib_name" | $AWK '{print $3}'`
+  fi
+
+  if test -f "$name" ; then
+    dir=`dirname "$name"`
+    if test -d "$dir" ; then
+      openmp_lib_dir="$dir"
+    fi
+  fi
+
+  AC_MSG_RESULT([$openmp_lib_dir])
+
+  if test ! -d "$openmp_lib_dir" ; then
+    AC_MSG_WARN([unable to find openmp library directory])
+  fi
+fi
+
+rm -f "$src" "$obj"
 
 
 #-------------------------------------------------
@@ -956,6 +1245,146 @@ fi
 
 
 #-------------------------------------------------
+# MPICXX compiler for hpcprof-mpi
+#-------------------------------------------------
+
+# Search for MPI C++ compiler that is on PATH but not from a module
+# and is not a spack wrapper.  This is mainly for a spack build on
+# Cray or Blue Gene where mpicxx is not from a module that we can put
+# in packages.yaml.
+#
+# On Cray, we must avoid the spack wrapper.  The Cray MPI C++ compiler
+# is CC, but the spack CC wrapper is only a C++ compiler, not MPI.
+#
+#  $1, $2, ... is a list of compiler names (per platform).
+#
+# Returns: full path of compiler, or else 'no'.
+#
+search_for_mpi()
+{
+  ans=no
+
+  for name in "$@" ; do
+    for item in `type -a $name 2>/dev/null` ; do
+      case "$item" in
+        /* )
+          # spack wrapper: /path/to/spack/lib/spack/env/case-insensitive/CC
+          echo "$item" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+          if test $? -ne 0 ; then
+            ans="$item"
+            break 2
+          fi
+          ;;
+      esac
+    done
+  done
+
+  echo "$ans"
+}
+
+#-------------------------------------------------
+
+# Find MPICXX, the MPI C++ compiler for hpcprof-mpi.
+#
+# --enable-mpi-search=(cray, bgq) is mainly for a spack build on Cray
+# or Blue Gene that doesn't have a module for MPI.  Outside of spack,
+# set MPICXX and use --enable-all-static for Cray and Blue Gene that
+# build a static hpcprof-mpi.
+
+AC_ARG_VAR([MPICXX], [MPI C++ compiler for hpcprof-mpi])
+
+AC_MSG_NOTICE([supplied MPICXX compiler: $MPICXX])
+
+AC_ARG_ENABLE([mpi-search],
+  [AS_HELP_STRING([--enable-mpi-search=(cray,bgq)],
+      [search for MPI C++ compiler on given system (for spack build)])],
+  [],
+  [enable_mpi_search=no])
+
+case "$enable_mpi_search" in
+  cray )
+    MPICXX=`search_for_mpi CC`
+    case "$MPICXX" in
+      /* )
+        AC_MSG_NOTICE([Cray MPI wrapper: $MPICXX])
+	;;
+      * )
+        AC_MSG_WARN([unable to find the Cray MPI C++ wrapper (CC) on your PATH])
+        AC_MSG_ERROR([check that this system is Cray and CC is the MPI wrapper])
+        ;;
+    esac
+    ;;
+
+  bgq )
+    MPICXX=`search_for_mpi mpicxx mpic++`
+    case "$MPICXX" in
+      /* )
+        AC_MSG_NOTICE([Blue Gene MPI wrapper: $MPICXX])
+	;;
+      * )
+        AC_MSG_WARN([unable to find the Blue Gene MPI C++ wrapper (mpicxx) on your PATH])
+        AC_MSG_ERROR([check that this system is Blue Gene and mpicxx is the MPI wrapper])
+        ;;
+    esac
+    ;;
+
+  no )
+    ;;
+
+  * )
+    AC_MSG_WARN([--enable-mpi-search is for Spack builds on Cray and Blue Gene])
+    AC_MSG_ERROR([unknown platform: $enable_mpi_search])
+    ;;
+esac
+
+#-------------------------------------------------
+
+# Test if MPICXX is a valid MPI C++ compiler and report version.
+
+if test "x$MPICXX" != x ; then
+  MPICXX_VERSION=`find_version "$MPICXX"`
+  MPICXX_PATH=`find_path "$MPICXX"`
+  MPICXX="$MPICXX_PATH"
+
+  AC_MSG_NOTICE([MPICXX compiler: $MPICXX_VERSION])
+  AC_MSG_NOTICE([MPICXX path: $MPICXX_PATH])
+
+  if test_is_gnu "$MPICXX" ; then : ; else
+    warn_non_gcc=yes
+    AC_MSG_WARN([Not using the GNU MPICXX compiler.])
+  fi
+
+  AC_MSG_CHECKING([if MPICXX is a valid MPI C++ compiler])
+
+  ORIG_CXX="$CXX"
+  CXX="$MPICXX"
+  AC_LANG_PUSH([C++])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <mpi.h>
+#include <iostream>
+int myRank(void)
+{
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  std::cout << "yes";
+  return rank;
+}
+]])], [mpicxx_avail=yes], [mpicxx_avail=no])
+
+  AC_MSG_RESULT([$mpicxx_avail])
+
+  if test "$mpicxx_avail" = no ; then
+    AC_MSG_ERROR([MPICXX is not a valid compiler: $MPICXX])
+  fi
+
+  AC_LANG_POP
+  CXX="$ORIG_CXX"
+fi
+
+
+#-------------------------------------------------
 # Test if CXX and MPICXX are compatible
 #-------------------------------------------------
 
@@ -972,16 +1401,24 @@ hello_bin="$base".bin
 hello_out="$base".out
 ACTUAL_CXXFLAGS="$CXXFLAGS $HOST_CXXFLAGS"
 
+prof_mpi_avail=no
+
 if test -n "$MPICXX" ; then
-  AC_MSG_CHECKING([whether CXX and MPICXX are compatible])
+  AC_MSG_CHECKING([if CXX and MPICXX are compatible])
 
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
   cat <<EOF >"$hello_src"
 #include <iostream>
 #include <string>
-int main()
+#include <vector>
+using namespace std;
+int main(int argc, char **argv)
 {
-  std::cout << "hello, world\n";
+  vector <string> foo;
+  for (int i = 0; i < argc; i++) {
+    foo.push_back(argv[[i]]);
+  }
+  cout << foo.size();
   return 0;
 }
 EOF
@@ -990,14 +1427,13 @@ EOF
 
   if test $? -eq 0 && test -f "$hello_bin" ; then
     AC_MSG_RESULT([yes])
+    prof_mpi_avail=yes
   else
     AC_MSG_RESULT([no])
-    AC_MSG_WARN([MPICXX does not link with CXX (see config.log for details)])
-    AC_MSG_WARN([probably MPICXX does match CXX for compiler family or version])
     cat <<EOF >&AS_MESSAGE_LOG_FD
 ------------------------------------------------------------
-CXX:     $CXX $ACTUAL_CXXFLAGS
-MPICXX:  $MPICXX
+CXX:     $CXX -c $ACTUAL_CXXFLAGS -o $hello_o $hello_src
+MPICXX:  $MPICXX -o $hello_bin $hello_o
 
 EOF
     cat "$hello_src" >&AS_MESSAGE_LOG_FD
@@ -1006,14 +1442,17 @@ EOF
     cat <<EOF >&AS_MESSAGE_LOG_FD
 ------------------------------------------------------------
 EOF
-  MPICXX=
+    AC_MSG_WARN([CXX:     $CXX_VERSION])
+    AC_MSG_WARN([MPICXX:  $MPICXX_VERSION])
+    AC_MSG_WARN([MPICXX does not link with CXX (see config.log for details)])
+    AC_MSG_ERROR([probably MPICXX does match CXX for compiler family or version])
   fi
-
   rm -f "$hello_src" "$hello_o" "$hello_bin" "$hello_out"
-
-else
-  AC_MSG_NOTICE([skipping MPICXX compatibility check (MPICXX not set)])
 fi
+
+AC_MSG_NOTICE([build hpcprof-mpi: $prof_mpi_avail])
+
+AM_CONDITIONAL(OPT_ENABLE_MPI, [test "$prof_mpi_avail" = yes])
 
 
 #-------------------------------------------------
@@ -1034,11 +1473,118 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
-AC_MSG_NOTICE([*** INFO: post hpc tests: CXX='${CXX}' CXXFLAGS='${CXXFLAGS}' HOST_CXXFLAGS='${HOST_CXXFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: CC='${CC}' CFLAGS='${CFLAGS}' HOST_CFLAGS='${HOST_CFLAGS}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPICC='${MPICC}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPICXX='${MPICXX}' ***])
-AC_MSG_NOTICE([*** INFO: post hpc tests: MPIF77='${MPIF77}' ***])
+AC_MSG_NOTICE([INFO: post hpc tests: CC='${CC}'  CFLAGS='${CFLAGS}'  HOST_CFLAGS='${HOST_CFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'  HOST_CXXFLAGS='${HOST_CXXFLAGS}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICC='${MPICC}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPICXX='${MPICXX}'])
+AC_MSG_NOTICE([INFO: post hpc tests: MPIF77='${MPIF77}'])
+
+
+#-------------------------------------------------
+# Option: --enable-bgq
+#-------------------------------------------------
+
+# Option to select blue gene front or back end.  Default is for back
+# end if system is powerpc and looks like blue gene.
+#
+# Some things (POSIX timers and perf events) won't run on the blue
+# gene back end, but this is hard to test for on the front end.
+
+bgq_explicit=no
+
+AC_ARG_ENABLE([bgq],
+  [AS_HELP_STRING([--enable-bgq],
+      [configure for blue gene/q back end, disable posix timers
+       and perf events (default auto-detect)])],
+  [bgq_explicit=yes],
+  [enable_bgq=check])
+
+# Treat this as blue gene if powerpc and /bgsys/drivers exists, or
+# else if explicitly set.
+
+AC_MSG_CHECKING([for blue gene/q back end])
+
+case "$host_cpu" in
+  *power* | *ppc* )
+    case "$enable_bgq" in
+      yes | no )
+        ;;
+      * )
+        if test -d /bgsys/drivers ; then enable_bgq=yes
+	else enable_bgq=no
+        fi
+        ;;
+    esac
+    ;;
+  * )
+    enable_bgq=no
+    ;;
+esac
+
+AC_MSG_RESULT([$enable_bgq])
+
+blue_gene_back_end=no
+host_extra_mesg=
+warn_bgq_backend=no
+
+if test "$enable_bgq" = yes ; then
+  blue_gene_back_end=yes
+  host_extra_mesg='(bgq back end)'
+
+  if test "$bgq_explicit" != yes ; then
+    warn_bgq_backend=yes
+  fi
+fi
+
+# Old --enable-bluegene option.  This is still used in itimer.c for
+# how we treat WALLCLOCK.
+
+if test "$blue_gene_back_end" = yes ; then
+  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM Blue Gene support])
+fi
+
+# Old --enable-bgq-cnk option.  This provides get_hw_tid() and
+# Kernel_ProcessorID(), but nothing uses it now.  If you want to
+# turn it back on, then fix the hard-coded paths in
+# hpcrun/utilities/bgq-cnk and do a proper config test.
+
+AM_CONDITIONAL([OPT_BGQ_BACKEND], false)
+
+# Old --with-upc and --with-upc-lib options.  These only applied to
+# blue gene/p which we no longer support.
+
+AM_CONDITIONAL([OPT_ENABLE_UPC], false)
+
+OPT_UPC_IFLAGS=
+OPT_UPC_LDFLAGS=
+
+AC_SUBST([OPT_UPC_IFLAGS])
+AC_SUBST([OPT_UPC_LDFLAGS])
+
+
+#-------------------------------------------------
+# Hash value for launch scripts
+#-------------------------------------------------
+
+# Make a hash value to verify that a launch script has the correct
+# install directory.  It doesn't have to be secure, just unique.
+
+AC_PATH_PROGS([hash_fcn], [md5sum sha256sum sha384sum sha512sum], [no])
+
+plain_text=`echo $$ ; date ; pwd`
+
+hash_value=`echo $plain_text | $hash_fcn | $AWK '{ print $1 }'`
+
+if test "x$hash_value" = x ; then
+  hash_value=`echo $plain_text | tr -d ' '`
+fi
+
+hash_value=`echo $hash_value | head -c 30`
+
+AC_MSG_NOTICE([launch script hash: $hash_value])
+
+AC_SUBST([hash_value])
+
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
@@ -1068,13 +1614,10 @@ ext_cc_path=unknown
 ext_cxx_path=unknown
 ext_wordsize=unknown
 
-warn_no_externals=no
-
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
   [AS_HELP_STRING([--with-externals=PATH],
-	  [path to hpctoolkit-externals build or install directory
-	   (normally required)])],
+	  [path to hpctoolkit-externals build or install directory])],
   [],
   [with_externals=no])
 
@@ -1083,14 +1626,192 @@ if test "${with_externals}" != "no"; then
   if test ! -f "$ext_file" ; then
     AC_MSG_ERROR([missing externals file: $ext_file])
   fi
-  AC_MSG_NOTICE([using externals tree: $with_externals])
   externals_root=`( cd "$with_externals" && pwd )`
   . "$ext_file"
   use_externals=yes
+  AC_MSG_NOTICE([externals version: $ext_version])
+  if test "x$ext_version" = x0 ; then
+    ext_version=
+  fi
 else
-  AC_MSG_WARN([not using --with-externals])
   use_externals=no
-  warn_no_externals=yes
+fi
+
+AC_MSG_NOTICE([externals directory: $with_externals])
+
+
+#-------------------------------------------------
+# Option: --with-spack=PATH
+#-------------------------------------------------
+
+# If specified, then use PATH as the directory containing the spack
+# packages.  This is not spack's install_tree prefix, but rather the
+# arch/compiler subdir that contains the spack packages, something
+# like:  .../linux-fedora26-x86_64/gcc-7.3.1/
+#
+# May be absolute or relative path.
+
+AC_ARG_WITH([spack],
+  [AS_HELP_STRING([--with-spack=PATH],
+      [path to spack arch/compiler install directory])],
+  [],
+  [with_spack=no])
+
+if test "x$with_spack" != xno ; then
+  dir=`(cd "$with_spack" 2>/dev/null && /bin/pwd)`
+  if test ! -d "$dir" ; then
+    AC_MSG_ERROR([bad spack install directory: $with_spack])
+  fi
+  with_spack="$dir"
+fi
+
+AC_MSG_NOTICE([spack directory: $with_spack])
+
+
+#-------------------------------------------------
+# Default package prefixes from externals and spack.
+#-------------------------------------------------
+
+# The order of precedence is:
+#  1. --with-package  (highest)
+#  2. --with-spack
+#  3. --with-externals
+
+default_binutils_prefix=no
+default_boost_prefix=no
+default_bzip_prefix=no
+default_dyninst_prefix=no
+default_elfutils_prefix=no
+default_libdwarf_prefix=no
+default_libiberty_prefix=no
+default_libmonitor_prefix=no
+default_libunwind_prefix=no
+default_lzma_prefix=no
+default_mbedtls_prefix=no
+default_papi_prefix=no
+default_perfmon_prefix=no
+default_tbb_prefix=no
+default_xed_prefix=no
+default_xerces_prefix=no
+default_zlib_prefix=no
+
+if test "$use_externals" = yes ; then
+  default_binutils_prefix="$ext_binutils_prefix"
+  default_boost_prefix="$ext_boost_prefix"
+  default_dyninst_prefix="$ext_symtabAPI_prefix"
+  default_elfutils_prefix="$ext_libelf_prefix"
+  default_libdwarf_prefix="$ext_libdwarf_prefix"
+  default_libmonitor_prefix="$ext_libmonitor_prefix"
+  default_libunwind_prefix="$ext_libunwind_prefix"
+  if test "x$ext_lzma_prefix" != x ; then
+    default_lzma_prefix="$ext_lzma_prefix"
+  fi
+  if test "x$ext_perfmon_prefix" != x ; then
+    default_perfmon_prefix="$ext_perfmon_prefix"
+  fi
+  default_xed_prefix="$ext_xed2_prefix"
+  default_xerces_prefix="$ext_xerces_prefix"
+  default_zlib_prefix="$ext_zlib_prefix"
+fi
+
+# Return: success (0) and set 'spack_ans' to install prefix for given
+# package name ($1).  Warn if there are multiple dirs with same pkg
+# name and return the most recent one.  (Be careful not to spawn a
+# subshell.)
+
+mult_spack_pkgs=
+
+find_spack_pkg()
+{
+  base="$1"
+  spack_ans=no
+  mult=no
+
+  # allow symlink, if set
+  if test -d "${with_spack}/$base" ; then
+    spack_ans="${with_spack}/$base"
+    return 0
+  fi
+
+  for dir in "${with_spack}/${base}"-* ; do
+    if test -d "$dir" ; then
+      if test "$spack_ans" = no ; then
+        spack_ans="$dir"
+      else
+        mult=yes
+        if test "$dir" -nt "$spack_ans" ; then
+          spack_ans="$dir"
+        fi
+      fi
+    fi
+  done
+
+  if test "$mult" = yes ; then
+    AC_MSG_WARN([multiple spack packages for: $base])
+    mult_spack_pkgs="$mult_spack_pkgs $base"
+  fi
+
+  if test "$spack_ans" != no ; then
+    return 0
+  fi
+  return 1
+}
+
+if test "$with_spack" != no
+then
+  AC_MSG_NOTICE([checking spack packages ...])
+
+  if find_spack_pkg binutils ; then
+    default_binutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg boost ; then
+    default_boost_prefix="$spack_ans"
+  fi
+  if find_spack_pkg bzip2 ; then
+    default_bzip_prefix="$spack_ans"
+  fi
+  if find_spack_pkg dyninst ; then
+    default_dyninst_prefix="$spack_ans"
+  fi
+  if find_spack_pkg elfutils ; then
+    default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libdwarf ; then
+    default_libdwarf_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libiberty ; then
+    default_libiberty_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libmonitor ; then
+    default_libmonitor_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libunwind ; then
+    default_libunwind_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xz ; then
+    default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg mbedtls ; then
+    default_mbedtls_prefix="$spack_ans"
+  fi
+  if find_spack_pkg papi ; then
+    default_papi_prefix="$spack_ans"
+  fi
+  if find_spack_pkg libpfm4 ; then
+    default_perfmon_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-tbb ; then
+    default_tbb_prefix="$spack_ans"
+  fi
+  if find_spack_pkg intel-xed ; then
+    default_xed_prefix="$spack_ans"
+  fi
+  if find_spack_pkg xerces-c ; then
+    default_xerces_prefix="$spack_ans"
+  fi
+  if find_spack_pkg zlib ; then
+    default_zlib_prefix="$spack_ans"
+  fi
 fi
 
 
@@ -1098,60 +1819,11 @@ fi
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
-# Verify that toolkit and externals use the same C and C++ compilers
-# and that they produce the same wordsize.  This is especially
-# important for C++ and libstdc++.  For now, give a pass if externals
-# isn't new enough to export these variables.
-
-CC_VERSION='unknown non-gnu'
-version=`$CC --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CC_VERSION=`echo "$version" | head -1`
-fi
-
-CC_PATH=
-base=`echo $CC | awk '{ print $1 }'`
-case "$base" in
-  /* ) CC_PATH="$base" ;;
-  * )  AC_PATH_PROG([CC_PATH], [$base]) ;;
-esac
-if test "x$CC_PATH" = x ; then
-  CC_PATH=unknown
-fi
-
-warn_non_gcc=no
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  AC_MSG_WARN([Not using the GNU C compiler.])
-fi
-
-CXX_VERSION='unknown non-gnu'
-version=`$CXX --version 2>/dev/null`
-if echo "$version" | grep -i copyright >/dev/null ; then
-  CXX_VERSION=`echo "$version" | head -1`
-fi
-
-CXX_PATH=
-base=`echo $CXX | awk '{ print $1 }'`
-case "$base" in
-  /* ) CXX_PATH="$base" ;;
-  * )  AC_PATH_PROG([CXX_PATH], [$base]) ;;
-esac
-if test "x$CXX_PATH" = x ; then
-  CXX_PATH=unknown
-fi
-
-echo $version | grep -E -i -e 'copy.*free.*soft.*found' >/dev/null
-if test $? -ne 0 ; then
-  warn_non_gcc=yes
-  AC_MSG_WARN([Not using the GNU C++ compiler.])
-fi
-
-AC_MSG_NOTICE([C compiler: $CC_VERSION])
-AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
+# If still using externals, verify that toolkit and externals use the
+# same C and C++ compilers.  Spack does things differently.
 
 warn_compiler_mismatch=no
+
 if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
 then
   warn_compiler_mismatch=yes
@@ -1165,6 +1837,9 @@ then
 hpctoolkit-externals.])
 fi
 
+# Continue to set multilib_path for package tests below, but we really
+# only support 64-bit now.
+
 host_wordsize=unknown
 wordsize_cflag=
 case "$host_sizeof_voidp" in
@@ -1173,61 +1848,82 @@ case "$host_sizeof_voidp" in
   * ) AC_MSG_WARN([unable to determine host wordsize]) ;;
 esac
 
-if test "$ext_wordsize" != unknown && test "$host_wordsize" != "$ext_wordsize"
-then
-  AC_MSG_ERROR([mismatched wordsize: hpctoolkit is configured for \
-${host_wordsize}-bit but externals is ${ext_wordsize}-bit])
-fi
-
-# On ia64, -m64 is an unrecognized option (and unnecessary).
-if test "$HOST_CPU_IA64" = yes ; then
-  wordsize_cflag=
-fi
-
-# multilib path based on wordsize of host machine
 multilib_path=lib
 case "$host_wordsize" in
   32 ) multilib_path='lib32 lib' ;;
   64 ) multilib_path='lib64 lib' ;;
 esac
 
-AC_SUBST([wordsize_cflag])
-
 
 #-------------------------------------------------
-# Check for GNU's binutils (binary interface)
+# Option: --with-binutils=PATH
 #-------------------------------------------------
 
-GNUBINUTILS=no
-GNUBINUTILS_IFLAGS=
-GNUBINUTILS_LDFLAGS=
-GNUBINUTILS_LDLIBS=
+num_pkgs=0
 
-if test "$use_externals" = yes ; then
-  GNUBINUTILS="$ext_binutils_prefix"
-fi
+# Binutils uses four main libraries: libbfd.a, libopcodes.a,
+# libiberty.a and libz.a (plus -ldl if bfd is built with plugins).
+# The first two must be in the binutils package, but the last two may
+# be in binutils or separate (libiberty and zlib).
+#
+# Note: we no longer use binutils to crack instructions, so we don't
+# need libopcodes anymore, not on any platform.
+
+BINUTILS="$default_binutils_prefix"
 
 AC_ARG_WITH([binutils],
   [AS_HELP_STRING([--with-binutils=PATH],
-	[path to binutils install directory])],
-  [GNUBINUTILS="$withval"],
+      [path to binutils install directory])],
+  [BINUTILS="$withval"],
   [])
+
+BINUTILS_IFLAGS=
+BINUTILS_LIBS=
+binutils_has_libiberty=no
+binutils_has_libz=no
 
 AC_MSG_CHECKING([for binutils])
 
-case "$GNUBINUTILS" in
+case "$BINUTILS" in
   /* )
-    if test -f "${GNUBINUTILS}/include/bfd.h" ; then
-      GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-      GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib"
-      for dir in lib32 lib64 ; do
-        if test -d "${GNUBINUTILS}/$dir" ; then
-	  GNUBINUTILS_LDFLAGS="$GNUBINUTILS_LDFLAGS -L${GNUBINUTILS}/$dir"
-	fi
-      done
+    # bfd.h must exist
+    if test -f "${BINUTILS}/include/bfd.h" ; then
+      BINUTILS_IFLAGS="-I${BINUTILS}/include"
     else
-      AC_MSG_ERROR([invalid binutils directory: $GNUBINUTILS])
+      AC_MSG_ERROR([unable to find bfd.h in: $BINUTILS])
     fi
+
+    # libbfd.a must be in binutils
+    for lib in $multilib_path fail ; do
+      file="${BINUTILS}/${lib}/libbfd.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	break
+      elif test "$lib" = fail ; then
+        AC_MSG_ERROR([unable to find libbfd.a in: $BINUTILS])
+      fi
+    done
+
+    # libiberty.a may be here or may be in libiberty
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libiberty.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libiberty=yes
+	break
+      fi
+    done
+
+    # libz.a may be here or may be in zlib
+    for lib in $multilib_path ; do
+      file="${BINUTILS}/${lib}/libz.a"
+      if test -f "$file" ; then
+        BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	binutils_has_libz=yes
+	break
+      fi
+    done
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1236,146 +1932,46 @@ case "$GNUBINUTILS" in
     ;;
 esac
 
-AC_MSG_RESULT([$GNUBINUTILS])
+AC_MSG_RESULT([$BINUTILS])
 
-# Test if binutils links with libs in GNUBINUTILS_LDLIBS.
-test_binutils_libs()
-{
-  LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
+binlibs=
+for lib in $BINUTILS_LIBS ; do
+  binlibs="$binlibs `basename $lib`"
+done
 
-  AC_LINK_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  long size = bfd_get_symtab_upper_bound(abfd);
-  std::cout << size;
-  return 0;
-}
-]])], [ans=0], [ans=1])
+AC_MSG_NOTICE([binutils libs: $binlibs])
 
-  return $ans
-}
+# FIXME: libbfd requires -ldl unless plugins are disabled (default is
+# enabled).  But we could test for this.
 
-AC_LANG_PUSH([C++])
+BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-ORIG_LIBS="$LIBS"
-CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $GNUBINUTILS_IFLAGS"
-
-# Test for binutils libs.  We always use bfd, opcodes and libiberty,
-# and newer binutils also use libdl and libz.
-
-case "$GNUBINUTILS" in
-  /* )
-    GNUBINUTILS_LDLIBS="-lopcodes -lbfd -liberty"
-    if test_binutils_libs ; then :
-    else
-      GNUBINUTILS_LDLIBS="$GNUBINUTILS_LDLIBS -ldl -lz"
-      if test_binutils_libs ; then :
-      else
-        AC_MSG_WARN([unable to find link flags for binutils])
-      fi
-    fi
-    AC_MSG_NOTICE([binutils libraries: $GNUBINUTILS_LDLIBS])
-    ;;
-esac
-
-AC_SUBST([GNUBINUTILS_IFLAGS])
-AC_SUBST([GNUBINUTILS_LDFLAGS])
-AC_SUBST([GNUBINUTILS_LDLIBS])
-
-# Test for special, hpctoolkit-patched binutils.
-
-hpc_binutils=no
-LIBS="$GNUBINUTILS_LDFLAGS $GNUBINUTILS_LDLIBS"
-
-case "$GNUBINUTILS" in
-  /* )
-    AC_MSG_CHECKING([for hpctoolkit patched binutils])
-
-    AC_LINK_IFELSE([
-    AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-int main(int argc, char **argv)
-{
-  bfd_init();
-  bfd *abfd = bfd_openr(argv[1], "default");
-  bfd_vma vma = bfd_get_first_addr(abfd);
-  int ret = bfd_elf_forall_dbg_funcinfo(abfd, NULL, NULL, NULL);
-  std::cout << vma << ret;
-  return 0;
-}
-]])], [hpc_binutils=yes], [hpc_binutils=no])
-
-    AC_MSG_RESULT([$hpc_binutils])
-    ;;
-esac
-
-if test "$hpc_binutils" = yes ; then
-  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [1], [HPCToolkit patched binutils])
-fi
-
-# Test if binutils has support for IA64 (Itanium).
-
-binutils_ia64=no
-
-case "$GNUBINUTILS" in
-  /* )
-    AC_MSG_CHECKING([if binutils supports ia64])
-
-    AC_LINK_IFELSE([
-    AC_LANG_SOURCE([[
-#include <iostream>
-#include <bfd.h>
-#include <bfdlink.h>
-#include <dis-asm.h>
-int main(int argc, char **argv)
-{
-  disassemble_info myinfo;
-  bfd_init();
-  int ret = print_insn_ia64(0x400400, &myinfo);
-  std::cout << ret;
-  return 0;
-}
-]])], [binutils_ia64=yes], [binutils_ia64=no])
-
-    AC_MSG_RESULT([$binutils_ia64])
-    ;;
-esac
-
-if test "$binutils_ia64" = yes ; then
-  AC_DEFINE([ENABLE_BINUTILS_IA64], [1], [Binutils has support for ia64])
-fi
-
-AM_CONDITIONAL([OPT_HAVE_BINUTILS_IA64], [test "$binutils_ia64" = yes])
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-LIBS="$ORIG_LIBS"
-
-AC_LANG_POP
+AC_SUBST([BINUTILS_IFLAGS])
+AC_SUBST([BINUTILS_LIBS])
 
 
 #-------------------------------------------------
 # Option: --with-boost=PATH
 #-------------------------------------------------
 
-BOOST=no
-if test "$use_externals" = yes ; then
-  BOOST="$ext_boost_prefix"
-fi
+BOOST="$default_boost_prefix"
 
 AC_ARG_WITH([boost],
   [AS_HELP_STRING([--with-boost=PATH],
       [path to boost install directory])],
   [BOOST="$withval"],
   [])
+
+BOOST_IFLAGS=
+BOOST_LFLAGS=
+BOOST_LIB_DIR=
+BOOST_COPY=no
+
+# The copy list should include all libraries that any version of
+# dyninst would use (but no more).  But copy-libs won't fail on a
+# missing library, so it doesn't have to be exact.
+
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer graph regex'
 
 AC_MSG_CHECKING([for boost])
 
@@ -1384,6 +1980,22 @@ case "$BOOST" in
     if test ! -f "${BOOST}/include/boost/shared_ptr.hpp" ; then
       AC_MSG_ERROR([invalid boost directory: $BOOST])
     fi
+    BOOST_IFLAGS="-I${BOOST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${BOOST}/$lib"
+      for f in "$dir"/libboost*system*.so* ; do
+        if test -f "$f" ; then
+	  BOOST_LIB_DIR="$dir"
+	  BOOST_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$BOOST_COPY" != yes ; then
+      AC_MSG_ERROR([invalid boost directory: $BOOST])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1394,50 +2006,420 @@ esac
 
 AC_MSG_RESULT([$BOOST])
 
-BOOST_INC="${BOOST}/include"
+# Toolkit doesn't use a boost library directly, but something from a
+# dyninst header pulls in libboost_system (not sure how).  So, we just
+# add everything from the copy list to the link line.  (They're pulled
+# in indirectly anyway).
 
-# Test for libboost_thread-mt.so and libboost_system-mt.so.
-# If exist, then copy to ext-libs.  Recent dyninst uses these.
+if test "x$BOOST_LIB_DIR" != x ; then
+  boost_lib_list=
 
-AC_MSG_CHECKING([whether to copy boost libraries])
-
-BOOST_LIB=
-BOOST_LIB_LIST=
-BOOST_COPY=no
-
-for lib in $multilib_path ; do
-  boost_libdir="${BOOST}/$lib"
-  for f in "$boost_libdir"/libboost_thread* ; do
-    if test -f "$f" ; then
-      BOOST_LIB="$boost_libdir"
-      BOOST_COPY=yes
-      break 2
+  for lib in $BOOST_COPY_LIST ; do
+    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+      boost_lib_list="${boost_lib_list} -lboost_$lib"
     fi
   done
-done
 
-if test "$BOOST_COPY" = yes ; then
-  BOOST_LIB_LIST='-lboost_atomic -lboost_chrono -lboost_date_time -lboost_system -lboost_thread'
+  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lib_list"
+
+  AC_MSG_NOTICE([boost libs: $boost_lib_list])
 fi
 
-AC_MSG_RESULT([$BOOST_COPY])
-
-AC_SUBST([BOOST_INC])
-AC_SUBST([BOOST_LIB])
-AC_SUBST([BOOST_LIB_LIST])
+AC_SUBST([BOOST_IFLAGS])
+AC_SUBST([BOOST_LFLAGS])
+AC_SUBST([BOOST_LIB_DIR])
 AC_SUBST([BOOST_COPY])
+AC_SUBST([BOOST_COPY_LIST])
 
-AM_CONDITIONAL([USE_BOOST_LIBS], [test "$BOOST_COPY" = yes])
+
+#-------------------------------------------------
+# Option: --with-bzip=PATH
+#-------------------------------------------------
+
+# Location of libbz2.so.  This is just for copy-libs as an elfutils
+# prereq.  Toolkit doesn't directly call bzip, so we don't need an
+# include path here.  Note: this package is not built in externals.
+
+BZIP_COPY=no
+BZIP_LIB=no
+
+BZIP="$default_bzip_prefix"
+
+AC_ARG_WITH([bzip],
+  [AS_HELP_STRING([--with-bzip=PATH],
+      [path to bzip2 install directory])],
+  [BZIP="$withval"],
+  [])
+
+AC_MSG_CHECKING([for bzip])
+
+case "$BZIP" in
+  /* )
+    for lib in $multilib_path ; do
+      bzip_lib="${BZIP}/$lib"
+      if test -f "${bzip_lib}/libbz2.so" ; then
+        BZIP_LIB="$bzip_lib"
+	break
+      fi
+    done
+    if test "$BZIP_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libbz2.so in: $BZIP])
+    fi
+    BZIP_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([bzip directory must be absolute path: $BZIP])
+    ;;
+esac
+
+AC_MSG_RESULT([$BZIP])
+
+AC_SUBST([BZIP_COPY])
+AC_SUBST([BZIP_LIB])
+
+
+#-------------------------------------------------
+# Option: --with-dyninst=PATH
+#-------------------------------------------------
+
+# Now require full ParseAPI with CFG loop support or nothing.
+
+DYNINST="$default_dyninst_prefix"
+
+AC_ARG_WITH([dyninst],
+  [AS_HELP_STRING([--with-dyninst=PATH],
+      [path to dyninst install directory])],
+  [DYNINST="$withval"],
+  [])
+
+DYNINST_IFLAGS=
+DYNINST_LFLAGS=
+DYNINST_LIB_DIR=
+DYNINST_COPY=no
+dyninst_features=
+
+AC_MSG_CHECKING([for dyninst])
+
+case "${DYNINST}" in
+  /* )
+    if test -f "${DYNINST}/include/Symtab.h"  \
+       && test -f "${DYNINST}/include/CFG.h"
+    then : ; else
+      AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
+    fi
+    DYNINST_IFLAGS="-I${DYNINST}/include"
+
+    for lib in $multilib_path ; do
+      dir="${DYNINST}/$lib"
+      if test -f "${dir}/libparseAPI.so" ; then
+        DYNINST_LIB_DIR="$dir"
+	DYNINST_COPY=yes
+	break
+      fi
+    done
+    if test "$DYNINST_COPY" != yes ; then
+      AC_MSG_ERROR([invalid dyninst directory: $DYNINST])
+    fi
+    DYNINST_LFLAGS="-L${DYNINST_LIB_DIR} -lparseAPI -linstructionAPI -lsymtabAPI"
+    DYNINST_LFLAGS="${DYNINST_LFLAGS} -ldynDwarf -ldynElf -lcommon"
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([dyninst directory must be absolute path: $DYNINST])
+    ;;
+esac
+
+AC_MSG_RESULT([$DYNINST])
+
+AC_SUBST([DYNINST_IFLAGS])
+AC_SUBST([DYNINST_LFLAGS])
+AC_SUBST([DYNINST_LIB_DIR])
+AC_SUBST([DYNINST_COPY])
+
+#-------------------------------------------------
+
+# Check that ParseAPI includes CFG loop support.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} ${DYNINST_IFLAGS}"
+AC_LANG_PUSH([C++])
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([for parseapi CFG loop support])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  return (long) bvec.size();
+}
+]])],
+  [cfg_loop_support=yes ; dyninst_features="$dyninst_features cfg"],
+  [cfg_loop_support=no])
+
+  AC_MSG_RESULT([$cfg_loop_support])
+
+  if test "$cfg_loop_support" != yes ; then
+    AC_MSG_ERROR([parseAPI does not include CFG loop support])
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if Block::getInsns() uses Instruction::Ptr or Instruction.
+# 9.3 uses Instruction::Ptr, new-par-par and 10.x use Instruction.
+
+use_instn_ptr=yes
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if parseapi uses Instruction::Ptr])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long instruction_size(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.begin()->second->size();
+}
+]])], [use_instn_ptr=yes], [use_instn_ptr=no])
+
+  AC_MSG_RESULT([$use_instn_ptr])
+fi
+
+if test "$use_instn_ptr" = yes ; then
+  AC_DEFINE(DYNINST_INSTRUCTION_PTR, 1, [dyninst uses Instruction::Ptr])
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There is not a good compile or link test for this, so we fall back
+# on ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+
+use_libdw=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst built with libdw.so])
+
+  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  AC_MSG_RESULT([$use_libdw])
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  if test "$use_libdw" = yes
+  then dyninst_features="$dyninst_features libdw"
+  else dyninst_features="$dyninst_features libdwarf"
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst supports cuda.
+
+use_cuda=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports cuda])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+]])],
+  [use_cuda=yes ; dyninst_features="$dyninst_features cuda"],
+  [use_cuda=no])
+
+  AC_MSG_RESULT([$use_cuda])
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with openmp support.
+# Again, not really a good test.
+
+dyninst_openmp=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst built with openmp])
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$parseapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        dyninst_openmp=yes
+	dyninst_features="$dyninst_features openmp"
+	break
+      fi
+    done
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  AC_MSG_RESULT([$dyninst_openmp])
+fi
+
+AC_LANG_POP
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=unset
+
+AC_ARG_WITH([dyninst-type],
+  [AS_HELP_STRING([--with-dyninst-type=TYPE],
+      [temp option for dyninst version (old, libdw, cuda),
+       only needed if autoconf fails to detect correctly])],
+  [dyninst_type="$withval"],
+  [])
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) AC_MSG_ERROR([bad value for --with-dyninst-type: $dyninst_type]) ;;
+  esac
+
+  AC_MSG_NOTICE([override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda])
+fi
+
+AM_CONDITIONAL(OPT_DYNINST_LIBDWARF, [test "$use_libdw" = no])
+AM_CONDITIONAL(OPT_DYNINST_LIBDW, [test "$use_libdw" = yes])
+
+if test "$use_libdw" = yes ; then
+  AC_DEFINE(DYNINST_USE_LIBDW, 1, [dyninst built with libdw])
+fi
+
+if test "$use_cuda" = yes ; then
+  AC_DEFINE(DYNINST_USE_CUDA, 1, [dyninst supports cuda])
+fi
+
+
+#-------------------------------------------------
+# Option: --with-elfutils=PATH
+#-------------------------------------------------
+
+LIBELF="$default_elfutils_prefix"
+
+AC_ARG_WITH([elfutils],
+  [AS_HELP_STRING([--with-elfutils=PATH],
+      [path to elfutils install directory])],
+  [LIBELF="$withval"],
+  [])
+
+AC_MSG_CHECKING([for elfutils])
+
+LIBELF_INC=no
+LIBELF_LIB=no
+LIBELF_COPY=no
+have_libdw=no
+
+case "$LIBELF" in
+  /* )
+    if test ! -f "${LIBELF}/include/libelf.h" \
+        && test ! -f "${LIBELF}/include/libelf/libelf.h"
+    then
+      AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
+    fi
+    LIBELF_INC="${LIBELF}/include"
+    for lib in $multilib_path ; do
+      if test -f "${LIBELF}/${lib}/libelf.so" ; then
+        LIBELF_LIB="${LIBELF}/${lib}"
+	break
+      fi
+    done
+    if test "$LIBELF_LIB" = no ; then
+      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
+    fi
+    LIBELF_COPY=yes
+
+    if test -f "${LIBELF_LIB}/libdw.so" ; then
+      have_libdw=yes
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
+    ;;
+esac
+
+AC_MSG_RESULT([$LIBELF])
+
+if test "$use_libdw" = yes && test "$have_libdw" != yes ; then
+  AC_MSG_WARN([dyninst uses libdw but elfutils is missing libdw])
+  AC_MSG_WARN([dyninst:  $DYNINST])
+  AC_MSG_WARN([elfutils: $LIBELF])
+fi
+
+AC_SUBST([LIBELF_INC])
+AC_SUBST([LIBELF_LIB])
+AC_SUBST([LIBELF_COPY])
 
 
 #-------------------------------------------------
 # Option: --with-libdwarf=PATH
 #-------------------------------------------------
 
-LIBDWARF=no
-if test "$use_externals" = yes ; then
-    LIBDWARF="$ext_libdwarf_prefix"
-fi
+LIBDWARF="$default_libdwarf_prefix"
 
 AC_ARG_WITH([libdwarf],
   [AS_HELP_STRING([--with-libdwarf=PATH],
@@ -1454,6 +2436,7 @@ case "${LIBDWARF}" in
         AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
     fi
     LIBDWARF_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBDWARF_COPY=no
@@ -1474,69 +2457,58 @@ AC_SUBST([LIBDWARF_COPY])
 
 
 #-------------------------------------------------
-# Option: --with-libelf=PATH
+# Option: --with-libiberty=PATH
 #-------------------------------------------------
 
-LIBELF=no
-if test "$use_externals" = yes ; then
-  LIBELF="$ext_libelf_prefix"
-fi
+# This is only used if binutils doesn't have libiberty.a.
 
-AC_ARG_WITH([libelf],
-  [AS_HELP_STRING([--with-libelf=PATH],
-      [path to libelf install directory])],
-  [LIBELF="$withval"],
+LIBIBERTY="$default_libiberty_prefix"
+
+AC_ARG_WITH([libiberty],
+  [AS_HELP_STRING([--with-libiberty=PATH],
+      [path to libiberty install directory (only needed if binutils
+       does not contain libiberty.a)])],
+  [LIBIBERTY="$withval"],
   [])
 
-AC_MSG_CHECKING([for libelf])
+if test "$BINUTILS" = no || test "$binutils_has_libiberty" = yes
+then
+  AC_MSG_NOTICE([skipping libiberty for binutils])
+  LIBIBERTY=no
+else
+  AC_MSG_CHECKING([for libiberty.a for binutils])
 
-LIBELF_INC=no
-LIBELF_LIB=no
-LIBELF_COPY=no
+  found_libiberty=no
+  case "$LIBIBERTY" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${LIBIBERTY}/${lib}/libiberty.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libiberty=yes
+	  break
+	fi
+      done
+      num_pkgs=`expr 1 + $num_pkgs`
+      ;;
+  esac
 
-case "$LIBELF" in
-  /* )
-    if test ! -f "${LIBELF}/include/libelf.h" \
-        && test ! -f "${LIBELF}/include/libelf/libelf.h"
-    then
-      AC_MSG_ERROR([unable to find libelf.h in: $LIBELF])
-    fi
-    LIBELF_INC="${LIBELF}/include"
-    for lib in $multilib_path ; do
-      if test -f "${LIBELF}/${lib}/libelf.so" ; then
-        LIBELF_LIB="${LIBELF}/${lib}"
-	break
-      fi
-    done
-    if test "$LIBELF_LIB" = no ; then
-      AC_MSG_ERROR([unable to find libelf.so in: $LIBELF])
-    fi
-    LIBELF_COPY=yes
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
-    ;;
-esac
+  AC_MSG_RESULT([$found_libiberty])
 
-AC_MSG_RESULT([$LIBELF])
-
-AC_SUBST([LIBELF_INC])
-AC_SUBST([LIBELF_LIB])
-AC_SUBST([LIBELF_COPY])
+  if test "$found_libiberty" != yes ; then
+    AC_MSG_ERROR([unable to find libiberty.a in binutils or libiberty])
+  fi
+fi
 
 
 #-------------------------------------------------
 # Option: --with-libmonitor=PATH
 #-------------------------------------------------
 
-LIBMONITOR=no
 OPT_LIBMONITOR_DYNAMIC=no
 OPT_LIBMONITOR_STATIC=no
-if test "$use_externals" = yes ; then
-  LIBMONITOR="$ext_libmonitor_prefix"
-fi
+
+LIBMONITOR="$default_libmonitor_prefix"
 
 AC_ARG_WITH([libmonitor],
   [AS_HELP_STRING([--with-libmonitor=PATH],
@@ -1567,6 +2539,7 @@ case "${LIBMONITOR}" in
     fi
     LIBMONITOR_COPY=yes
     LIBMONITOR_RUN_DIR="$hpc_ext_libs_dir"
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     LIBMONITOR_COPY=no
@@ -1598,7 +2571,6 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 # and dynamic versions separately.  But if libunwind is the primary
 # unwinder, then can't build hpcrun or hpclink without it.
 
-LIBUNWIND=no
 LIBUNWIND_STAT=no
 
 LIBUNWIND_IFLAGS=
@@ -1610,9 +2582,7 @@ LIBUNWIND_LDFLAGS_STAT=
 LIBUNWIND_COPY=no
 LIBUNWIND_LIB=
 
-if test "$use_externals" = yes ; then
-  LIBUNWIND="$ext_libunwind_prefix"
-fi
+LIBUNWIND="$default_libunwind_prefix"
 
 AC_ARG_WITH([libunwind],
   [AS_HELP_STRING([--with-libunwind=PATH],
@@ -1655,6 +2625,7 @@ case "$LIBUNWIND" in
     if test "x$LIBUNWIND_LIB" = x ; then
       AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1741,21 +2712,19 @@ AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 # Dynamically, add -llzma to libhpcrun.so and copy libs.
 # Statically, link liblzma.a into libhpcrun.o at build time.
 
-LZMA=no
 LZMA_STATIC=no
 LZMA_LDFLAGS_DYN=
 LZMA_LDFLAGS_STAT=
+LZMA_INC=no
 LZMA_COPY=no
 LZMA_LIB=
+LZMA_PROF_MPI_LIBS=
 
-# allow for older externals which doesn't define ext_lzma_prefix
-if test "$use_externals" = yes && test "x$ext_lzma_prefix" != x ; then
-  LZMA="$ext_lzma_prefix"
-fi
+LZMA="$default_lzma_prefix"
 
 AC_ARG_WITH([lzma],
   [AS_HELP_STRING([--with-lzma=PATH],
-      [path to lzma (xz) install directory])],
+      [path to lzma (xz utils) install directory])],
   [LZMA="$withval"],
   [])
 
@@ -1769,6 +2738,7 @@ case "$LZMA" in
         LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
 	LZMA_COPY=yes
 	LZMA_LIB="$lzma_libdir"
+        LZMA_INC="${LZMA}/include"
 	if test -f "${lzma_libdir}/liblzma.a" ; then
 	  LZMA_STATIC=yes
 	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
@@ -1778,7 +2748,18 @@ case "$LZMA" in
     done
     if test "x$LZMA_LIB" = x ; then
       AC_MSG_ERROR([invalid lzma directory: $LZMA])
+    else
+      #
+      # hpcprof-mpi: same as hpclink if fully static, else default
+      #
+      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+      if test $? = 0 ; then
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+      else
+        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+      fi
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -1792,233 +2773,187 @@ AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
 
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
+AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
+AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
 
 
 #-------------------------------------------------
-# with-monitor
+# Option: --with-mbedtls=PATH
 #-------------------------------------------------
 
-AC_MSG_CHECKING([for monitor])
+# mbedtls is a lightweight library that includes libmbedcrypto.a for
+# computing md5 and SHA sums for buffers in memory.
+#
+# Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
-OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
-MONITOR=
-MONITOR_LIBS=
-HPC_MONITOR=
+MBEDTLS_COPY=no
+MBEDTLS="$default_mbedtls_prefix"
+MBEDTLS_IFLAGS=
+MBEDTLS_LIBS=
+MBEDTLS_LIB=
 
-# By default, disable old-monitor and hpcrun-flat in a cross compile.
-# It can be reenabled with an explicit --with-monitor option.
-
-if test "$use_externals" = yes && test -z "$is_cross_compile"
-then
-  MONITOR="$ext_old_monitor_prefix"
-  case "$MONITOR" in
-    /* )  OPT_WITH_MONITOR=yes
-	  OPT_INSTALL_MONITOR=yes
-	  ;;
-  esac
-fi
-
-AC_ARG_WITH([monitor],
-  AS_HELP_STRING([--with-monitor=PATH],
-                 [use given (old) libmonitor installation]),
-  [if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     OPT_INSTALL_MONITOR=yes
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi],
+AC_ARG_WITH([mbedtls],
+  [AS_HELP_STRING([--with-mbedtls=PATH],
+      [path to mbedtls install directory])],
+  [MBEDTLS="$withval"],
   [])
 
-for lib in ${LIB_SEARCH_PATH} ; do
-  if test -r "${MONITOR}/${lib}/libmonitor.so"; then
-    MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
-  fi
-done
-MONITOR_LIBS=`echo ${MONITOR_LIBS}`
+AC_MSG_CHECKING([for mbedtls])
 
-MONITOR_IFLAGS="-I${MONITOR}/include"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
-  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
-else 
-  HPC_MONITOR="${MONITOR}"
-fi
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  AC_DEFINE([HAVE_MONITOR], [1], [Monitor library])
-  AC_MSG_RESULT([yes (${MONITOR_LIBS})])
-else
-  AC_MSG_RESULT([no (not needed)])
-fi
-
-AC_SUBST([MONITOR])
-AC_SUBST([HPC_MONITOR])
-AC_SUBST([OPT_INSTALL_MONITOR])
-
-
-#-------------------------------------------------
-# Check for Open Analysis (CFG builder, etc.)
-#-------------------------------------------------
-
-OA=no
-OA_IFLAGS=
-OA_LDFLAGS=
-OA_AVAIL=no
-
-if test "$use_externals" = yes ; then
-  OA="$ext_open_analysis_prefix"
-fi
-
-# The open-analysis CFG support in lib/isa is broken on power8/le and
-# doesn't exist on ARM.  So, disable OA on those platforms.
-
-case "$host" in
-  *powerpc64le* | *aarch* )
-    myhosttype=`echo $host | awk -F- '{ print $1 }'`
-    AC_MSG_NOTICE([disable open-analysis cfg support on $myhosttype])
-    OA=no
-    ;;
-esac
-
-AC_ARG_WITH([open-analysis],
-  [AS_HELP_STRING([--with-open-analysis=PATH],
-      [path to OpenAnalysis install directory])],
-  [OA="$withval"],
-  [])
-
-AC_MSG_CHECKING([for OpenAnalysis])
-
-case "$OA" in
+case "$MBEDTLS" in
   /* )
-    if test -f "${OA}/include/OpenAnalysis/Utils/RIFG.hpp" \
-       && test -f "${OA}/lib/libOAsz64.a"
-    then :
-    else
-      AC_MSG_ERROR([invalid OpenAnalysis directory: $OA])
+    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
+      AC_MSG_ERROR([unable to find md5.h in: $MBEDTLS])
     fi
-    OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
-    OA_LDFLAGS="${OA}/lib/libOAsz64.a"
-    OA_AVAIL=yes
+    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    for lib in $multilib_path ; do
+      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+	MBEDTLS_COPY=yes
+	MBEDTLS_LIB="${MBEDTLS}/lib"
+        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	break
+      fi
+    done
+    if test "x$MBEDTLS_LIBS" = x ; then
+      AC_MSG_ERROR([unable to find libmbedcrypto.a in: $MBEDTLS])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
   * )
-    AC_MSG_ERROR([OpenAnalysis directory must be absolute path: $OA])
+    AC_MSG_ERROR([mbedtls directory must be absolute path: $MBEDTLS])
     ;;
 esac
 
-AC_MSG_RESULT([$OA])
+AC_MSG_RESULT([$MBEDTLS])
 
-AC_SUBST([OA_IFLAGS])
-AC_SUBST([OA_LDFLAGS])
+#
+# Test if libmbedcrypto.a was compiled with -fPIC
+#
+case "$MBEDTLS" in
+  /* )
+    AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
+    
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
+    LIBS="$MBEDTLS_LIBS"
+
+    AC_LANG_PUSH([C])
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <sys/types.h>
+#include "mbedtls/md5.h"
+void
+my_md5_hash(char *buf, size_t len)
+{
+    mbedtls_md5_context ctx;
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_update(&ctx, buf, len);
+}
+]])], [mbed_fpic=yes], [mbed_fpic=no])
+
+    AC_MSG_RESULT([$mbed_fpic])
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$mbed_fpic" != yes ; then
+      AC_MSG_ERROR([libmbedcrypto.a must be compiled with -fPIC])
+    fi
+    ;;
+esac
+
+AC_SUBST([MBEDTLS_COPY])
+AC_SUBST([MBEDTLS_LIB])
+AC_SUBST([MBEDTLS_IFLAGS])
+AC_SUBST([MBEDTLS_LIBS])
 
 
 #-------------------------------------------------
-# with-papi
+# Option: --with-papi=PATH
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether configured with PAPI])
-
-#HPC_DEF_CHECK_CXX_PAPI_LINK
-
-OPT_HAVE_PAPI=no
 OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
-OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
 OPT_PAPI_LIBPATH=
 
+OPT_PAPI="$default_papi_prefix"
+
 AC_ARG_WITH([papi],
-  AS_HELP_STRING([--with-papi=PATH],
-                 [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_PAPI=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-papi requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_PAPI=${withval}
-   fi],
-  [if test -f /usr/local/papi/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local/papi
-   elif test -f /usr/local/include/papi.h; then
-    OPT_HAVE_PAPI=yes
-    OPT_PAPI=/usr/local
-  fi])
+  [AS_HELP_STRING([--with-papi=PATH],
+      [path to papi install directory])],
+  [OPT_PAPI="$withval"],
+  [])
 
+AC_ARG_ENABLE([force-papi],
+  [AS_HELP_STRING([--enable-force-papi],
+      [force using both papi and perf events, if configure can't verify
+       that papi and perfmon match])],
+  [force_papi="$enableval"],
+  [force_papi=no])
 
-# Allow <papi_install_path> to either point to a true installation or
-# simply a build.  In the latter case, the papi library and header
-# will have a different location.
-#   <papi-install-path>/ include/papi.h
-#                        lib/libpapi.so
-#                        lib64/libpapi.so
-#   <papi-build-path>/ papi.h
-#                      libpapi.so
-# Note: same test is in hpctoolkit-oss's Makefile.quick
-#
-if test "$OPT_HAVE_PAPI" = "yes" ; then
-  if test -f "${OPT_PAPI}/include/papi.h"; then
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
-  elif test -f "${OPT_PAPI}/papi.h" ; then
-    OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
-  else
-    AC_MSG_ERROR([no papi.h in ${OPT_PAPI}/include])
-  fi
-  
-  for lib in ${LIB_SEARCH_PATH} ; do
-    if test -r "${OPT_PAPI}/${lib}/libpapi.so" \
-       || test -f "${OPT_PAPI}/${lib}/libpapi.a"
-    then
-      OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
-      OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-      if test -f "${OPT_PAPI}/${lib}/libpapi.so" ; then
-	OPT_PAPI_DYNAMIC=yes
-      fi
-      if test -f "${OPT_PAPI}/${lib}/libpapi.a" ; then
-	OPT_PAPI_STATIC=yes
-      fi
-      break
+AC_MSG_CHECKING([for papi])
+
+case "$OPT_PAPI" in
+  /* )
+    if test ! -f "${OPT_PAPI}/include/papi.h" ; then
+      AC_MSG_ERROR([unable to find papi.h in: $OPT_PAPI])
     fi
-  done
-  if test -z "${OPT_PAPI_LIBPATH}" ; then
-    AC_MSG_ERROR([no libpapi.so or libpapi.a in $LIB_SEARCH_PATH])
-  fi
-fi
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
 
-# Check for PAPI > 3.0 [skip for now]
+    for lib in $multilib_path ; do
+      lib_dir="${OPT_PAPI}/$lib"
+      if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
+      then
+        OPT_PAPI_LIBPATH="$lib_dir"
+        OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+	if test -f "${lib_dir}/libpapi.so" ; then
+          OPT_PAPI_DYNAMIC=yes
+        fi
+        if test -f "${lib_dir}/libpapi.a" ; then
+          OPT_PAPI_STATIC=yes
+	fi
+	break
+      fi
+    done
 
-if test "${OPT_HAVE_PAPI}" = "yes"; then
-  AC_MSG_RESULT([yes (${OPT_PAPI})])
-  AC_MSG_NOTICE([PAPI shared libpapi.so: $OPT_PAPI_DYNAMIC])
-  AC_MSG_NOTICE([PAPI static libpapi.a: $OPT_PAPI_STATIC])
-else
-  AC_MSG_RESULT([no])
+    if test "x$OPT_PAPI_LIBPATH" = x ; then
+      AC_MSG_ERROR([unable to find libpapi in: $OPT_PAPI])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([papi directory must be absolute path: $OPT_PAPI])
+    ;;
+esac
+
+AC_MSG_RESULT([$OPT_PAPI])
+
+if test "$OPT_PAPI" != no ; then
+  AC_MSG_NOTICE([papi shared libpapi.so: $OPT_PAPI_DYNAMIC])
+  AC_MSG_NOTICE([papi static libpapi.a: $OPT_PAPI_STATIC])
 fi
 
 # The dynamic case also needs libpapi.so's prerequisite libraries
-# (-lperfctr, -lpfm).  In the static case, libpapi.a already includes
-# these functions.  At least, that's what we've seen so far.
-#
+# (-lpfm).  In the static case, libpapi.a already includes these
+# functions.  At least, that's what we've seen so far.
+
 papi_extra_libs=
 so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
 if test -f "$so_file" ; then
-  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lperfctr"
-  fi
   ldd "$so_file" | grep libpfm >/dev/null 2>&1
   if test $? = 0 ; then
     papi_extra_libs="${papi_extra_libs} -lpfm"
   fi
 fi
-
-AM_CONDITIONAL(OPT_PAPI_DYNAMIC, test "$OPT_PAPI_DYNAMIC" = yes)
-AM_CONDITIONAL(OPT_PAPI_STATIC,  test "$OPT_PAPI_STATIC" = yes)
 
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
@@ -2026,32 +2961,32 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST([papi_extra_libs])
 
+
+#-------------------------------------------------
+# Option: --enable-papi-c
+#-------------------------------------------------
+
 # Option to use the new papi-c.c sample source file.  This is mostly
 # temporary until the new file integrates both component and
 # non-component PAPI.  Requires PAPI 5.1 or later.
 
+use_papi_c=yes
+
 AC_ARG_ENABLE([papi-c],
-  AS_HELP_STRING([--enable-papi-c],
-      [use new papi component sample source, requires papi 5.1 or later]),
+  [AS_HELP_STRING([--enable-papi-c],
+      [use component papi, if available (default yes)])],
   [use_papi_c="$enableval"],
-  [use_papi_c=check])
+  [])
 
-AC_MSG_CHECKING([whether to use new papi component])
-
-case "$use_papi_c" in
-  no | check ) ;;
-  * ) use_papi_c=yes ;;
-esac
-
-if test "$OPT_HAVE_PAPI" = no ; then
+if test "$OPT_PAPI" = no || test "$use_papi_c" != yes ; then
   use_papi_c=no
-fi
+else
+  AC_MSG_CHECKING([for component papi])
 
-if test "$use_papi_c" = check ; then
   ORIG_CFLAGS="$CFLAGS"
   ORIG_LIBS="$LIBS"
   CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
-  LIBS="$OPT_PAPI_LDFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
@@ -2066,34 +3001,33 @@ int main()
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
   LIBS="$ORIG_LIBS"
+
+  AC_MSG_RESULT([$use_papi_c])
 fi
 
-AC_MSG_RESULT([$use_papi_c])
 
-AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
+#-------------------------------------------------
+# Option: --enable-papi-c-cupti
+#-------------------------------------------------
+
+use_papi_c_cupti=no
 
 AC_ARG_ENABLE([papi-c-cupti],
-  AS_HELP_STRING([--enable-papi-c-cupti],
-      [enable component PAPI's CUPTI functionality (requires papi-c with cuda component installed]),
+  [AS_HELP_STRING([--enable-papi-c-cupti],
+      [use papi CUPTI support, if available (default no), requires
+       papi cuda component])],
   [use_papi_c_cupti="$enableval"],
-  [use_papi_c_cupti=no])
+  [])
 
-AC_MSG_CHECKING([whether to use component papi CUPTI functionality])
-
-case "$use_papi_c_cupti" in
-  no ) ;;
-  * ) use_papi_c_cupti=yes ;;
-esac
-
-if test "$use_papi_c" = no ; then
+if test "$use_papi_c" = no || test "$use_papi_c_cupti" != yes ; then
   use_papi_c_cupti=no
-fi
+else
+  AC_MSG_CHECKING([for papi cuda component])
 
-if test "$use_papi_c_component" = yes ; then
   ORIG_CFLAGS="$CFLAGS"
   ORIG_LIBS="$LIBS"
   CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
-  LIBS="$OPT_PAPI_LDFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
   AC_LANG_PUSH([C])
 
   AC_LINK_IFELSE([
@@ -2109,84 +3043,378 @@ int main()
   AC_LANG_POP
   CFLAGS="$ORIG_CFLAGS"
   LIBS="$ORIG_LIBS"
+
+  AC_MSG_RESULT([$use_papi_c_cupti])
 fi
 
-AC_MSG_RESULT([$use_papi_c_cupti])
+
+#-------------------------------------------------
+# Option: --with-perfmon=PATH
+#-------------------------------------------------
+
+PERFMON=no
+PERFMON_STATIC=no
+PERFMON_COPY=no
+OPT_PERFMON=no
+
+PERFMON_CFLAGS=
+PERFMON_LDFLAGS_DYN=
+PERFMON_LDFLAGS_STAT=
+PERFMON_LIB=
+
+AC_ARG_WITH([perfmon],
+  [AS_HELP_STRING([--with-perfmon=PATH],
+      [path to perfmon2 (libpfm4) install directory])],
+  [perfmon_withval="$withval"],
+  [perfmon_withval= ])
+
+# Returns: success (0) if $1 is a valid perfmon install directory.
+# Needs header file and at least one library.
+valid_perfmon_dir()
+{
+  dir="$1"
+
+  if test "x$dir" = x  \
+     || test ! -f "${dir}/include/perfmon/pfmlib.h" ; then
+    return 1
+  fi
+
+  for lib in $multilib_path ; do
+    if test -f "${dir}/${lib}/libpfm.a"  \
+       || test -f "${dir}/${lib}/libpfm.so" ; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+AC_MSG_CHECKING([for perfmon])
+
+perfmon_mesg=
+perfmon_is_from_papi=no
+
+# First, find which perfmon directory, if any.
+
+if test "x$perfmon_withval" = xno
+then
+  # if explicitly set to no, then leave disabled
+  PERFMON=no
+  perfmon_mesg='no (disabled)'
+
+elif test "x$OPT_PAPI" != xno && valid_perfmon_dir "$OPT_PAPI"
+then
+  # if --with-papi exists and includes perfmon, use that to keep papi
+  # and perfmon consistent.
+  PERFMON="$OPT_PAPI"
+  perfmon_mesg="(from papi) $OPT_PAPI"
+  perfmon_is_from_papi=yes
+
+elif test "$blue_gene_back_end" = yes ; then
+  # disable separate perfmon for blue gene
+  PERFMON=no
+  perfmon_mesg='no (disabled for blue gene)'
+
+elif test "xperfmon_withval" != x && valid_perfmon_dir "$perfmon_withval"
+then
+  # if --with-perfmon is set and works, use that
+  PERFMON="$perfmon_withval"
+  perfmon_mesg="$perfmon_withval"
+
+elif test "$default_perfmon_prefix" != no  \
+     && valid_perfmon_dir "$default_perfmon_prefix"
+then
+  # if value from externals/spack works, use that
+  PERFMON="$default_perfmon_prefix"
+  perfmon_mesg="$default_perfmon_prefix"
+
+else
+  # give up, nothing works
+  PERFMON=no
+  perfmon_mesg=no
+fi
+
+AC_MSG_RESULT([$perfmon_mesg])
+
+# Second, set the flags variables, etc.
+
+case "$PERFMON" in
+  /* )
+    PERFMON_CFLAGS="-I${PERFMON}/include -DENABLE_PERFMON"
+    OPT_PERFMON=yes
+
+    for lib in $multilib_path ; do
+      lib_dir="${PERFMON}/$lib"
+      if test -f "${lib_dir}/libpfm.so" || test -f "${lib_dir}/libpfm.a"
+      then
+        PERFMON_LIB="$lib_dir"
+	PERFMON_COPY=yes
+	if test -f "${lib_dir}/libpfm.so" ; then
+	  PERFMON_LDFLAGS_DYN="-L${lib_dir} -lpfm"
+        fi
+        if test -f "${lib_dir}/libpfm.a" ; then
+	  PERFMON_LDFLAGS_STAT="${lib_dir}/libpfm.a"
+          PERFMON_STATIC=yes
+	fi
+        break
+      fi
+    done
+
+    if test "x$PERFMON_LIB" = x ; then
+      AC_MSG_ERROR([unable to find libpfm in: $PERFMON])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+esac
+
+AC_SUBST([PERFMON_CFLAGS])
+AC_SUBST([PERFMON_LIB])
+AC_SUBST([PERFMON_LDFLAGS_DYN])
+AC_SUBST([PERFMON_LDFLAGS_STAT])
+AC_SUBST([PERFMON_COPY])
+
+AM_CONDITIONAL(OPT_PERFMON, [test "$OPT_PERFMON" = yes])
+
+
+#-------------------------------------------------
+# Option: --enable-perf-events
+#-------------------------------------------------
+
+# This option is mostly for compute nodes where it's hard to run a
+# config test.
+
+AC_ARG_ENABLE([perf-events],
+  [AS_HELP_STRING([--enable-perf-events],
+      [force enable or disable perf events in hpcrun (normally 2.6.32 or later),
+       only needed if fails to auto-detect correctly])],
+  [perf_event="$enableval"],
+  [perf_event=check])
+
+PERF_EVENT_PARANOID_PATH="/proc/sys/kernel/perf_event_paranoid"
+PERF_EVENT_PARANOID="-1"
+
+if test -f "$PERF_EVENT_PARANOID_PATH" ; then
+  PERF_EVENT_PARANOID=`cat "$PERF_EVENT_PARANOID_PATH"`
+fi
+
+AC_MSG_CHECKING([for perf events])
+
+case "$perf_event" in
+  yes ) perf_event_mesg="yes (forced)" ;;
+  no )  perf_event_mesg="no (disabled)" ;;
+  * )
+    AC_COMPILE_IFELSE([
+    AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+static struct perf_event_attr attr;
+void check_kernel()
+{
+  attr.sample_id_all = 1;
+}
+]])], [perf_event=yes], [perf_event=no])
+    perf_event_mesg="$perf_event"
+    ;;
+esac
+
+AC_MSG_RESULT([$perf_event_mesg])
+
+AC_MSG_NOTICE([perf paranoid in ${PERF_EVENT_PARANOID_PATH} : ${PERF_EVENT_PARANOID}])
+
+# Perf events won't run and throws an illegal instruction on blue gene
+# back end.
+if test "$blue_gene_back_end" = yes ; then
+  AC_MSG_NOTICE([disable perf events for blue gene back end])
+  perf_event=no
+  perf_event_mesg='no (disabled for blue gene)'
+fi
+
+# Perf events doesn't exactly require perfmon, but if not available,
+# then mnemonic names won't work.
+
+warn_no_perfmon=no
+
+if test "$perf_event" = yes && test "$PERFMON" = no ; then
+  AC_MSG_WARN([perf events is enabled but perfmon is not available])
+  warn_no_perfmon=yes
+fi
+
+AC_SUBST([PERF_EVENT_PARANOID])
+
+AM_CONDITIONAL(OPT_ENABLE_PERF_EVENT, [test "$perf_event" = yes])
+
+
+#-------------------------------------------------
+# Option: --enable-kernel-blocking
+#-------------------------------------------------
+
+# Again, the option is mostly for compute nodes.
+
+AC_ARG_ENABLE([kernel-blocking],
+  [AS_HELP_STRING([--enable-kernel-blocking],
+      [force enable or disable kernel blocking support in perf events
+       (normally 4.3 or later), only needed if fails to auto-detect correctly])],
+  [kernel_blocking="$enableval"],
+  [kernel_blocking=check])
+
+if test "$perf_event" = no ; then
+  kernel_blocking=no
+  kernel_blocking_mesg="no (perf-events is off)"
+else
+  AC_MSG_CHECKING([for kernel blocking in perf events])
+
+  case "$kernel_blocking" in
+    yes ) kernel_blocking_mesg="yes (forced)" ;;
+    no )  kernel_blocking_mesg="no (disabled)" ;;
+    * )
+      AC_COMPILE_IFELSE([
+      AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+#include <linux/version.h>
+
+static struct perf_event_attr attr;
+void check_kernel()
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+  attr.context_switch = 1;
+#else
+#error "kernel is older than 4.3"
+#endif
+}
+]])], [kernel_blocking=yes], [kernel_blocking=no])
+    kernel_blocking_mesg="$kernel_blocking"
+    ;;
+  esac
+
+  AC_MSG_RESULT([$kernel_blocking])
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_blocking" = yes])
+
+
+#-------------------------------------------------
+# Test consistency of papi and perfmon
+#-------------------------------------------------
+
+warn_papi_mismatch=no
+
+papi_mesg="$OPT_PAPI"
+
+if test "$OPT_PAPI" != no && test "$perf_event" = yes  \
+   && test "$PERFMON" != no && test "$perfmon_is_from_papi" = no
+then
+  AC_MSG_WARN([unable to verify that papi and perfmon are consistent])
+
+  if test "$force_papi" = yes ; then
+    AC_MSG_WARN([force using papi])
+    papi_mesg="(force enable) $OPT_PAPI"
+
+  else
+    AC_MSG_WARN([disable papi due to possible conflict with perfmon])
+    papi_mesg='no (disabled due to conflict with perfmon)'
+    warn_papi_mismatch=yes
+
+    OPT_PAPI=no
+    OPT_PAPI_DYNAMIC=no
+    OPT_PAPI_STATIC=no
+    OPT_PAPI_IFLAGS=
+    OPT_PAPI_LDFLAGS=
+    OPT_PAPI_LIBPATH=
+    use_papi_c=no
+    use_papi_c_cupti=no
+  fi
+fi
+
+# AC-SUBST can be anywhere, but AM-CONDITIONAL reads the value now.
+
+AM_CONDITIONAL(OPT_PAPI_DYNAMIC, [test "$OPT_PAPI_DYNAMIC" = yes])
+AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
+AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
+
 #-------------------------------------------------
-# Option: --with-symtabAPI=PATH
+# Option: --with-tbb=PATH
 #-------------------------------------------------
 
-SYMTABAPI=no
-if test "$use_externals" = yes ; then
-  SYMTABAPI="$ext_symtabAPI_prefix"
-fi
+# Dyninst 10.x with parallel parsing uses Intel TBB, but older
+# versions do not, so this must be optional.  Also, we selectively add
+# proxy malloc to hpcstruct, so keep that separate.
 
-AC_ARG_WITH([symtabAPI],
-  [AS_HELP_STRING([--with-symtabAPI=PATH],
-      [path to symtabAPI install directory])],
-  [SYMTABAPI="$withval"],
+TBB="$default_tbb_prefix"
+
+AC_ARG_WITH([tbb],
+  [AS_HELP_STRING([--with-tbb=PATH],
+      [path to intel tbb install directory])],
+  [TBB="$withval"],
   [])
 
-SYMTABAPI_COPY=no
-SYMTABAPI_COPY_DYN=no
-SYMTABAPI_COPY_PARSE=no
-SYMTABAPI_LIB_LIST=
+TBB_IFLAGS=
+TBB_LFLAGS=
+TBB_PROXY_LIB=
+TBB_LIB_DIR=
+TBB_COPY=no
 
-AC_MSG_CHECKING([for symtabAPI])
+AC_MSG_CHECKING([for tbb])
 
-case "${SYMTABAPI}" in
+case "$TBB" in
   /* )
-    if test -f "${SYMTABAPI}/include/Symtab.h" && \
-       test -f "${SYMTABAPI}/lib/libsymtabAPI.so"
-    then :
-    else
-        AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
+    if test ! -f "${TBB}/include/tbb/concurrent_hash_map.h" ; then
+      AC_MSG_ERROR([invalid tbb directory: $TBB])
     fi
-    SYMTABAPI_COPY=yes
-    SYMTABAPI_LIB_LIST='-lsymtabAPI -lcommon'
-    if test -f "${SYMTABAPI}/lib/libdynElf.so" ; then
-      SYMTABAPI_COPY_DYN=yes
-      SYMTABAPI_LIB_LIST="$SYMTABAPI_LIB_LIST -ldynDwarf -ldynElf"
+    TBB_IFLAGS="-I${TBB}/include"
+
+    for lib in $multilib_path ; do
+      dir="${TBB}/$lib"
+      for f in "$dir"/libtbb*.so* ; do
+        if test -f "$f" ; then
+	  TBB_LIB_DIR="$dir"
+	  TBB_COPY=yes
+	  break 2
+	fi
+      done
+    done
+    if test "$TBB_COPY" != yes ; then
+      AC_MSG_ERROR([invalid tbb directory: $TBB])
     fi
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
   * )
-    AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
+    AC_MSG_ERROR([tbb directory must be absolute path: $TBB])
     ;;
 esac
 
-AC_MSG_RESULT([$SYMTABAPI])
+AC_MSG_RESULT([$TBB])
 
-AC_MSG_CHECKING([for parseAPI])
+if test "x$TBB_LIB_DIR" != x ; then
+  tbb_lib_list=
 
-PARSEAPI_AVAIL=no
+  for lib in tbb tbbmalloc ; do
+    if test -f "${TBB_LIB_DIR}/lib${lib}.so" ; then
+      tbb_lib_list="${tbb_lib_list} -l$lib"
+    fi
+  done
 
-if test "$SYMTABAPI" != no \
-   && test -f "${SYMTABAPI}/include/CFG.h" \
-   && test -f "${SYMTABAPI}/lib/libparseAPI.so"
-then
-  SYMTABAPI_COPY_PARSE=yes
-  PARSEAPI_AVAIL=yes
+  TBB_LFLAGS="-L${TBB_LIB_DIR} $tbb_lib_list"
+
+  # Keep proxy malloc separate.
+  if test -f "${TBB_LIB_DIR}/libtbbmalloc_proxy.so" ; then
+    TBB_PROXY_LIB='-ltbbmalloc_proxy'
+  fi
+
+  AC_MSG_NOTICE([tbb libs: $tbb_lib_list $TBB_PROXY_LIB])
 fi
 
-AC_MSG_RESULT([$PARSEAPI_AVAIL])
-
-SYMTABAPI_INC="${SYMTABAPI}/include"
-SYMTABAPI_LIB="${SYMTABAPI}/lib"
-
-AC_SUBST([SYMTABAPI_INC])
-AC_SUBST([SYMTABAPI_LIB])
-AC_SUBST([SYMTABAPI_LIB_LIST])
-AC_SUBST([SYMTABAPI_COPY])
-AC_SUBST([SYMTABAPI_COPY_DYN])
-AC_SUBST([SYMTABAPI_COPY_PARSE])
+AC_SUBST([TBB_IFLAGS])
+AC_SUBST([TBB_LFLAGS])
+AC_SUBST([TBB_PROXY_LIB])
+AC_SUBST([TBB_LIB_DIR])
+AC_SUBST([TBB_COPY])
 
 
 #-------------------------------------------------
-# Option: --with-xed2=PATH
+# Option: --with-xed=PATH
 #-------------------------------------------------
 
 # Now use static and shared libxed.  hpcrun requires .so or .a + fPIC,
@@ -2197,7 +3425,6 @@ AC_SUBST([SYMTABAPI_COPY_PARSE])
 # XED with separate .so and .a without fPIC, so we test if .a can link
 # into a shared library.
 
-XED2=no
 XED2_INC=
 XED2_LIB_DIR=no
 XED2_LIB_FLAGS=
@@ -2208,13 +3435,11 @@ XED2_COPY=no
 no_xed_for_hpcrun=no
 no_xed_for_hpclink=no
 
-if test "$use_externals" = yes ; then
-  XED2="$ext_xed2_prefix"
-fi
+XED2="$default_xed_prefix"
 
-AC_ARG_WITH([xed2],
-  [AS_HELP_STRING([--with-xed2=PATH],
-  	    [path to xed2 install directory])],
+AC_ARG_WITH([xed],
+  [AS_HELP_STRING([--with-xed=PATH],
+  	    [path to intel xed install directory])],
   [XED2="$withval"],
   [])
 
@@ -2235,6 +3460,7 @@ case "$XED2" in
     XED2_LIB_DIR="${XED2}/lib"
     XED2_COPY=yes
     xed2_avail=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2311,7 +3537,7 @@ int my_xed_init(void)
   #
   # hpcprof-mpi: same as hpclink if fully static, else default
   #
-  echo "x$HPC_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+  echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
   if test $? = 0 ; then
     XED2_PROF_MPI_LIBS="$XED2_HPCLINK_LIBS"
   else
@@ -2346,16 +3572,13 @@ AC_SUBST([XED2_COPY])
 # installations to optionally be given on configure line or in the
 # environment.
 
+XERCES="$default_xerces_prefix"
+
 AC_MSG_CHECKING([for XercesC])
 
-XERCES=no
-if test "$use_externals" = yes ; then
-  XERCES="$ext_xerces_prefix"
-fi
-
 AC_ARG_WITH([xerces],
-  AS_HELP_STRING([--with-xerces=PATH],
-                 [use given XercesC installation]),
+  [AS_HELP_STRING([--with-xerces=PATH],
+                  [path to xerces-c install directory])],
   [if test $withval != no; then
      XERCES=${withval}
    fi],
@@ -2379,6 +3602,7 @@ if test "$XERCES" = no ; then
 else
   XERCES_COPY=yes
   XERCES_LIB="${XERCES}/lib"
+  num_pkgs=`expr 1 + $num_pkgs`
 fi
 
 AC_MSG_RESULT([${XERCES}])
@@ -2394,10 +3618,9 @@ AC_SUBST([XERCES_LIB])
 # Option: --with-zlib=PATH
 #-------------------------------------------------
 
-ZLIB=no
-if test "$use_externals" = yes ; then
-  ZLIB="$ext_zlib_prefix"
-fi
+# Zlib is used both independently and for binutils.
+
+ZLIB="$default_zlib_prefix"
 
 AC_ARG_WITH([zlib],
   [AS_HELP_STRING([--with-zlib=PATH],
@@ -2409,6 +3632,7 @@ AC_MSG_CHECKING([zlib])
 
 ZLIB_INC=no
 ZLIB_LIB=no
+ZLIB_HPCLINK_LIB=no
 ZLIB_COPY=no
 
 case "$ZLIB" in
@@ -2418,15 +3642,17 @@ case "$ZLIB" in
     fi
     ZLIB_INC="${ZLIB}/include"
     for lib in $multilib_path ; do
-      if test -f "${ZLIB}/${lib}/libz.so" ; then
+      if test -f "${ZLIB}/${lib}/libz.so" && test -f "${ZLIB}/${lib}/libz.a" ; then
         ZLIB_LIB="${ZLIB}/${lib}"
+	ZLIB_HPCLINK_LIB="${ZLIB}/${lib}/libz.a"
 	break
       fi
     done
     if test "$ZLIB_LIB" = no ; then
-      AC_MSG_ERROR([unable to find zlib.so in: $ZLIB])
+      AC_MSG_ERROR([unable to find zlib.so or zlib.a in: $ZLIB])
     fi
     ZLIB_COPY=yes
+    num_pkgs=`expr 1 + $num_pkgs`
     ;;
   no )
     ;;
@@ -2437,10 +3663,39 @@ esac
 
 AC_MSG_RESULT([$ZLIB])
 
+# If binutils doesn't include libz.a, then try here.
+if test "$BINUTILS" = no || test "$binutils_has_libz" = yes
+then
+  AC_MSG_NOTICE([skipping libz for binutils])
+else
+  AC_MSG_CHECKING([for libz.a for binutils])
+
+  found_libz=no
+  case "$ZLIB" in
+    /* )
+      for lib in $multilib_path ; do
+        file="${ZLIB}/${lib}/libz.a"
+	if test -f "$file" ; then
+          BINUTILS_LIBS="${BINUTILS_LIBS} $file"
+	  found_libz=yes
+	  break
+	fi
+      done
+      ;;
+  esac
+
+  AC_MSG_RESULT([$found_libz])
+
+  if test "$found_libz" != yes ; then
+    AC_MSG_ERROR([unable to find libz.a in binutils or zlib])
+  fi
+fi
+
 AM_CONDITIONAL([OPT_USE_ZLIB], [test "$ZLIB" != no])
 
 AC_SUBST([ZLIB_INC])
 AC_SUBST([ZLIB_LIB])
+AC_SUBST([ZLIB_HPCLINK_LIB])
 AC_SUBST([ZLIB_COPY])
 
 
@@ -2482,7 +3737,6 @@ back_end_label=
 BACK_END_LABEL=
 
 if test "$enable_back_end" = yes ; then
-  OPT_INSTALL_MONITOR=no
   XERCES_COPY=no
 fi
 
@@ -2493,32 +3747,6 @@ AM_CONDITIONAL(OPT_BUILD_FRONT_END, [test $enable_back_end = no])
 
 AM_CONDITIONAL(OPT_BUILD_LIB_ALL,  [test $enable_back_end = no])
 AM_CONDITIONAL(OPT_BUILD_TOOL_ALL, [test $enable_back_end = no])
-
-
-#-------------------------------------------------
-# enable-hpcrun-flat: Only build hpcrun if on Linux and PAPI is present
-#-------------------------------------------------
-
-AC_ARG_ENABLE([hpcrun-flat],
-  [AS_HELP_STRING([--enable-hpcrun-flat],
-	  [build hpcrun-flat (default yes)])],
-  [],
-  [enable_hpcrun_flat=yes])
-
-AC_MSG_CHECKING([whether to build hpcrun-flat])
-
-OPT_ENABLE_HPCRUN_FLAT="no"
-
-if test "${enable_hpcrun_flat}" = yes \
-   && test "${OPT_PAPI_DYNAMIC}" = yes \
-   && test "${OPT_WITH_MONITOR}" = yes \
-   && test "${HOST_OS}" = "Linux"
-then
-  OPT_ENABLE_HPCRUN_FLAT="yes"
-fi
-
-AC_MSG_RESULT([$OPT_ENABLE_HPCRUN_FLAT])
-AM_CONDITIONAL(OPT_ENABLE_HPCRUN_FLAT, test "${OPT_ENABLE_HPCRUN_FLAT}" = "yes")
 
 
 #-------------------------------------------------
@@ -2539,7 +3767,7 @@ if test "$enable_hpcrun" = no ; then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
-     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no || \
+     test "$LIBMONITOR" = no || test "$DYNINST" = no || \
      test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
 then
   OPT_ENABLE_HPCRUN=no
@@ -2554,53 +3782,6 @@ fi
 
 AC_MSG_RESULT([$enable_hpcrun_mesg])
 AM_CONDITIONAL([OPT_ENABLE_HPCRUN], [test "${OPT_ENABLE_HPCRUN}" = yes])
-
-
-# Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
-#
-# FIXME (tallent): This is completely broken for cross-compiling
-# (there is no reason for the paths to be persistent).  Moreover, we
-# should not be responsible for configuring runtime paths for
-# libstdc++.
-#
-# Try --print-file-name first.  If that doesn't work, then try ldd.
-# If --print-file-name works, then its answer is more reliable because
-# it doesn't depend on LD_LIBRARY_PATH.  But if you use CC= without
-# setting LD_LIBRARY_PATH, then ldd will give the wrong answer.
-#
-# Of course, --print-file-name and libstdc++.so are GNU-specific.
-# (Intel icc seems to support both, but computes an answer based on
-# LD_LIBRARY_PATH, which can't be right.)  Is there a better option
-# here?
-
-libcxx_file=`${CXX} -print-file-name=libstdc++.so`
-
-case "$libcxx_file" in
-  /* ) ;;
-  * )
-    src="hpc_hello.$$.cc"
-    obj="hpc_hello.$$.out"
-    rm -f "$src" "$obj"
-    cat <<"EOF" >"$src"
-main(){}
-EOF
-    ${CXX} -o "$obj" "$src"
-    libcxx_file=`ldd "$obj" | $AWK '/libstdc\+\+/ { print $3 }'`
-    rm -f "$src" "$obj"
-    ;;
-esac
-
-libcxx_dir=`dirname $libcxx_file`
-libcxx_base=`basename $libcxx_file`
-HPCRUN_LIBCXX_PATH=`( cd $libcxx_dir 2>/dev/null && /bin/pwd )`
-
-case "$HPCRUN_LIBCXX_PATH" in
-  /* ) AC_MSG_NOTICE([found libstdc++.so at ${HPCRUN_LIBCXX_PATH}/${libcxx_base}]) ;;
-  * )  AC_MSG_WARN([unable to find libstdc++.so]) ;;
-esac
-
-AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
@@ -2682,188 +3863,42 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 
 
 #-------------------------------------------------
-# hpcstruct: CFG support from OpenAnalysis and ParseAPI
+# enable-openmp
 #-------------------------------------------------
 
-# Test symtabAPI/parseAPI for inline function and CFG loop tree
-# support, and test for old or new method for getting an inline
-# function name.
+# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
+# does.
 
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} -I${BOOST_INC} -I${SYMTABAPI_INC}"
-AC_LANG_PUSH([C++])
-
-#
-# Test for inline function support, getInlinedParent().
-#
-inline_avail=no
-
-AC_MSG_CHECKING([symtabAPI for inline function support])
-
-if test "$SYMTABAPI" != no
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-void get_parent(FunctionBase * func)
-{
-  FunctionBase *parent = func->getInlinedParent();
-  cout << parent;
-}
-]])], [inline_avail=yes], [inline_avail=no])
-fi
-
-AC_MSG_RESULT([$inline_avail])
-
-#
-# Test if symtabAPI is using the new method for inline function names.
-# Symtab 9.0 uses a new method (getName) for function names which is
-# incompatible with the old method (getAllPrettyNames).
-#
-new_symtab_getname=no
-
-AC_MSG_CHECKING([symtabAPI for new function name iterator])
-
-if test "$inline_avail" = yes
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <Symtab.h>
-#include <Function.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-void get_name(FunctionBase * func)
-{
-  std::cout << func->getName();
-}
-]])], [new_symtab_getname=yes], [new_symtab_getname=no])
-fi
-
-AC_MSG_RESULT([$new_symtab_getname])
-
-#
-# Test if symtabAPI includes parseAPI CFG loop support.
-#
-parseapi_avail=no
-
-AC_MSG_CHECKING([parseAPI for CFG loop support])
-
-if test "$inline_avail" = yes && test "$PARSEAPI_AVAIL" = yes
-then
-  AC_COMPILE_IFELSE([
-  AC_LANG_SOURCE([[
-#include <iostream>
-#include <vector>
-#include <Symtab.h>
-#include <Function.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace std;
-void get_blocks(LoopTreeNode * node)
-{
-  Loop * loop = node->loop;
-  vector <Block *> bvec;
-  loop->getLoopBasicBlocks(bvec);
-  std::cout << bvec.size();
-}
-]])], [parseapi_avail=yes], [parseapi_avail=no])
-fi
-
-AC_MSG_RESULT([$parseapi_avail])
-
-AC_LANG_POP
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#
-# Use OpenAnalysis or ParseAPI or both as available for building CFG's
-# in hpcstruct.  Warn if neither is available.
-#
-# OpenAnalysis can be disabled with '--without-open-analysis' and
-# ParseAPI can be disabled with '--disable-parseapi'.
-#
-
-AC_ARG_ENABLE([parseapi],
-  [AS_HELP_STRING([--disable-parseapi],
-      [disable using parseapi for building control flow graphs in
-       hpcstruct (default is to use if available)])],
+AC_ARG_ENABLE([openmp],
+  [AS_HELP_STRING([--enable-openmp],
+      [enable openmp support in hpcstruct (default is to test dyninst)])],
   [],
-  [enable_parseapi=use])
+  [enable_openmp="$dyninst_openmp"])
 
-if test "$enable_parseapi" = no ; then
-  parseapi_avail=no
+AC_MSG_CHECKING([whether to enable openmp in hpcstruct])
+AC_MSG_RESULT([$enable_openmp])
+
+case "$enable_openmp" in
+  yes | no ) ;;
+  * ) AC_MSG_WARN([bad value for enable-openmp: $enable_openmp])
+    enable_openmp="$dyninst_openmp"
+    ;;
+esac
+
+if test "$enable_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP], [1], [Build with openmp support])
+  hpcstruct_mesg=openmp
+else
+  OPENMP_FLAG=
+  hpcstruct_mesg=serial
 fi
 
-cfg_mesg=
-if test "$OA_AVAIL" = yes ; then
-  cfg_mesg='open-analysis'
-fi
-if test "$parseapi_avail" = yes ; then
-  cfg_mesg="$cfg_mesg parseapi"
-fi
-cfg_mesg=`echo $cfg_mesg`
-
-if test "$OA_AVAIL" = no && test "$parseapi_avail" = no ; then
-  AC_MSG_WARN([unable to build hpcstruct: no open-analysis or parseapi])
-  cfg_mesg=no
+if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
+then
+  hpcstruct_mesg=no
 fi
 
-if test "$new_symtab_getname" = yes ; then
-  AC_DEFINE([SYMTAB_NEW_NAME_ITERATOR], [1], [Use new symtabAPI getName iterator])
-fi
-
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_SYMTAB], [test "$inline_avail" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_PARSEAPI], [test "$parseapi_avail" = yes])
-AM_CONDITIONAL([OPT_ENABLE_BANAL_WITH_OA], [test "$OA_AVAIL" = yes])
-
-# Hpcstruct gets a launch script if (1) Xed is shared (some versions
-# of MIC), or (2) use symtab for inline support.
-
-hpcstruct_launch_script=yes
-
-AM_CONDITIONAL(OPT_HPCSTRUCT_LAUNCH_SCRIPT, [test "$hpcstruct_launch_script" = yes])
-
-
-#-------------------------------------------------
-# enable-mpi:
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to build MPI-based analysis tools (e.g., hpcprof-mpi)])
-
-OPT_REQ_ENABLE_MPI="auto" # yes, no, auto
-
-AC_ARG_ENABLE([mpi],
-  AS_HELP_STRING([--enable-mpi],
-                 [Enable MPI support (uses MPICXX variable)]),
-  [case "${enableval}" in
-     yes) OPT_REQ_ENABLE_MPI="yes" ;;
-     no)  OPT_REQ_ENABLE_MPI="no" ;;
-     *)   AC_MSG_ERROR([bad value ${enableval} for --enable-mpi]) ;;
-   esac],
-  [if test -n "${MPICXX_ORIG}" ; then
-     OPT_REQ_ENABLE_MPI=yes
-   fi])
-
-OPT_ENABLE_MPI=no
-if test -n "${MPICXX}" -a "${OPT_REQ_ENABLE_MPI}" != "no" ; then
-  OPT_ENABLE_MPI=yes
-fi
-
-AC_MSG_RESULT([${OPT_ENABLE_MPI} (request: ${OPT_REQ_ENABLE_MPI})])
-
-
-if test "${OPT_REQ_ENABLE_MPI}" = "yes" -a "${OPT_ENABLE_MPI}" = no ; then
-  AC_MSG_ERROR([MPI support requested but MPI compiler is invalid!])
-fi
-
-AM_CONDITIONAL(OPT_ENABLE_MPI, test "${OPT_ENABLE_MPI}" = "yes")
+AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
 
 
 #-------------------------------------------------
@@ -3150,6 +4185,13 @@ int main()
 
 AC_MSG_RESULT([$ans])
 
+# The POSIX timers pass this test on blue gene, but they don't work on
+# the back end.
+if test "$blue_gene_back_end" = yes ; then
+  AC_MSG_NOTICE([disable POSIX timers for blue gene back end])
+  ans=no
+fi
+
 # If CLOCK_REALTIME exists, then also try CLOCK_THREAD_CPUTIME_ID.
 
 if test "$ans" = yes ; then
@@ -3179,153 +4221,6 @@ AC_LANG_POP
 
 
 #-------------------------------------------------
-# enable-bluegene: BG/* support
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether to enable IBM BlueGene/P support])
-
-OPT_ENABLE_IBM_BLUEGENE="no"
-
-AC_ARG_ENABLE([bluegene],
-  AS_HELP_STRING([--enable-bluegene],
-                 [Enable BlueGene/P support]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_IBM_BLUEGENE="yes" ;;
-     no)  OPT_ENABLE_IBM_BLUEGENE="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-bluegene]) ;;
-   esac],
-  [if test "$HOST_CPU_PPC" = yes && test -d /bgsys ; then
-     OPT_ENABLE_IBM_BLUEGENE=yes
-   fi])
-
-AC_MSG_RESULT([${OPT_ENABLE_IBM_BLUEGENE}])
-
-if test "${OPT_ENABLE_IBM_BLUEGENE}" = "yes" ; then
-  AC_DEFINE([HOST_SYSTEM_IBM_BLUEGENE], [1], [IBM BlueGene/P support])
-fi
-
-#-------------------------------------------------
-# Option: --enable-bgq-cnk=PATH
-#-------------------------------------------------
-#
-# hpcrun (&hpclink) on BGQ needs the back-end compiler for a few files.
-#
-enable_bgq=no
-AC_ARG_ENABLE([bgq-cnk],
-    [AS_HELP_STRING([--enable-bgq-cnk],
-	[enable BGQ- and cnk-specific options: build parts of hpcrun with
-	 back-end powerpc64-bgq-linux-gcc])],
-    [enable_bgq="yes"],
-    [])
-
-# Search for the back-end BGQ compiler on PATH and test for Blue
-# Gene/P (suppress the warning on P).
-
-ppc64_bgq_avail=
-if test -d /bgsys ; then
-    AC_CHECK_PROG([ppc64_bgq_avail], [powerpc64-bgq-linux-gcc], [yes], [no])
-else
-    ppc64_bgq_avail=no
-fi
-
-hpcrun_use_bgq_backend=no
-warn_bgq_backend=no
-
-case "$enable_bgq" in 
-    yes )
-	if test "$ppc64_bgq_avail" != yes ; then
-	    AC_MSG_ERROR([unable to find powerpc64-bgq-linux-gcc for enable-bgq-cnk])
-	fi
-	hpcrun_use_bgq_backend=yes
-	;;
-    no ) ;;
-    * )  ;;
-esac
-
-AC_SUBST([hpcrun_use_bgq_backend])
-AC_MSG_RESULT([$hpcrun_use_bgq_backend])
-AM_CONDITIONAL(OPT_BGQ_BACKEND, test "$hpcrun_use_bgq_backend" = "yes")
-
-#-------------------------------------------------
-# Option: --with-upc=PATH
-#-------------------------------------------------
-
-# The IBM BlueGene UPC sampling source, for which we need header and
-# library files.  On intrepid, these files are in:
-#   inc: /bgsys/drivers/ppcfloor/arch/include/spi
-#   lib: /bgsys/drivers/ppcfloor/runtime/SPI
-#
-# The --with-upc path is just the least common ancestor of these two
-# directories. but we may need to generalize this to --with-upc-inc
-# and --with-upc-lib.
-
-AC_MSG_CHECKING([for UPC])
-
-AC_ARG_WITH([upc],
-  AS_HELP_STRING([--with-upc=PATH],
-      [path to IBM BlueGene UPC installation]),
-  [error_if_missing=yes],
-  [if test "$OPT_ENABLE_IBM_BLUEGENE" = yes ; then
-     with_upc=/bgsys/drivers/ppcfloor
-   else
-     with_upc=no
-   fi
-   error_if_missing=no])
-
-AC_ARG_WITH([upc-lib],
-  AS_HELP_STRING([--with-upc-lib=LIBRARY],
-      [path to UPC library(s), absolute or relative to WITH_UPC/runtime/SPI]),
-  [],
-  [with_upc_lib=libSPI.cna.a])
-
-OPT_UPC=no
-OPT_UPC_IFLAGS=
-OPT_UPC_LDFLAGS=
-opt_upc_mesg=no
-
-case "${with_upc}" in
-  /* )
-    if test -f "${with_upc}/arch/include/spi/UPC.h"
-    then
-      OPT_UPC=yes
-      OPT_UPC_IFLAGS="-I ${with_upc}/arch/include"
-      opt_upc_mesg="$with_upc"
-      for lib in $with_upc_lib ; do
-	case "$lib" in
-	  /* ) abs_lib="$lib" ;;
-	  * )  abs_lib="${with_upc}/runtime/SPI/${lib}" ;;
-	esac
-	if test -f "$abs_lib" ; then
-	  OPT_UPC_LDFLAGS="${OPT_UPC_LDFLAGS} ${abs_lib}"
-	else
-	  OPT_UPC=no
-	  opt_upc_mesg=no
-	  if test "$error_if_missing" = yes ; then
-	    AC_MSG_ERROR([invalid UPC directory: $with_upc])
-	  fi
-	fi
-      done
-    else
-      if test "$error_if_missing" = yes ; then
-	AC_MSG_ERROR([invalid UPC directory: $with_upc])
-      fi
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    AC_MSG_ERROR([UPC directory must be absolute path: $with_upc])
-    ;;
-esac
-
-AC_MSG_RESULT([$opt_upc_mesg])
-
-AM_CONDITIONAL([OPT_ENABLE_UPC], [test "$OPT_UPC" = yes])
-AC_SUBST(OPT_UPC_IFLAGS)
-AC_SUBST(OPT_UPC_LDFLAGS)
-
-
-#-------------------------------------------------
 # Option: --with-cuda=PATH
 #-------------------------------------------------
 
@@ -3349,9 +4244,6 @@ OPT_CUDA=
 OPT_CUDA_INCPATH=
 OPT_CUDA_LDFLAGS=
 OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 AC_ARG_WITH([cuda],
   AS_HELP_STRING([--with-cuda=PATH],
@@ -3420,9 +4312,16 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 #-------------------------------------------------
 OPT_HAVE_CUPTI=no
 OPT_CUPTI=
+OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
 OPT_CUPTI_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
+else
+    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
+fi
 
 AC_ARG_WITH([cupti],
   AS_HELP_STRING([--with-cupti=PATH],
@@ -3438,12 +4337,6 @@ AC_ARG_WITH([cupti],
 #
 # Valid cupti library
 #
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
-   fi
-fi
-
 if test "$use_papi_c_cupti" != no; then
    if test "$OPT_HAVE_CUPTI" = yes; then
        OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
@@ -3457,10 +4350,57 @@ if test "$use_papi_c_cupti" != no; then
    fi
 fi
 
+if test "$OPT_HAVE_CUPTI" = "yes" ; then
+ AC_ARG_WITH([cupti-include],
+  AS_HELP_STRING([--with-cupti-include=PATH],
+                 [use given CUPTI include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_CUPTI}/include/cupti.h; then
+         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+         AC_DEFINE(HAVE_CUPTI_H, 1, [cupti include file available])
+     else
+         AC_MSG_ERROR(['${OPT_CUPTI}/include/cupti.h' not found])
+     fi])  
+
+  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
+
+  AC_ARG_WITH([cupti-lib],
+  AS_HELP_STRING([--with-cupti-lib=PATH],
+                 [use given CUPTI lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-cupti-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_CUPTI_LIBPATH=${withval}
+   fi], 
+  
+   [for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
+    if test -f "${OPT_CUPTI}/${lib}/libcupti.so" 
+    then
+      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
+      break
+    fi
+  done 
+     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
+       AC_MSG_ERROR([libcupti.so not found])
+     fi
+   ] )
+
+  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -Wl,-rpath=${OPT_CUPTI_LIBPATH} -lcupti "
+
+fi
+
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
-AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI])
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -3570,6 +4510,43 @@ AC_SUBST([BACK_END_LABEL])
 
 
 #----------------------------------------------------------------------------
+# Launch script variables
+#----------------------------------------------------------------------------
+
+# Variables to insert into every launch script.  We write this
+# manually to guarantee that it exists before configure runs file
+# substitution from AC-OUTPUT.
+
+launch_script_file='config/launch-script-vars'
+
+mkdir -p config
+rm -f "$launch_script_file"
+
+cat <<EOF >"$launch_script_file"
+# If this script can't find its install directory, then set 'prefix'
+# here.  This should only be necessary if you've moved both the script
+# and the install directory.
+#
+# Set 'hash_value' to empty to disable matching the hash with the
+# install directory.  Note: re-running configure creates a new hash.
+# If you copy this script out of its install directory and rerun
+# configure, then the hashes won't match.
+
+prefix='$prefix'
+hash_value='$hash_value'
+
+VERSION='$PACKAGE_VERSION'
+git_version='$git_version'
+EOF
+
+AC_SUBST_FILE([launch_script_vars])
+launch_script_vars="$launch_script_file"
+
+AC_SUBST_FILE([launch_early_options])
+launch_early_options="${srcdir}/config/launch-options"
+
+
+#----------------------------------------------------------------------------
 # Makefiles to create
 #----------------------------------------------------------------------------
 
@@ -3600,6 +4577,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcserver/Makefile \
   src/tool/hpcserver/mpi/Makefile \
   src/tool/hpcstruct/Makefile \
+  src/tool/hpctracedump/Makefile \
   src/tool/misc/Makefile \
   src/tool/xprof/Makefile \
   src/lib/Makefile \
@@ -3635,6 +4613,8 @@ AC_CONFIG_FILES([src/tool/hpcproftt/hpcproftt],
   [chmod +x src/tool/hpcproftt/hpcproftt])
 AC_CONFIG_FILES([src/tool/hpcstruct/hpcstruct],
   [chmod +x src/tool/hpcstruct/hpcstruct])
+AC_CONFIG_FILES([src/tool/hpcstruct/dotgraph],
+  [chmod +x src/tool/hpcstruct/dotgraph])
 
 AC_SUBST_FILE([copyright_hash])
 copyright_hash="${srcdir}/config/copyright-hash"
@@ -3660,26 +4640,32 @@ dnl fi
 # Summary of the config options.
 #-------------------------------------------------
 
+dyninst_features=`echo $dyninst_features`
+
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
+AC_MSG_NOTICE([  git version: $git_version])
+if test "x$ext_version" != x ; then
+  AC_MSG_NOTICE([  externals:   $ext_version])
+fi
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  prefix: $prefix])
 AC_MSG_NOTICE([  build:  $build])
-AC_MSG_NOTICE([  host:   $host])
+AC_MSG_NOTICE([  host:   ${host} ${host_extra_mesg}])
 AC_MSG_NOTICE([  host endian: $host_endian])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  hpcrun?:      ${enable_hpcrun_mesg}])
 AC_MSG_NOTICE([  hpclink?:     ${OPT_ENABLE_HPCRUN_STATIC}])
-AC_MSG_NOTICE([  hpcrun-flat?: ${OPT_ENABLE_HPCRUN_FLAT}])
+AC_MSG_NOTICE([  hpcprof-mpi:  ${prof_mpi_avail}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
-AC_MSG_NOTICE([  mpi support?: ${OPT_ENABLE_MPI}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
 AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
-AC_MSG_NOTICE([  hpcstruct:    $cfg_mesg])
+AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
+AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -3690,32 +4676,41 @@ AC_MSG_NOTICE([  Path:      $CXX_PATH])
 AC_MSG_NOTICE([  CXX:       '${CXX}'])
 AC_MSG_NOTICE([  CXXFLAGS:  '${CXXFLAGS} ${HOST_CXXFLAGS}'])
 AC_MSG_NOTICE([  C++11:     '${cxx_c11_flag}'])
+AC_MSG_NOTICE([  OpenMP:    '${OPENMP_FLAG}'])
 AC_MSG_NOTICE([  CCAS:      '${CCAS}'])
 AC_MSG_NOTICE([  CCASFLAGS: '${CCASFLAGS}'])
 AC_MSG_NOTICE([  LDFLAGS:   '${LDFLAGS}'])
 AC_MSG_NOTICE([  MPICC:     '${MPICC}'])
 AC_MSG_NOTICE([  MPICXX:    '${MPICXX}'])
 AC_MSG_NOTICE([  MPIF77:    '${MPIF77}'])
-AC_MSG_NOTICE([  HPC_LT_LDFLAGS:        '${HPC_LT_LDFLAGS}'])
 AC_MSG_NOTICE([  HPCPROFMPI_LT_LDFLAGS: '${HPCPROFMPI_LT_LDFLAGS}'])
 AC_MSG_NOTICE([])
-AC_MSG_NOTICE([  binutils:     ${GNUBINUTILS}])
+AC_MSG_NOTICE([  binutils:     ${BINUTILS}])
 AC_MSG_NOTICE([  boost:        ${BOOST}])
+AC_MSG_NOTICE([  bzip:         ${BZIP}])
+AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
+AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
+AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
-AC_MSG_NOTICE([  libelf:       ${LIBELF}])
+AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
-AC_MSG_NOTICE([  monitor/old:  ${MONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
-AC_MSG_NOTICE([  OpenAnalysis: ${OA}])
-AC_MSG_NOTICE([  symtabAPI:    ${SYMTABAPI}])
-AC_MSG_NOTICE([  xed2:         ${XED2}])
+AC_MSG_NOTICE([  mbedtls:      ${MBEDTLS}])
+AC_MSG_NOTICE([  papi:         ${papi_mesg}])
+AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
+AC_MSG_NOTICE([  tbb:          ${TBB}])
+AC_MSG_NOTICE([  xed:          ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
-AC_MSG_NOTICE([  papi:         ${OPT_PAPI}])
 AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-AC_MSG_NOTICE([  upc (BG/P):   ${opt_upc_mesg}])
+
+if test "x$mult_spack_pkgs" != x ; then
+  mult_spack_pkgs=`echo $mult_spack_pkgs`
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([multiple spack packages for: $mult_spack_pkgs])
+fi
 
 if test "$warn_config_site" = yes ; then
   AC_MSG_NOTICE([])
@@ -3726,15 +4721,35 @@ if test "$warn_config_site" = yes ; then
 fi
 
 if test "$warn_bgq_backend" = yes ; then
-    AC_MSG_NOTICE([])
-    AC_MSG_WARN([On the Blue Gene/Q compute nodes, hpcrun needs a separate,])
-    AC_MSG_WARN([back-end compiler.  Use --enable-bgq to build for the back end,])
-    AC_MSG_WARN([or else --disable-bgq to build for the front end.])
+  AC_MSG_NOTICE([])
+  AC_MSG_NOTICE([Note: HPCToolkit is configured for Blue Gene/Q back end.])
+  AC_MSG_NOTICE([If you wanted to build for the front end (regular powerpc),])
+  AC_MSG_NOTICE([then re-run configure with '--disable-bgq'.])
 fi
 
-if test "$warn_no_externals" = yes ; then
+if test "$warn_papi_mismatch" = yes ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using hpctoolkit-externals.])
+  AC_MSG_WARN([PAPI is disabled due to possible conflict between perf events])
+  AC_MSG_WARN([and papi versions of perfmon (normally pfmlib.h is missing])
+  AC_MSG_WARN([from papi include dir).  Possible solutions:])
+  AC_MSG_WARN([ 1. disable papi with:  --without-papi])
+  AC_MSG_WARN([ 2. disable perf events with:  --disable-perf-events])
+  AC_MSG_WARN([ 3. force enable both with:  --enable-force-papi])
+  AC_MSG_WARN([   if you're sure that papi was built with the same version])
+  AC_MSG_WARN([   of perfmon (but may deadlock or segfault if mismatched).])
+fi
+
+if test "$warn_no_perfmon" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Perf events is enabled, but perfmon is not available.])
+  AC_MSG_WARN([Mnemonic names will not be available for perf events.])
+fi
+
+if test "x$with_externals" = xno && test "x$with_spack" = xno  \
+   && test "$num_pkgs" -lt 8
+then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Not using hpctoolkit externals or spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
   AC_MSG_WARN([this is probably an error.  First, checkout, configure and])
   AC_MSG_WARN([build externals and then reconfigure hpctoolkit with:])
@@ -3743,7 +4758,7 @@ fi
 
 if test "$warn_non_gcc" = yes ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using the GNU C or C++ compiler.])
+  AC_MSG_WARN([Not using the GNU C or C++ or MPICXX compiler.])
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])

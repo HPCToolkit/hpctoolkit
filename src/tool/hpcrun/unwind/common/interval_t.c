@@ -1,9 +1,3 @@
-/*
- * interval_t.c
- *
- * Author: dxnguyen
- */
-
 //******************************************************************************
 // global include files
 //******************************************************************************
@@ -22,16 +16,6 @@
 static char
 Interval_MaxSpaces[] = "                                               ";
 
-
-// pre-condition: start <= end
-interval_t*
-interval_t_new(uintptr_t start, uintptr_t end, mem_alloc m_alloc)
-{
-  interval_t* ptr_interval = (interval_t*)m_alloc(sizeof(interval_t));
-  ptr_interval->start = start;
-  ptr_interval->end   = end;
-  return ptr_interval;
-}
 
 int
 interval_t_cmp(void* lhs, void* rhs)

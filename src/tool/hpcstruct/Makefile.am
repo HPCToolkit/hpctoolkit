@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,57 +44,67 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-
-#############################################################################
-# Common settings
-#############################################################################
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
+#----------------------------------------------------------------------
 
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+# Fixme: new elfutils from spack wants bzip, xz and zlib.
 
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
+
+LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
+
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 ZLIB_LIB = @ZLIB_LIB@
 
-MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
+LZMA_LDFLAGS_DYN  = @LZMA_LDFLAGS_DYN@
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+TBB_IFLAGS    = @TBB_IFLAGS@
+TBB_LFLAGS    = @TBB_LFLAGS@
+TBB_PROXY_LIB = @TBB_PROXY_LIB@
+
+MYSOURCES = main.cpp Args.cpp
+
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	@BINUTILS_IFLAGS@
+
+DOT_CXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)    \
+	$(BOOST_IFLAGS)  \
+	$(DYNINST_IFLAGS) \
+	-I$(LIBELF_INC)  \
+	$(TBB_IFLAGS)
+
+if OPT_DYNINST_LIBDWARF
+DOT_CXXFLAGS += -I$(LIBDWARF_INC)
+endif
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@ \
 	-ldl
 
 MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) \
@@ -103,33 +113,29 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(MY_LIB_CFG) \
-	$(MY_LIB_Symtab) \
-	@GNUBINUTILS_LDLIBS@ \
-	@HOST_HPCSTRUCT_LDFLAGS@
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	@BINUTILS_LIBS@ \
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
 
-MY_LIB_CFG =
+DOT_LDADD = \
+	$(DYNINST_LFLAGS) \
+	$(BOOST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	$(LZMA_LDFLAGS_DYN) \
+	$(TBB_LFLAGS)
 
-if OPT_ENABLE_BANAL_WITH_PARSEAPI
-MY_LIB_CFG += -L$(SYMTABAPI_LIB) -lparseAPI -linstructionAPI
-MYCXXFLAGS += -DBANAL_USE_PARSEAPI
-endif
-
-if OPT_ENABLE_BANAL_WITH_OA
-MY_LIB_CFG += @OA_LDFLAGS@
-MYCXXFLAGS += @OA_IFLAGS@
-endif
-
-if OPT_ENABLE_BANAL_WITH_SYMTAB
-MY_LIB_Symtab = -L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L@LIBELF_LIB@ -lelf
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 else
-MY_LIB_Symtab =
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
-if USE_BOOST_LIBS
-MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+if OPT_ENABLE_OPENMP
+MYCXXFLAGS += $(OPENMP_FLAG)
+DOT_CXXFLAGS += $(OPENMP_FLAG)
 endif
 
 if HOST_CPU_X86_FAMILY
@@ -138,36 +144,41 @@ else
 MY_LIB_XED =
 endif
 
-if OPT_USE_ZLIB
-MYLDADD += -L$(ZLIB_LIB) -lz
-endif
-
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-#############################################################################
-# Automake rules
-#############################################################################
+GENHEADERS = \
+	$(srcdir)/cubins-analysis.h \
+	$(srcdir)/usage.h
+
+#----------------------------------------------------------------------
 
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
+noinst_HEADERS = $(GENHEADERS)
+BUILT_SOURCES = $(GENHEADERS)
+
 bin_SCRIPTS = hpcstruct
-pkglibexec_PROGRAMS = hpcstruct-bin
+pkglibexec_SCRIPTS = dotgraph
+pkglibexec_PROGRAMS = hpcstruct-bin dotgraph-bin
 
 hpcstruct_bin_SOURCES  = $(MYSOURCES)
-hpcstruct_bin_CFLAGS   = $(MYCFLAGS)
 hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
 
-MOSTLYCLEANFILES = $(MYCLEAN)
+dotgraph_bin_SOURCES  = DotGraph.cpp
+dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
+dotgraph_bin_LDADD    = $(DOT_LDADD)
 
-if ! OPT_HPCSTRUCT_LAUNCH_SCRIPT
-install-exec-hook:
-	rm -f $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-	mv -f $(DESTDIR)$(pkglibexecdir)/hpcstruct-bin$(EXEEXT) \
-	      $(DESTDIR)$(bindir)/hpcstruct$(EXEEXT)
-endif
+MOSTLYCLEANFILES = $(MYCLEAN)
+#############################################################################
+# Other rules
+#############################################################################
+
+$(srcdir)/%.h : $(srcdir)/%.txt
+	$(srcdir)/stringify.py < $<  > $@
+
 
 #############################################################################
 # Common rules

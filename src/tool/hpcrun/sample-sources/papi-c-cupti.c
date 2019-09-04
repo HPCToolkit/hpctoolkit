@@ -227,7 +227,7 @@ hpcrun_cuda_kernel_callback(void* userdata,
 	  TMSG(CUDA, "sampling call path for metric_id = %d", metric_id);
 	  hpcrun_sample_callpath(&uc, metric_id, eventValues[i]/*metricIncr*/, 
 				 CUPTI_LAUNCH_CALLBACK_DEPTH/*skipInner*/, 
-				 0/*isSync*/);
+				 0/*isSync*/, NULL);
 	  TMSG(CUDA, "sampled call path for metric_id = %d", metric_id);
 	}
     }
@@ -377,9 +377,9 @@ static sync_info_list_t cuda_component = {
   .next = NULL,
 };
 
-__attribute__((constructor))
+
 void
-papi_c_cupti_register(void)
+SS_OBJ_CONSTRUCTOR(papi_c_cupti)(void)
 {
   // fetch actual cuda/cupti functions
   dlgpu();

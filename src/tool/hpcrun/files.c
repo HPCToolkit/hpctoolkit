@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -138,7 +138,7 @@
 //***************************************************************
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
-#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-%08lx-%u-%d.%s"
+#define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
 #define VDSO_FILEPATH_TEMPLATE "%s/[vdso]"
 
 #define FILES_RANDOM_GEN  4
@@ -152,12 +152,6 @@ struct fileid {
   long host;
   int  gen;
 };
-
-
-//***************************************************************
-// globals 
-//***************************************************************
-
 
 
 //***************************************************************
@@ -419,9 +413,9 @@ hpcrun_files_set_directory()
 }
 
 
-const char * 
-hpcrun_files_directory_pathname()
-{  
+const char *
+hpcrun_files_output_directory()
+{
   return output_directory;
 }
 

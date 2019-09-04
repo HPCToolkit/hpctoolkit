@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -76,20 +76,13 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
-
-MY_LIB_Dyninst = -L$(SYMTABAPI_LIB)  -lparseAPI -linstructionAPI \
-	$(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L@LIBELF_LIB@ -lelf
-
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
 MYLDFLAGS = \
-	@HPC_LT_LDFLAGS@ \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
-	@GNUBINUTILS_LDFLAGS@
+	@LZMA_LDFLAGS_DYN@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
@@ -104,9 +97,10 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	$(MY_LIB_Dyninst) \
+	$(DYNINST_LDFLAGS) \
+	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
-	@GNUBINUTILS_LDLIBS@ \
+	@BINUTILS_LIBS@ \
 	@HOST_HPCPROFTT_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY
@@ -125,9 +119,8 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-bin_SCRIPTS = hpcproftt
-
 pkglibexec_PROGRAMS = hpcproftt-bin
+pkglibexec_SCRIPTS = hpcproftt
 
 hpcproftt_bin_SOURCES   = $(MYSOURCES)
 hpcproftt_bin_CFLAGS    = $(MYCFLAGS)

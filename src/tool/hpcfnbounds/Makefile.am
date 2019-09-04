@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,9 +70,11 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-BOOST_INC = @BOOST_INC@
-BOOST_LIB = @BOOST_LIB@
-BOOST_LIB_LIST = @BOOST_LIB_LIST@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
 
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
@@ -80,9 +82,7 @@ LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_INC   = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
-SYMTABAPI_INC = @SYMTABAPI_INC@
-SYMTABAPI_LIB = @SYMTABAPI_LIB@
-SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+TBB_LFLAGS = @TBB_LFLAGS@
 
 XED2_INC = @XED2_INC@
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
@@ -94,21 +94,31 @@ MYSOURCES = \
 	code-ranges.cpp \
 	function-entries.cpp \
 	intervals.cpp \
+	sections.cpp \
 	server.cpp
 
-MYCPPFLAGS = $(HPC_IFLAGS) -I$(BOOST_INC) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
-	-I$(SYMTABAPI_INC)
+MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	$(DYNINST_IFLAGS)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
-MYLDADD = $(HPCLIB_SupportLean) \
-         $(HPCLIB_ProfLean) \
-	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-	-L$(LIBDWARF_LIB) -ldwarf \
-	-L$(LIBELF_LIB) -lelf
+# MYLDADD = $(HPCLIB_SupportLean) \
+#         $(HPCLIB_ProfLean) \
+# 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
+# 	-L$(LIBDWARF_LIB) -ldwarf \
+# 	-L$(LIBELF_LIB) -lelf
 
-if USE_BOOST_LIBS
-  MYLDADD += -L$(BOOST_LIB) $(BOOST_LIB_LIST)
+MYLDADD = libeh_frames.a  \
+	$(HPCLIB_SupportLean) \
+        $(HPCLIB_ProfLean) \
+	$(DYNINST_LFLAGS)  \
+	$(BOOST_LFLAGS) \
+	$(TBB_LFLAGS)
+
+if OPT_DYNINST_LIBDW
+  MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
+else
+  MYLDADD += -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 if OPT_USE_ZLIB
@@ -124,8 +134,14 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
+noinst_LIBRARIES = libeh_frames.a
+
 pkglibexec_PROGRAMS = hpcfnbounds-bin
 pkglibexec_SCRIPTS =  hpcfnbounds
+
+libeh_frames_a_SOURCES = eh-frames.cpp
+libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBDWARF_INC)
+libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds_bin_SOURCES  = $(MYSOURCES)
 hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS)
@@ -136,8 +152,12 @@ if HOST_CPU_X86_FAMILY
   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
   hpcfnbounds_bin_LDADD    += $(XED2_LIB_FLAGS)
+else 
+if HOST_CPU_AARCH64
+  hpcfnbounds_bin_SOURCES  += arm-process-ranges.cpp
 else
   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+endif
 endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)

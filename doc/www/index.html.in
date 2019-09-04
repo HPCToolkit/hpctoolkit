@@ -90,19 +90,24 @@ showing activity over time at different call stack depths.
 
 </ul>
 
+<h2>Exascale Computing Project (ECP) </h2>
+<a href="https://www.exascaleproject.org"><img src="https://www.exascaleproject.org/wp-content/themes/exascale/images/ecp-logo.png" height="42" align="left"/></a>HPCToolkit is part of the <a href="https://www.exascaleproject.org/">ECP</a> 
+which is a collaborative effort of two US Department of Energy (DOE) organizations - the Office of Science (DOE-SC) and the National Nuclear Security Administration (NNSA).
 <p>
-Highlighted platforms:
+In this project, the goal is to extend HPCToolkit with improved capabilities for measurement and analysis of computation, data movement, communication, and I/O at extreme scale. Planned enhancements include improved support for lightweight measurement of massive node-level parallelism using hardware counters, measuring OS activity, recording measurement data efficiently, analyzing performance data in parallel, and integrating code-centric, time-centric, data-centric, and resource-centric views for analysis.
 </p>
+<h2> Highlighted platforms </h2>
 <ul>
   <li>Linux-x86_64, Linux-x86, Linux-Power.</li>
   <li>Including: Cray XT/XE/XK, IBM Blue Gene/Q, Blue Gene/P.</li>
 </ul>
 
+<h2> License</h2>
 <p>HPCToolkit is open-source software released under the 3-clause
 <a href="README.License">BSD license</a>.
 </p>
 
-<p>[<span class="lastupdated">Page last updated: 2011/07/18</span>]
+<p>[<span class="lastupdated">Page last updated: 2018/02/04</span>]
 </p>
 
 <!-- ********************************************************************** -->

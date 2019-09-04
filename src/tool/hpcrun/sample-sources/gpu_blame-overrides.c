@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,7 @@
  * local includes
  *****************************************************************************/
 #include "common.h"
+#include <hpcrun/constructors.h>
 #include "gpu_blame.h"
 #include "gpu_ctxt_actions.h"
 
@@ -109,7 +110,7 @@
 
 #include <lib/support-lean/timer.h>
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/atomic.h>
+#include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/wrapper-macros.h>
 /******************************************************************************
@@ -190,7 +191,7 @@ TD_GET(gpu_data.accum_num_samples) = 0;                                         
 hpcrun_safe_enter();                                                                                                             \
 ucontext_t ctxt;                                                                                                                 \
 getcontext(&ctxt);                                                                                                               \
-cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, 0 , 0 /*skipInner */ , 1 /*isSync */ ).sample_node; \
+cct_node_t * launch_node = hpcrun_sample_callpath(&ctxt, cpu_idle_metric_id, (cct_metric_data_t){.i = 0} , 0 /*skipInner */ , 1 /*isSync */, NULL ).sample_node; \
 TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                  \
 spinlock_lock(&g_gpu_lock);                                                                                                      \
 uint64_t start_time;                                                                                                             \
@@ -250,7 +251,7 @@ HPCRUN_ASYNC_BLOCK_SPIN_LOCK;                                                   
 TD_GET(gpu_data.is_thread_at_cuda_sync) = true;                                                                                         \
 ucontext_t context;                                                                                                                     \
 getcontext(&context);                                                                                                                   \
-cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, 0, skip_inner /*skipInner */ , 1 /*isSync */ ).sample_node; \
+cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node; \
 cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, cct_node);                                    \
 monitor_disable_new_threads();                                                                                                          \
 event_node = create_and_insert_event(streamId, cct_node, stream_cct);                                                                   \
@@ -626,9 +627,7 @@ static void PopulateEntryPointesToWrappedCalls() {
     PopulateEntryPointesToWrappedCuDriverCalls();
 }
 
-__attribute__((constructor))
-static void
-CpuGpuBlameShiftInit(void)
+HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 {
   hpcrun_disable_papi_cuda();
   if (getenv("DEBUG_HPCRUN_GPU_CONS"))

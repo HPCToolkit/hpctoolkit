@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,14 +47,18 @@
 #ifndef files_h
 #define files_h
 
+
+//*****************************************************************************
+// forward declarations
 //*****************************************************************************
 
 void hpcrun_files_set_directory();
-const char *hpcrun_files_directory_pathname();
 
 void hpcrun_files_set_executable(char *execname);   
+
 const char *hpcrun_files_executable_pathname();
 const char *hpcrun_files_executable_name();
+const char *hpcrun_files_output_directory();
 
 int hpcrun_open_log_file(void);
 int hpcrun_open_trace_file(int thread);

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2017, Rice University
+## Copyright ((c)) 2002-2019, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -44,96 +44,76 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
-
-#############################################################################
-# Common settings
-#############################################################################
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 include $(top_srcdir)/src/Makeinclude.config
 
-#############################################################################
-# Local settings
-#############################################################################
+#----------------------------------------------------------------------
 
-BOOST_INC = @BOOST_INC@
+BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+BOOST_IFLAGS = @BOOST_IFLAGS@
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
 LIBDWARF_INC = @LIBDWARF_INC@
-SYMTABAPI_INC = @SYMTABAPI_INC@
+LIBELF_INC = @LIBELF_INC@
+TBB_IFLAGS = @TBB_IFLAGS@
+
+if OPT_DYNINST_LIBDWARF
+DWARF_IFLAGS = -I$(LIBDWARF_INC)
+endif
 
 MYSOURCES = \
-	Linemap.hpp Linemap.cpp \
-	Struct.hpp Struct.cpp \
-	StructSimple.hpp StructSimple.cpp \
-	Struct-LocationMgr.hpp Struct-LocationMgr.cpp
+	cuda/CFGParser.cpp  \
+	cuda/CudaCFGFactory.cpp  \
+	cuda/CudaFunction.cpp  \
+	cuda/GraphReader.cpp \
+	cuda/CudaBlock.cpp  \
+	cuda/CudaCodeSource.cpp  \
+	cuda/ReadCubinCFG.cpp \
+	ElfHelper.cpp \
+	Fatbin.cpp \
+	InputFile.cpp \
+	RelocateCubin.cpp \
+	Struct.cpp  \
+	Struct-Inline.cpp  \
+	Struct-Output.cpp
 
-SIMPLE_SRCS = StructSimple.hpp StructSimple.cpp
-INLINE_SRCS = Struct-Inline.hpp Struct-Inline.cpp
-OA_SRCS =     OAInterface.hpp OAInterface.cpp
+SIMPLE_SRCS = StructSimple.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ -I$(LIBDWARF_INC)
-
-if IS_HOST_AR
-  MYAR = @HOST_AR@
-else
-  MYAR = $(AR) cru
-endif
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	$(BINUTILS_IFLAGS)  \
+	$(BOOST_IFLAGS)  \
+	$(DWARF_IFLAGS)  \
+	-I$(LIBELF_INC)  \
+	$(DYNINST_IFLAGS)  \
+	$(TBB_IFLAGS)
 
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-#############################################################################
-# Automake rules
-#############################################################################
+#----------------------------------------------------------------------
+
+pkglibexecdir = @my_pkglibexecdir@
 
 noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
 
 libHPCbanal_la_SOURCES  = $(MYSOURCES)
-libHPCbanal_la_CFLAGS   = $(MYCFLAGS)
 libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbanal_la_AR       = $(MYAR)
 libHPCbanal_la_LIBADD   = $(MYLIBADD)
 
+if OPT_ENABLE_OPENMP
+libHPCbanal_la_CXXFLAGS += $(OPENMP_FLAG)
+endif
+
 libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
-libHPCbanal_simple_la_CFLAGS   = $(MYCFLAGS)
 libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbanal_simple_la_AR       = $(MYAR)
 libHPCbanal_simple_la_LIBADD   = $(MYLIBADD)
-
-if OPT_ENABLE_BANAL_WITH_SYMTAB
-libHPCbanal_la_SOURCES  += $(INLINE_SRCS)
-libHPCbanal_la_CXXFLAGS += -I$(BOOST_INC) -I$(SYMTABAPI_INC) -DBANAL_USE_SYMTAB
-endif
-
-if OPT_ENABLE_BANAL_WITH_PARSEAPI
-libHPCbanal_la_CXXFLAGS += -DBANAL_USE_PARSEAPI
-endif
-
-if OPT_ENABLE_BANAL_WITH_OA
-libHPCbanal_la_SOURCES += $(OA_SRCS)
-libHPCbanal_la_CXXFLAGS += -DBANAL_USE_OA @OA_IFLAGS@
-endif
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 include $(top_srcdir)/src/Makeinclude.rules
 

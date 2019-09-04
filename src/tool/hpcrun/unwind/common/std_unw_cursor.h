@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,9 @@
 #include <inttypes.h>
 #include <ucontext.h>
 
+#define UNW_LOCAL_ONLY
+#include <libunwind.h>
+
 //*************************** User Include Files ****************************
 
 #include <unwind/common/fence_enum.h>
@@ -73,6 +76,11 @@
 #define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
 
 #endif
+
+enum libunw_state {
+  LIBUNW_UNAVAIL,
+  LIBUNW_READY,
+};
 
 typedef struct hpcrun_unw_cursor_t {
 
@@ -96,12 +104,14 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // unwind-provider-specific state
   // ------------------------------------------------------------
-  int32_t flags;
+  int32_t flags:30;
+  enum libunw_state libunw_status:2;
 
 #ifdef HOST_CPU_PPC
   ucontext_t *ctxt; // needed for register-based unwinding
 #endif
 
+  unw_cursor_t uc;
 } hpcrun_unw_cursor_t;
 
 

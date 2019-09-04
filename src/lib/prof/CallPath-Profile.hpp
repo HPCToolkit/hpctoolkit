@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -77,6 +77,11 @@
 #include "Metric-Mgr.hpp"
 #include "LoadMap.hpp"
 #include "CCT-Tree.hpp"
+#include "StringSet.hpp"
+
+#include <lib/support/FileUtil.hpp> // dirname
+
+#include "../binutils/SimpleSymbolsFactories.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -117,19 +122,38 @@ public:
   { return m_fmtVersion; }
 
 
-  const std::set<std::string>&
+  const StringSet&
   traceFileNameSet() const
   { return m_traceFileNameSet; }
 
-  std::set<std::string>&
+
+  StringSet&
   traceFileNameSet()
   { return m_traceFileNameSet; }
-  
+
   // enable/disable redundancy of procedure names
   // @param flag: true  -- redundancy is eliminated
   // 		  false -- redundancy is allowed
   void disable_redundancy(bool flag) {
     m_remove_redundancy = flag;
+  }
+
+  void
+  addDirectory(std::string filename) {
+    std::string directory = FileUtil::dirname(filename);
+    if (!directory.empty()) {
+      m_directorySet.insert(directory);
+    }
+  }
+
+  void
+  copyDirectory(const StringSet &rhs) {
+    m_directorySet += rhs;
+  }
+
+  StringSet&
+  directorySet() {
+    return m_directorySet;
   }
 
   // -------------------------------------------------------
@@ -344,12 +368,12 @@ private:
   double m_fmtVersion;
   epoch_flags_t m_flags;
   uint64_t m_measurementGranularity;
-  uint32_t m_raToCallsiteOfst;
 
   std::string m_profileFileName; // non-empty, if relevant
+  StringSet m_directorySet; // set of directories containing profiles
 
   std::string m_traceFileName;   // non-empty, if relevant
-  std::set<std::string> m_traceFileNameSet;
+  StringSet m_traceFileNameSet;
   uint64_t m_traceMinTime, m_traceMaxTime;
 
   //typedef std::map<std::string, std::string> StrToStrMap;

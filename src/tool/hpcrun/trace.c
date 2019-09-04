@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,7 +90,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime);
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime);
 
 
 //*********************************************************************
@@ -143,24 +143,26 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
     hpcrun_trace_file_validate(fd >= 0, "open");
     cptd->trace_buffer = hpcrun_malloc(HPCRUN_TraceBufferSz);
     ret = hpcio_outbuf_attach(&cptd->trace_outbuf, fd, cptd->trace_buffer,
-			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED);
+			      HPCRUN_TraceBufferSz, HPCIO_OUTBUF_UNLOCKED,
+                              hpcrun_malloc);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "open");
 
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
 
-    ret = hpctrace_fmt_hdr_outbuf(flags, &cptd->trace_outbuf);
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
+    ENABLE(USE_TRAMP);
+#else
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
+#endif
+    
+    ret = hpctrace_fmt_hdr_outbuf(flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "write header to");
-    if(cptd->trace_min_time_us == 0) {
-      struct timeval tv;
-      gettimeofday(&tv, NULL);
-      cptd->trace_min_time_us = ((uint64_t)tv.tv_usec
-                                 + (((uint64_t)tv.tv_sec) * 1000000));
-    }
   }
   TMSG(TRACE, "Trace open done");
 }
@@ -170,13 +172,13 @@ void
 hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
 {
 	if (tracing && hpcrun_sample_prob_active()) {
-        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, microtime);
+        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, microtime);
 	}
 }
 
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint metric_id)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
@@ -185,10 +187,17 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, uint call_path_id, uint met
     uint64_t microtime = ((uint64_t)tv.tv_usec
 			  + (((uint64_t)tv.tv_sec) * 1000000));
 
-    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, microtime);
-  }
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(node);
 
+    int32_t call_path_id = hpcrun_cct_persistent_id(node);
+
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
+  }
 }
+
+
 
 void
 hpcrun_trace_close(core_profile_trace_data_t * cptd)
@@ -210,12 +219,11 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
   TMSG(TRACE, "trace close done");
 }
 
-
 //*********************************************************************
 // private operations
 //*********************************************************************
 
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime)
 {
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = microtime;
@@ -227,19 +235,33 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
     }
     
     hpctrace_fmt_datum_t trace_datum;
-    trace_datum.time = microtime;
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
     trace_datum.metricId = (uint32_t)metric_id;
+    if (dLCA > HPCTRACE_FMT_DLCA_NULL)
+      dLCA = HPCTRACE_FMT_DLCA_NULL;
+
+#if defined(LCA_TRACE)
+    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
+    HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
+#else
+    trace_datum.comp = microtime;
+#endif
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;
 #ifdef DATACENTRIC_TRACE
-    flags.fields.isDataCentric = true;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, true);
 #else
-    flags.fields.isDataCentric = false;
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS, false);
 #endif
     
-    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, &cptd->trace_outbuf);
+#if defined(LCA_TRACE) && (defined (HOST_CPU_x86_64) || defined (HOST_CPU_PPC))
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, true);
+#else
+    HPCTRACE_HDR_FLAGS_SET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS, false);
+#endif
+    
+    int ret = hpctrace_fmt_datum_outbuf(&trace_datum, flags, cptd->trace_outbuf);
     hpcrun_trace_file_validate(ret == HPCFMT_OK, "append");
 }
 
