@@ -1103,8 +1103,7 @@ public:
   { return m_pretty_name.c_str(); }
 
   void
-  pretty_name(const char *nm)
-  { m_pretty_name = nm; }
+  pretty_name(const char *nm);
 
   std::string
   baseName() const
