@@ -4,6 +4,7 @@
 #include <hpcrun/loadmap.h>
 #include <cupti.h>
 #include "cupti-node.h"
+#include <lib/prof-lean/producer_wfq.h>
 
 //******************************************************************************
 // constants
@@ -49,6 +50,8 @@ cupti_bind
 (
  void
 );
+
+
 
 
 void
@@ -262,15 +265,15 @@ cupti_modules_ignore
 //******************************************************************************
 
 void
-cupti_notification_handle
+cupti_correlation_handle
 (
- cupti_node_t *node
+ cupti_entry_correlation_t *entry
 );
 
 void
 cupti_activity_handle
 (
- cupti_node_t *node
+ cupti_entry_activity_t *entry
 );
 
 #endif

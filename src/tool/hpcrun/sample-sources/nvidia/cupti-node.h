@@ -13,7 +13,8 @@ typedef enum {
 
 // generic entry
 typedef struct cupti_node {
-  struct cupti_node *next;
+  //tx7
+  //struct cupti_node *next;
   void *entry;
   cupti_entry_type_t type;
 } cupti_node_t;
@@ -131,11 +132,11 @@ typedef struct cupti_entry_activity {
 } cupti_entry_activity_t;
 
 // notification entry
-typedef struct cupti_entry_notification {
+typedef struct cupti_entry_correlation {
   uint64_t host_op_id;
   cct_node_t *cct_node;
   void *record;
-} cupti_entry_notification_t;
+} cupti_entry_correlation_t;
 
 // activity allocator
 cupti_node_t *
@@ -147,14 +148,7 @@ cupti_activity_node_new
 );
 
 
-void
-cupti_activity_node_set
-(
- cupti_node_t *cupti_node,
- CUpti_Activity *activity,
- cct_node_t *cct_node,
- cupti_node_t *next
-);
+
 
 // notification allocator
 cupti_node_t *
@@ -168,13 +162,21 @@ cupti_notification_node_new
 
 
 void
-cupti_notification_node_set
-(
- cupti_node_t *cupti_node,
- uint64_t host_op_id,
- cct_node_t *cct_node,
- void *record,
- cupti_node_t *next
-);
+cupti_activity_entry_set
+        (
+                cupti_entry_activity_t *entry,
+                CUpti_Activity *activity,
+                cct_node_t *cct_node
+        );
+
+
+void
+cupti_correlation_entry_set
+        (
+                cupti_entry_correlation_t *entry,
+                uint64_t host_op_id,
+                cct_node_t *cct_node,
+                void *record
+        );
 
 #endif

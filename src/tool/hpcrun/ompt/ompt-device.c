@@ -168,7 +168,7 @@ hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,  ompt_placeholder_t ph)
   cct_node_t* cct_child = hpcrun_cct_insert_addr(target_node, &frm);
 
   // inform the worker about the placeholder
-  cupti_worker_notification_apply(host_op_id, cct_child);
+  correlation_produce(host_op_id, cct_child);
 }
 
 
@@ -211,7 +211,7 @@ ompt_callback_buffer_complete
 )
 {
   // handle notifications
-  cupti_cupti_notification_apply(cupti_notification_handle);
+  correlations_consume();
   // signal advance to return pointer to first record
   ompt_buffer_cursor_t next = begin;
   int status = 0;
@@ -343,7 +343,7 @@ ompt_target_callback
   cupti_record_init();
 
   // process cupti records
-  cupti_worker_activity_apply(cupti_activity_handle);
+  cupti_activities_consume();
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};

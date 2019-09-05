@@ -49,6 +49,7 @@
 
 #include <setjmp.h>
 #include <stdbool.h>
+#include <tool/hpcrun/sample-sources/nvidia/stream-tracing.h>
 
 extern bool hpcrun_is_initialized();
 

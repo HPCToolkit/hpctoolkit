@@ -3,19 +3,49 @@
 
 #include <lib/prof-lean/stdatomic.h>
 #include <cupti_activity.h>
-#include "cupti-stack.h"
+//#include "cupti-stack.h"
+#include "cupti-node.h"
+#include <lib/prof-lean/bi_unordered_channel.h>
+
+typedef struct {
+    s_element_ptr_t next;
+    cupti_entry_correlation_t node;
+} typed_stack_elem(cupti_entry_correlation_t);
+
+typedef struct {
+    s_element_ptr_t next;
+    cupti_entry_activity_t node;
+} typed_stack_elem(cupti_entry_activity_t);
+
+
+
+typedef bi_unordered_channel_t typed_bi_unordered_channel(cupti_entry_activity_t);
+typedef bi_unordered_channel_t typed_bi_unordered_channel(cupti_entry_correlation_t);
+
+typed_bi_unordered_channel_declare(cupti_entry_correlation_t)
+typed_bi_unordered_channel_declare(cupti_entry_activity_t)
+
+typedef typed_stack_elem(cupti_entry_correlation_t) cupti_correlation_elem;
+typedef typed_stack_elem(cupti_entry_activity_t) cupti_activity_elem;
+
+
+typedef typed_bi_unordered_channel(cupti_entry_activity_t) activity_channel_t;
+typedef typed_bi_unordered_channel(cupti_entry_correlation_t) correlation_channel_t;
+
+//typedef void (*cupti_stack_fn_t)(cupti_node_t *node);
+
+#define correlation_bi_unordered_channel_pop typed_bi_unordered_channel_pop(cupti_entry_correlation_t)
+#define correlation_bi_unordered_channel_push typed_bi_unordered_channel_push(cupti_entry_correlation_t)
+#define correlation_bi_unordered_channel_steal typed_bi_unordered_channel_steal(cupti_entry_correlation_t)
+
+#define activity_bi_unordered_channel_pop typed_bi_unordered_channel_pop(cupti_entry_activity_t)
+#define activity_bi_unordered_channel_push typed_bi_unordered_channel_push(cupti_entry_activity_t)
+#define activity_bi_unordered_channel_steal typed_bi_unordered_channel_steal(cupti_entry_activity_t)
 
 // record type
 typedef struct cupti_record {
-  cupti_stack_t worker_notification_stack;
-  cupti_stack_t worker_free_notification_stack;
-  cupti_stack_t worker_activity_stack;
-  cupti_stack_t worker_free_activity_stack;
-  cupti_stack_t cupti_notification_stack;
-  cupti_stack_t cupti_free_notification_stack;
-  cupti_stack_t cupti_activity_stack;
-  cupti_stack_t cupti_free_activity_stack;
-  cupti_stack_t cupti_buffer_stack;
+  activity_channel_t activity_channel;
+  correlation_channel_t correlation_channel;
 } cupti_record_t;
 
 // a list of thread records
@@ -25,34 +55,32 @@ typedef struct cupti_record_list {
 } cupti_record_list_t;
 
 // apply functions
+// cupti_worker_activity_apply
 void
-cupti_worker_activity_apply
+cupti_activities_consume
 (
- cupti_stack_fn_t fn
+
 );
-
-
+// worker_notification_apply
 void
-cupti_worker_notification_apply
+correlation_produce
 (
  uint64_t host_op_id,
  cct_node_t *cct_node
 );
-
-
+//cupti-activ
 void
-cupti_cupti_activity_apply
+cupti_activity_produce
 (
  CUpti_Activity *activity,
  cct_node_t *cct_node,
  cupti_record_t *record
 );
-
-
+// cupti-notif
 void
-cupti_cupti_notification_apply
+correlations_consume
 (
- cupti_stack_fn_t fn
+
 );
 
 // getters
@@ -62,12 +90,10 @@ cupti_worker_record_init
 (
 );
 
-
 void
 cupti_record_init
 (
 );
-
 
 cupti_record_t *
 cupti_record_get

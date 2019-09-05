@@ -1,3 +1,4 @@
+/*
 #include <lib/prof-lean/stdatomic.h>
 #include <cupti_version.h>
 
@@ -82,3 +83,4 @@ cupti_stack_apply
     cupti_stack_push(free_stack, node);
   }
 }
+*/

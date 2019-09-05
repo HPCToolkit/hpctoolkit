@@ -546,6 +546,8 @@ hpcrun_init_internal(bool is_child)
   }
 
   hpcrun_is_initialized_private = true;
+
+  stream_tracing_init();
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -629,6 +631,7 @@ static void hpcrun_process_aux_cleanup_action()
 void
 hpcrun_fini_internal()
 {
+  //stream_tracing_fini();
   hpcrun_disable_sampling();
 
   TMSG(FINI, "process");
@@ -663,6 +666,8 @@ hpcrun_fini_internal()
 
     int is_process = 1;
     thread_finalize(is_process);
+
+    stream_tracing_fini();
 
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
@@ -900,6 +905,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
   }
+
 
   hpcrun_safe_exit();
 
