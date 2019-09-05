@@ -168,12 +168,14 @@ hpcrun_ompt_op_id_notify(int begin, ompt_id_t host_op_id, ip_normalized_t ip_nor
 {
   // A runtime API must be implemented by driver APIs.
   if (begin == 1) {
-    // Enter a runtime api
+    // Enter a ompt runtime api
+    PRINT("enter ompt runtime op\n");
     ompt_runtime_api_flag = true;
     cupti_correlation_id_push(host_op_id);
     return;
   }
 
+  PRINT("exit ompt runtime op\n");
   // Enter a runtime api
   ompt_runtime_api_flag = false;
   // Pop the id and make a notification
@@ -441,13 +443,19 @@ ompt_target_callback
   macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout) 
 
 void
-ompt_data_op_callback(ompt_id_t target_id,
-                      ompt_id_t host_op_id,
-                      ompt_target_data_op_t optype,
-                      void *host_addr,
-                      void *device_addr,
-                      size_t bytes,
-                      int begin)
+ompt_data_op_callback
+(
+ ompt_id_t target_id,
+ ompt_id_t host_op_id,
+ ompt_target_data_op_t optype,
+ void *src_addr,
+ int src_device_num,
+ void *dest_addr,
+ int dest_device_num,
+ size_t bytes,
+ const void *codeptr_ra,
+ int begin
+)
 {
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
   switch (optype) {                       
@@ -468,10 +476,13 @@ ompt_data_op_callback(ompt_id_t target_id,
 
 
 void
-ompt_submit_callback(ompt_id_t target_id,
-                     ompt_id_t host_op_id,
-                     unsigned int requested_num_teams,
-                     int begin)
+ompt_submit_callback
+(
+ ompt_id_t target_id,
+ ompt_id_t host_op_id,
+ unsigned int requested_num_teams,
+ int begin
+)
 {
   PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
   hpcrun_ompt_op_id_notify(begin, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);

@@ -243,7 +243,7 @@ cupti_correlation_callback_dummy
 // static data
 //******************************************************************************
 
-static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(1);
+static atomic_long cupti_correlation_id = ATOMIC_VAR_INIT(0x8000000000000001);
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -1949,7 +1949,6 @@ cupti_correlation_id_push(uint64_t id)
 {
   HPCRUN_CUPTI_CALL(cuptiActivityPushExternalCorrelationId,
     (CUPTI_EXTERNAL_CORRELATION_KIND_UNKNOWN, id));
-
 }
 
 
