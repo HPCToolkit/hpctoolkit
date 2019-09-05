@@ -126,14 +126,6 @@ static void
 coalesceStmts(Prof::Struct::Tree& structure);
 
 
-static bool
-vdso_loadmodule(const char *pathname)
-{
-  return false;
-  return pathname && strstr(pathname,  "vdso");
-}
-
-
 namespace Analysis {
 
 namespace CallPath {
@@ -398,16 +390,16 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
                            bool printProgress)
 {
   const string& lm_nm = loadmap_lm->name();
+  const string& lm_pretty_name = Prof::LoadMap::LM::pretty_name(lm_nm);
+
   BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_nm);
+    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_pretty_name);
   } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  } else if (vdso_loadmodule(lm_nm.c_str()))  {
-    DIAG_WMsgIf(printProgress, "Cannot fully process samples for virtual load module " << lm_nm);
   } else {
 
     try {
@@ -419,16 +411,11 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
       delete lm;
       lm = NULL;
       DIAG_WMsgIf(printProgress, "Cannot fully process samples for load module " << 
-                  lm_nm << ": " << x.what());
+                  lm_pretty_name << ": " << x.what());
     }
-    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_nm);
+    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_pretty_name);
   }
 
-  // load module might have a "pretty" name, e.g., [vdso] instead
-  // of a full path to a file in a measurement directory 
-  if (lm) {
-    lmStrct->pretty_name(lm->name().c_str());
-  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()

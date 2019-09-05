@@ -89,19 +89,8 @@ MYSOURCES = \
 
 
 #############################################################################
-# Flags
-#############################################################################
-
-BOOST_IFLAGS   = @BOOST_IFLAGS@
-TBB_IFLAGS     = @TBB_IFLAGS@
-
-
 MYCFLAGS       = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS     = @HOST_CXXFLAGS@ \
-                 $(HPC_IFLAGS) \
-                 $(BOOST_IFLAGS) \
-                 $(TBB_IFLAGS) \
-                 @BINUTILS_IFLAGS@
+MYCXXFLAGS     = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

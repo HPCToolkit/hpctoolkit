@@ -80,6 +80,7 @@ using std::string;
 #include <include/gcc-attr.h>
 #include <include/uint.h>
 
+#include "LoadMap.hpp"
 #include "Struct-Tree.hpp"
 
 #include <lib/xml/xml.hpp>
@@ -104,20 +105,6 @@ namespace Struct {
 
 
 RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
-
-//***************************************************************************
-// helper functions
-//***************************************************************************
-
-static const string&
-normalize_name(const string& lm_nm)
-{
-  static const string vdso_nm("[vdso]");
-
-  if (lm_nm.find(vdso_nm) != string::npos) return vdso_nm;
-  return lm_nm;
-}
-
 
 //***************************************************************************
 // Tree
@@ -283,7 +270,7 @@ Root::findLM(const char* nm) const
   // TODO: if the map is empty and Root has LM children, we should
   // populate the map
 
-  string nm_real = normalize_name(nm);
+  string nm_real = Prof::LoadMap::LM::pretty_name(nm);
 
   s_realpathMgr.realpath(nm_real);
 
@@ -339,7 +326,7 @@ RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
 void
 LM::pretty_name(const char *nm)
 { 
-  string nm_norm = normalize_name(nm);
+  string nm_norm = LoadMap::LM::pretty_name(nm);
   m_pretty_name = nm_norm; 
 }
 
