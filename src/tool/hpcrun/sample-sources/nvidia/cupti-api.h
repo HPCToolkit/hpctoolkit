@@ -228,6 +228,11 @@ cupti_device_shutdown
 );
 
 
+//******************************************************************************
+// cupti status
+//******************************************************************************
+
+
 void
 cupti_stop_flag_set
 (
@@ -248,6 +253,25 @@ cupti_runtime_api_flag_unset
 
 void
 cupti_runtime_api_flag_set
+(
+);
+
+
+void
+cupti_correlation_id_push
+(
+ uint64_t id
+);
+
+
+uint64_t
+cupti_correlation_id_pop
+(
+);
+
+
+ip_normalized_t
+cupti_kernel_ip_get
 (
 );
 

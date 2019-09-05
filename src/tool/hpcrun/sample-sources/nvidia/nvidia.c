@@ -101,7 +101,7 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <ompt/ompt-interface.h>
+#include <ompt/ompt-device.h>
 
 
 /******************************************************************************
@@ -1019,6 +1019,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
       pc_sampling_frequency = -1;
     }
+
+    ompt_external_subscriber_enable();
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }

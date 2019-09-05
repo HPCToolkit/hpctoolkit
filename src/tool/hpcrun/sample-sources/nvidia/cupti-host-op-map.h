@@ -73,7 +73,7 @@ cupti_host_op_map_entry_host_op_node_get
 
 
 cct_node_t *
-cupti_host_op_map_entry_host_func_node_get
+cupti_host_op_map_entry_func_node_get
 (
  cupti_host_op_map_entry_t *entry
 );
