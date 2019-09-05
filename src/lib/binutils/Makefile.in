@@ -145,8 +145,7 @@ am__objects_1 = libHPCbinutils_la-Demangler.lo libHPCbinutils_la-LM.lo \
 	libHPCbinutils_la-SimpleSymbols.lo \
 	libHPCbinutils_la-SimpleSymbolsFactories.lo \
 	libHPCbinutils_la-Dbg-LM.lo libHPCbinutils_la-Dbg-Proc.lo \
-	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-dso_symbols.lo \
-	libHPCbinutils_la-VMAInterval.lo
+	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -253,8 +252,6 @@ BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
-
-#	VdsoSymbols.hpp VdsoSymbols.cpp 
 
 #############################################################################
 # Flags
@@ -541,7 +538,6 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	dso_symbols.h dso_symbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
@@ -549,7 +545,6 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ \
                  $(HPC_IFLAGS) \
                  $(BOOST_IFLAGS) \
                  $(TBB_IFLAGS) \
-                 $(DYNINST_IFLAGS) \
                  @BINUTILS_IFLAGS@
 
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -642,7 +637,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-dso_symbols.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -741,13 +735,6 @@ libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='BinUtils.cpp' object='libHPCbinutils_la-BinUtils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp
-
-libHPCbinutils_la-dso_symbols.lo: dso_symbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-dso_symbols.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-dso_symbols.Tpo -c -o libHPCbinutils_la-dso_symbols.lo `test -f 'dso_symbols.cpp' || echo '$(srcdir)/'`dso_symbols.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-dso_symbols.Tpo $(DEPDIR)/libHPCbinutils_la-dso_symbols.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dso_symbols.cpp' object='libHPCbinutils_la-dso_symbols.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-dso_symbols.lo `test -f 'dso_symbols.cpp' || echo '$(srcdir)/'`dso_symbols.cpp
 
 libHPCbinutils_la-VMAInterval.lo: VMAInterval.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-VMAInterval.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp

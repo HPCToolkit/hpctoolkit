@@ -85,17 +85,14 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	dso_symbols.h dso_symbols.cpp \
 	VMAInterval.hpp VMAInterval.cpp
 
-#	VdsoSymbols.hpp VdsoSymbols.cpp 
 
 #############################################################################
 # Flags
 #############################################################################
 
 BOOST_IFLAGS   = @BOOST_IFLAGS@
-DYNINST_IFLAGS = @DYNINST_IFLAGS@
 TBB_IFLAGS     = @TBB_IFLAGS@
 
 
@@ -104,7 +101,6 @@ MYCXXFLAGS     = @HOST_CXXFLAGS@ \
                  $(HPC_IFLAGS) \
                  $(BOOST_IFLAGS) \
                  $(TBB_IFLAGS) \
-                 $(DYNINST_IFLAGS) \
                  @BINUTILS_IFLAGS@
 
 if IS_HOST_AR
