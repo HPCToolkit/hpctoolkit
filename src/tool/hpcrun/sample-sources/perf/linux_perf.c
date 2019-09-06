@@ -123,6 +123,7 @@
 
 #include "kernel_blocking.h"  // api for predefined kernel blocking event
 #include "sample-sources/datacentric/datacentric.h"     // api for datacentric
+#include "sample-sources/stall/stall.h"                 // api for stall event
 
 #include "lib/support-lean/compress.h"
 
@@ -624,6 +625,7 @@ METHOD_FN(init)
   // init events
   kernel_blocking_init();
   datacentric_init();
+  stall_init();
 
   TMSG(LINUX_PERF, "%d: init ok", self->sel_idx);
 }
@@ -1163,9 +1165,6 @@ perf_event_handler(
       arg.metric  = metric;
       arg.sample  = NULL;
       arg.metric_value = 0.0;
-
-      if (event_custom_pre_handler(&arg) == REJECT_EVENT)
-        continue;
 
       double val = record_sample(current, &mmap_data, context,
                                  metric, event_info->attr.freq, &sv);
