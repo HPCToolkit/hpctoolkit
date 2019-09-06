@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,47 +45,14 @@
 // ******************************************************* EndRiceCopyright *
 
 
-/******************************************************************************
- * local includes 
- ******************************************************************************/
+#ifndef __PERF_PMU_H__
+#define __PERF_PMU_H__
 
-#include <cct/cct.h>                       // cct_node_t
-#include "sample-sources/perf/perf-util.h" // event_info_t
-#include "sample-sources/perf/event_custom.h" // event_custom_t
+#include <utilities/arch/cpuid.h>
 
+struct pmu_config_s {
+  cpu_type_t cpu;
+  const char *event;
+};
 
-/******************************************************************************
- *  MACROs
- ******************************************************************************/
-
-
-
-/******************************************************************************
- *  interface operations
- ******************************************************************************/
-
-void datacentric_init()
-{}
-
-// ----------------------------------------------
-// to be implemented by specific hardware
-// ----------------------------------------------
-
-// called to create events and the metric has to be stored by store_events_and_info
-int datacentric_hw_register(sample_source_t *self, event_custom_t *event,
-                        struct event_threshold_s *period)
-{}
-
-
-// called when a sample occurs
-void
-datacentric_hw_handler(perf_mmap_data_t *mmap_data,
-                       cct_node_t *datacentric_node,
-                       cct_node_t *sample_node)
-{} 
-
-int
-datacentric_is_active()
-{
-  return 0;
-}
+#endif // __PERF_PMU_H__

@@ -50,15 +50,17 @@
 
 #include <utilities/arch/cpuid.h>
 
-struct pmu_config_s {
-  cpu_type_t cpu;
-  const char *event;
-};
+#include <sample-sources/perf/pmu.h>
+
 
 /**
  * attention: the order of the array can be important.
  * A source for pebs taken from:
  * https://github.com/numap-library/numap/blob/master/src/numap.c
+ *
+ * and the list of hardware counter at:
+ * https://oprofile.sourceforge.io/docs/
+ * https://download.01.org/perfmon/index/
  */
 struct pmu_config_s pmu_events[] = {
     {INTEL_SNB,    "MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD"},
