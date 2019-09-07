@@ -1283,7 +1283,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
 	getFuncNames(sym_func, prettynm, linknm, opts.ourDemangle);
 	if (is_shared) {
-	  prettynm += " (" + basename + ")";
+	  prettynm += " [" + basename + "]";
 	}
 
 	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
@@ -1309,7 +1309,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	stringstream buf;
 	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
 	if (is_shared) {
-	  buf << " (" << basename << ")";
+	  buf << " [" << basename << "]";
 	}
 
 	linknm = func->name();
@@ -1390,7 +1390,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 	}
       }
       if (is_shared) {
-	prettynm += " (" + basename + ")";
+	prettynm += " [" + basename + "]";
       }
 
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
