@@ -1098,13 +1098,6 @@ public:
   codeName() const
   { return name(); }
 
-  const char *
-  pretty_name() const
-  { return m_pretty_name.c_str(); }
-
-  void
-  pretty_name(const char *nm);
-
   std::string
   baseName() const
   { return FileUtil::basename(m_name); }

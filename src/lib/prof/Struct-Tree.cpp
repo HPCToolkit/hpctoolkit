@@ -270,8 +270,7 @@ Root::findLM(const char* nm) const
   // TODO: if the map is empty and Root has LM children, we should
   // populate the map
 
-  string nm_real = Prof::LoadMap::LM::pretty_name(nm);
-
+  string nm_real = nm;
   s_realpathMgr.realpath(nm_real);
 
   LMMap::iterator it1 = lmMap_realpath->find(nm_real);
@@ -324,14 +323,6 @@ RealPathMgr& LM::s_realpathMgr = RealPathMgr::singleton();
 
 
 void
-LM::pretty_name(const char *nm)
-{ 
-  string nm_norm = LoadMap::LM::pretty_name(nm);
-  m_pretty_name = nm_norm; 
-}
-
-
-void
 LM::Ctor(const char* nm, ANode* parent)
 {
   DIAG_Assert(nm, "");
@@ -339,8 +330,6 @@ LM::Ctor(const char* nm, ANode* parent)
   DIAG_Assert((parent == NULL) || (t == TyRoot) || (t == TyGroup), "");
 
   m_name = nm;
-  pretty_name(nm);
-
   m_fileMap = new FileMap();
   m_procMap = NULL;
   m_stmtMap = NULL;

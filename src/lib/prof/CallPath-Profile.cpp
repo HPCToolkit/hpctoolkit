@@ -98,6 +98,7 @@ using std::string;
 #include "FileError.hpp"
 #include "NameMappings.hpp"
 #include "Struct-Tree.hpp"
+#include "LoadMap.hpp"
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -569,7 +570,7 @@ getFilenameKey(Struct::LM *lm, const char *filename)
   if (lm) {
     // use pretty_name for the key to unify different names of vmlinux 
     // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
-    lm_name = lm->pretty_name();
+    lm_name = Prof::LoadMap::LM::pretty_name(lm->name());
   } else {
     lm_name = "";
   }
@@ -598,7 +599,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     bool fake_procedure = false;
 
     if (type == 1) { // LoadModule
-      nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); 
+      nm = Prof::LoadMap::LM::pretty_name(strct->name()).c_str(); 
       SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
       if (sf) {
         sf->id(id);
