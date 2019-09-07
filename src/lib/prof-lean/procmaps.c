@@ -195,10 +195,13 @@ lm_segment_iterate
 
   FILE* loadmap = fopen("/proc/self/maps", "r");
 
-  for(; getline(&line, &len, loadmap) != -1;) {
-    lm_seg_t s;
-    lm_segment_parse(&s, line);
-    if (lm_callback(&s, arg)) break;
+  if (loadmap) {
+    for(; getline(&line, &len, loadmap) != -1;) {
+      lm_seg_t s;
+      lm_segment_parse(&s, line);
+      if (lm_callback(&s, arg)) break;
+    }
+    fclose(loadmap);
   }
 }
 
