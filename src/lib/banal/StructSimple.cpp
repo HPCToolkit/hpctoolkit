@@ -100,15 +100,6 @@ using namespace Prof;
 // 
 //****************************************************************************
 
-static const char *
-fileBasename(const char *pathname)
-{
-  const char *slash = strrchr(pathname, '/');
-  const char *basename = (slash ? slash + 1 : pathname);
-  return basename;
-}
-
-
 // makeStructureSimple: Uses the line map to make structure
 Prof::Struct::Stmt*
 BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
