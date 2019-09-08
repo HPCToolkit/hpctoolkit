@@ -82,6 +82,14 @@ typedef struct {
 
 
 
+//***************************************************************************
+// thread local data
+//***************************************************************************
+
+static __thread lm_seg_t lm_seg; 
+
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -197,9 +205,8 @@ lm_segment_iterate
 
   if (loadmap) {
     for(; getline(&line, &len, loadmap) != -1;) {
-      lm_seg_t s;
-      lm_segment_parse(&s, line);
-      if (lm_callback(&s, arg)) break;
+      lm_segment_parse(&lm_seg, line);
+      if (lm_callback(&lm_seg, arg)) break;
     }
     fclose(loadmap);
   }
