@@ -318,7 +318,6 @@ MY_BASE_FILES =				\
 	hpcrun_flag_stacks.c \
 	device-finalizers.c \
 	device-initializers.c \
-	addr_to_module.c \
 	module-ignore-map.c \
 	threadmgr.c			\
 	trace.c				\

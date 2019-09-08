@@ -437,18 +437,17 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
 	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c addr_to_module.c \
-	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
 	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
@@ -573,7 +572,6 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-hpcrun_flag_stacks.lo \
 	libhpcrun_la-device-finalizers.lo \
 	libhpcrun_la-device-initializers.lo \
-	libhpcrun_la-addr_to_module.lo \
 	libhpcrun_la-module-ignore-map.lo libhpcrun_la-threadmgr.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
 	libhpcrun_la-write_data.lo cct/libhpcrun_la-cct_bundle.lo \
@@ -784,18 +782,17 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
 	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c addr_to_module.c \
-	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
 	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
@@ -925,7 +922,6 @@ am__objects_50 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-hpcrun_flag_stacks.$(OBJEXT) \
 	libhpcrun_o-device-finalizers.$(OBJEXT) \
 	libhpcrun_o-device-initializers.$(OBJEXT) \
-	libhpcrun_o-addr_to_module.$(OBJEXT) \
 	libhpcrun_o-module-ignore-map.$(OBJEXT) \
 	libhpcrun_o-threadmgr.$(OBJEXT) libhpcrun_o-trace.$(OBJEXT) \
 	libhpcrun_o-weak.$(OBJEXT) libhpcrun_o-write_data.$(OBJEXT) \
@@ -1633,18 +1629,17 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
 	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c addr_to_module.c \
-	module-ignore-map.c threadmgr.c trace.c weak.c write_data.c \
-	cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c ompt/ompt-callstack.c ompt/ompt-defer.c \
-	ompt/ompt-device.c ompt/ompt-defer-write.c \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c ompt/ompt-callstack.c \
+	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
 	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
 	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
 	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
@@ -3210,7 +3205,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-addr_to_module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct2metrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_backtrace_finalize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-cct_insert_backtrace.Plo@am__quote@
@@ -3250,7 +3244,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-weak.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-write_data.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_mpi_la-mpi-overrides.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-addr_to_module.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct2metrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_backtrace_finalize.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-cct_insert_backtrace.Po@am__quote@
@@ -4094,13 +4087,6 @@ libhpcrun_la-device-initializers.lo: device-initializers.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device-initializers.c' object='libhpcrun_la-device-initializers.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-device-initializers.lo `test -f 'device-initializers.c' || echo '$(srcdir)/'`device-initializers.c
-
-libhpcrun_la-addr_to_module.lo: addr_to_module.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-addr_to_module.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-addr_to_module.Tpo -c -o libhpcrun_la-addr_to_module.lo `test -f 'addr_to_module.c' || echo '$(srcdir)/'`addr_to_module.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-addr_to_module.Tpo $(DEPDIR)/libhpcrun_la-addr_to_module.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addr_to_module.c' object='libhpcrun_la-addr_to_module.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-addr_to_module.lo `test -f 'addr_to_module.c' || echo '$(srcdir)/'`addr_to_module.c
 
 libhpcrun_la-module-ignore-map.lo: module-ignore-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-module-ignore-map.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-module-ignore-map.Tpo -c -o libhpcrun_la-module-ignore-map.lo `test -f 'module-ignore-map.c' || echo '$(srcdir)/'`module-ignore-map.c
@@ -5634,20 +5620,6 @@ libhpcrun_o-device-initializers.obj: device-initializers.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='device-initializers.c' object='libhpcrun_o-device-initializers.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-device-initializers.obj `if test -f 'device-initializers.c'; then $(CYGPATH_W) 'device-initializers.c'; else $(CYGPATH_W) '$(srcdir)/device-initializers.c'; fi`
-
-libhpcrun_o-addr_to_module.o: addr_to_module.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-addr_to_module.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-addr_to_module.Tpo -c -o libhpcrun_o-addr_to_module.o `test -f 'addr_to_module.c' || echo '$(srcdir)/'`addr_to_module.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-addr_to_module.Tpo $(DEPDIR)/libhpcrun_o-addr_to_module.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addr_to_module.c' object='libhpcrun_o-addr_to_module.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-addr_to_module.o `test -f 'addr_to_module.c' || echo '$(srcdir)/'`addr_to_module.c
-
-libhpcrun_o-addr_to_module.obj: addr_to_module.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-addr_to_module.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-addr_to_module.Tpo -c -o libhpcrun_o-addr_to_module.obj `if test -f 'addr_to_module.c'; then $(CYGPATH_W) 'addr_to_module.c'; else $(CYGPATH_W) '$(srcdir)/addr_to_module.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-addr_to_module.Tpo $(DEPDIR)/libhpcrun_o-addr_to_module.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='addr_to_module.c' object='libhpcrun_o-addr_to_module.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-addr_to_module.obj `if test -f 'addr_to_module.c'; then $(CYGPATH_W) 'addr_to_module.c'; else $(CYGPATH_W) '$(srcdir)/addr_to_module.c'; fi`
 
 libhpcrun_o-module-ignore-map.o: module-ignore-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-module-ignore-map.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-module-ignore-map.Tpo -c -o libhpcrun_o-module-ignore-map.o `test -f 'module-ignore-map.c' || echo '$(srcdir)/'`module-ignore-map.c

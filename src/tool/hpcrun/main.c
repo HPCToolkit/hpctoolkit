@@ -115,7 +115,6 @@
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
 #include "control-knob.h"
-#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
