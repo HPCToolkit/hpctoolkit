@@ -44,17 +44,17 @@ void
 correlation_produce(uint64_t host_op_id, cct_node_t *api_node, cct_node_t *func_node)
 {
   correlation_channel_t *correlation_channel = &(cupti_record.correlation_channel);
-  cupti_correlation_elem *node = correlation_bi_unordered_channel_pop(correlation_channel, channel_direction_backward);
+  cupti_correlation_elem_t *node = correlation_bi_unordered_channel_pop(correlation_channel, channel_direction_backward);
   if (!node) {
     correlation_bi_unordered_channel_steal(correlation_channel, channel_direction_backward);
     node = correlation_bi_unordered_channel_pop(correlation_channel, channel_direction_backward);
   }
   // TODO(Keren): add a new node method
   if (!node) {
-    node =(cupti_correlation_elem* ) hpcrun_malloc_safe(sizeof(cupti_correlation_elem));
+    node = (cupti_correlation_elem_t *)hpcrun_malloc_safe(sizeof(cupti_correlation_elem_t));
     cstack_ptr_set(&node->next, 0);
   }
-  cupti_correlation_entry_set(&node->node, host_op_id, api_node, func_node, &cupti_record);
+  cupti_correlation_entry_set(&node->entry, host_op_id, api_node, func_node, &cupti_record);
   correlation_bi_unordered_channel_push(correlation_channel, channel_direction_forward, node);
 }
 
@@ -63,25 +63,25 @@ void
 cupti_activities_consume()
 {
   activity_channel_t *activity_channel = &(cupti_record.activity_channel);
-  cupti_activity_elem *node;
+  cupti_activity_elem_t *node;
   activity_bi_unordered_channel_steal(activity_channel, channel_direction_forward);
   while ((node = activity_bi_unordered_channel_pop(activity_channel, channel_direction_forward))) {
-    cupti_activity_handle(&node->node);
+    cupti_activity_handle(&node->entry);
     activity_bi_unordered_channel_push(activity_channel, channel_direction_backward, node);
   }
 }
 
 //cor consume
- void
+void
 correlations_consume()
 {
   cupti_record_list_t *head = atomic_load(&cupti_record_list_head);
   while (head) {
     correlation_channel_t *correlation_channel = &(head->record->correlation_channel);
-    cupti_correlation_elem *node;
+    cupti_correlation_elem_t *node;
     correlation_bi_unordered_channel_steal(correlation_channel, channel_direction_forward);
     while ((node = correlation_bi_unordered_channel_pop(correlation_channel, channel_direction_forward))) {
-      cupti_correlation_handle(&node->node);
+      cupti_correlation_handle(&node->entry);
       correlation_bi_unordered_channel_push(correlation_channel, channel_direction_backward, node);
     }
     head = atomic_load(&head->next);
@@ -89,19 +89,19 @@ correlations_consume()
 }
 
 
-  void
+void
 cupti_activity_produce(CUpti_Activity *activity, cct_node_t *cct_node, cupti_record_t *record)
 {
   activity_channel_t *activity_channel = &(record->activity_channel);
-  cupti_activity_elem *node = activity_bi_unordered_channel_pop(activity_channel, channel_direction_backward);
+  cupti_activity_elem_t *node = activity_bi_unordered_channel_pop(activity_channel, channel_direction_backward);
   if (!node) {
     activity_bi_unordered_channel_steal(activity_channel, channel_direction_backward);
     node = activity_bi_unordered_channel_pop(activity_channel, channel_direction_backward);
   }
   if (!node) {
-    node =(cupti_activity_elem*) hpcrun_malloc_safe(sizeof(cupti_activity_elem));
+    node = (cupti_activity_elem_t *)hpcrun_malloc_safe(sizeof(cupti_activity_elem_t));
     cstack_ptr_set(&node->next, 0);
   }
-  cupti_activity_entry_set(&node->node, activity, cct_node);
+  cupti_activity_entry_set(&node->entry, activity, cct_node);
   activity_bi_unordered_channel_push(activity_channel, channel_direction_forward, node);
 }

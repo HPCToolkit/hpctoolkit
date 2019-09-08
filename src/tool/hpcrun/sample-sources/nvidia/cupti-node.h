@@ -11,14 +11,6 @@ typedef enum {
   CUPTI_ENTRY_TYPE_COUNT = 4
 } cupti_entry_type_t;
 
-// generic entry
-typedef struct cupti_node {
-  //tx7
-  //struct cupti_node *next;
-  void *entry;
-  cupti_entry_type_t type;
-} cupti_node_t;
-
 // pc sampling
 typedef struct cupti_pc_sampling {
   uint32_t samples;
@@ -138,27 +130,6 @@ typedef struct cupti_entry_correlation {
   cct_node_t *func_node;
   void *record;
 } cupti_entry_correlation_t;
-
-// activity allocator
-cupti_node_t *
-cupti_activity_node_new
-(
- CUpti_Activity *activity,
- cct_node_t *cct_node,
- cupti_node_t *next
-);
-
-
-// notification allocator
-cupti_node_t *
-cupti_notification_node_new
-(
- uint64_t host_op_id,
- cct_node_t *api_node,
- cct_node_t *func_node,
- void *record,
- cupti_node_t *next
-);
 
 
 void

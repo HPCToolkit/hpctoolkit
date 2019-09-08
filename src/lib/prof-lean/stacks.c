@@ -62,164 +62,164 @@
 
 void
 sstack_ptr_set
-        (
-                s_element_ptr_t *p,
-                s_element_t *v
-        )
+(
+ s_element_ptr_t *p,
+ s_element_t *v
+)
 {
-    atomic_store_explicit(&Ap(p), v, memory_order_relaxed);
+  atomic_store_explicit(&Ap(p), v, memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_ptr_get
-        (
-                s_element_ptr_t *e
-        )
+(
+ s_element_ptr_t *e
+)
 {
-    return atomic_load_explicit(&Ap(e), memory_order_relaxed);
+  return atomic_load_explicit(&Ap(e), memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *r
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *r
+)
 {
-    return atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
+  return atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
 }
 
 
 void
 sstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+)
 {
-    s_element_t *first = atomic_load_explicit(&Ap(q), memory_order_relaxed);
-    atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
-    atomic_store_explicit(&Ap(q), e, memory_order_relaxed);
+  s_element_t *first = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
+  atomic_store_explicit(&Ap(q), e, memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_pop
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
-    if (e) {
-        s_element_t *next = atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
-        atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
-        atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);
-    }
-    return e;
+  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  if (e) {
+    s_element_t *next = atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+    atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
+    atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);
+  }
+  return e;
 }
 
 
 s_element_t *
 sstack_steal
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = sstack_swap(q, 0);
+  s_element_t *e = sstack_swap(q, 0);
 
-    return e;
+  return e;
 }
+
 
 void
 cstack_ptr_set
-        (
-                s_element_ptr_t *e,
-                s_element_t *v
-        )
+(
+ s_element_ptr_t *e,
+ s_element_t *v
+)
 {
-    atomic_init(&Ap(e), v);
+  atomic_init(&Ap(e), v);
 }
 
 
 s_element_t *
 cstack_ptr_get
-        (
-                s_element_ptr_t *e
-        )
+(
+ s_element_ptr_t *e
+)
 {
-    return atomic_load(&Ap(e));
+  return atomic_load(&Ap(e));
 }
 
 
 s_element_t *
 cstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *r
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *r
+)
 {
-    s_element_t *e = atomic_exchange(&Ap(q),r);
+  s_element_t *e = atomic_exchange(&Ap(q),r);
 
-    return e;
+  return e;
 }
 
 
 void
 cstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+)
 {
-    s_element_t *head = atomic_load(&Ap(q));
-    s_element_t *new_head = e;
+  s_element_t *head = atomic_load(&Ap(q));
+  s_element_t *new_head = e;
 
-    // push a singleton or a chain on the list
-    for (;;) {
-        s_element_t *enext = atomic_load(&e->Ad(next));
-        if (enext == 0) break;
-        e = enext;
-    }
+  // push a singleton or a chain on the list
+  for (;;) {
+    s_element_t *enext = atomic_load(&e->Ad(next));
+    if (enext == 0) break;
+    e = enext;
+  }
 
-    do {
-        atomic_store(&e->Ad(next), head);
-    } while (!atomic_compare_exchange_strong(&Ap(q), &head, new_head));
+  do {
+    atomic_store(&e->Ad(next), head);
+  } while (!atomic_compare_exchange_strong(&Ap(q), &head, new_head));
 }
 
 
 s_element_t *
 cstack_pop
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *oldhead = atomic_load(&Ap(q));
-    s_element_t *next = 0;
+  s_element_t *oldhead = atomic_load(&Ap(q));
+  s_element_t *next = 0;
 
-    do {
-        if (oldhead == 0) return 0;
-        next = atomic_load(&oldhead->Ad(next));
-    } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
+  do {
+    if (oldhead == 0) return 0;
+    next = atomic_load(&oldhead->Ad(next));
+  } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
 
-    atomic_store(&oldhead->Ad(next),0);
+  atomic_store(&oldhead->Ad(next),0);
 
-    return oldhead;
+  return oldhead;
 }
 
 
 s_element_t *
 cstack_steal
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = cstack_swap(q, 0);
+  s_element_t *e = cstack_swap(q, 0);
 
-    return e;
+  return e;
 }
-
 
 
 //*****************************************************************************

@@ -2,19 +2,20 @@
 #define _HPCTOOLKIT_CUPTI_RECORD_H_
 
 #include <lib/prof-lean/stdatomic.h>
-#include <cupti_activity.h>
-//#include "cupti-stack.h"
-#include "cupti-node.h"
 #include <lib/prof-lean/bi_unordered_channel.h>
+
+#include <cupti_activity.h>
+
+#include "cupti-node.h"
 
 typedef struct {
   s_element_ptr_t next;
-  cupti_entry_correlation_t node;
+  cupti_entry_correlation_t entry;
 } typed_stack_elem(cupti_entry_correlation_t);
 
 typedef struct {
   s_element_ptr_t next;
-  cupti_entry_activity_t node;
+  cupti_entry_activity_t entry;
 } typed_stack_elem(cupti_entry_activity_t);
 
 
@@ -24,14 +25,11 @@ typedef bi_unordered_channel_t typed_bi_unordered_channel(cupti_entry_correlatio
 typed_bi_unordered_channel_declare(cupti_entry_correlation_t)
 typed_bi_unordered_channel_declare(cupti_entry_activity_t)
 
-typedef typed_stack_elem(cupti_entry_correlation_t) cupti_correlation_elem;
-typedef typed_stack_elem(cupti_entry_activity_t) cupti_activity_elem;
-
+typedef typed_stack_elem(cupti_entry_correlation_t) cupti_correlation_elem_t;
+typedef typed_stack_elem(cupti_entry_activity_t) cupti_activity_elem_t;
 
 typedef typed_bi_unordered_channel(cupti_entry_activity_t) activity_channel_t;
 typedef typed_bi_unordered_channel(cupti_entry_correlation_t) correlation_channel_t;
-
-//typedef void (*cupti_stack_fn_t)(cupti_node_t *node);
 
 #define correlation_bi_unordered_channel_pop typed_bi_unordered_channel_pop(cupti_entry_correlation_t)
 #define correlation_bi_unordered_channel_push typed_bi_unordered_channel_push(cupti_entry_correlation_t)
@@ -69,7 +67,7 @@ correlation_produce
  cct_node_t *func_node
 );
 
-//cupti-activ
+//cupti-activity
 void
 cupti_activity_produce
 (
@@ -78,7 +76,7 @@ cupti_activity_produce
  cupti_record_t *record
 );
 
-// cupti-notif
+// cupti-notification
 void
 correlations_consume
 (

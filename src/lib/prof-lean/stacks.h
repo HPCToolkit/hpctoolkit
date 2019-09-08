@@ -202,52 +202,51 @@ typedef struct s_element_s {
 
 void
 sstack_ptr_set
-        (
-                s_element_ptr_t *e,
-                s_element_t *v
-        );
+(
+ s_element_ptr_t *e,
+ s_element_t *v
+);
 
 
 s_element_t *
 sstack_ptr_get
-        (
-                s_element_ptr_t *e
-        );
+(
+ s_element_ptr_t *e
+);
 
 
 // set q->next to point to e and return old value of q->next
 s_element_t *
 sstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        );
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+);
 
 
 // push a singleton e or a chain beginning with e onto q 
 void
 sstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        );
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+);
 
 
 // pop a singlegon from q or return 0
 s_element_t *
 sstack_pop
-        (
-                s_element_ptr_t *q
-        );
+(
+ s_element_ptr_t *q
+);
 
 
 // steal the entire chain rooted at q 
 s_element_t *
 sstack_steal
-        (
-                s_element_ptr_t *q
-        );
-
+(
+ s_element_ptr_t *q
+);
 
 
 //-----------------------------------------------------------------------------
@@ -256,51 +255,51 @@ sstack_steal
 
 void
 cstack_ptr_set
-        (
-                s_element_ptr_t *e,
-                s_element_t *v
-        );
+(
+ s_element_ptr_t *e,
+ s_element_t *v
+);
 
 
 s_element_t *
 cstack_ptr_get
-        (
-                s_element_ptr_t *e
-        );
+(
+ s_element_ptr_t *e
+);
 
 
 // set q->next to point to e and return old value of q->next
 s_element_t *
 cstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        );
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+);
 
 
 // push a singleton e or a chain beginning with e onto q 
 void
 cstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        );
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+);
 
 
 // pop a singlegon from q or return 0
 s_element_t *
 cstack_pop
-        (
-                s_element_ptr_t *q
-        );
+(
+ s_element_ptr_t *q
+);
 
 
 // steal the entire chain rooted at q 
 s_element_t *
 cstack_steal
-        (
-                s_element_ptr_t *q
-        );
+(
+ s_element_ptr_t *q
+);
 
 #endif
 

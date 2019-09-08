@@ -141,8 +141,8 @@ typed_unordered_stack_functions(type, show)
 //*****************************************************************************
 
 typedef struct u_stack_s {
-    s_element_ptr_t produced;
-    s_element_ptr_t to_consume;
+  s_element_ptr_t produced;
+  s_element_ptr_t to_consume;
 } u_stack_t;
 
 
@@ -157,8 +157,9 @@ typedef struct u_stack_s {
 void
 unordered_stack_init
 (
-    u_stack_t *p
+ u_stack_t *p
 );
+
 
 // push a singleton e or a chain beginning with e onto q
 void
@@ -168,6 +169,7 @@ unordered_stack_push
  s_element_t *e
 );
 
+
 // pop a singlegon from q or return 0
 s_element_t *
 unordered_stack_pop
@@ -175,12 +177,11 @@ unordered_stack_pop
  u_stack_t *p
 );
 
+
 void
 unordered_stack_steal
 (
  u_stack_t *p
 );
-
-
 
 #endif

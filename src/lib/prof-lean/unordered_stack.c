@@ -61,48 +61,54 @@
 
 void unordered_stack_init
 (
-    u_stack_t *p
+ u_stack_t *p
 )
 {
-    atomic_init(&Ad(p->produced), 0);
-    atomic_init(&Ad(p->to_consume), 0);
+  atomic_init(&Ad(p->produced), 0);
+  atomic_init(&Ad(p->to_consume), 0);
 }
+
 
 void
 unordered_stack_push
 (
-    u_stack_t *p,
-    s_element_t *e
+ u_stack_t *p,
+ s_element_t *e
 )
 {
-    cstack_push(&p->produced, e);
+  cstack_push(&p->produced, e);
 }
+
 
 s_element_t *
 unordered_stack_pop
 (
-    u_stack_t *p
+ u_stack_t *p
 )
 {
-    //for consumer we can use memory order relaxed
-    s_element_t *e = sstack_pop(&p->to_consume);
-    return e;
+  //for consumer we can use memory order relaxed
+  s_element_t *e = sstack_pop(&p->to_consume);
+  return e;
 }
+
 
 void
 unordered_stack_steal
 (
-    u_stack_t *p
+ u_stack_t *p
 )
 {
+  if (atomic_load_explicit(&Ad(p->produced), memory_order_relaxed) != NULL) {
     s_element_t *s = cstack_steal(&p->produced);
     atomic_store_explicit(&Ad(p->to_consume), s, memory_order_relaxed);
+  }
 }
 
 //*****************************************************************************
 // unit test
 //*****************************************************************************
 
+#if 0
 #define UNIT_TEST 1
 #if UNIT_TEST
 
@@ -127,9 +133,9 @@ typed_unordered_stack_impl(int)
 typed_stack_elem(int) *
 typed_stack_elem_fn(int,new)(int value)
 {
-    typed_stack_elem(int) *e =(typed_stack_elem(int)* ) malloc(sizeof(int_s_element_t));
-    e->value = value;
-    cstack_ptr_set(&e->next, 0);
+  typed_stack_elem(int) *e =(typed_stack_elem(int)* ) malloc(sizeof(int_s_element_t));
+  e->value = value;
+  cstack_ptr_set(&e->next, 0);
 }
 
 
@@ -218,5 +224,6 @@ main
         }
     }
 }
+#endif
 
 #endif
