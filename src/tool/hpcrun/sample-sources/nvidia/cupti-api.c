@@ -111,7 +111,7 @@
 #include "cupti-record.h"
 
 #include "cupti-context-stream-id-map.h"
-#include "cupti-stream-tracing.h"
+#include "cupti-stream-trace.h"
 
 
 //******************************************************************************

@@ -475,7 +475,7 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-node.c			\
 	sample-sources/nvidia/cupti-record.c   \
 	sample-sources/nvidia/cupti-context-stream-id-map.c \
-	sample-sources/nvidia/cupti-stream-tracing.c
+	sample-sources/nvidia/cupti-stream-trace.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

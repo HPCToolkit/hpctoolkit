@@ -12,9 +12,9 @@
 
 #include "cupti-context-stream-id-map.h"
 
-void cupti_stream_tracing_init();
+void cupti_stream_trace_init();
 
-void cupti_stream_tracing_fini();
+void cupti_stream_trace_fini(void *arg);
 
 void *cupti_stream_data_collecting(void *arg);
 

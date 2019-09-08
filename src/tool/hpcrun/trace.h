@@ -46,7 +46,7 @@
 
 #ifndef hpcrun_trace_h
 #define hpcrun_trace_h
-#include<stdint.h>
+#include <stdint.h>
 #include "files.h"
 #include "core_profile_trace_data.h"
 
@@ -59,10 +59,10 @@ void hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint
 void hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime);
 void hpcrun_trace_close(core_profile_trace_data_t * cptd);
 
-void hpcrun_trace_append_STREAM(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA, uint64_t microtime);
+void hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t *node, uint metric_id, uint32_t dLCA, uint64_t microtime);
 
+int hpcrun_trace_isactive();
 
-        int hpcrun_trace_isactive();
 #endif // hpcrun_trace_h
 
 

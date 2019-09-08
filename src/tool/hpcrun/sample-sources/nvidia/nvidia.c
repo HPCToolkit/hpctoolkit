@@ -83,6 +83,7 @@
 #include "cuda-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
+#include "cupti-stream-trace.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -305,6 +306,7 @@
 // finalizers
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 static kind_info_t* stall_kind; // gpu insts
 static kind_info_t* ke_kind; // kernel execution
@@ -1024,6 +1026,13 @@ METHOD_FN(process_event_list, int lush_metrics)
   } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
     ompt_pc_sampling_enable();
   }
+
+  // Init trace records
+  cupti_stream_trace_init();
+
+  // Register shutdown functions to write trace files
+  device_trace_finalizer_shutdown.fn = cupti_stream_trace_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 static void

@@ -3,7 +3,7 @@
 //
 
 #include "cupti-context-stream-id-map.h"
-#include "cupti-stream-tracing.h"
+#include "cupti-stream-trace.h"
 
 extern atomic_ullong stream_counter;
 
@@ -180,10 +180,10 @@ cupti_context_stream_id_map_append
 )
 {
   // TODO(Keren): refactor
-  cupti_context_stream_id_map_entry_t *entry = cupti_context_stream_map_lookup(context_id, stream_id);
+  cupti_context_stream_id_map_entry_t *entry = cupti_context_stream_id_map_lookup(context_id, stream_id);
   if (!entry) {
     cupti_context_stream_id_map_insert(context_id, stream_id);
-    entry = cupti_context_stream_map_lookup(context_id, stream_id); //new node will be root
+    entry = cupti_context_stream_id_map_lookup(context_id, stream_id); //new node will be root
     monitor_disable_new_threads(); // only once?
     stream_thread_data_t *data = hpcrun_malloc_safe(sizeof(stream_thread_data_t));
     data->cond = &entry->cond;
@@ -198,8 +198,8 @@ cupti_context_stream_id_map_append
   node->activity_data.start = start;
   node->activity_data.end = end;
   producer_wfq_ptr_set(&node->next, 0);
-  stream_activity_data_producer_wfq *wfq = cupti_context_stream_map_entry_wfq_get(entry);
-  pthread_cond_t *cond = cupti_context_stream_map_entry_cond_get(entry);
+  stream_activity_data_producer_wfq *wfq = cupti_context_stream_id_map_entry_wfq_get(entry);
+  pthread_cond_t *cond = cupti_context_stream_id_map_entry_cond_get(entry);
   pthread_mutex_t *mutex = &entry->mutex;
   stream_activity_data_t_producer_wfq_enqueue(wfq, node);
   pthread_cond_signal(cond);
@@ -226,6 +226,7 @@ splay_tree_traversal
 
 
 void
-cupti_context_stream_id_map_signal() {
+cupti_context_stream_id_map_signal()
+{
   splay_tree_traversal(cupti_context_stream_id_map_root);
 }

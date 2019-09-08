@@ -47,19 +47,19 @@
 //***************************************************************************
 //
 // File:
-//   cupti-stream-tracing.c
+//   cupti-stream-trace.c
 //
 // Purpose:
-//   implementation of activity tracing for NVIDIA GPUs
+//   implementation of activity trace for NVIDIA GPUs
 //  
 //***************************************************************************
 
 
-#include "cupti-stream-tracing.h"
+#include "cupti-stream-trace.h"
 
 #include <tool/hpcrun/threadmgr.h>
 
-#define CUPTI_STREAM_DEBUG 0
+#define CUPTI_STREAM_DEBUG 1
 
 #if CUPTI_STREAM_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -74,7 +74,7 @@ static atomic_ullong cupti_stream_counter;
 
 
 void
-cupti_stream_tracing_init
+cupti_stream_trace_init
 (
 )
 {
@@ -123,10 +123,10 @@ cupti_stream_data_collecting
       cct_node_t *no_thread = td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
       if (first_pass) {
         first_pass = false;
-        hpcrun_trace_append_STREAM(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
+        hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
       }
-      hpcrun_trace_append_STREAM(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
-      hpcrun_trace_append_STREAM(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
     } else {
       pthread_cond_wait(cond, mutex);
     }
@@ -138,25 +138,28 @@ cupti_stream_data_collecting
     cct_node_t *no_thread = td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
     if (first_pass) {
       first_pass = false;
-      hpcrun_trace_append_STREAM(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
     }
-    hpcrun_trace_append_STREAM(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
-    hpcrun_trace_append_STREAM(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
   }
   epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
   hpcrun_threadMgr_data_put(epoch, td);
   atomic_fetch_add(&cupti_stream_counter, -1);
 
   PRINT("Finish stream collecting");
+
+  return NULL;
 }
 
 
 void
-cupti_stream_tracing_fini
+cupti_stream_trace_fini
 (
+ void *arg
 )
 {
   atomic_store(&cupti_stop_streams, 1);
-  signal_all_streams();
+  cupti_context_stream_id_map_signal();
   while (atomic_load(&cupti_stream_counter));
 }
