@@ -459,9 +459,7 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c \
-	sample-sources/nvidia/cupti-context-stream-id-map.c \
-    sample-sources/nvidia/stream-tracing.c
+	sample-sources/nvidia/cuda-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
@@ -474,10 +472,10 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-correlation-id-map.c	\
 	sample-sources/nvidia/cupti-function-id-map.c		\
 	sample-sources/nvidia/cupti-host-op-map.c		\
-	sample-sources/nvidia/cupti-stack.c			\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-record.c
-
+	sample-sources/nvidia/cupti-record.c   \
+	sample-sources/nvidia/cupti-context-stream-id-map.c \
+	sample-sources/nvidia/cupti-stream-tracing.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -883,7 +881,8 @@ endif
 if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 if UNW_LIBUNW

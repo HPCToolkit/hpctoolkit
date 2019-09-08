@@ -102,12 +102,12 @@ countSections
  Elf *elf
 )
 {
-    int count = 0;
-    Elf_Scn *scn = NULL;
-    while ((scn = elf_nextscn(elf, scn)) != NULL) {
-      count++;
-    }
-    return count;
+  int count = 0;
+  Elf_Scn *scn = NULL;
+  while ((scn = elf_nextscn(elf, scn)) != NULL) {
+    count++;
+  }
+  return count;
 }
 
 
@@ -187,6 +187,8 @@ relocateSymbolsHelper
   if (shdr->sh_entsize > 0) { // avoid divide by 0
     nsymbols = shdr->sh_size / shdr->sh_entsize;
     if (nsymbols <= 0) return NULL;
+  } else {
+    return NULL;
   }
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
@@ -294,5 +296,6 @@ computeCubinFunctionOffsets
 		  }
 	  }
   }
+
   return symbols;
 }

@@ -52,8 +52,6 @@ cupti_bind
 );
 
 
-
-
 void
 cupti_activity_process
 (
@@ -192,7 +190,7 @@ cupti_buffer_completion_callback
 void
 cupti_load_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -201,7 +199,7 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -231,6 +229,11 @@ cupti_device_shutdown
 );
 
 
+//******************************************************************************
+// cupti status
+//******************************************************************************
+
+
 void
 cupti_stop_flag_set
 (
@@ -239,6 +242,37 @@ cupti_stop_flag_set
 
 void
 cupti_stop_flag_unset
+(
+);
+
+
+void
+cupti_runtime_api_flag_unset
+(
+);
+
+
+void
+cupti_runtime_api_flag_set
+(
+);
+
+
+void
+cupti_correlation_id_push
+(
+ uint64_t id
+);
+
+
+uint64_t
+cupti_correlation_id_pop
+(
+);
+
+
+ip_normalized_t
+cupti_kernel_ip_get
 (
 );
 

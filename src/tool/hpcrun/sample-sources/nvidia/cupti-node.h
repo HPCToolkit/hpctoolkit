@@ -134,7 +134,8 @@ typedef struct cupti_entry_activity {
 // notification entry
 typedef struct cupti_entry_correlation {
   uint64_t host_op_id;
-  cct_node_t *cct_node;
+  cct_node_t *api_node;
+  cct_node_t *func_node;
   void *record;
 } cupti_entry_correlation_t;
 
@@ -148,14 +149,13 @@ cupti_activity_node_new
 );
 
 
-
-
 // notification allocator
 cupti_node_t *
 cupti_notification_node_new
 (
  uint64_t host_op_id,
- cct_node_t *cct_node,
+ cct_node_t *api_node,
+ cct_node_t *func_node,
  void *record,
  cupti_node_t *next
 );
@@ -163,20 +163,21 @@ cupti_notification_node_new
 
 void
 cupti_activity_entry_set
-        (
-                cupti_entry_activity_t *entry,
-                CUpti_Activity *activity,
-                cct_node_t *cct_node
-        );
+(
+ cupti_entry_activity_t *entry,
+ CUpti_Activity *activity,
+ cct_node_t *cct_node
+);
 
 
 void
 cupti_correlation_entry_set
-        (
-                cupti_entry_correlation_t *entry,
-                uint64_t host_op_id,
-                cct_node_t *cct_node,
-                void *record
-        );
+(
+ cupti_entry_correlation_t *entry,
+ uint64_t host_op_id,
+ cct_node_t *cct_node,
+ cct_node_t *func_node,
+ void *record
+);
 
 #endif

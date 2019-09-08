@@ -139,7 +139,9 @@ install-exec-local:
 	    $(call copy-libs,$(DYNINST_COPY),$(DYNINST_LIB_DIR),lib"$$lib"*so*) ;  \
 	done
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
+	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
+	@$(call copy-libs,$(MBEDTLS_COPY),$(MBEDTLS_LIB),libmbedcrypto.a)
 	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
 	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)

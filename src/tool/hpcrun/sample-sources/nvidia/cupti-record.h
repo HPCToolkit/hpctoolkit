@@ -8,15 +8,14 @@
 #include <lib/prof-lean/bi_unordered_channel.h>
 
 typedef struct {
-    s_element_ptr_t next;
-    cupti_entry_correlation_t node;
+  s_element_ptr_t next;
+  cupti_entry_correlation_t node;
 } typed_stack_elem(cupti_entry_correlation_t);
 
 typedef struct {
-    s_element_ptr_t next;
-    cupti_entry_activity_t node;
+  s_element_ptr_t next;
+  cupti_entry_activity_t node;
 } typed_stack_elem(cupti_entry_activity_t);
-
 
 
 typedef bi_unordered_channel_t typed_bi_unordered_channel(cupti_entry_activity_t);
@@ -59,15 +58,17 @@ typedef struct cupti_record_list {
 void
 cupti_activities_consume
 (
-
 );
+
 // worker_notification_apply
 void
 correlation_produce
 (
  uint64_t host_op_id,
- cct_node_t *cct_node
+ cct_node_t *api_node,
+ cct_node_t *func_node
 );
+
 //cupti-activ
 void
 cupti_activity_produce
@@ -76,11 +77,11 @@ cupti_activity_produce
  cct_node_t *cct_node,
  cupti_record_t *record
 );
+
 // cupti-notif
 void
 correlations_consume
 (
-
 );
 
 // getters
@@ -90,10 +91,12 @@ cupti_worker_record_init
 (
 );
 
+
 void
 cupti_record_init
 (
 );
+
 
 cupti_record_t *
 cupti_record_get

@@ -49,7 +49,8 @@
 
 #include <setjmp.h>
 #include <stdbool.h>
-#include <tool/hpcrun/sample-sources/nvidia/stream-tracing.h>
+// TODO(Keren): move it to nvidia device initializer
+#include <tool/hpcrun/sample-sources/nvidia/cupti-stream-tracing.h>
 
 extern bool hpcrun_is_initialized();
 
