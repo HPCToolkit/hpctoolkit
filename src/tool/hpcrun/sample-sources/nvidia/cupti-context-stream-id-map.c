@@ -5,11 +5,24 @@
 #include "cupti-context-stream-id-map.h"
 #include "cupti-stream-trace.h"
 
-extern atomic_ullong stream_counter;
 
-cupti_context_stream_id_map_entry_t *cupti_context_stream_id_map_root = NULL;
+#define CUPTI_CONTEXT_STREAM_ID_MAP_DEBUG 0
 
-typed_producer_wfq_impl(stream_activity_data_t)
+#if CUPTI_CONTEXT_STREAM_ID_MAP_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
+
+struct cupti_context_stream_id_map_entry_s {
+  uint64_t context_stream_id;
+  stream_trace_t *stream_trace;
+  struct cupti_context_stream_id_map_entry_s *left;
+  struct cupti_context_stream_id_map_entry_s *right;
+};
+
+struct cupti_context_stream_id_map_entry_s *cupti_context_stream_id_map_root = NULL;
 
 
 static uint64_t
@@ -19,7 +32,7 @@ cupti_context_stream_id_generate
  uint32_t stream_id
 )
 {
-  return ((uint64_t)context_id << 32)| (uint64_t)stream_id;
+  return ((uint64_t)context_id << 32) | (uint64_t)stream_id;
 }
 
 
@@ -30,13 +43,12 @@ cupti_context_stream_id_map_entry_new
  uint32_t stream_id
 )
 {
+  PRINT("Create new thread <context_id %u, stream_id %u>\n", context_id, stream_id);
+
   cupti_context_stream_id_map_entry_t *e;
   e = (cupti_context_stream_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_context_stream_id_map_entry_t));
   e->context_stream_id = cupti_context_stream_id_generate(context_id, stream_id);
-  e->wfq = (producer_wfq_t *)hpcrun_malloc_safe(sizeof(producer_wfq_t));
-  //    pthread_mutex_init(&e->mutex, NULL);
-  //    pthread_cond_init(&e->cond, NULL);
-  producer_wfq_init(e->wfq);
+  e->stream_trace = cupti_stream_trace_create();
   e->left = NULL;
   e->right = NULL;
 
@@ -127,6 +139,7 @@ cupti_context_stream_id_map_insert
       assert(0);
     }
   }
+
   cupti_context_stream_id_map_root = entry;
 }
 
@@ -149,26 +162,6 @@ cupti_context_stream_id_map_delete
 }
 
 
-producer_wfq_t *
-cupti_context_stream_id_map_entry_wfq_get
-(
- cupti_context_stream_id_map_entry_t *stream_entry
-)
-{
-  return stream_entry->wfq;
-}
-
-
-pthread_cond_t *
-cupti_context_stream_id_map_entry_cond_get
-(
- cupti_context_stream_id_map_entry_t *stream_entry
-)
-{
-  return &stream_entry->cond;
-}
-
-
 void
 cupti_context_stream_id_map_append
 (
@@ -181,52 +174,35 @@ cupti_context_stream_id_map_append
 {
   // TODO(Keren): refactor
   cupti_context_stream_id_map_entry_t *entry = cupti_context_stream_id_map_lookup(context_id, stream_id);
-  if (!entry) {
+  if (entry == NULL) {
     cupti_context_stream_id_map_insert(context_id, stream_id);
-    entry = cupti_context_stream_id_map_lookup(context_id, stream_id); //new node will be root
-    monitor_disable_new_threads(); // only once?
-    stream_thread_data_t *data = hpcrun_malloc_safe(sizeof(stream_thread_data_t));
-    data->cond = &entry->cond;
-    data->wfq = entry->wfq;
-    data->mutex = &entry->mutex;
-    cupti_stream_counter_increase(1);
-    pthread_create(&entry->thread, NULL, cupti_stream_data_collecting, data);
-    monitor_enable_new_threads();
+    entry = cupti_context_stream_id_map_lookup(context_id, stream_id);
   }
-  stream_activity_data_elem *node =(stream_activity_data_elem* ) hpcrun_malloc_safe(sizeof(stream_activity_data_elem));
-  node->activity_data.node = cct_node;
-  node->activity_data.start = start;
-  node->activity_data.end = end;
-  producer_wfq_ptr_set(&node->next, 0);
-  stream_activity_data_producer_wfq *wfq = cupti_context_stream_id_map_entry_wfq_get(entry);
-  pthread_cond_t *cond = cupti_context_stream_id_map_entry_cond_get(entry);
-  pthread_mutex_t *mutex = &entry->mutex;
-  stream_activity_data_t_producer_wfq_enqueue(wfq, node);
-  pthread_cond_signal(cond);
+  cupti_stream_trace_append(entry->stream_trace, start, end, cct_node);
 }
 
 
 static void
-splay_tree_traversal
+cupti_context_stream_id_map_process_helper
 (
- cupti_context_stream_id_map_entry_t* root
+ cupti_context_stream_id_map_entry_t *entry,
+ cupti_context_stream_id_map_fn_t fn
 )
 {
-  if (!root) {
+  if (entry) {
+    fn(entry->stream_trace);
+    cupti_context_stream_id_map_process_helper(entry->left, fn);
+    cupti_context_stream_id_map_process_helper(entry->right, fn);
     return;
   }
-
-  pthread_cond_signal(&root->cond);
-
-  if (root->left)
-    splay_tree_traversal(root->left);
-  if (root->right)
-    splay_tree_traversal(root->right);
 }
 
 
 void
-cupti_context_stream_id_map_signal()
+cupti_context_stream_id_map_process
+(
+ cupti_context_stream_id_map_fn_t fn
+)
 {
-  splay_tree_traversal(cupti_context_stream_id_map_root);
+  cupti_context_stream_id_map_process_helper(cupti_context_stream_id_map_root, fn);
 }

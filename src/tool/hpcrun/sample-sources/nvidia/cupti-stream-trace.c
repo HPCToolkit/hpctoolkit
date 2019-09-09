@@ -58,8 +58,12 @@
 #include "cupti-stream-trace.h"
 
 #include <tool/hpcrun/threadmgr.h>
+#include <tool/hpcrun/trace.h>
 
-#define CUPTI_STREAM_DEBUG 1
+#include <pthread.h>
+#include <monitor.h>
+
+#define CUPTI_STREAM_DEBUG 0
 
 #if CUPTI_STREAM_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -68,81 +72,123 @@
 #endif
 
 
-static _Atomic(bool) cupti_stop_streams;
+typedef struct {
+  cct_node_t *node;
+  uint64_t start;
+  uint64_t end;
+} stream_activity_data_t;
+
+typedef struct {
+  producer_wfq_element_ptr_t next;
+  stream_activity_data_t activity_data;
+} typed_producer_wfq_elem(stream_activity_data_t);
+
+typedef producer_wfq_t typed_producer_wfq(stream_activity_data_t);
+
+struct stream_trace_s {
+  pthread_t thread;
+  producer_wfq_t wfq;
+  pthread_cond_t cond;
+  pthread_mutex_t mutex;
+};
+
+typedef typed_producer_wfq_elem(stream_activity_data_t) stream_activity_data_elem_t;
+
+/******************************************************************************
+ * static indicator variables
+ *****************************************************************************/
+
+static _Atomic(bool) cupti_stop_streams_flag;
 static atomic_ullong cupti_stream_id;
 static atomic_ullong cupti_stream_counter;
 
+/******************************************************************************
+ * wfq functions
+ *****************************************************************************/
+
+typed_producer_wfq_declare(stream_activity_data_t)
+
+typed_producer_wfq_impl(stream_activity_data_t)
+
+#define stream_activity_data_producer_wfq_enqueue typed_producer_wfq_enqueue(stream_activity_data_t)
+#define stream_activity_data_producer_wfq_dequeue typed_producer_wfq_dequeue(stream_activity_data_t)
+
+/******************************************************************************
+ * stream trace functions
+ *****************************************************************************/
 
 void
 cupti_stream_trace_init
 (
 )
 {
-  atomic_store(&cupti_stop_streams, 0);
+  atomic_store(&cupti_stop_streams_flag, false);
   atomic_store(&cupti_stream_counter, 0);
   atomic_store(&cupti_stream_id, 0);
 }
 
 
-void
-cupti_stream_counter_increase
-(
- unsigned long long inc
-)
-{
-  atomic_fetch_add(&cupti_stream_counter, inc);
-}
-
-
 void *
-cupti_stream_data_collecting
+cupti_stream_trace_collect
 (
  void *arg
 )
 {
   PRINT("Init stream collecting");
 
-  stream_thread_data_t* thread_args = (stream_thread_data_t*) arg;
-  stream_activity_data_t_producer_wfq_t *wfq = thread_args->wfq;
-  pthread_cond_t *cond = thread_args->cond;
-  pthread_mutex_t *mutex = thread_args->mutex;
+  stream_trace_t *stream_trace = (stream_trace_t *)arg;
+  producer_wfq_t *wfq = &stream_trace->wfq;
+  pthread_cond_t *cond = &stream_trace->cond;
+  pthread_mutex_t *mutex = &stream_trace->mutex;
   bool first_pass = true;
-  stream_activity_data_elem *elem;
+  stream_activity_data_elem_t *elem = NULL;
 
-  thread_data_t *td = NULL;
-  // FIXME(Keren): adjust
   //!unsure of the first argument
+  thread_data_t *td = NULL;
   hpcrun_threadMgr_non_compact_data_get(500 + atomic_fetch_add(&cupti_stream_id, 1), NULL, &td);
   hpcrun_set_thread_data(td);
 
-  while(!atomic_load(&cupti_stop_streams)) {
+  while (!atomic_load(&cupti_stop_streams_flag)) {
     elem = stream_activity_data_producer_wfq_dequeue(wfq);
     if (elem) {
       cct_node_t *path = elem->activity_data.node;
-      cct_node_t *leaf = hpcrun_cct_insert_path_return_leaf((td->core_profile_trace_data.epoch->csdata).tree_root, path);
+      cct_node_t *leaf = hpcrun_cct_insert_path_return_leaf(
+        (td->core_profile_trace_data.epoch->csdata).tree_root, path);
       cct_node_t *no_thread = td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
+
+      PRINT("Stream append node\n");
       if (first_pass) {
         first_pass = false;
-        hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
+        hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+          td->prev_dLCA, elem->activity_data.start/1000 - 1);
       }
-      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
-      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+        td->prev_dLCA, elem->activity_data.start/1000);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+        td->prev_dLCA, elem->activity_data.end/1000 + 1);
     } else {
       pthread_cond_wait(cond, mutex);
     }
   }
 
+  // Flush back
   while ((elem = stream_activity_data_producer_wfq_dequeue(wfq))) {
     cct_node_t *path = elem->activity_data.node;
     cct_node_t *leaf = hpcrun_cct_insert_path_return_leaf((td->core_profile_trace_data.epoch->csdata).tree_root, path);
     cct_node_t *no_thread = td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
+
+    PRINT("Stream append node\n");
     if (first_pass) {
       first_pass = false;
-      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.start/1000 - 1);
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+        td->prev_dLCA, elem->activity_data.start/1000 - 1);
     }
-    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0, td->prev_dLCA, elem->activity_data.start/1000);
-    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0, td->prev_dLCA, elem->activity_data.end/1000 + 1);
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+      td->prev_dLCA, elem->activity_data.start/1000);
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+      td->prev_dLCA, elem->activity_data.end/1000 + 1);
   }
+
   epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
   hpcrun_threadMgr_data_put(epoch, td);
   atomic_fetch_add(&cupti_stream_counter, -1);
@@ -153,13 +199,64 @@ cupti_stream_data_collecting
 }
 
 
-void
-cupti_stream_trace_fini
-(
- void *arg
-)
+stream_trace_t *
+cupti_stream_trace_create()
 {
-  atomic_store(&cupti_stop_streams, 1);
-  cupti_context_stream_id_map_signal();
+  // Init variables
+  stream_trace_t *stream_trace = (stream_trace_t *)hpcrun_malloc_safe(sizeof(stream_trace_t));
+
+  producer_wfq_init(&stream_trace->wfq);
+  pthread_mutex_init(&stream_trace->mutex, NULL);
+  pthread_cond_init(&stream_trace->cond, NULL);
+
+  // Create a new thread for the stream
+  monitor_disable_new_threads();
+
+  atomic_fetch_add(&cupti_stream_counter, 1);
+  pthread_create(&stream_trace->thread, NULL, cupti_stream_trace_collect, stream_trace);
+
+  monitor_enable_new_threads();
+
+  return stream_trace;
+}
+
+
+static stream_activity_data_elem_t *
+stream_activity_data_elem_new(uint64_t start, uint64_t end, cct_node_t *cct_node)
+{
+  stream_activity_data_elem_t *elem = (stream_activity_data_elem_t *)
+    hpcrun_malloc_safe(sizeof(stream_activity_data_elem_t));
+
+  elem->activity_data.node = cct_node;
+  elem->activity_data.start = start;
+  elem->activity_data.end = end;
+  producer_wfq_ptr_set(&elem->next, NULL);
+
+  return elem;
+}
+
+
+void
+cupti_stream_trace_append(stream_trace_t *stream_trace, uint64_t start, uint64_t end, cct_node_t *cct_node)
+{
+  stream_activity_data_elem_t *elem = stream_activity_data_elem_new(start, end, cct_node);
+  // FIXME(Keren): Currently every time a new element is pushed, deliver a signal. The behavior is costly
+  stream_activity_data_t_producer_wfq_enqueue(&stream_trace->wfq, elem);
+  pthread_cond_signal(&stream_trace->cond);
+}
+
+
+static void
+cupti_stream_trace_signal(stream_trace_t *stream_trace)
+{
+  pthread_cond_signal(&stream_trace->cond);
+}
+
+
+void
+cupti_stream_trace_fini(void *arg)
+{
+  atomic_store(&cupti_stop_streams_flag, true);
+  cupti_context_stream_id_map_process(cupti_stream_trace_signal);
   while (atomic_load(&cupti_stream_counter));
 }

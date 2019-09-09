@@ -802,14 +802,14 @@ cupti_subscriber_callback
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
-      PRINT("loaded module id %d, cubin size %ld, cubin %p\n", 
+      PRINT("loaded module id %d, cubin size %" PRIu64 ", cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
-      PRINT("unloaded module id %d, cubin size %ld, cubin %p\n",
+      PRINT("unloaded module id %d, cubin size %" PRIu64 ", cubin %p\n",
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
@@ -1766,7 +1766,8 @@ cupti_synchronization_process
         cupti_activity_produce((CUpti_Activity *)activity,
         host_op_node, record);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId, activity->start, activity->end, host_op_node);
+      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
+        activity->start, activity->end, host_op_node);
       //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
@@ -1791,7 +1792,8 @@ cupti_cdpkernel_process
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId, activity->start, activity->end, host_op_node);
+      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
+        activity->start, activity->end, host_op_node);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1863,21 +1865,6 @@ cupti_instruction_process
 }
 
 
-static void
-cupti_stream_process
-(
-  CUpti_ActivityStream* activity
-)
-{
-// TODO(Keren): maybe later
-// cupti_context_stream_map_insert(activity->contextId, activity->streamId);
-// pthread_t thread;
-// monitor_disable_new_threads(); // only once?
-// pthread_create(&thread, NULL, );
-// monitor_enable_new_threads();
-}
-
-
 //******************************************************************************
 // activity processing
 //******************************************************************************
@@ -1944,9 +1931,6 @@ cupti_activity_process
   case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
   case CUPTI_ACTIVITY_KIND_BRANCH:
     cupti_instruction_process(activity);
-    break;
-  case CUPTI_ACTIVITY_KIND_STREAM:
-    cupti_stream_process((CUpti_ActivityStream*)activity);
     break;
   case CUPTI_ACTIVITY_KIND_CDP_KERNEL:
      cupti_cdpkernel_process((CUpti_ActivityCdpKernel*)activity);
@@ -2051,7 +2035,7 @@ cupti_device_shutdown(void *args)
 void
 cupti_correlation_handle(cupti_entry_correlation_t *entry)
 {
-  PRINT("Insert external id %ld\n", entry->host_op_id);
+  PRINT("Insert external id %" PRIu64 "\n", entry->host_op_id);
   cupti_host_op_map_insert
     (entry->host_op_id, entry->api_node, entry->func_node, entry->record);
 }

@@ -328,7 +328,7 @@ ompt_device_initialize(uint64_t device_num,
                        ompt_function_lookup_t lookup,
                        const char *documentation)
 {
-  PRINT("ompt_device_initialize->%s, %d\n", type, device_num);
+  PRINT("ompt_device_initialize->%s, %" PRIu64 "\n", type, device_num);
 
   ompt_bind_names(lookup);
 
@@ -354,7 +354,7 @@ ompt_device_load(uint64_t device_num,
                  const void *device_addr,
                  uint64_t module_id)
 {
-  PRINT("ompt_device_load->%s, %d\n", filename, device_num);
+  PRINT("ompt_device_load->%s, %" PRIu64 "\n", filename, device_num);
   cupti_load_callback_cuda(module_id, host_addr, bytes);
 }
 
@@ -390,7 +390,7 @@ ompt_target_callback
   const void *codeptr_ra
 )
 {
-  PRINT("ompt_target_callback->target_id %d\n", target_id);
+  PRINT("ompt_target_callback->target_id %" PRIu64 "\n", target_id);
 
   if (endpoint == ompt_scope_end) {
     target_node = NULL;
@@ -484,9 +484,9 @@ ompt_submit_callback
  int begin
 )
 {
-  PRINT("ompt_submit_callback enter->target_id %d\n", target_id);
+  PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
   hpcrun_ompt_op_id_notify(begin, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
-  PRINT("ompt_submit_callback exit->target_id %d\n", target_id);
+  PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
 
 

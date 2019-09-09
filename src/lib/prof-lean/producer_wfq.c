@@ -2,6 +2,8 @@
 // Created by ax4 on 7/31/19.
 //
 
+#include <stdbool.h>
+
 #include "producer_wfq.h"
 
 #define Ad(wfq) wfq.aptr
@@ -10,70 +12,69 @@
 void
 producer_wfq_init
 (
-    producer_wfq_t *wfq
+ producer_wfq_t *wfq
 )
 {
-    atomic_store(&Ad(wfq->head), 0);
-    atomic_store(&Ad(wfq->tail), 0);
+  atomic_store(&Ad(wfq->head), 0);
+  atomic_store(&Ad(wfq->tail), 0);
 }
+
 
 void
 producer_wfq_ptr_set
-        (
-                producer_wfq_element_ptr_t *e,
-                producer_wfq_element_t *v
-        )
+(
+ producer_wfq_element_ptr_t *e,
+ producer_wfq_element_t *v
+)
 {
-    atomic_init(&Ap(e), v);
+  atomic_init(&Ap(e), v);
 }
+
 
 void
 producer_wfq_enqueue
 (
-    producer_wfq_t *wfq,
-    producer_wfq_element_t *e
+ producer_wfq_t *wfq,
+ producer_wfq_element_t *e
 )
 {
-    atomic_store_explicit(&Ad(e->next), 0, memory_order_relaxed);
-    producer_wfq_element_t *last = atomic_exchange(&Ad(wfq->tail), e);
-    if (!last)
-    {
-        atomic_store(&Ad(wfq->head), e);
-    } else
-    {
-        atomic_store(&Ad(last->next), e);
-    }
+  atomic_store_explicit(&Ad(e->next), 0, memory_order_relaxed);
+  producer_wfq_element_t *last = atomic_exchange(&Ad(wfq->tail), e);
+  if (!last) {
+    atomic_store(&Ad(wfq->head), e);
+  } else {
+    atomic_store(&Ad(last->next), e);
+  }
 }
+
 
 producer_wfq_element_t*
 producer_wfq_dequeue
 (
-    producer_wfq_t *wfq
+ producer_wfq_t *wfq
 )
 {
-    producer_wfq_element_t *first, *second;
-    while (1)
-    {
-        first = atomic_exchange(&Ad(wfq->head), 0);
-        if (first) break;
-        if (!atomic_load(&Ad(wfq->tail))) return 0;
-    }
-    second = atomic_load(&Ad(first->next));
-    if (second)
-    {
-        atomic_store(&Ad(wfq->head), second);
-    } else
-    {
-        if (!atomic_compare_exchange_strong(&Ad(wfq->tail), &first, 0))
-        {
-            while (!atomic_load(&Ad(first->next)));
-            producer_wfq_element_t *next = atomic_load(&Ad(first->next));
-            atomic_store(&Ad(wfq->head), next);
-        }
+  producer_wfq_element_t *first, *second;
+  while (true) {
+    first = atomic_exchange(&Ad(wfq->head), 0);
+    if (first) break;
+    if (!atomic_load(&Ad(wfq->tail))) return 0;
+  }
 
+  second = atomic_load(&Ad(first->next));
+  if (second) {
+    atomic_store(&Ad(wfq->head), second);
+  } else {
+    if (!atomic_compare_exchange_strong(&Ad(wfq->tail), &first, 0)) {
+      while (!atomic_load(&Ad(first->next)));
+      producer_wfq_element_t *next = atomic_load(&Ad(first->next));
+      atomic_store(&Ad(wfq->head), next);
     }
-    return first;
+  }
+
+  return first;
 }
+
 
 #define UNIT_TEST 0
 #if UNIT_TEST
