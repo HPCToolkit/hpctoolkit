@@ -252,7 +252,6 @@ datacentric_post_handler(event_handler_arg_t *args)
   perf_mmap_data_t *mmap_data = args->data;
 
   cct_node_t *sample_node = args->sample->sample_node;
-  cct_node_t *node = sample_node;
 
   // ---------------------------------------------------------
   // memory information exists:
@@ -340,12 +339,14 @@ datacentric_post_handler(event_handler_arg_t *args)
   }
 
   // copy the callpath of the sample to the variable context
-  node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+  cct_node_t *node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
 
+#if 0
   // sample node will point to this var node.
   // we need this node to keep the id so that hpcprof/hpcviewer will not lose the pointer
   hpcrun_cct_retain(var_node);
   hpcrun_cct_link_source_memaccess(sample_node, var_node);
+#endif
 
   metric_set_t *mset = hpcrun_reify_metric_set(node);
 
