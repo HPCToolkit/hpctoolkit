@@ -80,7 +80,7 @@
 // macros
 //*****************************************************************************
 
-#define OMPT_ACTIVITY_DEBUG 1
+#define OMPT_ACTIVITY_DEBUG 0
 
 #if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -163,10 +163,12 @@ static __thread bool ompt_runtime_api_flag = false;
 //*****************************************************************************
 
 static void
-hpcrun_ompt_op_id_notify(int begin, ompt_id_t host_op_id, ip_normalized_t ip_norm)
+hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
+                         ompt_id_t host_op_id,
+                         ip_normalized_t ip_norm)
 {
   // A runtime API must be implemented by driver APIs.
-  if (begin == 1) {
+  if (endpoint == ompt_scope_begin) {
     // Enter a ompt runtime api
     PRINT("enter ompt runtime op\n");
     ompt_runtime_api_flag = true;
@@ -297,8 +299,7 @@ ompt_trace_configure(ompt_device_t *device)
   }
 
   // turn on monitoring previously indicated
-  // always use hpctoolkit's internal subscriber
-  //ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
+  ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
 }
 
 
@@ -313,7 +314,7 @@ ompt_device_initialize(uint64_t device_num,
 
   ompt_bind_names(lookup);
 
-  ompt_trace_configure(device);
+  //ompt_trace_configure(device);
 
   ompt_device_map_insert(device_num, device, type);
 }
@@ -426,6 +427,7 @@ ompt_target_callback
 void
 ompt_data_op_callback
 (
+ ompt_scope_endpoint_t endpoint,
  ompt_id_t target_id,
  ompt_id_t host_op_id,
  ompt_target_data_op_t optype,
@@ -434,8 +436,7 @@ ompt_data_op_callback
  void *dest_addr,
  int dest_device_num,
  size_t bytes,
- const void *codeptr_ra,
- int begin
+ const void *codeptr_ra
 )
 {
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
@@ -452,21 +453,21 @@ ompt_data_op_callback
       break;
   }
 
-  hpcrun_ompt_op_id_notify(begin, host_op_id, op.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, host_op_id, op.pc_norm);
 }
 
 
 void
 ompt_submit_callback
 (
+ ompt_scope_endpoint_t endpoint,
  ompt_id_t target_id,
  ompt_id_t host_op_id,
- unsigned int requested_num_teams,
- int begin
+ unsigned int requested_num_teams
 )
 {
   PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
-  hpcrun_ompt_op_id_notify(begin, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
   PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
 

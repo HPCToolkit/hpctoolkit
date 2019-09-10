@@ -932,7 +932,7 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
-            cupti_activities_consume();
+          cupti_activities_consume();
           cuda_state = cuda_placeholders.cuda_kernel_state;
           is_valid_op = true;
           // XXX(Keren): cannot parse this kind of kernel launch
@@ -1057,7 +1057,7 @@ cupti_subscriber_callback
       #endif
         {
           // Process previous activities
-            cupti_activities_consume();
+          cupti_activities_consume();
           cuda_state = cuda_placeholders.cuda_kernel_state;
           is_valid_op = true;
           is_kernel_op = true;
