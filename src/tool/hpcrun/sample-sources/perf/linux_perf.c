@@ -567,31 +567,15 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 #if kernel_sampling_enabled
   info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t)perf_util_add_kernel_callchain;
 #else
-  info.sample_custom_cct.update_after_fn  = NULL;
+  info.sample_custom_cct.update_after_fn  = (hpcrun_cct_update_after_t)perf_util_precise_ip;
 #endif
   info.sample_custom_cct.data_aux         = mmap_data;
 
   hpcrun_metricVal_t value = {.r = counter};
 
-  // PEBS IP is not null, we will attribute the cost to the sibling of the sample node t
-  if (mmap_data->ip != 0) {
-    value.r = 0;
-  }
-
   *sv = hpcrun_sample_callpath(context, metric,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipinner*/, 0/*issync*/, &info);
-
-  // PEBS IP is not null, we will attribute the cost to the sibling of the sample node t
-  if (mmap_data->ip != 0 && sv != NULL && sv->sample_node != NULL) {
-    cct_addr_t *addr    = hpcrun_cct_addr(sv->sample_node);
-    addr->ip_norm.lm_ip = mmap_data->ip;
-
-    sv->sample_node = hpcrun_cct_insert_addr(hpcrun_cct_parent(sv->sample_node), addr);
-
-    value.r = counter;
-    cct_metric_data_increment(metric, sv->sample_node, value);
-  }
 
   blame_shift_apply(metric, sv->sample_node, counter /*metricincr*/);
 
