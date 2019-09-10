@@ -63,6 +63,8 @@
 #include <pthread.h>
 #include <monitor.h>
 
+#include "cupti-context-stream-id-map.h"
+
 #define CUPTI_STREAM_DEBUG 0
 
 #if CUPTI_STREAM_DEBUG
@@ -70,6 +72,9 @@
 #else
 #define PRINT(...)
 #endif
+
+#define HPCRUN_CUPTI_TRACE_BUFFER_SIZE 100
+#define HPCRUN_CUPTI_TRACE_ID (1<<31 - 1)
 
 
 typedef struct {
@@ -90,6 +95,7 @@ struct stream_trace_s {
   producer_wfq_t wfq;
   pthread_cond_t cond;
   pthread_mutex_t mutex;
+  uint64_t count;
 };
 
 typedef typed_producer_wfq_elem(stream_activity_data_t) stream_activity_data_elem_t;
@@ -146,7 +152,8 @@ cupti_stream_trace_collect
   // FIXME(Keren): adjust
   //!unsure of the first argument
   thread_data_t *td = NULL;
-  hpcrun_threadMgr_non_compact_data_get(500 + atomic_fetch_add(&cupti_stream_id, 1), NULL, &td);
+  uint32_t trace_id = HPCRUN_CUPTI_TRACE_ID - atomic_fetch_add(&cupti_stream_id, 1);
+  hpcrun_threadMgr_non_compact_data_get(trace_id, NULL, &td);
   hpcrun_set_thread_data(td);
 
   while (!atomic_load(&cupti_stop_streams_flag)) {
@@ -241,9 +248,14 @@ void
 cupti_stream_trace_append(stream_trace_t *stream_trace, uint64_t start, uint64_t end, cct_node_t *cct_node)
 {
   stream_activity_data_elem_t *elem = stream_activity_data_elem_new(start, end, cct_node);
-  // FIXME(Keren): Currently every time a new element is pushed, deliver a signal. The behavior is costly
   stream_activity_data_t_producer_wfq_enqueue(&stream_trace->wfq, elem);
-  pthread_cond_signal(&stream_trace->cond);
+  stream_trace->count++;
+
+  // Notify the stream thread when buffer limit is reached
+  if (stream_trace->count == HPCRUN_CUPTI_TRACE_BUFFER_SIZE) {
+    pthread_cond_signal(&stream_trace->cond);
+    stream_trace->count = 0;
+  }
 }
 
 
