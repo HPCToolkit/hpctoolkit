@@ -135,7 +135,6 @@ OMPT_TARGET_API_FUNCTION(void, ompt_set_pc_sampling,
 //*****************************************************************************
 
 static bool ompt_pc_sampling_enabled = false;
-static bool ompt_external_subscriber_enabled = false;
 
 static device_finalizer_fn_entry_t device_finalizer;
 
@@ -274,20 +273,6 @@ ompt_pc_sampling_disable()
 
 
 void
-ompt_external_subscriber_enable()
-{
-  ompt_external_subscriber_enabled = true;
-}
-
-
-void
-ompt_external_subscriber_disable()
-{
-  ompt_external_subscriber_enabled = false;
-}
-
-
-void
 ompt_trace_configure(ompt_device_t *device)
 {
   int flags = 0;
@@ -311,13 +296,9 @@ ompt_trace_configure(ompt_device_t *device)
     ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
   }
 
-  // use hpctoolkit's subscriber
-  if (ompt_external_subscriber_enabled) {
-    ompt_set_external_subscriber(1);
-  }
-
   // turn on monitoring previously indicated
-  ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
+  // always use hpctoolkit's internal subscriber
+  //ompt_start_trace(device, ompt_callback_buffer_request, ompt_callback_buffer_complete);
 }
 
 

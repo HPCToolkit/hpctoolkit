@@ -143,6 +143,7 @@ cupti_stream_trace_collect
   bool first_pass = true;
   stream_activity_data_elem_t *elem = NULL;
 
+  // FIXME(Keren): adjust
   //!unsure of the first argument
   thread_data_t *td = NULL;
   hpcrun_threadMgr_non_compact_data_get(500 + atomic_fetch_add(&cupti_stream_id, 1), NULL, &td);
