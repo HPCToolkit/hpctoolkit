@@ -179,6 +179,9 @@ perf_util_is_ksym_available();
 int
 perf_util_get_paranoid_level();
 
+cct_node_t*
+perf_util_precise_ip(cct_node_t *leaf, void *data_aux);
+
 #if KERNEL_SAMPLING_ENABLED
 cct_node_t *
 perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
