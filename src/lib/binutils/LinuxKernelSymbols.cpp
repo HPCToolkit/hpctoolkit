@@ -67,6 +67,24 @@
 
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define PROVIDE_LOAD_MODULE_NAME 1
+
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+#ifdef PROVIDE_LOAD_MODULE_NAME
+static const char *LINUX_KERNEL_LOAD_MODULE_NAME = "[" LINUX_KERNEL_NAME "]"; 
+#endif
+
+
+
+//******************************************************************************
 // local operations
 //******************************************************************************
 
@@ -91,6 +109,18 @@ getKernelFilename(const std::set<std::string> &directorySet, std::string virtual
     }
   }
   return path;
+}
+
+
+static void
+add_suffix
+(
+ char *name,
+ const char *suffix
+)
+{
+  strcat(name, " ");
+  strcat(name, suffix);
 }
 
 
@@ -171,9 +201,12 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
       case 'T':
         // if module is non-empty, append it to name
         if (strlen(module) > 0) {
-           strcat(name, " ");
-           strcat(name, module);
+	  add_suffix(name, module);
         }
+
+#ifdef PROVIDE_LOAD_MODULE_NAME
+	add_suffix(name, LINUX_KERNEL_LOAD_MODULE_NAME);
+#endif
 
         binding = ((type == 't') ?
 	           SimpleSymbolBinding_Local :
