@@ -14,7 +14,7 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "cupti-host-op-map.h"
-#include "cupti-record.h"
+#include "cupti-channel.h"
 
 #define CUPTI_HOST_OP_MAP_DEBUG 0
 
@@ -31,7 +31,7 @@ struct cupti_host_op_map_entry_s {
   uint64_t host_op_id;
   int samples;
   int total_samples;
-  cupti_record_t *record;
+  cupti_activity_channel_t *channel;
   cct_node_t *host_op_node;
   cct_node_t *func_node;
   struct cupti_host_op_map_entry_s *left;
@@ -50,7 +50,7 @@ static cupti_host_op_map_entry_t *cupti_host_op_map_root = NULL;
 
 static cupti_host_op_map_entry_t *
 cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node,
-  cct_node_t *func_node, cupti_record_t *record)
+  cct_node_t *func_node, cupti_activity_channel_t *channel)
 {
   cupti_host_op_map_entry_t *e;
   e = (cupti_host_op_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_host_op_map_entry_t));
@@ -59,7 +59,7 @@ cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node,
   e->total_samples = 0;
   e->host_op_node = host_op_node;
   e->func_node = func_node;
-  e->record = record;
+  e->channel = channel;
   e->left = NULL;
   e->right = NULL;
 
@@ -105,17 +105,17 @@ cupti_host_op_map_lookup(uint64_t id)
     result = cupti_host_op_map_root;
   }
 
-  TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(DEFER_CTXT, "host op map lookup: id=0x%lx (channel %p)", id, result);
   return result;
 }
 
 
 void
-cupti_host_op_map_insert(uint64_t host_op_id, cct_node_t *host_op_node,
-  cct_node_t *func_node, cupti_record_t *record)
+cupti_host_op_map_insert(uint64_t host_op_id, cupti_activity_channel_t *channel, 
+  cct_node_t *host_op_node, cct_node_t *func_node)
 {
   cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(
-    host_op_id, host_op_node, func_node, record);
+    host_op_id, host_op_node, func_node, channel);
 
   TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_node);
 
@@ -218,10 +218,10 @@ cupti_host_op_map_entry_func_node_get(cupti_host_op_map_entry_t *entry)
 }
 
 
-cupti_record_t *
-cupti_host_op_map_entry_record_get(cupti_host_op_map_entry_t *entry)
+cupti_activity_channel_t *
+cupti_host_op_map_entry_activity_channel_get(cupti_host_op_map_entry_t *entry)
 {
-  return entry->record;
+  return entry->channel;
 }
 
 

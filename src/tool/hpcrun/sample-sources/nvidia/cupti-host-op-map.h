@@ -13,7 +13,7 @@
 
 #include <hpcrun/cct/cct.h>
 
-#include "cupti-record.h"
+#include "cupti-channel.h"
 
 /******************************************************************************
  * type definitions 
@@ -36,11 +36,12 @@ void
 cupti_host_op_map_insert
 (
  uint64_t host_op_id,
+ cupti_activity_channel_t *channel,
  cct_node_t *host_op_node,
- cct_node_t *host_func_node,
- cupti_record_t *record
+ cct_node_t *host_func_node
 );
 
+// TODO(Keren): find another way to remove nodes
 // samples == total_samples remove the node and return false
 bool
 cupti_host_op_map_samples_increase
@@ -79,8 +80,8 @@ cupti_host_op_map_entry_func_node_get
 );
 
 
-cupti_record_t *
-cupti_host_op_map_entry_record_get
+cupti_activity_channel_t *
+cupti_host_op_map_entry_activity_channel_get
 (
  cupti_host_op_map_entry_t *entry
 );

@@ -83,7 +83,7 @@
 #include "cuda-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
-#include "cupti-stream-trace.h"
+#include "cupti-trace-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -991,9 +991,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
   // Register cupti callbacks
-  cupti_trace_init();
+  cupti_init();
   cupti_callbacks_subscribe();
-  cupti_trace_start();
+  cupti_start();
 
   // Set enabling activities
   cupti_enabled_activities |= CUPTI_DRIVER;
@@ -1007,11 +1007,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     pc_sampling_frequency = -1;
   }
 
-  // Init trace records
-  cupti_stream_trace_init();
+  // Init records
+  cupti_trace_init();
 
   // Register shutdown functions to write trace files
-  device_trace_finalizer_shutdown.fn = cupti_stream_trace_fini;
+  device_trace_finalizer_shutdown.fn = cupti_trace_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 

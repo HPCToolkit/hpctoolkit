@@ -69,71 +69,66 @@
 //*****************************************************************************
 
 #define typed_unordered_stack_declare(type) \
-typed_unordered_stack_functions(type, ignore)
+  typed_unordered_stack_functions(type, ignore)
 
 #define typed_unordered_stack_impl(type) \
-typed_unordered_stack_functions(type, show)
+  typed_unordered_stack_functions(type, show)
 
-#define unordered_stack_op(op)			\
+#define unordered_stack_op(op) \
   unordered_stack_ ## op
 
 // routine name for a typed unordered_stack operation
-#define typed_unordered_stack_op(type, op)		\
-   type ## _unordered_stack_ ## op
+#define typed_unordered_stack_op(type, op) \
+  type ## _unordered_stack_ ## op
 
-#define typed_unordered_stack(type)  \
+#define typed_unordered_stack(type) \
   type ## _ ## u_stack_t
 
 #define typed_unordered_stack_init(type) \
-    typed_unordered_stack_op(type, init)
+  typed_unordered_stack_op(type, init)
 
-#define typed_unordered_stack_push(type)		\
+#define typed_unordered_stack_push(type) \
   typed_unordered_stack_op(type, push)
 
-#define typed_unordered_stack_pop(type)		\
+#define typed_unordered_stack_pop(type) \
   typed_unordered_stack_op(type, pop)
 
 #define typed_unordered_stack_steal(type) \
   typed_unordered_stack_op(type, steal)
 
-
 // define typed wrappers for a unordered_stack type
-#define typed_unordered_stack_functions(type, macro)				\
+#define typed_unordered_stack_functions(type, macro) \
 \
-\
-  void                        \
-  typed_unordered_stack_init(type)   \
-    (typed_unordered_stack(type) *p)   \
-    macro({ \
-        unordered_stack_op(init) ((u_stack_t *) p); \
-    }) \
-  								\
- \
-  void								\
-  typed_unordered_stack_push(type)					\
-    (typed_unordered_stack(type) *q, typed_stack_elem(type) *e)	\
-  macro({								\
-        unordered_stack_op(push) ((u_stack_t *) q,			\
-			 (s_element_t *) e);			\
-  })								\
-  								\
-  typed_stack_elem(type) *					\
-  typed_unordered_stack_pop(type)					\
-  (typed_unordered_stack(type) *q)				\
-  macro({								\
-    typed_stack_elem(type) *e = (typed_stack_elem(type) *)	\
-      unordered_stack_op(pop) ((u_stack_t *) q);		\
-    return e;							\
+  void \
+  typed_unordered_stack_init(type) \
+  (typed_unordered_stack(type) *p) \
+  macro({ \
+    unordered_stack_op(init) ((u_stack_t *) p); \
   }) \
-  \
-   void								\
-  typed_unordered_stack_steal(type)					\
-    (typed_unordered_stack(type) *q)	\
-  macro({								\
-        unordered_stack_op(steal) ((u_stack_t *) q);			\
-  })								\
-
-
+\
+  void \
+  typed_unordered_stack_push(type) \
+  (typed_unordered_stack(type) *q, typed_stack_elem(type) *e) \
+  macro({ \
+    unordered_stack_op(push) ((u_stack_t *) q, \
+    (s_element_t *) e); \
+  }) \
+\
+  typed_stack_elem(type) * \
+  typed_unordered_stack_pop(type) \
+  (typed_unordered_stack(type) *q) \
+  macro({ \
+    typed_stack_elem(type) *e = (typed_stack_elem(type) *) \
+    unordered_stack_op(pop) ((u_stack_t *) q); \
+    return e; \
+  }) \
+ \
+  void \
+  typed_unordered_stack_steal(type) \
+  (typed_unordered_stack(type) *q) \
+  macro({ \
+    unordered_stack_op(steal) ((u_stack_t *) q); \
+  }) \
 
 
 //*****************************************************************************

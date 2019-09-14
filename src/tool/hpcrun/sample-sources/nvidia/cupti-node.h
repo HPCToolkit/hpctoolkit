@@ -8,7 +8,8 @@ typedef enum {
   CUPTI_ENTRY_TYPE_ACTIVITY = 1,
   CUPTI_ENTRY_TYPE_NOTIFICATION = 2,
   CUPTI_ENTRY_TYPE_BUFFER = 3,
-  CUPTI_ENTRY_TYPE_COUNT = 4
+  CUPTI_ENTRY_TYPE_TRACE = 4,
+  CUPTI_ENTRY_TYPE_COUNT = 5
 } cupti_entry_type_t;
 
 // pc sampling
@@ -126,14 +127,21 @@ typedef struct cupti_entry_activity {
 // notification entry
 typedef struct cupti_entry_correlation {
   uint64_t host_op_id;
+  void *activity_channel;
   cct_node_t *api_node;
   cct_node_t *func_node;
-  void *record;
 } cupti_entry_correlation_t;
+
+// trace entry
+typedef struct cupti_entry_trace {
+  uint64_t start;
+  uint64_t end;
+  cct_node_t *node;
+} cupti_entry_trace_t;
 
 
 void
-cupti_activity_entry_set
+cupti_entry_activity_set
 (
  cupti_entry_activity_t *entry,
  CUpti_Activity *activity,
@@ -142,13 +150,24 @@ cupti_activity_entry_set
 
 
 void
-cupti_correlation_entry_set
+cupti_entry_correlation_set
 (
  cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
+ void *activity_channel,
  cct_node_t *cct_node,
- cct_node_t *func_node,
- void *record
+ cct_node_t *func_node
 );
+
+
+void
+cupti_entry_trace_set
+(
+ cupti_entry_trace_t *entry,
+ uint64_t start,
+ uint64_t end,
+ cct_node_t *node
+);
+
 
 #endif

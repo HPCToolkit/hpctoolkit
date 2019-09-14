@@ -13,7 +13,7 @@
 // ------------------------------------------------------------
 
 void
-cupti_activity_entry_set
+cupti_entry_activity_set
 (
  cupti_entry_activity_t *entry,
  CUpti_Activity *activity,
@@ -166,17 +166,32 @@ cupti_activity_entry_set
 
 
 void
-cupti_correlation_entry_set
+cupti_entry_correlation_set
 (
  cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
+ void *activity_channel,
  cct_node_t *api_node,
- cct_node_t *func_node,
- void *record
+ cct_node_t *func_node
 )
 {
+  entry->activity_channel = activity_channel;
   entry->host_op_id = host_op_id;
   entry->api_node = api_node;
   entry->func_node = func_node;
-  entry->record = record;
+}
+
+
+void
+cupti_entry_trace_set
+(
+ cupti_entry_trace_t *entry,
+ uint64_t start,
+ uint64_t end,
+ cct_node_t *node
+)
+{
+  entry->start = start;
+  entry->end = end;
+  entry->node = node;
 }

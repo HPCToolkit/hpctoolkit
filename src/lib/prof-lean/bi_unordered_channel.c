@@ -34,8 +34,8 @@ void bi_unordered_channel_steal(bi_unordered_channel_t *ch, channel_direction_t 
 }
 
 
-void bi_unordered_channel_init(bi_unordered_channel_t ch){
-  unordered_stack_init(&ch.forward_stack);
-  unordered_stack_init(&ch.backward_stack);
+void bi_unordered_channel_init(bi_unordered_channel_t *ch){
+  unordered_stack_init(&(ch->forward_stack));
+  unordered_stack_init(&(ch->backward_stack));
 }
 

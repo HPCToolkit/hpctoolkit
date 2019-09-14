@@ -50,8 +50,6 @@
 
 #include "stacks.h"
 
-
-
 //*****************************************************************************
 // interface functions
 //*****************************************************************************
@@ -134,6 +132,24 @@ sstack_steal
 
 
 void
+sstack_reverse
+(
+ s_element_ptr_t *q
+)
+{
+  s_element_t *prev = NULL;
+  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  while (e) {
+    s_element_t *next = atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+    atomic_store_explicit(&(e->Ad(next)), prev, memory_order_relaxed);
+    prev = e;
+    e = next;
+  }
+  atomic_store_explicit(&Ap(q), prev, memory_order_relaxed);
+}
+
+
+void
 cstack_ptr_set
 (
  s_element_ptr_t *e,
@@ -161,7 +177,7 @@ cstack_swap
  s_element_t *r
 )
 {
-  s_element_t *e = atomic_exchange(&Ap(q),r);
+  s_element_t *e = atomic_exchange(&Ap(q), r);
 
   return e;
 }
@@ -204,7 +220,7 @@ cstack_pop
     next = atomic_load(&oldhead->Ad(next));
   } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
 
-  atomic_store(&oldhead->Ad(next),0);
+  atomic_store(&oldhead->Ad(next), 0);
 
   return oldhead;
 }

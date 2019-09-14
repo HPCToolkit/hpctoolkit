@@ -125,19 +125,19 @@ cupti_device_timestamp_get
 
 
 void 
-cupti_trace_init
+cupti_init
 (
 );
 
 
 void 
-cupti_trace_start
+cupti_start
 (
 );
 
 
 void 
-cupti_trace_pause
+cupti_pause
 (
  CUcontext context,
  bool begin_pause
@@ -145,7 +145,7 @@ cupti_trace_pause
 
 
 void 
-cupti_trace_finalize
+cupti_finalize
 (
 );
 
@@ -303,6 +303,7 @@ cupti_correlation_handle
 (
  cupti_entry_correlation_t *entry
 );
+
 
 void
 cupti_activity_handle

@@ -3,7 +3,6 @@
 //
 
 #include "cupti-context-stream-id-map.h"
-#include "cupti-stream-trace.h"
 
 
 #define CUPTI_CONTEXT_STREAM_ID_MAP_DEBUG 0
@@ -17,7 +16,7 @@
 
 struct cupti_context_stream_id_map_entry_s {
   uint64_t context_stream_id;
-  stream_trace_t *stream_trace;
+  cupti_trace_t *trace;
   struct cupti_context_stream_id_map_entry_s *left;
   struct cupti_context_stream_id_map_entry_s *right;
 };
@@ -48,7 +47,7 @@ cupti_context_stream_id_map_entry_new
   cupti_context_stream_id_map_entry_t *e;
   e = (cupti_context_stream_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_context_stream_id_map_entry_t));
   e->context_stream_id = cupti_context_stream_id_generate(context_id, stream_id);
-  e->stream_trace = cupti_stream_trace_create();
+  e->trace = cupti_trace_create();
   e->left = NULL;
   e->right = NULL;
 
@@ -178,7 +177,7 @@ cupti_context_stream_id_map_append
     cupti_context_stream_id_map_insert(context_id, stream_id);
     entry = cupti_context_stream_id_map_lookup(context_id, stream_id);
   }
-  cupti_stream_trace_append(entry->stream_trace, start, end, cct_node);
+  cupti_trace_append(entry->trace, start, end, cct_node);
 }
 
 
@@ -190,7 +189,7 @@ cupti_context_stream_id_map_process_helper
 )
 {
   if (entry) {
-    fn(entry->stream_trace);
+    fn(entry->trace);
     cupti_context_stream_id_map_process_helper(entry->left, fn);
     cupti_context_stream_id_map_process_helper(entry->right, fn);
     return;

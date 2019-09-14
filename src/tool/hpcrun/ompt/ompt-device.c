@@ -71,7 +71,7 @@
 #include "ompt-placeholders.h"
 
 #include "sample-sources/nvidia/cupti-api.h"
-#include "sample-sources/nvidia/cupti-record.h"
+#include "sample-sources/nvidia/cupti-channel.h"
 #include "sample-sources/nvidia/nvidia.h"
 
 
@@ -203,7 +203,10 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
   }
 
   // inform the worker about the placeholder
-  correlation_produce(host_op_id, cct_child, cct_func);
+  cupti_correlation_channel_t *channel = cupti_correlation_channel_get();
+  cupti_activity_channel_t *activity_channel = cupti_activity_channel_get();
+  cupti_correlation_channel_produce(channel, host_op_id,
+    activity_channel, cct_child, cct_func);
   hpcrun_safe_exit();
 }
 
@@ -247,7 +250,7 @@ ompt_callback_buffer_complete
 )
 {
   // handle notifications
-  correlations_consume();
+  cupti_correlation_channel_consume(NULL);
   // signal advance to return pointer to first record
   ompt_buffer_cursor_t next = begin;
   int status = 0;
@@ -379,14 +382,13 @@ ompt_target_callback
     return;
   }
 
-  // If a thread creates a target region, we init records
-  // and it must be flushed in the finalizer
-  cupti_stop_flag_set();
-  // TODO(Keren) ignore cupti thread callback
-  cupti_record_init();
-
-  // process cupti records
-  cupti_activities_consume();
+  // XXX(Keren): Do not use openmp callbacks to consume and produce records
+  // HPCToolkit always subscribes its own cupti callback
+  //
+  //cupti_stop_flag_set();
+  //cupti_correlation_channel_init();
+  //cupti_activity_channel_init();
+  //cupti_correlation_channel_consume();
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};

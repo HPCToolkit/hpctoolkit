@@ -10,11 +10,11 @@
 #include <tool/hpcrun/cct/cct.h>
 #include <tool/hpcrun/threadmgr.h>
 
-#include "cupti-stream-trace.h"
+#include "cupti-trace-api.h"
 
 typedef struct cupti_context_stream_id_map_entry_s cupti_context_stream_id_map_entry_t;
 
-typedef void (*cupti_context_stream_id_map_fn_t)(stream_trace_t *stream_trace);
+typedef void (*cupti_context_stream_id_map_fn_t)(cupti_trace_t *trace);
 
 
 cupti_context_stream_id_map_entry_t *

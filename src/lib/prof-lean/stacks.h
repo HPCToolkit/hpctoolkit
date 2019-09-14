@@ -72,108 +72,107 @@
 #define show(x) x
 
 #define typed_stack_declare(type) \
-typed_stack(type, ignore)
+  typed_stack(type, ignore)
 
 #define typed_stack_impl(type) \
-typed_stack(type, show)
+  typed_stack(type, show)
 
 // routine name for a stack operation
-#define stack_op(qtype, op)			\
+#define stack_op(qtype, op) \
   qtype ## _ ## op
 
 // typed stack pointer
-#define typed_stack_elem_ptr(type)		\
+#define typed_stack_elem_ptr(type) \
   type ## _ ## s_element_ptr_t
 
-#define typed_stack_elem(type)			\
+#define typed_stack_elem(type) \
   type ## _ ## s_element_t
 
-#define typed_stack_elem_fn(type, fn)		\
+#define typed_stack_elem_fn(type, fn) \
   type ## _ ## s_element_ ## fn
 
 // routine name for a typed stack operation
-#define typed_stack_op(type, qtype, op)		\
+#define typed_stack_op(type, qtype, op) \
   type ## _ ## qtype ## _ ## op
 
 // ptr set routine name for a typed stack 
-#define typed_stack_elem_ptr_set(type, qtype)	\
+#define typed_stack_elem_ptr_set(type, qtype) \
   typed_stack_op(type, qtype, ptr_set)
 
 // ptr get routine name for a typed stack 
-#define typed_stack_elem_ptr_get(type, qtype)	\
+#define typed_stack_elem_ptr_get(type, qtype) \
   typed_stack_op(type, qtype, ptr_get)
 
 // swap routine name for a typed stack 
-#define typed_stack_swap(type, qtype)		\
+#define typed_stack_swap(type, qtype) \
   typed_stack_op(type, qtype, swap)
 
 // push routine name for a typed stack 
-#define typed_stack_push(type, qtype)		\
+#define typed_stack_push(type, qtype) \
   typed_stack_op(type, qtype, push)
 
 // pop routine name for a typed stack 
-#define typed_stack_pop(type, qtype)		\
+#define typed_stack_pop(type, qtype) \
   typed_stack_op(type, qtype, pop)
 
 // steal routine name for a typed stack 
-#define typed_stack_steal(type, qtype)		\
+#define typed_stack_steal(type, qtype) \
   typed_stack_op(type, qtype, steal)
 
 
 // define typed wrappers for a stack type 
-#define typed_stack(type, qtype, macro)				\
-  void								\
-  typed_stack_elem_ptr_set(type, qtype)				\
-    (typed_stack_elem_ptr(type) *e,				\
-     typed_stack_elem(type) *v)					\
-  macro({								\
-    stack_op(qtype,ptr_set)((s_element_ptr_t *) e,		\
-			    (s_element_t *) v);			\
-  })								\
-  								\
-  typed_stack_elem(type) *					\
-  typed_stack_elem_ptr_get(type, qtype)				\
-    (typed_stack_elem_ptr(type) *e)				\
-  macro({								\
-    typed_stack_elem(type) *r =	(typed_stack_elem(type) *)	\
-      stack_op(qtype,ptr_get)((s_element_ptr_t *) e);		\
-    return r;							\
-  })								\
-  								\
-  typed_stack_elem(type) *					\
-  typed_stack_swap(type, qtype)					\
-    (typed_stack_elem_ptr(type) *q, typed_stack_elem(type) *v)	\
-  macro({								\
-    typed_stack_elem(type) *e = (typed_stack_elem(type) *)	\
-      stack_op(qtype,swap)((s_element_ptr_t *) q,		\
-			   (s_element_t *) v);			\
-    return e;							\
-  })							\
-  								\
-  void								\
-  typed_stack_push(type, qtype)					\
-    (typed_stack_elem_ptr(type) *q, typed_stack_elem(type) *e)	\
-  macro({								\
-    stack_op(qtype,push)((s_element_ptr_t *) q,			\
-			 (s_element_t *) e);			\
-  })								\
-  								\
-  typed_stack_elem(type) *					\
-  typed_stack_pop(type, qtype)					\
-  (typed_stack_elem_ptr(type) *q)				\
-  macro({								\
-    typed_stack_elem(type) *e = (typed_stack_elem(type) *)	\
-      stack_op(qtype,pop)((s_element_ptr_t *) q);		\
-    return e;							\
-  })								\
-  								\
-  typed_stack_elem(type) *					\
-  typed_stack_steal(type, qtype)				\
-  (typed_stack_elem_ptr(type) *q)				\
-  macro({								\
-    typed_stack_elem(type) *e = (typed_stack_elem(type) *)	\
-      stack_op(qtype,steal)((s_element_ptr_t *) q);		\
-    return e;							\
+#define typed_stack(type, qtype, macro) \
+  void \
+  typed_stack_elem_ptr_set(type, qtype) \
+  (typed_stack_elem_ptr(type) *e, typed_stack_elem(type) *v) \
+  macro({ \
+    stack_op(qtype,ptr_set)((s_element_ptr_t *) e, \
+      (s_element_t *) v); \
+  }) \
+\
+  typed_stack_elem(type) * \
+  typed_stack_elem_ptr_get(type, qtype) \
+  (typed_stack_elem_ptr(type) *e) \
+  macro({ \
+    typed_stack_elem(type) *r = (typed_stack_elem(type) *) \
+    stack_op(qtype,ptr_get)((s_element_ptr_t *) e); \
+    return r; \
+  }) \
+\
+  typed_stack_elem(type) * \
+  typed_stack_swap(type, qtype) \
+  (typed_stack_elem_ptr(type) *q, typed_stack_elem(type) *v) \
+  macro({ \
+    typed_stack_elem(type) *e = (typed_stack_elem(type) *) \
+    stack_op(qtype,swap)((s_element_ptr_t *) q, \
+      (s_element_t *) v); \
+    return e; \
+  }) \
+\
+  void \
+  typed_stack_push(type, qtype) \
+  (typed_stack_elem_ptr(type) *q, typed_stack_elem(type) *e) \
+  macro({ \
+    stack_op(qtype,push)((s_element_ptr_t *) q, \
+    (s_element_t *) e); \
+  }) \
+\
+  typed_stack_elem(type) * \
+  typed_stack_pop(type, qtype) \
+  (typed_stack_elem_ptr(type) *q) \
+  macro({ \
+    typed_stack_elem(type) *e = (typed_stack_elem(type) *) \
+    stack_op(qtype,pop)((s_element_ptr_t *) q); \
+    return e; \
+  }) \
+\
+  typed_stack_elem(type) * \
+  typed_stack_steal(type, qtype) \
+  (typed_stack_elem_ptr(type) *q) \
+  macro({ \
+    typed_stack_elem(type) *e = (typed_stack_elem(type) *) \
+    stack_op(qtype,steal)((s_element_ptr_t *) q); \
+    return e; \
   })
 
 
@@ -182,14 +181,13 @@ typed_stack(type, show)
 //*****************************************************************************
 
 typedef struct s_element_ptr_u {
-    _Atomic(struct s_element_s*) aptr;
+  _Atomic(struct s_element_s*) aptr;
 } s_element_ptr_t;
 
 
 typedef struct s_element_s {
-    s_element_ptr_t next;
+  s_element_ptr_t next;
 } s_element_t;
-
 
 
 //*****************************************************************************
@@ -244,6 +242,13 @@ sstack_pop
 // steal the entire chain rooted at q 
 s_element_t *
 sstack_steal
+(
+ s_element_ptr_t *q
+);
+
+// reverse the entire chain rooted at q and set q to be the previous tail
+void
+sstack_reverse
 (
  s_element_ptr_t *q
 );
