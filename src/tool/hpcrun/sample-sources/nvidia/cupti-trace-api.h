@@ -11,8 +11,11 @@
 #include <tool/hpcrun/cct/cct.h>
 
 #include "cupti-node.h"
+#include "cupti-channel.h"
 
 typedef struct cupti_trace_s cupti_trace_t;
+
+typedef void (*cupti_trace_fn_t)(cupti_trace_t *trace, void *arg);
 
 void cupti_trace_init();
 
@@ -24,6 +27,6 @@ cupti_trace_t *cupti_trace_create();
 
 void cupti_trace_handle(cupti_entry_trace_t *entry);
 
-void cupti_trace_append(cupti_trace_t *trace, uint64_t start, uint64_t end, cct_node_t *cct_node);
+void cupti_trace_append(cupti_trace_t *trace, void *arg);
 
 #endif // _HPCTOOLKIT_CUPTI_TRACE_API_H_

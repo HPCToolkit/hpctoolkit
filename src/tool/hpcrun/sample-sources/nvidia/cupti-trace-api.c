@@ -64,12 +64,13 @@
 
 #include <pthread.h>
 #include <monitor.h>
+#include <assert.h>
 
-#include "cupti-context-stream-id-map.h"
+#include "cupti-context-id-map.h"
 #include "cupti-channel.h"
 
 
-#define CUPTI_TRACE_API_DEBUG 0
+#define CUPTI_TRACE_API_DEBUG 1
 
 #if CUPTI_TRACE_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -82,6 +83,7 @@
 
 
 struct cupti_trace_s {
+  uint32_t stream_id;
   pthread_t thread;
   pthread_cond_t cond;
   pthread_mutex_t mutex;
@@ -191,7 +193,7 @@ cupti_trace_create()
 
   pthread_mutex_init(&trace->mutex, NULL);
   pthread_cond_init(&trace->cond, NULL);
-  trace->channel = cupti_trace_channel_get();
+  trace->channel = (cupti_trace_channel_t *)hpcrun_malloc_safe(sizeof(cupti_trace_channel_t));
 
   // Create a new thread for the stream
   monitor_disable_new_threads();
@@ -206,11 +208,15 @@ cupti_trace_create()
 
 
 void
-cupti_trace_append(cupti_trace_t *trace, uint64_t start, uint64_t end, cct_node_t *cct_node)
+cupti_trace_append(cupti_trace_t *trace, void *arg)
 {
-  PRINT("Append trace start %" PRIu64 " end %" PRIu64 "\n", start, end); 
+  cupti_entry_trace_t *entry_trace = (cupti_entry_trace_t *)arg;
 
-  cupti_trace_channel_produce(trace->channel, start, end, cct_node);
+  PRINT("Append trace start %" PRIu64 " end %" PRIu64 "\n",
+    entry_trace->start, entry_trace->end); 
+
+  cupti_trace_channel_produce(trace->channel, entry_trace->start,
+    entry_trace->end, entry_trace->node);
   trace->count++;
 
   // Notify the stream thread when buffer limit is reached
@@ -222,7 +228,7 @@ cupti_trace_append(cupti_trace_t *trace, uint64_t start, uint64_t end, cct_node_
 
 
 static void
-cupti_trace_signal(cupti_trace_t *trace)
+cupti_trace_signal(cupti_trace_t *trace, void *arg)
 {
   pthread_cond_signal(&trace->cond);
 }
@@ -232,6 +238,6 @@ void
 cupti_trace_fini(void *arg)
 {
   atomic_store(&cupti_stop_trace_flag, true);
-  cupti_context_stream_id_map_process(cupti_trace_signal);
+  cupti_context_id_map_device_process(cupti_trace_signal, NULL);
   while (atomic_load(&cupti_stream_counter));
 }

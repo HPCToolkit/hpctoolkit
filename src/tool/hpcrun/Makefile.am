@@ -473,7 +473,8 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-function-id-map.c		\
 	sample-sources/nvidia/cupti-host-op-map.c		\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-context-stream-id-map.c \
+	sample-sources/nvidia/cupti-context-id-map.c \
+	sample-sources/nvidia/cupti-stream-id-map.c \
 	sample-sources/nvidia/cupti-trace-api.c \
 	sample-sources/nvidia/cupti-trace-channel.c \
 	sample-sources/nvidia/cupti-correlation-channel.c   \

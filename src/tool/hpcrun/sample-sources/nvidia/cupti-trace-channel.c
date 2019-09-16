@@ -2,6 +2,8 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <cupti_version.h>
 
+#include <assert.h>
+
 #include "cupti-channel.h"
 #include "cupti-trace-api.h"
 
@@ -17,6 +19,7 @@ static __thread cupti_trace_channel_t *cupti_trace_channel;
 typed_bi_unordered_channel_impl(cupti_entry_trace_t)
 
 
+// Do not use
 void
 cupti_trace_channel_init()
 {
@@ -27,6 +30,7 @@ cupti_trace_channel_init()
 }
 
 
+// Do not use
 cupti_trace_channel_t *
 cupti_trace_channel_get()
 {

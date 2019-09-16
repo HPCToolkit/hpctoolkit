@@ -110,7 +110,7 @@
 #include "cupti-host-op-map.h"
 #include "cupti-channel.h"
 
-#include "cupti-context-stream-id-map.h"
+#include "cupti-context-id-map.h"
 #include "cupti-trace-api.h"
 
 
@@ -1593,16 +1593,22 @@ cupti_memcpy_process
     cupti_host_op_map_entry_t *host_op_entry =
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = host_op_node
+      };
+      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+        cupti_trace_append, &entry_trace);
+
+      cupti_activity_channel_t *channel =
+        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity,
         host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //cupti_host_op_map_delete(external_id);
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, host_op_node);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   } else {
@@ -1631,14 +1637,20 @@ cupti_memcpy2_process
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = host_op_node
+      };
+      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+        cupti_trace_append, &entry_trace);
+
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity,
         host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //cupti_host_op_map_delete(external_id);
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, host_op_node);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1662,12 +1674,18 @@ cupti_memset_process
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = host_op_node
+      };
+      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+        cupti_trace_append, &entry_trace);
+
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, host_op_node);
       //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
@@ -1737,12 +1755,18 @@ cupti_kernel_process
     if (host_op_entry != NULL) {
       cct_node_t *func_node = 
         cupti_host_op_map_entry_func_node_get(host_op_entry);
+      // do not delete it because it shares external_id with activity samples
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = func_node
+      };
+      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+        cupti_trace_append, &entry_trace);
+
       cupti_activity_channel_t *channel = 
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, func_node);
-      // do not delete it because it shares external_id with activity samples
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, func_node);
     }
   }
 
@@ -1770,9 +1794,24 @@ cupti_synchronization_process
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, host_op_node);
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = host_op_node
+      };
+      if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE) {
+        // Insert a event for a specific stream
+        PRINT("Add context %u stream %u sync\n", activity->contextId, activity->streamId);
+        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+          cupti_trace_append, &entry_trace); 
+      } else if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE) {
+        // Insert events for all current active streams
+        // TODO(Keren): What if the stream is created
+        PRINT("Add context %u sync\n", activity->contextId);
+        cupti_context_id_map_context_process(activity->contextId, cupti_trace_append, &entry_trace);
+      }
+      // TODO(Keren): handle event synchronization
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, host_op_node);
       //cupti_host_op_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
@@ -1797,8 +1836,13 @@ cupti_cdpkernel_process
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_host_op_node_get(host_op_entry);
-      cupti_context_stream_id_map_append(activity->contextId, activity->streamId,
-        activity->start, activity->end, host_op_node);
+      cupti_entry_trace_t entry_trace = {
+        .start = activity->start,
+        .end = activity->end,
+        .node = host_op_node
+      };
+      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+        cupti_trace_append, &entry_trace);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
