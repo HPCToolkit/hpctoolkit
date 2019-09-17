@@ -4081,7 +4081,7 @@ fi
 libdir='${exec_prefix}/lib'
 
 #-------------------------------------------------
-# Git version
+# Git and Spack versions
 #-------------------------------------------------
 
 # If this is a git repo, then try to identify the branch name and the
@@ -4092,30 +4092,31 @@ $as_echo_n "checking for git version... " >&6; }
 
 git_version='unknown (not a git repo)'
 
-mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
-if echo "$mesg" | grep -i commit >/dev/null ; then
-  git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
-  git_hash=`expr "$git_hash" : '\(................\)'`
-  git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
+if test -d "${srcdir}/.git" ; then
+  mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
+  if echo "$mesg" | grep -i commit >/dev/null ; then
+    git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
+    git_hash=`expr "$git_hash" : '\(................\)'`
+    git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
 
-  mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
-  if echo "$mesg" | grep -i branch >/dev/null ; then
-    git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
+    mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
+    if echo "$mesg" | grep -i branch >/dev/null ; then
+      git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
 
-  elif echo "$mesg" | grep -i detach >/dev/null ; then
-    # detached commits don't have a branch name
-    git_branch=detached
+    elif echo "$mesg" | grep -i detach >/dev/null ; then
+      # detached commits don't have a branch name
+      git_branch=detached
 
-  else
-    git_branch=unknown
+    else
+      git_branch=unknown
+    fi
+
+    git_version="$git_branch at $git_date ($git_hash)"
   fi
-
-  git_version="$git_branch at $git_date ($git_hash)"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $git_version" >&5
 $as_echo "$git_version" >&6; }
-
 
 
 cat >>confdefs.h <<_ACEOF
@@ -4127,6 +4128,21 @@ _ACEOF
 cat >>confdefs.h <<_ACEOF
 #define HPCTOOLKIT_VERSION_STRING "A member of HPCToolkit, version ${PACKAGE_VERSION}"
 _ACEOF
+
+
+# If this is a spack build, then try to identify the spack spec.
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for spack spec" >&5
+$as_echo_n "checking for spack spec... " >&6; }
+
+spack_spec='unknown (not a spack build)'
+
+if test "x$SPACK_SHORT_SPEC" != x ; then
+  spack_spec=`echo $SPACK_SHORT_SPEC | tr -d "'"`
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $spack_spec" >&5
+$as_echo "$spack_spec" >&6; }
 
 
 #-------------------------------------------------
@@ -23166,6 +23182,7 @@ hash_value='$hash_value'
 
 VERSION='$PACKAGE_VERSION'
 git_version='$git_version'
+spack_spec='$spack_spec'
 EOF
 
 
@@ -26068,6 +26085,8 @@ $as_echo "$as_me: -------------------" >&6;}
 $as_echo "$as_me:   HPCToolkit version: ${PACKAGE_VERSION}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   git version: $git_version" >&5
 $as_echo "$as_me:   git version: $git_version" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   spack spec:  $spack_spec" >&5
+$as_echo "$as_me:   spack spec:  $spack_spec" >&6;}
 if test "x$ext_version" != x ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}:   externals:   $ext_version" >&5
 $as_echo "$as_me:   externals:   $ext_version" >&6;}
