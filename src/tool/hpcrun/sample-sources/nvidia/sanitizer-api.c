@@ -413,6 +413,7 @@ sanitizer_load_callback
     }
   }
 
+  PRINT("Patch CUBIN\n");
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -688,7 +689,6 @@ sanitizer_kernel_launch_callback
     buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
     // allocate buffer
     void *memory_buffer_device = NULL;
-    void **prev_buffer_device = NULL;
     uint32_t *hash_buffer_device = NULL;
 
     // sanitizer_buffer
@@ -703,14 +703,6 @@ sanitizer_kernel_launch_callback
 
     PRINT("Allocate hash_buffer_device %p, size %zu\n", hash_buffer_device, SANITIZER_THREAD_HASH_SIZE * sizeof(uint32_t));
 
-    // sanitizer_buffer_t->prev_buffers
-    HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&prev_buffer_device,
-      SANITIZER_THREAD_HASH_SIZE * sizeof(void *)));
-    HPCRUN_SANITIZER_CALL(sanitizerMemset, (prev_buffer_device, 0,
-      SANITIZER_THREAD_HASH_SIZE * sizeof(void *), stream));
-
-    PRINT("Allocate prev_buffer_device %p, size %zu\n", prev_buffer_device, SANITIZER_THREAD_HASH_SIZE * sizeof(void *));
-
     // sanitizer_buffer_t->buffers
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
       (&memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t)));
@@ -720,7 +712,6 @@ sanitizer_kernel_launch_callback
     PRINT("Allocate memory_buffer_device %p, size %zu\n", memory_buffer_device, SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t));
 
     buffer_reset.thread_hash_locks = hash_buffer_device;
-    buffer_reset.prev_buffers = prev_buffer_device;
     buffer_reset.buffers = memory_buffer_device;
     buffer_reset.block_sampling_frequency = sanitizer_block_sampling_frequency_get();
     PRINT("Sampling frequency %d\n", sanitizer_block_sampling_frequency_get());
