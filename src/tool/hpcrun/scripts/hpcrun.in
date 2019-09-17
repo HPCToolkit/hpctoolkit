@@ -197,6 +197,7 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
+#preload_list=/opt/rocm/lib/libroctracer64.so
 preload_list=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=

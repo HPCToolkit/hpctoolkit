@@ -267,13 +267,13 @@ cupti_modules_ignore
 void
 cupti_correlation_handle
 (
- cupti_entry_correlation_t *entry
+ entry_correlation_t *entry
 );
 
 void
 cupti_activity_handle
 (
- cupti_entry_activity_t *entry
+ entry_activity_t *entry
 );
 
 #endif

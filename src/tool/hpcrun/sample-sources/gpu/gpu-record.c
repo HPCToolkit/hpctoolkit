@@ -2,6 +2,13 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include "gpu-record.h"
 
+#if GPU_RECORD_DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
+
 
 static _Atomic(gpu_record_list_t *) gpu_record_list_head;
 

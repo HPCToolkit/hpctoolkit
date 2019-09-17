@@ -548,6 +548,10 @@ hpcrun_init_internal(bool is_child)
   hpcrun_is_initialized_private = true;
 
   stream_tracing_init();
+
+#ifdef USE_ROCM
+  roctracer_init();
+#endif
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -668,6 +672,10 @@ hpcrun_fini_internal()
     thread_finalize(is_process);
 
     stream_tracing_fini();
+
+#ifdef USE_ROCM
+    roctracer_fini();
+#endif
 
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());

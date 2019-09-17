@@ -168,7 +168,7 @@ hpcrun_ompt_op_id_notify(ompt_id_t host_op_id,  ompt_placeholder_t ph)
   cct_node_t* cct_child = hpcrun_cct_insert_addr(target_node, &frm);
 
   // inform the worker about the placeholder
-  correlation_produce(host_op_id, cct_child);
+  correlation_produce(host_op_id, cct_child, NULL);
 }
 
 
@@ -340,10 +340,10 @@ ompt_target_callback
   // and it must be flushed in the finalizer
   cupti_stop_flag_set();
   // TODO(Keren) ignore cupti thread callback
-  cupti_record_init();
+  gpu_record_init();
 
   // process cupti records
-  cupti_activities_consume();
+  activities_consume(cupti_activity_handle);
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};

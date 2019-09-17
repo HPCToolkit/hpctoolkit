@@ -5,7 +5,7 @@
 #include <cupti.h>
 #include "cupti-node.h"
 
-void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
+void cupti_activity_attribute(entry_activity_t *activity, cct_node_t *cct_node);
 
 int cupti_pc_sampling_frequency_get();
 

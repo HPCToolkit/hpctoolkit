@@ -168,6 +168,9 @@
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW
 
+/* use ROCM */
+#undef USE_ROCM
+
 /* Use system byteswap.h */
 #undef USE_SYSTEM_BYTESWAP
 

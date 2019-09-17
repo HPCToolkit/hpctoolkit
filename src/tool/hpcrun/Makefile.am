@@ -264,7 +264,9 @@ UNW_MIPS_LD_FLAGS =
 
 MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
-	-DINLINE_FN=1
+	-DINLINE_FN=1 \
+	-DLOCAL_BUILD=1 \
+	-D__HIP_PLATFORM_HCC__=1
 
 MY_BASE_FILES =				\
 	utilities/first_func.c		\
@@ -369,7 +371,12 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	sample-sources/gpu/gpu-api.c \
+	sample-sources/gpu/gpu-correlation-id-map.c \
+	sample-sources/gpu/gpu-host-op-map.c \
+	sample-sources/gpu/gpu-record.c \
+	sample-sources/gpu/placeholders.c
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
@@ -474,10 +481,18 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-correlation-id-map.c	\
 	sample-sources/nvidia/cupti-function-id-map.c		\
 	sample-sources/nvidia/cupti-host-op-map.c		\
-	sample-sources/nvidia/cupti-stack.c			\
 	sample-sources/nvidia/cupti-node.c			\
 	sample-sources/nvidia/cupti-record.c
+endif
 
+
+if OPT_ENABLE_ROCM
+MY_ROCM_FILES=\
+	sample-sources/amd/amd.c \
+	sample-sources/amd/hip-state-placeholders.c \
+	sample-sources/amd/roctracer-api.c \
+	sample-sources/amd/roctracer-node.c \
+	sample-sources/amd/roctracer-record.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -692,9 +707,9 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -L$(LIBELF_LIB) -lelf \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -lelf -L$(LIBELF_LIB)  \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-        $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS)
+        $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) $(OPT_ROCM_LDFLAGS)
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -884,6 +899,13 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
   libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+endif
+
+
+if OPT_ENABLE_ROCM
+  libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
 endif
 
 if UNW_LIBUNW

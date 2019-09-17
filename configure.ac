@@ -4396,6 +4396,44 @@ AC_SUBST([OPT_CUPTI])
 AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
+
+#-------------------------------------------------
+# Option: --with-rocm=PATH
+#-------------------------------------------------
+
+# ROCM default install path is /usr/local/rocm
+
+OPT_ROCM=
+OPT_ROCM_INCPATH=
+OPT_ROCM_LDFLAGS=
+OPT_ROCM_LIBPATH=
+
+AC_ARG_WITH([rocm],
+  AS_HELP_STRING([--with-rocm=PATH],
+                 [use given ROCM installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_ROCM=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-rocm requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_ROCM=${withval}
+   fi])
+
+if test "$OPT_HAVE_ROCM" = "yes" ; then
+  AC_DEFINE(USE_ROCM, 1, [use ROCM])
+
+  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
+
+  OPT_ROCM_LDFLAGS="-L${OPT_ROCM}/lib -lroctracer64"
+
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
+
+AC_SUBST([OPT_ROCM])
+AC_SUBST([OPT_ROCM_IFLAGS])
+AC_SUBST([OPT_ROCM_LDFLAGS])
+
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
