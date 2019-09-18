@@ -519,11 +519,15 @@ sanitizer_memory_process
   size_t i = 0;
   for (i = 0; i < num_buffers; ++i) {
     sanitizer_memory_buffer_t *memory_buffer = &(memory_buffer_host[i]);
-    used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|%p|",
+    used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|",
       memory_buffer->pc - function_addr,
       memory_buffer->block_ids.x, memory_buffer->block_ids.y, memory_buffer->block_ids.z,
-      memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z,
-      memory_buffer->address);
+      memory_buffer->thread_ids.x, memory_buffer->thread_ids.y, memory_buffer->thread_ids.z);
+    if (memory_buffer->address) {
+      used += sprintf(&sanitizer_trace[used], "%p|", memory_buffer->address);
+    } else {
+      used += sprintf(&sanitizer_trace[used], "0x0|");
+    }
     size_t j;
     used += sprintf(&sanitizer_trace[used], "0x");
     for (j = 0; j < memory_buffer->size; ++j) { 
