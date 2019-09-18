@@ -300,8 +300,10 @@ sanitizer_path
  void
 )
 {
-  const char *path = "libsanitizer-public.so";
+  // TODO(Keren): change it back after 10.2 public release
+  const char *path = "/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
 
+#if 0
   static char buffer[PATH_MAX];
   buffer[0] = 0;
 
@@ -318,6 +320,7 @@ sanitizer_path
   }
 
   if (h) monitor_real_dlclose(h);
+#endif
 
   return path;
 }
@@ -418,10 +421,6 @@ sanitizer_load_callback
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, ("./memory.fatbin", context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
-  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_SHFL, cubin_module, "sanitizer_shfl_callback"));
-  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_BARRIER, cubin_module, "sanitizer_barrier_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_BLOCK_ENTER, cubin_module, "sanitizer_block_enter_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -822,7 +821,8 @@ sanitizer_subscribe_callback
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
-      PRINT("Launch kernel %s <%d, %d>:<%d, %d, %d>\n", ld->functionName, ld->gridDim_x, ld->gridDim_y, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
+      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
+        ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
       // multi-thread
       // gaurantee that each time only a single callback data is associated with a stream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
