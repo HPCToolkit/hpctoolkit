@@ -503,7 +503,7 @@ sanitizer_memory_process
   if (memory_buffer_host == NULL) {
     // first time copy back, allocate memory
     memory_buffer_host = (sanitizer_memory_buffer_t *)
-      hpcrun_malloc(SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t));
+      hpcrun_malloc_safe(SANITIZER_BUFFER_SIZE * sizeof(sanitizer_memory_buffer_t));
   }
   HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
     (memory_buffer_host, buffers, sizeof(sanitizer_memory_buffer_t) * num_buffers, stream));
@@ -511,7 +511,7 @@ sanitizer_memory_process
   if (sanitizer_trace == NULL) {
     // first time to allocate trace buffer
     sanitizer_trace = (char *)
-      hpcrun_malloc(SANITIZER_TRACE_SIZE * sizeof(unsigned char));
+      hpcrun_malloc_safe(SANITIZER_TRACE_SIZE * sizeof(unsigned char));
   }
 
   // XXX(Keren): tricky change offset here
@@ -565,7 +565,7 @@ sanitizer_buffer_process
 
   // first time copy back, allocate memory
   if (buffer_host == NULL) {
-    buffer_host = (sanitizer_buffer_t *) hpcrun_malloc(sizeof(sanitizer_buffer_t));
+    buffer_host = (sanitizer_buffer_t *) hpcrun_malloc_safe(sizeof(sanitizer_buffer_t));
   }
   HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
     (buffer_host, buffer_device_entry->buffer, sizeof(sanitizer_buffer_t), stream));
