@@ -15,7 +15,7 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: Sept 1, 2019.
+Last revised: Sept 18, 2019.
 
 2 Current Issues
 ================
@@ -52,25 +52,21 @@ front-end target is 'x86_64' (not 'mic_knl').
          spec: gcc@7.3.0
          target: x86_64
 
-2.2 (2019-08-28) Cuda modules
------------------------------
+Alternatively, the last working commit was '9c1c50fb7632' on 2019-06-07.
+You could revert to this commit, run 'spack compiler find' and then
+return to the current spack head (develop).  Be sure to fill in the
+'modules:' field.
+
+3 Recently Resolved Issues
+==========================
+
+3.1 (2019-08-28) External cuda modules
+--------------------------------------
 
 Sometimes spack misreads the 'module:' entry for an external package in
-'packages.yaml'.  This is infrequent and we haven't identified a clear
-pattern, but this has happened with the cuda modules on cori at NERSC.
-
-   For example, with the 'cuda/10.1.168' module for the gpu version of
-hpctoolkit on cori, you would use the following entry in
-'packages.yaml'.
-
-     cuda:
-       modules:
-         cuda@10.1.168:  cuda/10.1.168
-
-This entry is supposed to work, but doesn't.  The correct cuda prefix is
-actually '/usr/common/software/cuda/10.1.168', but spack misreads this
-as '/usr'.  When this happens, hpctoolkit fails with error messages
-showing that spack incorrectly uses the '/usr' path.  For example,
+'packages.yaml' and selects the wrong install directory.  For example,
+spack misreads the 'cuda/10.1.168' module on cori at NERSC (incorrectly
+using /usr) and the build for hpctoolkit fails as follows.
 
      ==> cuda@10.1.168 : has external module in cuda/10.1.168
      ==> cuda@10.1.168 : is actually installed in /usr
@@ -78,44 +74,47 @@ showing that spack incorrectly uses the '/usr' path.  For example,
      .../configure --prefix='...' ... '--with-cuda=/usr'
      >> 208    configure: error: '/usr/include/cuda.h' not found
 
-Workaround: In 'packages.yaml', replace the 'modules:' entry with a
-'paths:' prefix.
+Fixed: This is now fixed in commit b1868f35ec91
+(https://github.com/spack/spack/pull/12693) on 2019-09-11.  Or, you can
+workaround the problem by replacing 'modules:' with a 'paths:' entry.
 
      cuda:
        paths:
          cuda@10.1.168:  /usr/common/software/cuda/10.1.168
 
-2.3 (2019-08-19) Build-stage not writable
+3.2 (2019-08-19) Build stage not writable
 -----------------------------------------
 
-Spack has been reworking the build directory structure and the value for
-'build-stage' in 'config.yaml' is currently broken.
+Spack has reorganized the build directories and the value for
+'build_stage' in 'config.yaml' may not work.
 
      build_stage:
        - $tempdir/spack-stage
 
 The problem with this value is that the first user to run spack on this
 machine will create the directory, owned by that user and thus not
-writable by any other user.  For every other user, spack install will
+writable by any other user.  For every other user, 'spack install' will
 fail with:
 
      ==> Error: No accessible stage paths in:
 
-Workaround: Change 'build-stage' in 'config.yaml' to another directory
-that you can write to.
+Fixed: This is now fixed in commit c141e99e062b
+(https://github.com/spack/spack/pull/12516) on 2019-09-03.  Check your
+'build_stage' directory and make sure that you have write access.  One
+solution is to add '$user' to the path.
 
-3 Recently Resolved Issues
-==========================
+     build_stage:
+       - $tempdir/$user/spack-stage
 
-3.1 (2019-06-06) Intel-xed and hpcviewer
+3.3 (2019-06-06) Intel-xed and hpcviewer
 ----------------------------------------
 
 Packages that use a spack resource (a second tar file) are currently
 broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
 platforms).
 
-Fixed: This is now fixed in spack develop in commit 'aca1bfdb6a64' on
-2019-06-13.
+Fixed: This is now fixed in commit aca1bfdb6a64
+(https://github.com/spack/spack/pull/11676) on 2019-06-13.
 
 4 General Problems
 ==================

@@ -47,12 +47,12 @@
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
   <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.1 (2019-08-28) Cray front-end compilers</a></li>
-  <li><a name="toc-_00282019_002d08_002d28_0029-Cuda-modules" href="#g_t_00282019_002d08_002d28_0029-Cuda-modules">2.2 (2019-08-28) Cuda modules</a></li>
-  <li><a name="toc-_00282019_002d08_002d19_0029-Build_002dstage-not-writable" href="#g_t_00282019_002d08_002d19_0029-Build_002dstage-not-writable">2.3 (2019-08-19) Build-stage not writable</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer" href="#g_t_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer">3.1 (2019-06-06) Intel-xed and hpcviewer</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-External-cuda-modules" href="#g_t_00282019_002d08_002d28_0029-External-cuda-modules">3.1 (2019-08-28) External cuda modules</a></li>
+  <li><a name="toc-_00282019_002d08_002d19_0029-Build-stage-not-writable" href="#g_t_00282019_002d08_002d19_0029-Build-stage-not-writable">3.2 (2019-08-19) Build stage not writable</a></li>
+  <li><a name="toc-_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer" href="#g_t_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer">3.3 (2019-06-06) Intel-xed and hpcviewer</a></li>
 </ul></li>
 <li><a name="toc-General-Problems" href="#General-Problems">4 General Problems</a>
 <ul class="no-bullet">
@@ -89,7 +89,7 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Sept 1, 2019.
+<p>Last revised: Sept 18, 2019.
 </p>
 
 <a name="Current-Issues"></a>
@@ -131,30 +131,23 @@ front-end operating_system is something like <code>sles12</code> (not
     target: x86_64
 </pre></div>
 
+<p>Alternatively, the last working commit was <code>9c1c50fb7632</code> on
+2019-06-07.  You could revert to this commit, run <code>spack compiler
+find</code> and then return to the current spack head (develop).  Be sure to
+fill in the <code>modules:</code> field.
+</p>
 
-<a name="g_t_00282019_002d08_002d28_0029-Cuda-modules"></a>
-<h4 class="subsection">2.2 (2019-08-28) Cuda modules</h4>
+<a name="Recently-Resolved-Issues"></a>
+<h3 class="section">3 Recently Resolved Issues</h3>
+
+<a name="g_t_00282019_002d08_002d28_0029-External-cuda-modules"></a>
+<h4 class="subsection">3.1 (2019-08-28) External cuda modules</h4>
 
 <p>Sometimes spack misreads the <code>module:</code> entry for an external
-package in <code>packages.yaml</code>.  This is infrequent and we haven&rsquo;t
-identified a clear pattern, but this has happened with the cuda modules
-on cori at NERSC.
-</p>
-<p>For example, with the <code>cuda/10.1.168</code> module for the gpu version of
-hpctoolkit on cori, you would use the following entry in
-<code>packages.yaml</code>.
-</p>
-<div class="example">
-<pre class="example">cuda:
-  modules:
-    cuda@10.1.168:  cuda/10.1.168
-</pre></div>
-
-<p>This entry is supposed to work, but doesn&rsquo;t.  The correct cuda prefix is
-actually <code>/usr/common/software/cuda/10.1.168</code>, but spack misreads
-this as <code>/usr</code>.  When this happens, hpctoolkit fails with error
-messages showing that spack incorrectly uses the <code>/usr</code> path.
-For example,
+package in <code>packages.yaml</code> and selects the wrong install
+directory.  For example, spack misreads the <code>cuda/10.1.168</code>
+module on cori at NERSC (incorrectly using /usr) and the build for
+hpctoolkit fails as follows.
 </p>
 <div class="example">
 <pre class="example">==&gt; cuda@10.1.168 : has external module in cuda/10.1.168
@@ -164,8 +157,10 @@ For example,
 &gt;&gt; 208    configure: error: '/usr/include/cuda.h' not found
 </pre></div>
 
-<p><b>Workaround:</b> In <code>packages.yaml</code>, replace the <code>modules:</code>
-entry with a <code>paths:</code> prefix.
+<p><b>Fixed:</b> This is now fixed in commit
+<a href="https://github.com/spack/spack/pull/12693">b1868f35ec91</a> on
+2019-09-11.  Or, you can workaround the problem by replacing
+<code>modules:</code> with a <code>paths:</code> entry.
 </p>
 <div class="example">
 <pre class="example">cuda:
@@ -174,11 +169,11 @@ entry with a <code>paths:</code> prefix.
 </pre></div>
 
 
-<a name="g_t_00282019_002d08_002d19_0029-Build_002dstage-not-writable"></a>
-<h4 class="subsection">2.3 (2019-08-19) Build-stage not writable</h4>
+<a name="g_t_00282019_002d08_002d19_0029-Build-stage-not-writable"></a>
+<h4 class="subsection">3.2 (2019-08-19) Build stage not writable</h4>
 
-<p>Spack has been reworking the build directory structure and the value for
-<code>build-stage</code> in <code>config.yaml</code> is currently broken.
+<p>Spack has reorganized the build directories and the value for
+<code>build_stage</code> in <code>config.yaml</code> may not work.
 </p>
 <div class="example">
 <pre class="example">build_stage:
@@ -187,29 +182,35 @@ entry with a <code>paths:</code> prefix.
 
 <p>The problem with this value is that the first user to run spack on this
 machine will create the directory, owned by that user and thus not
-writable by any other user.  For every other user, spack install will
-fail with:
+writable by any other user.  For every other user, <code>spack install</code>
+will fail with:
 </p>
 <div class="example">
 <pre class="example">==&gt; Error: No accessible stage paths in:
 </pre></div>
 
-<p><b>Workaround:</b> Change <code>build-stage</code> in <code>config.yaml</code> to
-another directory that you can write to.
+<p><b>Fixed:</b> This is now fixed in commit
+<a href="https://github.com/spack/spack/pull/12516">c141e99e062b</a> on
+2019-09-03.  Check your <code>build_stage</code> directory and make sure
+that you have write access.  One solution is to add <code>$user</code> to
+the path.
 </p>
+<div class="example">
+<pre class="example">build_stage:
+  - $tempdir/$user/spack-stage
+</pre></div>
 
-<a name="Recently-Resolved-Issues"></a>
-<h3 class="section">3 Recently Resolved Issues</h3>
 
 <a name="g_t_00282019_002d06_002d06_0029-Intel_002dxed-and-hpcviewer"></a>
-<h4 class="subsection">3.1 (2019-06-06) Intel-xed and hpcviewer</h4>
+<h4 class="subsection">3.3 (2019-06-06) Intel-xed and hpcviewer</h4>
 
 <p>Packages that use a spack resource (a second tar file) are currently
 broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
 platforms).
 </p>
-<p><b>Fixed:</b> This is now fixed in spack develop in commit
-<code>aca1bfdb6a64</code> on 2019-06-13.
+<p><b>Fixed:</b> This is now fixed in commit
+<a href="https://github.com/spack/spack/pull/11676">aca1bfdb6a64</a> on
+2019-06-13.
 </p>
 
 <a name="General-Problems"></a>

@@ -26,7 +26,7 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: Sept 1, 2019.
+Last revised: Sept 18, 2019.
 
 @c ------------------------------------------------------------
 
@@ -67,31 +67,23 @@ front-end operating_system is something like @code{sles12} (not
     target: x86_64
 @end example
 
+@noindent
+Alternatively, the last working commit was @code{9c1c50fb7632} on
+2019-06-07.  You could revert to this commit, run @code{spack compiler
+find} and then return to the current spack head (develop).  Be sure to
+fill in the @code{modules:} field.
+
 @c ------------------------------------------------------------
 
-@subsection (2019-08-28) Cuda modules
+@section Recently Resolved Issues
+
+@subsection (2019-08-28) External cuda modules
 
 Sometimes spack misreads the @code{module:} entry for an external
-package in @code{packages.yaml}.  This is infrequent and we haven't
-identified a clear pattern, but this has happened with the cuda modules
-on cori at NERSC.
-
-For example, with the @code{cuda/10.1.168} module for the gpu version of
-hpctoolkit on cori, you would use the following entry in
-@code{packages.yaml}.
-
-@example
-cuda:
-  modules:
-    cuda@@10.1.168:  cuda/10.1.168
-@end example
-
-@noindent
-This entry is supposed to work, but doesn't.  The correct cuda prefix is
-actually @code{/usr/common/software/cuda/10.1.168}, but spack misreads
-this as @code{/usr}.  When this happens, hpctoolkit fails with error
-messages showing that spack incorrectly uses the @code{/usr} path.
-For example,
+package in @code{packages.yaml} and selects the wrong install
+directory.  For example, spack misreads the @code{cuda/10.1.168}
+module on cori at NERSC (incorrectly using /usr) and the build for
+hpctoolkit fails as follows.
 
 @example
 ==> cuda@@10.1.168 : has external module in cuda/10.1.168
@@ -102,8 +94,10 @@ For example,
 @end example
 
 @noindent
-@b{Workaround:} In @code{packages.yaml}, replace the @code{modules:}
-entry with a @code{paths:} prefix.
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/12693, b1868f35ec91} on
+2019-09-11.  Or, you can workaround the problem by replacing
+@code{modules:} with a @code{paths:} entry.
 
 @example
 cuda:
@@ -113,10 +107,10 @@ cuda:
 
 @c ------------------------------------------------------------
 
-@subsection (2019-08-19) Build-stage not writable
+@subsection (2019-08-19) Build stage not writable
 
-Spack has been reworking the build directory structure and the value for
-@code{build-stage} in @code{config.yaml} is currently broken.
+Spack has reorganized the build directories and the value for
+@code{build_stage} in @code{config.yaml} may not work.
 
 @example
 build_stage:
@@ -126,20 +120,26 @@ build_stage:
 @noindent
 The problem with this value is that the first user to run spack on this
 machine will create the directory, owned by that user and thus not
-writable by any other user.  For every other user, spack install will
-fail with:
+writable by any other user.  For every other user, @code{spack install}
+will fail with:
 
 @example
 ==> Error: No accessible stage paths in:
 @end example
 
 @noindent
-@b{Workaround:} Change @code{build-stage} in @code{config.yaml} to
-another directory that you can write to.
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/12516, c141e99e062b} on
+2019-09-03.  Check your @code{build_stage} directory and make sure
+that you have write access.  One solution is to add @code{$user} to
+the path.
+
+@example
+build_stage:
+  - $tempdir/$user/spack-stage
+@end example
 
 @c ------------------------------------------------------------
-
-@section Recently Resolved Issues
 
 @subsection (2019-06-06) Intel-xed and hpcviewer
 
@@ -148,8 +148,9 @@ broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
 platforms).
 
 @noindent
-@b{Fixed:} This is now fixed in spack develop in commit
-@code{aca1bfdb6a64} on 2019-06-13.
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/11676, aca1bfdb6a64} on
+2019-06-13.
 
 @c ------------------------------------------------------------
 
