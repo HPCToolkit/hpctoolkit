@@ -16,7 +16,7 @@
 
 #include "cupti-stream-id-map.h"
 
-#define CUPTI_STREAM_ID_MAP_DEBUG 1
+#define CUPTI_STREAM_ID_MAP_DEBUG 0
 
 #if CUPTI_STREAM_ID_MAP_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)

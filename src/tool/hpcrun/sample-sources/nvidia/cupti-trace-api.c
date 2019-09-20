@@ -70,7 +70,7 @@
 #include "cupti-channel.h"
 
 
-#define CUPTI_TRACE_API_DEBUG 1
+#define CUPTI_TRACE_API_DEBUG 0
 
 #if CUPTI_TRACE_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -239,5 +239,7 @@ cupti_trace_fini(void *arg)
 {
   atomic_store(&cupti_stop_trace_flag, true);
   cupti_context_id_map_device_process(cupti_trace_signal, NULL);
-  while (atomic_load(&cupti_stream_counter));
+  while (atomic_load(&cupti_stream_counter)) {
+    cupti_context_id_map_device_process(cupti_trace_signal, NULL);
+  }
 }
