@@ -363,35 +363,38 @@ perf_util_precise_ip(cct_node_t *leaf, void *data_aux)
   cct_node_t *sibling         = leaf;
   perf_mmap_data_t *mmap_data = (perf_mmap_data_t*) data_aux;
 
-  // PEBS IP is not null, we will attribute the cost to the sibling of the sample node t
+  // PEBS IP is not null, we will attribute the cost to the sibling or the child of the sample node
   if (mmap_data->ip != 0 && leaf != NULL) {
-
-    // Create a sibling for precise IP with the real value.
-    // This sibling may have different parent than the sampled node, but since we lose
-    //   the information of context, we just assume it's okay to have the same parent.
 
     cct_addr_t *addr = hpcrun_cct_addr(leaf);
     if (addr->ip_norm.lm_ip == mmap_data->ip)
       return sibling;
 
-    cct_addr_t precise_addr;
-    memcpy(&precise_addr, addr, sizeof(cct_addr_t));
-
-    precise_addr.ip_norm.lm_ip = mmap_data->ip;
-
     load_module_t* loadmap =
     hpcrun_loadmap_findByAddr((void*)mmap_data->ip, (void*)mmap_data->ip);
+
     if (loadmap != NULL) {
+      // Create a new node for precise IP
+      // The new node may have different parent than the sampled one, but since we lose
+      //   the information of context, we just assume it's okay to have it
+
+      cct_addr_t precise_addr;
+      memcpy(&precise_addr, addr, sizeof(cct_addr_t));
+
+      precise_addr.ip_norm.lm_ip = mmap_data->ip;
       precise_addr.ip_norm.lm_id = loadmap->id;
-    }
 
-    // If precise ip load module is not the same as the load module in the signal context,
-    // we gives up and refuse to use the precise ip
+      // If precise ip load module is not the same as the load module in the signal context,
+      // the precise ip node is the child of the sampled one
+      // otherwise, we create it as a sibling (assuming it's in the same function).
+      // Statistically, when they are in the same module, the difference of addresses
+      //  is not big (around 5 to 8 bytes). 
 
-    if (loadmap->id == addr->ip_norm.lm_id) {
-      sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(leaf), &precise_addr);
-    } else {
-      sibling = hpcrun_cct_insert_addr(leaf, &precise_addr);
+      if (loadmap->id == addr->ip_norm.lm_id) {
+        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(leaf), &precise_addr);
+      } else {
+        sibling = hpcrun_cct_insert_addr(leaf, &precise_addr);
+      } 
     }
   }
   return sibling;

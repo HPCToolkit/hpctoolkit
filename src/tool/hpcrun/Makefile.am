@@ -392,7 +392,7 @@ if HOST_CPU_PPC
 MY_BASE_FILES +=  				 \
 	sample-sources/datacentric/datacentric.c \
 	sample-sources/datacentric/pmu_power.c	 \
-	sample-sources/stall/stall_dummy.c 
+	sample-sources/stall/stall.c 
 else
 MY_BASE_FILES +=  				 \
 	sample-sources/datacentric/datacentric_dummy.c \

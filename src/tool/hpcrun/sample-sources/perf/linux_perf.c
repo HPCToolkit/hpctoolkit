@@ -573,8 +573,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
 
   hpcrun_metricVal_t value = {.r = counter};
 
-  *sv = hpcrun_sample_callpath(context, metric,
-        (hpcrun_metricVal_t) {.r=counter},
+  *sv = hpcrun_sample_callpath(context, metric, value,
         0/*skipinner*/, 0/*issync*/, &info);
 
   blame_shift_apply(metric, sv->sample_node, counter /*metricincr*/);
