@@ -880,7 +880,8 @@ endif
 if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 if UNW_LIBUNW

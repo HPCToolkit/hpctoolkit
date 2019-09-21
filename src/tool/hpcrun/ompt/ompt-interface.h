@@ -288,22 +288,4 @@ ompt_set_callback_internal
 );
 
 
-//-----------------------------------------------------------------------------
-// NVIDIA GPU pc sampling support
-//-----------------------------------------------------------------------------
-
-void 
-ompt_pc_sampling_enable
-(
-  void 
-);
-
-
-void 
-ompt_pc_sampling_disable
-(
-  void
-);
-
-
 #endif // _OMPT_INTERFACE_H_

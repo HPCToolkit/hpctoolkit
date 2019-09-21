@@ -666,7 +666,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
 
   // With -e cputime, sometimes addr is 0
   if (addr != NULL) {
-    e = uw_hash_lookup(td->uw_hash_table, addr);
+    e = uw_hash_lookup(td->uw_hash_table, uw, addr);
 
     if (e == NULL) {
       // check if addr is already in the range of an interval key in the map
@@ -678,7 +678,8 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
         if (oldstat == READY) {
           unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
           if (unwr_info->btuwi != NULL) {
-            uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+            uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, 
+			   unwr_info->btuwi);
           }
         } else {
           // reset oldstat to deferred
@@ -778,7 +779,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     if (addr != NULL) {
       unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
       if (unwr_info->btuwi != NULL) {
-        uw_hash_insert(td->uw_hash_table, addr, ilm_btui, unwr_info->btuwi);
+        uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, unwr_info->btuwi);
       }
     }
   } 

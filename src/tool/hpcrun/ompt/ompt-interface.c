@@ -575,9 +575,9 @@ init_idle_blame_shift
 
   if (!ompt_idle_blame_requested) return;
 
+#if 0
   ompt_idle_blame_shift_request();
 
-#if 0
   retval = ompt_set_callback_fn(ompt_callback_idle,
                                 (ompt_callback_t)ompt_idle);
   idle_blame_shift_avail |= ompt_event_may_occur(retval);

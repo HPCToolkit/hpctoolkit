@@ -47,12 +47,24 @@
 #ifndef __OMPT_DEVICE_H__
 #define __OMPT_DEVICE_H__
 
+#include <stdbool.h>
 #include <include/hpctoolkit-config.h>
 
 #if HAVE_CUPTI_H 
 
 void 
 prepare_device
+(
+ void
+);
+
+
+//---------------------------------------------
+// If a API is invoked by OMPT (TRUE/FALSE)
+//---------------------------------------------
+
+bool
+ompt_get_runtime_status
 (
  void
 );
@@ -71,6 +83,23 @@ ompt_pc_sampling_enable
 
 void 
 ompt_pc_sampling_disable
+(
+ void
+);
+
+//-----------------------------------------------------------------------------
+// Use hpctoolkit callback/OMPT callback
+//-----------------------------------------------------------------------------
+
+void
+ompt_external_subscriber_enable
+(
+ void
+);
+
+
+void
+ompt_external_subscriber_disable
 (
  void
 );

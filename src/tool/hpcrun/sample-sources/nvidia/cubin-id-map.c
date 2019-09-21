@@ -174,11 +174,11 @@ cubin_id_map_entry_elf_vector_get(cubin_id_map_entry_t *entry)
 
 
 //--------------------------------------------------------------------------
-// Transform a <cubin_id, function_id, offset> tuple to a pc address by
+// Transform a <cubin_id, function_index, offset> tuple to a pc address by
 // looking up elf symbols inside a cubin
 //--------------------------------------------------------------------------
 ip_normalized_t
-cubin_id_transform(uint32_t cubin_id, uint32_t function_id, int64_t offset)
+cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
@@ -188,7 +188,7 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_id, int64_t offset)
     PRINT("get hpctoolkit_module_id %d\n", hpctoolkit_module_id);
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
-    ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
+    ip.lm_ip = (uintptr_t)(vector->symbols[function_index] + offset);
   }
   return ip;
 }
