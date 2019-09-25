@@ -172,13 +172,15 @@ cupti_entry_correlation_set
  uint64_t host_op_id,
  void *activity_channel,
  cct_node_t *api_node,
- cct_node_t *func_node
+ cct_node_t *func_node,
+ cct_node_t *sync_node
 )
 {
   entry->activity_channel = activity_channel;
   entry->host_op_id = host_op_id;
   entry->api_node = api_node;
   entry->func_node = func_node;
+  entry->sync_node = sync_node;
 }
 
 

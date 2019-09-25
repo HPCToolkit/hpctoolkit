@@ -130,6 +130,7 @@ typedef struct cupti_entry_correlation {
   void *activity_channel;
   cct_node_t *api_node;
   cct_node_t *func_node;
+  cct_node_t *sync_node;
 } cupti_entry_correlation_t;
 
 // trace entry
@@ -156,7 +157,8 @@ cupti_entry_correlation_set
  uint64_t host_op_id,
  void *activity_channel,
  cct_node_t *cct_node,
- cct_node_t *func_node
+ cct_node_t *func_node,
+ cct_node_t *sync_node
 );
 
 

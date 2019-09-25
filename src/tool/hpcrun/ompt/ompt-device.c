@@ -70,6 +70,7 @@
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
 
+#include "sample-sources/nvidia/cuda-state-placeholders.h"
 #include "sample-sources/nvidia/cupti-api.h"
 #include "sample-sources/nvidia/cupti-channel.h"
 #include "sample-sources/nvidia/nvidia.h"
@@ -189,24 +190,30 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
   cct_addr_t frm;
   memset(&frm, 0, sizeof(cct_addr_t));
   frm.ip_norm = ip_norm;
-  cct_node_t *cct_child = hpcrun_cct_insert_addr(target_node, &frm);
+  cct_node_t *cct_api = hpcrun_cct_insert_addr(target_node, &frm);
   cct_node_t *cct_func = NULL;
+  cct_node_t *cct_sync = NULL;
 
-  // Create a function node
+  // Create a function node and a sync node
   if (ip_norm.lm_id == ompt_placeholders.ompt_tgt_kernel.pc_norm.lm_id &&
     ip_norm.lm_ip == ompt_placeholders.ompt_tgt_kernel.pc_norm.lm_ip) {
-    cct_addr_t func_frm;
-    memset(&func_frm, 0, sizeof(cct_addr_t));
-    func_frm.ip_norm = cupti_kernel_ip_get();
-    cct_func = hpcrun_cct_insert_addr(cct_child, &func_frm);
+    cct_addr_t frm;
+    memset(&frm, 0, sizeof(cct_addr_t));
+    frm.ip_norm = cupti_kernel_ip_get();
+    cct_func = hpcrun_cct_insert_addr(cct_api, &frm);
     hpcrun_cct_retain(cct_func);
+
+    memset(&frm, 0, sizeof(cct_addr_t));
+    frm.ip_norm = cuda_placeholders.cuda_sync_state.pc_norm;
+    cct_sync = hpcrun_cct_insert_addr(cct_api, &frm);
+    hpcrun_cct_retain(cct_sync);
   }
 
   // inform the worker about the placeholder
   cupti_correlation_channel_t *channel = cupti_correlation_channel_get();
   cupti_activity_channel_t *activity_channel = cupti_activity_channel_get();
   cupti_correlation_channel_produce(channel, host_op_id,
-    activity_channel, cct_child, cct_func);
+    activity_channel, cct_api, cct_func, cct_sync);
   hpcrun_safe_exit();
 }
 

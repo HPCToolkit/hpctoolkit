@@ -38,7 +38,8 @@ cupti_host_op_map_insert
  uint64_t host_op_id,
  cupti_activity_channel_t *channel,
  cct_node_t *host_op_node,
- cct_node_t *host_func_node
+ cct_node_t *host_func_node,
+ cct_node_t *host_sync_node
 );
 
 // TODO(Keren): find another way to remove nodes
@@ -75,6 +76,13 @@ cupti_host_op_map_entry_host_op_node_get
 
 cct_node_t *
 cupti_host_op_map_entry_func_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_sync_node_get
 (
  cupti_host_op_map_entry_t *entry
 );

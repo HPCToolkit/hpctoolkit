@@ -769,7 +769,7 @@ cupti_correlation_callback_cuda
     cupti_correlation_channel_get(),
     correlation_id, 
     cupti_activity_channel_get(),
-    cct_api, cct_func);
+    cct_api, cct_func, NULL);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -1789,15 +1789,19 @@ cupti_synchronization_process
     cupti_host_op_map_entry_t *host_op_entry =
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
-        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      cct_node_t *sync_node =
+        cupti_host_op_map_entry_sync_node_get(host_op_entry);
+      if (sync_node == NULL) {
+        sync_node =
+          cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+      }
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
-      cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, host_op_node);
+      cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, sync_node);
       cupti_entry_trace_t entry_trace = {
         .start = activity->start,
         .end = activity->end,
-        .node = host_op_node
+        .node = sync_node
       };
       if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE) {
         // Insert a event for a specific stream
@@ -2088,5 +2092,5 @@ void
 cupti_correlation_handle(cupti_entry_correlation_t *entry)
 {
   cupti_host_op_map_insert(entry->host_op_id,
-    entry->activity_channel, entry->api_node, entry->func_node);
+    entry->activity_channel, entry->api_node, entry->func_node, entry->sync_node);
 }

@@ -34,6 +34,7 @@ struct cupti_host_op_map_entry_s {
   cupti_activity_channel_t *channel;
   cct_node_t *host_op_node;
   cct_node_t *func_node;
+  cct_node_t *sync_node;
   struct cupti_host_op_map_entry_s *left;
   struct cupti_host_op_map_entry_s *right;
 }; 
@@ -50,7 +51,7 @@ static cupti_host_op_map_entry_t *cupti_host_op_map_root = NULL;
 
 static cupti_host_op_map_entry_t *
 cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node,
-  cct_node_t *func_node, cupti_activity_channel_t *channel)
+  cct_node_t *func_node, cct_node_t *sync_node, cupti_activity_channel_t *channel)
 {
   cupti_host_op_map_entry_t *e;
   e = (cupti_host_op_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_host_op_map_entry_t));
@@ -59,6 +60,7 @@ cupti_host_op_map_entry_new(uint64_t host_op_id, cct_node_t *host_op_node,
   e->total_samples = 0;
   e->host_op_node = host_op_node;
   e->func_node = func_node;
+  e->sync_node = sync_node;
   e->channel = channel;
   e->left = NULL;
   e->right = NULL;
@@ -112,10 +114,10 @@ cupti_host_op_map_lookup(uint64_t id)
 
 void
 cupti_host_op_map_insert(uint64_t host_op_id, cupti_activity_channel_t *channel, 
-  cct_node_t *host_op_node, cct_node_t *func_node)
+  cct_node_t *host_op_node, cct_node_t *func_node, cct_node_t *sync_node)
 {
   cupti_host_op_map_entry_t *entry = cupti_host_op_map_entry_new(
-    host_op_id, host_op_node, func_node, channel);
+    host_op_id, host_op_node, func_node, sync_node, channel);
 
   TMSG(DEFER_CTXT, "host op map insert: id=0x%lx seq_id=0x%lx", host_op_id, host_op_node);
 
@@ -217,6 +219,12 @@ cupti_host_op_map_entry_func_node_get(cupti_host_op_map_entry_t *entry)
   return entry->func_node;
 }
 
+
+cct_node_t *
+cupti_host_op_map_entry_sync_node_get(cupti_host_op_map_entry_t *entry)
+{
+  return entry->sync_node;
+}
 
 cupti_activity_channel_t *
 cupti_host_op_map_entry_activity_channel_get(cupti_host_op_map_entry_t *entry)

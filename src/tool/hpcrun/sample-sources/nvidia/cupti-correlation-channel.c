@@ -56,7 +56,8 @@ cupti_correlation_channel_produce
  uint64_t host_op_id,
  cupti_activity_channel_t *activity_channel,
  cct_node_t *api_node,
- cct_node_t *func_node
+ cct_node_t *func_node,
+ cct_node_t *sync_node
 )
 {
   cupti_correlation_channel_elem_t *node = channel_pop(channel, channel_direction_backward);
@@ -68,7 +69,7 @@ cupti_correlation_channel_produce
     node = (cupti_correlation_channel_elem_t *)hpcrun_malloc_safe(sizeof(cupti_correlation_channel_elem_t));
     cstack_ptr_set(&node->next, 0);
   }
-  cupti_entry_correlation_set(&node->entry, host_op_id, activity_channel, api_node, func_node);
+  cupti_entry_correlation_set(&node->entry, host_op_id, activity_channel, api_node, func_node, sync_node);
   channel_push(channel, channel_direction_forward, node);
 }
 
