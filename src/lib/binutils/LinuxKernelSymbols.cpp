@@ -253,44 +253,6 @@ LinuxKernelSymbolsFactory::create(void)
   return m_kernelSymbol;
 }
 
-void
-LinuxKernelSymbolsFactory::id(uint _id)
-{
-  // only accept the first ID, and throw the others
-  if (m_id_status == UNINITIALIZED) {
-    m_id = _id;
-    m_id_status = INITIALIZED;
-  }
-}
-
-uint
-LinuxKernelSymbolsFactory::id()
-{
-  return m_id;
-}
-
-void
-LinuxKernelSymbolsFactory::fileId(uint _id)
-{
-  // only accept the first ID, and throw the others
-  if (m_fileId_status == UNINITIALIZED) {
-    m_fileId = _id;
-    m_fileId_status = INITIALIZED;
-  }
-}
-
-uint
-LinuxKernelSymbolsFactory::fileId()
-{
-  return m_fileId;
-}
-
-const char*
-LinuxKernelSymbolsFactory::unified_name()
-{
-  return LINUX_KERNEL_NAME;
-}
-
 
 
 //******************************************************************************

@@ -152,10 +152,7 @@ namespace Prof {
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
-
-// all fake load modules will be merged into one single load module
-// whoever the first one arrive, will be the main fake load module
-std::map<uint, uint> m_pairFakeLoadModule;
+std::map<uint, uint> m_mapLoadModuleIDs;      // map between load module IDs
 
 namespace CallPath {
 
@@ -529,8 +526,9 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<std::string, uint, StringCompare> m_mapFiles; // map the filenames and the ID
-static std::map<std::string, uint, StringCompare> m_mapProcs; // map the procedure names and the ID
+static std::map<std::string, uint, StringCompare> m_mapFiles;       // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapProcs;       // map the procedure names and the ID
+static std::map<std::string, uint, StringCompare> m_mapLoadModules; // map the load modules names and the ID
 
 // attempt to retrieve the filename of a node
 // if the node is an alien or a loop or a file, then we are guaranteed to
@@ -600,12 +598,22 @@ writeXML_help(std::ostream& os, const char* entry_nm,
 
     if (type == 1) { // LoadModule
       nm = Prof::LoadMap::LM::pretty_name(strct->name()).c_str(); 
-      SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
-      if (sf) {
-        sf->id(id);
-        m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+      // check load module duplicates
+      std::map<std::string, uint>::iterator it = m_mapLoadModules.find(nm);
 
-        nm = sf->unified_name();
+      if (it == m_mapLoadModules.end()) 
+      {
+        // the load module is not in dictionary. Add it into the map.
+         m_mapLoadModules[nm] = id;
+      } else 
+      {
+        // the same procedure name already exists, we need to reuse
+        // the previous ID instead of the original one.
+        //
+        // remember that this ID needs redirection to the existing ID
+
+        Prof::m_mapLoadModuleIDs[id] = it->second;
+        continue;
       }
     }
     else if (type == 2) { // File
@@ -651,11 +659,6 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         Struct::LM *lm     = strct->ancestorLM();
         if (lm) {
           uint lm_id = lm->id();
-          SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
-          if (sf) {
-            lm_id = sf->id();
-          }
-
           char buffer[MAX_PREFIX_CHARS];
           snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
           completProcName.append(buffer);
