@@ -657,16 +657,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         std::string completProcName;
 
         Struct::LM *lm     = strct->ancestorLM();
-        if (lm) {
-          uint lm_id = lm->id();
-          char buffer[MAX_PREFIX_CHARS];
-          snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
-          completProcName.append(buffer);
-        }
 
         // we need to allow the same function name from a different file
         const char *fn = getFileName(strct);
-        completProcName.append(fn);
+        std::string file_key = getFilenameKey(lm, fn); 
+        
+        completProcName.append(file_key);
         completProcName.append(":");
 
         const char *lnm;
