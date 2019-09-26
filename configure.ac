@@ -118,6 +118,9 @@ hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_INSTALL_PREFIX],
+  ["$prefix"], [HPCToolkit install prefix])
+
 #-------------------------------------------------
 # CONFIG_SITE
 #-------------------------------------------------
@@ -4302,6 +4305,13 @@ if test "$OPT_HAVE_CUDA" = "yes" ; then
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
+
+if test "$OPT_HAVE_CUDA" = yes ; then
+  AC_DEFINE([OPT_HAVE_CUDA], [1], [Have support for cuda])
+fi
+
+AC_DEFINE_UNQUOTED([CUDA_INSTALL_PREFIX],
+  ["$OPT_CUDA"], ["Cuda install prefix"])
 
 AC_SUBST([OPT_CUDA])
 AC_SUBST([OPT_CUDA_IFLAGS])

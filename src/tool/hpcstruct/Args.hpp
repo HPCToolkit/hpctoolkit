@@ -64,7 +64,6 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -129,8 +128,8 @@ public:
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
-  std::vector<std::string> in_filenm;
-  std::vector<std::string> out_filenm;
+  std::string in_filenm;
+  std::string out_filenm;
 
 private:
   void

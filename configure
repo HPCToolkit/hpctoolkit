@@ -4076,6 +4076,12 @@ hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 
 
+
+cat >>confdefs.h <<_ACEOF
+#define HPCTOOLKIT_INSTALL_PREFIX "$prefix"
+_ACEOF
+
+
 #-------------------------------------------------
 # CONFIG_SITE
 #-------------------------------------------------
@@ -23017,6 +23023,18 @@ else
   OPT_ENABLE_CUDA_TRUE='#'
   OPT_ENABLE_CUDA_FALSE=
 fi
+
+
+if test "$OPT_HAVE_CUDA" = yes ; then
+
+$as_echo "#define OPT_HAVE_CUDA 1" >>confdefs.h
+
+fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define CUDA_INSTALL_PREFIX "$OPT_CUDA"
+_ACEOF
 
 
 
