@@ -125,6 +125,16 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
 
+static bool
+isVDSOLoadModule(string name) {  
+  // vdso load module name is in the following format:
+  // vdso/<md5 hash>.vdso
+  size_t ret = name.rfind("/");  
+  if (ret == string::npos) return false;
+  if (name.substr(0, ret) != "vdso") return false; 
+  return name.find(".vdso") == name.size() - 5;
+}
+
 
 namespace Analysis {
 
@@ -404,7 +414,21 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
     try {
       lm = new BinUtil::LM();
-      lm->open(lm_nm.c_str());
+      if (isVDSOLoadModule(lm_nm)) {        
+        string path = "";
+        if (!prof.directorySet().empty()) {
+          // Assume we can find all version of the vdso in all measurement directories.          
+          // Can different runs encounter different vdso?
+          // If they can, it means a particular version of vdso may only
+          // show up in some of the measurement directories (not all).
+          // Then we cannot just choose the first measurement directory.                    
+          path = *(prof.directorySet().begin());
+        }        
+        path += "/" + lm_nm;
+        lm->open(path.c_str());
+      } else {
+        lm->open(lm_nm.c_str());
+      }
       lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
