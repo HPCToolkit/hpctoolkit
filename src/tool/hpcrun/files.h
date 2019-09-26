@@ -66,6 +66,8 @@ int hpcrun_open_profile_file(int rank, int thread);
 int hpcrun_rename_log_file(int rank);
 int hpcrun_rename_trace_file(int rank, int thread);
 
+// storing the hash of the vdso for the current process
+extern char vdso_hash_str[];
 void hpcrun_save_vdso();
 
 //*****************************************************************************

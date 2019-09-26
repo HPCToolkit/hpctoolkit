@@ -183,7 +183,7 @@ static int log_rename_ret = 0;
 
 static int vdso_written = 0; // for coordination across fork
 
-
+char vdso_hash_str[HASH_LENGTH * 2];
 //***************************************************************
 // private operations
 //***************************************************************
@@ -553,28 +553,28 @@ hpcrun_save_vdso()
 
   // Calculate a hash based on the contents of VDSO.
   // We can distinguish different vdso on different compute nodes
-  unsigned char hash[HASH_LENGTH];
+  unsigned char hash[HASH_LENGTH];  
   unsigned int hash_len = crypto_hash_length();
   crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
-
   size_t i;
-  size_t used = 0;
-  used += sprintf(&name[used], "%s", output_directory);
-  used += sprintf(&name[used], "%s", "/vdso/");
-  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&name[used], "%02x", hash[i]);
+    sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
   }
-  used += sprintf(&name[used], "%s", ".vdso"); 
+  if (strlen(output_directory) + 6 + hash_len * 2 + 5 >= PATH_MAX) {
+    fd = -1;
+    error = ENAMETOOLONG;
+    hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
+    return;
+  }
+  strcpy(name, output_directory);
+  strcat(name, "/vdso/");
+  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  strcat(name, vdso_hash_str);
+  strcat(name, ".vdso");  
 
   // loop enables us to use break for unstructured control flow
   for(;;) {
     errno = 0;
-    if (used >= PATH_MAX) {
-      fd = -1;
-      error = ENAMETOOLONG;
-      break;
-    }
     fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (errno == EEXIST) {
       // another process already wrote [vdso]
