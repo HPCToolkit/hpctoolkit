@@ -130,6 +130,7 @@
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/vdso.h>
+#include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
 #include <lib/support-lean/OSUtil.h>
 
 
@@ -139,7 +140,6 @@
 
 // directory/progname-rank-thread-hostid-pid-gen.suffix
 #define FILENAME_TEMPLATE  "%s/%s-%06u-%03d-" HOSTID_FORMAT "-%u-%d.%s"
-#define VDSO_FILEPATH_TEMPLATE "%s/[vdso]"
 
 #define FILES_RANDOM_GEN  4
 #define FILES_MAX_GEN     11
@@ -551,11 +551,26 @@ hpcrun_save_vdso()
   if (vdso_addr) {
     size_t vdso_len = vdso_segment_len();
 
+  // Calculate a hash based on the contents of VDSO.
+  // We can distinguish different vdso on different compute nodes
+  unsigned char hash[HASH_LENGTH];
+  unsigned int hash_len = crypto_hash_length();
+  crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
+
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&name[used], "%s", output_directory);
+  used += sprintf(&name[used], "%s", "/vdso/");
+  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < hash_len; ++i) {
+    used += sprintf(&name[used], "%02x", hash[i]);
+  }
+  used += sprintf(&name[used], "%s", ".vdso"); 
+
   // loop enables us to use break for unstructured control flow
   for(;;) {
     errno = 0;
-    ret = snprintf(name, PATH_MAX, VDSO_FILEPATH_TEMPLATE, output_directory);
-    if (ret >= PATH_MAX) {
+    if (used >= PATH_MAX) {
       fd = -1;
       error = ENAMETOOLONG;
       break;

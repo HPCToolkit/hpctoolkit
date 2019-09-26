@@ -74,9 +74,7 @@
 // macros
 //*****************************************************************************
 
-#define MD5_HASH_NBYTES 16
-
-#define HASH_LENGTH MD5_HASH_NBYTES 
+ 
 
 #define LOWER_NIBBLE_MASK 	(0x0f)
 #define UPPER_NIBBLE(c) 	((c >> 4) & LOWER_NIBBLE_MASK)
