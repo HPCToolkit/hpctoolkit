@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -58,6 +58,7 @@
 #include <sample-sources/perf/pmu.h>
 
 #include "datacentric.h"
+#include "pmu_handler.h"
 
 // list of precise events
 
@@ -73,42 +74,26 @@
 #define EVNAME_POWER_RMEM_CYC	  "PM_MRK_DATA_FROM_RMEM_CYC"
 #define EVNAME_POWER_L2MISS_CYC   "PM_MRK_DATA_FROM_L2MISS_CYC"
 
-#define DEFAULT_THRESHOLD  	100
-
-/**
- * extended configuration containing the frequency and threshold
- * for off-socket pmus, we want to sample every event
- **/
-struct pmu_config_ext_s 
-{
-  cpu_type_t cpu;
-  const char *event;
-
-  bool     is_period;
-  uint64_t threshold;
-} ;
-
 /**
  * attention: the order of the array is very important. 
+ * 
+ * Some events are taken from Linux definition:
+ *
+ * https://github.com/torvalds/linux/blob/master/arch/powerpc/perf/power9-events-list.h
  */
-static struct pmu_config_ext_s  pmu_events[] = {
+static struct pmu_config_s  pmu_events[] = {
    
-#if 0
-   { POWER9,   "perf_raw::r40401e0" },   // experimental PM_MRK_INST_CMPL on counter 4
-#else
-   { POWER9,   EVNAME_POWER_RMEM, true, 1 },  // remote memory
-   { POWER9,   EVNAME_POWER_DL4,  true, 1 },  // cache from another chip's L4 from different node
-   { POWER9,   EVNAME_POWER_LMEM, false,    DEFAULT_THRESHOLD },  // reload from local memory
-   { POWER9,   EVNAME_POWER_OFFCHIP, false, DEFAULT_THRESHOLD },   // The processor's data cache was reloaded either shared or modified data from another core's L2/L3 on a different chip (remote or distant) due to a demand load
-#endif   
-   { POWER8,   EVNAME_POWER_RMEM, true, 1 },   // remote memory
-   { POWER8,   EVNAME_POWER_DL4,  true, 1 },   // cache from another chip's L4 from different node
-   { POWER8,   EVNAME_POWER_LMEM, false,    DEFAULT_THRESHOLD },  // reload from local memory
-   { POWER8,   EVNAME_POWER_OFFCHIP, false, DEFAULT_THRESHOLD },  // The processor's data cache was reloaded either shared or modified data from another core's L2/L3 on a different chip (remote or distant) due to a demand load
+   { POWER9,   "MEM-LOAD",  "perf_raw::r34340401e0" },   // see Linux Power 9 support mem-loads
+   { POWER9,   "MEM-STORE", "perf_raw::r343c0401e0" },   // see Linux Power 9 support mem-stores
 
-   { POWER7,   EVNAME_POWER_RMEM, true, 1 },
-   { POWER7,   EVNAME_POWER_DL4,  true, 1  },
-   { POWER7,   EVNAME_POWER_LMEM, false, DEFAULT_THRESHOLD }
+   { POWER8,   "RMEM",           EVNAME_POWER_RMEM   },   // remote memory
+   { POWER8,   "DIST-L4",        EVNAME_POWER_DL4    },   // cache from another chip's L4 from different node
+   { POWER8,   "LOCAL-MEM",      EVNAME_POWER_LMEM   },   // reload from local memory
+   { POWER8,   "L2/L3 OFF-CHIP", EVNAME_POWER_OFFCHIP },  // The processor's data cache was reloaded either shared or modified data from another core's L2/L3 on a different chip (remote or distant) due to a demand load
+
+   { POWER7,   "RMEM",      EVNAME_POWER_RMEM },
+   { POWER7,   "DIST-L4",   EVNAME_POWER_DL4  },
+   { POWER7,   "LOCAL-MEM", EVNAME_POWER_LMEM }
 };
 
 
@@ -118,14 +103,14 @@ datacentric_hw_handler(perf_mmap_data_t *mmap_data,
                        cct_node_t *datacentric_node,
                        cct_node_t *sample_node)
 {
-  TMSG(DATACENTRIC, "ip: 0x%x, \tdata_src: 0x%x", mmap_data->ip, mmap_data->data_src);
+  pmu_handler_callback(mmap_data, datacentric_node, sample_node);
 }
 
 int
 datacentric_hw_register(sample_source_t *self, event_custom_t *event,
                         struct event_threshold_s *period)
 {
-  int size = sizeof(pmu_events)/sizeof(struct pmu_config_ext_s);
+  int size = sizeof(pmu_events)/sizeof(struct pmu_config_s);
   u64 sample_type = PERF_SAMPLE_CALLCHAIN
                     | PERF_SAMPLE_PERIOD | PERF_SAMPLE_TIME
                     | PERF_SAMPLE_IP     | PERF_SAMPLE_ADDR
@@ -147,10 +132,12 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
     if (isPMU < 0) continue;
 
     //set_default_perf_event_attr(event_attr, period);
-    bool is_period = pmu_events[i].is_period;
-    u64  threshold = pmu_events[i].threshold;
+    bool is_period = period->threshold_type == PERIOD;
 
-    perf_util_attr_init(pmu_events[i].event, &event_attr, is_period, threshold, sample_type);
+    perf_util_attr_init(pmu_events[i].event, &event_attr, 
+                        is_period,  period->threshold_num, 
+                        sample_type);
+
     perf_skid_set_max_precise_ip(&event_attr);
 
     // testing the feasibility;
@@ -166,7 +153,7 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
       // ------------------------------------------
       int metric = hpcrun_new_metric();
       hpcrun_set_metric_info_and_period(
-            metric, pmu_events[i].event,
+            metric, pmu_events[i].name,
             MetricFlags_ValFmt_Int, 1, metric_property_none);
 
       // ------------------------------------------
@@ -184,5 +171,8 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
 
     }
   }
+  if (num_pmu > 0)
+    pmu_handler_init();
+
   return num_pmu;
 }

@@ -167,18 +167,20 @@ pkglibexec_PROGRAMS =
 
 @HOST_CPU_AARCH64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_17 = \
 @HOST_CPU_AARCH64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/datacentric.c \
-@HOST_CPU_AARCH64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/ibsop.c		\
+@HOST_CPU_AARCH64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/ibsop.c	 \
 @HOST_CPU_AARCH64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_TRUE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/stall_dummy.c 
 
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_18 = \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/datacentric.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	utilities/arch/x86-family/cpuid.c    	 \
-@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_x86.c	\
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_x86.c	 \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_handler.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/stall.c 
 
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_19 = \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/datacentric.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_power.c	 \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/pmu_handler.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/stall.c 
 
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__append_20 = \
@@ -520,6 +522,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/datacentric/ibsop.c \
 	utilities/arch/x86-family/cpuid.c \
 	sample-sources/datacentric/pmu_x86.c \
+	sample-sources/datacentric/pmu_handler.c \
 	sample-sources/stall/stall.c \
 	sample-sources/datacentric/pmu_power.c \
 	sample-sources/perf/kernel_blocking.c \
@@ -582,9 +585,11 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_12 = sample-sources/datacentric/libhpcrun_la-datacentric.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	utilities/arch/x86-family/libhpcrun_la-cpuid.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_la-pmu_x86.lo \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_la-pmu_handler.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_la-stall.lo
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_13 = sample-sources/datacentric/libhpcrun_la-datacentric.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_la-pmu_power.lo \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_la-pmu_handler.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_la-stall.lo
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_14 = sample-sources/datacentric/libhpcrun_la-datacentric_dummy.lo \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_la-stall_dummy.lo
@@ -848,6 +853,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/datacentric/ibsop.c \
 	utilities/arch/x86-family/cpuid.c \
 	sample-sources/datacentric/pmu_x86.c \
+	sample-sources/datacentric/pmu_handler.c \
 	sample-sources/stall/stall.c \
 	sample-sources/datacentric/pmu_power.c \
 	sample-sources/perf/kernel_blocking.c \
@@ -906,9 +912,11 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_50 = sample-sources/datacentric/libhpcrun_o-datacentric.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	utilities/arch/x86-family/libhpcrun_o-cpuid.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_o-pmu_x86.$(OBJEXT) \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_o-pmu_handler.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_64_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_o-stall.$(OBJEXT)
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_51 = sample-sources/datacentric/libhpcrun_o-datacentric.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_o-pmu_power.$(OBJEXT) \
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/datacentric/libhpcrun_o-pmu_handler.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_TRUE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_o-stall.$(OBJEXT)
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@am__objects_52 = sample-sources/datacentric/libhpcrun_o-datacentric_dummy.$(OBJEXT) \
 @HOST_CPU_AARCH64_FALSE@@HOST_CPU_PPC_FALSE@@HOST_CPU_X86_64_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_IBS_OP_FALSE@@OPT_PERF_MEM_DATA_SRC_TRUE@	sample-sources/stall/libhpcrun_o-stall_dummy.$(OBJEXT)
@@ -2362,6 +2370,9 @@ utilities/arch/x86-family/libhpcrun_la-cpuid.lo:  \
 sample-sources/datacentric/libhpcrun_la-pmu_x86.lo:  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
+sample-sources/datacentric/libhpcrun_la-pmu_handler.lo:  \
+	sample-sources/datacentric/$(am__dirstamp) \
+	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/stall/libhpcrun_la-stall.lo:  \
 	sample-sources/stall/$(am__dirstamp) \
 	sample-sources/stall/$(DEPDIR)/$(am__dirstamp)
@@ -2845,6 +2856,9 @@ utilities/arch/x86-family/libhpcrun_o-cpuid.$(OBJEXT):  \
 sample-sources/datacentric/libhpcrun_o-pmu_x86.$(OBJEXT):  \
 	sample-sources/datacentric/$(am__dirstamp) \
 	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
+sample-sources/datacentric/libhpcrun_o-pmu_handler.$(OBJEXT):  \
+	sample-sources/datacentric/$(am__dirstamp) \
+	sample-sources/datacentric/$(DEPDIR)/$(am__dirstamp)
 sample-sources/stall/libhpcrun_o-stall.$(OBJEXT):  \
 	sample-sources/stall/$(am__dirstamp) \
 	sample-sources/stall/$(DEPDIR)/$(am__dirstamp)
@@ -3304,11 +3318,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-datacentric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-datacentric_dummy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-ibsop.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_handler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_power.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_x86.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-datacentric.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-datacentric_dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-ibsop.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_power.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_x86.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo@am__quote@
@@ -4233,6 +4249,13 @@ sample-sources/datacentric/libhpcrun_la-pmu_x86.lo: sample-sources/datacentric/p
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/pmu_x86.c' object='sample-sources/datacentric/libhpcrun_la-pmu_x86.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-pmu_x86.lo `test -f 'sample-sources/datacentric/pmu_x86.c' || echo '$(srcdir)/'`sample-sources/datacentric/pmu_x86.c
+
+sample-sources/datacentric/libhpcrun_la-pmu_handler.lo: sample-sources/datacentric/pmu_handler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_la-pmu_handler.lo -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_handler.Tpo -c -o sample-sources/datacentric/libhpcrun_la-pmu_handler.lo `test -f 'sample-sources/datacentric/pmu_handler.c' || echo '$(srcdir)/'`sample-sources/datacentric/pmu_handler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_handler.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_la-pmu_handler.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/pmu_handler.c' object='sample-sources/datacentric/libhpcrun_la-pmu_handler.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_la-pmu_handler.lo `test -f 'sample-sources/datacentric/pmu_handler.c' || echo '$(srcdir)/'`sample-sources/datacentric/pmu_handler.c
 
 sample-sources/stall/libhpcrun_la-stall.lo: sample-sources/stall/stall.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/stall/libhpcrun_la-stall.lo -MD -MP -MF sample-sources/stall/$(DEPDIR)/libhpcrun_la-stall.Tpo -c -o sample-sources/stall/libhpcrun_la-stall.lo `test -f 'sample-sources/stall/stall.c' || echo '$(srcdir)/'`sample-sources/stall/stall.c
@@ -5808,6 +5831,20 @@ sample-sources/datacentric/libhpcrun_o-pmu_x86.obj: sample-sources/datacentric/p
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/pmu_x86.c' object='sample-sources/datacentric/libhpcrun_o-pmu_x86.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-pmu_x86.obj `if test -f 'sample-sources/datacentric/pmu_x86.c'; then $(CYGPATH_W) 'sample-sources/datacentric/pmu_x86.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/pmu_x86.c'; fi`
+
+sample-sources/datacentric/libhpcrun_o-pmu_handler.o: sample-sources/datacentric/pmu_handler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-pmu_handler.o -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Tpo -c -o sample-sources/datacentric/libhpcrun_o-pmu_handler.o `test -f 'sample-sources/datacentric/pmu_handler.c' || echo '$(srcdir)/'`sample-sources/datacentric/pmu_handler.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/pmu_handler.c' object='sample-sources/datacentric/libhpcrun_o-pmu_handler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-pmu_handler.o `test -f 'sample-sources/datacentric/pmu_handler.c' || echo '$(srcdir)/'`sample-sources/datacentric/pmu_handler.c
+
+sample-sources/datacentric/libhpcrun_o-pmu_handler.obj: sample-sources/datacentric/pmu_handler.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/datacentric/libhpcrun_o-pmu_handler.obj -MD -MP -MF sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Tpo -c -o sample-sources/datacentric/libhpcrun_o-pmu_handler.obj `if test -f 'sample-sources/datacentric/pmu_handler.c'; then $(CYGPATH_W) 'sample-sources/datacentric/pmu_handler.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/pmu_handler.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Tpo sample-sources/datacentric/$(DEPDIR)/libhpcrun_o-pmu_handler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/datacentric/pmu_handler.c' object='sample-sources/datacentric/libhpcrun_o-pmu_handler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/datacentric/libhpcrun_o-pmu_handler.obj `if test -f 'sample-sources/datacentric/pmu_handler.c'; then $(CYGPATH_W) 'sample-sources/datacentric/pmu_handler.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/datacentric/pmu_handler.c'; fi`
 
 sample-sources/stall/libhpcrun_o-stall.o: sample-sources/stall/stall.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/stall/libhpcrun_o-stall.o -MD -MP -MF sample-sources/stall/$(DEPDIR)/libhpcrun_o-stall.Tpo -c -o sample-sources/stall/libhpcrun_o-stall.o `test -f 'sample-sources/stall/stall.c' || echo '$(srcdir)/'`sample-sources/stall/stall.c

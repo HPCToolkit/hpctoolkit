@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,15 +45,15 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef __PERF_PMU_H__
-#define __PERF_PMU_H__
+#ifndef __PMU_HANDLER_H__
+#define __PMU_HANDLER_H__
 
-#include <utilities/arch/cpuid.h>
+void
+pmu_handler_init();
 
-struct pmu_config_s {
-  cpu_type_t cpu;
-  const char *name;
-  const char *event;
-};
 
-#endif // __PERF_PMU_H__
+void
+pmu_handler_callback(perf_mmap_data_t *mmap_data,
+                       cct_node_t *datacentric_node,
+                       cct_node_t *sample_node);
+#endif // __PMU_HANDLER_H__
