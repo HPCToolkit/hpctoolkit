@@ -26,11 +26,32 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: Sept 18, 2019.
+Last revised: Sept 26, 2019.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
+
+@subsection (2019-09-25) New microarchitecture targets
+
+Spack recently changed how it treats a system's architecture and target
+to allow a hierarchy of fine-grained microarchitectures.  The 'target'
+is now a specific microarchitecture (eg, haswell) instead of a generic
+family (x86_64).  You will see this change in two main places: in 'spack
+spec' and the path for the install directory.  For example,
+@code{linux-rhel7-x86_64} might become @code{linux-rhel7-broadwell}.
+
+Although a fresh install from scratch should work, there may be some
+corner cases that don't work and there may be some issues with combining
+older packages with newer ones.  If you prefer to avoid this change
+until the dust settles, then use commit @code{a940ff34d745} from Sept
+19, 2019.
+
+@example
+git clone https://github.com/spack/spack.git
+cd spack
+git checkout a940ff34d745
+@end example
 
 @subsection (2019-08-28) Cray front-end compilers
 

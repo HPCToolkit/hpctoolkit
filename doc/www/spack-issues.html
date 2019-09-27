@@ -46,7 +46,8 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.1 (2019-08-28) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282019_002d09_002d25_0029-New-microarchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-microarchitecture-targets">2.1 (2019-09-25) New microarchitecture targets</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.2 (2019-08-28) Cray front-end compilers</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
@@ -89,14 +90,36 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Sept 18, 2019.
+<p>Last revised: Sept 26, 2019.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
+<a name="g_t_00282019_002d09_002d25_0029-New-microarchitecture-targets"></a>
+<h4 class="subsection">2.1 (2019-09-25) New microarchitecture targets</h4>
+
+<p>Spack recently changed how it treats a system&rsquo;s architecture and target
+to allow a hierarchy of fine-grained microarchitectures.  The &rsquo;target&rsquo;
+is now a specific microarchitecture (eg, haswell) instead of a generic
+family (x86_64).  You will see this change in two main places: in &rsquo;spack
+spec&rsquo; and the path for the install directory.  For example,
+<code>linux-rhel7-x86_64</code> might become <code>linux-rhel7-broadwell</code>.
+</p>
+<p>Although a fresh install from scratch should work, there may be some
+corner cases that don&rsquo;t work and there may be some issues with combining
+older packages with newer ones.  If you prefer to avoid this change
+until the dust settles, then use commit <code>a940ff34d745</code> from Sept
+19, 2019.
+</p>
+<div class="example">
+<pre class="example">git clone https://github.com/spack/spack.git
+cd spack
+git checkout a940ff34d745
+</pre></div>
+
 <a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
-<h4 class="subsection">2.1 (2019-08-28) Cray front-end compilers</h4>
+<h4 class="subsection">2.2 (2019-08-28) Cray front-end compilers</h4>
 
 <p><code>Spack compiler find</code> is currently broken for detecting the
 front-end compilers on Cray that HPCToolkit uses.  Normally, you would
