@@ -111,8 +111,8 @@
 #include "cupti-api.h"
 #include "cupti-function-id-map.h"
 #include "cupti-record.h"
-#include "cupti-context-stream-id-map.h"
-#include "stream-tracing.h"
+#include "../gpu/gpu-context-stream-id-map.h"
+#include "../gpu/stream-tracing.h"
 
 
 //******************************************************************************

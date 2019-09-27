@@ -6,7 +6,6 @@
 #define HPCTOOLKIT_STREAM_TRACE_THREAD_H
 
 #include <lib/prof-lean/producer_wfq.h>
-#include "cupti-context-stream-id-map.h"
 #include <tool/hpcrun/thread_data.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <tool/hpcrun/cct/cct.h>

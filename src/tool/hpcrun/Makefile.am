@@ -376,7 +376,9 @@ MY_BASE_FILES =				\
 	sample-sources/gpu/gpu-correlation-id-map.c \
 	sample-sources/gpu/gpu-host-op-map.c \
 	sample-sources/gpu/gpu-record.c \
-	sample-sources/gpu/placeholders.c
+	sample-sources/gpu/placeholders.c \
+	sample-sources/gpu/gpu-context-stream-id-map.c \
+    sample-sources/gpu/stream-tracing.c
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
@@ -466,9 +468,7 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c \
-	sample-sources/nvidia/cupti-context-stream-id-map.c \
-    sample-sources/nvidia/stream-tracing.c
+	sample-sources/nvidia/cuda-state-placeholders.c 
 endif
 
 if OPT_ENABLE_CUPTI
@@ -906,6 +906,8 @@ if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
   libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif
 
 if UNW_LIBUNW

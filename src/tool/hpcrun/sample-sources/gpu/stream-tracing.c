@@ -3,6 +3,7 @@
 //
 #include "stream-tracing.h"
 #include <tool/hpcrun/threadmgr.h>
+#include "gpu-context-stream-id-map.h"
 
 static atomic_ullong stream_id;
 

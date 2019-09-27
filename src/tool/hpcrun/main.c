@@ -128,7 +128,7 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <memory/mmap.h>
-
+#include <tool/hpcrun/sample-sources/gpu/stream-tracing.h>
 #include <monitor-exts/monitor_ext.h>
 
 #include <cct/cct.h>
@@ -549,9 +549,9 @@ hpcrun_init_internal(bool is_child)
 
   stream_tracing_init();
 
-#ifdef USE_ROCM
+/*#ifdef USE_ROCM
   roctracer_init();
-#endif
+#endif*/
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \

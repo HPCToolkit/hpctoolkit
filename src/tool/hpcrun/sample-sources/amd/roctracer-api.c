@@ -46,15 +46,6 @@
 
 //static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
 
-static void
-roctracer_activity_attribute
-(
-    entry_activity_t *activity,
-    cct_node_t *cct_node
-)
-{
-
-}
 
 
 void
@@ -145,6 +136,42 @@ roctracer_memset_data_set
     }
 }
 
+static void
+roctracer_memcpy_data_set
+(
+      const hip_api_data_t *data,
+      entry_data_t *entry_data,
+      uint32_t callback_id
+)
+{
+    switch(callback_id){
+        case HIP_API_ID_hipMemcpyDtoD:
+            entry_data->memcpy.copyKind = 8;
+            entry_data->memcpy.bytes = data->args.hipMemcpyDtoD.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpyAtoH:
+            entry_data->memcpy.copyKind = 4;
+            break;
+        case HIP_API_ID_hipMemcpyHtoD:
+            entry_data->memcpy.copyKind = 1;
+            entry_data->memcpy.bytes = data->args.hipMemcpyHtoD.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpyHtoA:
+            entry_data->memcpy.copyKind = 3;
+            break;
+        case HIP_API_ID_hipMemcpyDtoH:
+            entry_data->memcpy.copyKind = 2;
+            entry_data->memcpy.bytes = data->args.hipMemcpyDtoH.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpy:
+            entry_data->memcpy.copyKind = data->args.hipMemcpy.kind;
+            entry_data->memcpy.bytes = data->args.hipMemcpy.sizeBytes;
+            break;
+    }
+
+
+}
+
 void
 roctracer_subscriber_callback
 (
@@ -154,6 +181,7 @@ roctracer_subscriber_callback
       void* arg
 )
 {
+    gpu_record_init();
     placeholder_t hip_state = hip_placeholders.hip_none_state;
     const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
     entry_data_t *entry_data;
@@ -184,6 +212,8 @@ roctracer_subscriber_callback
             case HIP_API_ID_hipMemcpyParam2D:
                 hip_state = hip_placeholders.hip_memcpy_state;
                 activities_consume(roctracer_activity_handle);
+                entry_data = (entry_data_t*)hpcrun_malloc_safe(sizeof(entry_data_t));
+                roctracer_memcpy_data_set(data, entry_data, callback_id);
                 roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
                 break;
             case HIP_API_ID_hipMalloc:

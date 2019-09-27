@@ -2,7 +2,7 @@
 // Created by ax4 on 8/1/19.
 //
 
-#include "cupti-context-stream-id-map.h"
+#include "gpu-context-stream-id-map.h"
 #include "stream-tracing.h"
 
 extern atomic_ullong stream_counter;
