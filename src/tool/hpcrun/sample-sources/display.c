@@ -129,8 +129,8 @@ printw(FILE *output, const char *name, const char *desc_unsanitized)
         }
         fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
       }
-      free (line);
-      free (len);
+      free(line);
+      free(len);
     }
     free(desc);
   } else {

@@ -97,10 +97,6 @@ static const char* usage_details =
 #include "usage.h"
 ;
 
-// Possible extensions:
-//  --Li : Select the opposite of the --loop-intvl default.
-//  --Lf : Select the opposite of the --loop-fwd-subst default.
-
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
 
@@ -360,10 +356,6 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Output options
     if (parser.isOpt("output")) {
       out_filenm = parser.getOptArg("output");
-    }
-
-    if (parser.isOpt("compact")) {
-      prettyPrintOutput = false;
     }
 
     // Check for required arguments
