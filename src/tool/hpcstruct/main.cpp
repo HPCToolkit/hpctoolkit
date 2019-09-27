@@ -317,69 +317,41 @@ realmain(int argc, char* argv[])
   // Single application binary
   // ------------------------------------------------------------
 
-  // FIXME: this is always a loop of one element, so remove the loop.
+  const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
+  std::ostream* outFile = IOUtil::OpenOStream(osnm);
+  char* outBuf = new char[HPCIO_RWBufferSz];
 
-  vector <string> input_names;
-  vector <string> output_names;
+  std::streambuf* os_buf = outFile->rdbuf();
+  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
 
-  input_names.push_back(args.in_filenm);
-  output_names.push_back(args.out_filenm);
+  std::string gapsName = "";
+  std::ostream* gapsFile = NULL;
+  char* gapsBuf = NULL;
+  std::streambuf* gaps_rdbuf = NULL;
 
-  for (size_t i = 0; i < input_names.size(); i++) {
-
-    // ------------------------------------------------------------
-    // Build and print the program structure tree
-    // ------------------------------------------------------------
-
-    auto &in_filenm = input_names[i];
-    auto &out_filenm = output_names[i];
-    const char* osnm = (out_filenm == "-") ? NULL : out_filenm.c_str();
-
-    std::ostream* outFile = IOUtil::OpenOStream(osnm);
-    char* outBuf = new char[HPCIO_RWBufferSz];
-
-    std::streambuf* os_buf = outFile->rdbuf();
-    os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
-
-    std::string gapsName = "";
-    std::ostream* gapsFile = NULL;
-    char* gapsBuf = NULL;
-    std::streambuf* gaps_rdbuf = NULL;
-
-    if (args.show_gaps) {
-      // fixme: may want to add --gaps-name option
-      if (out_filenm == "-") {
-        DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
-        exit(1);
-      }
-
-      gapsName = RealPath(osnm) + std::string(".gaps");
-      gapsFile = IOUtil::OpenOStream(gapsName.c_str());
-      gapsBuf = new char[HPCIO_RWBufferSz];
-      gaps_rdbuf = gapsFile->rdbuf();
-      gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
+  if (args.show_gaps) {
+    // fixme: may want to add --gaps-name option
+    if (args.out_filenm == "-") {
+      DIAG_EMsg("Cannot make gaps file when hpcstruct file is stdout.");
+      exit(1);
     }
 
-#if 0
-    ProcNameMgr* procNameMgr = NULL;
-    if (args.lush_agent == "agent-c++") {
-      procNameMgr = new CppNameMgr;
-    }
-    else if (args.lush_agent == "agent-cilk") {
-      procNameMgr = new CilkNameMgr;
-    }
-#endif
+    gapsName = RealPath(osnm) + std::string(".gaps");
+    gapsFile = IOUtil::OpenOStream(gapsName.c_str());
+    gapsBuf = new char[HPCIO_RWBufferSz];
+    gaps_rdbuf = gapsFile->rdbuf();
+    gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
+  }
 
-    BAnal::Struct::makeStructure(in_filenm, outFile, gapsFile, gapsName,
-      args.searchPathStr, opts);
+  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
+			       args.searchPathStr, opts);
 
-    IOUtil::CloseStream(outFile);
-    delete[] outBuf;
+  IOUtil::CloseStream(outFile);
+  delete[] outBuf;
 
-    if (gapsFile != NULL) {
-      IOUtil::CloseStream(gapsFile);
-      delete[] gapsBuf;
-    }
+  if (gapsFile != NULL) {
+    IOUtil::CloseStream(gapsFile);
+    delete[] gapsBuf;
   }
 
   return (0);
