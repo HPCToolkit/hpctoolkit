@@ -135,7 +135,7 @@ fi
 libdir='${exec_prefix}/lib'
 
 #-------------------------------------------------
-# Git version
+# Git and Spack versions
 #-------------------------------------------------
 
 # If this is a git repo, then try to identify the branch name and the
@@ -145,29 +145,30 @@ AC_MSG_CHECKING([for git version])
 
 git_version='unknown (not a git repo)'
 
-mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
-if echo "$mesg" | grep -i commit >/dev/null ; then
-  git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
-  git_hash=`expr "$git_hash" : '\(................\)'`
-  git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
-
-  mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
-  if echo "$mesg" | grep -i branch >/dev/null ; then
-    git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
-
-  elif echo "$mesg" | grep -i detach >/dev/null ; then
-    # detached commits don't have a branch name
-    git_branch=detached
-
-  else
-    git_branch=unknown
+if test -d "${srcdir}/.git" ; then
+  mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
+  if echo "$mesg" | grep -i commit >/dev/null ; then
+    git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
+    git_hash=`expr "$git_hash" : '\(................\)'`
+    git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
+  
+    mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
+    if echo "$mesg" | grep -i branch >/dev/null ; then
+      git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
+  
+    elif echo "$mesg" | grep -i detach >/dev/null ; then
+      # detached commits don't have a branch name
+      git_branch=detached
+  
+    else
+      git_branch=unknown
+    fi
+  
+    git_version="$git_branch at $git_date ($git_hash)"
   fi
-
-  git_version="$git_branch at $git_date ($git_hash)"
 fi
 
 AC_MSG_RESULT([$git_version])
-
 
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
 	  ["${PACKAGE_VERSION}"],
@@ -176,6 +177,19 @@ AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION],
 AC_DEFINE_UNQUOTED([HPCTOOLKIT_VERSION_STRING],
 	  ["A member of HPCToolkit, version ${PACKAGE_VERSION}"],
 	  [HPCToolkit version string])
+
+# If this is a spack build, then try to identify the spack spec.
+
+AC_MSG_CHECKING([for spack spec])
+
+spack_spec='unknown (not a spack build)'
+
+if test "x$SPACK_SHORT_SPEC" != x ; then
+  spack_spec=`echo $SPACK_SHORT_SPEC | tr -d "'"`
+fi
+
+AC_MSG_RESULT([$spack_spec])
+
 
 #-------------------------------------------------
 # is_cross_compile: non-empty string if cross-compiling
@@ -4514,6 +4528,7 @@ hash_value='$hash_value'
 
 VERSION='$PACKAGE_VERSION'
 git_version='$git_version'
+spack_spec='$spack_spec'
 EOF
 
 AC_SUBST_FILE([launch_script_vars])
@@ -4624,6 +4639,7 @@ AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([-------------------])
 AC_MSG_NOTICE([  HPCToolkit version: ${PACKAGE_VERSION}])
 AC_MSG_NOTICE([  git version: $git_version])
+AC_MSG_NOTICE([  spack spec:  $spack_spec])
 if test "x$ext_version" != x ; then
   AC_MSG_NOTICE([  externals:   $ext_version])
 fi

@@ -26,27 +26,152 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: June 17, 2019.
+Last revised: Sept 26, 2019.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-No known issues at this time.
+@subsection (2019-09-25) New microarchitecture targets
+
+Spack recently changed how it treats a system's architecture and target
+to allow a hierarchy of fine-grained microarchitectures.  The 'target'
+is now a specific microarchitecture (eg, haswell) instead of a generic
+family (x86_64).  You will see this change in two main places: in 'spack
+spec' and the path for the install directory.  For example,
+@code{linux-rhel7-x86_64} might become @code{linux-rhel7-broadwell}.
+
+Although a fresh install from scratch should work, there may be some
+corner cases that don't work and there may be some issues with combining
+older packages with newer ones.  If you prefer to avoid this change
+until the dust settles, then use commit @code{a940ff34d745} from Sept
+19, 2019.
+
+@example
+git clone https://github.com/spack/spack.git
+cd spack
+git checkout a940ff34d745
+@end example
+
+@subsection (2019-08-28) Cray front-end compilers
+
+@code{Spack compiler find} is currently broken for detecting the
+front-end compilers on Cray that HPCToolkit uses.  Normally, you would
+load a module for gcc and run @code{spack compiler find} and spack would
+add that compiler to @code{compilers.yaml}, but this currently does not
+work.
+
+@b{Workaround:} If you have a working @code{compiler:} entry for a
+front-end GNU compiler on Cray, then that will continue to work.  If
+not, then you will have to add one manually.  For example, this is an
+entry for the @code{gcc/7.3.0} module on theta at ANL.  Note that the
+front-end operating_system is something like @code{sles12} (not
+@code{cnl6}), and the front-end target is @code{x86_64} (not
+@code{mic_knl}).
+
+@example
+- compiler:
+    environment: @{@}
+    extra_rpaths: []
+    flags: @{@}
+    modules:
+    - PrgEnv-gnu/6.0.4
+    - gcc/7.3.0
+    - cray-mpich/7.7.3
+    operating_system: sles12
+    paths:
+      cc:  /opt/gcc/7.3.0/bin/gcc
+      cxx: /opt/gcc/7.3.0/bin/g++
+      f77: /opt/gcc/7.3.0/bin/gfortran
+      fc:  /opt/gcc/7.3.0/bin/gfortran
+    spec: gcc@@7.3.0
+    target: x86_64
+@end example
+
+@noindent
+Alternatively, the last working commit was @code{9c1c50fb7632} on
+2019-06-07.  You could revert to this commit, run @code{spack compiler
+find} and then return to the current spack head (develop).  Be sure to
+fill in the @code{modules:} field.
 
 @c ------------------------------------------------------------
 
 @section Recently Resolved Issues
 
-@subsection (2019-06-06) intel-xed and hpcviewer
+@subsection (2019-08-28) External cuda modules
+
+Sometimes spack misreads the @code{module:} entry for an external
+package in @code{packages.yaml} and selects the wrong install
+directory.  For example, spack misreads the @code{cuda/10.1.168}
+module on cori at NERSC (incorrectly using /usr) and the build for
+hpctoolkit fails as follows.
+
+@example
+==> cuda@@10.1.168 : has external module in cuda/10.1.168
+==> cuda@@10.1.168 : is actually installed in /usr
+
+.../configure --prefix='...' ... '--with-cuda=/usr'
+>> 208    configure: error: '/usr/include/cuda.h' not found
+@end example
+
+@noindent
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/12693, b1868f35ec91} on
+2019-09-11.  Or, you can workaround the problem by replacing
+@code{modules:} with a @code{paths:} entry.
+
+@example
+cuda:
+  paths:
+    cuda@@10.1.168:  /usr/common/software/cuda/10.1.168
+@end example
+
+@c ------------------------------------------------------------
+
+@subsection (2019-08-19) Build stage not writable
+
+Spack has reorganized the build directories and the value for
+@code{build_stage} in @code{config.yaml} may not work.
+
+@example
+build_stage:
+  - $tempdir/spack-stage
+@end example
+
+@noindent
+The problem with this value is that the first user to run spack on this
+machine will create the directory, owned by that user and thus not
+writable by any other user.  For every other user, @code{spack install}
+will fail with:
+
+@example
+==> Error: No accessible stage paths in:
+@end example
+
+@noindent
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/12516, c141e99e062b} on
+2019-09-03.  Check your @code{build_stage} directory and make sure
+that you have write access.  One solution is to add @code{$user} to
+the path.
+
+@example
+build_stage:
+  - $tempdir/$user/spack-stage
+@end example
+
+@c ------------------------------------------------------------
+
+@subsection (2019-06-06) Intel-xed and hpcviewer
 
 Packages that use a spack resource (a second tar file) are currently
 broken.  This includes intel-xed (x86_64 only) and hpcviewer (all
 platforms).
 
 @noindent
-@b{Fixed:} This is now fixed in spack develop in commit
-@code{aca1bfdb6a64} on 2019-06-13.
+@b{Fixed:} This is now fixed in commit
+@uref{https://github.com/spack/spack/pull/11676, aca1bfdb6a64} on
+2019-06-13.
 
 @c ------------------------------------------------------------
 
