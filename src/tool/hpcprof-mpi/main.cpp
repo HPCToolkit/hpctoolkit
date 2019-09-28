@@ -721,6 +721,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   for (uint i = mSrcBeg; i < mSrcEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     m->isVisible(false);
+    m->isTemporary(true);
   }
 
   for (uint i = mDrvdBeg; i < mDrvdEnd; ++i) {
@@ -768,6 +769,7 @@ makeDerivedMetricDescs(Prof::CallPath::Profile& profGbl,
   for (uint i = mXDrvdBeg; i < mXDrvdEnd; ++i) {
     Prof::Metric::ADesc* m = mMgrGbl.metric(i);
     m->isVisible(false);
+    m->isTemporary(true);
   }
 
   profGbl.isMetricMgrVirtual(false);

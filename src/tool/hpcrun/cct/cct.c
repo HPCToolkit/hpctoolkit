@@ -104,7 +104,7 @@ struct cct_node_t {
   // ---------------------------------------------------------
   int32_t persistent_id;
   
-  uint16_t node_type;
+  uint32_t node_type;
 
   cct_addr_t addr; // bundle abstract address components into a data type
 
@@ -537,6 +537,22 @@ hpcrun_cct_set_node_unknown_attribute(cct_node_t *root)
   root->node_type |= NODE_TYPE_UNKNOWN_ATTRIBUTE;
 }
 
+// link between the node and the source of memory declaration
+void
+hpcrun_cct_link_source_memaccess(cct_node_t *node, cct_node_t *source)
+{
+  // let assume a persistent id will never exceed 2^26
+  uint32_t link_node = node->node_type >> BITS_RESERVED_NODE_TYPE;
+  if (link_node > 0) {
+    // it's already linked to a node
+    TMSG(LINUX_PERF, "node %d already linked to %d", node->persistent_id, link_node);
+    return;
+  }
+  uint32_t source_id = source->persistent_id << BITS_RESERVED_NODE_TYPE;
+  node->node_type   |= source_id;
+
+  hpcrun_cct_set_node_memaccess(node);
+}
 
 //***************************************************************************
 //

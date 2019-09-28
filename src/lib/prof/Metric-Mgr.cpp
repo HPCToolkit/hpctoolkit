@@ -148,11 +148,19 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 
   uint threshold = (needMultiOccurance) ? 2 : 1;
 
+  // needAllStats will generate additional 10 metrics (mean, stddev, ...)
+  // hence the total metrics added is: (1+10) x 2 = 22
+  //
+  // if all stats is not needed, we only have 2 additional metrics: incl and excl
+  m_numMetricsPerGroup = needAllStats ? 22 : 2;
+
   // -------------------------------------------------------
   // collect like metrics
   // -------------------------------------------------------
   for (uint i = srcBegId; i < srcEndId; ++i) {
     Metric::ADesc* m = m_metrics[i];
+    m->isTemporary(true);
+
     string nm = m->nameGeneric();
 
     StringToADescVecMap::iterator it = nmToMetricMap.find(nm);
@@ -241,6 +249,12 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
     srcEndId = m_metrics.size();
   }
 
+  // needAllStats will generate additional 10 metrics (mean, stddev, ...)
+  // hence the total metrics added is: (1+10) x 2 = 22
+  //
+  // if all stats is not needed, we only have 2 additional metrics: incl and excl
+  m_numMetricsPerGroup = needAllStats ? 22 : 2;
+
   uint firstId = Mgr::npos;
 
   for (uint i = srcBegId; i < srcEndId; ++i) {
@@ -268,6 +282,7 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
 }
 
 
+
 Metric::DerivedDesc*
 Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		       const Metric::ADescVec& mOpands)
@@ -278,30 +293,42 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     opands[i] = new Metric::Var(m->name(), m->id());
   }
 
+  bool doDispPercent = true;
+  bool isPercent = false;
+  bool isVisible = mSrc->isVisible();
+
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+    doDispPercent = mSrc->doDispPercent();
+    isPercent     = mSrc->isPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
+    isPercent = true;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
+    doDispPercent = false;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
+    doDispPercent = false;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -312,8 +339,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, mSrc->isVisible(), true/*isSortKey*/,
-		    mSrc->doDispPercent(), mSrc->isPercent());
+    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
+		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
   m->zeroDBInfo(); // clear
@@ -323,6 +350,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->sampling_type(mSrc->sampling_type());
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
+  m->formula      (mSrc->formula());
 
   insert(m);
   expr->accumId(0, m->id());
@@ -364,9 +392,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
-  bool doDispPercent = mSrc->doDispPercent();
-  bool isVisible = mSrc->isVisible();
+  bool doDispPercent = true;
   bool isPercent = false;
+  bool isVisible = mSrc->isVisible();
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -374,6 +402,10 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+
+    // some metrics (like ratio) don't display the percent
+    // we should respect the original metric description here
+    doDispPercent = mSrc->doDispPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
@@ -504,7 +536,7 @@ Mgr::findFirstVisible() const
   Metric::ADesc* found = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }
@@ -519,7 +551,7 @@ Mgr::findLastVisible() const
   Metric::ADesc* found = NULL;
   for (int i = m_metrics.size() - 1; i >= 0; --i) { // i may be < 0
     Metric::ADesc* m = m_metrics[i];
-    if (m->isVisible()) {
+    if (!m->isTemporary()) {
       found = m;
       break;
     }

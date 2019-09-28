@@ -42,7 +42,7 @@ hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 extra_wrap_names=
 extra_hpc_files=
 # Compiler and flags for array of fnbounds addresses.
-CC='@CC@ @CFLAGS@'
+CC='@HPCLINK_CC@ @CFLAGS@'
 
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"

@@ -396,8 +396,6 @@ hpcrun_fmt_metricDesc_fread(metric_desc_t* x, metric_aux_info_t *aux_info, FILE*
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(x->is_frequency_metric),    fs));
   HPCFMT_ThrowIfError(hpcfmt_int2_fread ((uint16_t*)&(aux_info->is_multiplexed),  fs));
   HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(aux_info->threshold_mean),  fs));
-  // disabled temporarily
-  //HPCFMT_ThrowIfError(hpcfmt_real8_fread(&(x->info_data.threshold_stdev), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread ((&aux_info->num_samples),     fs));
 
   // These two aren't written into the hpcrun file; hence manually set them.
@@ -631,7 +629,7 @@ int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
 			  epoch_flags_t flags, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->node_type, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->node_type, fs));
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_parent, fs));
@@ -660,7 +658,7 @@ int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->node_type, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->node_type, fs));
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id_parent, fs));
@@ -683,6 +681,7 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
   return HPCFMT_OK;
 }
 
+#define TYPE_MASK 0x3F
 
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
@@ -691,8 +690,11 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 {
   // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
   // (negative) is apparent
-  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d) ",
-	  pre, (int)x->id, (int)x->id_parent, x->node_type);
+  uint32_t node_type = x->node_type & TYPE_MASK;
+  uint32_t node_link = x->node_type >> BITS_RESERVED_NODE_TYPE;
+
+  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d  link: %d) ",
+	  pre, (int)x->id, (int)x->id_parent, node_type, node_link);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];

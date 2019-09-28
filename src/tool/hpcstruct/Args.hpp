@@ -115,17 +115,10 @@ public:
   bool show_time;
 
   // Parsed Data: optional arguments
-  std::string lush_agent;
   std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
   std::string dbgProcGlob;
 
   std::string out_filenm;
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments

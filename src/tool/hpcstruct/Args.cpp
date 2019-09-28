@@ -115,10 +115,13 @@ Options: General\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
   --debug-proc <glob>  Debug structure recovery for procedures matching\n\
                        the procedure glob <glob>\n\
+\n\
+Options: Parallel usage\n\
   -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
   --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
                        default is same value for --jobs.\n\
   --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
+                       (unsafe for num > 1)\n\
   --time               Display stats on time and space usage.\n\
 \n\
 Options: Structure recovery\n\
@@ -126,88 +129,34 @@ Options: Structure recovery\n\
                        Use <path> when resolving source file names. For a\n\
                        recursive search, append a '*' after the last slash,\n\
                        e.g., '/mypath/*' (quote or escape to protect from\n\
-                       the shell.) May pass multiple times.\n"
-
-#if 0
-  --loop-intvl <yes|no>\n\
-                       Should loop recovery heuristics assume an irreducible\n\
-                       interval is a loop? {yes}\n\
-  --loop-fwd-subst <yes|no>\n\
-                       Should loop recovery heuristics assume forward\n\
-                       substitution may occur? {yes}\n\
-  -N <all|safe|none>, --normalize <all|safe|none>\n\
-                       Specify normalizations to apply to structure. {all}\n\
-                         all : apply all normalizations\n\
-                         safe: apply only safe normalizations\n\
-                         none: apply no normalizations\n
-#endif
-
-"  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
+                       the shell.) May pass multiple times.\n\
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
                        Substitute instances of <old-path> with <new-path>;\n\
                        apply to all paths (profile's load map, source code)\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
-  --use-binutils       Use binutils as the default binary instruction decoder\n\
-                       On x86 default is Intel XED library.\n\
   --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
                        in the control-flow graph.\n\
 \n\
-Options: Demangling\n\
-  --demangle-library <path to demangling library>\n\
-                       Specify the pathname for a dynamically-linked\n\
-                       library whose demangler function should \n\
-                       be used for demangling. By default, the demangler used\n\
-                       is __cxa_demangle in the C++ Standard Library linked into\n\
-                       hpcstruct.\n\
-\n\
-  --demangle-function <name of the demangler>\n\
-                       By default, the demangler used is __cxa_demangle, a function\n\
-                       provided by the C++ Standard Library. This option enables\n\
-                       one to specify an alternate demangler, e.g., cplus_demangle\n\
-                       provided by the BFD library.\n\
-\n\
-Options: Output:\n\
+Options: Output files\n\
   -o <file>, --output <file>\n\
                        Write hpcstruct file to <file>.\n\
                        Use '--output=-' to write output to stdout.\n\
-  --compact            Generate compact output, eliminating extra white space\n\
 ";
-
-// Possible extensions:
-//  --Li : Select the opposite of the --loop-intvl default.
-//  --Lf : Select the opposite of the --loop-fwd-subst default.
-
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  {  0 , "agent-c++",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
-  // Demangler library
-  {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
-  // Demangler function
-  {  0 , "demangle-function",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
   // Structure recovery options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
-     NULL },
-  {  0 , "loop-intvl",      CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "loop-fwd-subst",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
@@ -216,8 +165,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -230,10 +177,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
   {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
-  // Instruction decoder options
-  { 0, "use-binutils",     CLP::ARG_NONE,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
@@ -267,10 +210,6 @@ Args::Ctor()
   jobs_symtab = -1;
   show_time = false;
   searchPathStr = ".";
-  isIrreducibleIntervalLoop = true;
-  isForwardSubstitution = true;
-  prettyPrintOutput = true;
-  useBinutils = false;
   show_gaps = false;
 }
 
@@ -376,29 +315,10 @@ Args::parse(int argc, const char* const argv[])
       show_time = true;
     }
 
-    // Check for LUSH options (TODO)
-    if (parser.isOpt("agent-c++")) {
-      lush_agent = "agent-c++";
-    }
-    if (parser.isOpt("agent-cilk")) {
-      lush_agent = "agent-cilk";
-    }
-
     // Check for other options: Structure recovery
     if (parser.isOpt("include")) {
       searchPathStr += ":" + parser.getOptArg("include");
     }
-    if (parser.isOpt("loop-intvl")) {
-      const string& arg = parser.getOptArg("loop-intvl");
-      isIrreducibleIntervalLoop =
-	CmdLineParser::parseArg_bool(arg, "--loop-intvl option");
-    }
-    if (parser.isOpt("loop-fwd-subst")) {
-      const string& arg = parser.getOptArg("loop-fwd-subst");
-      isForwardSubstitution =
-	CmdLineParser::parseArg_bool(arg, "--loop-fwd-subst option");
-    }
-
     if (parser.isOpt("replace-path")) {
       string arg = parser.getOptArg("replace-path");
       
@@ -422,25 +342,9 @@ Args::parse(int argc, const char* const argv[])
       show_gaps = true;
     }
 
-    // Instruction decoder options
-    useBinutils = parser.isOpt("use-binutils");
-
-    // Check for other options: Demangling
-    if (parser.isOpt("demangle-library")) {
-      demangle_library = parser.getOptArg("demangle-library");
-    }
-
-    // Check for other options: Demangling
-    if (parser.isOpt("demangle-function")) {
-      demangle_function = parser.getOptArg("demangle-function");
-    }
-
     // Check for other options: Output options
     if (parser.isOpt("output")) {
       out_filenm = parser.getOptArg("output");
-    }
-    if (parser.isOpt("compact")) {
-      prettyPrintOutput = false;
     }
 
     // Check for required arguments
@@ -477,32 +381,3 @@ Args::ddump() const
 {
   dump(std::cerr);
 }
-
-
-//***************************************************************************
-
-#if 0
-void
-Args::setHPCHome()
-{
-  char * home = getenv(HPCTOOLKIT.c_str());
-  if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl;
-    exit(1);
-  }
-   
-  // chop of trailing slashes
-  int len = strlen(home);
-  if (home[len-1] == '/') home[--len] = 0;
-   
-  DIR *fp = opendir(home);
-  if (fp == NULL) {
-    cerr << "Error: " << home << " is not a directory" << endl;
-    exit(1);
-  }
-  closedir(fp);
-  hpcHome = home;
-}
-#endif
-

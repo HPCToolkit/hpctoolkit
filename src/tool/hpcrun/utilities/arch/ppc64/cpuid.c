@@ -44,13 +44,77 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
+#define UNIT_TEST 1
+
+#if UNIT_TEST
+#include "../cpuid.h"
+#else
 #include <utilities/arch/cpuid.h>
+#endif
+
+#define MAX_CHAR_BUFFER 100
+
+#define mfspr(rn)       ({unsigned long rval; \
+			 asm volatile("mfspr %0,0x11F" : "=r" (rval)); rval; })
+
+#define PVR_VER(pvr)    (((pvr) >>  16) & 0xFFFF) /* Version field */
+#define PVR_REV(pvr)    (((pvr) >>   0) & 0xFFFF) /* Revison field */
+
 
 
 cpu_type_t
 get_cpuid()
 {
-  return CPU_UNSUP;
+  unsigned long pvr;
+  unsigned int  ver;
+
+  cpu_type_t  cpu_type = CPU_UNSUP;
+
+  pvr = mfspr(SPRN_PVR);
+  ver = PVR_VER(pvr);
+
+  if (ver == 0) return CPU_UNSUP;
+
+  switch(ver) {
+    case 0x4e: 
+         cpu_type = POWER9;
+         break;
+    case 0x4b: 
+         cpu_type = POWER8;
+         break;
+    default: 
+         cpu_type = POWER7;  /* FIXME : it can be error reading */
+  }
+  return cpu_type;
 }
+
+
+char *
+get_cpuid_str()
+{
+	char *bufp;
+
+	if (asprintf(&bufp, "%.8lx", mfspr(SPRN_PVR)) < 0)
+		bufp = NULL;
+
+	return bufp;
+}
+
+#if UNIT_TEST
+
+int main()
+{
+  cpu_type_t type  = get_cpuid();
+  char *cpu_string = get_cpuid_str();
+
+  printf("cpu: %s,  type: %x\n", cpu_string, type);
+}
+
+#endif
 

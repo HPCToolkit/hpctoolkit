@@ -108,7 +108,7 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
   string procnm, filenm;
   SrcFile::ln line = Prof::Struct::Tree::UnknownLine;
   lm->findSrcCodeInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
-  procnm = BinUtil::canonicalizeProcName(procnm);
+  procnm = BinUtil::demangleProcName(procnm);
   
   if (filenm.empty()) {
     filenm = Prof::Struct::Tree::UnknownFileNm

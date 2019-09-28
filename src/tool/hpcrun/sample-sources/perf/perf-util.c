@@ -350,6 +350,57 @@ perf_util_get_default_threshold(struct event_threshold_s *threshold)
   threshold->threshold_type = default_threshold.threshold_type;
 }
 
+//----------------------------------------------------------
+// if the kernel provides precise ip information, we should
+// create a new node based on this ip as a sibling of the current leaf.
+//
+// FIXME: this is not an ideal solution as they may have not the same
+//        parent or even the same function.
+//----------------------------------------------------------
+cct_node_t*
+perf_util_precise_ip(cct_node_t *leaf, void *data_aux)
+{
+  cct_node_t *sibling         = leaf;
+  perf_mmap_data_t *mmap_data = (perf_mmap_data_t*) data_aux;
+
+  // PEBS IP is not null, we will attribute the cost to the sibling or the child of the sample node
+  if (mmap_data->ip != 0 && leaf != NULL) {
+
+    cct_addr_t *addr = hpcrun_cct_addr(leaf);
+    if (addr->ip_norm.lm_ip == mmap_data->ip)
+      return sibling;
+
+    load_module_t* loadmap =
+    hpcrun_loadmap_findByAddr((void*)mmap_data->ip, (void*)mmap_data->ip);
+
+    if (loadmap != NULL) {
+      // Create a new node for precise IP
+      // The new node may have different parent than the sampled one, but since we lose
+      //   the information of context, we just assume it's okay to have it
+
+      cct_addr_t precise_addr;
+      memcpy(&precise_addr, addr, sizeof(cct_addr_t));
+
+      precise_addr.ip_norm.lm_ip = mmap_data->ip;
+      precise_addr.ip_norm.lm_id = loadmap->id;
+
+      // If precise ip load module is not the same as the load module in the signal context,
+      // the precise ip node is the child of the sampled one
+      // otherwise, we create it as a sibling (assuming it's in the same function).
+      // Statistically, when they are in the same module, the difference of addresses
+      //  is not big (around 5 to 8 bytes). 
+
+      if (loadmap->id == addr->ip_norm.lm_id) {
+        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(leaf), &precise_addr);
+      } else {
+        sibling = hpcrun_cct_insert_addr(leaf, &precise_addr);
+      } 
+    }
+  }
+  return sibling;
+}
+
+
 #if KERNEL_SAMPLING_ENABLED
 //----------------------------------------------------------
 // extend a user-mode callchain with kernel frames (if any)
@@ -360,13 +411,13 @@ perf_util_add_kernel_callchain(
   void *data_aux
 )
 {
-  cct_node_t *parent = leaf;
-
   if (data_aux == NULL)  {
-    return parent;
+    return leaf;
   }
 
+  cct_node_t *parent     = perf_util_precise_ip(leaf, data_aux);
   perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+
   if (data->nr > 0) {
     uint16_t kernel_lm_id = perf_get_kernel_lm_id();
 
@@ -443,6 +494,9 @@ perf_util_attr_init(
 #if KERNEL_SAMPLING_ENABLED
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+    attr->sample_max_stack         = MAX_CALLCHAIN_FRAMES;
+#endif
 #endif
     attr->exclude_kernel           = INCLUDE;
   }

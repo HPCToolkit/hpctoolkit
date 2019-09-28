@@ -564,6 +564,22 @@ getFileName(Struct::ANode* strct)
   return nm;
 }
 
+static std::string
+getFilenameKey(Struct::LM *lm, const char *filename)
+{
+  std::string lm_name;
+  if (lm) {
+    // use pretty_name for the key to unify different names of vmlinux 
+    // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+    lm_name = lm->pretty_name();
+  } else {
+    lm_name = "";
+  }
+  std::string key = lm_name + ":" + filename;
+
+  return key;
+}
+
 // writing XML dictionary in the header part of experiment.xml
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
@@ -600,13 +616,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       // (exception for unknown-file)
       // ---------------------------------------
       Struct::LM *lm = strct->ancestorLM();
-      std::string lm_name;
-      if (lm) {
-        // use pretty_name for the key to unify different names of vmlinux 
-        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
-        lm_name = lm->pretty_name();
-      }
-      std::string key = lm_name + ":" + nm;
+      std::string key = getFilenameKey(lm, nm); 
 
       if (m_mapFiles.find(key) == m_mapFiles.end()) {
         //  the filename is not in the list. Add it.
@@ -639,22 +649,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // -------------------------------------------------------
         std::string completProcName;
 
-        Struct::File *file = strct->ancestorFile();
-        uint file_id       = (file != NULL ? file->id() : 0);
         Struct::LM *lm     = strct->ancestorLM();
         if (lm) {
           uint lm_id = lm->id();
           SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
           if (sf) {
             lm_id = sf->id();
-
-            // if we haven't set fake_file_id, we need to set it with
-            //   the file id of this struct.
-            //   otherwise, we just reuse the fake_file_id to make it consistent
-            //   across different lm
-
-            sf->fileId(file_id);
-            file_id = sf->fileId();
           }
 
           char buffer[MAX_PREFIX_CHARS];
@@ -663,9 +663,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         }
 
         // we need to allow the same function name from a different file
-        char buffer[MAX_PREFIX_CHARS];
-        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
-        completProcName.append(buffer);
+        const char *fn = getFileName(strct);
+        completProcName.append(fn);
+        completProcName.append(":");
 
         const char *lnm;
 
@@ -687,7 +687,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
           lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
-        if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+
+        // make sure the triple <load_module_id, filename, proc_name> is unique
+        //
+        std::map<std::string, uint>::iterator it = m_mapProcs.find(completProcName);
+
+        if (it == m_mapProcs.end()) 
         {
           // the proc is not in dictionary. Add it into the map.
           m_mapProcs[completProcName] = id;
@@ -739,6 +744,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 {
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
+
+//  m_mMgr->computeMetricsPerGroup();
 
   // -------------------------------------------------------
   //
@@ -1306,7 +1313,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN");
+			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
 
     // keep the show status consistent between hpcrun and experiment.xml
     m->isVisible(mdesc.flags.fields.show == 1);
@@ -1327,6 +1334,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->nameSfx(m_sfx);
     }
     m->flags(mdesc.flags);
+    m->formula(mdesc.formula);
     
     // ----------------------------------------
     // 1b. Update the additional perf event attributes
@@ -1351,14 +1359,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     if (doMakeInclExcl) {
       Metric::SampledDesc* mSmpl =
-          new Metric::SampledDesc(nm, desc, mdesc.period,
-              true/*isUnitsEvents*/,
-              profFileName, profRelId, "HPCRUN");
+	new Metric::SampledDesc(nm, desc, mdesc.period,
+				true/*isUnitsEvents*/,
+				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
         mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
+      mSmpl->formula(mdesc.formula);
       mSmpl->isVisible(mdesc.flags.fields.show);
       mSmpl->doDispPercent(mdesc.flags.fields.showPercent);
 
@@ -1474,7 +1483,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
-  ExprEval eval;
+  //ExprEval eval;
   DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
@@ -1496,19 +1505,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // FIXME: we don't check the validity of the formula (yet).
     //        If hpcrun has incorrect formula, the result can be anything
     // ------------------------------------------
-    metric_desc_t* m_lst = metricTbl.lst;
+    /*metric_desc_t* m_lst = metricTbl.lst;
     VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
 
-    for (uint i = 0; i < numMetricsSrc; i++) {
-      char *expr = (char*) m_lst[i].formula;
+    for (uint metricID = 0; metricID < numMetricsSrc; metricID++) {
+      char *expr = (char*) m_lst[metricID].formula;
       if (expr == NULL || strlen(expr)==0) continue;
 
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
         // the formula syntax looks "correct". Update the the metric value
-      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+      	hpcrun_fmt_metric_set_value(m_lst[metricID], &nodeFmt.metrics[metricID], res);
       }
-    }
+    }*/
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;

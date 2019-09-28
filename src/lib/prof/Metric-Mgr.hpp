@@ -256,6 +256,12 @@ public:
 
 public:
 
+  int
+  numMetricsPerGroup() const {
+    return m_numMetricsPerGroup;
+  }
+
+
 private:
   bool
   insertInMapsAndMakeUniqueName(Metric::ADesc* m);
@@ -281,6 +287,10 @@ private:
 
   // profile file name to Metric::SampledDesc table
   StringToADescVecMap m_fnameToFMetricMap;
+
+  // number of sub-metrics  (inc/excl, sum, mean, ...)
+  // it's different for each type of metric
+  int m_numMetricsPerGroup = 0;
 };
 
 //****************************************************************************

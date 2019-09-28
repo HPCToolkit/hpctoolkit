@@ -79,6 +79,9 @@ using std::string;
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/support/diagnostics.h>
 
+#include <lib/support/ExprEval.hpp>
+#include <lib/support/VarMapMetric.hpp>
+
 //*************************** Forward Declarations **************************
 
 
@@ -91,6 +94,7 @@ namespace Metric {
 //***************************************************************************
 // IData
 //***************************************************************************
+
 
 std::string
 IData::toStringMetrics(int oFlags, const char* pfx) const
@@ -114,27 +118,49 @@ IData::writeMetricsXML(std::ostream& os,
   }
   mEndId = std::min(numMetrics(), mEndId);
 
+  ExprEval     eval;
+  VarMapMetric varMap(metricMgr, mBegId);
+
   for (uint i = mBegId; i < mEndId; i++) {
+
+    hpcrun_metricVal_t val     = {.r=0.0};
+    uint desc_id               = i-mBegId;
+    const Metric::ADesc* adesc = metricMgr->metric(desc_id);
+
     if (hasMetric(i)) {
-      hpcrun_metricVal_t val = m_metrics[i];
-      std::string mval;
+      val = m_metrics[i];
+
+    } else {
+      // no metric value:
+      // perhaps we need to compute using the formula
+      // from hpcrun
+
+      uint desc_id = i-mBegId;
+      const Metric::ADesc* adesc = metricMgr->metric(desc_id);
+
+      char *formula = adesc->formula();
+      if (formula != NULL) {
+        varMap.setMetrics(&m_metrics);
+        double result = eval.Eval(formula, &varMap);
+
+        if (eval.GetErr() == EEE_NO_ERROR) {
+          val.r        = result;
+          m_metrics[i] = val;
+        }
+      }
+    }
+    // print to xml
+    if (val.r != 0.0) {
 
       // specific case for address-base type:
       // use the integer format to print to the xml to make it easy the xml parser
       // to parse the number.
 
-      uint desc_id = i-mBegId;
-      const Metric::ADesc* adesc = metricMgr->metric(desc_id);
-      const Metric::SampledDesc* mdesc = dynamic_cast<const Metric::SampledDesc*>(adesc);
-      if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
-        mval = xml::MakeAttrNum(val.i);
-      } else{
-        mval = xml::MakeAttrNum(val.r);
-      }
+      std::string mval = adesc->getXMLValue(val);
 
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
-	 << " v" << mval << "/>";
+         << " v" << mval << "/>";
       wasMetricWritten = true;
     }
   }

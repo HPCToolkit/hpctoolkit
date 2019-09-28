@@ -46,6 +46,8 @@
 // user include files
 //***************************************************************************
 
+#include <strings.h>       //  strcasecmp
+
 #include "include/queue.h" // Singly-linkled list macros
 
 #include "sample-sources/display.h"

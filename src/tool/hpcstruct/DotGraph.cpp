@@ -90,11 +90,13 @@ class Options {
 public:
   char * filename;
   int  jobs;
+  char *func;
 
   Options()
   {
     filename = (char *) "";
     jobs = 1;
+    func = 0;
   }
 };
 
@@ -104,13 +106,23 @@ public:
 // procedure and write to the ostream 'dotFile'.
 //
 static void
-makeDotFile(ofstream * dotFile, CodeObject * code_obj)
+makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
 {
   const CodeObject::funclist & funcList = code_obj->funcs();
 
   for (auto fit = funcList.begin(); fit != funcList.end(); ++fit)
   {
     ParseAPI::Function * func = *fit;
+    
+    if (only_func) {
+      // if only_func is a non-NULL character string, only produce 
+      // output for this function
+      if (strcmp(only_func, func->name().c_str()) != 0) {
+	// name doesn't match only_func
+	continue;
+      }
+    }
+
     map <Block *, int> blockNum;
     map <Block *, int>::iterator mit;
     int num;
@@ -177,6 +189,7 @@ usage(string mesg)
 {
   cout << "usage:  dotgraph  [options]...  filename\n\n"
        << "options:\n"
+       << "  -f func      only produce output for function 'func'\n"
        << "  -j num       use num threads for ParseAPI::parse()\n"
        << "  -h, --help   display usage message and exit\n"
        << "\n";
@@ -200,6 +213,13 @@ getOptions(int argc, char **argv, Options & opts)
 
     if (arg == "-h" || arg == "-help" || arg == "--help") {
       usage("");
+    }
+    else if (arg == "-f") {
+      if (n + 1 >= argc) {
+	usage("missing arg for -f");
+      }
+      opts.func = argv[n + 1];
+      n += 2;
     }
     else if (arg == "-j") {
       if (n + 1 >= argc) {
@@ -274,7 +294,7 @@ main(int argc, char **argv)
   CodeObject * code_obj = new CodeObject(code_src);
   code_obj->parse();
 
-  makeDotFile(&dotFile, code_obj);
+  makeDotFile(&dotFile, code_obj, opts.func);
 
   return 0;
 }

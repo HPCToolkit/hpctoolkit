@@ -372,26 +372,33 @@ if OPT_PERF_MEM_DATA_SRC
 if HOST_CPU_AARCH64
 # temporarily, no support for ARM
 MY_BASE_FILES +=  			 	 \
-	sample-sources/datacentric/datacentric_dummy.c	
+	sample-sources/datacentric/datacentric_dummy.c \
+	sample-sources/stall/stall_dummy.c 
 else
 if OPT_IBS_OP
 MY_BASE_FILES +=  				 \
 	sample-sources/datacentric/datacentric.c \
-	sample-sources/datacentric/ibsop.c
+	sample-sources/datacentric/ibsop.c	 \
+	sample-sources/stall/stall_dummy.c 
 else 
 if HOST_CPU_X86_64
 MY_BASE_FILES +=  				 \
 	sample-sources/datacentric/datacentric.c \
 	utilities/arch/x86-family/cpuid.c    	 \
-	sample-sources/datacentric/pmu_x86.c
+	sample-sources/datacentric/pmu_x86.c	 \
+	sample-sources/datacentric/pmu_handler.c \
+	sample-sources/stall/stall.c 
 else 
 if HOST_CPU_PPC
 MY_BASE_FILES +=  				 \
 	sample-sources/datacentric/datacentric.c \
-	sample-sources/datacentric/pmu_power.c
+	sample-sources/datacentric/pmu_power.c	 \
+	sample-sources/datacentric/pmu_handler.c \
+	sample-sources/stall/stall.c 
 else
 MY_BASE_FILES +=  				 \
-	sample-sources/datacentric/datacentric_dummy.c	
+	sample-sources/datacentric/datacentric_dummy.c \
+	sample-sources/stall/stall_dummy.c 
 endif	# HOST_CPU_PPC
 endif	# HOST_CPU_X86_64
 

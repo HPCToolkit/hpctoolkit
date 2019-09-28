@@ -100,7 +100,7 @@
  * macros 
  *****************************************************************************/
 
-const char *EVNAME_ADDRESS_CENTRIC = "MINOR-FAULTS";
+const char *EVNAME_ADDRESS_CENTRIC = "FAULTS";
 
 /******************************************************************************
  * prototypes and forward declaration
@@ -252,7 +252,6 @@ datacentric_post_handler(event_handler_arg_t *args)
   perf_mmap_data_t *mmap_data = args->data;
 
   cct_node_t *sample_node = args->sample->sample_node;
-  cct_node_t *node = sample_node;
 
   // ---------------------------------------------------------
   // memory information exists:
@@ -284,10 +283,10 @@ datacentric_post_handler(event_handler_arg_t *args)
   // either static variable or heap allocation
   // otherwise, we encounter an unknown variable
   // --------------------------------------------------------------
+  cct_node_t* var_node = NULL;
 
   if (info) {
     var_context = info->context;
-    cct_node_t* var_node = NULL;
 
     if (info->magic == DATA_STATIC_MAGIC) {
       // attach this node of static variable to the datacentric root
@@ -313,7 +312,7 @@ datacentric_post_handler(event_handler_arg_t *args)
       cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
 
       var_node = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
-      hpcrun_cct_set_node_allocation(var_context);
+      hpcrun_cct_set_node_allocation(var_node);
 
       // add artificial root for memory-access call-path
       var_context = hpcrun_insert_special_node(var_node, DATACENTRIC_MemoryAccess);
@@ -336,10 +335,18 @@ datacentric_post_handler(event_handler_arg_t *args)
     var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
 
     hpcrun_cct_set_node_unknown_attribute(var_context);
+    var_node = var_context;
   }
 
   // copy the callpath of the sample to the variable context
-  node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+  cct_node_t *node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+
+#if 0
+  // sample node will point to this var node.
+  // we need this node to keep the id so that hpcprof/hpcviewer will not lose the pointer
+  hpcrun_cct_retain(var_node);
+  hpcrun_cct_link_source_memaccess(sample_node, var_node);
+#endif
 
   metric_set_t *mset = hpcrun_reify_metric_set(node);
 

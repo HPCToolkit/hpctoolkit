@@ -78,7 +78,12 @@ typedef enum {
   INTEL_ICL,
   INTEL_KNL,      // knight landing
 
-  AMD_MGN_CRS     // amd magny cours
+  AMD_MGN_CRS,    // amd magny cours
+
+  POWER7,	  // power processors
+  POWER8,
+  POWER9
+
 } cpu_type_t;
 
 

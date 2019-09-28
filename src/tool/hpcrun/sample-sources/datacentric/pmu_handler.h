@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: $
-// $Id: $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,63 +44,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File: Demangler.cpp
-//   $HeadURL: $
-//
-// Purpose: 
-//   Implement an API that enables an HPCToolkit user to provide and employ 
-//   an arbitrary C++ Standard to demangle symbols.
-//
-// Description:
-//   The API includes an interface to register a C++ Standard Library that
-//   will be used to demangle symbols and a demangler interface that will
-//   employ the specified library to perform demangling.
-//
-//***************************************************************************
+
+#ifndef __PMU_HANDLER_H__
+#define __PMU_HANDLER_H__
+
+void
+pmu_handler_init();
 
 
-
-//******************************************************************************
-// global includes
-//******************************************************************************
-
-#include <cxxabi.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "Demangler.hpp"
-
-
-
-//******************************************************************************
-// local variables
-//******************************************************************************
-
-static demangler_t demangle_fn = abi::__cxa_demangle;
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void 
-hpctoolkit_demangler_set(demangler_t _demangle_fn)
-{
-  demangle_fn = _demangle_fn;
-}
-
-
-char *
-hpctoolkit_demangle(const char *mangled_name, 
-                    char *output_buffer, 
-                    size_t *length, 
-                    int *status)
-{
-  return demangle_fn(mangled_name, output_buffer, length, status);
-}
+void
+pmu_handler_callback(perf_mmap_data_t *mmap_data,
+                       cct_node_t *datacentric_node,
+                       cct_node_t *sample_node);
+#endif // __PMU_HANDLER_H__

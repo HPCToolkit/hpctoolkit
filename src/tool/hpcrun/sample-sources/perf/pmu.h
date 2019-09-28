@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: $
-// $Id: $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -45,51 +45,15 @@
 // ******************************************************* EndRiceCopyright *
 
 
-//***************************************************************************
-//
-// File: Demangler.hpp
-//
-// Purpose: 
-//   Define an API that enables an HPCToolkit user to provide and employ 
-//   an arbitrary C++ Standard to demangle symbols.
-//
-// Description:
-//   The API includes an interface to register a C++ Standard Library that
-//   will be used to demangle symbols and a demangler interface that will
-//   employ the specified library to perform demangling.
-//
-//***************************************************************************
+#ifndef __PERF_PMU_H__
+#define __PERF_PMU_H__
 
-#ifndef __Demangler_hpp__
-#define __Demangler_hpp__
+#include <utilities/arch/cpuid.h>
 
-//***************************************************************************
-// types
-//***************************************************************************
-
-typedef char *(*demangler_t)
-  (const char *mangled_name, 
-   char *output_buffer, 
-   size_t *length, 
-   int *status);
-
-
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-
-extern "C" {
-
-void
-hpctoolkit_demangler_set(demangler_t _demangle_fn);
-
-
-char *
-hpctoolkit_demangle(const char *mangled_name, 
-                    char *output_buffer, 
-                    size_t *length, 
-                    int *status);
+struct pmu_config_s {
+  cpu_type_t cpu;
+  const char *name;
+  const char *event;
 };
 
-#endif
+#endif // __PERF_PMU_H__

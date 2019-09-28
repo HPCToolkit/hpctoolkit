@@ -85,6 +85,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/dictionary.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -111,13 +112,13 @@ RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
 
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownLMNm   = "<unknown load module>";
+const std::string Tree::UnknownLMNm   = UNKNOWN_LOAD_MODULE;
 
-const std::string Tree::UnknownFileNm = "<unknown file>";
+const std::string Tree::UnknownFileNm = UNKNOWN_FILE;
 
-const std::string Tree::UnknownProcNm = "<unknown procedure>";
+const std::string Tree::UnknownProcNm = UNKNOWN_PROC;
 
-const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
+const std::string Tree::PartialUnwindProcNm = PARTIAL_CALL_PATHS;
 
 const std::string Tree::UnknownGlobalVariable = "<unknown variable>";
 

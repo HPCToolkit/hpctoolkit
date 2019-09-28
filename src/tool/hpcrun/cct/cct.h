@@ -333,4 +333,7 @@ hpcrun_cct_is_node_variable(cct_node_t *node);
 void
 hpcrun_cct_set_node_unknown_attribute(cct_node_t *root);
 
+void
+hpcrun_cct_link_source_memaccess(cct_node_t *node, cct_node_t *source);
+
 #endif // cct_h

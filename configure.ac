@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2018.09],
+AC_INIT([hpctoolkit], [2019.08-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -148,7 +148,7 @@ git_version='unknown (not a git repo)'
 mesg=`cd "$srcdir" && git log -n 1 --date=short 2>/dev/null`
 if echo "$mesg" | grep -i commit >/dev/null ; then
   git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
-  git_hash=`expr "$git_hash" : '\(........\)'`
+  git_hash=`expr "$git_hash" : '\(................\)'`
   git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
 
   mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
@@ -934,6 +934,48 @@ if test_is_gnu "$CXX" ; then : ; else
   warn_non_gcc=yes
   AC_MSG_WARN([Not using the GNU C++ compiler.])
 fi
+
+
+#-------------------------------------------------
+# Find base CC compiler, outside of spack
+#-------------------------------------------------
+
+# Hpclink needs the CC compiler for the fnbounds array, but the spack
+# wrapper won't run outside of spack.  So, if we're being built by
+# spack, then find the base compiler for hpclink.
+
+HPCLINK_CC="$CC_PATH"
+
+echo "$CC_PATH" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+if test $? -eq 0 ; then
+  AC_MSG_NOTICE([found spack compiler wrapper])
+  AC_MSG_CHECKING([if base compiler works: $SPACK_CC])
+
+  ORIG_CC="$CC"
+  CC="$SPACK_CC"
+  AC_LANG_PUSH([C])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+unsigned long addrs[] = {
+  0x400400, 0x400410
+};
+unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
+]])], [ans=yes], [ans=no])
+
+  AC_MSG_RESULT([$ans])
+
+  AC_LANG_POP()
+  CC="$ORIG_CC"
+
+  if test "$ans" = yes ; then HPCLINK_CC="$SPACK_CC"
+  else HPCLINK_CC=gcc
+  fi
+fi
+
+AC_MSG_NOTICE([hpclink compiler: $HPCLINK_CC])
+
+AC_SUBST([HPCLINK_CC])
 
 
 #-------------------------------------------------
@@ -3171,10 +3213,16 @@ else
       AC_COMPILE_IFELSE([
       AC_LANG_SOURCE([[
 #include <linux/perf_event.h>
+#include <linux/version.h>
+
 static struct perf_event_attr attr;
 void check_kernel()
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
   attr.context_switch = 1;
+#else
+#error "kernel is older than 4.3"
+#endif
 }
 ]])], [kernel_blocking=yes], [kernel_blocking=no])
     kernel_blocking_mesg="$kernel_blocking"
@@ -4591,10 +4639,10 @@ AC_MSG_NOTICE([  hpcprof-mpi:  ${prof_mpi_avail}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
-AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
+AC_MSG_NOTICE([  datacentric-trace?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])

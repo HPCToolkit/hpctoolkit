@@ -84,3 +84,8 @@ datacentric_hw_handler(perf_mmap_data_t *mmap_data,
                        cct_node_t *sample_node)
 {} 
 
+int
+datacentric_is_active()
+{
+  return 0;
+}

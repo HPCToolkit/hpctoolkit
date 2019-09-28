@@ -73,6 +73,7 @@
 #include "Metric-AExprIncr.hpp"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
 
@@ -107,7 +108,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false), m_formula(NULL)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -120,7 +122,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false), m_formula(NULL)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -136,7 +139,8 @@ public:
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
-      m_period_mean(0), m_sampling_type(FREQUENCY)
+      m_period_mean(0), m_sampling_type(FREQUENCY),
+	  m_isTemporary(false), m_formula(NULL)
   {
     nameFromString(nameBase);
   }
@@ -153,7 +157,8 @@ public:
       m_computedTy(x.m_computedTy),
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
-      m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type)
+      m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
+	  m_isTemporary(false), m_formula(x.m_formula)
   { }
 
   ADesc&
@@ -179,6 +184,9 @@ public:
       m_isMultiplexed = x.m_isMultiplexed;
       m_period_mean   = x.m_period_mean;
       m_sampling_type = x.m_sampling_type;
+
+      m_isTemporary   = x.m_isTemporary;
+      m_formula       = x.m_formula;
     }
     return *this;
   }
@@ -409,6 +417,30 @@ public:
   { return m_isPercent; }
 
 
+  bool
+  isTemporary() const
+  { return m_isTemporary; }
+
+  void
+  isTemporary(bool x)
+  { m_isTemporary = x; }
+
+  void
+  formula(const char *str_formula)
+  {
+    if (str_formula == NULL || str_formula[0] == '\0') return;
+
+    int len = strlen(str_formula);
+    m_formula = new char[len];
+    strcpy(m_formula, str_formula);
+  }
+
+  char*
+  formula() const
+  {
+    return m_formula;
+  }
+
   // ------------------------------------------------------------
   // computed type
   // ------------------------------------------------------------
@@ -496,6 +528,11 @@ public:
   void
   ddump() const;
 
+  virtual std::string
+  getXMLValue(hpcrun_metricVal_t val) const
+  {
+    return xml::MakeAttrNum(val.r);
+  }
 
   // -------------------------------------------------------
   // 
@@ -568,6 +605,10 @@ private:
   bool  m_isMultiplexed;
   float m_period_mean;
   enum SamplingType_e m_sampling_type;
+
+  bool m_isTemporary;
+
+  char *m_formula;
 };
 
 
@@ -680,6 +721,15 @@ public:
   isUnitsEvents(bool isUnitsEvents)
   { m_isUnitsEvents = isUnitsEvents; }
 
+
+  virtual std::string
+  getXMLValue(hpcrun_metricVal_t val) const
+  {
+    if (flags().fields.valFmt == MetricFlags_ValFmt_Address)
+      return xml::MakeAttrNum(val.i);
+    else
+      return xml::MakeAttrNum(val.r);
+  }
 
   // ------------------------------------------------------------
   // 

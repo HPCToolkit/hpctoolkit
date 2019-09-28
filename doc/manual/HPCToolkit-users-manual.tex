@@ -116,7 +116,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2018.09}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2019.08}
 %\subtitle{}
 
 \author{
@@ -188,7 +188,7 @@ Rice University\\
 \HPCToolkit{} provides accurate measurements of a program's work, resource consumption, and inefficiency, correlates these metrics with the program's source code, works with multilingual, fully optimized binaries, has low measurement overhead, and scales to large parallel systems.
 \HPCToolkit{}'s measurements provide support for analyzing a program execution cost, inefficiency, and scaling characteristics both within and across nodes of a parallel system.
 
-\HPCToolkit{} works by sampling an execution of a multithreaded and/or multiprocess program using hardware performance counters, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred.
+\HPCToolkit{} principally monitors an execution of a multithreaded and/or multiprocess program using asynchronous sampling, unwinding thread call stacks, and attributing the metric value associated with a sample event in a thread to the calling context of the thread/process in which the event occurred. \HPCToolkit{}'s asynchronous sampling is typically triggered by the expiration of a Linux timer or a hardware performance monitoring unit event, such reaching a threshold value for a hardware performance counter.
 Sampling has several advantages over instrumentation for measuring program performance: it requires no modification of source code, it avoids potential blind spots (such as code available in only binary form), and it has lower overhead.
 \HPCToolkit{} typically adds measurement overhead of only a few percent to an execution for reasonable sampling rates~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 Sampling enables fine-grain measurement and attribution of costs in both serial and parallel programs. 
@@ -196,8 +196,8 @@ Sampling enables fine-grain measurement and attribution of costs in both serial 
 For parallel programs, one can use HPCToolkit to measure
 the fraction of time threads are idle, working, or communicating.
 To obtain detailed information about a program's computation
-performance, one can collect samples using performance monitoring
-units built into modern processors  to measure metrics such as
+performance, one can collect samples using a processor's built-in performance monitoring
+units to measure metrics such as
 operation counts, pipeline stalls, cache misses, and data movement
 between processor sockets.  Such detailed measurements are essential
 to understand the performance characteristics of applications
@@ -215,6 +215,13 @@ On ARM processors, HPCToolkit uses {\tt libunwind} exclusively. On Power process
 binary analysis exclusively. 
 On x86\_64 processors, HPCToolkit employs both strategies in an integrated fashion.
 
+\HPCToolkit{} assembles performance measurements into a call path profile that associates the costs of each function call with its full calling context.
+In addition, \HPCToolkit{} uses binary analysis to attribute program performance metrics with uniquely detailed precision -- full dynamic calling contexts augmented with information about call sites, inlined functions and templates, loops, and source lines.
+Measurements can be analyzed in a variety of ways: top-down in a calling context tree, which associates costs with the full calling context in which they are incurred; bottom-up in a view that apportions costs associated with a function to each of the contexts in which the function is called; and in a flat view that aggregates all costs associated with a function independent of calling context.
+This multiplicity of code-centric perspectives is essential to understanding a program's performance for tuning under various circumstances. 
+\HPCToolkit{} also supports a thread-centric perspective, which enables one to see how a performance metric for a calling context differs across threads, and a time-centric perspective, which enables a user to see how an execution unfolds over time. Figures~\ref{fig:code-centric}--\ref{fig:time-centric} show samples of HPCToolkit's code-centric, thread-centric, and time-centric views.
+
+
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-code-centric}}
 \caption{A code-centric view of an execution of the University of Chicago's FLASH code executing on 8192 cores of a Blue Gene/P. This bottom-up view shows that 16\% of the execution time was spent in IBM's DCMF messaging layer. By tracking these costs up the call chain, we can see that most of this time   was spent on behalf of calls to {\tt pmpi\_allreduce} on line 419 of {\tt amr\_comm\_setup}.}
@@ -230,17 +237,13 @@ On x86\_64 processors, HPCToolkit employs both strategies in an integrated fashi
 
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/hpctoolkit-time-centric}}
-\caption{A time-centric view of  part of an execution of the University of Chicago's FLASH code  on 256 cores of a Blue Gene/P. The figure shows a detail from the end of the initialization phase and  part of the first iteration of the solve phase. The largest pane in the figure shows the activity of cores 2--95 in the execution during a time interval ranging from 69.376s--85.58s during the execution.  Time lines for threads are arranged from top to bottom and time flows from left to right. The color at any point in time for a thread indicates the procedure that the thread is executing at that time. The right pane shows the full call stack of thread 85 at 84.82s into the execution, corresponding to the selection shown by the white crosshair; the outermost procedure frame of the call stack is shown at the top of the pane and the innermost frame is shown at the bottom. This view highlights that even though FLASH is an SPMD program, the behavior of threads over time can be quite different. The purple region highlighted by the cursor, which represents a call by all processors to {\tt mpi\_allreduce}, shows that the time spent in this call varies across the processors. The variation in time spent waiting in {\tt mpi\_allreduce} is readily explained by an imbalance in the time processes spend a prior prolongation step, shown in yellow. Further left in the figure, one can see differences between main and slave cores  awaiting completion of an {\tt mpi\_allreduce}. The main cores wait in {\tt DCMF\_Messager\_advance} (which appears as blue stripes); the slave cores wait in a helper function (shown in green). These cores await the late arrival of a few processes that have extra work to do inside {\tt simulation\_initblock}.}
+\caption{A time-centric view of  part of an execution of the University of Chicago's FLASH code  on 256 cores of a Blue Gene/P. The figure shows a detail from the end of the initialization phase and  part of the first iteration of the solve phase. The largest pane in the figure shows the activity of cores 2--95 in the execution during a time interval ranging from 69.376s--85.58s during the execution.  Time lines for threads are arranged from top to bottom and time flows from left to right. The color at any point in time for a thread indicates the procedure that the thread is executing at that time. The right pane shows the full call stack of thread 85 at 84.82s into the execution, corresponding to the selection shown by the white crosshair; the outermost procedure frame of the call stack is shown at the top of the pane and the innermost frame is shown at the bottom. This view highlights that even though FLASH is an SPMD program, the behavior of threads over time can be quite different. The purple region highlighted by the cursor, which represents a call by all processors to {\tt mpi\_allreduce}, shows that the time spent in this call varies across the processors. The variation in time spent waiting in {\tt mpi\_allreduce} is readily explained by an imbalance in the time processes spend a prior prolongation step, shown in yellow. Further left in the figure, one can see differences among ranks executing on different cores in each node as they await the  completion of an {\tt mpi\_allreduce}. A rank executing on one core of each node waits in {\tt DCMF\_Messager\_advance} (which appears as blue stripes) while ranks executing on other cores in each node wait in a helper function (shown in green). In this phase, ranks await the delayed arrival of a few of their peers who have extra work to do inside {\tt simulation\_initblock} before they call  {\tt mpi\_allreduce}. }
 \label{fig:time-centric}
 \end{figure}
 
 
 
-\HPCToolkit{} assembles performance measurements into a call path profile that associates the costs of each function call with its full calling context.
-In addition, \HPCToolkit{} uses binary analysis to attribute program performance metrics with uniquely detailed precision -- full dynamic calling contexts augmented with information about call sites, inlined functions and templates, loops, and source lines.
-Measurements can be analyzed in a variety of ways: top-down in a calling context tree, which associates costs with the full calling context in which they are incurred; bottom-up in a view that apportions costs associated with a function to each of the contexts in which the function is called; and in a flat view that aggregates all costs associated with a function independent of calling context.
-This multiplicity of code-centric perspectives is essential to understanding a program's performance for tuning under various circumstances. 
-\HPCToolkit{} also supports a thread-centric perspective, which enables one to see how a performance metric for a calling context differs across threads, and a time-centric perspective, which enables a user to see how an execution unfolds over time. Figures~\ref{fig:code-centric}--\ref{fig:time-centric} show samples of HPCToolkit's code-centric, thread-centric, and time-centric views.
+
 
 By working at the machine-code level, \HPCToolkit{} accurately measures and attributes costs in executions of multilingual programs, even if they are linked with libraries available only in binary form.
 \HPCToolkit{} supports performance analysis of fully optimized code -- the only form of a program worth measuring; it even measures and attributes performance metrics to shared libraries that are dynamically loaded at run time.
@@ -254,9 +257,8 @@ We have also developed techniques for efficiently attributing the idleness in on
 \HPCToolkit{} is deployed on many DOE supercomputers, including 
 the Sierra supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Lawrence Livermore National Laboratory,
 Cray XC40 systems at Argonne's Leadership Computing Facility and the National Energy
-Research Scientific Computing Center; a Cray XK7 system at Oak Ridge Leadership Computing Facility, 
-Blue Gene/Q systems at Argonne Leadership Computing Facility and
-Lawrence Livermore National Laboratory, 
+Research Scientific Computing Center; the Summit supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Oak Ridge Leadership Computing Facility, 
+Blue Gene/Q systems at Argonne Leadership Computing Facility, 
 as well as other clusters and supercomputers based on x86\_64, Power, and ARM processors. 
 
 % ***************************************************************************
@@ -287,7 +289,7 @@ For the most detailed attribution of application performance data using \HPCTool
 Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
 Third, one invokes \hpcstruct{}, \HPCToolkit{}'s tool for analyzing an application binary to recover information about files, procedures, loops, and inlined code.
 Fourth, one uses \hpcprof{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
-Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} graphical presentation tool.
+Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} and/or \hpctraceviewer{} graphical presentation tools.
 
 The rest of this chapter briefly discusses unique aspects of \HPCToolkit{}'s measurement, analysis and presentation capabilities.
 
@@ -295,20 +297,21 @@ The rest of this chapter briefly discusses unique aspects of \HPCToolkit{}'s mea
 \section{Asynchronous Sampling}
 
 Without accurate measurement, performance analysis results may be of questionable value.
-As a result, a principal focus of work on \HPCToolkit{} has been the design and implementation of techniques for providing accurate fine-grain measurements of production applications running at scale.
+As a result, a principal focus of work on \HPCToolkit{} has been the design and implementation of techniques to provide accurate fine-grain measurements of production applications running at scale.
 For tools to be useful on production applications on large-scale parallel systems, large measurement overhead is unacceptable.
 For measurements to be accurate, performance tools must avoid introducing measurement error.
-Both source-level and binary instrumentation can distort application performance through a variety of mechanisms. %~\cite{Mytkowicz-Diwan-etal:2009:ASPLOS-reproducibility}.
-In addition, source-level instrumentation can distort application performance by interfering with inlining and template optimization.
+Both source-level and binary instrumentation can distort application performance through a variety of mechanisms~\cite{Mytkowicz:2009:PWD:2528521.1508275}. 
+Frequent calls to small instrumented procedures can lead to considerable measurement overhead.
+Furthermore, source-level instrumentation can distort application performance by interfering with inlining and template optimization. 
 To avoid these effects, many instrumentation-based tools intentionally refrain from instrumenting certain procedures.
-Ironically, the more this approach reduces overhead, the more it introduces \emph{blind spots}, \ie{}, portions of unmonitored execution.
+Ironically, the more this approach reduces overhead, the more it introduces \emph{blind spots}, \ie{}, intervals of unmonitored execution.
 For example, a common selective instrumentation technique is to ignore small frequently executed procedures --- but these may be just the thread synchronization library routines that are critical.
 Sometimes, a tool unintentionally introduces a blind spot.
-A typical example is that source code instrumentation necessarily introduces blind spots when source code is unavailable, a common condition for math and communication libraries.
+A typical example is that source code instrumentation suffers from blind spots when source code is unavailable, a common condition for math and communication libraries.
 
 To avoid these problems, \HPCToolkit{} eschews instrumentation and favors the use of \emph{asynchronous sampling} to measure and attribute performance metrics.
 During a program execution, sample events are triggered by periodic interrupts induced by an interval timer or overflow of hardware performance counters.
-One can sample metrics that reflect work (\eg{}, instructions, floating-point operations), consumption of resources (\eg{}, cycles, memory bus transactions), or inefficiency (\eg{}, stall cycles).
+One can sample metrics that reflect work (\eg{}, instructions, floating-point operations), consumption of resources (\eg{}, cycles, bandwidth consumed in the memory hierarhcy by data transfers in response to cache misses), or inefficiency (\eg{}, stall cycles).
 For reasonable sampling frequencies, the overhead and distortion introduced by sampling-based measurement is typically much lower than that introduced by instrumentation~\cite{Froyd-MC-Fo:2005:ICS-csprof}.
 
 
@@ -340,8 +343,8 @@ To associate measurement data with the static structure of fully-optimized execu
 \footnote{This object to source code mapping should be contrasted with the binary's line map, which (if present) is typically fundamentally line based.}
 \HPCToolkit{} constructs this mapping using binary analysis; we call this process \emph{recovering program structure}~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 
-\HPCToolkit{} focuses its efforts on recovering procedures and loop nests, the most important elements of source code structure.
-To recover program structure, \HPCToolkit's \hpcstruct{} utility parses a load module's machine instructions, reconstructs a control flow graph, combines line map information with interval analysis on the control flow graph in a way that enables it to identify transformations to procedures such as inlining and account for loop transformations~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
+\HPCToolkit{} focuses its efforts on recovering procedures, inlined functions and templates, as well as  loop nests, the most important elements of source code structure.
+To recover program structure, \HPCToolkit's \hpcstruct{} utility parses a load module's machine instructions, reconstructs a control flow graph, combines line map and DWARF information about inlining with interval analysis on the control flow graph in a way that enables it to relate machine code after optimization back to the original source~\cite{Tallent-MC-Fagan:2009:PLDI-hpctoolkit-binary-analysis}.
 %\footnote{Without line map information, \hpcstruct{} can still identify procedures and loops, but is not able to account for inlining or loop transformations.}
 
 Two important benefits naturally accrue from this approach.
@@ -357,11 +360,13 @@ This enables us to attribute the performance of samples in their full static and
 
 To enable an analyst to rapidly pinpoint and quantify performance bottlenecks, tools must present the performance measurements in a way that engages the analyst, focuses attention on what is important, and automates common analysis subtasks to reduce the mental effort and frustration of sifting through a sea of measurement details.
 
-To enable rapid analysis of an execution's performance bottlenecks, we have carefully designed the \hpcviewer{} presentation tool~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer}.
-\hpcviewer{} combines a relatively small set of complementary presentation techniques that, taken together, rapidly focus an analyst's attention on performance bottlenecks rather than on unimportant information.
+To enable rapid analysis of an execution's performance bottlenecks, we have carefully designed the \hpcviewer{} - a code-centric presentation tool~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer} and \hpctraceviewer{} - a time-centric presentation tool~\cite{Tallent-MC-etal:2011:ICS-hpctoolkit-scalable-tracing}. 
 
+\hpcviewer{} combines a relatively small set of complementary presentation techniques that, taken together, rapidly focus an analyst's attention on performance bottlenecks rather than on unimportant information.
 To facilitate the goal of rapidly focusing an analyst's attention on performance bottlenecks \hpcviewer{} extends several existing presentation techniques.
 In particular, \hpcviewer{} (1) synthesizes and presents three complementary views of calling-context-sensitive metrics; (2) treats a procedure's static structure as first-class information with respect to both performance metrics and constructing views; (3) enables a large variety of user-defined metrics to describe performance inefficiency; and (4) automatically expands hot paths based on arbitrary performance metrics --- through calling contexts and static structure --- to rapidly highlight important performance data.
+
+\hpctraceviewer{}  enables an application developer to visualize how a parallel execution unfolds over time. This view facilitates identification of important inefficiencies such as serialization and load imbalance, among others.
 
 
 
@@ -399,7 +404,8 @@ To use \HPCToolkit{} to measure and analyze an application's performance, one fi
 Second, one launches an application with \HPCToolkit{}'s measurement tool, \hpcrun{}, which uses statistical sampling to collect a performance profile.
 Third, one invokes \hpcstruct{}, \HPCToolkit{}'s tool for analyzing an application binary to recover information about files, procedures, loops, and inlined code.
 Fourth, one uses \hpcprof{} to combine information about an application's structure with dynamic performance measurements to produce a performance database.
-Finally, one explores a performance database with \HPCToolkit{}'s \hpcviewer{} graphical presentation tool.
+For large executions where analyzing performance measurements serially would be imprudent, \HPCToolkit{}  provides \hpcprofmpi{} - an MPI program that can be launched to analyze  performance data from many MPI ranks and threads in parallel.
+Finally, one explores a performance database with one of \HPCToolkit{}'s graphical user interfaces: \hpcviewer{} for code-centric analysis of performance metrics or  \hpctraceviewer{} for time-centric analysis of an execution. 
 
 The following subsections explain \HPCToolkit{}'s work flow in more detail.
 
@@ -410,10 +416,10 @@ The following subsections explain \HPCToolkit{}'s work flow in more detail.
 \subsection{Compiling an Application}
 
 For the most detailed attribution of application performance data using \HPCToolkit{}, one should compile so as to include with line map information in the generated object code.
-This usually means compiling with options similar to `\texttt{-g -O3}' or `\texttt{-g -fast}'; for Portland Group (PGI) compilers, use \texttt{-gopt} in place of \texttt{-g}.
+This usually means compiling with options similar to `\texttt{-g -O3}'. Check your compiler's documentation for information about the right set of options to have the compiler record information about inlining and the mapping of machine instructions to source lines. We advise picking  options that indicate they will record information that relates machine instructions to source code without compromising optimization. For instance, the Portland Group (PGI) compilers, use \texttt{-gopt} in place of \texttt{-g} to collect information without interfering with optimization.
 
-While \HPCToolkit{} does not need this information to function, it can be helpful to users trying to interpret the results.
-Since compilers can usually provide line map information for fully optimized code, this requirement need not require a special build process.
+While \HPCToolkit{} does not need information about the mapping between machine instructions and source code to function, having such information included in the binary code by the compiler can be helpful to users trying to interpret performance measurements.
+Since compilers can usually provide information about line mappings and inlining for fully-optimized code, this requirement usually involves a one-time trivial adjustment to the an application's build scripts to provide a better experience with tools. Such mapping information enables tools such as \HPCToolkit{}, race detectors, and memory analysis tools to attribute information more precisely.
 
 
 % ==========================================================
@@ -436,7 +442,7 @@ Simply launch your application with \hpcrun{}:
 \begin{quote}
   \verb|[<mpi-launcher>] hpcrun [hpcrun-options] app [app-arguments]|
 \end{quote}
-Of course, \texttt{<mpi-launcher>} is only needed for MPI programs and is usually a program like \texttt{mpiexec} or \texttt{mpirun}.
+Of course, \texttt{<mpi-launcher>} is only needed for MPI programs and is sometimes a program like \texttt{mpiexec} or \texttt{mpirun}, or a workload manager's utilities such as Slurm's {\tt srun} or IBM's Job Step Manager utility {\tt jsrun}.
 
 \item Statically linked applications:\hfill
 
@@ -449,7 +455,7 @@ Then monitor \texttt{app} by passing \hpcrun{} options through environment varia
 For instance:
 \begin{quote}
 \begin{verbatim}
-export HPCRUN_EVENT_LIST="CYCLES@f200"
+export HPCRUN_EVENT_LIST="CYCLES"
 [<mpi-launcher>] app [app-arguments]
 \end{verbatim}
 \end{quote}
@@ -463,10 +469,11 @@ The database is named according the form:
 \begin{quote}
   \verb|hpctoolkit-app-measurements[-<jobid>]|
 \end{quote}
-If the application \texttt{app} is run under control of a recognized batch job scheduler (such as PBS or GridEngine), the name of the measurements directory will contain the corresponding job identifier \texttt{<jobid>}.
-Currently, the database contains measurements files for each thread that are named using the following template:
+If the application \texttt{app} is run under control of a recognized batch job scheduler (such as Slurm, Cobalt, or IBM's Job Manager), the name of the measurements directory will contain the corresponding job identifier \texttt{<jobid>}.
+Currently, the database contains measurements files for each thread that are named using the following templates:
 \begin{quote}
   \verb|app-<mpi-rank>-<thread-id>-<host-id>-<process-id>.<generation-id>.hpcrun|
+    \verb|app-<mpi-rank>-<thread-id>-<host-id>-<process-id>.<generation-id>.hpctrace|
 \end{quote}
 
 \subsubsection{Specifying Sample Sources}
@@ -483,7 +490,7 @@ To configure \hpcrun{} with two samples sources, \texttt{$e_1$@howoften$_1$} and
 \end{quote}
 To use the same sample sources with an \hpclink{}-ed application, use a command similar to:
 \begin{quote}
-  \texttt{export HPCRUN\_EVENT\_LIST="$e_1$@howoften$_1$;$e_2$@howoften$_2$"}
+  \texttt{export HPCRUN\_EVENT\_LIST="$e_1$@howoften$_1$ $e_2$@howoften$_2$"}
 \end{quote}
 
 
@@ -509,7 +516,7 @@ Typically, \hpcstruct{} is launched without any options.
 \subsection{Analyzing Measurements \& Attributing Them to Source Code}
 
 To analyze \HPCToolkit{}'s measurements and attribute them to the application's source code, use either \hpcprof{} or \hpcprofmpi{}.
-In most respects, \hpcprof{} and \hpcprofmpi{} are semantically idential.
+In most respects, \hpcprof{} and \hpcprofmpi{} are semantically idential. For convenience, we use the notation \hpcprofAll{} to refer to both of these tools.
 Both generate the same set of summary metrics over all threads and processes in an execution.
 The difference between the two is that the latter is designed to process (in parallel) measurements from large-scale executions.
 Consequently, while the former can optionally generate separate metrics for each thread (see the \mytt{--metric/-M} option), the latter only generates summary metrics.
@@ -541,7 +548,7 @@ This capability is useful for (a) combining event sets gathered over multiple ex
 The above commands use two important options.
 The \texttt{-S/--structure} option takes a program structure file.
 The \texttt{-I/--include} option takes a directory \texttt{<app-src>} to application source code; the optional `\texttt{+}' suffix requests that the directory be searched recursively for source code.
-Either option can be passed multiple times.
+Either option can be passed multiple times to specify multiple structure files (e.g., for the application and each of the key libraries it uses) or multiple include paths that indicate  roots of source trees for the application and/or of its libraries. 
 
 Another potentially important option, especially for machines that require executing from special file systems, is the \texttt{-R/--replace-path} option for substituting instances of \emph{old-path} with \emph{new-path}: \texttt{-R 'old-path=new-path'}.
 
@@ -556,7 +563,7 @@ In such cases, not only must you copy \hpcprofmpi{} into the scratch file system
 \subsection{Presenting Performance Measurements for Interactive Analysis}
 
 To interactively view and analyze an \HPCToolkit{} performance database, use \hpcviewer{}.
-\hpcviewer{} may be launched from the command line or from a windowing system.
+\hpcviewer{} may be launched from the command line or by double-clicking on its icon on MacOS or Windows.
 The following is an example of launching from a command line:
 \begin{quote}
   \verb|hpcviewer hpctoolkit-app-database|
@@ -603,7 +610,7 @@ First, we summarize the available documentation and command-line help:
 
 \item[Command-line help.]\hfill
 
-Each of \HPCToolkit{}'s command-line tools will generate a help message summarizing the tool's usage, arguments and options.
+Each of \HPCToolkit{}'s command-line tools can generate a help message summarizing the tool's usage, arguments and options.
 To generate this help message, invoke the tool with \mytt{-h} or \mytt{--help}.
 
 \item[Man pages.]\hfill
@@ -737,7 +744,7 @@ One can directly quantify and pinpoint losses from failing to keep the floating 
 One can pinpoint and quantify losses of this nature by computing a {\em floating-point waste} metric that is calculated as the difference between the potential number of calculations that could have been performed if the computation was running at its peak rate minus the actual number that were performed.
 To compute the number of calculations that could have been completed in each scope, multiply the total number of cycles spent in the scope by the peak rate of operations per cycle.
 Using \hpcviewer{}, one can specify a formula to compute such a derived metric and it will compute the value of the derived metric for every scope.
-Figure~\ref{fig:fpwaste} shows the specification of this floating-point waste metric for a code.
+Figure~\ref{fig:fpwaste} shows the specification of this floating-point waste metric for a code.\footnote{Many recent processors have trouble accurately counting floating-point operations accurately, which is unfortunate. If your processor can't accurately count floating-point operations, a floating-point waste metric will be less useful.}
 
 Sorting by a waste metric will rank order scopes to show the scopes with the greatest waste.
 Such scopes correspond directly to those that contain the greatest opportunities for improving overall program performance.
@@ -757,7 +764,7 @@ A waste metric will typically highlight loops where
 
 Beyond identifying and quantifying opportunities for tuning with a waste metric, one can compute a companion derived metric {\em relative efficiency} metric to help understand how easy it might be to improve performance.
 A scope running at very high efficiency will typically be much harder to tune than running at low efficiency.
-For our floating-point waste metric, we one can compute the floating point efficiency metric by dividing measured FLOPs by potential peak FLOPS and multiplying the quantity by 100.
+For our floating-point waste metric, we one can compute the floating point efficiency metric by dividing measured FLOPs by potential peak FLOPs and multiplying the quantity by 100.
 Figure~\ref{fig:fpefficiency} shows the specification of this floating-point efficiency metric for a code.
 
 \begin{figure}[t]
@@ -771,7 +778,7 @@ Scopes that rank high according to a waste metric and low according to a compani
 Figure~\ref{fig:fpefficiency-loop} shows the specification of this floating-point efficiency metric for a code.
 Figure~\ref{fig:fpefficiency-loop} shows an \hpcviewer{} display that shows the top two routines that collectively account for 32.2\% of the floating point waste in a reactive turbulent combustion code.
 The second routine (\mytt{ratt}) is expanded to show the loops and statements within.
-While the overall floating point efficiency for \mytt{ratt} is at 6.6\% of peak (shown in scientific notation in the \hpcviewer{} display), the most costly loop in \mytt{ratt} that accounts for 7.3\% of the floating point waste is executing at only 0.114\%.
+While the overall floating point efficiency for \mytt{ratt} is at 6.6\% of peak (shown in scientific notation in the \hpcviewer{} display), the most costly loop in \mytt{ratt} that accounts for 7.3\% of the floating point waste is executing at only 0.114\% efficiency.
  Identifying such sources of inefficiency is the first step towards improving performance via tuning.
 
 
@@ -926,7 +933,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpcviewer{}'s User Interface}
+\chapter{\hpcviewer{} User Interface}
 \label{chpt:hpcviewer-interface}
 
 \input{hpcviewer}
@@ -935,7 +942,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpctraceviewer{}'s User Interface}
+\chapter{\hpctraceviewer{} User Interface}
 \label{chpt:hpctraceviewer-interface}
 
 \input{hpctraceviewer}
@@ -947,15 +954,8 @@ To isolate code that is an impediment to scalable performance, one can use the {
 \chapter{Monitoring MPI Applications}
 \label{chpt:mpi-apps}
 
-This chapter describes how to use \HPCToolkit{} with MPI programs.
-
-% ===========================================================================
-% ===========================================================================
-
-\section{Introduction}
-
-\HPCToolkit{}'s measurement tools collect data on each process and thread of an MPI program.
-\HPCToolkit{} can be used with pure MPI programs as well as hybrid programs that use OpenMP or Pthreads for multithreaded parallelism.
+\HPCToolkit{}'s measurement subsystem can measure each process and thread in an execution of an MPI program.
+\HPCToolkit{} can be used with pure MPI programs as well as hybrid programs that use multithreading, e.g. OpenMP or Pthreads, within MPI processes.
 
 \HPCToolkit{} supports C, C++ and Fortran MPI programs.
 It has been successfully tested with MPICH, MVAPICH and OpenMPI and should work with almost all MPI implementations.
@@ -980,6 +980,8 @@ For a dynamically linked application binary \texttt{app}, use a command line sim
 %
 Observe that the MPI launcher (\texttt{mpirun}, \texttt{mpiexec}, \etc{}) is used to launch \hpcrun{}, which is then used to launch the application program.
 
+\vspace{1ex}
+
 \question{How do I compile and run a statically linked MPI program?}
 
 \answer{}
@@ -1003,6 +1005,7 @@ export HPCRUN_EVENT_LIST="CYCLES@f200"
 \end{quote}
 See the Chapter~\ref{chpt:statically-linked-apps} for more information.
 
+\vspace{1ex}
 
 \question{What files does \hpcrun{} produce for an MPI program?}
 
@@ -1040,6 +1043,8 @@ Technically, the smaller \mytt{.hpcrun} files imply only a smaller calling-conte
 But in this case, the helper threads are not doing much work.
 
 
+\vspace{1ex}
+
 \question{Do I need to include anything special in the source code?}
 
 \answer{}
@@ -1069,12 +1074,14 @@ Other communicators are allowed, but the first call should use \mytt{MPI_COMM_WO
 Also, the call to \mytt{MPI_Comm_rank()} should be unconditional, that is all processes should make this call.
 Actually, the call to \mytt{MPI_Comm_size()} is not necessary (for \hpcrun{}), although most MPI programs normally call both \mytt{MPI_Comm_size()} and \mytt{MPI_Comm_rank()}.
 
+\vspace{1ex}
 
 \question{What MPI implementations are supported?}
 
 \answer{}
 Although the matrix of all possible MPI variants, versions, compilers, architectures and systems is very large, \HPCToolkit{} has been tested successfully with MPICH, MVAPICH and OpenMPI and should work with most MPI implementations.
 
+\vspace{1ex}
 
 \question{What languages are supported?}
 
@@ -1168,7 +1175,7 @@ aprun -n 64 ./app arg ...
 \end{verbatim}
 \end{quote}
 
-Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene system, you would use the \texttt{--env} option to pass environment variables.
+Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/Q system, you would use the \texttt{--env} option to pass environment variables.
 For example, you might submit a job with:
 \begin{quote}
 \begin{verbatim}
@@ -1393,7 +1400,7 @@ There are three likely reasons why \hpcviewer{} might run slowly.
 First, you may be running \hpcviewer{} on a remote system with low bandwidth, high latency or an otherwise unsatisfactory network connection to your desktop.
 If any of these conditions are true, \hpcviewer{}'s otherwise snappy GUI can become sluggish if not downright unresponsive.
 The solution is to install \hpcviewer{} on your local system, copy the database onto your local system, and run \hpcviewer{} locally.
-We almost always run \hpcviewer{} on our local workstations or laptops for this reason.
+We almost always run \hpcviewer{} on our local desktops or laptops for this reason.
 
 Second, \HPCToolkit{}'s database may contain too many metrics.
 This can happen if you use \hpcprof{} to build a database for several threads with several metrics each, resulting in too many metrics total.
@@ -1694,7 +1701,7 @@ export MONITOR_DEBUG=1
 Broadly speaking, there are two levels at which a user can test \hpcrun{}.
 The first level is tracing \hpcrun{}'s application control, that is, running \hpcrun{} without an asynchronous sample source.
 The second level is tracing \hpcrun{} with a sample source.
-The key difference between the two is that the former uses the \texttt{--event NONE} or \mytt{HPCRUN_EVENT_LIST="NONE"} option (shown below) whereas the latter does not (which enables the default WALLCLOCK sample source).
+The key difference between the two is that the former uses the \texttt{--event NONE} or \mytt{HPCRUN_EVENT_LIST="NONE"} option (shown below) whereas the latter does not (which enables the default CPUTIME sample source).
 With this in mind, to collect a debug trace for either of these levels, use commands similar to the following:
 %
 \begin{itemize}
@@ -1744,14 +1751,14 @@ Note that \hpcrun{} is easiest to debug if you configure and build \HPCToolkit{}
   To debug \hpcrun{} with controlled sampling signals, launch as follows:
 \begin{quote}
 \begin{verbatim}
-hpcrun --debug --event WALLCLOCK@0 app [app-arguments]
+hpcrun --debug --event REALTIME@0 app [app-arguments]
 \end{verbatim}
 \end{quote}
 or
 \begin{quote}
 \begin{verbatim}
 export HPCRUN_WAIT=1
-export HPCRUN_EVENT_LIST="WALLCLOCK@0"
+export HPCRUN_EVENT_LIST="REALTIME@0"
 app [app-arguments]
 \end{verbatim}
 \end{quote}

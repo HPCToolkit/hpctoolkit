@@ -103,10 +103,10 @@ typedef struct perf_mmap_data_s {
   u64    abi;        /* if PERF_SAMPLE_REGS_USER */
   u64    *regs;
                      /* if PERF_SAMPLE_REGS_USER */
-  u64    stack_size;             /* if PERF_SAMPLE_STACK_USER */
-  char   *stack_data; /* if PERF_SAMPLE_STACK_USER */
-  u64    stack_dyn_size;         /* if PERF_SAMPLE_STACK_USER &&
-                                     size != 0 */
+  u64    stack_size;                       /* if PERF_SAMPLE_STACK_USER */
+  char   stack_data[MAX_CALLCHAIN_FRAMES]; /* if PERF_SAMPLE_STACK_USER */
+  u64    stack_dyn_size;                   /* if PERF_SAMPLE_STACK_USER &&
+                                               size != 0 */
   u64    weight;     /* if PERF_SAMPLE_WEIGHT */
   u64    data_src;   /* if PERF_SAMPLE_DATA_SRC */
   u64    transaction;/* if PERF_SAMPLE_TRANSACTION */
@@ -117,9 +117,6 @@ typedef struct perf_mmap_data_s {
   // header information in the buffer
   u32   header_misc; /* information about the sample */
   u32   header_type; /* either sample record or other */
-
-  // only for PERF_RECORD_SWITCH
-  u64 	context_switch_time;
 
 } perf_mmap_data_t;
 
@@ -181,6 +178,9 @@ perf_util_is_ksym_available();
 
 int
 perf_util_get_paranoid_level();
+
+cct_node_t*
+perf_util_precise_ip(cct_node_t *leaf, void *data_aux);
 
 #if KERNEL_SAMPLING_ENABLED
 cct_node_t *

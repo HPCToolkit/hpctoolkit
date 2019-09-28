@@ -3,8 +3,8 @@
 % $Id$
 
 
-\HPCToolkit{} provides the \hpcviewer{}~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer} performance presentation tool for interactive examination of performance databases.
-\hpcviewer{} interactively presents context-sensitive performance metrics correlated to program structure and mapped to a program's source code, if available.
+\HPCToolkit{}'s \hpcviewer{}~\cite{Adhianto-MC-Ta:2010:PSTI-hpcviewer} is a code-centric user interface for interactive examination of performance databases.
+\hpcviewer{} enables a user to view context-sensitive performance metrics correlated to program structure and mapped to a program's source code, if available.
 It can present an arbitrary collection of performance metrics gathered during one or more runs or compute derived metrics.
 
 
@@ -25,8 +25,6 @@ Without this argument, \hpcviewer{} will prompt for the location of a database.
 
 The possible options are as follows:
 \begin{itemize}
- \item \texttt{-n}: Do not display the Callers View.  (May save memory and time.)
-
  \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
    (To get a console window, be sure to use java as the VM instead of javaw.)
 
@@ -42,7 +40,7 @@ The possible options are as follows:
 
 \subsection{Requirements}
 \begin{itemize}
- \item Java Runtime Environment (JRE) 1.6 or greater.
+ \item Java Runtime Environment (JRE) 1.7 or greater.
    Use the Oracle or IBM version or the latest version of OpenJDK.
    Specifically we recommend Oracle on x86 platforms, and IBM java on POWER.
    Take special note on POWER systems: we require the 64-bit java, even on a 32-bit
@@ -97,37 +95,35 @@ The Source pane (top) displays program source code.
 The Navigation and Metric panes (bottom) associate a table of performance metrics with static or dynamic program structure.
 These panes are discussed in more detail in Section~\ref{sec:hpcviewer:panes}.
 
-\hpcviewer{} displays calling-context-sensitive performance data in three different views: a top-down \emph{Calling Context View}, a bottom-up \emph{Callers View}, and a \emph{Flat View}.
+\hpcviewer{} displays calling-context-sensitive performance data in three different views: a top-down \emph{Top-down View}, a bottom-up \emph{Bottom-up View}, and a \emph{Flat View}.
 One selects the desired view by clicking on the corresponding view control tab.
 We briefly describe the three views and their corresponding purposes.
 
 \begin{itemize}
-\item \textbf{Calling Context View}.
-  This top-down view represents the dynamic calling contexts (call paths) in which costs were incurred.
+\item \textbf{Top-down View}.
+  This top-down view shows the dynamic calling contexts (call paths) in which costs were incurred.
   Using this view, one can explore performance measurements of an application in a top-down fashion to understand the costs incurred by calls to a procedure in a particular calling context.
-  We use the term \emph{cost} rather than simply \emph{time} since \hpcviewer{} can present a multiplicity of measured such as cycles, or cache misses) or derived metrics (\eg{} cache miss rates or bandwidth consumed) that that are other indicators of execution cost.
+  We use the term \emph{cost} rather than simply \emph{time} since \hpcviewer{} can present a multiplicity of metrics such as cycles, or cache misses) or derived metrics (\eg{} cache miss rates or bandwidth consumed) that that are other indicators of execution cost.
 
   A calling context for a procedure \fnnm{f} consists of the stack of procedure frames active when the call was made to \fnnm{f}.
   Using this view, one can readily see how much of the application's cost was incurred by \fnnm{f} when called from a particular calling context.
   If finer detail is of interest, one can explore how the costs incurred by a call to \fnnm{f} in a particular context are divided between \fnnm{f} itself and the procedures it calls.
   \HPCToolkit{}'s call path profiler \hpcrun{} and the \hpcviewer{} user interface distinguish calling context precisely by individual call sites; this means that if a procedure \fnnm{g} contains calls to procedure \fnnm{f} in different places, these represent separate calling contexts.
 
-\item \textbf{Callers View}.
+\item \textbf{Bottom-up View}.
   This bottom-up view enables one to look upward along call paths.
-  The view apportions a procedure's costs to its caller and, more generally, its calling contexts.
+  The view apportions a procedure's costs to its callers and, more generally, its calling contexts.
   This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context.
   For instance, a message-passing program may call \mytt{MPI_Wait} in many different calling contexts.
   The cost of any particular call will depend upon the structure of the parallelization in which the call is made.
   Serialization or load imbalance may cause long waits in some calling contexts while other parts of the program may have short waits because computation is balanced and communication is overlapped with computation.
 
-  When several levels of the Callers View are expanded, saying that the Callers View apportions metrics of a callee on behalf of its caller can be confusing: what is the caller and what is the callee?
-  In this situation, we can say that the Callers View apportions the metrics of a particular procedure \emph{in its various calling contexts} on behalf of that context's caller.
-  Alternatively but equivalently, the Callers View apportions the metrics of a particular procedure on behalf of its various \emph{calling contexts}.
+  When several levels of the Bottom-up View are expanded, saying that the Bottom-up View apportions metrics of a callee on behalf of its callers can be confusing. More precisely, the Bottom-up View apportions the metrics of a procedure on behalf of the various \emph{calling contexts} that reach it.
 
 \item \textbf{Flat View}.
   This view organizes performance measurement data according to the static structure of an application.
   All costs incurred in any calling context by a procedure are aggregated together in the Flat View.
-  This complements the Calling Context View, in which the costs incurred by a particular procedure are represented separately for each call to the procedure from a different calling context.
+  This complements the Top-down View, in which the costs incurred by a particular procedure are represented separately for each call to the procedure from a different calling context.
 
 \end{itemize}
 
@@ -144,7 +140,7 @@ We briefly describe the role of each pane.
 % ==========================================================
 % ==========================================================
 
-\subsection{Source pane}
+\subsection{Source Pane}
 \label{sec:pane-source}
 
 The source pane displays the source code associated with the current entity selected in the navigation pane.
@@ -155,25 +151,25 @@ Switching the source pane to view to a different source file is accomplished by 
 % ==========================================================
 % ==========================================================
 
-\subsection{Navigation pane}
+\subsection{Navigation Pane}
 
 The navigation pane presents a hierarchical tree-based structure that is used to organize the presentation of an applications's performance data.
 Entities that occur in the navigation pane's tree include load modules, files, procedures, procedure activations, inlined code, loops, and source lines.
 Selecting any of these entities will cause its corresponding source code (if any) to be displayed in the source pane.
 One can reveal or conceal children in this hierarchy by `opening' or `closing' any non-leaf (\ie{}, individual source line) entry in this view.
 
-The nature of the entities in the navigation pane's tree structure depends upon whether one is exploring the Calling Context View, the Callers View, or the Flat View of the performance data.
+The nature of the entities in the navigation pane's tree structure depends upon whether one is exploring the Top-down View, the Bottom-up View, or the Flat View of the performance data.
 \begin{itemize}
-\item In the \textbf{Calling Context View}, entities in the navigation tree represent procedure activations, inlined code, loops, and source lines.
+\item In the \textbf{Top-down View}, entities in the navigation tree represent procedure activations, inlined code, loops, and source lines.
   While most entities link to a single location in source code, procedure activations link to two: the call site from which a procedure was called and the procedure itself.
 
-\item In the \textbf{Callers View}, entities in the navigation tree are procedure activations.
+\item In the \textbf{Bottom-up View}, entities in the navigation tree are procedure activations.
   Unlike procedure activations in the calling context tree view in which call sites are paired with the called procedure, in the caller's view, call sites are paired with the calling procedure to facilitate attribution of costs for a called procedure to multiple different call sites and callers.
 
 \item In the \textbf{Flat View}, entities in the navigation tree correspond to source files, procedure call sites (which are rendered the same way as procedure activations), loops, and source lines.
 \end{itemize}
 
-\subsubsection{Navigation control}
+\subsubsection{Navigation Control}
 
 The header above the navigation pane contains some controls for the navigation and metric view.
 In Figure~\ref{fig:hpcviewer-legend}, they are labeled as ``navigation/metric control.''
@@ -198,40 +194,39 @@ One can zoom out (reversing a prior zoom operation) by depressing the down arrow
 
 \item \textbf{Hot call path} \includegraphics[scale=.8]{fig/hpcviewer-button-hotpath.png} :
 
-This button is used to automatically find hot call paths with respect to the currently selected metric column.
-The hot path is computed by comparing parent and child metric values, and showing the chain where the difference is greater than a threshold (by default is \texttt{50\%}).
-It is also possible to change the threshold value by clicking the menu File|Preference.
+This button is used to automatically reveal and traverse the hot call path rooted at the selected node in the navigation pane with respect to the selected metric column. Let $n$ be the node initially selected in the navigation pane.
+A hot path from $n$  is traversed by comparing the values of the selected metric for $n$ and its children. If one child accounts for T\% or more (where T is the threshold value for a hot call path) of the cost at $n$,  then that child becomes $n$ and the process repeats recursively. The default value for T is 50. One can change T by using the menu File|Preferences|hpcviewer preferences.
 
-\item \textbf{Derived metric} \includegraphics[scale=.8]{fig/hpcviewer-button-derivedmetric.png} :
+\item \textbf{Add derived metric} \includegraphics[scale=.8]{fig/hpcviewer-button-derivedmetric.png} :
 
-Creating a new metric based on mathematical formula.
+Create a new metric by specifying a mathematical formula.
 See Section~\ref{sec:hpcviewer:derived-metrics} for more details.
 
 \item \textbf{Hide/show metrics} \includegraphics[scale=.8]{fig/hpcviewer-button-checkcolumns.png} :
 
-Showing and hiding metric columns.
-A dialog box will appear, and user can select which columns to show or hide.
+Show or hide metric columns.
+A dialog box will appear and the user can select which metric columns should be shown.
 See Section~\ref{sec:hpcviewer:metric-pane} section for more details.
 
 \item \textbf{Export into a CSV format file} \includegraphics[scale=.8]{fig/hpcviewer-button-csv.png} :
 
-Exporting the current metric table into a comma separated value (CSV) format file.
+Export the current metric table into a comma separated value (CSV) format file.
 This feature only exports all metrics that are currently shown.
 Metrics that are not shown in the view (whose scopes are not expanded) will not be exported (we assume these metrics are not significant).
 
 \item \textbf{Increase font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontplus.png} /
       \textbf{Decrease font size} \includegraphics[scale=.8]{fig/hpcviewer-button-fontminus.png} :
 
-Increasing or decreasing the size of the navigation and metric panes.
+Increase or decrease the size of the navigation and metric panes.
 
-\item \textbf{Showing graph of metric values} \includegraphics[scale=.8]{fig/hpcviewer-button-graph.png} :
+\item \textbf{Show a graph of metric values} \includegraphics[scale=.8]{fig/hpcviewer-button-graph.png} :
 
-Showing the graph (plot, sorted plot or histogram) of metric values of the selected node in CCT for all processes or threads (Section~\ref{sec:hpcviewer:plots}). 
+Show a graph (a plot, a sorted plot or a histogram) of metric values associated with the selected node in CCT for all processes or threads (Section~\ref{sec:hpcviewer:plots}). 
 This menu is only available if the database is generated by \texttt{hpcprof-mpi} instead of \texttt{hpcprof}. 
 
 \item \textbf{Show the metrics of a set of threads} \includegraphics[scale=.8]{fig/hpcviewer-thread.png}:
 
-Showing the CCT and the metrics of a seletected threads  (Section~\ref{sec:thread-level-table}). 
+Show the CCT and the metrics of a seletected threads  (Section~\ref{sec:thread-level-table}). 
 This menu is only available if the database is generated by \texttt{hpcprof-mpi} instead of \texttt{hpcprof}. 
  
 \end{itemize}
@@ -245,18 +240,18 @@ This menu is only available if the database is generated by \texttt{hpcprof-mpi}
 \end{figure}
 Navigation control also provides several context menus by clicking the right-button of the mouse. As shown in Figure~\ref{fig:hpcviewer-menu-context}, the menus are:
 \begin{itemize}
- \item \textbf{Zoom-in/out}: Carrying out exactly the same as action as the Zoom-in/out in the navigation control.
- \item \textbf{Copy}: Copying into clipboard the selected line in navigation pane which includes the name of the node in the tree, and the values of visible metrics in metric pane (Section ~\ref{sec:pane-metric}). The values of hidden metrics will not be copied.
- \item \textbf{Show ...}: Showing the source code file and highlighting the specified line in (Section Source pane~\ref{sec:pane-source}). If the file doesn't exist, the menu is disabled.
- \item \textbf{Callsite ...}: Showing the source code file and highlighting the specified line of the call site. This menu only available in Calling Context View. If the file doesn't exist, the menu is disabled.
- \item \textbf{Graph ...}: Showing the graph (plot, sorted plot or histogram) of metric values of the selected node in CCT for all processes or threads (Section~\ref{sec:hpcviewer:plots}). This menu is only available if the database is generated by \texttt{hpcprof-mpi} instead of \texttt{hpcprof}. 
+ \item \textbf{Zoom-in/out}: Carry out exactly the same as action as the Zoom-in/out in the navigation control.
+ \item \textbf{Copy}: Copy into clipboard the selected line in navigation pane which includes the name of the node in the tree, and the values of visible metrics in metric pane (Section ~\ref{sec:pane-metric}). The values of hidden metrics will not be copied.
+ \item \textbf{Show ...}: Show the source code file and highlighting the specified line in (Section Source pane~\ref{sec:pane-source}). If the file doesn't exist, the menu is disabled.
+ \item \textbf{Callsite ...}: Show the source code file and highlighting the specified line of the call site. This menu only available in Top-down View. If the file doesn't exist, the menu is disabled.
+ \item \textbf{Graph ...}: Show the graph (plot, sorted plot or histogram) of metric values of the selected node in CCT for all processes or threads (Section~\ref{sec:hpcviewer:plots}). This menu is only available if the database is generated by \texttt{hpcprof-mpi} instead of \texttt{hpcprof}. 
 \end{itemize}
 
 
 % ==========================================================
 % ==========================================================
 
-\subsection{Metric pane}
+\subsection{Metric Pane}
 \label{sec:pane-metric}
 
 The metric pane displays one or more performance metrics associated with entities to the left in the navigation pane.
@@ -277,27 +272,27 @@ Vertical scrolling of the metric and navigation panes is synchronized.
 
 \section{Understanding Metrics}
 
-\hpcviewer{} can present an arbitrary collection of performance metrics gathered during one or more runs, or compute derived metrics expressed as formulae with existing metrics as terms.
+\hpcviewer{} can present an arbitrary collection of performance metrics gathered during one or more runs, or compute derived metrics expressed as formulae. A derived metric may be specified with a formula that typically uses one or more existing metrics as terms in an expression.
 
 For any given scope in \hpcviewer{}'s three views, \hpcviewer{} computes both \emph{inclusive} and \emph{exclusive} metric values.
-For the moment, consider the Calling Context View.
+First, consider the Top-down View.
 Inclusive metrics reflect costs for the entire subtree rooted at that scope.
 Exclusive metrics are of two flavors, depending on the scope.
 For a procedure, exclusive metrics reflect all costs within that procedure but excluding callees.
 In other words, for a procedure, costs are exclusive with respect to dynamic call chains.
 For all other scopes, exclusive metrics reflect costs for the scope itself; \ie{}, costs are exclusive with respect to static structure.
-The Callers and Flat Views contain inclusive and exclusive metric values that are relative to the Calling Context View.
-This means, \eg{}, that inclusive metrics for a particular scope in the Callers or Flat View are with respect to that scope's subtree in the Calling Context View.
+The Bottom-up and Flat Views contain inclusive and exclusive metric values that are relative to the Top-down View.
+This means, \eg{}, that inclusive metrics for a particular scope in the Bottom-up or Flat View are with respect to that scope's subtree in the Top-down View.
 
 
 % ==========================================================
 % ==========================================================
 
-\subsection{How metrics are computed?}
+\subsection{How Metrics are Computed}
 
-Call path profile measurements collected by \hpcrun{} correspond directly to the Calling Context View.
-\hpcviewer{} derives all other views from exclusive metric costs in the Calling Context View.
-For the Caller View, \hpcviewer{} collects the cost of all samples in each function and attribute that to a top-level entry in the Caller View.
+Call path profile measurements collected by \hpcrun{} correspond directly to the Top-down View.
+\hpcviewer{} derives all other views from exclusive metric costs in the Top-down View.
+For the Bottom-up View, \hpcviewer{} collects the cost of all samples in each function and attribute that to a top-level entry in the Bottom-up View.
 Under each top-level function, \hpcviewer{} can look up the call chain at all of the context in which the function is called.
 For each function, \hpcviewer{} apportions its costs among each of the calling contexts in which they were incurred.
 \hpcviewer{} computes the Flat View by traversing the calling context tree and attributing all costs for a scope to the scope within its static source code structure.
@@ -349,13 +344,13 @@ h () {
 
 \begin{figure}[t]
 \centering{\includegraphics[scale=0.5]{fig/metrics-cct.png}}
-\caption{Calling Context View. Each node of the tree has three boxes: the left-most is the name of the node (or in this case the name of the routine, the center is the inclusive value, and on the right is the exclusive value.}
+\caption{Top-down View. Each node of the tree has three boxes: the left-most is the name of the node (or in this case the name of the routine, the center is the inclusive value, and on the right is the exclusive value.}
 \label{fig:cct}
 \end{figure}
 
 \begin{figure}
 \centering{\includegraphics[scale=0.5]{fig/metrics-callers.png}}
-\caption{Caller View}
+\caption{Bottom-up View}
 \label{fig:metrics-callers}
 \end{figure}
 
@@ -373,15 +368,15 @@ We use different labels because there is no natural one-to-one correspondence be
 
 Routine \texttt{g} can behave as a recursive function depending on the value of the condition branch (lines 3--4).
 Figure~\ref{fig:cct} shows an example of the call chain execution of the program annotated with both inclusive and exclusive costs.
-Computation of inclusive costs from exclusive costs in the Calling Context View involves simply summing up all of the costs in the subtree below.
+Computation of inclusive costs from exclusive costs in the Top-down View involves simply summing up all of the costs in the subtree below.
 
 In this figure, we can see that on the right path of the routine \texttt{m}, routine \texttt{g} (instantiated in the diagram as \texttt{g$_1$}) performed a recursive call (\texttt{g$_2$}) before calling routine \texttt{h}.
 Although \texttt{g$_1$}, \texttt{g$_2$} and \texttt{g$_3$} are all instances from the same routine (\ie{}, \texttt{g}), we attribute a different cost for each instance.
 This separation of cost can be critical to identify which instance has a performance problem.
 
-Figure~\ref{fig:metrics-callers} shows the corresponding scope structure for the Caller View and the costs we compute for this recursive program.
+Figure~\ref{fig:metrics-callers} shows the corresponding scope structure for the Bottom-up View and the costs we compute for this recursive program.
 The procedure \texttt{g} noted as \texttt{g$_a$} (which is a root node in the diagram), has different cost to \texttt{g} as a callsite as noted as \texttt{g$_b$}, \texttt{g$_c$} and \texttt{g$_d$}.
-For instance, on the first tree of this figure, the inclusive cost of \texttt{g$_a$} is \texttt{9}, which is the sum of the highest cost for each branch in calling context tree (Figure~\ref{fig:cct}): the inclusive cost of \texttt{g$_3$} (which is \texttt{3}) and \texttt{g$_1$} (which is \texttt{6}).
+For instance, on the first tree of this figure, the inclusive cost of \texttt{g$_a$} is \texttt{9}, which is the sum of the highest cost for each path in the calling context tree shown in Figure~\ref{fig:cct} that includes \texttt{g}: the inclusive cost of \texttt{g$_3$} (which is \texttt{3}) and \texttt{g$_1$} (which is \texttt{6}).
 We do not attribute the cost of \texttt{g$_2$} here since it is a descendant of \texttt{g$_1$} (in other term, the cost of \texttt{g$_2$} is included in \texttt{g$_1$}).
 
 Inclusive costs need to be computed similarly in the Flat View.
@@ -430,12 +425,12 @@ Operators have standard algebraic precedence.
 
 \subsection{Examples}
 
-Suppose the database contains information about 5 processes, each with two metrics:
+Suppose the database contains information from five executions, where the same two metrics were recorded for each:
 \begin{enumerate}
 \item Metric 0, 2, 4, 6 and 8: total number of cycles
 \item Metric 1, 3, 5, 7 and 9: total number of floating point operations
 \end{enumerate}
-To compute the average number of cycles per floating point operation across all of the processes, we can define a formula as follows:
+To compute the average number of cycles per floating point operation across all of the executions, we can define a formula as follows:
 \begin{quote}
 \begin{verbatim}
 avg($0, $2, $4. $6. $8) / avg($1, $3, $5, $7, $9)
@@ -445,7 +440,7 @@ avg($0, $2, $4. $6. $8) / avg($1, $3, $5, $7, $9)
 % ==========================================================
 % ==========================================================
 
-\subsection{Derived metric dialog box}
+\subsection{Creating Derived Metrics}
 
 \begin{figure}[t]
 \centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-derived-metric.png}}
@@ -470,33 +465,33 @@ The window has two main parts:
 
 \item \textit{Formula definition field}.
   In this field the user can define a formula with spreadsheet-like mathematical formula.
-  This field is required to be filled.
+  This field must be filled. A user can type a formula into this field, or use the buttons in the Assistance pane below below to help insert metric terms or function templates. 
 
-\item \textit{Metric help}.
-  This is used to help the user to find the \textit{ID} of a metric.
-  For instance, in this snapshot, the metric \mysf{PAPI_TOT_CYC} has the ID \texttt{44}.
-  By clicking the button \textbf{Insert metric}, the metric ID will be inserted in formula definition field.
+\item \textit{Metrics}.
+  This is used to find the \textit{ID} of a metric.
+  For instance, in this snapshot, the metric \mysf{WALLCLOCK} has the ID \texttt{2}.
+  By clicking the button \textbf{Insert metric}, the metric ID will be inserted in formula definition field. A metric may refer to the value at an individual node in the calling context tree (point-wise) or the value at the root of the calling context tree (aggregate).
 
-\item \textit{Function help}.
-  This help is to guide the user to insert functions in the formula definition field.
+\item \textit{Functions}.
+  This is to guide the user who wants to insert functions in the formula definition field.
   Some functions require only one metric as the argument, but some can have two or more arguments.
-  For instance, the function \texttt{avg()} which computes the average of some metrics, need to have two arguments.
+  For instance, the function \texttt{avg()} which computes the average of some metrics, needs at least two arguments.
 \end{itemize}
 
 \item \textbf{Advanced options}:
 \begin{itemize}
 
 \item \textit{Augment metric value display with a percentage relative to column total}.
-  When this box is checked, each scope's derived metric value will be augmented with a percentage value, which for scope \textit{s} is computed as the 100 * (\textit{s}'s derived metric value) / (the derived metric value computed by applying the metric formula to the aggregate values of the input metrics) the entire execution).
+  When this box is checked, each scope's derived metric value will be augmented with a percentage value, which for scope \textit{s} is computed as the 100 * (\textit{s}'s derived metric value) / (the derived metric value computed by applying the metric formula to the aggregate values of the input metrics for the entire execution).
   Such a computation can lead to nonsensical results for some derived metric formulae.
   For instance, if the derived metric is computed as a ratio of two other metrics, the aforementioned computation that compares the scope's ratio with the ratio for the entire program won't yield a meaningful result.
   To avoid a confusing metric display, think before you use this button to annotate a metric with its percent of total.
 
-\item \textit{Default format}. This option will set the metric value with a scientific notation format which is the default format.
+\item \textit{Default format}. This option will display the metric value using scientific notation with three digits of precision, which is the default format.
 
-\item \textit{Display metric value as percent}. This option will set the metric value with percent format. For instance, if the metric has a value 12.345678, with this option, it's displayed as 12.34\%.
+\item \textit{Display metric value as percent}. This option will display the metric value formatted as a percent with two decimal digits. For instance, if the metric has a value 12.3415678, with this option, it will be displayed as 12.34\%.
 
-\item \textit{Custom format}. This option will set the metric value with your customized format. The format is equivalent to Java's Formatter class, or similar to C's printf format. For example, the format "\texttt{\%6.2f}" will display 6 digit floating-points with 2 digit precision.
+\item \textit{Custom format}. This option will present the metric value with your customized format. The format is equivalent to Java's Formatter class, or similar to C's printf format. For example, the format "\texttt{\%6.2f}" will display six digit floating-points with two digits to the right of the decimal point.
 
 \end{itemize}
 
@@ -512,7 +507,7 @@ One can then review again the formula (or metric name) by clicking the small tri
 \section{Thread-level Metric Values}
 \label{sec:hpcviewer:thread-level}
 
-\subsection{Plotting graphs}
+\subsection{Plotting Graphs}
 \label{sec:hpcviewer:plots}
 \begin{figure}[t]
 \centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-view-rawmetrics.png}}
@@ -526,9 +521,9 @@ This is particularly useful for quickly assessing load imbalance \emph{in contex
 Figure~\ref{fig:hpcviewer-view-scatterplot} shows \hpcviewer{} rendering such a plot.
 The horizontal axis shows application processes, ordered by MPI rank.
 The vertical axis shows metric values for each process.
-Because \hpcviewer{} can generate scatter plots for any node in the Calling Context View, these graphs are calling-context sensitive.
+Because \hpcviewer{} can generate scatter plots for any node in the Top-down View, these graphs are calling-context sensitive.
 
-To create a graph, first select a scope in the Calling Context View; in the Figure, the top-level procedure \texttt{main} is selected.
+To create a graph, first select a scope in the Top-down View; in the Figure, the top-level procedure \texttt{main} is selected.
 Then, right-click the selected scope to show the associated context menu.
 (The menu begins with entries labeled `Zoom-in' and `Zoom-out.')
 At the bottom of the context menu is a list of metrics that \hpcviewer{} can graph.
@@ -562,7 +557,7 @@ Currently, it is only possible to generate scatter plots for metrics directly co
 
 \begin{figure}[t]
 \centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-thread-table.png}}
-\caption{Example of a Thread View which display thread-level metrics of a set of threads. The first column is a CCT equivalent to the CCT in the Calling Context View, the second and third columns represent the metrics of the selected threads (in this case they are threads from 0.0, to 15.0)}
+\caption{Example of a Thread View which display thread-level metrics of a set of threads. The first column is a CCT equivalent to the CCT in the Top-down View, the second and third columns represent the metrics of the selected threads (in this case they are threads from 0.0, to 15.0)}
 \label{fig:hpcviewer-view-thread-level}
 \end{figure}
 
@@ -579,12 +574,12 @@ Hence, to specify just a main thread (thread zero), you can type '.0' on the fil
 
 Once threads have been selected, you can click \textbf{OK}, and the Thread view (Figure~\ref{fig:hpcviewer-view-thread-level}) will be activated. 
 The tree of the view is the same as the tree from calling context view, with the metrics only from the selected threads.
-If there are more than one selected threads, the metrics are the average of the values of the selected threads.
+If there are more than one selected threads, the metrics are the sum of the values of the selected threads.
 
 
 % ===========================================================================
 % ===========================================================================
-\section{Filtering Tree nodes}
+\section{Filtering Tree Nodes}
 \label{sec:filter}
 Occasionally, It is useful to omit uninterested nodes of the tree to enable to focus on important parts. 
 For instance, you may want to hide all nodes associated with OpenMP runtime and just show all nodes and metrics from the application. 
@@ -669,14 +664,14 @@ This occurs since these views do not show ``fake'' procedures.
 % ===========================================================================
 % ===========================================================================
 
-\section{For Convenience Sake}
+\section{Convenience Features}
 
 In this section we describe some features of \hpcviewer{} that help improve productivity.
 
 % ==========================================================
 % ==========================================================
 
-\subsection{Editor pane}
+\subsection{Editor Pane}
 
 The editor pane is used to display \textit{a copy} of your program's source code or \HPCToolkit{}'s performance data in XML format; for this reason, it does not support editing of the pane's contents.
 To edit your program, you should use your favorite editor to edit \textit{your} original copy of the source, not the one stored in \HPCToolkit{}'s performance database.
@@ -701,7 +696,7 @@ Thanks to built-in capabilities in Eclipse, \hpcviewer{} supports some useful sh
 % ==========================================================
 % ==========================================================
 
-\subsection{Metric pane}
+\subsection{Metric Pane}
 \label{sec:hpcviewer:metric-pane}
 
 For the metric pane, \hpcviewer{} has some convenient features:
@@ -863,8 +858,14 @@ This menu displays information about the viewer. The menu contains two items:
 Some important \hpcviewer{} limitations are listed below:
 \begin{itemize}
 
-\item \textbf{Limited number of metrics}.
-  With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
+\item \textbf{No support for Java 9 or newer}.
+\hpcviewer{} does not yet support Java 9 or newer. Users are required to install Java 8 on their platform. Support for Java 9 and newer is still under development.
+
+\item \textbf{No support for ARM platforms}.
+\hpcviewer{} is not currently available on ARM platforms because the Eclipse Rich Client Platform does not yet export binaries for ARM.
+
+\item \textbf{Limited number of metric columns}.
+With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
 
 %\item \textbf{Printing metrics}.
 %  \hpcviewer{} does not currently support printing metric values.
