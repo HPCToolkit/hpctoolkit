@@ -83,8 +83,8 @@
  */
 static struct pmu_config_s  pmu_events[] = {
    
-   { POWER9,   "MEM-LOAD",  "perf_raw::r34340401e0" },   // see Linux Power 9 support mem-loads
-   { POWER9,   "MEM-STORE", "perf_raw::r343c0401e0" },   // see Linux Power 9 support mem-stores
+   { POWER9,   "PM_MRK_INST_CMPL/0x34340",  "perf_raw::r34340401e0" },   // see Linux Power 9 support mem-loads
+   { POWER9,   "PM_MRK_INST_CMPL/0x343c0",  "perf_raw::r343c0401e0" },   // see Linux Power 9 support mem-stores
 
    { POWER8,   "RMEM",           EVNAME_POWER_RMEM   },   // remote memory
    { POWER8,   "DIST-L4",        EVNAME_POWER_DL4    },   // cache from another chip's L4 from different node
