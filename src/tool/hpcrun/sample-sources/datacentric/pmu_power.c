@@ -86,10 +86,7 @@ static struct pmu_config_s  pmu_events[] = {
    { POWER9,   "PM_MRK_INST_CMPL/0x34340",  "perf_raw::r34340401e0" },   // see Linux Power 9 support mem-loads
    { POWER9,   "PM_MRK_INST_CMPL/0x343c0",  "perf_raw::r343c0401e0" },   // see Linux Power 9 support mem-stores
 
-   { POWER8,   "RMEM",           EVNAME_POWER_RMEM   },   // remote memory
-   { POWER8,   "DIST-L4",        EVNAME_POWER_DL4    },   // cache from another chip's L4 from different node
-   { POWER8,   "LOCAL-MEM",      EVNAME_POWER_LMEM   },   // reload from local memory
-   { POWER8,   "L2/L3 OFF-CHIP", EVNAME_POWER_OFFCHIP },  // The processor's data cache was reloaded either shared or modified data from another core's L2/L3 on a different chip (remote or distant) due to a demand load
+   { POWER8,   "PM_MRK_INST_CMPL/0x10",     "perf_raw::r10401e0"},   // see Linux Power 8 support mem-access
 
    { POWER7,   "RMEM",      EVNAME_POWER_RMEM },
    { POWER7,   "DIST-L4",   EVNAME_POWER_DL4  },
