@@ -82,6 +82,8 @@ typedef struct {
 } vdso_info_t;
 
 
+// Each process running a node has one vdso
+static char vdso_saved_path[PATH_MAX];
 
 //***************************************************************************
 // interface operations
@@ -125,3 +127,19 @@ vdso_segment_len
   }
   return len;
 }
+
+const char*
+get_saved_vdso_path()
+{
+  return vdso_saved_path;
+}
+
+int
+set_saved_vdso_path(const char* path)
+{
+  if (strlen(path) >= PATH_MAX) return 1;
+  strcpy(vdso_saved_path, path);
+  return 0;
+}
+
+

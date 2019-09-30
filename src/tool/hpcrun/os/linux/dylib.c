@@ -131,7 +131,7 @@ dylib_map_open_dsos()
   char *vdso_start = (char *) vdso_segment_addr();
   if (vdso_start) {
     char *vdso_end = vdso_start + vdso_segment_len();
-    fnbounds_ensure_mapped_dso(VDSO_SEGMENT_NAME_SHORT, vdso_start, vdso_end);
+    fnbounds_ensure_mapped_dso(get_saved_vdso_path(), vdso_start, vdso_end);
   }
 }
 

@@ -448,20 +448,14 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
   // name of the file that contains a copy. given [vdso], the system server will
   // compute the bounds using its own memory-mapped copy of [vdso] rather than
   // waiting for the file to be written -- johnmc 7/2017 
-  const char *pathname_for_query;
-
+  const char *pathname_for_query;  
   if (incoming_filename == NULL) {
     return (NULL);
   }
 
   // [vdso] and linux-gate.so are virtual files and don't exist
   // in the file system.
-  if (vdso_segment_p(incoming_filename)) { 
-    strcpy(filename, "vdso/");
-    strcat(filename, vdso_hash_str);
-    strcat(filename, ".vdso");    
-    pathname_for_query = filename;
-  } else if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
+  if (strncmp(incoming_filename, "linux-gate.so", 13) == 0) {
     strncpy(filename, incoming_filename, PATH_MAX);
     pathname_for_query = filename;
   } else {

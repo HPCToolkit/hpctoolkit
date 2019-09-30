@@ -96,6 +96,12 @@ vdso_segment_len
 (
 );
 
+const char*
+get_saved_vdso_path();
+
+int
+set_saved_vdso_path(const char*);
+
 
 #ifdef __cplusplus
 };

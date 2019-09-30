@@ -132,7 +132,7 @@ isVDSOLoadModule(string name) {
   size_t ret = name.rfind("/");  
   if (ret == string::npos) return false;
   if (name.substr(0, ret) != "vdso") return false; 
-  return name.find(".vdso") == name.size() - 5;
+  return name.find(".[vdso]") == name.size() - 7;
 }
 
 

@@ -536,7 +536,7 @@ void
 hpcrun_save_vdso()
 {
   char name[PATH_MAX];
-  int fd, ret;
+  int fd;
   int error;
 
   // don't need to try writing it again after a fork
@@ -570,7 +570,7 @@ hpcrun_save_vdso()
   strcat(name, "/vdso/");
   mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   strcat(name, vdso_hash_str);
-  strcat(name, ".vdso");  
+  strcat(name, ".[vdso]");  
 
   // loop enables us to use break for unstructured control flow
   for(;;) {
@@ -592,6 +592,7 @@ hpcrun_save_vdso()
         break;
       }
       if (close(fd) == 0) {
+        set_saved_vdso_path(name);
         return;
       }
       error = errno;
