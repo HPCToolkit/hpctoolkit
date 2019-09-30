@@ -1069,9 +1069,9 @@ makeVariables(ostream * outFile)
 
   the_symtab->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
 
-  for (auto i=0; i<symvec.size(); i++) {
+  for (unsigned int i=0; i<symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (s->getOffset() == 0 || s->getSize()<env_get_datacentric_min_bytes())
+    if (s->getOffset() == 0 || s->getSize()< (unsigned int)env_get_datacentric_min_bytes())
       continue;
 
     VariableInfo vinfo;
