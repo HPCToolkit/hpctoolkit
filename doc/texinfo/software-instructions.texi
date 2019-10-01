@@ -65,6 +65,9 @@ The current status of using Spack for HPCToolkit is at:
 @uref{http://hpctoolkit.org/spack-issues.html}
 @end example
 
+@noindent
+Last revised: Oct 1, 2019.
+
 @c ------------------------------------------------------------
 
 @section Prerequisites
@@ -784,6 +787,158 @@ On Windows and MacOS, download the @code{win32} or @code{macosx.cocoa}
 versions and unpack the zip files in the desired directory.  Due to
 Apple's security precautions, on MacOS, you will need to use curl or
 wget instead of a web browser.
+
+@c ------------------------------------------------------------
+
+@section Building a New Compiler
+
+Some systems may have compilers that are too old for building
+HPCToolkit or other packages.  For example, RedHat 7.x comes with gcc
+4.8.x which is very old.  If your system doesn't already have modules
+for later compilers, then you may need to build a new compiler
+yourself.
+
+First, pick a directory in which to install the modules and make
+subdirectories for the spack packages and module files.  In this
+example, I'm using @code{/opt/spack/Modules} as my top-level directory
+and subdirectories @code{packages} and @code{modules}.  Edit
+@code{config.yaml} to add these paths.
+
+@example
+config:
+  install_tree:  /opt/spack/Modules/packages
+
+  # just use one of these
+  module_roots:
+    tcl:  /opt/spack/Modules/modules
+    lmod: /opt/spack/Modules/modules
+@end example
+
+@noindent
+Determine if your system uses TCL (environment) or Lmod modules.
+Normally, the @code{module} command is a shell function.  TCL modules
+use @code{modulecmd} and Lmod modules eval @code{LMOD_CMD}.  Edit
+@code{modules.yaml} to enable the module type for your system.  Again,
+you only need one of these (and don't use dotkit unless you work at
+LLNL).
+
+@example
+modules:
+  enable:
+   - tcl
+   - lmod
+@end example
+
+@noindent
+Then, choose a version of gcc and use the default compiler (normally
+@code{/usr/bin/gcc}) to build the newer version.  Currently, gcc 7.x
+is a good choice that builds robustly, has enough modern features but
+is not too new to cause problems for some packages.  For example,
+
+@example
+spack install gcc@@7.4.0
+@end example
+
+@noindent
+Note: it is not necessary to rebuild the new compiler with itself.
+
+@subsection Using the New Compiler
+
+After building a new compiler, then you need to tell spack how to find
+it.  First, use @code{module use} and @code{module load} to load the
+module.  For TCL modules, the module files are in a subdirectory of
+@code{module_roots} named after the system architecture.  For example,
+
+@example
+module use /opt/spack/Modules/modules/linux-rhel7-x86_64
+module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+@end example
+
+@noindent
+For Lmod modules, the module directory is one level below that and the
+module names are a little different.
+
+@example
+module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
+module load gcc/7.4.0-dan4vbm
+@end example
+
+@noindent
+For both TCL and Lmod modules, it's best to put the @code{module use}
+command in your shell's startup scripts so that @code{module avail} and
+@code{module load} will know where to find them.  After loading the
+module, run @code{spack compiler find}.
+
+@example
+$ spack compiler find
+==> Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
+    gcc@@7.4.0
+@end example
+
+@noindent
+Finally, always check the new entry in @code{compilers.yaml} and add the
+name of the module to the @code{modules:} field.
+
+@example
+- compiler:
+    environment: @{@}
+    extra_rpaths: []
+    flags: @{@}
+    modules:
+    - gcc-7.4.0-gcc-4.8.5-qemsqrc
+    operating_system: rhel7
+    paths:
+      cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+      cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+      f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+      fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+    spec: gcc@@7.4.0
+    target: x86_64
+@end example
+
+@noindent
+Note: as long as the spack packages and modules directories remain
+intact and you don't remove the @code{compilers.yaml} entry, then this
+compiler will always be available from within spack.  You can also use
+this compiler outside of spack by using @code{module load}.  If you
+want to make this your default compiler for all spack builds, then you
+can specify this in @code{packages.yaml}.  For example,
+
+@example
+packages:
+  all:
+    compiler: [gcc@@7.4.0]
+@end example
+
+@noindent
+Also, when using the compiler from within spack, it doesn't matter if
+you have the module loaded or not.  Spack will erase your environment
+and re-add the appropriate modules automatically.
+
+@example
+@uref{https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration}
+@end example
+
+@subsection Bootstrapping Environment Modules
+
+If your system does not support modules, then you will have to add it.
+If you have root access, the easiest solution is to install a system
+package for modules.  If not, then use @code{spack bootstrap} to build
+the environment-modules package.  Source the bash or csh script in the
+@code{init} directory to add the @code{module} function to your
+environment.  For example,
+
+@example
+spack bootstrap
+cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+(bash)  . ./bash
+(csh)   source ./csh
+@end example
+
+@noindent
+Again, add the setup command to your shell's startup scripts.  Note:
+@code{spack bootstrap} is just shorthand for @code{spack install
+environment-modules} and you could run that instead.
 
 @c ------------------------------------------------------------
 

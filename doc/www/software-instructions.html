@@ -66,12 +66,17 @@
   <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">11.1 Spack Install</a></li>
   <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">11.2 Manual Install</a></li>
 </ul></li>
-<li><a name="toc-Spack-Mirrors" href="#Spack-Mirrors">12 Spack Mirrors</a></li>
-<li><a name="toc-Common-Problems" href="#Common-Problems">13 Common Problems</a>
+<li><a name="toc-Building-a-New-Compiler" href="#Building-a-New-Compiler">12 Building a New Compiler</a>
 <ul class="no-bullet">
-  <li><a name="toc-Unable-to-fetch-tar-file" href="#Unable-to-fetch-tar-file">13.1 Unable to fetch tar file</a></li>
-  <li><a name="toc-New-releases-break-the-build" href="#New-releases-break-the-build">13.2 New releases break the build</a></li>
-  <li><a name="toc-Failure-to-load-modules" href="#Failure-to-load-modules">13.3 Failure to load modules</a></li>
+  <li><a name="toc-Using-the-New-Compiler" href="#Using-the-New-Compiler">12.1 Using the New Compiler</a></li>
+  <li><a name="toc-Bootstrapping-Environment-Modules" href="#Bootstrapping-Environment-Modules">12.2 Bootstrapping Environment Modules</a></li>
+</ul></li>
+<li><a name="toc-Spack-Mirrors" href="#Spack-Mirrors">13 Spack Mirrors</a></li>
+<li><a name="toc-Common-Problems" href="#Common-Problems">14 Common Problems</a>
+<ul class="no-bullet">
+  <li><a name="toc-Unable-to-fetch-tar-file" href="#Unable-to-fetch-tar-file">14.1 Unable to fetch tar file</a></li>
+  <li><a name="toc-New-releases-break-the-build" href="#New-releases-break-the-build">14.2 New releases break the build</a></li>
+  <li><a name="toc-Failure-to-load-modules" href="#Failure-to-load-modules">14.3 Failure to load modules</a></li>
 </ul></li>
 
 </ul>
@@ -132,6 +137,8 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
+<p>Last revised: Oct 1, 2019.
+</p>
 
 <a name="Prerequisites"></a>
 <h3 class="section">2 Prerequisites</h3>
@@ -810,8 +817,153 @@ Apple&rsquo;s security precautions, on MacOS, you will need to use curl or
 wget instead of a web browser.
 </p>
 
+<a name="Building-a-New-Compiler"></a>
+<h3 class="section">12 Building a New Compiler</h3>
+
+<p>Some systems may have compilers that are too old for building
+HPCToolkit or other packages.  For example, RedHat 7.x comes with gcc
+4.8.x which is very old.  If your system doesn&rsquo;t already have modules
+for later compilers, then you may need to build a new compiler
+yourself.
+</p>
+<p>First, pick a directory in which to install the modules and make
+subdirectories for the spack packages and module files.  In this
+example, I&rsquo;m using <code>/opt/spack/Modules</code> as my top-level directory
+and subdirectories <code>packages</code> and <code>modules</code>.  Edit
+<code>config.yaml</code> to add these paths.
+</p>
+<div class="example">
+<pre class="example">config:
+  install_tree:  /opt/spack/Modules/packages
+
+  # just use one of these
+  module_roots:
+    tcl:  /opt/spack/Modules/modules
+    lmod: /opt/spack/Modules/modules
+</pre></div>
+
+<p>Determine if your system uses TCL (environment) or Lmod modules.
+Normally, the <code>module</code> command is a shell function.  TCL modules
+use <code>modulecmd</code> and Lmod modules eval <code>LMOD_CMD</code>.  Edit
+<code>modules.yaml</code> to enable the module type for your system.  Again,
+you only need one of these (and don&rsquo;t use dotkit unless you work at
+LLNL).
+</p>
+<div class="example">
+<pre class="example">modules:
+  enable:
+   - tcl
+   - lmod
+</pre></div>
+
+<p>Then, choose a version of gcc and use the default compiler (normally
+<code>/usr/bin/gcc</code>) to build the newer version.  Currently, gcc 7.x
+is a good choice that builds robustly, has enough modern features but
+is not too new to cause problems for some packages.  For example,
+</p>
+<div class="example">
+<pre class="example">spack install gcc@7.4.0
+</pre></div>
+
+<p>Note: it is not necessary to rebuild the new compiler with itself.
+</p>
+<a name="Using-the-New-Compiler"></a>
+<h4 class="subsection">12.1 Using the New Compiler</h4>
+
+<p>After building a new compiler, then you need to tell spack how to find
+it.  First, use <code>module use</code> and <code>module load</code> to load the
+module.  For TCL modules, the module files are in a subdirectory of
+<code>module_roots</code> named after the system architecture.  For example,
+</p>
+<div class="example">
+<pre class="example">module use /opt/spack/Modules/modules/linux-rhel7-x86_64
+module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+</pre></div>
+
+<p>For Lmod modules, the module directory is one level below that and the
+module names are a little different.
+</p>
+<div class="example">
+<pre class="example">module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
+module load gcc/7.4.0-dan4vbm
+</pre></div>
+
+<p>For both TCL and Lmod modules, it&rsquo;s best to put the <code>module use</code>
+command in your shell&rsquo;s startup scripts so that <code>module avail</code> and
+<code>module load</code> will know where to find them.  After loading the
+module, run <code>spack compiler find</code>.
+</p>
+<div class="example">
+<pre class="example">$ spack compiler find
+==&gt; Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
+    gcc@7.4.0
+</pre></div>
+
+<p>Finally, always check the new entry in <code>compilers.yaml</code> and add the
+name of the module to the <code>modules:</code> field.
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    environment: {}
+    extra_rpaths: []
+    flags: {}
+    modules:
+    - gcc-7.4.0-gcc-4.8.5-qemsqrc
+    operating_system: rhel7
+    paths:
+      cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+      cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+      f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+      fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+    spec: gcc@7.4.0
+    target: x86_64
+</pre></div>
+
+<p>Note: as long as the spack packages and modules directories remain
+intact and you don&rsquo;t remove the <code>compilers.yaml</code> entry, then this
+compiler will always be available from within spack.  You can also use
+this compiler outside of spack by using <code>module load</code>.  If you
+want to make this your default compiler for all spack builds, then you
+can specify this in <code>packages.yaml</code>.  For example,
+</p>
+<div class="example">
+<pre class="example">packages:
+  all:
+    compiler: [gcc@7.4.0]
+</pre></div>
+
+<p>Also, when using the compiler from within spack, it doesn&rsquo;t matter if
+you have the module loaded or not.  Spack will erase your environment
+and re-add the appropriate modules automatically.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration">https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration</a>
+</pre></div>
+
+<a name="Bootstrapping-Environment-Modules"></a>
+<h4 class="subsection">12.2 Bootstrapping Environment Modules</h4>
+
+<p>If your system does not support modules, then you will have to add it.
+If you have root access, the easiest solution is to install a system
+package for modules.  If not, then use <code>spack bootstrap</code> to build
+the environment-modules package.  Source the bash or csh script in the
+<code>init</code> directory to add the <code>module</code> function to your
+environment.  For example,
+</p>
+<div class="example">
+<pre class="example">spack bootstrap
+cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+(bash)  . ./bash
+(csh)   source ./csh
+</pre></div>
+
+<p>Again, add the setup command to your shell&rsquo;s startup scripts.  Note:
+<code>spack bootstrap</code> is just shorthand for <code>spack install
+environment-modules</code> and you could run that instead.
+</p>
+
 <a name="Spack-Mirrors"></a>
-<h3 class="section">12 Spack Mirrors</h3>
+<h3 class="section">13 Spack Mirrors</h3>
 
 <p>A spack mirror allows you to download and save a source tar file in
 advance.  This is useful if your system is behind a firewall, or if you
@@ -881,10 +1033,10 @@ could just copy the files into the <code>cache</code> directory.
 
 
 <a name="Common-Problems"></a>
-<h3 class="section">13 Common Problems</h3>
+<h3 class="section">14 Common Problems</h3>
 
 <a name="Unable-to-fetch-tar-file"></a>
-<h4 class="subsection">13.1 Unable to fetch tar file</h4>
+<h4 class="subsection">14.1 Unable to fetch tar file</h4>
 
 <p>Spack is somewhat fragile for how it downloads tar files and will
 often fail for transitory network problems.  This is especially true
@@ -907,7 +1059,7 @@ spack&rsquo;s cache directory <code>spack/var/spack/cache/&lt;package&gt;</code>
 spack mirror.
 </p>
 <a name="New-releases-break-the-build"></a>
-<h4 class="subsection">13.2 New releases break the build</h4>
+<h4 class="subsection">14.2 New releases break the build</h4>
 
 <p>Normally, HPCToolkit should build and work correctly with the latest
 version for all of its dependencies.  But sometimes a new release will
@@ -920,7 +1072,7 @@ build.
 version until the rest of the code adapts to the change.
 </p>
 <a name="Failure-to-load-modules"></a>
-<h4 class="subsection">13.3 Failure to load modules</h4>
+<h4 class="subsection">14.3 Failure to load modules</h4>
 
 <p>Spack is quite aggressive about compiling with a clean environment and
 will unload modules unless they are specifically required by some config

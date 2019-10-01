@@ -46,6 +46,8 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
+Last revised: Oct 1, 2019.
+
 2 Prerequisites
 ===============
 
@@ -630,7 +632,129 @@ and unpack the zip files in the desired directory.  Due to Apple's
 security precautions, on MacOS, you will need to use curl or wget
 instead of a web browser.
 
-12 Spack Mirrors
+12 Building a New Compiler
+==========================
+
+Some systems may have compilers that are too old for building HPCToolkit
+or other packages.  For example, RedHat 7.x comes with gcc 4.8.x which
+is very old.  If your system doesn't already have modules for later
+compilers, then you may need to build a new compiler yourself.
+
+   First, pick a directory in which to install the modules and make
+subdirectories for the spack packages and module files.  In this
+example, I'm using '/opt/spack/Modules' as my top-level directory and
+subdirectories 'packages' and 'modules'.  Edit 'config.yaml' to add
+these paths.
+
+     config:
+       install_tree:  /opt/spack/Modules/packages
+
+       # just use one of these
+       module_roots:
+         tcl:  /opt/spack/Modules/modules
+         lmod: /opt/spack/Modules/modules
+
+Determine if your system uses TCL (environment) or Lmod modules.
+Normally, the 'module' command is a shell function.  TCL modules use
+'modulecmd' and Lmod modules eval 'LMOD_CMD'.  Edit 'modules.yaml' to
+enable the module type for your system.  Again, you only need one of
+these (and don't use dotkit unless you work at LLNL).
+
+     modules:
+       enable:
+        - tcl
+        - lmod
+
+Then, choose a version of gcc and use the default compiler (normally
+'/usr/bin/gcc') to build the newer version.  Currently, gcc 7.x is a
+good choice that builds robustly, has enough modern features but is not
+too new to cause problems for some packages.  For example,
+
+     spack install gcc@7.4.0
+
+Note: it is not necessary to rebuild the new compiler with itself.
+
+12.1 Using the New Compiler
+---------------------------
+
+After building a new compiler, then you need to tell spack how to find
+it.  First, use 'module use' and 'module load' to load the module.  For
+TCL modules, the module files are in a subdirectory of 'module_roots'
+named after the system architecture.  For example,
+
+     module use /opt/spack/Modules/modules/linux-rhel7-x86_64
+     module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+
+For Lmod modules, the module directory is one level below that and the
+module names are a little different.
+
+     module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
+     module load gcc/7.4.0-dan4vbm
+
+For both TCL and Lmod modules, it's best to put the 'module use' command
+in your shell's startup scripts so that 'module avail' and 'module load'
+will know where to find them.  After loading the module, run 'spack
+compiler find'.
+
+     $ spack compiler find
+     ==> Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
+         gcc@7.4.0
+
+Finally, always check the new entry in 'compilers.yaml' and add the name
+of the module to the 'modules:' field.
+
+     - compiler:
+         environment: {}
+         extra_rpaths: []
+         flags: {}
+         modules:
+         - gcc-7.4.0-gcc-4.8.5-qemsqrc
+         operating_system: rhel7
+         paths:
+           cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+           cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+           f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+           fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+         spec: gcc@7.4.0
+         target: x86_64
+
+Note: as long as the spack packages and modules directories remain
+intact and you don't remove the 'compilers.yaml' entry, then this
+compiler will always be available from within spack.  You can also use
+this compiler outside of spack by using 'module load'.  If you want to
+make this your default compiler for all spack builds, then you can
+specify this in 'packages.yaml'.  For example,
+
+     packages:
+       all:
+         compiler: [gcc@7.4.0]
+
+Also, when using the compiler from within spack, it doesn't matter if
+you have the module loaded or not.  Spack will erase your environment
+and re-add the appropriate modules automatically.
+
+     <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
+
+12.2 Bootstrapping Environment Modules
+--------------------------------------
+
+If your system does not support modules, then you will have to add it.
+If you have root access, the easiest solution is to install a system
+package for modules.  If not, then use 'spack bootstrap' to build the
+environment-modules package.  Source the bash or csh script in the
+'init' directory to add the 'module' function to your environment.  For
+example,
+
+     spack bootstrap
+     cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+     (bash)  . ./bash
+     (csh)   source ./csh
+
+Again, add the setup command to your shell's startup scripts.  Note:
+'spack bootstrap' is just shorthand for 'spack install
+environment-modules' and you could run that instead.
+
+13 Spack Mirrors
 ================
 
 A spack mirror allows you to download and save a source tar file in
@@ -692,10 +816,10 @@ copy the files into the 'cache' directory.
 
      <https://spack.readthedocs.io/en/latest/mirrors.html>
 
-13 Common Problems
+14 Common Problems
 ==================
 
-13.1 Unable to fetch tar file
+14.1 Unable to fetch tar file
 -----------------------------
 
 Spack is somewhat fragile for how it downloads tar files and will often
@@ -716,7 +840,7 @@ manually download the file(s) by some other means and copy them to
 spack's cache directory 'spack/var/spack/cache/<package>' or to a spack
 mirror.
 
-13.2 New releases break the build
+14.2 New releases break the build
 ---------------------------------
 
 Normally, HPCToolkit should build and work correctly with the latest
@@ -729,7 +853,7 @@ build.
    The solution is to use 'packages.yaml' to specify an earlier version
 until the rest of the code adapts to the change.
 
-13.3 Failure to load modules
+14.3 Failure to load modules
 ----------------------------
 
 Spack is quite aggressive about compiling with a clean environment and
