@@ -459,7 +459,8 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c
+	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI

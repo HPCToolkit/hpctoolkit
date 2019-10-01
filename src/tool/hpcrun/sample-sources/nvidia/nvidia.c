@@ -81,6 +81,7 @@
 #include "nvidia.h"
 #include "cubin-id-map.h"
 #include "cuda-state-placeholders.h"
+#include "gpu-driver-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-trace-api.h"
@@ -969,6 +970,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     &pc_sampling_frequency, pc_sampling_frequency_default);
 
   cuda_init_placeholders();
+  gpu_driver_init_placeholders();
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;

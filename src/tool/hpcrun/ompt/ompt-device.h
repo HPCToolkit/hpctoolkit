@@ -49,6 +49,7 @@
 
 #include <stdbool.h>
 #include <include/hpctoolkit-config.h>
+#include <cct/cct.h>
 
 #if HAVE_CUPTI_H 
 
@@ -64,7 +65,14 @@ prepare_device
 //---------------------------------------------
 
 bool
-ompt_get_runtime_status
+ompt_runtime_status_get
+(
+ void
+);
+
+
+cct_node_t *
+ompt_trace_node_get
 (
  void
 );

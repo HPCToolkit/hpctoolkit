@@ -171,16 +171,26 @@ cupti_entry_correlation_set
  cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
  void *activity_channel,
- cct_node_t *api_node,
- cct_node_t *func_node,
- cct_node_t *sync_node
+ cct_node_t *copy_node,
+ cct_node_t *copyin_node,
+ cct_node_t *copyout_node,
+ cct_node_t *alloc_node,
+ cct_node_t *delete_node,
+ cct_node_t *sync_node,
+ cct_node_t *kernel_node,
+ cct_node_t *trace_node
 )
 {
   entry->activity_channel = activity_channel;
   entry->host_op_id = host_op_id;
-  entry->api_node = api_node;
-  entry->func_node = func_node;
+  entry->copy_node = copy_node;
+  entry->copyin_node = copyin_node;
+  entry->copyout_node = copyout_node;
+  entry->alloc_node = alloc_node;
+  entry->delete_node = delete_node;
   entry->sync_node = sync_node;
+  entry->kernel_node = kernel_node;
+  entry->trace_node = trace_node;
 }
 
 

@@ -143,6 +143,9 @@ cupti_trace_handle
   hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
     td->prev_dLCA, entry->end/1000 + 1);
 
+  PRINT("Write node lm_id %d lm_ip %p\n", hpcrun_cct_addr(leaf)->ip_norm.lm_id,
+    hpcrun_cct_addr(leaf)->ip_norm.lm_ip);
+
   PRINT("Write trace start %" PRIu64 " end %" PRIu64 "\n", entry->start, entry->end);
 }
 
@@ -218,6 +221,9 @@ cupti_trace_append(cupti_trace_t *trace, void *arg)
   cupti_trace_channel_produce(trace->channel, entry_trace->start,
     entry_trace->end, entry_trace->node);
   trace->count++;
+
+  PRINT("Append node lm_id %d lm_ip %p\n", hpcrun_cct_addr(entry_trace->node)->ip_norm.lm_id,
+    hpcrun_cct_addr(entry_trace->node)->ip_norm.lm_ip);
 
   // Notify the stream thread when buffer limit is reached
   if (trace->count == HPCRUN_CUPTI_TRACE_BUFFER_SIZE) {

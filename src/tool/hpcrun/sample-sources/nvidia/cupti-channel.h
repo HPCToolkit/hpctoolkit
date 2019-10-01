@@ -7,6 +7,7 @@
 #include <cupti_activity.h>
 
 #include "cupti-node.h"
+#include "gpu-driver-state-placeholders.h"
 
 #define declare_typed_channel(type, ...) \
   typedef struct { \
@@ -30,7 +31,7 @@
 
 declare_typed_channel(activity, CUpti_Activity *activity, cct_node_t *cct_node);
 declare_typed_channel(correlation, uint64_t host_op_id,
-  cupti_activity_channel_t *activity_channel, cct_node_t *api_node, cct_node_t *func_node, cct_node_t *sync_node);
+  cupti_activity_channel_t *activity_channel, gpu_driver_ccts_t *ccts);
 declare_typed_channel(trace, uint64_t start, uint64_t end, cct_node_t *cct_node);
 
 #endif

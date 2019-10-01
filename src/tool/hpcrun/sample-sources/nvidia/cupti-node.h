@@ -128,9 +128,14 @@ typedef struct cupti_entry_activity {
 typedef struct cupti_entry_correlation {
   uint64_t host_op_id;
   void *activity_channel;
-  cct_node_t *api_node;
-  cct_node_t *func_node;
+  cct_node_t *copy_node;
+  cct_node_t *copyin_node;
+  cct_node_t *copyout_node;
+  cct_node_t *alloc_node;
+  cct_node_t *delete_node;
   cct_node_t *sync_node;
+  cct_node_t *kernel_node;
+  cct_node_t *trace_node;
 } cupti_entry_correlation_t;
 
 // trace entry
@@ -156,9 +161,14 @@ cupti_entry_correlation_set
  cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
  void *activity_channel,
- cct_node_t *cct_node,
- cct_node_t *func_node,
- cct_node_t *sync_node
+ cct_node_t *copy_node,
+ cct_node_t *copyin_node,
+ cct_node_t *copyout_node,
+ cct_node_t *alloc_node,
+ cct_node_t *delete_node,
+ cct_node_t *sync_node,
+ cct_node_t *kernel_node,
+ cct_node_t *trace_node
 );
 
 

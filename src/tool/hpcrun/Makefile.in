@@ -500,6 +500,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/upc.c sample-sources/nvidia/cuda-api.c \
 	sample-sources/nvidia/cuda-device-map.c \
 	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -665,7 +666,8 @@ am__objects_33 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
 @OPT_ENABLE_CUDA_TRUE@am__objects_35 = sample-sources/nvidia/libhpcrun_la-cuda-api.lo \
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo
 @OPT_ENABLE_CUDA_TRUE@am__objects_36 = $(am__objects_35)
 am__objects_37 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
@@ -854,6 +856,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/upc.c sample-sources/nvidia/cuda-api.c \
 	sample-sources/nvidia/cuda-device-map.c \
 	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -1024,7 +1027,8 @@ am__objects_67 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
 @OPT_ENABLE_UPC_TRUE@am__objects_68 = $(am__objects_67)
 @OPT_ENABLE_CUDA_TRUE@am__objects_69 = sample-sources/nvidia/libhpcrun_o-cuda-api.$(OBJEXT) \
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT) \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT)
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT) \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.$(OBJEXT)
 @OPT_ENABLE_CUDA_TRUE@am__objects_70 = $(am__objects_69)
 am__objects_71 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
@@ -1713,7 +1717,8 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_16)
 @OPT_ENABLE_CUDA_TRUE@MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-device-map.c			\
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/gpu-driver-state-placeholders.c
 
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cubin-id-map.c			\
@@ -2548,6 +2553,9 @@ sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo:  \
 sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-backtrace.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
@@ -3023,6 +3031,9 @@ sample-sources/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT):  \
 sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-backtrace.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
@@ -3474,6 +3485,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stream-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-channel.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-nvidia.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-hash-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-id-map.Po@am__quote@
@@ -3493,6 +3505,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-nvidia.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Plo@am__quote@
@@ -4769,6 +4782,13 @@ sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo: sample-sources/nv
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cuda-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo `test -f 'sample-sources/nvidia/cuda-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/cuda-state-placeholders.c
+
+sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
 
 unwind/common/libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-backtrace.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o unwind/common/libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -6904,6 +6924,20 @@ sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj: sample-sources/nv
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cuda-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj `if test -f 'sample-sources/nvidia/cuda-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cuda-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cuda-state-placeholders.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj `if test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/gpu-driver-state-placeholders.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj `if test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/gpu-driver-state-placeholders.c'; fi`
 
 unwind/common/libhpcrun_o-backtrace.o: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-backtrace.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-backtrace.Tpo -c -o unwind/common/libhpcrun_o-backtrace.o `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
