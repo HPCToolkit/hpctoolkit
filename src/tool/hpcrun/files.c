@@ -578,6 +578,7 @@ hpcrun_save_vdso()
     fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
     if (errno == EEXIST) {
       // another process already wrote [vdso]
+      set_saved_vdso_path(name);
       return;
     }
     if (fd >= 0) {
