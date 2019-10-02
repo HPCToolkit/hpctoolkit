@@ -98,9 +98,6 @@ using SrcFile::ln_NULL;
 //*************************** Forward Declarations ***************************
 
 
-//***************************************************************************
-#define XML_ATTR_DATA_NODE_ALLOC    "d"
-#define XML_ATTR_DATA_START_MEM     "m"
 
 //***************************************************************************
 // Tree
@@ -1367,14 +1364,6 @@ string
 Stmt::toStringMe(uint oFlags) const
 {
   string self = ANode::toStringMe(oFlags);
-
-  // additional data-centric information
-  if (m_node_alloc != NULL) {
-    self += " " XML_ATTR_DATA_NODE_ALLOC + xml::MakeAttrNum(m_node_alloc->id());
-  }
-  if (m_start_address > 0) {
-    self += " " XML_ATTR_DATA_START_MEM  + xml::MakeAttrNum(m_start_address, 16);
-  }
 
   if ((oFlags & Tree::OFlg_Debug) || (oFlags & Tree::OFlg_DebugAll)) {
     self += " n=\"" + nameDyn() + "\"";

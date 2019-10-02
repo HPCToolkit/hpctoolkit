@@ -537,7 +537,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       if (n_dyn->isSecondarySynthRoot()) {
         unkProcNm = &Struct::Tree::PartialUnwindProcNm;
 
-      } else if (n_dyn->hpcrun_node_type() == NODE_TYPE_GLOBAL_VARIABLE) {
+      } else if (hpcrun_fmt_node_type_variable(n_dyn->hpcrun_node_type())) {
         // datacentric: case for global variable, if the address of the variable
         // is not recognized, we need to label it as "<unknown variable> instead of
         //  <unknown procedure>

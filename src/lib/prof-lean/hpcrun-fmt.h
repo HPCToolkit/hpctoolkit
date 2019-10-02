@@ -587,6 +587,12 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
 
+
+// --------------------------------------------------------------
+// Node types inquiries
+// --------------------------------------------------------------
+
+// check if the node is supposed to be a root
 static inline bool
 hpcrun_fmt_node_type_root(uint16_t type)
 {
@@ -599,6 +605,33 @@ hpcrun_fmt_node_type_allocation(uint16_t type)
   return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
 }
 
+//
+// check if the node is a memaccess node
+// which  means the node has access to the memory hierarchy
+
+static inline bool
+hpcrun_fmt_node_type_memaccess(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_MEMACCESS;
+}
+
+static inline bool
+hpcrun_fmt_node_type_memaccess_root(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_MEMACCESS_ROOT;
+}
+
+static inline bool
+hpcrun_fmt_node_type_variable(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+static inline bool
+hpcrun_fmt_node_type_unknown(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
 
 // --------------------------------------------------------------------------
 // 
