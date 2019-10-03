@@ -45,38 +45,39 @@
 <ul class="no-bullet">
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Prerequisites" href="#Prerequisites">2 Prerequisites</a></li>
-<li><a name="toc-Clone-Spack-and-HPCToolkit" href="#Clone-Spack-and-HPCToolkit">3 Clone Spack and HPCToolkit</a></li>
-<li><a name="toc-Config_002eyaml" href="#Config_002eyaml">4 Config.yaml</a></li>
-<li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">5 Packages.yaml</a></li>
-<li><a name="toc-Compilers-and-compilers_002eyaml" href="#Compilers-and-compilers_002eyaml">6 Compilers and compilers.yaml</a></li>
-<li><a name="toc-Spack-Install" href="#Spack-Install">7 Spack Install</a></li>
-<li><a name="toc-Manual-Install" href="#Manual-Install">8 Manual Install</a></li>
-<li><a name="toc-Advanced-Options" href="#Advanced-Options">9 Advanced Options</a>
+<li><a name="toc-Spack-Notation" href="#Spack-Notation">3 Spack Notation</a></li>
+<li><a name="toc-Clone-Spack-and-HPCToolkit" href="#Clone-Spack-and-HPCToolkit">4 Clone Spack and HPCToolkit</a></li>
+<li><a name="toc-Config_002eyaml" href="#Config_002eyaml">5 Config.yaml</a></li>
+<li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">6 Packages.yaml</a></li>
+<li><a name="toc-Compilers-and-compilers_002eyaml" href="#Compilers-and-compilers_002eyaml">7 Compilers and compilers.yaml</a></li>
+<li><a name="toc-Spack-Install" href="#Spack-Install">8 Spack Install</a></li>
+<li><a name="toc-Manual-Install" href="#Manual-Install">9 Manual Install</a></li>
+<li><a name="toc-Advanced-Options" href="#Advanced-Options">10 Advanced Options</a>
 <ul class="no-bullet">
-  <li><a name="toc-MPI" href="#MPI">9.1 MPI</a></li>
-  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">9.2 PAPI vs Perfmon</a></li>
+  <li><a name="toc-MPI" href="#MPI">10.1 MPI</a></li>
+  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">10.2 PAPI vs Perfmon</a></li>
 </ul></li>
-<li><a name="toc-Platform-Specific-Notes" href="#Platform-Specific-Notes">10 Platform Specific Notes</a>
+<li><a name="toc-Platform-Specific-Notes" href="#Platform-Specific-Notes">11 Platform Specific Notes</a>
 <ul class="no-bullet">
-  <li><a name="toc-Blue-Gene" href="#Blue-Gene">10.1 Blue Gene</a></li>
-  <li><a name="toc-Cray" href="#Cray">10.2 Cray</a></li>
+  <li><a name="toc-Blue-Gene" href="#Blue-Gene">11.1 Blue Gene</a></li>
+  <li><a name="toc-Cray" href="#Cray">11.2 Cray</a></li>
 </ul></li>
-<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">11 Hpcviewer and Hpctraceviewer</a>
+<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer and Hpctraceviewer</a>
 <ul class="no-bullet">
-  <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">11.1 Spack Install</a></li>
-  <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">11.2 Manual Install</a></li>
+  <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">12.1 Spack Install</a></li>
+  <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">12.2 Manual Install</a></li>
 </ul></li>
-<li><a name="toc-Building-a-New-Compiler" href="#Building-a-New-Compiler">12 Building a New Compiler</a>
+<li><a name="toc-Building-a-New-Compiler" href="#Building-a-New-Compiler">13 Building a New Compiler</a>
 <ul class="no-bullet">
-  <li><a name="toc-Using-the-New-Compiler" href="#Using-the-New-Compiler">12.1 Using the New Compiler</a></li>
-  <li><a name="toc-Bootstrapping-Environment-Modules" href="#Bootstrapping-Environment-Modules">12.2 Bootstrapping Environment Modules</a></li>
+  <li><a name="toc-Using-the-New-Compiler" href="#Using-the-New-Compiler">13.1 Using the New Compiler</a></li>
+  <li><a name="toc-Bootstrapping-Environment-Modules" href="#Bootstrapping-Environment-Modules">13.2 Bootstrapping Environment Modules</a></li>
 </ul></li>
-<li><a name="toc-Spack-Mirrors" href="#Spack-Mirrors">13 Spack Mirrors</a></li>
-<li><a name="toc-Common-Problems" href="#Common-Problems">14 Common Problems</a>
+<li><a name="toc-Spack-Mirrors" href="#Spack-Mirrors">14 Spack Mirrors</a></li>
+<li><a name="toc-Common-Problems" href="#Common-Problems">15 Common Problems</a>
 <ul class="no-bullet">
-  <li><a name="toc-Unable-to-fetch-tar-file" href="#Unable-to-fetch-tar-file">14.1 Unable to fetch tar file</a></li>
-  <li><a name="toc-New-releases-break-the-build" href="#New-releases-break-the-build">14.2 New releases break the build</a></li>
-  <li><a name="toc-Failure-to-load-modules" href="#Failure-to-load-modules">14.3 Failure to load modules</a></li>
+  <li><a name="toc-Unable-to-fetch-tar-file" href="#Unable-to-fetch-tar-file">15.1 Unable to fetch tar file</a></li>
+  <li><a name="toc-New-releases-break-the-build" href="#New-releases-break-the-build">15.2 New releases break the build</a></li>
+  <li><a name="toc-Failure-to-load-modules" href="#Failure-to-load-modules">15.3 Failure to load modules</a></li>
 </ul></li>
 
 </ul>
@@ -137,7 +138,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Oct 1, 2019.
+<p>Last revised: Oct 4, 2019.
 </p>
 
 <a name="Prerequisites"></a>
@@ -169,11 +170,102 @@ packages if they are missing from your system.
 viewers also require GTK+ version 2.x.
 </p>
 
+<a name="Spack-Notation"></a>
+<h3 class="section">3 Spack Notation</h3>
+
+<p>Spack uses a special notation for specifying the version, variants,
+compilers and dependencies when describing how to build a package.
+This combination of version, variants, etc is called a &rsquo;spec&rsquo; and is
+used both on the command line and in config files.
+</p>
+<ol>
+<li> &rsquo;@&rsquo; specifies the package version.  <code>spack info &lt;package&gt;</code> shows
+the available versions and variants for a package.  In most cases,
+spaces are optional between elements of a spec.  For example:
+
+<div class="example">
+<pre class="example">boost@1.66.0    dyninst @10.1.0    hpctoolkit@master
+</pre></div>
+
+</li><li> &rsquo;+&rsquo;, &rsquo;-&rsquo;, &rsquo;~&rsquo; specify boolean (on/off) variants.  Note: <code>-</code>
+(dash) and <code>~</code> (tilde) both mean &rsquo;off&rsquo;.  Use dash after a space
+and tilde after a non-space.  For example:
+
+<div class="example">
+<pre class="example">elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@0.176 +bzip2~nls
+</pre></div>
+
+</li><li> &rsquo;name=value&rsquo; specifies a non-boolean variant, for example:
+
+<div class="example">
+<pre class="example">dyninst+openmp build_type=RelWithDebInfo    xerces-c@3.2.2 transcoder=iconv
+</pre></div>
+
+</li><li> &rsquo;%&rsquo; specifies the build compiler and its version, for example:
+
+<div class="example">
+<pre class="example">hpctoolkit@master %gcc@7.3.0
+</pre></div>
+
+</li><li> &rsquo;cflags&rsquo;, &rsquo;cxxflags&rsquo;, &rsquo;fflags&rsquo;, &rsquo;cppflags&rsquo;, &rsquo;ldflags&rsquo; and &rsquo;ldlibs&rsquo; are
+special name/value variants for compiler flags.  These are normally not
+needed, but if you do need to add a flag to the build, then one example
+might be:
+
+<div class="example">
+<pre class="example">amg2013 cflags='-O2 -mavx512pf'
+</pre></div>
+
+</li><li> &rsquo;^&rsquo; represents a dependency spec.  The spec for a dependency package is
+a full spec and may include its own version, variants, etc.  For
+example:
+
+<div class="example">
+<pre class="example">hpctoolkit@master ^dyninst@10.1.0+openmp
+</pre></div>
+
+</li><li> &rsquo;arch&rsquo;, &rsquo;platform&rsquo;, &rsquo;os&rsquo; and &rsquo;target&rsquo; are special options for the system
+architecture and machine type.  Platform is normally &rsquo;linux&rsquo;, or else
+&rsquo;cray&rsquo; or &rsquo;bgq&rsquo; (or even &rsquo;windows&rsquo; or &rsquo;darwin&rsquo;).  OS is the Linux
+distribution, &rsquo;rhel7&rsquo;, &rsquo;sles15&rsquo;, etc, and target is the machine type,
+&rsquo;x86_64&rsquo;, &rsquo;ppc64le&rsquo;, etc.  Arch is a triple of platform, os and target
+separated by dashes.
+
+<p>Normally, a system has only one arch type and you don&rsquo;t need to
+specify this.  However, for systems with separate front and back-end
+types, the default is the back end.  For example, if you wanted to
+build python for the front end on Cray, then you might use something
+like this.
+</p>
+<div class="example">
+<pre class="example">python@3.7.4 arch=cray-sles12-x86_64
+</pre></div>
+
+<p>Also, now that spack has implemented microarchitecture targets
+(haswell, ivybridge, etc), you can use &rsquo;target&rsquo; to build for a generic
+x86_64 or a specific CPU type.  For example:
+</p>
+<div class="example">
+<pre class="example">amg2013 target=x86_64    lulesh target=ivybridge
+</pre></div>
+</li></ol>
+
+<p>When writing a spec (for <code>spack install</code> or other), spack will
+fully resolve all possible choices for the package and all of its
+dependencies and create a unique hash value for that exact
+configuration.  This process is called &rsquo;concretization.&rsquo;  To see how
+spack would concretize a spec, use <code>spack spec &lt;partial-spec&gt;</code>.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies">https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies</a>
+</pre></div>
+
+
 <a name="Clone-Spack-and-HPCToolkit"></a>
-<h3 class="section">3 Clone Spack and HPCToolkit</h3>
+<h3 class="section">4 Clone Spack and HPCToolkit</h3>
 
 <p>Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 3,000 packages (and
+spack machinery and recipes for building more than 3,500 packages (and
 growing).  You should also clone HPCToolkit for the
 <code>packages.yaml</code> file which is used to configure the spack build.
 </p>
@@ -197,7 +289,7 @@ support for modules built by spack.
 </p>
 
 <a name="Config_002eyaml"></a>
-<h3 class="section">4 Config.yaml</h3>
+<h3 class="section">5 Config.yaml</h3>
 
 <p><code>config.yaml</code> is the top-level spack config file.  This specifies
 the directory layout for installed files and the top-level spack
@@ -263,7 +355,7 @@ will get inconsistent results.
 
 
 <a name="Packages_002eyaml"></a>
-<h3 class="section">5 Packages.yaml</h3>
+<h3 class="section">6 Packages.yaml</h3>
 
 <p>The <code>packages.yaml</code> file specifies the versions and variants for
 the packages that spack installs and serves as a common reference
@@ -343,7 +435,7 @@ Dependencies&rsquo;.
 
 
 <a name="Compilers-and-compilers_002eyaml"></a>
-<h3 class="section">6 Compilers and compilers.yaml</h3>
+<h3 class="section">7 Compilers and compilers.yaml</h3>
 
 <p>Building HPCToolkit requires GNU gcc/g++ at a minimum version 4.8 and
 preferably 5.x or later.  By default, spack uses the latest available
@@ -423,11 +515,11 @@ You could write this as:
 
 
 <a name="Spack-Install"></a>
-<h3 class="section">7 Spack Install</h3>
+<h3 class="section">8 Spack Install</h3>
 
 <p>First, set up your <code>config.yaml</code>, <code>packages.yaml</code> and
-<code>compilers.yaml</code> files as above and edit them for your system.  You
-can see how spack will build hpctoolkit with <code>spack spec</code> and
+<code>compilers.yaml</code> files as above and edit them for your system.
+You can see how spack will build hpctoolkit with <code>spack spec</code> and
 <code>spack graph</code>.
 </p>
 <div class="example">
@@ -441,9 +533,18 @@ spack graph hpctoolkit
 <pre class="example">spack install hpctoolkit
 </pre></div>
 
+<p><b>Tip:</b> Spack fetch is somewhat fragile and often has transient
+problems downloading files.  You can use <code>spack fetch -D</code> to
+pre-fetch all of the tar files and resolve any downloading problems
+before starting the full install.
+</p>
+<div class="example">
+<pre class="example">spack fetch -D hpctoolkit
+</pre></div>
+
 
 <a name="Manual-Install"></a>
-<h3 class="section">8 Manual Install</h3>
+<h3 class="section">9 Manual Install</h3>
 
 <p>The manual method uses spack to build hpctoolkit&rsquo;s prerequisites and
 then uses the traditional autotools <code>configure &amp;&amp; make &amp;&amp; make
@@ -505,10 +606,10 @@ version with a <code>--with-package</code> option.
 </p>
 
 <a name="Advanced-Options"></a>
-<h3 class="section">9 Advanced Options</h3>
+<h3 class="section">10 Advanced Options</h3>
 
 <a name="MPI"></a>
-<h4 class="subsection">9.1 MPI</h4>
+<h4 class="subsection">10.1 MPI</h4>
 
 <p>HPCToolkit always supports profiling MPI applications.  For
 hpctoolkit, the spack variant <code>+mpi</code> is for building hpcprof-mpi,
@@ -522,7 +623,7 @@ with the same version of GNU gcc/g++ used to build hpctoolkit (to keep
 the C++ libraries in sync).
 </p>
 <a name="PAPI-vs-Perfmon"></a>
-<h4 class="subsection">9.2 PAPI vs Perfmon</h4>
+<h4 class="subsection">10.2 PAPI vs Perfmon</h4>
 
 <p>HPCToolkit can access the Hardware Performance Counters with either
 PAPI or Perfmon (libpfm4).  By default, the hpctoolkit package uses
@@ -543,10 +644,10 @@ be available.
 </p>
 
 <a name="Platform-Specific-Notes"></a>
-<h3 class="section">10 Platform Specific Notes</h3>
+<h3 class="section">11 Platform Specific Notes</h3>
 
 <a name="Blue-Gene"></a>
-<h4 class="subsection">10.1 Blue Gene</h4>
+<h4 class="subsection">11.1 Blue Gene</h4>
 
 <p>Blue Gene systems are being phased out, without a next generation
 replacement, but are still supported by hpctoolkit (for now).  Blue
@@ -662,7 +763,7 @@ similar to the following.
 
 
 <a name="Cray"></a>
-<h4 class="subsection">10.2 Cray</h4>
+<h4 class="subsection">11.2 Cray</h4>
 
 <p>Cray systems, like Blue Gene, have separate front and back-end
 architecture types.  For example, on theta at ANL, the front-end arch
@@ -761,7 +862,7 @@ similar to the following.
 
 
 <a name="Hpcviewer-and-Hpctraceviewer"></a>
-<h3 class="section">11 Hpcviewer and Hpctraceviewer</h3>
+<h3 class="section">12 Hpcviewer and Hpctraceviewer</h3>
 
 <p>We provide binary distributions for hpcviewer and hpctraceviewer on
 Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
@@ -772,19 +873,21 @@ then view the results on another machine.
 The Linux versions also require GTK+ version 2.x.
 </p>
 <a name="Spack-Install-1"></a>
-<h4 class="subsection">11.1 Spack Install</h4>
+<h4 class="subsection">12.1 Spack Install</h4>
 
 <p>The spack install is available on Linux x86_64, big-endian power7
 (ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
 hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
 </p>
-<p>On x86_64, use the following command.  Hpcviewer requires jdk 1.8, but
-the latest 1.8 version, 1.8.0_202 does not download properly due to
-licensing issues, however 1.8.0_141-b15 seems to work.  Alternatively,
-you could manually download jdk 1.8.0_202 and copy it to a spack mirror.
+<p>On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
+1.8.0_202 has trouble downloading due to licensing issues, however
+1.8.0_141-b15 seems to work.  (Or, you could manually download jdk
+1.8.0_202 and copy it to the spack file cache.)  For openjdk, use
+version 1.8.0_202-b08.
 </p>
 <div class="example">
 <pre class="example">spack install hpcviewer ^jdk@1.8.0_141-b15
+spack install hpcviewer ^openjdk@1.8.0_202-b08
 </pre></div>
 
 <p>On powerpc (big and little-endian), use the IBM version of Java.
@@ -794,7 +897,7 @@ you could manually download jdk 1.8.0_202 and copy it to a spack mirror.
 </pre></div>
 
 <a name="Manual-Install-1"></a>
-<h4 class="subsection">11.2 Manual Install</h4>
+<h4 class="subsection">12.2 Manual Install</h4>
 
 <p>Binary distributions of the viewers for all supported platforms are
 available at:
@@ -818,7 +921,7 @@ wget instead of a web browser.
 </p>
 
 <a name="Building-a-New-Compiler"></a>
-<h3 class="section">12 Building a New Compiler</h3>
+<h3 class="section">13 Building a New Compiler</h3>
 
 <p>Some systems may have compilers that are too old for building
 HPCToolkit or other packages.  For example, RedHat 7.x comes with gcc
@@ -868,7 +971,7 @@ is not too new to cause problems for some packages.  For example,
 <p>Note: it is not necessary to rebuild the new compiler with itself.
 </p>
 <a name="Using-the-New-Compiler"></a>
-<h4 class="subsection">12.1 Using the New Compiler</h4>
+<h4 class="subsection">13.1 Using the New Compiler</h4>
 
 <p>After building a new compiler, then you need to tell spack how to find
 it.  First, use <code>module use</code> and <code>module load</code> to load the
@@ -941,7 +1044,7 @@ and re-add the appropriate modules automatically.
 </pre></div>
 
 <a name="Bootstrapping-Environment-Modules"></a>
-<h4 class="subsection">12.2 Bootstrapping Environment Modules</h4>
+<h4 class="subsection">13.2 Bootstrapping Environment Modules</h4>
 
 <p>If your system does not support modules, then you will have to add it.
 If you have root access, the easiest solution is to install a system
@@ -963,7 +1066,7 @@ environment-modules</code> and you could run that instead.
 </p>
 
 <a name="Spack-Mirrors"></a>
-<h3 class="section">13 Spack Mirrors</h3>
+<h3 class="section">14 Spack Mirrors</h3>
 
 <p>A spack mirror allows you to download and save a source tar file in
 advance.  This is useful if your system is behind a firewall, or if you
@@ -982,7 +1085,7 @@ and copy the tar files into their package&rsquo;s subdirectory.  For example,
    dyninst/
       dyninst-10.1.0.tar.gz     (from git checkout)
    ibm-java/
-      ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-x86_64-archive.bin)
+      ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-ppc64le-archive.bin)
    intel-xed/
       intel-xed-2019.03.01.tar.gz    (from git checkout)
       mbuild-2019.03.01.tar.gz       (resource from git checkout)
@@ -997,7 +1100,7 @@ extension is the same extension as the tar file (<code>tar.gz</code>,
 <code>tar.bz2</code>, etc) or else <code>None</code> for other types of files.
 </p>
 <div class="example">
-<pre class="example">&lt;name&gt; - &lt;version&gt; . &lt;extension&gt;
+<pre class="example">&lt;package-name&gt; - &lt;version&gt; . &lt;extension&gt;
 </pre></div>
 
 <p>For example, the boost 1.66.0 tar file is actually named
@@ -1007,9 +1110,9 @@ renamed to <code>jdk-1.8.0_202.tar.gz</code>.
 </p>
 <p>For packages that use a snapshot from a git repository (tag or commit
 hash), clone the repository, checkout the desired version, make a tar
-file and gzip the file.  (You may exclude the <code>.git</code> subdirectory.)
-But note that spack refuses to use a cached file for the head of a
-branch because it is a moving target.
+file and gzip the file.  (You should exclude the <code>.git</code>
+subdirectory.)  But note that spack refuses to use a cached file for
+the head of a branch because it is a moving target.
 </p>
 <p>Finally, after creating the mirror directory, add it to spack with
 <code>spack mirror add</code>.  For example,
@@ -1023,7 +1126,10 @@ my-mirror    file:///home/krentel/spack/mirror
 <p>Note: by default, spack stores downloaded files inside the spack
 repository at <code>spack/var/spack/cache</code>.  This directory is a full
 spack mirror, so instead of creating a separate directory tree, you
-could just copy the files into the <code>cache</code> directory.
+could just copy the files into the <code>cache</code> directory.  This is
+useful when <code>spack fetch</code> has trouble downloading a file.  If you
+can download the file manually, or copy it from another machine, then
+just rename the file as above and copy it into the spack file cache.
 </p>
 <p>For more information on mirrors, see:
 </p>
@@ -1033,10 +1139,10 @@ could just copy the files into the <code>cache</code> directory.
 
 
 <a name="Common-Problems"></a>
-<h3 class="section">14 Common Problems</h3>
+<h3 class="section">15 Common Problems</h3>
 
 <a name="Unable-to-fetch-tar-file"></a>
-<h4 class="subsection">14.1 Unable to fetch tar file</h4>
+<h4 class="subsection">15.1 Unable to fetch tar file</h4>
 
 <p>Spack is somewhat fragile for how it downloads tar files and will
 often fail for transitory network problems.  This is especially true
@@ -1059,7 +1165,7 @@ spack&rsquo;s cache directory <code>spack/var/spack/cache/&lt;package&gt;</code>
 spack mirror.
 </p>
 <a name="New-releases-break-the-build"></a>
-<h4 class="subsection">14.2 New releases break the build</h4>
+<h4 class="subsection">15.2 New releases break the build</h4>
 
 <p>Normally, HPCToolkit should build and work correctly with the latest
 version for all of its dependencies.  But sometimes a new release will
@@ -1072,7 +1178,7 @@ build.
 version until the rest of the code adapts to the change.
 </p>
 <a name="Failure-to-load-modules"></a>
-<h4 class="subsection">14.3 Failure to load modules</h4>
+<h4 class="subsection">15.3 Failure to load modules</h4>
 
 <p>Spack is quite aggressive about compiling with a clean environment and
 will unload modules unless they are specifically required by some config
