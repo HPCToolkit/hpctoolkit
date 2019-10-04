@@ -26,32 +26,59 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: Sept 26, 2019.
+Last revised: Oct 4, 2019.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-@subsection (2019-09-25) New microarchitecture targets
+@subsection (2019-09-25) New micro-architecture targets
 
 Spack recently changed how it treats a system's architecture and target
-to allow a hierarchy of fine-grained microarchitectures.  The 'target'
-is now a specific microarchitecture (eg, haswell) instead of a generic
-family (x86_64).  You will see this change in two main places: in 'spack
-spec' and the path for the install directory.  For example,
+to allow a hierarchy of fine-grained micro-architectures.  The 'target'
+is now a specific micro-architecture (eg, haswell, ivybridge) instead of
+a generic family (x86_64).  You will see this change in two main places:
+in 'spack spec' and the path for the install directory.  For example,
 @code{linux-rhel7-x86_64} might become @code{linux-rhel7-broadwell}.
+You can use @code{spack arch} to see the list of generic families and
+micro-architecture targets.
 
-Although a fresh install from scratch should work, there may be some
-corner cases that don't work and there may be some issues with combining
-older packages with newer ones.  If you prefer to avoid this change
-until the dust settles, then use commit @code{a940ff34d745} from Sept
-19, 2019.
+@example
+spack arch --known-targets
+@end example
+
+@noindent
+@b{Workaround:} Although a fresh install from scratch should work and
+usually does work, there may be some packages or corner cases that can't
+handle the micro-arch specs.  If you prefer to avoid this change until
+the dust settles, then use commit @code{a940ff34d745} from Sept 19,
+2019.
 
 @example
 git clone https://github.com/spack/spack.git
 cd spack
 git checkout a940ff34d745
 @end example
+
+@b{Workaround:} A better workaround is to use the current develop head
+but build for a generic family instead of the micro-arch target.  Use
+the @code{target} option to specify the arch family.  For example:
+
+@example
+spack install hpctoolkit ... target=x86_64
+@end example
+
+@noindent
+If you want to use this target for all spack builds, then you can
+specify this in @code{packages.yaml}.
+
+@example
+packages:
+  all:
+    target: ['x86_64']
+@end example
+
+@c ------------------------------------------------------------
 
 @subsection (2019-08-28) Cray front-end compilers
 
