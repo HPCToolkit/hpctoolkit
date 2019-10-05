@@ -538,6 +538,7 @@ sanitizer_memory_process
     }
     used += sprintf(&sanitizer_trace[used], "\n");
   }
+  used += sprintf(&sanitizer_trace[used], "\n");
 
   cubin_module_map_entry_t *entry = cubin_module_map_lookup(module);
   unsigned int hash_len = 0;
