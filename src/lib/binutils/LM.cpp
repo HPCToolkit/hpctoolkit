@@ -378,9 +378,13 @@ BinUtil::LM::~LM()
   delete[] m_bfdSymTabSort;
   m_bfdSymTabSort = NULL; 
 
+  delete[] m_bfdDynSymTab;
+  m_bfdDynSymTab = NULL;
+
   m_bfdSymTabSz = 0;
   m_bfdSymTabSortSz = 0;
   m_bfdSynthTabSz = 0;
+  m_bfdDynSymTabSz = 0;
   
   // reset isa
   delete isa;
