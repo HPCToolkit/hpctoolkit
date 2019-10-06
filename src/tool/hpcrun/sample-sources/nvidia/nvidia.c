@@ -360,7 +360,9 @@ static int info_sm_efficiency_id;
 static int sync_metric_id[NUM_CLAUSES(FORALL_SYNC)+1];
 static int sync_time_metric_id;
 
-static const long pc_sampling_frequency_default = 10;
+// default trace all the activities
+// -1: disabled, >0: x ms per activity
+static long trace_frequency = -1;
 // -1: disabled, 5-31: 2^frequency
 static long pc_sampling_frequency = -1;
 static int cupti_enabled_activities = 0;
@@ -465,10 +467,8 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
-      int frequency_factor = 1;
-      if (frequency_factor != -1) {
-        frequency_factor = (1 << pc_sampling_frequency);
-      }
+      int frequency_factor = (1 << pc_sampling_frequency);
+
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
@@ -665,6 +665,13 @@ int
 cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
+}
+
+
+int
+cupti_trace_frequency_get()
+{
+  return trace_frequency;
 }
 
 
@@ -966,8 +973,18 @@ METHOD_FN(process_event_list, int lush_metrics)
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
+  int frequency = 0;
+  int frequency_default = -1;
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
-    &pc_sampling_frequency, pc_sampling_frequency_default);
+    &frequency, frequency_default);
+
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    trace_frequency = frequency;
+    pc_sampling_frequency = frequency_default;
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+    pc_sampling_frequency = frequency;
+    trace_frequency = frequency_default;
+  }
 
   cuda_init_placeholders();
   gpu_driver_init_placeholders();
@@ -1004,10 +1021,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
   cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    pc_sampling_frequency = -1;
-  }
 
   // Init records
   cupti_trace_init();
