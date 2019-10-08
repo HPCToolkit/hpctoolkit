@@ -139,15 +139,15 @@ cupti_trace_handle
     // Special first node and start of the stream
     append = true;
     first_pass = false;
-    stream_start = entry->start/1000 - 1;
+    stream_start = entry->start - 1;
     hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
-      td->prev_dLCA, entry->start/1000 - 1);
+      td->prev_dLCA, entry->start - 1);
   }
 
   int frequency = cupti_trace_frequency_get();
   if (frequency != -1 && append == false) {
-    uint64_t cur_start = entry->start/1000;
-    uint64_t cur_end = entry->end/1000 + 1;
+    uint64_t cur_start = entry->start;
+    uint64_t cur_end = entry->end;
     uint64_t intervals = (cur_start - stream_start - 1) / frequency + 1;
     uint64_t pivot = intervals * frequency + stream_start;
     if (pivot <= cur_end && pivot >= cur_start) {
@@ -162,9 +162,9 @@ cupti_trace_handle
 
   if (append) {
     hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
-      td->prev_dLCA, entry->start/1000);
+      td->prev_dLCA, entry->start);
     hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
-      td->prev_dLCA, entry->end/1000 + 1);
+      td->prev_dLCA, entry->end);
     PRINT("Write node lm_id %d lm_ip %p\n", hpcrun_cct_addr(leaf)->ip_norm.lm_id,
       hpcrun_cct_addr(leaf)->ip_norm.lm_ip);
     PRINT("Write trace start %" PRIu64 " end %" PRIu64 "\n", entry->start, entry->end);
