@@ -126,6 +126,7 @@ cupti_trace_handle
 
   static __thread bool first_pass = true;
   static __thread uint64_t stream_start = 0;
+  static __thread uint64_t last_end = 0;
   thread_data_t *td = hpcrun_get_thread_data();
   
   // FIXME(Keren): more efficient by copying to common ancester
@@ -136,10 +137,13 @@ cupti_trace_handle
 
   bool append = false;
   if (first_pass) {
-    // Special first node and start of the stream
     append = true;
     first_pass = false;
-    stream_start = entry->start - 1;
+    // Start timestamp of the stream
+    stream_start = entry->start;
+    // In the begin, we do not have any activity
+    last_end = 0;
+    // Special first node
     hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
       td->prev_dLCA, entry->start - 1);
   }
@@ -161,10 +165,16 @@ cupti_trace_handle
   }
 
   if (append) {
-    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
-      td->prev_dLCA, entry->start);
-    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+    if (entry->start < last_end) {  // if we have hardware measurement error, set the offset as the end of the last activity
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+        td->prev_dLCA, last_end + 1);
+    } else {
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+        td->prev_dLCA, entry->start);
+    }
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
       td->prev_dLCA, entry->end);
+    last_end = entry->end;
     PRINT("Write node lm_id %d lm_ip %p\n", hpcrun_cct_addr(leaf)->ip_norm.lm_id,
       hpcrun_cct_addr(leaf)->ip_norm.lm_ip);
     PRINT("Write trace start %" PRIu64 " end %" PRIu64 "\n", entry->start, entry->end);
