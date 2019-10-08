@@ -135,13 +135,15 @@ vdso_segment_len
   size_t elf_size = 0;
   elf_version(EV_CURRENT);
   Elf *vdso_elf = elf_memory(vdso_addr, seg_len); 
-  if (vdso_elf) {
-    Elf_Scn *scn = NULL;
-    GElf_Shdr shdr;
-    while ((scn = elf_nextscn(vdso_elf, scn)) != NULL) {
-      if (gelf_getshdr(scn, &shdr)) {
-        if (shdr.sh_offset + shdr.sh_size > elf_size) elf_size = shdr.sh_offset + shdr.sh_size;
-      }
+  GElf_Ehdr ehdr;
+  if (vdso_elf && gelf_getehdr(vdso_elf, &ehdr)) {
+    // ELF Format:
+    // | ELF HEADER | Program Header |  Section 1 | ... | Section n | Section Header |
+    // So, to get the size of vdso, we need to to get the end of section header.
+    // The section header is a table, each entry describing a section
+    size_t section_count = 0;
+    if (elf_getshdrnum(vdso_elf, &section_count) == 0) {
+      elf_size = ehdr.e_shoff + ehdr.e_shentsize * section_count;
     }
   }
   if (elf_size > 0)
