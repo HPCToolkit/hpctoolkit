@@ -774,6 +774,23 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(CUDA,"nevents = %d", nevents);
 
+  // Fetch the event string for the sample source
+  // only one event is allowed
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  int frequency = 0;
+  int frequency_default = -1;
+  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
+    &frequency, frequency_default);
+
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    trace_frequency = frequency;
+    pc_sampling_frequency = frequency_default;
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+    pc_sampling_frequency = frequency;
+    trace_frequency = frequency_default;
+  }
+
 #define getindex(name, index) index
 
 #define declare_cur_metrics(name, index) \
@@ -789,22 +806,25 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define create_cur_kind cur_kind = hpcrun_metrics_new_kind()
 #define close_cur_kind hpcrun_close_kind(cur_kind)
 
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
 #define cur_kind stall_kind
 #define cur_metrics stall_metric_id
 
-  create_cur_kind;
-  // GPU INST must be the first kind for sample apportion
-  FORALL_GPU_INST(declare_cur_metrics);
-  FORALL_GPU_INST_LAT(declare_cur_metrics);
-  FORALL_STL(declare_cur_metrics);	
-  FORALL_STL(hide_cur_metrics);
-  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
-  gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
-  close_cur_kind;
+    create_cur_kind;
+    // GPU INST must be the first kind for sample apportion
+    FORALL_GPU_INST(declare_cur_metrics);
+    FORALL_GPU_INST_LAT(declare_cur_metrics);
+    FORALL_STL(declare_cur_metrics);	
+    FORALL_STL(hide_cur_metrics);
+    gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
+    gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
+    close_cur_kind;
 
 #undef cur_kind
 #undef cur_metrics
+  }
 
+#if 0 // Do not process im metrics for now
 #define cur_kind im_kind
 #define cur_metrics im_metric_id
 
@@ -817,6 +837,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
 #define cur_kind em_kind
 #define cur_metrics em_metric_id
@@ -901,6 +922,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #undef cur_kind
 #undef cur_metrics
 
+#if 0 // do not process global memory metrics for now
 #define cur_kind gl_kind
 #define cur_metrics gl_metric_id
 
@@ -911,7 +933,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+#if 0 // do not process shared memory metrics for now
 #define cur_kind sh_kind
 #define cur_metrics sh_metric_id
 
@@ -922,7 +946,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+#if 0 // do not process branch metrics for now
 #define cur_kind bh_kind
 #define cur_metrics bh_metric_id
 
@@ -935,27 +961,33 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
 #define cur_kind info_kind
 #define cur_metrics info_metric_id
 
-  create_cur_kind;
-  FORALL_INFO(declare_cur_metrics);	
-  FORALL_INFO(hide_cur_metrics);
-  FORALL_INFO_EFFICIENCY(declare_cur_metrics_real);
-  info_dropped_samples_id = info_metric_id[0];
-  info_period_in_cycles_id = info_metric_id[1];
-  info_total_samples_id = info_metric_id[2];
-  info_sm_full_samples_id = info_metric_id[3];
-  info_sm_efficiency_id = info_metric_id[4];
+    create_cur_kind;
+    FORALL_INFO(declare_cur_metrics);	
+    FORALL_INFO(hide_cur_metrics);
+    FORALL_INFO_EFFICIENCY(declare_cur_metrics_real);
+    info_dropped_samples_id = info_metric_id[0];
+    info_period_in_cycles_id = info_metric_id[1];
+    info_total_samples_id = info_metric_id[2];
+    info_sm_full_samples_id = info_metric_id[3];
+    info_sm_efficiency_id = info_metric_id[4];
 
-  hpcrun_set_percent(info_sm_efficiency_id, 1);
-  metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
-  char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
-  sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
-  sm_efficiency_metric->formula = sm_efficiency_buffer;
+    hpcrun_set_percent(info_sm_efficiency_id, 1);
+    metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
+    char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
+    sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
+    sm_efficiency_metric->formula = sm_efficiency_buffer;
+    close_cur_kind;
 
-  close_cur_kind;
+#undef cur_kind
+#undef cur_metrics
+  }
+
 
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {
@@ -968,23 +1000,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
   }
 #endif
-
-  // Fetch the event string for the sample source
-  // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-  int frequency = 0;
-  int frequency_default = -1;
-  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
-    &frequency, frequency_default);
-
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    trace_frequency = frequency;
-    pc_sampling_frequency = frequency_default;
-  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
-    pc_sampling_frequency = frequency;
-    trace_frequency = frequency_default;
-  }
 
   cuda_init_placeholders();
   gpu_driver_init_placeholders();

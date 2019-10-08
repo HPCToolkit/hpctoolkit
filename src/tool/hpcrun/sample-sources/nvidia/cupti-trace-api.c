@@ -163,7 +163,7 @@ cupti_trace_handle
   if (append) {
     hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
       td->prev_dLCA, entry->start);
-    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
       td->prev_dLCA, entry->end);
     PRINT("Write node lm_id %d lm_ip %p\n", hpcrun_cct_addr(leaf)->ip_norm.lm_id,
       hpcrun_cct_addr(leaf)->ip_norm.lm_ip);
