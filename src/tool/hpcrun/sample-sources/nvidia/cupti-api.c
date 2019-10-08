@@ -1695,7 +1695,8 @@ cupti_memcpy_process
         host_op_node = cupti_host_op_map_entry_copyin_node_get(host_op_entry);
       } else if (activity->copyKind == CUPTI_ACTIVITY_MEMCPY_KIND_DTOH) {
         host_op_node = cupti_host_op_map_entry_copyout_node_get(host_op_entry);
-      } else {
+      }
+      if (host_op_node == NULL) { // If we cannot find a perfect match for the operation
         host_op_node = cupti_host_op_map_entry_copy_node_get(host_op_entry);
       }
       cupti_entry_trace_t entry_trace = {
