@@ -681,20 +681,15 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
   return HPCFMT_OK;
 }
 
-#define TYPE_MASK 0x3F
+
 
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre)
 {
-  // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
-  // (negative) is apparent
-  uint32_t node_type = x->node_type & TYPE_MASK;
-  uint32_t node_link = x->node_type >> BITS_RESERVED_NODE_TYPE;
-
-  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d  link: %d) ",
-	  pre, (int)x->id, (int)x->id_parent, node_type, node_link);
+  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d) ",
+	  pre, (int)x->id, (int)x->id_parent, x->node_type);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
