@@ -7,7 +7,6 @@
 
 #include <hpcrun/sample-sources/gpu/gpu-record.h>
 #include <roctracer_hip.h>
-#include <roctracer_hcc.h>
 
 
 

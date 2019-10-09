@@ -280,8 +280,9 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_ROCM_TRUE@am__append_117 = $(MY_ROCM_FILES)
 @OPT_ENABLE_ROCM_TRUE@am__append_118 = -DENABLE_ROCM
 @OPT_ENABLE_ROCM_TRUE@am__append_119 = $(OPT_ROCM_IFLAGS) -g
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_120 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_121 = libagent-pthread.la \
+@OPT_ENABLE_ROCM_TRUE@am__append_120 = -DHPCRUN_SS_AMD
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_121 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_122 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -463,6 +464,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/gpu/gpu-host-op-map.c \
 	sample-sources/gpu/gpu-record.c \
 	sample-sources/gpu/placeholders.c \
+	sample-sources/gpu/gpu-context-stream-id-map.c \
+	sample-sources/gpu/stream-tracing.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -502,8 +505,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/nvidia/cuda-api.c \
 	sample-sources/nvidia/cuda-device-map.c \
 	sample-sources/nvidia/cuda-state-placeholders.c \
-	sample-sources/nvidia/cupti-context-stream-id-map.c \
-	sample-sources/nvidia/stream-tracing.c \
 	sample-sources/amd/amd.c \
 	sample-sources/amd/hip-state-placeholders.c \
 	sample-sources/amd/roctracer-api.c \
@@ -626,6 +627,8 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/gpu/libhpcrun_la-gpu-host-op-map.lo \
 	sample-sources/gpu/libhpcrun_la-gpu-record.lo \
 	sample-sources/gpu/libhpcrun_la-placeholders.lo \
+	sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo \
+	sample-sources/gpu/libhpcrun_la-stream-tracing.lo \
 	$(am__objects_7) $(am__objects_8) $(am__objects_9) \
 	$(am__objects_10) $(am__objects_11) $(am__objects_12) \
 	$(am__objects_13)
@@ -675,9 +678,7 @@ am__objects_33 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
 @OPT_ENABLE_CUDA_TRUE@am__objects_35 = sample-sources/nvidia/libhpcrun_la-cuda-api.lo \
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-stream-tracing.lo
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo
 @OPT_ENABLE_CUDA_TRUE@am__objects_36 = $(am__objects_35)
 @OPT_ENABLE_ROCM_TRUE@am__objects_37 =  \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/amd/libhpcrun_la-amd.lo \
@@ -835,6 +836,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/gpu/gpu-host-op-map.c \
 	sample-sources/gpu/gpu-record.c \
 	sample-sources/gpu/placeholders.c \
+	sample-sources/gpu/gpu-context-stream-id-map.c \
+	sample-sources/gpu/stream-tracing.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -997,6 +1000,8 @@ am__objects_52 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/gpu/libhpcrun_o-gpu-host-op-map.$(OBJEXT) \
 	sample-sources/gpu/libhpcrun_o-gpu-record.$(OBJEXT) \
 	sample-sources/gpu/libhpcrun_o-placeholders.$(OBJEXT) \
+	sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.$(OBJEXT) \
+	sample-sources/gpu/libhpcrun_o-stream-tracing.$(OBJEXT) \
 	$(am__objects_45) $(am__objects_46) $(am__objects_47) \
 	$(am__objects_48) $(am__objects_49) $(am__objects_50) \
 	$(am__objects_51)
@@ -1478,6 +1483,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -1553,8 +1559,8 @@ bin_SCRIPTS = $(am__append_4) $(am__append_6)
 pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
-pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_120) \
-	$(am__append_121)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_121) \
+	$(am__append_122)
 BUILT_SOURCES = $(am__append_20)
 CLEANFILES = $(am__append_21)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
@@ -1643,7 +1649,7 @@ UNW_MIPS_LD_FLAGS =
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_17) \
 	$(am__append_96) $(am__append_100) $(am__append_102) \
-	$(am__append_106)
+	$(am__append_106) $(am__append_120)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1687,7 +1693,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/gpu/gpu-correlation-id-map.c \
 	sample-sources/gpu/gpu-host-op-map.c \
 	sample-sources/gpu/gpu-record.c \
-	sample-sources/gpu/placeholders.c $(am__append_8) \
+	sample-sources/gpu/placeholders.c \
+	sample-sources/gpu/gpu-context-stream-id-map.c \
+	sample-sources/gpu/stream-tracing.c $(am__append_8) \
 	$(am__append_9) $(am__append_10) $(am__append_12) \
 	$(am__append_13) $(am__append_14) $(am__append_15)
 MY_DYNAMIC_FILES = \
@@ -1732,9 +1740,7 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_16)
 @OPT_ENABLE_CUDA_TRUE@MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-device-map.c			\
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cupti-context-stream-id-map.c \
-@OPT_ENABLE_CUDA_TRUE@    sample-sources/nvidia/stream-tracing.c
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c 
 
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cubin-id-map.c			\
@@ -2375,6 +2381,12 @@ sample-sources/gpu/libhpcrun_la-gpu-record.lo:  \
 sample-sources/gpu/libhpcrun_la-placeholders.lo:  \
 	sample-sources/gpu/$(am__dirstamp) \
 	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
+sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo:  \
+	sample-sources/gpu/$(am__dirstamp) \
+	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
+sample-sources/gpu/libhpcrun_la-stream-tracing.lo:  \
+	sample-sources/gpu/$(am__dirstamp) \
+	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/$(am__dirstamp):
 	@$(MKDIR_P) trampoline/common
 	@: > trampoline/common/$(am__dirstamp)
@@ -2576,12 +2588,6 @@ sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo:  \
-	sample-sources/nvidia/$(am__dirstamp) \
-	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo:  \
-	sample-sources/nvidia/$(am__dirstamp) \
-	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_la-stream-tracing.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/amd/$(am__dirstamp):
@@ -2956,6 +2962,12 @@ sample-sources/gpu/libhpcrun_o-gpu-record.$(OBJEXT):  \
 	sample-sources/gpu/$(am__dirstamp) \
 	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
 sample-sources/gpu/libhpcrun_o-placeholders.$(OBJEXT):  \
+	sample-sources/gpu/$(am__dirstamp) \
+	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
+sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.$(OBJEXT):  \
+	sample-sources/gpu/$(am__dirstamp) \
+	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
+sample-sources/gpu/libhpcrun_o-stream-tracing.$(OBJEXT):  \
 	sample-sources/gpu/$(am__dirstamp) \
 	sample-sources/gpu/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT):  \
@@ -3514,15 +3526,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-directed.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_o-undirected.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-context-stream-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-host-op-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-placeholders.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_la-stream-tracing.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-api.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-correlation-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-host-op-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-record.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-placeholders.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cubin-hash-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
@@ -3531,14 +3547,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cuda-state-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-stream-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-function-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-host-op-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-nvidia.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-stream-tracing.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-hash-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
@@ -4525,6 +4539,20 @@ sample-sources/gpu/libhpcrun_la-placeholders.lo: sample-sources/gpu/placeholders
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_la-placeholders.lo `test -f 'sample-sources/gpu/placeholders.c' || echo '$(srcdir)/'`sample-sources/gpu/placeholders.c
 
+sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo: sample-sources/gpu/gpu-context-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-context-stream-id-map.Tpo -c -o sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo `test -f 'sample-sources/gpu/gpu-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/gpu/gpu-context-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-context-stream-id-map.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_la-gpu-context-stream-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/gpu-context-stream-id-map.c' object='sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_la-gpu-context-stream-id-map.lo `test -f 'sample-sources/gpu/gpu-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/gpu/gpu-context-stream-id-map.c
+
+sample-sources/gpu/libhpcrun_la-stream-tracing.lo: sample-sources/gpu/stream-tracing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_la-stream-tracing.lo -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_la-stream-tracing.Tpo -c -o sample-sources/gpu/libhpcrun_la-stream-tracing.lo `test -f 'sample-sources/gpu/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/gpu/stream-tracing.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_la-stream-tracing.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_la-stream-tracing.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/stream-tracing.c' object='sample-sources/gpu/libhpcrun_la-stream-tracing.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_la-stream-tracing.lo `test -f 'sample-sources/gpu/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/gpu/stream-tracing.c
+
 trampoline/common/libhpcrun_la-trampoline_eager.lo: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline_eager.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_la-trampoline_eager.lo `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo
@@ -4825,20 +4853,6 @@ sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo: sample-sources/nv
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cuda-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo `test -f 'sample-sources/nvidia/cuda-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/cuda-state-placeholders.c
-
-sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo: sample-sources/nvidia/cupti-context-stream-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-stream-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo `test -f 'sample-sources/nvidia/cupti-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-stream-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-stream-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-stream-id-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-context-stream-id-map.c' object='sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-context-stream-id-map.lo `test -f 'sample-sources/nvidia/cupti-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-stream-id-map.c
-
-sample-sources/nvidia/libhpcrun_la-stream-tracing.lo: sample-sources/nvidia/stream-tracing.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-stream-tracing.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-stream-tracing.Tpo -c -o sample-sources/nvidia/libhpcrun_la-stream-tracing.lo `test -f 'sample-sources/nvidia/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/nvidia/stream-tracing.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-stream-tracing.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-stream-tracing.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/stream-tracing.c' object='sample-sources/nvidia/libhpcrun_la-stream-tracing.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-stream-tracing.lo `test -f 'sample-sources/nvidia/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/nvidia/stream-tracing.c
 
 sample-sources/amd/libhpcrun_la-amd.lo: sample-sources/amd/amd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/amd/libhpcrun_la-amd.lo -MD -MP -MF sample-sources/amd/$(DEPDIR)/libhpcrun_la-amd.Tpo -c -o sample-sources/amd/libhpcrun_la-amd.lo `test -f 'sample-sources/amd/amd.c' || echo '$(srcdir)/'`sample-sources/amd/amd.c
@@ -6463,6 +6477,34 @@ sample-sources/gpu/libhpcrun_o-placeholders.obj: sample-sources/gpu/placeholders
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/placeholders.c' object='sample-sources/gpu/libhpcrun_o-placeholders.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_o-placeholders.obj `if test -f 'sample-sources/gpu/placeholders.c'; then $(CYGPATH_W) 'sample-sources/gpu/placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu/placeholders.c'; fi`
+
+sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.o: sample-sources/gpu/gpu-context-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.o -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Tpo -c -o sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.o `test -f 'sample-sources/gpu/gpu-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/gpu/gpu-context-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/gpu-context-stream-id-map.c' object='sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.o `test -f 'sample-sources/gpu/gpu-context-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/gpu/gpu-context-stream-id-map.c
+
+sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.obj: sample-sources/gpu/gpu-context-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.obj -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Tpo -c -o sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.obj `if test -f 'sample-sources/gpu/gpu-context-stream-id-map.c'; then $(CYGPATH_W) 'sample-sources/gpu/gpu-context-stream-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu/gpu-context-stream-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_o-gpu-context-stream-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/gpu-context-stream-id-map.c' object='sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_o-gpu-context-stream-id-map.obj `if test -f 'sample-sources/gpu/gpu-context-stream-id-map.c'; then $(CYGPATH_W) 'sample-sources/gpu/gpu-context-stream-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu/gpu-context-stream-id-map.c'; fi`
+
+sample-sources/gpu/libhpcrun_o-stream-tracing.o: sample-sources/gpu/stream-tracing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_o-stream-tracing.o -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Tpo -c -o sample-sources/gpu/libhpcrun_o-stream-tracing.o `test -f 'sample-sources/gpu/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/gpu/stream-tracing.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/stream-tracing.c' object='sample-sources/gpu/libhpcrun_o-stream-tracing.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_o-stream-tracing.o `test -f 'sample-sources/gpu/stream-tracing.c' || echo '$(srcdir)/'`sample-sources/gpu/stream-tracing.c
+
+sample-sources/gpu/libhpcrun_o-stream-tracing.obj: sample-sources/gpu/stream-tracing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/gpu/libhpcrun_o-stream-tracing.obj -MD -MP -MF sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Tpo -c -o sample-sources/gpu/libhpcrun_o-stream-tracing.obj `if test -f 'sample-sources/gpu/stream-tracing.c'; then $(CYGPATH_W) 'sample-sources/gpu/stream-tracing.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu/stream-tracing.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Tpo sample-sources/gpu/$(DEPDIR)/libhpcrun_o-stream-tracing.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/gpu/stream-tracing.c' object='sample-sources/gpu/libhpcrun_o-stream-tracing.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/gpu/libhpcrun_o-stream-tracing.obj `if test -f 'sample-sources/gpu/stream-tracing.c'; then $(CYGPATH_W) 'sample-sources/gpu/stream-tracing.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/gpu/stream-tracing.c'; fi`
 
 trampoline/common/libhpcrun_o-trampoline_eager.o: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_eager.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_eager.o `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c

@@ -46,7 +46,6 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <ompt/ompt-interface.h>
 #include <roctracer_hip.h>
-#include <roctracer_hcc.h>
 
 #define FORALL_ME(macro) \
   macro("MEM_ALLOC:UNKNOWN_BYTES",       0) \

@@ -24,7 +24,9 @@
 
 #include "roctracer-api.h"
 #include "roctracer-record.h"
+#include "amd.h"
 #include "hip-state-placeholders.h"
+
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
@@ -42,8 +44,13 @@
 #include <hpcrun/sample-sources/gpu/gpu-api.h>
 
 #include <roctracer_hip.h>
-#include <roctracer_hcc.h>
 
+
+// HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
+// However, this file will include many C++ code, making it impossible
+// to compile with pure C.
+// HSA_OP_ID_COPY is a constant with value 1 at the moment. 
+#define HSA_OP_ID_COPY  1
 //static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
 
 
