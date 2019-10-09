@@ -599,6 +599,8 @@ hpcrun_fmt_node_type_root(uint16_t type)
   return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
 }
 
+// check if the node is memory allocation node
+// (PF to malloc, calloc, ...etc)
 static inline bool
 hpcrun_fmt_node_type_allocation(uint16_t type)
 {
@@ -606,31 +608,33 @@ hpcrun_fmt_node_type_allocation(uint16_t type)
 }
 
 //
-// check if the node is a memaccess node
+// check if the node is a memory access node
 // which  means the node has access to the memory hierarchy
 
 static inline bool
 hpcrun_fmt_node_type_memaccess(uint16_t type)
 {
-  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_MEMACCESS;
+  return (type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
+// check if this node is the start of call path to memory access
 static inline bool
 hpcrun_fmt_node_type_memaccess_root(uint16_t type)
 {
-  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_MEMACCESS_ROOT;
+  return (type & NODE_TYPE_MEMACCESS_ROOT) == NODE_TYPE_MEMACCESS_ROOT;
 }
 
+// check if the node is a global variable node
 static inline bool
 hpcrun_fmt_node_type_variable(uint16_t type)
 {
-  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_GLOBAL_VARIABLE;
+  return (type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
 }
 
 static inline bool
 hpcrun_fmt_node_type_unknown(uint16_t type)
 {
-  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_UNKNOWN_ATTRIBUTE;
+  return (type & NODE_TYPE_UNKNOWN_ATTRIBUTE) == NODE_TYPE_UNKNOWN_ATTRIBUTE;
 }
 
 // --------------------------------------------------------------------------
