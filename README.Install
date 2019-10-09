@@ -46,6 +46,8 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
+Last revised: Oct 4, 2019.
+
 2 Prerequisites
 ===============
 
@@ -73,11 +75,81 @@ Building HPCToolkit requires the following prerequisites.
 Hpcviewer and hpctraceviewer require Java version 8.  On Linux, the
 viewers also require GTK+ version 2.x.
 
-3 Clone Spack and HPCToolkit
+3 Spack Notation
+================
+
+Spack uses a special notation for specifying the version, variants,
+compilers and dependencies when describing how to build a package.  This
+combination of version, variants, etc is called a 'spec' and is used
+both on the command line and in config files.
+
+  1. '@' specifies the package version.  'spack info <package>' shows
+     the available versions and variants for a package.  In most cases,
+     spaces are optional between elements of a spec.  For example:
+
+          boost@1.66.0    dyninst @10.1.0    hpctoolkit@master
+
+  2. '+', '-', '~' specify boolean (on/off) variants.  Note: '-' (dash)
+     and '~' (tilde) both mean 'off'.  Use dash after a space and tilde
+     after a non-space.  For example:
+
+          elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@0.176 +bzip2~nls
+
+  3. 'name=value' specifies a non-boolean variant, for example:
+
+          dyninst+openmp build_type=RelWithDebInfo    xerces-c@3.2.2 transcoder=iconv
+
+  4. '%' specifies the build compiler and its version, for example:
+
+          hpctoolkit@master %gcc@7.3.0
+
+  5. 'cflags', 'cxxflags', 'fflags', 'cppflags', 'ldflags' and 'ldlibs'
+     are special name/value variants for compiler flags.  These are
+     normally not needed, but if you do need to add a flag to the build,
+     then one example might be:
+
+          amg2013 cflags='-O2 -mavx512pf'
+
+  6. '^' represents a dependency spec.  The spec for a dependency
+     package is a full spec and may include its own version, variants,
+     etc.  For example:
+
+          hpctoolkit@master ^dyninst@10.1.0+openmp
+
+  7. 'arch', 'platform', 'os' and 'target' are special options for the
+     system architecture and machine type.  Platform is normally
+     'linux', or else 'cray' or 'bgq' (or even 'windows' or 'darwin').
+     OS is the Linux distribution, 'rhel7', 'sles15', etc, and target is
+     the machine type, 'x86_64', 'ppc64le', etc.  Arch is a triple of
+     platform, os and target separated by dashes.
+
+     Normally, a system has only one arch type and you don't need to
+     specify this.  However, for systems with separate front and
+     back-end types, the default is the back end.  For example, if you
+     wanted to build python for the front end on Cray, then you might
+     use something like this.
+
+          python@3.7.4 arch=cray-sles12-x86_64
+
+     Also, now that spack has implemented microarchitecture targets
+     (haswell, ivybridge, etc), you can use 'target' to build for a
+     generic x86_64 or a specific CPU type.  For example:
+
+          amg2013 target=x86_64    lulesh target=ivybridge
+
+When writing a spec (for 'spack install' or other), spack will fully
+resolve all possible choices for the package and all of its dependencies
+and create a unique hash value for that exact configuration.  This
+process is called 'concretization.'  To see how spack would concretize a
+spec, use 'spack spec <partial-spec>'.
+
+     <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
+
+4 Clone Spack and HPCToolkit
 ============================
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 3,000 packages (and
+spack machinery and recipes for building more than 3,500 packages (and
 growing).  You should also clone HPCToolkit for the 'packages.yaml' file
 which is used to configure the spack build.
 
@@ -95,7 +167,7 @@ It suffices to add 'spack/bin' to your PATH (or even symlink the spack
 launch script).  Sourcing the 'setup-env' script adds extra support for
 modules built by spack.
 
-4 Config.yaml
+5 Config.yaml
 =============
 
 'config.yaml' is the top-level spack config file.  This specifies the
@@ -150,7 +222,7 @@ See the spack docs on 'Configuration Files' and 'Basic Settings'.
      <https://spack.readthedocs.io/en/latest/configuration.html>
      <https://spack.readthedocs.io/en/latest/config_yaml.html>
 
-5 Packages.yaml
+6 Packages.yaml
 ===============
 
 The 'packages.yaml' file specifies the versions and variants for the
@@ -220,7 +292,7 @@ Dependencies'.
      <https://spack.readthedocs.io/en/latest/build_settings.html>
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
-6 Compilers and compilers.yaml
+7 Compilers and compilers.yaml
 ==============================
 
 Building HPCToolkit requires GNU gcc/g++ at a minimum version 4.8 and
@@ -290,7 +362,7 @@ See the spack docs on 'Compiler Configuration'.
 
      <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
 
-7 Spack Install
+8 Spack Install
 ===============
 
 First, set up your 'config.yaml', 'packages.yaml' and 'compilers.yaml'
@@ -304,7 +376,14 @@ Then, the "one button" method uses spack to install everything.
 
      spack install hpctoolkit
 
-8 Manual Install
+Tip: Spack fetch is somewhat fragile and often has transient problems
+downloading files.  You can use 'spack fetch -D' to pre-fetch all of the
+tar files and resolve any downloading problems before starting the full
+install.
+
+     spack fetch -D hpctoolkit
+
+9 Manual Install
 ================
 
 The manual method uses spack to build hpctoolkit's prerequisites and
@@ -359,11 +438,11 @@ recent directory time stamp (and issue a warning).  If this is not what
 you want, then you will need to specify the correct version with a
 '--with-package' option.
 
-9 Advanced Options
-==================
+10 Advanced Options
+===================
 
-9.1 MPI
--------
+10.1 MPI
+--------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
 the spack variant '+mpi' is for building hpcprof-mpi, the MPI version of
@@ -376,8 +455,8 @@ and add this to 'packages.yaml'.  The MPI module should be built with
 the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
 C++ libraries in sync).
 
-9.2 PAPI vs Perfmon
--------------------
+10.2 PAPI vs Perfmon
+--------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI
 or Perfmon (libpfm4).  By default, the hpctoolkit package uses perfmon.
@@ -396,10 +475,10 @@ automatically detect this, so if you build hpctoolkit with a recent
 enough version of PAPI, then both the PAPI and perfmon interfaces will
 be available.
 
-10 Platform Specific Notes
+11 Platform Specific Notes
 ==========================
 
-10.1 Blue Gene
+11.1 Blue Gene
 --------------
 
 Blue Gene systems are being phased out, without a next generation
@@ -496,7 +575,7 @@ to the following.
          --enable-all-static  \
          MPICXX=mpicxx
 
-10.2 Cray
+11.2 Cray
 ---------
 
 Cray systems, like Blue Gene, have separate front and back-end
@@ -582,7 +661,7 @@ to the following.
          --enable-all-static  \
          MPICXX=CC
 
-11 Hpcviewer and Hpctraceviewer
+12 Hpcviewer and Hpctraceviewer
 ===============================
 
 We provide binary distributions for hpcviewer and hpctraceviewer on
@@ -593,25 +672,27 @@ then view the results on another machine.
    All versions of the viewers require Java version 8 (not 9 or later).
 The Linux versions also require GTK+ version 2.x.
 
-11.1 Spack Install
+12.1 Spack Install
 ------------------
 
 The spack install is available on Linux x86_64, big-endian power7
 (ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
 hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
 
-   On x86_64, use the following command.  Hpcviewer requires jdk 1.8,
-but the latest 1.8 version, 1.8.0_202 does not download properly due to
-licensing issues, however 1.8.0_141-b15 seems to work.  Alternatively,
-you could manually download jdk 1.8.0_202 and copy it to a spack mirror.
+   On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
+1.8.0_202 has trouble downloading due to licensing issues, however
+1.8.0_141-b15 seems to work.  (Or, you could manually download jdk
+1.8.0_202 and copy it to the spack file cache.)  For openjdk, use
+version 1.8.0_202-b08.
 
      spack install hpcviewer ^jdk@1.8.0_141-b15
+     spack install hpcviewer ^openjdk@1.8.0_202-b08
 
 On powerpc (big and little-endian), use the IBM version of Java.
 
      spack install hpcviewer ^ibm-java
 
-11.2 Manual Install
+12.2 Manual Install
 -------------------
 
 Binary distributions of the viewers for all supported platforms are
@@ -630,7 +711,129 @@ and unpack the zip files in the desired directory.  Due to Apple's
 security precautions, on MacOS, you will need to use curl or wget
 instead of a web browser.
 
-12 Spack Mirrors
+13 Building a New Compiler
+==========================
+
+Some systems may have compilers that are too old for building HPCToolkit
+or other packages.  For example, RedHat 7.x comes with gcc 4.8.x which
+is very old.  If your system doesn't already have modules for later
+compilers, then you may need to build a new compiler yourself.
+
+   First, pick a directory in which to install the modules and make
+subdirectories for the spack packages and module files.  In this
+example, I'm using '/opt/spack/Modules' as my top-level directory and
+subdirectories 'packages' and 'modules'.  Edit 'config.yaml' to add
+these paths.
+
+     config:
+       install_tree:  /opt/spack/Modules/packages
+
+       # just use one of these
+       module_roots:
+         tcl:  /opt/spack/Modules/modules
+         lmod: /opt/spack/Modules/modules
+
+Determine if your system uses TCL (environment) or Lmod modules.
+Normally, the 'module' command is a shell function.  TCL modules use
+'modulecmd' and Lmod modules eval 'LMOD_CMD'.  Edit 'modules.yaml' to
+enable the module type for your system.  Again, you only need one of
+these (and don't use dotkit unless you work at LLNL).
+
+     modules:
+       enable:
+        - tcl
+        - lmod
+
+Then, choose a version of gcc and use the default compiler (normally
+'/usr/bin/gcc') to build the newer version.  Currently, gcc 7.x is a
+good choice that builds robustly, has enough modern features but is not
+too new to cause problems for some packages.  For example,
+
+     spack install gcc@7.4.0
+
+Note: it is not necessary to rebuild the new compiler with itself.
+
+13.1 Using the New Compiler
+---------------------------
+
+After building a new compiler, then you need to tell spack how to find
+it.  First, use 'module use' and 'module load' to load the module.  For
+TCL modules, the module files are in a subdirectory of 'module_roots'
+named after the system architecture.  For example,
+
+     module use /opt/spack/Modules/modules/linux-rhel7-x86_64
+     module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+
+For Lmod modules, the module directory is one level below that and the
+module names are a little different.
+
+     module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
+     module load gcc/7.4.0-dan4vbm
+
+For both TCL and Lmod modules, it's best to put the 'module use' command
+in your shell's startup scripts so that 'module avail' and 'module load'
+will know where to find them.  After loading the module, run 'spack
+compiler find'.
+
+     $ spack compiler find
+     ==> Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
+         gcc@7.4.0
+
+Finally, always check the new entry in 'compilers.yaml' and add the name
+of the module to the 'modules:' field.
+
+     - compiler:
+         environment: {}
+         extra_rpaths: []
+         flags: {}
+         modules:
+         - gcc-7.4.0-gcc-4.8.5-qemsqrc
+         operating_system: rhel7
+         paths:
+           cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+           cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+           f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+           fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+         spec: gcc@7.4.0
+         target: x86_64
+
+Note: as long as the spack packages and modules directories remain
+intact and you don't remove the 'compilers.yaml' entry, then this
+compiler will always be available from within spack.  You can also use
+this compiler outside of spack by using 'module load'.  If you want to
+make this your default compiler for all spack builds, then you can
+specify this in 'packages.yaml'.  For example,
+
+     packages:
+       all:
+         compiler: [gcc@7.4.0]
+
+Also, when using the compiler from within spack, it doesn't matter if
+you have the module loaded or not.  Spack will erase your environment
+and re-add the appropriate modules automatically.
+
+     <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
+
+13.2 Bootstrapping Environment Modules
+--------------------------------------
+
+If your system does not support modules, then you will have to add it.
+If you have root access, the easiest solution is to install a system
+package for modules.  If not, then use 'spack bootstrap' to build the
+environment-modules package.  Source the bash or csh script in the
+'init' directory to add the 'module' function to your environment.  For
+example,
+
+     spack bootstrap
+     cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+     (bash)  . ./bash
+     (csh)   source ./csh
+
+Again, add the setup command to your shell's startup scripts.  Note:
+'spack bootstrap' is just shorthand for 'spack install
+environment-modules' and you could run that instead.
+
+14 Spack Mirrors
 ================
 
 A spack mirror allows you to download and save a source tar file in
@@ -650,7 +853,7 @@ example,
         dyninst/
            dyninst-10.1.0.tar.gz     (from git checkout)
         ibm-java/
-           ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-x86_64-archive.bin)
+           ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-ppc64le-archive.bin)
         intel-xed/
            intel-xed-2019.03.01.tar.gz    (from git checkout)
            mbuild-2019.03.01.tar.gz       (resource from git checkout)
@@ -663,7 +866,7 @@ is the spack name for the version (from 'spack info'), and extension is
 the same extension as the tar file ('tar.gz', 'tar.bz2', etc) or else
 'None' for other types of files.
 
-     <name> - <version> . <extension>
+     <package-name> - <version> . <extension>
 
 For example, the boost 1.66.0 tar file is actually named
 'boost_1_66_0.tar.bz2' but is stored in the mirror as
@@ -672,9 +875,9 @@ For example, the boost 1.66.0 tar file is actually named
 
    For packages that use a snapshot from a git repository (tag or commit
 hash), clone the repository, checkout the desired version, make a tar
-file and gzip the file.  (You may exclude the '.git' subdirectory.)  But
-note that spack refuses to use a cached file for the head of a branch
-because it is a moving target.
+file and gzip the file.  (You should exclude the '.git' subdirectory.)
+But note that spack refuses to use a cached file for the head of a
+branch because it is a moving target.
 
    Finally, after creating the mirror directory, add it to spack with
 'spack mirror add'.  For example,
@@ -686,16 +889,19 @@ because it is a moving target.
 Note: by default, spack stores downloaded files inside the spack
 repository at 'spack/var/spack/cache'.  This directory is a full spack
 mirror, so instead of creating a separate directory tree, you could just
-copy the files into the 'cache' directory.
+copy the files into the 'cache' directory.  This is useful when 'spack
+fetch' has trouble downloading a file.  If you can download the file
+manually, or copy it from another machine, then just rename the file as
+above and copy it into the spack file cache.
 
    For more information on mirrors, see:
 
      <https://spack.readthedocs.io/en/latest/mirrors.html>
 
-13 Common Problems
+15 Common Problems
 ==================
 
-13.1 Unable to fetch tar file
+15.1 Unable to fetch tar file
 -----------------------------
 
 Spack is somewhat fragile for how it downloads tar files and will often
@@ -716,7 +922,7 @@ manually download the file(s) by some other means and copy them to
 spack's cache directory 'spack/var/spack/cache/<package>' or to a spack
 mirror.
 
-13.2 New releases break the build
+15.2 New releases break the build
 ---------------------------------
 
 Normally, HPCToolkit should build and work correctly with the latest
@@ -729,7 +935,7 @@ build.
    The solution is to use 'packages.yaml' to specify an earlier version
 until the rest of the code adapts to the change.
 
-13.3 Failure to load modules
+15.3 Failure to load modules
 ----------------------------
 
 Spack is quite aggressive about compiling with a clean environment and
