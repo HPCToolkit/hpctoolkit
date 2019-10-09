@@ -562,6 +562,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   sampling_info_t info;
 
+  info.flags = 0;
   info.sample_clock = 0;
   info.sample_custom_cct.update_before_fn = NULL;
 #if kernel_sampling_enabled

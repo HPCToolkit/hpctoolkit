@@ -280,8 +280,14 @@ hpcrun_sample_callpath(void* context, int metricId,
     leaf_ip = td->btbuf_beg->the_function;
   }
 
-  bool trace_ok = ! td->deadlock_drop;
+  bool trace_ok = (!td->deadlock_drop);
+
+  if (trace_ok && data != NULL) {
+    // do not trace if we are sample in the middle of allocation routines
+    trace_ok = !(data->flags & SAMPLING_IN_MALLOC == SAMPLING_IN_MALLOC);
+  }
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
+
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 
