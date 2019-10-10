@@ -26,11 +26,50 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: Oct 4, 2019.
+Last revised: Oct 9, 2019.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
+
+@subsection (2019-10-08) Python 3.x breaks PAPI
+
+Python 2.x is nearing end-of-life and Spack recently changed their
+launch script to look for and use python 3.x if available.  There are
+incompatibilities and some spack packages (including PAPI) currently
+break with python 3.x.  (The papi recipe hangs while patching files with
+@code{filter_file}.)  There are two workarounds, depending on whether
+python 2.x is available on your system.
+
+@b{Workaround:} If python 2.x is available on your system, then the
+simplest solution is to remove the test for @code{python3} in the
+@code{bin/spack} launch script.
+
+@example
+# This file is bilingual. The following shell code finds our preferred python.
+# Following line is a shell no-op, and starts a multi-line Python comment.
+# See https://stackoverflow.com/a/47886254
+""":"
+# prefer python3, then python, then python2
+for cmd in python3 python python2; do
+   command -v > /dev/null $cmd && exec $cmd $0 "$@"
+done
+@end example
+
+@noindent
+@b{Workaround:} If python 2.x is not available on your system, then
+apply the patch to @code{lib/spack/llnl/util/filesystem.py} from spack
+issue 12765.
+
+@example
+@uref{https://github.com/spack/spack/pull/12765/files}
+@end example
+
+@noindent
+You only need the patch to @code{filesystem.py}.  The other two files
+are tests.
+
+@c ------------------------------------------------------------
 
 @subsection (2019-09-25) New micro-architecture targets
 
