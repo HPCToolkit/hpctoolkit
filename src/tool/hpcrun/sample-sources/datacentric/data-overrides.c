@@ -440,7 +440,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 
     // warn sample callpath not to record the trace of this sample
 
-    sampling_info.flags = SAMPLING_IN_MALLOC;
+    sampling_info.flags = SAMPLING_NO_TRACES;
     sampling_info.sample_custom_cct.data_aux        = NULL;
     sampling_info.sample_custom_cct.update_after_fn  = NULL;
     sampling_info.sample_custom_cct.update_before_fn = NULL;

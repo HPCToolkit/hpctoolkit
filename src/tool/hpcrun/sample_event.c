@@ -283,8 +283,10 @@ hpcrun_sample_callpath(void* context, int metricId,
   bool trace_ok = (!td->deadlock_drop);
 
   if (trace_ok && data != NULL) {
-    // do not trace if we are sample in the middle of allocation routines
-    trace_ok = !(data->flags & SAMPLING_IN_MALLOC == SAMPLING_IN_MALLOC);
+    // sometimes sample-sources don't want us to record traces.
+    //
+    // For instance, datacentric avoid traces in the middle of allocation routines
+    trace_ok = !(data->flags & SAMPLING_NO_TRACES == SAMPLING_NO_TRACES);
   }
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
 
