@@ -78,6 +78,12 @@ LIBELF_LIB   = @LIBELF_LIB@
 
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+else
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+endif
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
