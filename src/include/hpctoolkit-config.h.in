@@ -27,7 +27,7 @@
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
 
-/* cupti include file available */
+/* The <cupti.h> header file is available. */
 #undef HAVE_CUPTI_H
 
 /* Define to 1 if you have the <cxxabi.h> header file. */

@@ -651,7 +651,6 @@ OPT_ENABLE_CUPTI_FALSE
 OPT_ENABLE_CUPTI_TRUE
 OPT_CUDA_LDFLAGS
 OPT_CUDA_IFLAGS
-OPT_CUDA
 OPT_ENABLE_CUDA_FALSE
 OPT_ENABLE_CUDA_TRUE
 hpclink_extra_wrap_names
@@ -1035,11 +1034,7 @@ with_cilk
 enable_lush_pthreads
 enable_xop
 with_cuda
-with_cuda_include
-with_cuda_lib
 with_cupti
-with_cupti_include
-with_cupti_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1781,20 +1776,9 @@ Optional Packages:
   --with-xerces=PATH      path to xerces-c install directory
   --with-zlib=PATH        path to zlib install directory
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
-  --with-cuda=PATH        use given CUDA installation (absolute path) with
-                          hpcrun (default is NO)
-  --with-cuda-include=PATH
-                          use given CUDA include (absolute path) with hpcrun
-                          (default is NO)
-  --with-cuda-lib=PATH    use given CUDA lib (absolute path) with hpcrun
-                          (default is NO)
-  --with-cupti=PATH       use given CUDA/CUPTI installation (absolute path)
-                          with hpcrun (default is NO)
-  --with-cupti-include=PATH
-                          use given CUPTI include (absolute path) with hpcrun
-                          (default is NO)
-  --with-cupti-lib=PATH   use given CUPTI lib (absolute path) with hpcrun
-                          (default is NO)
+  --with-cuda=PATH        path to cuda install directory
+  --with-cupti=PATH       path to cupti install directory, default is from
+                          cuda
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -19789,6 +19773,7 @@ $as_echo "$as_me: spack directory: $with_spack" >&6;}
 default_binutils_prefix=no
 default_boost_prefix=no
 default_bzip_prefix=no
+default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
 default_libdwarf_prefix=no
@@ -19880,6 +19865,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg bzip2 ; then
     default_bzip_prefix="$spack_ans"
+  fi
+  if find_spack_pkg cuda ; then
+    default_cuda_prefix="$spack_ans"
   fi
   if find_spack_pkg dyninst ; then
     default_dyninst_prefix="$spack_ans"
@@ -22933,88 +22921,53 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # Option: --with-cuda=PATH
 #-------------------------------------------------
 
-# CUDA support for CPU-GPU-Blame-shifting
-# CUDA default install path is /usr/local/cuda
-# Include files will be in CUDADIR/include
-# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
-# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
-# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+# CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
+# either in CUDA/extras/CUPTI or else in a separate install.
 
-
-if test "${host_sizeof_voidp}" = "4"; then
-    CUDA_LIB_SEARCH_ORDER="lib32 lib"
-else
-    CUDA_LIB_SEARCH_ORDER="lib64 lib"
-fi
-
+CUDA="$default_cuda_prefix"
 
 OPT_HAVE_CUDA=no
-OPT_CUDA=
-OPT_CUDA_INCPATH=
+OPT_CUDA_IFLAGS=
 OPT_CUDA_LDFLAGS=
-OPT_CUDA_LIBPATH=
 
 
 # Check whether --with-cuda was given.
 if test "${with_cuda+set}" = set; then :
-  withval=$with_cuda; if test $withval != no; then
-     OPT_HAVE_CUDA=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cuda requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUDA=${withval}
-   fi
+  withval=$with_cuda; CUDA="$withval"
 fi
 
 
-if test "$OPT_HAVE_CUDA" = "yes" ; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cuda" >&5
+$as_echo_n "checking for cuda... " >&6; }
 
-# Check whether --with-cuda-include was given.
-if test "${with_cuda_include+set}" = set; then :
-  withval=$with_cuda_include; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cuda-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUDA_INCPATH=${withval}
-  fi
-else
-  if test -f ${OPT_CUDA}/include/cuda.h; then
-         OPT_CUDA_INCPATH=${OPT_CUDA}/include
-     else
-         as_fn_error $? "'${OPT_CUDA}/include/cuda.h' not found" "$LINENO" 5
-     fi
-fi
-
-
-  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
-
-
-# Check whether --with-cuda-lib was given.
-if test "${with_cuda_lib+set}" = set; then :
-  withval=$with_cuda_lib; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cuda-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUDA_LIBPATH=${withval}
-   fi
-else
-  for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
-    if test -f "${OPT_CUDA}/${lib}/libcudart.so"
-    then
-      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
-      break
+case "$CUDA" in
+  /* )
+    if test ! -f "${CUDA}/include/cuda.h" ; then
+      as_fn_error $? "unable to find cuda.h in: $CUDA" "$LINENO" 5
     fi
-  done
-     if test  -z "${OPT_CUDA_LIBPATH}" ; then
-       as_fn_error $? "libcudart.so not found" "$LINENO" 5
-     fi
+    OPT_CUDA_IFLAGS="-I${CUDA}/include"
 
-fi
+    for lib in $multilib_path ; do
+      if test -f "${CUDA}/${lib}/libcudart.so" ; then
+        OPT_CUDA_LDFLAGS="-L${CUDA}/${lib} -lcudart"
+        break
+      fi
+    done
+    if test "x$OPT_CUDA_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libcudart.so in: $CUDA" "$LINENO" 5
+    fi
+    OPT_HAVE_CUDA=yes
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "cuda directory must be absolute path: $CUDA" "$LINENO" 5
+    ;;
+esac
 
-
-  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
-
-fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CUDA" >&5
+$as_echo "$CUDA" >&6; }
 
  if test "$OPT_HAVE_CUDA" = yes; then
   OPT_ENABLE_CUDA_TRUE=
@@ -23033,9 +22986,8 @@ fi
 
 
 cat >>confdefs.h <<_ACEOF
-#define CUDA_INSTALL_PREFIX "$OPT_CUDA"
+#define CUDA_INSTALL_PREFIX "$CUDA"
 _ACEOF
-
 
 
 
@@ -23044,97 +22996,68 @@ _ACEOF
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
+
+# CUPTI is either in CUDA/extras/CUPTI or else specified separately
+# here.
+
+CUPTI=no
+case "$CUDA" in
+  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+       ;;
+esac
+
 OPT_HAVE_CUPTI=no
-OPT_CUPTI=
-OPT_CUPTI_INCPATH=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
-OPT_CUPTI_LIBPATH=
-
-if test "${host_sizeof_voidp}" = "4"; then
-    CUPTI_LIB_SEARCH_ORDER="lib32 lib"
-else
-    CUPTI_LIB_SEARCH_ORDER="lib64 lib"
-fi
 
 
 # Check whether --with-cupti was given.
 if test "${with_cupti+set}" = set; then :
-  withval=$with_cupti; if test $withval != no; then
-     OPT_HAVE_CUPTI=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cupti requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUPTI=${withval}
-   fi
+  withval=$with_cupti; CUPTI="$withval"
 fi
 
 
-#
-# Valid cupti library
-#
-if test "$use_papi_c_cupti" != no; then
-   if test "$OPT_HAVE_CUPTI" = yes; then
-       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
-       if test "$OPT_HAVE_CUDA" = no; then
-          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
-	  OPT_CUDA_IFLAGS="-I$cuda_dir"
-       fi
-       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
-   else
-      as_fn_error $? "papi-c-cupti specified, but no cupti lib specified!" "$LINENO" 5
-   fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for cupti" >&5
+$as_echo_n "checking for cupti... " >&6; }
+
+case "$CUPTI" in
+  /* )
+    if test ! -f "${CUPTI}/include/cupti.h" ; then
+      as_fn_error $? "unable to find cupti.h in: $CUPTI" "$LINENO" 5
+    fi
+    OPT_CUPTI_IFLAGS="-I${CUPTI}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${CUPTI}/${lib}/libcupti.so" ; then
+        OPT_CUPTI_LDFLAGS="-L${CUPTI}/$lib -Wl,-rpath=${CUPTI}/$lib -lcupti"
+        break
+      fi
+    done
+    if test "x$OPT_CUPTI_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libcupti.so in: $CUPTI" "$LINENO" 5
+    fi
+    OPT_HAVE_CUPTI=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "cupti directory must be absolute path: $CUPTI" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $CUPTI" >&5
+$as_echo "$CUPTI" >&6; }
+
+# CUDA doesn't work without CUPTI.
+if test "$OPT_HAVE_CUDA" = yes && test "$OPT_HAVE_CUPTI" = no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: cuda is configured without cupti" >&5
+$as_echo "$as_me: WARNING: cuda is configured without cupti" >&2;}
+  as_fn_error $? "use --with-cupti to provide location of cupti" "$LINENO" 5
 fi
 
-if test "$OPT_HAVE_CUPTI" = "yes" ; then
-
-# Check whether --with-cupti-include was given.
-if test "${with_cupti_include+set}" = set; then :
-  withval=$with_cupti_include; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cupti-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUPTI_INCPATH=${withval}
-  fi
-else
-  if test -f ${OPT_CUPTI}/include/cupti.h; then
-         OPT_CUPTI_INCPATH=${OPT_CUPTI}/include
+if test "$OPT_HAVE_CUPTI" = yes ; then
 
 $as_echo "#define HAVE_CUPTI_H 1" >>confdefs.h
-
-     else
-         as_fn_error $? "'${OPT_CUPTI}/include/cupti.h' not found" "$LINENO" 5
-     fi
-fi
-
-
-  OPT_CUPTI_IFLAGS="-I${OPT_CUPTI_INCPATH} "
-
-
-# Check whether --with-cupti-lib was given.
-if test "${with_cupti_lib+set}" = set; then :
-  withval=$with_cupti_lib; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-cupti-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_CUPTI_LIBPATH=${withval}
-   fi
-else
-  for lib in ${CUPTI_LIB_SEARCH_ORDER} ; do
-    if test -f "${OPT_CUPTI}/${lib}/libcupti.so"
-    then
-      OPT_CUPTI_LIBPATH="${OPT_CUPTI}/${lib}"
-      break
-    fi
-  done
-     if test  -z "${OPT_CUPTI_LIBPATH}" ; then
-       as_fn_error $? "libcupti.so not found" "$LINENO" 5
-     fi
-
-fi
-
-
-  OPT_CUPTI_LDFLAGS="-L${OPT_CUPTI_LIBPATH} -Wl,-rpath=${OPT_CUPTI_LIBPATH} -lcupti "
 
 fi
 
@@ -23145,6 +23068,9 @@ else
   OPT_ENABLE_CUPTI_TRUE='#'
   OPT_ENABLE_CUPTI_FALSE=
 fi
+
+
+OPT_CUPTI="$CUPTI"
 
 
 
@@ -26318,8 +26244,10 @@ $as_echo "$as_me:   xed:          ${XED2}" >&6;}
 $as_echo "$as_me:   xerces:       ${XERCES}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   zlib:         ${ZLIB}" >&5
 $as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${OPT_CUDA}" >&5
-$as_echo "$as_me:   cuda:         ${OPT_CUDA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   cuda:         ${CUDA}" >&5
+$as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   cupti:        ${CUPTI}" >&5
+$as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 
