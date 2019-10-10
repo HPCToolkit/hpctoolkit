@@ -940,6 +940,48 @@ fi
 
 
 #-------------------------------------------------
+# Find base CC compiler, outside of spack
+#-------------------------------------------------
+
+# Hpclink needs the CC compiler for the fnbounds array, but the spack
+# wrapper won't run outside of spack.  So, if we're being built by
+# spack, then find the base compiler for hpclink.
+
+HPCLINK_CC="$CC_PATH"
+
+echo "$CC_PATH" | grep -E -i -e 'lib.*spack.*env' >/dev/null
+if test $? -eq 0 ; then
+  AC_MSG_NOTICE([found spack compiler wrapper])
+  AC_MSG_CHECKING([if base compiler works: $SPACK_CC])
+
+  ORIG_CC="$CC"
+  CC="$SPACK_CC"
+  AC_LANG_PUSH([C])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+unsigned long addrs[] = {
+  0x400400, 0x400410
+};
+unsigned long len = sizeof(addrs) / sizeof(addrs[0]);
+]])], [ans=yes], [ans=no])
+
+  AC_MSG_RESULT([$ans])
+
+  AC_LANG_POP()
+  CC="$ORIG_CC"
+
+  if test "$ans" = yes ; then HPCLINK_CC="$SPACK_CC"
+  else HPCLINK_CC=gcc
+  fi
+fi
+
+AC_MSG_NOTICE([hpclink compiler: $HPCLINK_CC])
+
+AC_SUBST([HPCLINK_CC])
+
+
+#-------------------------------------------------
 # CXXFLAGS for std C++11
 #-------------------------------------------------
 
