@@ -70,6 +70,12 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 
 MYSOURCES = \
@@ -99,6 +105,7 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \

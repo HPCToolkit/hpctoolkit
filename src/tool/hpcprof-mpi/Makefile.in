@@ -347,6 +347,14 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
@@ -442,14 +450,6 @@ XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 XED2_HPCRUN_LIBS = @XED2_HPCRUN_LIBS@
 XED2_INC = @XED2_INC@
 XED2_LIB_DIR = @XED2_LIB_DIR@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_PROF_MPI_LIBS = @XED2_PROF_MPI_LIBS@
 XERCES = @XERCES@
@@ -581,6 +581,7 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
