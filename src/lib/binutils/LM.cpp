@@ -93,6 +93,10 @@ using std::endl;
 #include "Proc.hpp"
 #include "SimpleSymbolsFactories.hpp"
 #include "Dbg-LM.hpp"
+#include "RelocateCubin.hpp"
+#include "Fatbin.hpp"
+#include "ElfHelper.hpp"
+#include "InputFile.hpp"
 
 //***************************************************************************
 // macros
@@ -378,9 +382,13 @@ BinUtil::LM::~LM()
   delete[] m_bfdSymTabSort;
   m_bfdSymTabSort = NULL; 
 
+  delete[] m_bfdDynSymTab;
+  m_bfdDynSymTab = NULL;
+
   m_bfdSymTabSz = 0;
   m_bfdSymTabSortSz = 0;
   m_bfdSynthTabSz = 0;
+  m_bfdDynSymTabSz = 0;
   
   // reset isa
   delete isa;
@@ -400,6 +408,19 @@ BinUtil::LM::open(const char* filenm)
   if (simpleSymbolsFactories.find(filenm)) {
     m_name = filenm;
     return;
+  }
+
+  // Write relocated cubins and reopen them
+  InputFile input_file;
+  std::string file_name = std::string(filenm);
+  if (input_file.openFile(file_name)) {
+    // We only relocate individual cubins, with filevector size 1
+    ElfFile *elf_file = (*input_file.fileVector())[0];
+    if (isCubin(elf_file->getElf())) {
+      file_name = elf_file->getFileName() + ".relocate";
+      writeElfFile(elf_file, ".relocate");
+      filenm = file_name.c_str();
+    }
   }
 
   // -------------------------------------------------------

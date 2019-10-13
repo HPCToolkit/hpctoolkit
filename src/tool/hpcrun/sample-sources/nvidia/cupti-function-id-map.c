@@ -78,7 +78,7 @@ cupti_function_id_map_delete_root()
   } else {
     cupti_function_id_map_root->left = 
       cupti_function_id_map_splay(cupti_function_id_map_root->left, 
-			   cupti_function_id_map_root->function_id);
+        cupti_function_id_map_root->function_id);
     cupti_function_id_map_root->left->right = cupti_function_id_map_root->right;
     cupti_function_id_map_root = cupti_function_id_map_root->left;
   }
@@ -156,9 +156,9 @@ static int
 cupti_function_id_map_count_helper(cupti_function_id_map_entry_t *entry) 
 {
   if (entry) {
-     int left = cupti_function_id_map_count_helper(entry->left);
-     int right = cupti_function_id_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cupti_function_id_map_count_helper(entry->left);
+    int right = cupti_function_id_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
   return 0;
 }

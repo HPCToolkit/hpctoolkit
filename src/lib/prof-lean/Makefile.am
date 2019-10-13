@@ -98,6 +98,10 @@ MYSOURCES = \
 	cskiplist.h cskiplist.c \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
+	stacks.h stacks.c \
+	unordered_stack.h unordered_stack.c \
+	bi_unordered_channel.h bi_unordered_channel.c \
+	producer_wfq.h producer_wfq.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
 	randomizer.h randomizer.c

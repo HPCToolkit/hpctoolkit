@@ -459,7 +459,8 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c
+	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
@@ -472,9 +473,13 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cupti-correlation-id-map.c	\
 	sample-sources/nvidia/cupti-function-id-map.c		\
 	sample-sources/nvidia/cupti-host-op-map.c		\
-	sample-sources/nvidia/cupti-stack.c			\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-record.c	 
+	sample-sources/nvidia/cupti-context-id-map.c \
+	sample-sources/nvidia/cupti-stream-id-map.c \
+	sample-sources/nvidia/cupti-trace-api.c \
+	sample-sources/nvidia/cupti-trace-channel.c \
+	sample-sources/nvidia/cupti-correlation-channel.c   \
+	sample-sources/nvidia/cupti-activity-channel.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

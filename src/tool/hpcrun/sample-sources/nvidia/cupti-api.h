@@ -4,6 +4,7 @@
 #include <hpcrun/loadmap.h>
 #include <cupti.h>
 #include "cupti-node.h"
+#include <lib/prof-lean/producer_wfq.h>
 
 //******************************************************************************
 // constants
@@ -124,19 +125,19 @@ cupti_device_timestamp_get
 
 
 void 
-cupti_trace_init
+cupti_init
 (
 );
 
 
 void 
-cupti_trace_start
+cupti_start
 (
 );
 
 
 void 
-cupti_trace_pause
+cupti_pause
 (
  CUcontext context,
  bool begin_pause
@@ -144,7 +145,7 @@ cupti_trace_pause
 
 
 void 
-cupti_trace_finalize
+cupti_finalize
 (
 );
 
@@ -269,12 +270,6 @@ cupti_correlation_id_pop
 (
 );
 
-
-ip_normalized_t
-cupti_kernel_ip_get
-(
-);
-
 //******************************************************************************
 // ignores
 //******************************************************************************
@@ -298,15 +293,16 @@ cupti_modules_ignore
 //******************************************************************************
 
 void
-cupti_notification_handle
+cupti_correlation_handle
 (
- cupti_node_t *node
+ cupti_entry_correlation_t *entry
 );
+
 
 void
 cupti_activity_handle
 (
- cupti_node_t *node
+ cupti_entry_activity_t *entry
 );
 
 #endif

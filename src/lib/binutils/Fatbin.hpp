@@ -42,137 +42,49 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
+// File: Fatbin.hpp
 //
 // Purpose:
-//
-// Description:
-//
+//   Interface for a routine that inspects and Elf module and collects
+//   nested Elf modules.
 //
 //***************************************************************************
 
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
-
+#ifndef __Fatbin_hpp__
+#define __Fatbin_hpp__
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <lib/support/diagnostics.h>
-
-#include "InputFile.hpp"
 #include "ElfHelper.hpp"
-#include "Fatbin.hpp"
 
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static size_t
-file_size(int fd)
-{
-  struct stat sb;
-  int retval = fstat(fd, &sb);
-  if (retval == 0 && S_ISREG(sb.st_mode)) {
-    return sb.st_size;
-  }
-  return 0;
-}
-
-
-// Automatically restart short reads.
-// This protects against EINTR.
-//
-static size_t
-read_all(int fd, void *buf, size_t count)
-{
-  ssize_t ret;
-  size_t len;
-
-  len = 0;
-  while (len < count) {
-    ret = read(fd, ((char *) buf) + len, count - len);
-    if (ret == 0 || (ret < 0 && errno != EINTR)) {
-      break;
-    }
-    if (ret > 0) {
-      len += ret;
-    }
-  }
-
-  return len;
-}
 
 
 //******************************************************************************
-// interface oeprations
+// interface functions
 //******************************************************************************
+
+bool
+findCubins
+(
+ ElfFile *elfFile,
+ ElfFileVector *elfFileVector
+);
 
 
 bool
-InputFile::openFile
+isCubin(Elf *elf);
+
+
+void
+writeElfFile
 (
- std::string &filename
-)
-{
-  this->filename = filename;
+ ElfFile *elfFile,
+ const char *suffix
+);
 
-  int    file_fd = open(filename.c_str(), O_RDONLY);
-
-  if (file_fd < 0) {
-    DIAG_EMsg("unable to open input file: " << filename);
-    return false;
-  }
-
-  size_t f_size = file_size(file_fd);
-  
-  if (f_size == 0) {
-    DIAG_EMsg("empty input file: " << filename);
-    return false;
-  }
-
-  char  *file_buffer = (char *) malloc(f_size);
-
-  if (file_buffer == 0) {
-    DIAG_EMsg("unable to allocate file buffer of " << f_size << " bytes");
-    return false;
-  }
-
-  size_t bytes = read_all(file_fd, file_buffer, f_size);
-
-  if (f_size != bytes) {
-    DIAG_EMsg("read only " << bytes << " bytes of "
-	      << f_size << " bytes from file " << filename);
-    return false;
-  }
-
-  close(file_fd);
-
-  ElfFile *elfFile = new ElfFile;
-  bool result = elfFile->open(file_buffer, f_size, filename);
-
-  if (result) {
-    filevector = new ElfFileVector;
-    filevector->push_back(elfFile);
-    findCubins(elfFile, filevector);
-  } else {
-    DIAG_EMsg("not an ELF binary: " << filename);
-    delete elfFile;
-  }
-
-  return result;
-}
+#endif

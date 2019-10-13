@@ -88,7 +88,6 @@ struct cuda_device_map_entry_s {
 }; 
 
 
-
 //*****************************************************************************
 // global data 
 //*****************************************************************************
@@ -142,7 +141,7 @@ cuda_device_map_delete_root
   } else {
     cuda_device_map_root->left = 
       cuda_device_map_splay(cuda_device_map_root->left, 
-			   cuda_device_map_root->device);
+        cuda_device_map_root->device);
     cuda_device_map_root->left->right = cuda_device_map_root->right;
     cuda_device_map_root = cuda_device_map_root->left;
   }
@@ -233,7 +232,6 @@ cuda_device_map_entry_device_property_get
 }
 
 
-
 //*****************************************************************************
 // debugging code
 //*****************************************************************************
@@ -245,9 +243,9 @@ cuda_device_map_count_helper
 ) 
 {
   if (entry) {
-     int left = cuda_device_map_count_helper(entry->left);
-     int right = cuda_device_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cuda_device_map_count_helper(entry->left);
+    int right = cuda_device_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
 
   return 0;

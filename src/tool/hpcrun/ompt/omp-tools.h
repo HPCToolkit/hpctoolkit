@@ -919,6 +919,7 @@ typedef void (*ompt_callback_device_unload_t) (
 );
 
 typedef void (*ompt_callback_target_data_op_t) (
+  ompt_scope_endpoint_t endpoint,
   ompt_id_t target_id,
   ompt_id_t host_op_id,
   ompt_target_data_op_t optype,
@@ -927,8 +928,7 @@ typedef void (*ompt_callback_target_data_op_t) (
   void *dest_addr,
   int dest_device_num,
   size_t bytes,
-  const void *codeptr_ra,
-  int begin
+  const void *codeptr_ra
 );
 
 typedef struct ompt_record_target_data_op_t {
@@ -982,10 +982,10 @@ typedef struct ompt_record_target_map_t {
 } ompt_record_target_map_t;
 
 typedef void (*ompt_callback_target_submit_t) (
+  ompt_scope_endpoint_t endpoint,
   ompt_id_t target_id,
   ompt_id_t host_op_id,
-  unsigned int requested_num_teams,
-  int begin
+  unsigned int requested_num_teams
 );
 
 typedef struct ompt_record_target_kernel_t {

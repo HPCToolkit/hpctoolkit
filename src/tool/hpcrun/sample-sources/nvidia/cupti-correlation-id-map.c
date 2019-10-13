@@ -70,7 +70,7 @@ cupti_correlation_id_map_delete_root()
   } else {
     cupti_correlation_id_map_root->left = 
       cupti_correlation_id_map_splay(cupti_correlation_id_map_root->left, 
-			   cupti_correlation_id_map_root->correlation_id);
+        cupti_correlation_id_map_root->correlation_id);
     cupti_correlation_id_map_root->left->right = cupti_correlation_id_map_root->right;
     cupti_correlation_id_map_root = cupti_correlation_id_map_root->left;
   }
@@ -213,9 +213,9 @@ static int
 cupti_correlation_id_map_count_helper(cupti_correlation_id_map_entry_t *entry) 
 {
   if (entry) {
-     int left = cupti_correlation_id_map_count_helper(entry->left);
-     int right = cupti_correlation_id_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cupti_correlation_id_map_count_helper(entry->left);
+    int right = cupti_correlation_id_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
   return 0;
 }

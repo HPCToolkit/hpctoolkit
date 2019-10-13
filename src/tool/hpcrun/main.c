@@ -901,6 +901,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     STDERR_MSG("Std Err message appears");
   }
 
+
   hpcrun_safe_exit();
 
   return data;

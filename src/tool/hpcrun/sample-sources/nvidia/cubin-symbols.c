@@ -102,12 +102,12 @@ countSections
  Elf *elf
 )
 {
-    int count = 0;
-    Elf_Scn *scn = NULL;
-    while ((scn = elf_nextscn(elf, scn)) != NULL) {
-      count++;
-    }
-    return count;
+  int count = 0;
+  Elf_Scn *scn = NULL;
+  while ((scn = elf_nextscn(elf, scn)) != NULL) {
+    count++;
+  }
+  return count;
 }
 
 

@@ -276,7 +276,7 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_113 = -DLUSH_PTHREADS
 @OPT_ENABLE_CUDA_TRUE@am__append_114 = $(MY_CUDA_FILES)
 @OPT_ENABLE_CUDA_TRUE@am__append_115 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_116 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_CUDA_TRUE@am__append_116 = $(OPT_CUDA_IFLAGS)
 @OPT_ENABLE_CUDA_TRUE@am__append_117 = $(MY_CUDA_FILES)
 @OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_118 = libagent-cilk.la
 @OPT_ENABLE_LUSH_TRUE@am__append_119 = libagent-pthread.la \
@@ -490,12 +490,17 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/nvidia/cupti-correlation-id-map.c \
 	sample-sources/nvidia/cupti-function-id-map.c \
 	sample-sources/nvidia/cupti-host-op-map.c \
-	sample-sources/nvidia/cupti-stack.c \
 	sample-sources/nvidia/cupti-node.c \
-	sample-sources/nvidia/cupti-record.c sample-sources/upc.c \
-	sample-sources/nvidia/cuda-api.c \
+	sample-sources/nvidia/cupti-context-id-map.c \
+	sample-sources/nvidia/cupti-stream-id-map.c \
+	sample-sources/nvidia/cupti-trace-api.c \
+	sample-sources/nvidia/cupti-trace-channel.c \
+	sample-sources/nvidia/cupti-correlation-channel.c \
+	sample-sources/nvidia/cupti-activity-channel.c \
+	sample-sources/upc.c sample-sources/nvidia/cuda-api.c \
 	sample-sources/nvidia/cuda-device-map.c \
 	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -649,15 +654,20 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-correlation-id-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-function-id-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-host-op-map.lo \
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-stack.lo \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-node.lo \
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-record.lo
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo
 @OPT_ENABLE_CUPTI_TRUE@am__objects_32 = $(am__objects_31)
 am__objects_33 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
 @OPT_ENABLE_CUDA_TRUE@am__objects_35 = sample-sources/nvidia/libhpcrun_la-cuda-api.lo \
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo
 @OPT_ENABLE_CUDA_TRUE@am__objects_36 = $(am__objects_35)
 am__objects_37 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
@@ -834,14 +844,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/nvidia/cupti-correlation-id-map.c \
 	sample-sources/nvidia/cupti-function-id-map.c \
 	sample-sources/nvidia/cupti-host-op-map.c \
-	sample-sources/nvidia/cupti-stack.c \
 	sample-sources/nvidia/cupti-node.c \
-	sample-sources/nvidia/cupti-record.c sample-sources/papi.c \
-	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
-	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
-	sample-sources/nvidia/cuda-api.c \
+	sample-sources/nvidia/cupti-context-id-map.c \
+	sample-sources/nvidia/cupti-stream-id-map.c \
+	sample-sources/nvidia/cupti-trace-api.c \
+	sample-sources/nvidia/cupti-trace-channel.c \
+	sample-sources/nvidia/cupti-correlation-channel.c \
+	sample-sources/nvidia/cupti-activity-channel.c \
+	sample-sources/papi.c sample-sources/papi-c-cupti.c \
+	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
+	sample-sources/upc.c sample-sources/nvidia/cuda-api.c \
 	sample-sources/nvidia/cuda-device-map.c \
 	sample-sources/nvidia/cuda-state-placeholders.c \
+	sample-sources/nvidia/gpu-driver-state-placeholders.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -993,9 +1008,13 @@ am__objects_60 =  \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-correlation-id-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-function-id-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-host-op-map.$(OBJEXT) \
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-stack.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-node.$(OBJEXT) \
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-record.$(OBJEXT)
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-trace-api.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.$(OBJEXT)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_63 = $(am__objects_62)
 @OPT_PAPI_CUPTI_TRUE@am__objects_64 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
 @OPT_PAPI_COMPONENT_FALSE@am__objects_65 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
@@ -1008,7 +1027,8 @@ am__objects_67 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
 @OPT_ENABLE_UPC_TRUE@am__objects_68 = $(am__objects_67)
 @OPT_ENABLE_CUDA_TRUE@am__objects_69 = sample-sources/nvidia/libhpcrun_o-cuda-api.$(OBJEXT) \
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT) \
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT)
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT) \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.$(OBJEXT)
 @OPT_ENABLE_CUDA_TRUE@am__objects_70 = $(am__objects_69)
 am__objects_71 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
@@ -1697,7 +1717,8 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_16)
 @OPT_ENABLE_CUDA_TRUE@MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 @OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-device-map.c			\
-@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/cuda-state-placeholders.c \
+@OPT_ENABLE_CUDA_TRUE@	sample-sources/nvidia/gpu-driver-state-placeholders.c
 
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cubin-id-map.c			\
@@ -1708,9 +1729,13 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-correlation-id-map.c	\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-function-id-map.c		\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-host-op-map.c		\
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-stack.c			\
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-node.c			\
-@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-record.c	 
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-context-id-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-stream-id-map.c \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-trace-api.c \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-trace-channel.c \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-correlation-channel.c   \
+@OPT_ENABLE_CUPTI_TRUE@	sample-sources/nvidia/cupti-activity-channel.c
 
 MY_UPC_FILES = sample-sources/upc.c
 MY_INCLUDE_DIRS = \
@@ -2496,13 +2521,25 @@ sample-sources/nvidia/libhpcrun_la-cupti-function-id-map.lo:  \
 sample-sources/nvidia/libhpcrun_la-cupti-host-op-map.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_la-cupti-stack.lo:  \
-	sample-sources/nvidia/$(am__dirstamp) \
-	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/nvidia/libhpcrun_la-cupti-node.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_la-cupti-record.lo:  \
+sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
@@ -2514,6 +2551,9 @@ sample-sources/nvidia/libhpcrun_la-cuda-device-map.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo:  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo:  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-backtrace.lo:  \
@@ -2946,13 +2986,25 @@ sample-sources/nvidia/libhpcrun_o-cupti-function-id-map.$(OBJEXT):  \
 sample-sources/nvidia/libhpcrun_o-cupti-host-op-map.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_o-cupti-stack.$(OBJEXT):  \
-	sample-sources/nvidia/$(am__dirstamp) \
-	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/nvidia/libhpcrun_o-cupti-node.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
-sample-sources/nvidia/libhpcrun_o-cupti-record.$(OBJEXT):  \
+sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-cupti-trace-api.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
@@ -2977,6 +3029,9 @@ sample-sources/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.$(OBJEXT):  \
+	sample-sources/nvidia/$(am__dirstamp) \
+	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.$(OBJEXT):  \
 	sample-sources/nvidia/$(am__dirstamp) \
 	sample-sources/nvidia/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_o-backtrace.$(OBJEXT):  \
@@ -3418,14 +3473,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cuda-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cuda-device-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cuda-state-placeholders.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-channel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-id-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-channel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-function-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-host-op-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-record.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stream-id-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-channel.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-nvidia.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-hash-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cubin-id-map.Po@am__quote@
@@ -3433,14 +3493,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cuda-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cuda-device-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cuda-state-placeholders.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-api.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-function-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-host-op-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-nvidia.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-event_custom.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_la-kernel_blocking.Plo@am__quote@
@@ -4641,13 +4706,6 @@ sample-sources/nvidia/libhpcrun_la-cupti-host-op-map.lo: sample-sources/nvidia/c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-host-op-map.lo `test -f 'sample-sources/nvidia/cupti-host-op-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-host-op-map.c
 
-sample-sources/nvidia/libhpcrun_la-cupti-stack.lo: sample-sources/nvidia/cupti-stack.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-stack.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stack.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-stack.lo `test -f 'sample-sources/nvidia/cupti-stack.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stack.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stack.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stack.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stack.c' object='sample-sources/nvidia/libhpcrun_la-cupti-stack.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-stack.lo `test -f 'sample-sources/nvidia/cupti-stack.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stack.c
-
 sample-sources/nvidia/libhpcrun_la-cupti-node.lo: sample-sources/nvidia/cupti-node.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-node.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-node.lo `test -f 'sample-sources/nvidia/cupti-node.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-node.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Plo
@@ -4655,12 +4713,47 @@ sample-sources/nvidia/libhpcrun_la-cupti-node.lo: sample-sources/nvidia/cupti-no
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-node.lo `test -f 'sample-sources/nvidia/cupti-node.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-node.c
 
-sample-sources/nvidia/libhpcrun_la-cupti-record.lo: sample-sources/nvidia/cupti-record.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-record.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-record.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-record.lo `test -f 'sample-sources/nvidia/cupti-record.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-record.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-record.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-record.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-record.c' object='sample-sources/nvidia/libhpcrun_la-cupti-record.lo' libtool=yes @AMDEPBACKSLASH@
+sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo: sample-sources/nvidia/cupti-context-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo `test -f 'sample-sources/nvidia/cupti-context-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-context-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-context-id-map.c' object='sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-record.lo `test -f 'sample-sources/nvidia/cupti-record.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-record.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-context-id-map.lo `test -f 'sample-sources/nvidia/cupti-context-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-id-map.c
+
+sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo: sample-sources/nvidia/cupti-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stream-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo `test -f 'sample-sources/nvidia/cupti-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stream-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-stream-id-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stream-id-map.c' object='sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-stream-id-map.lo `test -f 'sample-sources/nvidia/cupti-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stream-id-map.c
+
+sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo: sample-sources/nvidia/cupti-trace-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-api.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo `test -f 'sample-sources/nvidia/cupti-trace-api.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-api.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-api.c' object='sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-trace-api.lo `test -f 'sample-sources/nvidia/cupti-trace-api.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-api.c
+
+sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo: sample-sources/nvidia/cupti-trace-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo `test -f 'sample-sources/nvidia/cupti-trace-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-trace-channel.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-channel.c' object='sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-trace-channel.lo `test -f 'sample-sources/nvidia/cupti-trace-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-channel.c
+
+sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo: sample-sources/nvidia/cupti-correlation-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo `test -f 'sample-sources/nvidia/cupti-correlation-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-correlation-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-correlation-channel.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-correlation-channel.c' object='sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-correlation-channel.lo `test -f 'sample-sources/nvidia/cupti-correlation-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-correlation-channel.c
+
+sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo: sample-sources/nvidia/cupti-activity-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo `test -f 'sample-sources/nvidia/cupti-activity-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-activity-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-channel.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-activity-channel.c' object='sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cupti-activity-channel.lo `test -f 'sample-sources/nvidia/cupti-activity-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-activity-channel.c
 
 sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-upc.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-upc.Tpo -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -4689,6 +4782,13 @@ sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo: sample-sources/nv
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cuda-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-cuda-state-placeholders.lo `test -f 'sample-sources/nvidia/cuda-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/cuda-state-placeholders.c
+
+sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_la-gpu-driver-state-placeholders.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_la-gpu-driver-state-placeholders.lo `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
 
 unwind/common/libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-backtrace.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o unwind/common/libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -6615,20 +6715,6 @@ sample-sources/nvidia/libhpcrun_o-cupti-host-op-map.obj: sample-sources/nvidia/c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-host-op-map.obj `if test -f 'sample-sources/nvidia/cupti-host-op-map.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-host-op-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-host-op-map.c'; fi`
 
-sample-sources/nvidia/libhpcrun_o-cupti-stack.o: sample-sources/nvidia/cupti-stack.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-stack.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-stack.o `test -f 'sample-sources/nvidia/cupti-stack.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stack.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stack.c' object='sample-sources/nvidia/libhpcrun_o-cupti-stack.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-stack.o `test -f 'sample-sources/nvidia/cupti-stack.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stack.c
-
-sample-sources/nvidia/libhpcrun_o-cupti-stack.obj: sample-sources/nvidia/cupti-stack.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-stack.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-stack.obj `if test -f 'sample-sources/nvidia/cupti-stack.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-stack.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-stack.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stack.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stack.c' object='sample-sources/nvidia/libhpcrun_o-cupti-stack.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-stack.obj `if test -f 'sample-sources/nvidia/cupti-stack.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-stack.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-stack.c'; fi`
-
 sample-sources/nvidia/libhpcrun_o-cupti-node.o: sample-sources/nvidia/cupti-node.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-node.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-node.o `test -f 'sample-sources/nvidia/cupti-node.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-node.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Po
@@ -6643,19 +6729,89 @@ sample-sources/nvidia/libhpcrun_o-cupti-node.obj: sample-sources/nvidia/cupti-no
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-node.obj `if test -f 'sample-sources/nvidia/cupti-node.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-node.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-node.c'; fi`
 
-sample-sources/nvidia/libhpcrun_o-cupti-record.o: sample-sources/nvidia/cupti-record.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-record.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-record.o `test -f 'sample-sources/nvidia/cupti-record.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-record.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-record.c' object='sample-sources/nvidia/libhpcrun_o-cupti-record.o' libtool=no @AMDEPBACKSLASH@
+sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.o: sample-sources/nvidia/cupti-context-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.o `test -f 'sample-sources/nvidia/cupti-context-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-context-id-map.c' object='sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-record.o `test -f 'sample-sources/nvidia/cupti-record.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-record.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.o `test -f 'sample-sources/nvidia/cupti-context-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-context-id-map.c
 
-sample-sources/nvidia/libhpcrun_o-cupti-record.obj: sample-sources/nvidia/cupti-record.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-record.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-record.obj `if test -f 'sample-sources/nvidia/cupti-record.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-record.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-record.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-record.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-record.c' object='sample-sources/nvidia/libhpcrun_o-cupti-record.obj' libtool=no @AMDEPBACKSLASH@
+sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.obj: sample-sources/nvidia/cupti-context-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.obj `if test -f 'sample-sources/nvidia/cupti-context-id-map.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-context-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-context-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-context-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-context-id-map.c' object='sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-record.obj `if test -f 'sample-sources/nvidia/cupti-record.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-record.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-record.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-context-id-map.obj `if test -f 'sample-sources/nvidia/cupti-context-id-map.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-context-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-context-id-map.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.o: sample-sources/nvidia/cupti-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.o `test -f 'sample-sources/nvidia/cupti-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stream-id-map.c' object='sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.o `test -f 'sample-sources/nvidia/cupti-stream-id-map.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-stream-id-map.c
+
+sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.obj: sample-sources/nvidia/cupti-stream-id-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.obj `if test -f 'sample-sources/nvidia/cupti-stream-id-map.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-stream-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-stream-id-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-stream-id-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-stream-id-map.c' object='sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-stream-id-map.obj `if test -f 'sample-sources/nvidia/cupti-stream-id-map.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-stream-id-map.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-stream-id-map.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-cupti-trace-api.o: sample-sources/nvidia/cupti-trace-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-trace-api.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-api.o `test -f 'sample-sources/nvidia/cupti-trace-api.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-api.c' object='sample-sources/nvidia/libhpcrun_o-cupti-trace-api.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-api.o `test -f 'sample-sources/nvidia/cupti-trace-api.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-api.c
+
+sample-sources/nvidia/libhpcrun_o-cupti-trace-api.obj: sample-sources/nvidia/cupti-trace-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-trace-api.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-api.obj `if test -f 'sample-sources/nvidia/cupti-trace-api.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-trace-api.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-trace-api.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-api.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-api.c' object='sample-sources/nvidia/libhpcrun_o-cupti-trace-api.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-api.obj `if test -f 'sample-sources/nvidia/cupti-trace-api.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-trace-api.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-trace-api.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.o: sample-sources/nvidia/cupti-trace-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.o `test -f 'sample-sources/nvidia/cupti-trace-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.o `test -f 'sample-sources/nvidia/cupti-trace-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-trace-channel.c
+
+sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.obj: sample-sources/nvidia/cupti-trace-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.obj `if test -f 'sample-sources/nvidia/cupti-trace-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-trace-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-trace-channel.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-trace-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-trace-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-trace-channel.obj `if test -f 'sample-sources/nvidia/cupti-trace-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-trace-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-trace-channel.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.o: sample-sources/nvidia/cupti-correlation-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.o `test -f 'sample-sources/nvidia/cupti-correlation-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-correlation-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-correlation-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.o `test -f 'sample-sources/nvidia/cupti-correlation-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-correlation-channel.c
+
+sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.obj: sample-sources/nvidia/cupti-correlation-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.obj `if test -f 'sample-sources/nvidia/cupti-correlation-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-correlation-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-correlation-channel.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-correlation-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-correlation-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-correlation-channel.obj `if test -f 'sample-sources/nvidia/cupti-correlation-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-correlation-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-correlation-channel.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.o: sample-sources/nvidia/cupti-activity-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.o `test -f 'sample-sources/nvidia/cupti-activity-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-activity-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-activity-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.o `test -f 'sample-sources/nvidia/cupti-activity-channel.c' || echo '$(srcdir)/'`sample-sources/nvidia/cupti-activity-channel.c
+
+sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.obj: sample-sources/nvidia/cupti-activity-channel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Tpo -c -o sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.obj `if test -f 'sample-sources/nvidia/cupti-activity-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-activity-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-activity-channel.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-channel.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cupti-activity-channel.c' object='sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cupti-activity-channel.obj `if test -f 'sample-sources/nvidia/cupti-activity-channel.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cupti-activity-channel.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cupti-activity-channel.c'; fi`
 
 sample-sources/libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo -c -o sample-sources/libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c
@@ -6768,6 +6924,20 @@ sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj: sample-sources/nv
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/cuda-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-cuda-state-placeholders.obj `if test -f 'sample-sources/nvidia/cuda-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/cuda-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/cuda-state-placeholders.c'; fi`
+
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.o `test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c' || echo '$(srcdir)/'`sample-sources/nvidia/gpu-driver-state-placeholders.c
+
+sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj: sample-sources/nvidia/gpu-driver-state-placeholders.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj -MD -MP -MF sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj `if test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/gpu-driver-state-placeholders.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Tpo sample-sources/nvidia/$(DEPDIR)/libhpcrun_o-gpu-driver-state-placeholders.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/nvidia/gpu-driver-state-placeholders.c' object='sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/nvidia/libhpcrun_o-gpu-driver-state-placeholders.obj `if test -f 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; then $(CYGPATH_W) 'sample-sources/nvidia/gpu-driver-state-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/nvidia/gpu-driver-state-placeholders.c'; fi`
 
 unwind/common/libhpcrun_o-backtrace.o: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_o-backtrace.o -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_o-backtrace.Tpo -c -o unwind/common/libhpcrun_o-backtrace.o `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
