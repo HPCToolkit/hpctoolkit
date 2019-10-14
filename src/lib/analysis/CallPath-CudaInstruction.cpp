@@ -43,7 +43,7 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#include <lib/banal/cuda/InstructionAnalyzer.hpp>
+#include <lib/cuda/InstructionAnalyzer.hpp>
 
 #include <vector>
 #include <iostream>

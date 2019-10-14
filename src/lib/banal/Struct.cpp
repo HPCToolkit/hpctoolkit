@@ -88,6 +88,8 @@
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
+#include <lib/cuda/ReadCubinCFG.hpp>
+
 #include <boost/atomic.hpp>
 
 #include <CFG.h>
@@ -105,8 +107,6 @@
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
-
-#include "cuda/ReadCubinCFG.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

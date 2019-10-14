@@ -16,9 +16,6 @@
 
 # -*-Mode: makefile;-*-
 
-#############################################################################
-#############################################################################
-
 # -*-Mode: makefile;-*-
 
 #############################################################################
@@ -104,7 +101,6 @@ am__make_keepgoing = (target_option=k; $(am__make_running_with_option))
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
-pkglibexecdir = $(libexecdir)/@PACKAGE@
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -119,7 +115,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-subdir = src/lib/support-lean
+@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
+subdir = src/lib/cuda
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
@@ -137,20 +134,23 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCsupport_lean_la-timer.lo \
-	libHPCsupport_lean_la-OSUtil.lo \
-	libHPCsupport_lean_la-compress_lzma.lo
-am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
-libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
+libHPCcuda_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCcuda_la-CFGParser.lo \
+	libHPCcuda_la-CudaCFGFactory.lo libHPCcuda_la-CudaFunction.lo \
+	libHPCcuda_la-GraphReader.lo libHPCcuda_la-CudaBlock.lo \
+	libHPCcuda_la-CudaCodeSource.lo libHPCcuda_la-ReadCubinCFG.lo \
+	libHPCcuda_la-InstructionAnalyzer.lo \
+	libHPCcuda_la-Instruction.lo
+am_libHPCcuda_la_OBJECTS = $(am__objects_1)
+libHPCcuda_la_OBJECTS = $(am_libHPCcuda_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libHPCsupport_lean_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
+libHPCcuda_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -167,26 +167,26 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
-SOURCES = $(libHPCsupport_lean_la_SOURCES)
-DIST_SOURCES = $(libHPCsupport_lean_la_SOURCES)
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
+SOURCES = $(libHPCcuda_la_SOURCES)
+DIST_SOURCES = $(libHPCcuda_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -216,6 +216,9 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+
+#----------------------------------------------------------------------
+pkglibexecdir = @my_pkglibexecdir@
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -225,6 +228,8 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BACK_END_LABEL = @BACK_END_LABEL@
+
+#----------------------------------------------------------------------
 BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
@@ -314,10 +319,6 @@ LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
-
-#############################################################################
-# Common settings
-#############################################################################
 LZMA_INC = @LZMA_INC@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
@@ -461,8 +462,6 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
@@ -493,30 +492,39 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Local settings
-#############################################################################
+@OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
 MYSOURCES = \
-	timer.h timer.c \
-	OSUtil.h OSUtil.c \
-	\
-	compress_lzma.c
+	CFGParser.cpp  \
+	CudaCFGFactory.cpp  \
+	CudaFunction.cpp  \
+	GraphReader.cpp \
+	CudaBlock.cpp  \
+	CudaCodeSource.cpp  \
+	ReadCubinCFG.cpp \
+	InstructionAnalyzer.cpp \
+	Instruction.cpp
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)  -I$(LZMA_INC)
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = \
+	@HOST_CXXFLAGS@  \
+	$(HPC_IFLAGS)  \
+	$(BINUTILS_IFLAGS)  \
+	$(BOOST_IFLAGS)  \
+	$(DWARF_IFLAGS)  \
+	-I$(LIBELF_INC)  \
+	$(DYNINST_IFLAGS)  \
+	$(TBB_IFLAGS)
+
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
-MYLIBADD = 
-MYCLEAN = 
-
-#############################################################################
-# Automake rules
-#############################################################################
-noinst_LTLIBRARIES = libHPCsupport-lean.la
-libHPCsupport_lean_la_SOURCES = $(MYSOURCES)
-libHPCsupport_lean_la_CFLAGS = $(MYCFLAGS)
-libHPCsupport_lean_la_AR = $(MYAR)
-libHPCsupport_lean_la_LIBADD = $(MYLIBADD)
+MYLIBADD = @HOST_LIBTREPOSITORY@
+MYCLEAN = @HOST_LIBTREPOSITORY@
+noinst_LTLIBRARIES = libHPCcuda.la
+libHPCcuda_la_SOURCES = $(MYSOURCES)
+libHPCcuda_la_CFLAGS = $(MYCFLAGS)
+libHPCcuda_la_CXXFLAGS = $(MYCXXFLAGS) $(am__append_1)
+libHPCcuda_la_AR = $(MYAR)
+libHPCcuda_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -529,7 +537,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -539,9 +547,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/support-lean/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/lib/cuda/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/lib/support-lean/Makefile
+	  $(AUTOMAKE) --foreign src/lib/cuda/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -572,8 +580,8 @@ clean-noinstLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libHPCsupport-lean.la: $(libHPCsupport_lean_la_OBJECTS) $(libHPCsupport_lean_la_DEPENDENCIES) $(EXTRA_libHPCsupport_lean_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libHPCsupport_lean_la_LINK)  $(libHPCsupport_lean_la_OBJECTS) $(libHPCsupport_lean_la_LIBADD) $(LIBS)
+libHPCcuda.la: $(libHPCcuda_la_OBJECTS) $(libHPCcuda_la_DEPENDENCIES) $(EXTRA_libHPCcuda_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libHPCcuda_la_LINK)  $(libHPCcuda_la_OBJECTS) $(libHPCcuda_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -581,51 +589,99 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CFGParser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaBlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaCFGFactory.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaCodeSource.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaFunction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-GraphReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-Instruction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-ReadCubinCFG.Plo@am__quote@
 
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+.cpp.o:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+.cpp.obj:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+.cpp.lo:
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCsupport_lean_la-timer.lo: timer.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-timer.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-timer.Tpo -c -o libHPCsupport_lean_la-timer.lo `test -f 'timer.c' || echo '$(srcdir)/'`timer.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-timer.Tpo $(DEPDIR)/libHPCsupport_lean_la-timer.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='timer.c' object='libHPCsupport_lean_la-timer.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-timer.lo `test -f 'timer.c' || echo '$(srcdir)/'`timer.c
+libHPCcuda_la-CFGParser.lo: CFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-CFGParser.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-CFGParser.Tpo -c -o libHPCcuda_la-CFGParser.lo `test -f 'CFGParser.cpp' || echo '$(srcdir)/'`CFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-CFGParser.Tpo $(DEPDIR)/libHPCcuda_la-CFGParser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CFGParser.cpp' object='libHPCcuda_la-CFGParser.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-CFGParser.lo `test -f 'CFGParser.cpp' || echo '$(srcdir)/'`CFGParser.cpp
 
-libHPCsupport_lean_la-OSUtil.lo: OSUtil.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-OSUtil.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-OSUtil.Tpo -c -o libHPCsupport_lean_la-OSUtil.lo `test -f 'OSUtil.c' || echo '$(srcdir)/'`OSUtil.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-OSUtil.Tpo $(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='OSUtil.c' object='libHPCsupport_lean_la-OSUtil.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-OSUtil.lo `test -f 'OSUtil.c' || echo '$(srcdir)/'`OSUtil.c
+libHPCcuda_la-CudaCFGFactory.lo: CudaCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-CudaCFGFactory.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-CudaCFGFactory.Tpo -c -o libHPCcuda_la-CudaCFGFactory.lo `test -f 'CudaCFGFactory.cpp' || echo '$(srcdir)/'`CudaCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-CudaCFGFactory.Tpo $(DEPDIR)/libHPCcuda_la-CudaCFGFactory.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CudaCFGFactory.cpp' object='libHPCcuda_la-CudaCFGFactory.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-CudaCFGFactory.lo `test -f 'CudaCFGFactory.cpp' || echo '$(srcdir)/'`CudaCFGFactory.cpp
 
-libHPCsupport_lean_la-compress_lzma.lo: compress_lzma.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-compress_lzma.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Tpo -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Tpo $(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress_lzma.c' object='libHPCsupport_lean_la-compress_lzma.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
+libHPCcuda_la-CudaFunction.lo: CudaFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-CudaFunction.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-CudaFunction.Tpo -c -o libHPCcuda_la-CudaFunction.lo `test -f 'CudaFunction.cpp' || echo '$(srcdir)/'`CudaFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-CudaFunction.Tpo $(DEPDIR)/libHPCcuda_la-CudaFunction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CudaFunction.cpp' object='libHPCcuda_la-CudaFunction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-CudaFunction.lo `test -f 'CudaFunction.cpp' || echo '$(srcdir)/'`CudaFunction.cpp
+
+libHPCcuda_la-GraphReader.lo: GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-GraphReader.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-GraphReader.Tpo -c -o libHPCcuda_la-GraphReader.lo `test -f 'GraphReader.cpp' || echo '$(srcdir)/'`GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-GraphReader.Tpo $(DEPDIR)/libHPCcuda_la-GraphReader.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='GraphReader.cpp' object='libHPCcuda_la-GraphReader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-GraphReader.lo `test -f 'GraphReader.cpp' || echo '$(srcdir)/'`GraphReader.cpp
+
+libHPCcuda_la-CudaBlock.lo: CudaBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-CudaBlock.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-CudaBlock.Tpo -c -o libHPCcuda_la-CudaBlock.lo `test -f 'CudaBlock.cpp' || echo '$(srcdir)/'`CudaBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-CudaBlock.Tpo $(DEPDIR)/libHPCcuda_la-CudaBlock.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CudaBlock.cpp' object='libHPCcuda_la-CudaBlock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-CudaBlock.lo `test -f 'CudaBlock.cpp' || echo '$(srcdir)/'`CudaBlock.cpp
+
+libHPCcuda_la-CudaCodeSource.lo: CudaCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-CudaCodeSource.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-CudaCodeSource.Tpo -c -o libHPCcuda_la-CudaCodeSource.lo `test -f 'CudaCodeSource.cpp' || echo '$(srcdir)/'`CudaCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-CudaCodeSource.Tpo $(DEPDIR)/libHPCcuda_la-CudaCodeSource.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CudaCodeSource.cpp' object='libHPCcuda_la-CudaCodeSource.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-CudaCodeSource.lo `test -f 'CudaCodeSource.cpp' || echo '$(srcdir)/'`CudaCodeSource.cpp
+
+libHPCcuda_la-ReadCubinCFG.lo: ReadCubinCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-ReadCubinCFG.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-ReadCubinCFG.Tpo -c -o libHPCcuda_la-ReadCubinCFG.lo `test -f 'ReadCubinCFG.cpp' || echo '$(srcdir)/'`ReadCubinCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-ReadCubinCFG.Tpo $(DEPDIR)/libHPCcuda_la-ReadCubinCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ReadCubinCFG.cpp' object='libHPCcuda_la-ReadCubinCFG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-ReadCubinCFG.lo `test -f 'ReadCubinCFG.cpp' || echo '$(srcdir)/'`ReadCubinCFG.cpp
+
+libHPCcuda_la-InstructionAnalyzer.lo: InstructionAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-InstructionAnalyzer.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Tpo -c -o libHPCcuda_la-InstructionAnalyzer.lo `test -f 'InstructionAnalyzer.cpp' || echo '$(srcdir)/'`InstructionAnalyzer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Tpo $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='InstructionAnalyzer.cpp' object='libHPCcuda_la-InstructionAnalyzer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-InstructionAnalyzer.lo `test -f 'InstructionAnalyzer.cpp' || echo '$(srcdir)/'`InstructionAnalyzer.cpp
+
+libHPCcuda_la-Instruction.lo: Instruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-Instruction.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-Instruction.Tpo -c -o libHPCcuda_la-Instruction.lo `test -f 'Instruction.cpp' || echo '$(srcdir)/'`Instruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-Instruction.Tpo $(DEPDIR)/libHPCcuda_la-Instruction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Instruction.cpp' object='libHPCcuda_la-Instruction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-Instruction.lo `test -f 'Instruction.cpp' || echo '$(srcdir)/'`Instruction.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -862,9 +918,7 @@ endef
 
 #############################################################################
 
-#############################################################################
-# Common rules
-#############################################################################
+#----------------------------------------------------------------------
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

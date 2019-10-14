@@ -44,7 +44,7 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-AUTOMAKE_OPTIONS = foreign subdir-objects
+AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
@@ -62,12 +62,17 @@ DWARF_IFLAGS = -I$(LIBDWARF_INC)
 endif
 
 MYSOURCES = \
-	Struct.cpp  \
-	Struct-Inline.cpp  \
-	Struct-Output.cpp
+	CFGParser.cpp  \
+	CudaCFGFactory.cpp  \
+	CudaFunction.cpp  \
+	GraphReader.cpp \
+	CudaBlock.cpp  \
+	CudaCodeSource.cpp  \
+	ReadCubinCFG.cpp \
+	InstructionAnalyzer.cpp \
+	Instruction.cpp
 
-SIMPLE_SRCS = StructSimple.cpp
-
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
@@ -78,6 +83,12 @@ MYCXXFLAGS = \
 	$(DYNINST_IFLAGS)  \
 	$(TBB_IFLAGS)
 
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
 MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -86,19 +97,17 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 pkglibexecdir = @my_pkglibexecdir@
 
-noinst_LTLIBRARIES = libHPCbanal.la libHPCbanal_simple.la
+noinst_LTLIBRARIES = libHPCcuda.la
 
-libHPCbanal_la_SOURCES  = $(MYSOURCES)
-libHPCbanal_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbanal_la_LIBADD   = $(MYLIBADD)
+libHPCcuda_la_SOURCES  = $(MYSOURCES)
+libHPCcuda_la_CFLAGS   = $(MYCFLAGS)
+libHPCcuda_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCcuda_la_AR       = $(MYAR)
+libHPCcuda_la_LIBADD   = $(MYLIBADD)
 
 if OPT_ENABLE_OPENMP
-libHPCbanal_la_CXXFLAGS += $(OPENMP_FLAG)
+libHPCcuda_la_CXXFLAGS += $(OPENMP_FLAG)
 endif
-
-libHPCbanal_simple_la_SOURCES  = $(SIMPLE_SRCS)
-libHPCbanal_simple_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCbanal_simple_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

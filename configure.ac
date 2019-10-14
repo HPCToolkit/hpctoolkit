@@ -4583,6 +4583,7 @@ AC_CONFIG_FILES([ \
   src/lib/Makefile \
   src/lib/analysis/Makefile \
   src/lib/banal/Makefile \
+  src/lib/cuda/Makefile \
   src/lib/binutils/Makefile \
   src/lib/isa/Makefile \
   src/lib/prof/Makefile \
