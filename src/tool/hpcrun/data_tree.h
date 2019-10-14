@@ -55,6 +55,7 @@
  *****************************************************************************/
 
 #define DATA_STATIC_MAGIC 0xFEA12B0B
+#define DATA_DYNAMIC_MAGIC 0x68706374
 
 
 

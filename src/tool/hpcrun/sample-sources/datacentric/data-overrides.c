@@ -131,7 +131,6 @@ typedef void *realloc_fcn(void *, size_t);
 
 #define DATACENTRIC_USE_HYBRID_LAYOUT 0
 
-#define DATACENTRIC_MAGIC 0x68706374
 #define DATACENTRIC_DEFAULT_PAGESIZE  4096
 
 #define HPCRUN_DATACENTRIC_PROB  "HPCRUN_DATACENTRIC_PROB"
@@ -366,7 +365,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   // try header first
   *info_ptr = (datatree_info_t *) (appl_ptr - datainfo_size);
   if (datacentric_same_page(*info_ptr, appl_ptr)
-      && (*info_ptr)->magic == DATACENTRIC_MAGIC
+      && (*info_ptr)->magic == DATA_DYNAMIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
     *sys_ptr = *info_ptr;
     return DATACENTRIC_LOC_HEAD;
@@ -379,7 +378,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   if (*info_ptr == NULL) {
     return DATACENTRIC_LOC_NONE;
   }
-  if ((*info_ptr)->magic == DATACENTRIC_MAGIC
+  if ((*info_ptr)->magic == DATA_DYNAMIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
     return DATACENTRIC_LOC_FOOT;
   }
@@ -417,7 +416,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 
   memset(info_ptr, 0, sizeof(datatree_info_t));
 
-  info_ptr->magic      = DATACENTRIC_MAGIC;
+  info_ptr->magic      = DATA_DYNAMIC_MAGIC;
   info_ptr->bytes      = bytes;
   info_ptr->memblock   = appl_ptr;
   info_ptr->rmemblock  = info_ptr->memblock + info_ptr->bytes;
