@@ -720,8 +720,6 @@ OPT_PAPI_STATIC_FALSE
 OPT_PAPI_STATIC_TRUE
 OPT_PAPI_DYNAMIC_FALSE
 OPT_PAPI_DYNAMIC_TRUE
-OPT_PERF_MEM_REMOTE_FALSE
-OPT_PERF_MEM_REMOTE_TRUE
 OPT_PERF_MEM_DATA_SRC_FALSE
 OPT_PERF_MEM_DATA_SRC_TRUE
 OPT_IBS_FETCH_FALSE
@@ -21707,44 +21705,6 @@ else
 fi
 
 
-#-------------------------------------------------
-# perf event: existence of perf_mem's remote
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if the kernel supports perf_mem_data_src remote field" >&5
-$as_echo_n "checking if the kernel supports perf_mem_data_src remote field... " >&6; }
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <linux/perf_event.h>
-
-static union perf_mem_data_src d;
-int check_kernel()
-{
-  return d.mem_remote;
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  perf_mem_remote=yes
-else
-  perf_mem_remote=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $perf_mem_remote" >&5
-$as_echo "$perf_mem_remote" >&6; }
-
- if test "$perf_mem_remote" = yes; then
-  OPT_PERF_MEM_REMOTE_TRUE=
-  OPT_PERF_MEM_REMOTE_FALSE='#'
-else
-  OPT_PERF_MEM_REMOTE_TRUE='#'
-  OPT_PERF_MEM_REMOTE_FALSE=
-fi
-
 
 
 #-------------------------------------------------
@@ -23624,10 +23584,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PERF_MEM_DATA_SRC_TRUE}" && test -z "${OPT_PERF_MEM_DATA_SRC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PERF_MEM_DATA_SRC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_PERF_MEM_REMOTE_TRUE}" && test -z "${OPT_PERF_MEM_REMOTE_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_PERF_MEM_REMOTE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_DYNAMIC_TRUE}" && test -z "${OPT_PAPI_DYNAMIC_FALSE}"; then
