@@ -285,15 +285,6 @@ cct_node_t*
 hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
 
 
-// --------------------------------------------------------------
-// variable address
-// --------------------------------------------------------------
-
-void
-hpcrun_cct_var_add(cct_node_t *node_source, void *start, cct_node_t *node_target);
-
-bool
-hpcrun_cct_var_static(cct_node_t *node);
 
 
 // --------------------------------------------------------------
