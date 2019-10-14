@@ -14,6 +14,9 @@ class Function;
 struct InstructionStat {
   unsigned int pc;
   std::map<int, int> stat; 
+  int predicate;  // P0-P6
+  int dst;  // R0-R255: only records normal registers
+  std::vector<int> srcs;  // R0-R255, only records normal registers
 
   explicit InstructionStat(unsigned int pc): pc(pc) {}
 

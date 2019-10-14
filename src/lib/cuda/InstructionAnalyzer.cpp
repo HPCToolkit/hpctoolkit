@@ -136,8 +136,19 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
 
   const std::string &opcode = inst.opcode;
 
-  if (opcode.find("SYNC") != std::string::npos) {
+  if (opcode.find("MEMBAR") != std::string::npos ||
+    opcode.find("DEPBAR") != std::string::npos) {
+    type = ".BAR";
+  } else if (opcode.find("SYNC") != std::string::npos ||
+    opcode.find("BAR") != std::string::npos) {
     type = ".SYNC";
+    if (opcode.find("WARP") != std::string::npos) {
+      type += ".WARP";
+    } else {
+      type += ".BLOCK";
+    }
+  } else if (opcode.find("SHFL") != std::string::npos) {
+    type = ".SHFL";
   } else if (opcode.find("CAL") != std::string::npos) {
     type = ".CALL";
   } else if (opcode.find("EXIT") != std::string::npos) {
@@ -255,6 +266,97 @@ bool InstructionAnalyzer::dump(const std::string &file_path, InstructionMetrics 
   }
 
   ofs.close();
+  return true;
+}
+
+
+bool InstructionAnalyzer::read(
+  const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse) {
+  std::ifstream ifs(file_path, std::ifstream::in);
+  if ((ifs.rdstate() & std::ifstream::failbit) != 0) {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "Error opening " << file_path << std::endl;
+    }
+    return false;
+  }
+
+  const char sep = sparse ? '\n' : '#'; 
+
+  std::string buf;
+  if (std::getline(ifs, buf) && buf == "<metric names>") {
+    if (std::getline(ifs, buf)) {
+      std::istringstream iss(buf);
+      std::string cur_buf;
+      while (std::getline(iss, cur_buf, sep)) {
+        // (mn,id)#
+        // 01234567
+        //    p  s
+        auto pos = cur_buf.find(",");
+        if (pos != std::string::npos) {
+          auto metric_name = cur_buf.substr(1, pos - 1);
+          auto metric_id = cur_buf.substr(pos + 1, cur_buf.size() - pos - 2);
+          // Add a MIX prefix
+          metrics.metric_names["MIX:" + metric_name] = std::stoi(metric_id);
+
+          if (INSTRUCTION_ANALYZER_DEBUG) {
+            std::cout << "metric_name: " << metric_name << ", metric_id: " << metric_id << std::endl;
+          }
+        }
+      }
+    }
+  } else {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "Error reading metrics " << file_path << std::endl;
+    }
+    return false;
+  }
+  
+  if (std::getline(ifs, buf) && buf == "<inst stats>") {
+    if (std::getline(ifs, buf)) {
+      std::istringstream iss(buf);
+      std::string cur_buf;
+      while (std::getline(iss, cur_buf, sep)) {
+        bool first = true;
+        CudaParse::InstructionStat inst_stat;
+        std::istringstream isss(cur_buf);
+        // (pc,id:mc,...)#
+        while (std::getline(isss, cur_buf, ',')) {
+          if (cur_buf == ")") {
+            break;
+          }
+          if (first) {
+            // (111,
+            // 01234
+            std::string tmp = cur_buf.substr(1);
+            inst_stat.pc = std::stoi(tmp);
+            first = false;
+          } else {
+            // id:mc,
+            // 012345
+            //   p  s
+            auto pos = cur_buf.find(":");
+            if (pos != std::string::npos) {
+              auto metric_id = cur_buf.substr(0, pos);
+              auto metric_count = cur_buf.substr(pos + 1, cur_buf.size() - pos - 1);
+              inst_stat.stat[std::stoi(metric_id)] = std::stoi(metric_count);
+
+              if (INSTRUCTION_ANALYZER_DEBUG) {
+                std::cout << "pc 0x" << std::hex << inst_stat.pc << std::dec <<
+                  " metric_id: " << metric_id << ", metric_count: " << metric_count << std::endl;
+              }
+            }
+          }
+        }
+        metrics.inst_stats.emplace_back(inst_stat);
+      }
+    }
+  } else {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "Error reading stats " << file_path << std::endl;
+    }
+    return false;
+  }
+
   return true;
 }
 

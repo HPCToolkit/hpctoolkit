@@ -146,7 +146,8 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
 	$(HPCLIB_Cuda) $(HPCLIB_ProfXML) $(HPCLIB_Prof) \
 	$(HPCLIB_ProfLean) $(HPCLIB_Binutils) $(HPCLIB_ISA) \
 	$(am__DEPENDENCIES_2) $(HPCLIB_XML) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -286,6 +287,14 @@ BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
@@ -345,14 +354,6 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
@@ -582,6 +583,7 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
+	$(BOOST_LFLAGS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
