@@ -280,8 +280,16 @@ hpcrun_sample_callpath(void* context, int metricId,
     leaf_ip = td->btbuf_beg->the_function;
   }
 
-  bool trace_ok = ! td->deadlock_drop;
+  bool trace_ok = (!td->deadlock_drop);
+
+  if (trace_ok && data != NULL) {
+    // sometimes sample-sources don't want us to record traces.
+    //
+    // For instance, datacentric avoid traces in the middle of allocation routines
+    trace_ok = !(data->flags & SAMPLING_NO_TRACES == SAMPLING_NO_TRACES);
+  }
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
+
   if (trace_ok && hpcrun_trace_isactive()) {
     TMSG(TRACE, "Sample event encountered");
 

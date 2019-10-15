@@ -50,7 +50,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define UNIT_TEST 1
+#define UNIT_TEST 0
 
 #if UNIT_TEST
 #include "../cpuid.h"

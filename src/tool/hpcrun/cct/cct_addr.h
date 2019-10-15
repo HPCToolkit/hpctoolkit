@@ -47,8 +47,6 @@
 #ifndef CCT_ADDR_H
 #define CCT_ADDR_H
 
-#include <include/queue.h>
-
 #include <lib/prof-lean/lush/lush-support.h>
 #include <utilities/ip-normalized.h>
 

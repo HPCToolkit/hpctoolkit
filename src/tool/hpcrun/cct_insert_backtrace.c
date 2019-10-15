@@ -291,16 +291,6 @@ hpcrun_cct_record_backtrace(
     TMSG(FENCE, "Thread stop ==> cursor = %p", cct_cursor);
   }
 
-#if 0
-  // datacentric support: attach samples to data allocation cct
-  cct_node_t *data_node = TD_GET(mem_data.data_node);
-  if(data_node) {
-    cct_node_t *prefix = hpcrun_cct_insert_path_return_leaf(data_node, cct_cursor);
-    cct_cursor = prefix;
-    TD_GET(mem_data.data_node) = NULL;
-  }
-#endif
-
   TMSG(FENCE, "sanity check cursor = %p", cct_cursor);
   TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);

@@ -3305,26 +3305,6 @@ AC_MSG_RESULT([$perf_mem_data_src])
 
 AM_CONDITIONAL([OPT_PERF_MEM_DATA_SRC], [test "$perf_mem_data_src" = yes])
 
-#-------------------------------------------------
-# perf event: existence of perf_mem's remote
-#-------------------------------------------------
-
-AC_MSG_CHECKING([if the kernel supports perf_mem_data_src remote field])
-
-AC_COMPILE_IFELSE([
-AC_LANG_SOURCE([[
-#include <linux/perf_event.h>
-
-static union perf_mem_data_src d;
-int check_kernel()
-{
-  return d.mem_remote;
-}
-]])], [perf_mem_remote=yes], [perf_mem_remote=no])
-
-AC_MSG_RESULT([$perf_mem_remote])
-
-AM_CONDITIONAL([OPT_PERF_MEM_REMOTE], [test "$perf_mem_remote" = yes])
 
 
 #-------------------------------------------------

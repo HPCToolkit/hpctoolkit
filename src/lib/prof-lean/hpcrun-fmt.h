@@ -522,7 +522,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 #define NODE_TYPE_VARIABLE           32
 #define NODE_TYPE_UNKNOWN_ATTRIBUTE  64
 
-#define BITS_RESERVED_NODE_TYPE      7
 
 #define HPCRUN_FMT_LMId_NULL (0)
 
@@ -587,18 +586,55 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
 
+
+// --------------------------------------------------------------
+// Node types inquiries
+// --------------------------------------------------------------
+
+// check if the node is supposed to be a root
 static inline bool
 hpcrun_fmt_node_type_root(uint16_t type)
 {
   return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
 }
 
+// check if the node is memory allocation node
+// (PF to malloc, calloc, ...etc)
 static inline bool
 hpcrun_fmt_node_type_allocation(uint16_t type)
 {
   return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
 }
 
+//
+// check if the node is a memory access node
+// which  means the node has access to the memory hierarchy
+
+static inline bool
+hpcrun_fmt_node_type_memaccess(uint16_t type)
+{
+  return (type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
+}
+
+// check if this node is the start of call path to memory access
+static inline bool
+hpcrun_fmt_node_type_memaccess_root(uint16_t type)
+{
+  return (type & NODE_TYPE_MEMACCESS_ROOT) == NODE_TYPE_MEMACCESS_ROOT;
+}
+
+// check if the node is a global variable node
+static inline bool
+hpcrun_fmt_node_type_variable(uint16_t type)
+{
+  return (type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+static inline bool
+hpcrun_fmt_node_type_unknown(uint16_t type)
+{
+  return (type & NODE_TYPE_UNKNOWN_ATTRIBUTE) == NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
 
 // --------------------------------------------------------------------------
 // 

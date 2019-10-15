@@ -454,6 +454,13 @@ hpcrun_cct_terminate_path(cct_node_t* node)
   node->node_type |= NODE_TYPE_LEAF;
 }
 
+
+uint32_t
+hpcrun_cct_get_node_type(cct_node_t *node)
+{
+  return node->node_type;
+}
+
 bool
 hpcrun_cct_is_leaf(cct_node_t *node)
 {
@@ -470,22 +477,10 @@ hpcrun_cct_set_node_allocation(cct_node_t *node)
   node->node_type |= NODE_TYPE_ALLOCATION;
 }
 
-bool
-hpcrun_cct_is_node_allocation(cct_node_t *node)
-{
-  return (node->node_type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
-}
-
 void
 hpcrun_cct_set_node_variable(cct_node_t *node)
 {
   node->node_type |= NODE_TYPE_GLOBAL_VARIABLE;
-}
-
-bool
-hpcrun_cct_is_node_variable(cct_node_t *node)
-{
-  return (node->node_type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
 }
 
 //
@@ -497,14 +492,6 @@ hpcrun_cct_set_node_memaccess(cct_node_t *node)
   node->node_type |= NODE_TYPE_MEMACCESS;
 }
 
-//
-// check if the node is a memaccess node
-// which  means the node has access to the memory hierarchy
-bool
-hpcrun_cct_is_node_memaccess(cct_node_t *node)
-{
-  return (node->node_type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
-}
 
 // mark that the node is supposed to be a root
 // theoretically, a root has no parent, but to make it easy
@@ -524,35 +511,12 @@ hpcrun_cct_set_node_root(cct_node_t *root)
   root->node_type |= NODE_TYPE_ROOT;
 }
 
-// check if the node is supposed to be a root
-bool
-hpcrun_cct_is_node_root(cct_node_t *node)
-{
-  return hpcrun_fmt_node_type_root(node->node_type);
-}
-
 void
 hpcrun_cct_set_node_unknown_attribute(cct_node_t *root)
 {
   root->node_type |= NODE_TYPE_UNKNOWN_ATTRIBUTE;
 }
 
-// link between the node and the source of memory declaration
-void
-hpcrun_cct_link_source_memaccess(cct_node_t *node, cct_node_t *source)
-{
-  // let assume a persistent id will never exceed 2^26
-  uint32_t link_node = node->node_type >> BITS_RESERVED_NODE_TYPE;
-  if (link_node > 0) {
-    // it's already linked to a node
-    TMSG(LINUX_PERF, "node %d already linked to %d", node->persistent_id, link_node);
-    return;
-  }
-  uint32_t source_id = source->persistent_id << BITS_RESERVED_NODE_TYPE;
-  node->node_type   |= source_id;
-
-  hpcrun_cct_set_node_memaccess(node);
-}
 
 //***************************************************************************
 //
@@ -909,14 +873,4 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
 }
 
 
-
-cct_node_t *
-hpcrun_cct_get_root(cct_node_t *node)
-{
-  cct_node_t *current = node;
-  while(current && hpcrun_cct_parent(current)) {
-      current = hpcrun_cct_parent(current);
-  }
-  return current;
-}
 

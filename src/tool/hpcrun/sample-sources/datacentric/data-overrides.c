@@ -436,11 +436,19 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     }
 
     int metric = metric_variable_size;
+    sampling_info_t sampling_info;
+
+    // warn sample callpath not to record the trace of this sample
+
+    sampling_info.flags = SAMPLING_NO_TRACES;
+    sampling_info.sample_custom_cct.data_aux        = NULL;
+    sampling_info.sample_custom_cct.update_after_fn  = NULL;
+    sampling_info.sample_custom_cct.update_before_fn = NULL;
 
     // record the call path to this allocation, and the address
     sample_val_t smpl = hpcrun_sample_callpath(uc, metric,
                                                (hpcrun_metricVal_t) {.i=bytes},
-                                               0, 1, NULL);
+                                               0, 1, &sampling_info);
 
     // update the number of metric counter
     metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[metric]);

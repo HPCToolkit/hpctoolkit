@@ -124,6 +124,8 @@ int zero_fcn(void) { return 0; }
 #include "messages.h"
 #include "sample_sources_all.h"
 #include "monitor.h"
+#include "env.h"
+
 #else
 #include "syserv-mesg.h"
 #include "fnbounds_file_header.h"
@@ -400,12 +402,17 @@ launch_server(void)
     sprintf(fdin_str,  "%d", sendfd[0]);
     sprintf(fdout_str, "%d", recvfd[1]);
 
-    arglist[0] = server;
-    arglist[1] = "-m";
-    arglist[2] = "-s";
-    arglist[3] = fdin_str;
-    arglist[4] = fdout_str;
-    arglist[5] = NULL;
+    int n=0;
+
+    arglist[n++] = server;
+    arglist[n++] = "-s";
+    arglist[n++] = fdin_str;
+    arglist[n++] = fdout_str;
+
+    if (datacentric_is_enabled())
+      arglist[n++] = "-m";
+
+    arglist[n++] = NULL;
 
     monitor_real_execve(server, arglist, environ);
     err(1, "hpcrun system server: exec(%s) failed", server);

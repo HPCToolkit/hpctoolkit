@@ -110,7 +110,7 @@ hpcrun_sample_val_init(sample_val_t* x)
 // additional sampling info
 // --------------------------------------------------------------------------
 
-#define SAMPLING_IN_MALLOC    1
+#define SAMPLING_NO_TRACES    1
 #define SAMPLING_FIRST_TOUCH  2
 #define SAMPLING_DATA_NODE    4
 

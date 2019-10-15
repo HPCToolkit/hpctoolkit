@@ -525,7 +525,7 @@ void
 hpcrun_metric_std_set(int metric_id, metric_set_t* set,
 		      hpcrun_metricVal_t value)
 {
-  hpcrun_metric_std(metric_id, set, '=', value);
+  hpcrun_metric_std(metric_id, set, OPERATION_ASSIGN, value);
 }
 
 // increasing the value of metric
@@ -534,21 +534,21 @@ void
 hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
 		      hpcrun_metricVal_t incr)
 {
-  hpcrun_metric_std(metric_id, set, '+', incr);
+  hpcrun_metric_std(metric_id, set, OPERATION_INCREMENT, incr);
 }
 
 // set the minimum value (only applicable for address type value)s
 void
 hpcrun_metric_std_min(int metric_id, metric_set_t *set, hpcrun_metricVal_t val)
 {
-  hpcrun_metric_std(metric_id, set, '<', val);
+  hpcrun_metric_std(metric_id, set, OPERATION_MIN, val);
 }
 
 // set the maximum value (only applicable for address type value)
 void
 hpcrun_metric_std_max(int metric_id, metric_set_t *set, hpcrun_metricVal_t val)
 {
-  hpcrun_metric_std(metric_id, set, '>', val);
+  hpcrun_metric_std(metric_id, set, OPERATION_MAX, val);
 }
 
 
