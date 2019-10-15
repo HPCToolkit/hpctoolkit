@@ -87,7 +87,6 @@
 #include "include/queue.h"  // linked-list
 
 #include "datacentric.h"
-#include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
 
@@ -120,6 +119,8 @@ enum datacentric_status_e { UNINITIALIZED, INITIALIZED };
  *****************************************************************************/
 
 static enum datacentric_status_e plugin_status = UNINITIALIZED;
+
+static int metric_variable_size = -1;
 
 
 /******************************************************************************
@@ -473,12 +474,20 @@ datacentric_register(sample_source_t *self,
                      event_custom_t  *event,
                      struct event_threshold_s *period)
 {
-  struct event_threshold_s threshold;
-  perf_util_get_default_threshold( &threshold );
+  // ------------------------------------------
+  // metric for variable size (in bytes)
+  // ------------------------------------------
+  metric_variable_size = hpcrun_new_metric();
+
+  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   // ------------------------------------------
   // hardware-specific data centric setup (if supported)
   // ------------------------------------------
+  struct event_threshold_s threshold;
+  perf_util_get_default_threshold( &threshold );
+
   int result = datacentric_hw_register(self, event, &threshold);
   if (result == 0)
     return 0;
@@ -521,5 +530,11 @@ int
 datacentric_is_active()
 {
   return (plugin_status == INITIALIZED);
+}
+
+int
+datacentric_get_metric_variable_size()
+{
+  return metric_variable_size;
 }
 

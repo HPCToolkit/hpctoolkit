@@ -72,6 +72,8 @@ void datacentric_init();
 
 int datacentric_is_active();
 
+int datacentric_get_metric_variable_size();
+
 
 // ----------------------------------------------
 // to be implemented by specific hardware
