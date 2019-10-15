@@ -18,7 +18,7 @@ struct InstructionStat {
   int dst;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255, only records normal registers
 
-  explicit InstructionStat(unsigned int pc): pc(pc) {}
+  explicit InstructionStat(const Instruction &inst);
 
   InstructionStat() {}
 

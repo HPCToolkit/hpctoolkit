@@ -8,6 +8,73 @@
 
 namespace CudaParse {
 
+
+static int convert_reg(const std::string &str, size_t pos) {
+  int num = 0;
+  bool find_digit = false;
+  while (pos != std::string::npos) {
+    if (isdigit(str[pos])) {
+      find_digit = true;
+      num = num * 10 + str[pos] - '0'; 
+    } else {
+      break;
+    }
+    ++pos;
+  }
+  
+  if (find_digit) {
+    return num;
+  }
+
+  return -1;
+}
+
+
+InstructionStat::InstructionStat(const Instruction &inst) {
+  this->pc = inst.offset;
+  // -1 means no value
+  this->predicate = -1;
+  this->dst = -1;
+
+  if (inst.predicate.size() != 0) {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << inst.predicate << " ";
+    }
+
+    auto pos = inst.predicate.find("P");
+    if (pos != std::string::npos) {
+      this->predicate = convert_reg(inst.predicate, pos + 1);
+    }
+  }
+
+  if (inst.operands.size() != 0) {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << inst.operands[0] << " ";
+    }
+
+    auto pos = inst.operands[0].find("R");
+    if (pos != std::string::npos) {
+      this->dst = convert_reg(inst.operands[0], pos + 1);
+    }
+
+    for (size_t i = 1; i < inst.operands.size(); ++i) {
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << inst.operands[i] << " ";
+      }
+
+      pos = inst.operands[i].find("R");
+      if (pos != std::string::npos) {
+        this->srcs.push_back(convert_reg(inst.operands[i], pos + 1));
+      }
+    }
+  }
+
+  if (INSTRUCTION_ANALYZER_DEBUG) {
+    std::cout << std::endl;
+  }
+}
+
+
 template <>
 void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &metric_name) {
   metric_name = "MEMORY";
@@ -208,7 +275,7 @@ void InstructionAnalyzer::analyze(const std::vector<Function *> &functions,
           std::cout << inst->to_string() << "  ----  " << metric_name << std::endl;
         }
 
-        InstructionStat inst_stat(inst->offset);
+        InstructionStat inst_stat(*inst);
         int metric_id = 0;
         if (metrics.metric_names.find(metric_name) == metrics.metric_names.end()) {
           metric_id = metrics.metric_names.size();
@@ -256,9 +323,23 @@ bool InstructionAnalyzer::dump(const std::string &file_path, InstructionMetrics 
 
   ofs << std::endl << "<inst stats>" << std::endl;
 
-  // (pc,metric_id:metric_count, ...)#
+  // (pc,predicate,dst,src1:src2...,metric_id:metric_count, ...)#
   for (auto &inst_stat : metrics.inst_stats) {
     ofs << "(" << inst_stat.pc << ",";
+    if (inst_stat.predicate != -1) {
+      ofs << inst_stat.predicate;
+    }
+    ofs << ",";
+    if (inst_stat.dst != -1) {
+      ofs << inst_stat.dst;
+    }
+    ofs << ",";
+    for (auto src : inst_stat.srcs) {
+      if (src != -1) {
+        ofs << src << ":";
+      }
+    }
+    ofs << ",";
     for (auto it = inst_stat.stat.begin(); it != inst_stat.stat.end(); ++it) {
       ofs << it->first << ":" << it->second << ",";
     }
