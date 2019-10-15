@@ -189,8 +189,6 @@ static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
 #endif
 
-static int metric_variable_size = -1;
-
 
 /******************************************************************************
  * private operations
@@ -306,10 +304,6 @@ datacentric_initialize(void)
 #if SUPPORT_FOR_ADDRESS_CENTRIC  
   metric_initialize();
 #endif
-  metric_variable_size = hpcrun_new_metric();
-
-  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   overrides_status = OVERRIDES_INITIALIZED;
 
@@ -434,7 +428,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
       return;
     }
 
-    int metric = metric_variable_size;
+    int metric = datacentric_get_metric_variable_size();
     sampling_info_t sampling_info;
 
     // warn sample callpath not to record the trace of this sample
@@ -847,12 +841,6 @@ finish:
 //
 // Exported functions
 /////////////////////////////////////////////////////////
-
-int
-datacentric_get_metric_variable_size()
-{
-  return metric_variable_size;
-}
 
 #if SUPPORT_FOR_ADDRESS_CENTRIC  
 /***
