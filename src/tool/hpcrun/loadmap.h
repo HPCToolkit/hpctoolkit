@@ -65,7 +65,6 @@
 
 #include "fnbounds_file_header.h"
 
-
 //***************************************************************************
 //
 //***************************************************************************
@@ -79,6 +78,14 @@ typedef struct dso_info_t {
   unsigned long map_size;
   unsigned long nsymbols;
   int  is_relocatable;
+
+  // extended information
+  // for instance, datacentric need to attach list of variable for each load module
+  // note:
+  //  I have to make it generic, because loadmap.h will be included by many files,
+  //  including cct.h. All types used in loadmap.h has to be as primitive as possible,
+  //  This is to avoid cyclic dependencies.
+  void *info;
 
   struct dso_info_t* next; //to only be used with dso_free_list
   struct dso_info_t* prev;
@@ -249,5 +256,14 @@ typedef struct loadmap_notify_t {
 void hpcrun_loadmap_notify_register(loadmap_notify_t *n);
 
 //***************************************************************************
+// data centric support
+//***************************************************************************
+
+void
+hpcrun_dso_insert_data_var(dso_info_t *dso, void **var_table, unsigned long num);
+
+struct datatree_info_s*
+hpcrun_dso_find_data_var(dso_info_t *dso, void *key, void **start, void **end);
+
 
 #endif // LOADMAP_H

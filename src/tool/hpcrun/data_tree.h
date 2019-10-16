@@ -47,7 +47,7 @@
 #ifndef __DATACENTRIC_DATA_TREE_H__
 #define __DATACENTRIC_DATA_TREE_H__
 
-#include "cct.h"
+#include <cct/cct.h>
 
 
 /******************************************************************************
@@ -81,14 +81,25 @@ typedef struct datatree_info_s {
   struct datatree_info_s *right;
 } datatree_info_t;
 
+/* generic insert info item into a data tree*/
+struct datatree_info_s*
+datatree_info_insert_ext(struct datatree_info_s **data_root,
+                         spinlock_t *data_lock,
+                         struct datatree_info_s *node);
+
+/* generic lookup data tree */
+struct datatree_info_s *
+datatree_info_lookup_ext( struct datatree_info_s **data_root,
+                      spinlock_t *lock,
+                      void *key, void **start, void **end);
 
 /* * Insert a node */ 
-void datatree_splay_insert(struct datatree_info_s *node);
+void datatree_info_insert(struct datatree_info_s *node);
 
 /* find a cct node for a given key and range */
-struct datatree_info_s * datatree_splay_lookup(void *key, void **start, void **end);
+struct datatree_info_s * datatree_info_lookup(void *key, void **start, void **end);
 
 /* remove a node containing a memory block */
-struct datatree_info_s * datatree_splay_delete(void *memblock);
+struct datatree_info_s * datatree_info_delete(void *memblock);
 
 #endif //__DATACENTRIC_DATA_TREE_H__

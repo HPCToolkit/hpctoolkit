@@ -91,6 +91,7 @@
 #include <safe-sampling.h>
 #include <sample_event.h>
 #include <env.h>
+#include <cct/cct.h>
 
 #include <monitor-exts/monitor_ext.h>
 #include "lib/support-lean/datacentric_config.h"
@@ -368,7 +369,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
 
   // always try footer
   *sys_ptr = appl_ptr;
-  *info_ptr = datatree_splay_delete(appl_ptr);
+  *info_ptr = datatree_info_delete(appl_ptr);
   if (*info_ptr == NULL) {
     return DATACENTRIC_LOC_NONE;
   }
@@ -474,7 +475,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     loc_str = "inactive";
   }
   if (loc == DATACENTRIC_LOC_FOOT) {
-    datatree_splay_insert(info_ptr);
+    datatree_info_insert(info_ptr);
   }
 
   TMSG(DATACENTRIC, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",

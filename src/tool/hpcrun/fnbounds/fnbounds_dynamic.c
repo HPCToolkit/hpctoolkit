@@ -124,6 +124,9 @@
 	((void *) (((unsigned long) addr) + ((unsigned long) length)))
 
 
+
+
+
 //*********************************************************************
 // local variables
 //*********************************************************************
@@ -245,38 +248,6 @@ fnbounds_map_open_dsos()
 }
 
 
-//---------------------------------------------------------------------
-// Function: insert_var_table
-// Purpose:  
-//    create a tree of static variables to be used later by datacentric
-//    or other modules 
-//---------------------------------------------------------------------
-static void
-insert_var_table(void **var_table, unsigned long num)
-{
-  if(!var_table) return;
-
-  int i;
-  for (i = 0; i < num; i+=2) {
-    size_t num_bytes   = (size_t)var_table[i+1];
-
-    // create splay node
-    struct datatree_info_s *data_info = hpcrun_malloc(sizeof(struct datatree_info_s));
-
-    data_info->memblock  = var_table[i];
-    data_info->bytes     = num_bytes;
-    data_info->rmemblock = data_info->memblock + num_bytes;
-
-    data_info->left      = data_info->right = NULL;
-
-    data_info->magic     = DATA_STATIC_MAGIC;
-    data_info->context   = NULL;
-    data_info->status    = DATATREE_INFO_UNHANDLED;
-
-    datatree_splay_insert(data_info);
-  }
-}
-
 
 /**
  * running hpcfnbounds to analyse static variable and its address
@@ -295,7 +266,7 @@ fnbounds_run_var_analysis(dso_info_t *dso)
   void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
 
   if (var_table != NULL)
-    insert_var_table(var_table, fh.num_entries);
+    hpcun_dso_insert_data_var(dso, var_table, fh.num_entries);
 
   TMSG(DATACENTRIC, "%s has %ld entries", filename, fh.num_entries);
 }

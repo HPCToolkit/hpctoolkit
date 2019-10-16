@@ -63,7 +63,7 @@
  * macros
  *****************************************************************************/
 
-#define DATATREE_DEBUG 0
+#define DATATREE_DEBUG 1
 
 
 /******************************************************************************
@@ -121,48 +121,97 @@ splay_tree_size()
  * PUBLIC splay operations
  *****************************************************************************/
 
-
-/*
- * Insert a node
- */ 
-void
-datatree_splay_insert(struct datatree_info_s *node)
+struct datatree_info_s*
+datatree_info_insert_ext(struct datatree_info_s **data_root,
+                         spinlock_t *data_lock,
+                         struct datatree_info_s *node)
 {
   void *memblock = node->memblock;
 
   node->left = node->right = NULL;
 
-  spinlock_lock(&datatree_lock);
+  spinlock_lock(data_lock);
 
-  if (datacentric_tree_root != NULL) {
+  if (*data_root != NULL) {
 
-    datacentric_tree_root = splay(datacentric_tree_root, memblock);
+    *data_root = splay(*data_root, memblock);
+    struct datatree_info_s *root = *data_root;
 
-    if (memblock < datacentric_tree_root->memblock) {
-      node->left = datacentric_tree_root->left;
-      node->right = datacentric_tree_root;
-      datacentric_tree_root->left = NULL;
-    } else if (memblock > datacentric_tree_root->memblock) {
-      node->left = datacentric_tree_root;
-      node->right = datacentric_tree_root->right;
-      datacentric_tree_root->right = NULL;
+    if (memblock < (*data_root)->memblock) {
+      node->left  = root->left;
+      node->right = root;
+      root->left = NULL;
+
+    } else if (memblock > root->memblock) {
+      node->left  = root;
+      node->right = root->right;
+      root->right = NULL;
     }
   }
-  datacentric_tree_root = node;
+  *data_root = node;
 
 #if DATATREE_DEBUG
   TMSG(DATACENTRIC, "[%x] %d items  addr %x (%d bytes)",
       node->magic, splay_tree_size(), node->memblock, node->bytes);
 #endif
 
-  spinlock_unlock(&datatree_lock);
+  spinlock_unlock(data_lock);
+  return *data_root;
+}
+
+
+/* interface for data-centric analysis */
+struct datatree_info_s *
+datatree_info_lookup_ext( struct datatree_info_s **data_root,
+                      spinlock_t *lock,
+                      void *key, void **start, void **end)
+{
+  if(!data_root || !*data_root || !key) {
+    return NULL;
+  }
+
+  spinlock_lock(lock);
+
+  struct datatree_info_s **root = NULL;
+  root = interval_splay(data_root, key, start, end);
+  if (!root) {
+    spinlock_unlock(lock);
+    return NULL;
+  }
+
+  struct datatree_info_s *info = *root;
+
+#if DATATREE_DEBUG
+  TMSG(DATACENTRIC, "lookup key: %p  %result: %p  ", key, info);
+#endif
+
+  if(info && (info->memblock <= key) && (info->rmemblock > key)) {
+    *start = info->memblock;
+    *end   = info->rmemblock;
+
+    spinlock_unlock(lock);
+    return info;
+  }
+
+  spinlock_unlock(lock);
+
+  return NULL;
+}
+
+/*
+ * Insert a node
+ */ 
+void
+datatree_info_insert(struct datatree_info_s *node)
+{
+  datatree_info_insert_ext(&datacentric_tree_root, &datatree_lock, node);
 }
 
 /*
  * remove a node containing a memory block
  */ 
 struct datatree_info_s *
-datatree_splay_delete(void *memblock)
+datatree_info_delete(void *memblock)
 {
   struct datatree_info_s *result = NULL;
 
@@ -200,36 +249,7 @@ datatree_splay_delete(void *memblock)
 
 /* interface for data-centric analysis */
 struct datatree_info_s *
-datatree_splay_lookup(void *key, void **start, void **end)
+datatree_info_lookup(void *key, void **start, void **end)
 {
-  if(!datacentric_tree_root || !key) {
-    return NULL;
-  }
-
-  spinlock_lock(&datatree_lock);
-
-  struct datatree_info_s **root = NULL;
-  root = interval_splay(&datacentric_tree_root, key, start, end);
-  if (!root) {
-    spinlock_unlock(&datatree_lock);
-    return NULL;
-  }
-
-  struct datatree_info_s *info = *root;
-
-#if DATATREE_DEBUG
-  TMSG(DATACENTRIC, "lookup key: %p  %result: %p  ", key, info);
-#endif
-
-  if(info && (info->memblock <= key) && (info->rmemblock > key)) {
-    *start = info->memblock;
-    *end   = info->rmemblock;
-
-    spinlock_unlock(&datatree_lock);
-    return info;
-  }
-
-  spinlock_unlock(&datatree_lock);
-
-  return NULL;
+  return datatree_info_lookup_ext(&datacentric_tree_root, &datatree_lock, key, start, end);
 }
