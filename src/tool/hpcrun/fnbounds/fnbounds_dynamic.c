@@ -266,7 +266,7 @@ fnbounds_run_var_analysis(dso_info_t *dso)
   void **var_table = (void **) hpcrun_syserv_query_var(filename, &fh);
 
   if (var_table != NULL)
-    hpcun_dso_insert_data_var(dso, var_table, fh.num_entries);
+    hpcrun_dso_insert_data_var(dso, var_table, fh.num_entries);
 
   TMSG(DATACENTRIC, "%s has %ld entries", filename, fh.num_entries);
 }

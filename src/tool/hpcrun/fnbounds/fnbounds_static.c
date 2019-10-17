@@ -74,6 +74,9 @@ extern unsigned long hpcrun_nm_addrs_len;
 extern unsigned long hpcrun_reference_offset;
 extern int           hpcrun_is_relocatable;
 
+// datacentric extended data
+extern unsigned long hpcrun_data_addrs[];
+extern unsigned long hpcrun_data_addrs_len;
 //-------------------------------------------------------------------------
 // local data
 //-------------------------------------------------------------------------

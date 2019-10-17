@@ -422,6 +422,25 @@ dump_symbols_var(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 }
 
 static void
+dump_var_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+		 DiscoverFnTy fn_discovery, int query)
+{
+  if (c_mode()) {
+    printf("unsigned long hpcrun_data_addrs[] = {\n");
+  }
+
+  if (query == SYSERV_QUERY_VAR)  {
+    dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
+  }
+
+  if (c_mode()) {
+    printf("\n};\n");
+    printf("unsigned long hpcrun_nm_data_len = "
+	   "sizeof(hpcrun_data_addrs) / sizeof(hpcrun_data_addrs[0]);\n");
+  }
+}
+
+static void
 dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery, int query)
 {
@@ -429,18 +448,15 @@ dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
     printf("unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  switch (query) {
-  case SYSERV_QUERY:
+  if (query == SYSERV_QUERY)  {
     dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
-    break;
-  case SYSERV_QUERY_VAR:
-    dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
-    break;
   }
 
   if (c_mode()) {
     printf("\n};\n");
   }
+
+  dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
 }
 
 

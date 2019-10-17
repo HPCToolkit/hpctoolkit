@@ -149,7 +149,7 @@ normalize_name_load_renamings()
   for (unsigned int i = 0; i < sizeof(renamingTable) / sizeof(NameMapping); i++) {
     renamingMap[renamingTable[i].in] =  renamingTable[i].out;
   }
-  for (unsigned int i = 0; i < sizeof(fakeProcedureTable) / sizeof(const char*); i++) {
+  for (unsigned int i = 0; i < sizeof(fakeProcedureTable) / sizeof(ProcedureStatusMapping); i++) {
     fakeProcedureMap[fakeProcedureTable[i].name] = fakeProcedureTable[i].status;
   }
 }
