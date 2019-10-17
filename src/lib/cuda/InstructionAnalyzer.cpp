@@ -10,6 +10,9 @@
 
 namespace CudaParse {
 
+template <InstructionTypes inst_type>
+void analyze_instruction(const Instruction &inst, std::string &op);
+
 template <>
 void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &op) {
   op = "MEMORY";
@@ -272,7 +275,8 @@ InstructionStat::InstructionStat(const Instruction &inst) {
 }
 
 
-void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
+void InstructionAnalyzer::analyze_dot(const std::vector<Function *> &functions,
+  FunctionStats &function_stats) {
   std::string op;
   for (auto *function : functions) {
     FunctionStat function_stat(function->id);
@@ -289,7 +293,7 @@ void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
       }
       function_stat.block_stats.emplace_back(block_stat);
     }
-    _function_stats.emplace_back(function_stat);
+    function_stats.emplace_back(function_stat);
   }
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
@@ -298,10 +302,25 @@ void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
 }
 
 
-bool InstructionAnalyzer::dump() {
+void InstructionAnalyzer::flat(const FunctionStats &function_stats,
+  std::vector<InstructionStat> &inst_stats) {
+  for (auto &function_stat : function_stats) {
+    for (auto &block_stat : function_stat.block_stats) {
+      for (auto &inst_stat : block_stat.inst_stats) {
+        inst_stats.emplace_back(inst_stat);
+      }
+    }
+  }
+
+  std::sort(inst_stats.begin(), inst_stats.end());
+}
+
+
+bool InstructionAnalyzer::dump(const std::string &file_path,
+  const FunctionStats &function_stats) {
   boost::property_tree::ptree root;
 
-  for (auto &function_stat : _function_stats) {
+  for (auto &function_stat : function_stats) {
     boost::property_tree::ptree function;
     boost::property_tree::ptree blocks;
     function.put("id", function_stat.id);
@@ -346,19 +365,19 @@ bool InstructionAnalyzer::dump() {
   }
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
-    boost::property_tree::write_json(_file_path, root, std::locale(), true);
+    boost::property_tree::write_json(file_path, root, std::locale(), true);
   } else {
-    boost::property_tree::write_json(_file_path, root, std::locale(), false);
+    boost::property_tree::write_json(file_path, root, std::locale(), false);
   }
 
   return true;
 }
 
 
-bool InstructionAnalyzer::read() {
+bool InstructionAnalyzer::read(const std::string &file_path, FunctionStats &function_stats) {
   boost::property_tree::ptree root;
 
-  boost::property_tree::read_json(_file_path, root);
+  boost::property_tree::read_json(file_path, root);
 
   for (auto &function_iter : root) {
     int id = function_iter.second.get<int>("id", 0);
@@ -387,7 +406,7 @@ bool InstructionAnalyzer::read() {
         std::vector<int> srcs; 
         auto &src_iters = inst_iter.second.get_child("srcs");
         for (auto &iter : src_iters) {
-          srcs.push_back(boost::lexical_cast<float>(iter.second.data()));
+          srcs.push_back(boost::lexical_cast<int>(iter.second.data()));
         }
 
         InstructionStat inst_stat(op, pc, pred, dst, srcs);
@@ -411,7 +430,7 @@ bool InstructionAnalyzer::read() {
       function_stat.block_stats.emplace_back(block_stat);
     }
 
-    _function_stats.emplace_back(function_stat);
+    function_stats.emplace_back(function_stat);
   }
 
   return true;
