@@ -2,16 +2,17 @@
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "DotCFG.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
 template <>
-void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "MEMORY";
+void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &op) {
+  op = "MEMORY";
 
   std::string width;
   std::string ldst;
@@ -55,13 +56,13 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
     }
   }
 
-  metric_name += ldst + scope + width;
+  op += ldst + scope + width;
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "FLOAT";
+void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &op) {
+  op = "FLOAT";
 
   std::string type;
   std::string width;
@@ -89,13 +90,13 @@ void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &m
     type = ".OTHER";
   }
 
-  metric_name += type + width;
+  op += type + width;
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "INTEGER";
+void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string &op) {
+  op = "INTEGER";
 
   std::string type;
 
@@ -119,19 +120,19 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
     type = ".OTHER";
   }
 
-  metric_name += type;
+  op += type;
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "TEXTURE";
+void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst, std::string &op) {
+  op = "TEXTURE";
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "CONTROL";
+void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string &op) {
+  op = "CONTROL";
 
   std::string type;
 
@@ -164,13 +165,13 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
     type = ".OTHER";
   }
 
-  metric_name += type;
+  op += type;
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &metric_name) {
-  metric_name = "MISC";
+void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op) {
+  op = "MISC";
 
   std::string type;
 
@@ -183,7 +184,7 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &me
     type = ".OTHER";
   }
 
-  metric_name += type;
+  op += type;
 }
 
 
@@ -209,12 +210,12 @@ static int convert_reg(const std::string &str, size_t pos) {
 
 
 InstructionStat::InstructionStat(const Instruction &inst) {
-  std::string metric_name;
+  std::string op;
 
 #define INST_DISPATCHER(TYPE, VALUE)                \
   case TYPE:                                        \
     {                                               \
-      analyze_instruction<TYPE>(inst, metric_name); \
+      analyze_instruction<TYPE>(inst, op); \
       break;                                        \
     }
 
@@ -226,7 +227,7 @@ InstructionStat::InstructionStat(const Instruction &inst) {
 
 #undef INST_DISPATCHER
 
-  this->metric_name = metric_name;
+  this->op = op;
   this->pc = inst.offset;
   // -1 means no value
   this->predicate = -1;
@@ -272,18 +273,16 @@ InstructionStat::InstructionStat(const Instruction &inst) {
 
 
 void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
-  std::string metric_name;
+  std::string op;
   for (auto *function : functions) {
-    FunctionStat function_stat;
-    function_stat.id = function->id;
+    FunctionStat function_stat(function->id);
     for (auto *block : function->blocks) {
-      BlockStat block_stat;
-      block_stat.id = block->id;
+      BlockStat block_stat(block->id);
       for (auto *inst : block->insts) {
         InstructionStat inst_stat(*inst);
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
-          std::cout << inst->to_string() << "  ----  " << inst_stat.metric_name << std::endl;
+          std::cout << inst->to_string() << "  ----  " << inst_stat.op << std::endl;
         }
 
         block_stat.inst_stats.emplace_back(inst_stat);
@@ -301,6 +300,7 @@ void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
 
 bool InstructionAnalyzer::dump() {
   boost::property_tree::ptree root;
+
   for (auto &function_stat : _function_stats) {
     boost::property_tree::ptree function;
     boost::property_tree::ptree blocks;
@@ -315,7 +315,7 @@ bool InstructionAnalyzer::dump() {
         boost::property_tree::ptree inst;
         boost::property_tree::ptree srcs;
         inst.put("pc", inst_stat.pc);
-        inst.put("op", inst_stat.metric_name);
+        inst.put("op", inst_stat.op);
         if (inst_stat.predicate != -1) {
           inst.put("pred", inst_stat.predicate);
         } else {
@@ -356,96 +356,64 @@ bool InstructionAnalyzer::dump() {
 
 
 bool InstructionAnalyzer::read() {
-#if 0
-  std::ifstream ifs(file_path, std::ifstream::in);
-  if ((ifs.rdstate() & std::ifstream::failbit) != 0) {
+  boost::property_tree::ptree root;
+
+  boost::property_tree::read_json(_file_path, root);
+
+  for (auto &function_iter : root) {
+    int id = function_iter.second.get<int>("id", 0);
+    FunctionStat function_stat(id);
+
     if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error opening " << file_path << std::endl;
+      std::cout << "Function id: " << id << std::endl;
     }
-    return false;
-  }
 
-  const char sep = sparse ? '\n' : '#'; 
+    auto &blocks = function_iter.second.get_child("blocks");
+    for (auto &block_iter : blocks) {
+      int id = block_iter.second.get<int>("id", 0);
+      BlockStat block_stat(id);
 
-  std::string buf;
-  if (std::getline(ifs, buf) && buf == "<metric names>") {
-    if (std::getline(ifs, buf)) {
-      std::istringstream iss(buf);
-      std::string cur_buf;
-      while (std::getline(iss, cur_buf, sep)) {
-        // (mn,id)#
-        // 01234567
-        //    p  s
-        auto pos = cur_buf.find(",");
-        if (pos != std::string::npos) {
-          auto metric_name = cur_buf.substr(1, pos - 1);
-          auto metric_id = cur_buf.substr(pos + 1, cur_buf.size() - pos - 2);
-          // Add a MIX prefix
-          metrics.metric_names["MIX:" + metric_name] = std::stoi(metric_id);
-
-          if (INSTRUCTION_ANALYZER_DEBUG) {
-            std::cout << "metric_name: " << metric_name << ", metric_id: " << metric_id << std::endl;
-          }
-        }
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << "Block id: " << id << std::endl;
       }
-    }
-  } else {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error reading metrics " << file_path << std::endl;
-    }
-    return false;
-  }
-  
-  if (std::getline(ifs, buf) && buf == "<inst stats>") {
-    if (std::getline(ifs, buf)) {
-      std::istringstream iss(buf);
-      std::string cur_buf;
-      while (std::getline(iss, cur_buf, sep)) {
-        bool first = true;
-        CudaParse::InstructionStat inst_stat;
-        std::istringstream isss(cur_buf);
-        // (pc,id:mc,...)#
-        while (std::getline(isss, cur_buf, ',')) {
-          if (cur_buf == ")") {
-            break;
-          }
-          if (first) {
-            // (111,
-            // 01234
-            std::string tmp = cur_buf.substr(1);
-            inst_stat.pc = std::stoi(tmp);
-            first = false;
-          } else {
-            // id:mc,
-            // 012345
-            //   p  s
-            auto pos = cur_buf.find(":");
-            if (pos != std::string::npos) {
-              auto metric_id = cur_buf.substr(0, pos);
-              auto metric_count = cur_buf.substr(pos + 1, cur_buf.size() - pos - 1);
-              inst_stat.stat[std::stoi(metric_id)] = std::stoi(metric_count);
 
-              if (INSTRUCTION_ANALYZER_DEBUG) {
-                std::cout << "pc 0x" << std::hex << inst_stat.pc << std::dec <<
-                  " metric_id: " << metric_id << ", metric_count: " << metric_count << std::endl;
-              }
-            }
-          }
+      auto &insts = block_iter.second.get_child("insts");
+      for (auto &inst_iter : insts) {
+        int pc = inst_iter.second.get<int>("pc", 0);
+        std::string op = inst_iter.second.get<std::string>("op", "");
+        int pred = inst_iter.second.get<int>("pred", -1);
+        int dst = inst_iter.second.get<int>("dst", -1);
+
+        std::vector<int> srcs; 
+        auto &src_iters = inst_iter.second.get_child("srcs");
+        for (auto &iter : src_iters) {
+          srcs.push_back(boost::lexical_cast<float>(iter.second.data()));
         }
-        // FIXME(Keren)
-        std::vector<CudaParse::InstructionStat> stats;
-        stats.emplace_back(inst_stat);
-        metrics.inst_stats.emplace_back(stats);
+
+        InstructionStat inst_stat(op, pc, pred, dst, srcs);
+
+        if (INSTRUCTION_ANALYZER_DEBUG) {
+          std::cout << "Inst pc: " << pc << std::endl;
+          std::cout << "     op: " << op << std::endl;
+          std::cout << "     pred: " << pred << std::endl;
+          std::cout << "     dst: " << dst << std::endl;
+          std::cout << "     srcs: ";
+          for (auto src : srcs) {
+            std::cout << src << ",";
+          }
+          std::cout << std::endl;
+        }
+
+        block_stat.inst_stats.emplace_back(inst_stat);
+      
       }
+
+      function_stat.block_stats.emplace_back(block_stat);
     }
-  } else {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error reading stats " << file_path << std::endl;
-    }
-    return false;
+
+    _function_stats.emplace_back(function_stat);
   }
 
-#endif
   return true;
 }
 

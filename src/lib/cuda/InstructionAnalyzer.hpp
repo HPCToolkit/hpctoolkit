@@ -12,13 +12,18 @@ namespace CudaParse {
 class Function;
 
 struct InstructionStat {
-  std::string metric_name;
-  unsigned int pc;
+  std::string op;
+  int pc;
   int predicate;  // P0-P6
   int dst;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255, only records normal registers
 
   explicit InstructionStat(const Instruction &inst);
+
+  InstructionStat(const std::string &op,
+    unsigned int pc, int predicate, int dst, std::vector<int> &srcs) :
+    op(op), pc(pc), predicate(predicate), dst(dst),
+    srcs(srcs) {}
 
   InstructionStat() {}
 
@@ -34,6 +39,8 @@ struct BlockStat {
   int id;
   std::vector<int> targets;
   InstructionStats inst_stats;
+
+  BlockStat(int id) : id(id) {}
 };
 
 typedef std::vector<BlockStat> BlockStats;
@@ -42,6 +49,8 @@ typedef std::vector<BlockStat> BlockStats;
 struct FunctionStat {
   int id;
   BlockStats block_stats; 
+
+  FunctionStat(int id) : id(id) {}
 };
 
 typedef std::vector<FunctionStat> FunctionStats;
@@ -49,7 +58,7 @@ typedef std::vector<FunctionStat> FunctionStats;
 
 #if 0
 struct InstructionMetrics {
-  std::map<std::string, int> metric_names;
+  std::map<std::string, int> op;
   FunctionStats function_stats;
 
   void flat(std::vector<InstructionStat> &inst_stats) {
@@ -68,7 +77,7 @@ struct InstructionMetrics {
 
 
 template <InstructionTypes inst_type>
-void analyze_instruction(const Instruction &inst, std::string &metric_names);
+void analyze_instruction(const Instruction &inst, std::string &op);
 
 
 class InstructionAnalyzer {
@@ -76,8 +85,6 @@ class InstructionAnalyzer {
   InstructionAnalyzer(const std::string &file_path) : _file_path(file_path) {}
  
   void analyze(const std::vector<Function *> &functions);
-
-  void restore(std::vector<Function *> &functions);
 
   bool dump();
   

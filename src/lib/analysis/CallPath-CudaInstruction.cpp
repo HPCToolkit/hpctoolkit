@@ -75,7 +75,6 @@ struct VMAStmt {
 };
 
 
-#if 0
 static inline int
 getTotalGPUInst(Prof::CCT::ANode *node) {
   int sum = 0;
@@ -106,6 +105,7 @@ getLMfromInst(const std::string &inst_file) {
 }
 
 
+#if 0
 static void
 createMetrics(const MetricNameIdMap &metric_name_id_map, MetricNameProfMap &metric_name_prof_map, 
   MetricIdProfMap &metric_id_prof_map, Prof::Metric::Mgr &mgr) {
@@ -257,7 +257,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, std::vector<CudaParse:
 void
 overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
-#if 0
+
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
@@ -299,6 +299,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 1: Read metrics
     CudaParse::InstructionAnalyzer analyzer(file);
     analyzer.read();
+#if 0
     CudaParse::InstructionMetrics &inst_metrics = analyzer.instruction_metrics();
     
     // Step 2: Merge metrics
@@ -322,8 +323,8 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;
     }
-  }
 #endif
+  }
 }
 
 }  // namespace CallPath
