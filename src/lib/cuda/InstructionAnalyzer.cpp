@@ -1,79 +1,13 @@
 #include "InstructionAnalyzer.hpp"
 
-#include <fstream>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include "DotCFG.hpp"
 
 #define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
-
-
-static int convert_reg(const std::string &str, size_t pos) {
-  int num = 0;
-  bool find_digit = false;
-  while (pos != std::string::npos) {
-    if (isdigit(str[pos])) {
-      find_digit = true;
-      num = num * 10 + str[pos] - '0'; 
-    } else {
-      break;
-    }
-    ++pos;
-  }
-  
-  if (find_digit) {
-    return num;
-  }
-
-  return -1;
-}
-
-
-InstructionStat::InstructionStat(const Instruction &inst) {
-  this->pc = inst.offset;
-  // -1 means no value
-  this->predicate = -1;
-  this->dst = -1;
-
-  if (inst.predicate.size() != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst.predicate << " ";
-    }
-
-    auto pos = inst.predicate.find("P");
-    if (pos != std::string::npos) {
-      this->predicate = convert_reg(inst.predicate, pos + 1);
-    }
-  }
-
-  if (inst.operands.size() != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst.operands[0] << " ";
-    }
-
-    auto pos = inst.operands[0].find("R");
-    if (pos != std::string::npos) {
-      this->dst = convert_reg(inst.operands[0], pos + 1);
-    }
-
-    for (size_t i = 1; i < inst.operands.size(); ++i) {
-      if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << inst.operands[i] << " ";
-      }
-
-      pos = inst.operands[i].find("R");
-      if (pos != std::string::npos) {
-        this->srcs.push_back(convert_reg(inst.operands[i], pos + 1));
-      }
-    }
-  }
-
-  if (INSTRUCTION_ANALYZER_DEBUG) {
-    std::cout << std::endl;
-  }
-}
-
 
 template <>
 void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &metric_name) {
@@ -253,106 +187,176 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &me
 }
 
 
-InstructionAnalyzer::InstructionAnalyzer() {
-#define INIT_DISPATCHER(TYPE, VALUE)              \
-  _dispatcher[TYPE] = &analyze_instruction<TYPE>; \
+static int convert_reg(const std::string &str, size_t pos) {
+  int num = 0;
+  bool find_digit = false;
+  while (pos != std::string::npos) {
+    if (isdigit(str[pos])) {
+      find_digit = true;
+      num = num * 10 + str[pos] - '0'; 
+    } else {
+      break;
+    }
+    ++pos;
+  }
+  
+  if (find_digit) {
+    return num;
+  }
 
-  FORALL_INS_TYPES(INIT_DISPATCHER)
-
-#undef INIT_DISPATCHER
+  return -1;
 }
 
 
-void InstructionAnalyzer::analyze(const std::vector<Function *> &functions,
-  InstructionMetrics &metrics) {
+InstructionStat::InstructionStat(const Instruction &inst) {
   std::string metric_name;
-  for (auto *function : functions) {
-    for (auto *block : function->blocks) {
-      for (auto *inst : block->insts) {
-        _dispatcher[inst->type](*inst, metric_name);
 
-        if (INSTRUCTION_ANALYZER_DEBUG) {
-          std::cout << inst->to_string() << "  ----  " << metric_name << std::endl;
-        }
+#define INST_DISPATCHER(TYPE, VALUE)                \
+  case TYPE:                                        \
+    {                                               \
+      analyze_instruction<TYPE>(inst, metric_name); \
+      break;                                        \
+    }
 
-        InstructionStat inst_stat(*inst);
-        int metric_id = 0;
-        if (metrics.metric_names.find(metric_name) == metrics.metric_names.end()) {
-          metric_id = metrics.metric_names.size();
-          metrics.metric_names[metric_name] = metric_id;
-        } else {
-          metric_id = metrics.metric_names[metric_name];
-        }
-        inst_stat.stat[metric_id] += 1;
-        metrics.inst_stats.emplace_back(inst_stat);
+  switch (inst.type) {
+    FORALL_INS_TYPES(INST_DISPATCHER)
+    default:
+      break;
+    }
+
+#undef INST_DISPATCHER
+
+  this->metric_name = metric_name;
+  this->pc = inst.offset;
+  // -1 means no value
+  this->predicate = -1;
+  this->dst = -1;
+
+  if (inst.predicate.size() != 0) {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << inst.predicate << " ";
+    }
+
+    auto pos = inst.predicate.find("P");
+    if (pos != std::string::npos) {
+      this->predicate = convert_reg(inst.predicate, pos + 1);
+    }
+  }
+
+  if (inst.operands.size() != 0) {
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << inst.operands[0] << " ";
+    }
+
+    auto pos = inst.operands[0].find("R");
+    if (pos != std::string::npos) {
+      this->dst = convert_reg(inst.operands[0], pos + 1);
+    }
+
+    for (size_t i = 1; i < inst.operands.size(); ++i) {
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << inst.operands[i] << " ";
+      }
+
+      pos = inst.operands[i].find("R");
+      if (pos != std::string::npos) {
+        this->srcs.push_back(convert_reg(inst.operands[i], pos + 1));
       }
     }
   }
+
+  if (INSTRUCTION_ANALYZER_DEBUG) {
+    std::cout << std::endl;
+  }
+}
+
+
+void InstructionAnalyzer::analyze(const std::vector<Function *> &functions) {
+  std::string metric_name;
+  for (auto *function : functions) {
+    FunctionStat function_stat;
+    function_stat.id = function->id;
+    for (auto *block : function->blocks) {
+      BlockStat block_stat;
+      block_stat.id = block->id;
+      for (auto *inst : block->insts) {
+        InstructionStat inst_stat(*inst);
+
+        if (INSTRUCTION_ANALYZER_DEBUG) {
+          std::cout << inst->to_string() << "  ----  " << inst_stat.metric_name << std::endl;
+        }
+
+        block_stat.inst_stats.emplace_back(inst_stat);
+      }
+      function_stat.block_stats.emplace_back(block_stat);
+    }
+    _function_stats.emplace_back(function_stat);
+  }
+
   if (INSTRUCTION_ANALYZER_DEBUG) {
     std::cout << "Finish analysis" << std::endl;
   }
 }
 
 
-bool InstructionAnalyzer::dump(const std::string &file_path, InstructionMetrics &metrics, bool sparse) {
-  std::ofstream ofs(file_path, std::ofstream::out);
-  
-  if ((ofs.rdstate() & std::ofstream::failbit) != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error opening " << file_path << std::endl;
-    }
-    return false;
-  }
+bool InstructionAnalyzer::dump() {
+  boost::property_tree::ptree root;
+  for (auto &function_stat : _function_stats) {
+    boost::property_tree::ptree function;
+    boost::property_tree::ptree blocks;
+    function.put("id", function_stat.id);
 
-  if (metrics.metric_names.size() == 0) {
-    // no metrics
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Error no metrics " << file_path << std::endl;
-    }
-    return false;
-  }
+    for (auto &block_stat : function_stat.block_stats) {
+      boost::property_tree::ptree block;
+      boost::property_tree::ptree insts;
+      block.put("id", block_stat.id);
 
-  const char sep = sparse ? '\n' : '#'; 
+      for (auto &inst_stat : block_stat.inst_stats) {
+        boost::property_tree::ptree inst;
+        boost::property_tree::ptree srcs;
+        inst.put("pc", inst_stat.pc);
+        inst.put("op", inst_stat.metric_name);
+        if (inst_stat.predicate != -1) {
+          inst.put("pred", inst_stat.predicate);
+        } else {
+          inst.put("pred", "");
+        }
+        if (inst_stat.dst != -1) {
+          inst.put("dst", inst_stat.dst);
+        } else {
+          inst.put("dst", "");
+        }
 
-  ofs << "<metric names>" << std::endl;
-
-  // (metric_name,id)#
-  for (auto it = metrics.metric_names.begin(); it != metrics.metric_names.end(); ++it) {
-    ofs << "(" << it->first << "," << it->second << ")" << sep;
-  }
-
-  ofs << std::endl << "<inst stats>" << std::endl;
-
-  // (pc,predicate,dst,src1:src2...,metric_id:metric_count, ...)#
-  for (auto &inst_stat : metrics.inst_stats) {
-    ofs << "(" << inst_stat.pc << ",";
-    if (inst_stat.predicate != -1) {
-      ofs << inst_stat.predicate;
-    }
-    ofs << ",";
-    if (inst_stat.dst != -1) {
-      ofs << inst_stat.dst;
-    }
-    ofs << ",";
-    for (auto src : inst_stat.srcs) {
-      if (src != -1) {
-        ofs << src << ":";
+        for (auto src : inst_stat.srcs) {
+          boost::property_tree::ptree t;
+          t.put("", src);
+          srcs.push_back(std::make_pair("", t));
+        }
+        
+        inst.add_child("srcs", srcs);
+        insts.push_back(std::make_pair("", inst));
       }
+
+      block.add_child("insts", insts);
+      blocks.push_back(std::make_pair("", block));
     }
-    ofs << ",";
-    for (auto it = inst_stat.stat.begin(); it != inst_stat.stat.end(); ++it) {
-      ofs << it->first << ":" << it->second << ",";
-    }
-    ofs << ")" << sep;
+
+    function.add_child("blocks", blocks);
+    root.push_back(std::make_pair("", function));
   }
 
-  ofs.close();
+  if (INSTRUCTION_ANALYZER_DEBUG) {
+    boost::property_tree::write_json(_file_path, root, std::locale(), true);
+  } else {
+    boost::property_tree::write_json(_file_path, root, std::locale(), false);
+  }
+
   return true;
 }
 
 
-bool InstructionAnalyzer::read(
-  const std::string &file_path, CudaParse::InstructionMetrics &metrics, bool sparse) {
+bool InstructionAnalyzer::read() {
+#if 0
   std::ifstream ifs(file_path, std::ifstream::in);
   if ((ifs.rdstate() & std::ifstream::failbit) != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
@@ -428,7 +432,10 @@ bool InstructionAnalyzer::read(
             }
           }
         }
-        metrics.inst_stats.emplace_back(inst_stat);
+        // FIXME(Keren)
+        std::vector<CudaParse::InstructionStat> stats;
+        stats.emplace_back(inst_stat);
+        metrics.inst_stats.emplace_back(stats);
       }
     }
   } else {
@@ -438,6 +445,7 @@ bool InstructionAnalyzer::read(
     return false;
   }
 
+#endif
   return true;
 }
 

@@ -75,6 +75,7 @@ struct VMAStmt {
 };
 
 
+#if 0
 static inline int
 getTotalGPUInst(Prof::CCT::ANode *node) {
   int sum = 0;
@@ -106,7 +107,7 @@ getLMfromInst(const std::string &inst_file) {
 
 
 static void
-createMetrics(MetricNameProfMap &metric_name_prof_map, MetricNameIdMap &metric_name_id_map,
+createMetrics(const MetricNameIdMap &metric_name_id_map, MetricNameProfMap &metric_name_prof_map, 
   MetricIdProfMap &metric_id_prof_map, Prof::Metric::Mgr &mgr) {
   // Create new metrics in hpcprof
   // raw_id-><inclusive id, exclusive id>
@@ -160,11 +161,8 @@ createMetrics(MetricNameProfMap &metric_name_prof_map, MetricNameIdMap &metric_n
 
 
 static void
-gatherStmts(Prof::LoadMap::LMId_t lm_id, CudaParse::InstructionStats &inst_stats,
+gatherStmts(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::InstructionStat> &inst_stats,
   std::vector<VMAStmt> &vma_stmts, Prof::CCT::ANode *prof_root) {
-  // Sort instructions O(nlogn)
-  std::sort(inst_stats.begin(), inst_stats.end());
-
   auto inst_pc_front = inst_stats.front().pc;
   auto inst_pc_back = inst_stats.back().pc;
 
@@ -203,7 +201,7 @@ gatherStmts(Prof::LoadMap::LMId_t lm_id, CudaParse::InstructionStats &inst_stats
 
 
 static void
-associateInstStmts(const std::vector<VMAStmt> &vma_stmts, CudaParse::InstructionStats &inst_stats,
+associateInstStmts(const std::vector<VMAStmt> &vma_stmts, std::vector<CudaParse::InstructionStat> &inst_stats,
   MetricIdProfMap &metric_id_prof_map, Prof::Metric::Mgr &mgr) {
   size_t cur_stmt_index = 0;
 
@@ -253,11 +251,13 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, CudaParse::Instruction
     }
   }
 }
+#endif
 
 
 void
 overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
+#if 0
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
@@ -297,18 +297,22 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     Prof::LoadMap::LMId_t lm_id = (*lm_iter)->id();
 
     // Step 1: Read metrics
-    CudaParse::InstructionMetrics inst_metrics;
-    CudaParse::InstructionAnalyzer::read(file, inst_metrics);
+    CudaParse::InstructionAnalyzer analyzer(file);
+    analyzer.read();
+    CudaParse::InstructionMetrics &inst_metrics = analyzer.instruction_metrics();
     
     // Step 2: Merge metrics
     // Find new metric names and insert new mappings between from raw ids to prof metric ids
     MetricNameIdMap &metric_name_id_map = inst_metrics.metric_names;
     MetricIdProfMap metric_id_prof_map;
-    createMetrics(metric_name_prof_map, metric_name_id_map, metric_id_prof_map, *mgr);
+    createMetrics(metric_name_id_map, metric_name_prof_map, metric_id_prof_map, *mgr);
     
     // Step 3: Gather all CCT nodes with lm_id
     std::vector<VMAStmt> vma_stmts;
-    CudaParse::InstructionStats &inst_stats = inst_metrics.inst_stats;
+    // Sort the instructions by PC
+    std::vector<CudaParse::InstructionStat> inst_stats;
+    inst_metrics.flat(inst_stats);
+
     auto *prof_root = prof.cct()->root();
     gatherStmts(lm_id, inst_stats, vma_stmts, prof_root);
 
@@ -319,6 +323,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
       std::cout << "Finish reading instruction file " << file << std::endl;
     }
   }
+#endif
 }
 
 }  // namespace CallPath

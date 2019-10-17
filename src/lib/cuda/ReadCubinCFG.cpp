@@ -247,9 +247,6 @@ analyzeCudaInstruction
  const std::vector<CudaParse::Function *> &functions
 )
 {
-  CudaParse::InstructionAnalyzer instruction_analyzer;
-  CudaParse::InstructionMetrics instruction_metrics;
-  instruction_analyzer.analyze(functions, instruction_metrics);
   // Create a nvidia directory and dump instruction files
   if (functions.size() > 0) {
     const std::string dot_dir = search_path + "/nvidia";
@@ -260,7 +257,9 @@ analyzeCudaInstruction
     }
 
     const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
-    if (CudaParse::InstructionAnalyzer::dump(inst_output, instruction_metrics) != true) {
+    CudaParse::InstructionAnalyzer instruction_analyzer(inst_output);
+    instruction_analyzer.analyze(functions);
+    if (instruction_analyzer.dump() != true) {
       std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
     }
   }
