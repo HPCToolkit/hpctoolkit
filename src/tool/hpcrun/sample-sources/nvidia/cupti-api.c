@@ -925,11 +925,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
-          cupti_activity_channel_consume(cupti_activity_channel_get());
           is_valid_op = true;
-          // XXX(Keren): cannot parse this kind of kernel launch
-          if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
-            is_kernel_op = true;
+          is_kernel_op = true;
+          if (cd->callbackSite == CUPTI_API_ENTER) {
+            cupti_activity_channel_consume(cupti_activity_channel_get());
+            // XXX(Keren): cannot parse this kind of kernel launch
+            //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
             // CUfunction is the first param
             CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
             func_ip = cupti_func_ip_resolve(function_ptr);
@@ -997,8 +998,7 @@ cupti_subscriber_callback
           &gpu_driver_ccts);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-      }
-      if (cd->callbackSite == CUPTI_API_EXIT) {
+      } else if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id = cupti_correlation_id_pop();
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
@@ -1111,10 +1111,12 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:
       #endif
         {
-          // Process previous activities
-          cupti_activity_channel_consume(cupti_activity_channel_get());
           is_valid_op = true;
           is_kernel_op = true;
+          if (cd->callbackSite == CUPTI_API_ENTER) {
+            // Process previous activities
+            cupti_activity_channel_consume(cupti_activity_channel_get());
+          }
           break;
         }
       default:
