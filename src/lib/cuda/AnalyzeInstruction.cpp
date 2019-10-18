@@ -339,33 +339,37 @@ bool dumpCudaInstructions(const std::string &file_path,
 
       // Insts
       for (auto *inst : block->insts) {
-        // XXX:Skip NOP instructions
-        if (inst->inst_stat == NULL) {
-          continue;
-        }
-
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
-        ptree_inst.put("pc", inst->inst_stat->pc);
-        ptree_inst.put("op", inst->inst_stat->op);
-        if (inst->inst_stat->predicate != -1) {
-          ptree_inst.put("pred", inst->inst_stat->predicate);
+
+        if (inst->inst_stat == NULL) {
+          // Append NOP instructions
+          ptree_inst.put("pc", inst->offset);
+          ptree_inst.put("op", "NOP");
         } else {
-          ptree_inst.put("pred", "");
-        }
-        if (inst->inst_stat->dst != -1) {
-          ptree_inst.put("dst", inst->inst_stat->dst);
-        } else {
-          ptree_inst.put("dst", "");
+          // Append Normal instructions
+          ptree_inst.put("pc", inst->inst_stat->pc);
+          ptree_inst.put("op", inst->inst_stat->op);
+          if (inst->inst_stat->predicate != -1) {
+            ptree_inst.put("pred", inst->inst_stat->predicate);
+          } else {
+            ptree_inst.put("pred", "");
+          }
+          if (inst->inst_stat->dst != -1) {
+            ptree_inst.put("dst", inst->inst_stat->dst);
+          } else {
+            ptree_inst.put("dst", "");
+          }
+
+          for (auto src : inst->inst_stat->srcs) {
+            boost::property_tree::ptree t;
+            t.put("", src);
+            ptree_srcs.push_back(std::make_pair("", t));
+          }
+
+          ptree_inst.add_child("srcs", ptree_srcs);
         }
 
-        for (auto src : inst->inst_stat->srcs) {
-          boost::property_tree::ptree t;
-          t.put("", src);
-          ptree_srcs.push_back(std::make_pair("", t));
-        }
-        
-        ptree_inst.add_child("srcs", ptree_srcs);
         ptree_insts.push_back(std::make_pair("", ptree_inst));
       }
 

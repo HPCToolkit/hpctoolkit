@@ -6,26 +6,26 @@ namespace Dyninst {
 namespace ParseAPI {
 
 CudaBlock::CudaBlock(CodeObject * o, CodeRegion * r,
-  Address start, std::vector<Offset> &offsets) : Block(o, r, start) {
-  for (auto offset : offsets) {
-    _inst_offsets.push_back(offset);
+  CudaParse::Block * block) : Block(o, r, block->address) {
+  for (auto *inst : block->insts) {
+    _insts.push_back(inst);
   }
 }
 
 
 Address CudaBlock::last() const {
-  return this->_inst_offsets.back();
+  return this->_insts.back()->offset;
 }
 
 
 void CudaBlock::getInsns(Insns &insns) const {
-  for (auto offset : _inst_offsets) {
+  for (auto *inst : _insts) {
 #ifdef DYNINST_INSTRUCTION_PTR
     insns.insert(std::pair<long unsigned int, 
-      InstructionAPI::InstructionPtr>(offset, NULL));
+      InstructionAPI::InstructionPtr>(inst->offset, NULL));
 #else
-    InstructionAPI::Instruction inst;    
-    insns[offset] = inst;
+    InstructionAPI::Instruction instruction;
+    insns[inst->offset] = instruction;
 #endif
   }
 }

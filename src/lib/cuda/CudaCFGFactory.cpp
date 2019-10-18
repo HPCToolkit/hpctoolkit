@@ -28,11 +28,7 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
           if (DEBUG_CUDA_CFGFACTORY) {
             std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
           }
-          std::vector<Offset> inst_offsets;
-          for (auto *inst : block->insts) {
-            inst_offsets.push_back(inst->offset);
-          }
-          ret_block = new CudaBlock(obj, region, block->address, inst_offsets);
+          ret_block = new CudaBlock(obj, region, block);
           _block_filter[block->id] = ret_block;
           blocks_.add(ret_block);
         } else {
@@ -55,11 +51,7 @@ Function *CudaCFGFactory::mkfunc(Address addr, FuncSource src,
             if (DEBUG_CUDA_CFGFACTORY) {
               std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
             }
-            std::vector<Offset> inst_offsets;
-            for (auto *inst : target->block->insts) {
-              inst_offsets.push_back(inst->offset);
-            }
-            ret_target_block = new CudaBlock(obj, region, target->block->address, inst_offsets);
+            ret_target_block = new CudaBlock(obj, region, target->block);
             _block_filter[target->block->id] = ret_target_block;
             blocks_.add(ret_target_block);
           } else {
