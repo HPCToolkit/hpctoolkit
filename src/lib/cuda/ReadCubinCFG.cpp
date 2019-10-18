@@ -27,7 +27,7 @@
 #include "CudaCodeSource.hpp"
 #include "CFGParser.hpp"
 #include "Instruction.hpp"
-#include "InstructionAnalyzer.hpp"
+#include "AnalyzeInstruction.hpp"
 #include "GraphReader.hpp"
 #include "ReadCubinCFG.hpp"
 
@@ -240,7 +240,7 @@ parseDotCFG
 
 
 static void
-analyzeCudaInstruction
+dumpCudaInstructions
 (
  const std::string &search_path,
  const std::string &elf_filename,
@@ -257,9 +257,7 @@ analyzeCudaInstruction
     }
 
     const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
-    CudaParse::FunctionStats function_stats;
-    CudaParse::InstructionAnalyzer::analyze_dot(functions, function_stats);
-    if (CudaParse::InstructionAnalyzer::dump(inst_output, function_stats) != true) {
+    if (CudaParse::dumpCudaInstructions(inst_output, functions) != true) {
       std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
     }
   }
@@ -286,7 +284,10 @@ readCubinCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj
+ Dyninst::ParseAPI::CodeObject **code_obj,
+ bool dump_insts,
+ bool slice,
+ bool liveness
 ) 
 {
   static bool nvdisasm_usable = test_nvdisasm();
@@ -301,15 +302,30 @@ readCubinCFG
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
+      // Get raw dot functions
       std::vector<CudaParse::Function *> functions;
       parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
-      // Analyze Cuda instructions
-      analyzeCudaInstruction(search_path, elfFile->getFileName(), functions);
-      // Dyninst adapter
+
+      // Dyninst adapters
+      // First construct dyninst functions, blocks, and instructions
+      // Then parse slice and liveness, and update instruction_stats
       CFGFactory *cfg_fact = new CudaCFGFactory(functions);
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
+
+      if (slice) {
+        sliceCudaInstructions((*code_obj)->funcs(), functions);
+      }
+
+      if (liveness) {
+        processLivenessCudaInstructions((*code_obj)->funcs(), functions);
+      }
+
+      if (dump_insts) {
+        dumpCudaInstructions(search_path, elfFile->getFileName(), functions);
+      }
+
       unlink(dot.c_str());
       unlink(cubin.c_str());
       return true;

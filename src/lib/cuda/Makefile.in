@@ -139,7 +139,7 @@ am__objects_1 = libHPCcuda_la-CFGParser.lo \
 	libHPCcuda_la-CudaCFGFactory.lo libHPCcuda_la-CudaFunction.lo \
 	libHPCcuda_la-GraphReader.lo libHPCcuda_la-CudaBlock.lo \
 	libHPCcuda_la-CudaCodeSource.lo libHPCcuda_la-ReadCubinCFG.lo \
-	libHPCcuda_la-InstructionAnalyzer.lo \
+	libHPCcuda_la-AnalyzeInstruction.lo \
 	libHPCcuda_la-Instruction.lo
 am_libHPCcuda_la_OBJECTS = $(am__objects_1)
 libHPCcuda_la_OBJECTS = $(am_libHPCcuda_la_OBJECTS)
@@ -501,7 +501,7 @@ MYSOURCES = \
 	CudaBlock.cpp  \
 	CudaCodeSource.cpp  \
 	ReadCubinCFG.cpp \
-	InstructionAnalyzer.cpp \
+	AnalyzeInstruction.cpp \
 	Instruction.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
@@ -589,6 +589,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-AnalyzeInstruction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CFGParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaBlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaCFGFactory.Plo@am__quote@
@@ -596,7 +597,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-CudaFunction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-GraphReader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-Instruction.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCcuda_la-ReadCubinCFG.Plo@am__quote@
 
 .cpp.o:
@@ -669,12 +669,12 @@ libHPCcuda_la-ReadCubinCFG.lo: ReadCubinCFG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-ReadCubinCFG.lo `test -f 'ReadCubinCFG.cpp' || echo '$(srcdir)/'`ReadCubinCFG.cpp
 
-libHPCcuda_la-InstructionAnalyzer.lo: InstructionAnalyzer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-InstructionAnalyzer.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Tpo -c -o libHPCcuda_la-InstructionAnalyzer.lo `test -f 'InstructionAnalyzer.cpp' || echo '$(srcdir)/'`InstructionAnalyzer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Tpo $(DEPDIR)/libHPCcuda_la-InstructionAnalyzer.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='InstructionAnalyzer.cpp' object='libHPCcuda_la-InstructionAnalyzer.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCcuda_la-AnalyzeInstruction.lo: AnalyzeInstruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-AnalyzeInstruction.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-AnalyzeInstruction.Tpo -c -o libHPCcuda_la-AnalyzeInstruction.lo `test -f 'AnalyzeInstruction.cpp' || echo '$(srcdir)/'`AnalyzeInstruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCcuda_la-AnalyzeInstruction.Tpo $(DEPDIR)/libHPCcuda_la-AnalyzeInstruction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='AnalyzeInstruction.cpp' object='libHPCcuda_la-AnalyzeInstruction.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-InstructionAnalyzer.lo `test -f 'InstructionAnalyzer.cpp' || echo '$(srcdir)/'`InstructionAnalyzer.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCcuda_la-AnalyzeInstruction.lo `test -f 'AnalyzeInstruction.cpp' || echo '$(srcdir)/'`AnalyzeInstruction.cpp
 
 libHPCcuda_la-Instruction.lo: Instruction.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCcuda_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCcuda_la-Instruction.lo -MD -MP -MF $(DEPDIR)/libHPCcuda_la-Instruction.Tpo -c -o libHPCcuda_la-Instruction.lo `test -f 'Instruction.cpp' || echo '$(srcdir)/'`Instruction.cpp

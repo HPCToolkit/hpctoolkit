@@ -42,6 +42,8 @@ struct Block {
   size_t id;
   std::string name;
 
+  Block(size_t id) : id(id) {}
+
   Block(size_t id, const std::string &name) : id(id), name(name) {}
 
   bool operator<(const Block &other) const {

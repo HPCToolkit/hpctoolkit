@@ -1,16 +1,17 @@
-#include "InstructionAnalyzer.hpp"
+#include "AnalyzeInstruction.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include "DotCFG.hpp"
+#include "Instruction.hpp"
 
 #define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
-template <InstructionTypes inst_type>
+template <InstructionType inst_type>
 void analyze_instruction(const Instruction &inst, std::string &op);
 
 template <>
@@ -212,17 +213,17 @@ static int convert_reg(const std::string &str, size_t pos) {
 }
 
 
-InstructionStat::InstructionStat(const Instruction &inst) {
+InstructionStat::InstructionStat(const Instruction *inst) {
   std::string op;
 
 #define INST_DISPATCHER(TYPE, VALUE)                \
   case TYPE:                                        \
     {                                               \
-      analyze_instruction<TYPE>(inst, op); \
+      analyze_instruction<TYPE>(*inst, op); \
       break;                                        \
     }
 
-  switch (inst.type) {
+  switch (inst->type) {
     FORALL_INS_TYPES(INST_DISPATCHER)
     default:
       break;
@@ -231,40 +232,40 @@ InstructionStat::InstructionStat(const Instruction &inst) {
 #undef INST_DISPATCHER
 
   this->op = op;
-  this->pc = inst.offset;
+  this->pc = inst->offset;
   // -1 means no value
   this->predicate = -1;
   this->dst = -1;
 
-  if (inst.predicate.size() != 0) {
+  if (inst->predicate.size() != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst.predicate << " ";
+      std::cout << inst->predicate << " ";
     }
 
-    auto pos = inst.predicate.find("P");
+    auto pos = inst->predicate.find("P");
     if (pos != std::string::npos) {
-      this->predicate = convert_reg(inst.predicate, pos + 1);
+      this->predicate = convert_reg(inst->predicate, pos + 1);
     }
   }
 
-  if (inst.operands.size() != 0) {
+  if (inst->operands.size() != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst.operands[0] << " ";
+      std::cout << inst->operands[0] << " ";
     }
 
-    auto pos = inst.operands[0].find("R");
+    auto pos = inst->operands[0].find("R");
     if (pos != std::string::npos) {
-      this->dst = convert_reg(inst.operands[0], pos + 1);
+      this->dst = convert_reg(inst->operands[0], pos + 1);
     }
 
-    for (size_t i = 1; i < inst.operands.size(); ++i) {
+    for (size_t i = 1; i < inst->operands.size(); ++i) {
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << inst.operands[i] << " ";
+        std::cout << inst->operands[i] << " ";
       }
 
-      pos = inst.operands[i].find("R");
+      pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
-        this->srcs.push_back(convert_reg(inst.operands[i], pos + 1));
+        this->srcs.push_back(convert_reg(inst->operands[i], pos + 1));
       }
     }
   }
@@ -275,93 +276,87 @@ InstructionStat::InstructionStat(const Instruction &inst) {
 }
 
 
-void InstructionAnalyzer::analyze_dot(const std::vector<Function *> &functions,
-  FunctionStats &function_stats) {
-  std::string op;
+struct InstructionStatPointCompare {
+  bool operator()(const InstructionStat *l, const InstructionStat *r) {
+    return *l < *r;
+  }
+};
+
+
+void flatCudaInstructionStats(const std::vector<Function *> &functions,
+  std::vector<InstructionStat *> &inst_stats) {
   for (auto *function : functions) {
-    FunctionStat function_stat(function->id);
     for (auto *block : function->blocks) {
-      BlockStat block_stat(block->id);
       for (auto *inst : block->insts) {
-        InstructionStat inst_stat(*inst);
-
-        if (INSTRUCTION_ANALYZER_DEBUG) {
-          std::cout << inst->to_string() << "  ----  " << inst_stat.op << std::endl;
-        }
-
-        block_stat.inst_stats.emplace_back(inst_stat);
-      }
-      function_stat.block_stats.emplace_back(block_stat);
-    }
-    function_stats.emplace_back(function_stat);
-  }
-
-  if (INSTRUCTION_ANALYZER_DEBUG) {
-    std::cout << "Finish analysis" << std::endl;
-  }
-}
-
-
-void InstructionAnalyzer::flat(const FunctionStats &function_stats,
-  std::vector<InstructionStat> &inst_stats) {
-  for (auto &function_stat : function_stats) {
-    for (auto &block_stat : function_stat.block_stats) {
-      for (auto &inst_stat : block_stat.inst_stats) {
-        inst_stats.emplace_back(inst_stat);
+        inst_stats.emplace_back(inst->inst_stat);
       }
     }
   }
 
-  std::sort(inst_stats.begin(), inst_stats.end());
+  std::sort(inst_stats.begin(), inst_stats.end(), InstructionStatPointCompare());
 }
 
 
-bool InstructionAnalyzer::dump(const std::string &file_path,
-  const FunctionStats &function_stats) {
+void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
+  std::vector<Function *> &functions) {
+}
+
+
+void processLivenessCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
+  std::vector<Function *> &functions) {
+}
+
+
+bool dumpCudaInstructions(const std::string &file_path,
+  const std::vector<Function *> &functions) {
   boost::property_tree::ptree root;
 
-  for (auto &function_stat : function_stats) {
-    boost::property_tree::ptree function;
-    boost::property_tree::ptree blocks;
-    function.put("id", function_stat.id);
+  for (auto *function : functions) {
+    boost::property_tree::ptree ptree_function;
+    boost::property_tree::ptree ptree_blocks;
+    ptree_function.put("id", function->id);
+    ptree_function.put("name", function->name);
+    ptree_function.put("address", function->address);
 
-    for (auto &block_stat : function_stat.block_stats) {
-      boost::property_tree::ptree block;
-      boost::property_tree::ptree insts;
-      block.put("id", block_stat.id);
+    for (auto *block : function->blocks) {
+      boost::property_tree::ptree ptree_block;
+      boost::property_tree::ptree ptree_insts;
+      ptree_block.put("id", block->id);
+      ptree_block.put("name", block->name);
+      ptree_block.put("address", block->address);
 
-      for (auto &inst_stat : block_stat.inst_stats) {
-        boost::property_tree::ptree inst;
-        boost::property_tree::ptree srcs;
-        inst.put("pc", inst_stat.pc);
-        inst.put("op", inst_stat.op);
-        if (inst_stat.predicate != -1) {
-          inst.put("pred", inst_stat.predicate);
+      for (auto *inst : block->insts) {
+        boost::property_tree::ptree ptree_inst;
+        boost::property_tree::ptree ptree_srcs;
+        ptree_inst.put("pc", inst->inst_stat->pc);
+        ptree_inst.put("op", inst->inst_stat->op);
+        if (inst->inst_stat->predicate != -1) {
+          ptree_inst.put("pred", inst->inst_stat->predicate);
         } else {
-          inst.put("pred", "");
+          ptree_inst.put("pred", "");
         }
-        if (inst_stat.dst != -1) {
-          inst.put("dst", inst_stat.dst);
+        if (inst->inst_stat->dst != -1) {
+          ptree_inst.put("dst", inst->inst_stat->dst);
         } else {
-          inst.put("dst", "");
+          ptree_inst.put("dst", "");
         }
 
-        for (auto src : inst_stat.srcs) {
+        for (auto src : inst->inst_stat->srcs) {
           boost::property_tree::ptree t;
           t.put("", src);
-          srcs.push_back(std::make_pair("", t));
+          ptree_srcs.push_back(std::make_pair("", t));
         }
         
-        inst.add_child("srcs", srcs);
-        insts.push_back(std::make_pair("", inst));
+        ptree_inst.add_child("srcs", ptree_srcs);
+        ptree_insts.push_back(std::make_pair("", ptree_inst));
       }
 
-      block.add_child("insts", insts);
-      blocks.push_back(std::make_pair("", block));
+      ptree_block.add_child("insts", ptree_insts);
+      ptree_blocks.push_back(std::make_pair("", ptree_block));
     }
 
-    function.add_child("blocks", blocks);
-    root.push_back(std::make_pair("", function));
+    ptree_function.add_child("blocks", ptree_blocks);
+    root.push_back(std::make_pair("", ptree_function));
   }
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
@@ -374,42 +369,45 @@ bool InstructionAnalyzer::dump(const std::string &file_path,
 }
 
 
-bool InstructionAnalyzer::read(const std::string &file_path, FunctionStats &function_stats) {
+bool readCudaInstructions(const std::string &file_path, std::vector<Function *> &functions) {
   boost::property_tree::ptree root;
 
   boost::property_tree::read_json(file_path, root);
 
-  for (auto &function_iter : root) {
-    int id = function_iter.second.get<int>("id", 0);
-    FunctionStat function_stat(id);
+  for (auto &ptree_function : root) {
+    int id = ptree_function.second.get<int>("id", 0);
+    std::string name = ptree_function.second.get<std::string>("name", "");
+    auto *function = new Function(id, name);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << id << std::endl;
     }
 
-    auto &blocks = function_iter.second.get_child("blocks");
-    for (auto &block_iter : blocks) {
-      int id = block_iter.second.get<int>("id", 0);
-      BlockStat block_stat(id);
+    auto &ptree_blocks = ptree_function.second.get_child("blocks");
+    for (auto &ptree_block : ptree_blocks) {
+      int id = ptree_block.second.get<int>("id", 0);
+      std::string name = ptree_block.second.get<std::string>("name", "");
+      auto *block = new Block(id, name);
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
         std::cout << "Block id: " << id << std::endl;
       }
 
-      auto &insts = block_iter.second.get_child("insts");
-      for (auto &inst_iter : insts) {
-        int pc = inst_iter.second.get<int>("pc", 0);
-        std::string op = inst_iter.second.get<std::string>("op", "");
-        int pred = inst_iter.second.get<int>("pred", -1);
-        int dst = inst_iter.second.get<int>("dst", -1);
+      auto &ptree_insts = ptree_block.second.get_child("insts");
+      for (auto &ptree_inst : ptree_insts) {
+        int pc = ptree_inst.second.get<int>("pc", 0);
+        std::string op = ptree_inst.second.get<std::string>("op", "");
+        int pred = ptree_inst.second.get<int>("pred", -1);
+        int dst = ptree_inst.second.get<int>("dst", -1);
 
         std::vector<int> srcs; 
-        auto &src_iters = inst_iter.second.get_child("srcs");
+        auto &src_iters = ptree_inst.second.get_child("srcs");
         for (auto &iter : src_iters) {
           srcs.push_back(boost::lexical_cast<int>(iter.second.data()));
         }
 
-        InstructionStat inst_stat(op, pc, pred, dst, srcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs);
+        auto *inst = new Instruction(inst_stat);
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
           std::cout << "Inst pc: " << pc << std::endl;
@@ -423,14 +421,13 @@ bool InstructionAnalyzer::read(const std::string &file_path, FunctionStats &func
           std::cout << std::endl;
         }
 
-        block_stat.inst_stats.emplace_back(inst_stat);
-      
+        block->insts.emplace_back(inst);
       }
 
-      function_stat.block_stats.emplace_back(block_stat);
+      function->blocks.emplace_back(block);
     }
 
-    function_stats.emplace_back(function_stat);
+    functions.emplace_back(function);
   }
 
   return true;

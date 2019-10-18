@@ -70,6 +70,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+TBB_IFLAGS = @TBB_IFLAGS@
+
 MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
@@ -89,7 +92,7 @@ MYSOURCES = \
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ $(DYNINST_IFLAGS) $(TBB_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

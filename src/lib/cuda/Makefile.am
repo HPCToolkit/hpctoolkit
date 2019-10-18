@@ -69,7 +69,7 @@ MYSOURCES = \
 	CudaBlock.cpp  \
 	CudaCodeSource.cpp  \
 	ReadCubinCFG.cpp \
-	InstructionAnalyzer.cpp \
+	AnalyzeInstruction.cpp \
 	Instruction.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@

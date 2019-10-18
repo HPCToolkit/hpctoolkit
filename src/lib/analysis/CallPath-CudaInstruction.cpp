@@ -43,7 +43,7 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#include <lib/cuda/InstructionAnalyzer.hpp>
+#include <lib/cuda/AnalyzeInstruction.hpp>
 
 #include <vector>
 #include <iostream>
@@ -104,13 +104,13 @@ getLMfromInst(const std::string &inst_file) {
 
 
 static void
-createMetrics(const std::vector<CudaParse::InstructionStat> &inst_stats,
+createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
   MetricNameProfMap &metric_name_prof_map, Prof::Metric::Mgr &mgr) {
   // Create new metrics in hpcprof
   // raw_id-><inclusive id, exclusive id>
   // Existing metric names
-  for (auto &inst_stat : inst_stats) {
-    auto &metric_name = inst_stat.op;
+  for (auto *inst_stat : inst_stats) {
+    auto &metric_name = inst_stat->op;
     int in_id = -1;
     int ex_id = -1;
     if (metric_name_prof_map.find(metric_name) == metric_name_prof_map.end()) {
@@ -148,10 +148,10 @@ createMetrics(const std::vector<CudaParse::InstructionStat> &inst_stats,
 
 
 static void
-gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat> &inst_stats,
+gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat *> &inst_stats,
   const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts) {
-  auto inst_pc_front = inst_stats.front().pc;
-  auto inst_pc_back = inst_stats.back().pc;
+  auto inst_pc_front = inst_stats.front()->pc;
+  auto inst_pc_back = inst_stats.back()->pc;
 
   if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
     std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
@@ -188,16 +188,16 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
 
 
 static void
-associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<CudaParse::InstructionStat> &inst_stats,
+associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<CudaParse::InstructionStat *> &inst_stats,
   MetricNameProfMap &metric_name_prof_map, Prof::Metric::Mgr &mgr) {
   size_t cur_stmt_index = 0;
 
   // Lay metrics over prof tree O(n)
-  for (auto &inst_stat : inst_stats) {
-    // while lm_ip < inst_stat.pc
-    while (cur_stmt_index < vma_stmts.size() && inst_stat.pc > vma_stmts[cur_stmt_index].lm_ip) {
+  for (auto *inst_stat : inst_stats) {
+    // while lm_ip < inst_stat->pc
+    while (cur_stmt_index < vma_stmts.size() && inst_stat->pc > vma_stmts[cur_stmt_index].lm_ip) {
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-        std::cout << "inst_stat.pc: 0x" << std::hex << inst_stat.pc << ", vma: 0x" <<
+        std::cout << "inst_stat->pc: 0x" << std::hex << inst_stat->pc << ", vma: 0x" <<
           vma_stmts[cur_stmt_index].lm_ip << std::dec << std::endl;
       }
       ++cur_stmt_index;
@@ -205,21 +205,21 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<Cuda
     if (cur_stmt_index == vma_stmts.size()) {
       break;
     }
-    if (inst_stat.pc != vma_stmts[cur_stmt_index].lm_ip) {
+    if (inst_stat->pc != vma_stmts[cur_stmt_index].lm_ip) {
       continue;
     }
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
     auto *node = vma_stmts[cur_stmt_index].node;
     double sum_insts_f = getTotalGPUInst(node);
-    if (metric_name_prof_map.find(inst_stat.op) == metric_name_prof_map.end()) {
+    if (metric_name_prof_map.find(inst_stat->op) == metric_name_prof_map.end()) {
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-        std::cout << "Fail to find metric: " << inst_stat.op << std::endl;
+        std::cout << "Fail to find metric: " << inst_stat->op << std::endl;
       }
       continue;
     }
-    auto in_metric_id = metric_name_prof_map[inst_stat.op].first;
-    auto ex_metric_id = metric_name_prof_map[inst_stat.op].second;
+    auto in_metric_id = metric_name_prof_map[inst_stat->op].first;
+    auto ex_metric_id = metric_name_prof_map[inst_stat->op].second;
 
     // Calculate estimate number of executed instructions
     node->demandMetric(in_metric_id) += sum_insts_f;
@@ -227,7 +227,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<Cuda
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       auto in_count = node->metric(in_metric_id);
       auto ex_count = node->metric(ex_metric_id);
-      std::cout << "Associate pc: 0x" << std::hex << inst_stat.pc <<
+      std::cout << "Associate pc: 0x" << std::hex << inst_stat->pc <<
         " with vma: " << cur_vma << std::dec <<
         " inclusive id " << in_metric_id <<
         " name " << mgr.metric(in_metric_id)->name() << " count " << in_count <<
@@ -281,12 +281,12 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     Prof::LoadMap::LMId_t lm_id = (*lm_iter)->id();
 
     // Step 1: Read metrics
-    CudaParse::FunctionStats function_stats;
-    CudaParse::InstructionAnalyzer::read(file, function_stats);
+    std::vector<CudaParse::Function *> functions;
+    CudaParse::readCudaInstructions(file, functions);
 
     // Sort the instructions by PC
-    std::vector<CudaParse::InstructionStat> inst_stats;
-    CudaParse::InstructionAnalyzer::flat(function_stats, inst_stats);
+    std::vector<CudaParse::InstructionStat *> inst_stats;
+    CudaParse::flatCudaInstructionStats(functions, inst_stats);
     
     // Step 2: Merge metrics
     // Find new metric names and insert new mappings between from name to prof metric ids
