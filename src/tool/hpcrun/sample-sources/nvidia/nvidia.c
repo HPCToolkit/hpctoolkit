@@ -363,8 +363,10 @@ static int sync_time_metric_id;
 // default trace all the activities
 // -1: disabled, >0: x ms per activity
 static long trace_frequency = -1;
+static long trace_frequency_default = -1;
 // -1: disabled, 5-31: 2^frequency
 static long pc_sampling_frequency = -1;
+static long pc_sampling_frequency_default = 12;
 static int cupti_enabled_activities = 0;
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
@@ -784,10 +786,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     &frequency, frequency_default);
 
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    trace_frequency = frequency;
+    trace_frequency = frequency == frequency_default ?
+      trace_frequency_default : frequency;
     pc_sampling_frequency = frequency_default;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
-    pc_sampling_frequency = frequency;
+    pc_sampling_frequency = frequency == frequency_default ?
+      pc_sampling_frequency_default : frequency;
     trace_frequency = frequency_default;
   }
 
