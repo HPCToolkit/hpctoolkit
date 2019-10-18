@@ -7,7 +7,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 1
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
 
@@ -339,6 +339,11 @@ bool dumpCudaInstructions(const std::string &file_path,
 
       // Insts
       for (auto *inst : block->insts) {
+        // XXX:Skip NOP instructions
+        if (inst->inst_stat == NULL) {
+          continue;
+        }
+
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
         ptree_inst.put("pc", inst->inst_stat->pc);
