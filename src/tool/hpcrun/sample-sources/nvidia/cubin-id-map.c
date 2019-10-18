@@ -23,6 +23,8 @@
 #define PRINT(...)
 #endif
 
+#define CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE 127
+
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
@@ -88,18 +90,41 @@ cubin_id_map_delete_root()
  * interface operations
  *****************************************************************************/
 
+typedef struct {
+  uint32_t cubin_id;
+  cubin_id_map_entry_t *entry;
+} cubin_id_map_hash_entry_t;
+
+
 cubin_id_map_entry_t *
 cubin_id_map_lookup(uint32_t id)
 {
   cubin_id_map_entry_t *result = NULL;
-  spinlock_lock(&cubin_id_map_lock);
 
-  cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, id);
-  if (cubin_id_map_root && cubin_id_map_root->cubin_id == id) {
-    result = cubin_id_map_root;
+  static __thread cubin_id_map_hash_entry_t *cubin_id_map_hash_table = NULL;
+  
+  if (cubin_id_map_hash_table == NULL) {
+    cubin_id_map_hash_table = (cubin_id_map_hash_entry_t *)hpcrun_malloc_safe(
+      CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE * sizeof(cubin_id_map_hash_entry_t));
   }
 
-  spinlock_unlock(&cubin_id_map_lock);
+  cubin_id_map_hash_entry_t *hash_entry = &(cubin_id_map_hash_table[id % CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE]);
+
+  if (hash_entry == NULL || hash_entry->cubin_id != id) {
+    spinlock_lock(&cubin_id_map_lock);
+
+    cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, id);
+    if (cubin_id_map_root && cubin_id_map_root->cubin_id == id) {
+      result = cubin_id_map_root;
+    }
+
+    spinlock_unlock(&cubin_id_map_lock);
+
+    hash_entry->cubin_id = id;
+    hash_entry->entry = result;
+  } else {
+    result = hash_entry->entry;
+  }
 
   TMSG(DEFER_CTXT, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
   return result;
