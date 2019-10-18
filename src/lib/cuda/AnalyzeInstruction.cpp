@@ -321,10 +321,23 @@ bool dumpCudaInstructions(const std::string &file_path,
     for (auto *block : function->blocks) {
       boost::property_tree::ptree ptree_block;
       boost::property_tree::ptree ptree_insts;
+      boost::property_tree::ptree ptree_targets;
       ptree_block.put("id", block->id);
       ptree_block.put("name", block->name);
       ptree_block.put("address", block->address);
 
+      // Targets
+      for (auto *target : block->targets) {
+        boost::property_tree::ptree ptree_target;
+        ptree_target.put("id", target->block->id);
+        ptree_target.put("pc", target->inst->inst_stat->pc);
+        ptree_target.put("type", target->type);
+        ptree_targets.push_back(std::make_pair("", ptree_target));
+      }
+
+      ptree_block.add_child("targets", ptree_targets);
+
+      // Insts
       for (auto *inst : block->insts) {
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
@@ -374,25 +387,42 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   boost::property_tree::read_json(file_path, root);
 
+  // block-> < pc, <target block id, type> > 
+  std::map<Block *, std::map<int, std::pair<int, int> > > block_target_map;
+  std::map<int, Block *> block_map;
+  std::map<int, Instruction *> inst_map;
+
   for (auto &ptree_function : root) {
-    int id = ptree_function.second.get<int>("id", 0);
+    int function_id = ptree_function.second.get<int>("id", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(id, name);
+    auto *function = new Function(function_id, name);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "Function id: " << id << std::endl;
+      std::cout << "Function id: " << function_id << std::endl;
     }
 
     auto &ptree_blocks = ptree_function.second.get_child("blocks");
     for (auto &ptree_block : ptree_blocks) {
-      int id = ptree_block.second.get<int>("id", 0);
+      int block_id = ptree_block.second.get<int>("id", 0);
       std::string name = ptree_block.second.get<std::string>("name", "");
-      auto *block = new Block(id, name);
+      auto *block = new Block(block_id, name);
+      block_map[block_id] = block;
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << "Block id: " << id << std::endl;
+        std::cout << "Block id: " << block_id << std::endl;
       }
 
+      // Record targets id first
+      std::vector<int> tgts; 
+      auto &ptree_tgts = ptree_block.second.get_child("targets");
+      for (auto &ptree_tgt : ptree_tgts) {
+        int inst_pc = ptree_tgt.second.get<int>("pc", 0);
+        int target_id = ptree_tgt.second.get<int>("id", 0);
+        int type = ptree_tgt.second.get<int>("type", 0);
+        block_target_map[block][inst_pc] = std::make_pair(target_id, type);
+      }
+
+      // Insts
       auto &ptree_insts = ptree_block.second.get_child("insts");
       for (auto &ptree_inst : ptree_insts) {
         int pc = ptree_inst.second.get<int>("pc", 0);
@@ -401,13 +431,14 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int dst = ptree_inst.second.get<int>("dst", -1);
 
         std::vector<int> srcs; 
-        auto &src_iters = ptree_inst.second.get_child("srcs");
-        for (auto &iter : src_iters) {
-          srcs.push_back(boost::lexical_cast<int>(iter.second.data()));
+        auto &ptree_srcs = ptree_inst.second.get_child("srcs");
+        for (auto &ptree_src : ptree_srcs) {
+          srcs.push_back(boost::lexical_cast<int>(ptree_src.second.data()));
         }
 
         auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs);
         auto *inst = new Instruction(inst_stat);
+        inst_map[pc] = inst;
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
           std::cout << "Inst pc: " << pc << std::endl;
@@ -428,6 +459,19 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
     }
 
     functions.emplace_back(function);
+  }
+
+  // Reconstruct targets
+  for (auto &block_iter : block_target_map) {
+    auto *block = block_iter.first;
+    for (auto &iter : block_iter.second) {
+      auto pc = iter.first;
+      auto target_id = iter.second.first;
+      auto type = iter.second.second;
+      auto *inst = inst_map[pc];
+      auto *target_block = block_map[target_id];
+      block->targets.push_back(new Target(inst, target_block, (TargetType)(type)));
+    }
   }
 
   return true;
