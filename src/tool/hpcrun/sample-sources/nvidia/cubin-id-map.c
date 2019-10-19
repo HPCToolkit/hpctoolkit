@@ -106,11 +106,13 @@ cubin_id_map_lookup(uint32_t id)
   if (cubin_id_map_hash_table == NULL) {
     cubin_id_map_hash_table = (cubin_id_map_hash_entry_t *)hpcrun_malloc_safe(
       CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE * sizeof(cubin_id_map_hash_entry_t));
+    memset(cubin_id_map_hash_table, 0, CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE *
+      sizeof(cubin_id_map_hash_entry_t));
   }
 
   cubin_id_map_hash_entry_t *hash_entry = &(cubin_id_map_hash_table[id % CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE]);
 
-  if (hash_entry == NULL || hash_entry->cubin_id != id) {
+  if (hash_entry->entry == NULL || hash_entry->cubin_id != id) {
     spinlock_lock(&cubin_id_map_lock);
 
     cubin_id_map_root = cubin_id_map_splay(cubin_id_map_root, id);
