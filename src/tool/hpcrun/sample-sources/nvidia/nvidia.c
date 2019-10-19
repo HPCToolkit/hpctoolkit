@@ -664,7 +664,6 @@ cupti_enable_activities
 
   #define FORALL_ACTIVITIES(macro, context)                                      \
     macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(context, CUPTI_DATA_MOTION_IMPLICIT, data_motion_explicit_activities)  \
     macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
     macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
     macro(context, CUPTI_DRIVER, driver_activities)                              \
