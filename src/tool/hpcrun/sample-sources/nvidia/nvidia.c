@@ -477,11 +477,9 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
           activity->data.pc_sampling.latencySamples * frequency_factor});
 
-        metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
           activity->data.pc_sampling.samples * frequency_factor});
 
-        metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_lat_metric_id);
         hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
           activity->data.pc_sampling.latencySamples * frequency_factor});
       }
@@ -495,15 +493,12 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
 
       // It is fine to use set here because sampling cycle is changed during execution
-      metrics = hpcrun_reify_metric_set(cct_node, info_period_in_cycles_id);
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
 
-      metrics = hpcrun_reify_metric_set(cct_node, info_total_samples_id);
       hpcrun_metric_std_inc(info_total_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.totalSamples});
 
-      metrics = hpcrun_reify_metric_set(cct_node, info_sm_full_samples_id);
       hpcrun_metric_std_inc(info_sm_full_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.fullSMSamples});
       break;
@@ -516,7 +511,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
       }
@@ -530,7 +524,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memset.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, me_set_time_metric_id);
         hpcrun_metric_std_inc(me_set_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memset.end - activity->data.memset.start) / 1000.0});
       }
@@ -542,36 +535,27 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
       hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.staticSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_dynamic_shared_metric_id);
       hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.dynamicSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_local_metric_id);
       hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.localMemoryTotal});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.activeWarpsPerSM});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_max_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_thread_registers_id);
       hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.threadRegisters});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_threads_id);
       hpcrun_metric_std_inc(ke_block_threads_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_shared_memory_id);
       hpcrun_metric_std_inc(ke_block_shared_memory_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
       hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
       hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.r =
         (activity->data.kernel.end - activity->data.kernel.start) / 1000.0});
       break;
@@ -585,7 +569,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
 
-        metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
         hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
@@ -599,7 +582,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, me_time_metric_id);
         hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memory.end - activity->data.memory.start) / 1000.0});
       }
@@ -615,12 +597,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(l2_transactions_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.l2_transactions});
 
       int l2_theoretical_transactions_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT + type];
-      metrics = hpcrun_reify_metric_set(cct_node, l2_theoretical_transactions_index);
       hpcrun_metric_std_inc(l2_theoretical_transactions_index, metrics,
         (cct_metric_data_t){.i = activity->data.global_access.theoreticalL2Transactions});
 
       int bytes_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT * 2 + type];
-      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.bytes});
       break;
     }
@@ -635,12 +615,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         (cct_metric_data_t){.i = activity->data.shared_access.sharedTransactions});
 
       int theoretical_shared_transactions_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT + type];
-      metrics = hpcrun_reify_metric_set(cct_node, theoretical_shared_transactions_index);
       hpcrun_metric_std_inc(theoretical_shared_transactions_index, metrics,
         (cct_metric_data_t){.i = activity->data.shared_access.theoreticalSharedTransactions});
 
       int bytes_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT * 2 + type];
-      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.shared_access.bytes});
       break;
     }
@@ -650,7 +628,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);
       hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.diverged});
 
-      metrics = hpcrun_reify_metric_set(cct_node, bh_executed_metric_id);
       hpcrun_metric_std_inc(bh_executed_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.executed});
       break;
     }
