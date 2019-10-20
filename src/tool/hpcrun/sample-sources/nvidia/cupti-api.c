@@ -91,6 +91,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/module-ignore-map.h>
 #include <hpcrun/main.h>
+#include <hpcrun/trace.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -924,11 +925,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
-          cupti_activity_channel_consume(cupti_activity_channel_get());
           is_valid_op = true;
-          // XXX(Keren): cannot parse this kind of kernel launch
-          if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
-            is_kernel_op = true;
+          is_kernel_op = true;
+          if (cd->callbackSite == CUPTI_API_ENTER) {
+            cupti_activity_channel_consume(cupti_activity_channel_get());
+            // XXX(Keren): cannot parse this kind of kernel launch
+            //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
             // CUfunction is the first param
             CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
             func_ip = cupti_func_ip_resolve(function_ptr);
@@ -996,8 +998,7 @@ cupti_subscriber_callback
           &gpu_driver_ccts);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
-      }
-      if (cd->callbackSite == CUPTI_API_EXIT) {
+      } else if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id = cupti_correlation_id_pop();
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
@@ -1110,10 +1111,12 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:
       #endif
         {
-          // Process previous activities
-          cupti_activity_channel_consume(cupti_activity_channel_get());
           is_valid_op = true;
           is_kernel_op = true;
+          if (cd->callbackSite == CUPTI_API_ENTER) {
+            // Process previous activities
+            cupti_activity_channel_consume(cupti_activity_channel_get());
+          }
           break;
         }
       default:
@@ -1699,13 +1702,15 @@ cupti_memcpy_process
       if (host_op_node == NULL) { // If we cannot find a perfect match for the operation
         host_op_node = cupti_host_op_map_entry_copy_node_get(host_op_entry);
       }
-      cupti_entry_trace_t entry_trace = {
-        .start = activity->start,
-        .end = activity->end,
-        .node = host_op_node
-      };
-      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
-        cupti_trace_append, &entry_trace);
+      if (hpcrun_trace_isactive()) {
+        cupti_entry_trace_t entry_trace = {
+          .start = activity->start,
+          .end = activity->end,
+          .node = host_op_node
+        };
+        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+          cupti_trace_append, &entry_trace);
+      }
 
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
@@ -1741,13 +1746,15 @@ cupti_memcpy2_process
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
         cupti_host_op_map_entry_copy_node_get(host_op_entry);
-      cupti_entry_trace_t entry_trace = {
-        .start = activity->start,
-        .end = activity->end,
-        .node = host_op_node
-      };
-      cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
-        cupti_trace_append, &entry_trace);
+      if (hpcrun_trace_isactive()) {
+        cupti_entry_trace_t entry_trace = {
+          .start = activity->start,
+          .end = activity->end,
+          .node = host_op_node
+        };
+        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+          cupti_trace_append, &entry_trace);
+      }
 
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
@@ -1864,14 +1871,16 @@ cupti_kernel_process
         cupti_host_op_map_entry_trace_node_get(host_op_entry);
       cct_node_t *func_node = hpcrun_cct_children(host_op_node);
       if (func_node != NULL) {
-        // do not delete it because it shares external_id with activity samples
-        cupti_entry_trace_t entry_trace = {
-          .start = activity->start,
-          .end = activity->end,
-          .node = func_node
-        };
-        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
-          cupti_trace_append, &entry_trace);
+        if (hpcrun_trace_isactive()) {
+          // do not delete it because it shares external_id with activity samples
+          cupti_entry_trace_t entry_trace = {
+            .start = activity->start,
+            .end = activity->end,
+            .node = func_node
+          };
+          cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+            cupti_trace_append, &entry_trace);
+        }
 
         cupti_activity_channel_t *channel = 
           cupti_host_op_map_entry_activity_channel_get(host_op_entry);
@@ -1905,21 +1914,23 @@ cupti_synchronization_process
         cupti_host_op_map_entry_sync_node_get(host_op_entry);
       cupti_activity_channel_t *channel =
         cupti_host_op_map_entry_activity_channel_get(host_op_entry);
-      cupti_entry_trace_t entry_trace = {
-        .start = activity->start,
-        .end = activity->end,
-        .node = sync_node
-      };
-      if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE) {
-        // Insert a event for a specific stream
-        PRINT("Add context %u stream %u sync\n", activity->contextId, activity->streamId);
-        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
-          cupti_trace_append, &entry_trace); 
-      } else if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE) {
-        // Insert events for all current active streams
-        // TODO(Keren): What if the stream is created
-        PRINT("Add context %u sync\n", activity->contextId);
-        cupti_context_id_map_context_process(activity->contextId, cupti_trace_append, &entry_trace);
+      if (hpcrun_trace_isactive()) {
+        cupti_entry_trace_t entry_trace = {
+          .start = activity->start,
+          .end = activity->end,
+          .node = sync_node
+        };
+        if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE) {
+          // Insert a event for a specific stream
+          PRINT("Add context %u stream %u sync\n", activity->contextId, activity->streamId);
+          cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+            cupti_trace_append, &entry_trace); 
+        } else if (activity->type == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE) {
+          // Insert events for all current active streams
+          // TODO(Keren): What if the stream is created
+          PRINT("Add context %u sync\n", activity->contextId);
+          cupti_context_id_map_context_process(activity->contextId, cupti_trace_append, &entry_trace);
+        }
       }
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, sync_node);
       // TODO(Keren): handle event synchronization
@@ -1952,13 +1963,15 @@ cupti_cdpkernel_process
         cupti_host_op_map_entry_trace_node_get(host_op_entry);
       cct_node_t *func_node = hpcrun_cct_children(host_op_node);
       if (func_node != NULL) {
-        cupti_entry_trace_t entry_trace = {
-          .start = activity->start,
-          .end = activity->end,
-          .node = func_node
-        };
-        cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
-          cupti_trace_append, &entry_trace);
+        if (hpcrun_trace_isactive()) {
+          cupti_entry_trace_t entry_trace = {
+            .start = activity->start,
+            .end = activity->end,
+            .node = func_node
+          };
+          cupti_context_id_map_stream_process(activity->contextId, activity->streamId,
+            cupti_trace_append, &entry_trace);
+        }
       } else {
         PRINT("host_op_entry %lu, func_node not found\n", external_id);
       }
