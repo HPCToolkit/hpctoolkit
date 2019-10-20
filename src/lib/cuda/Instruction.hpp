@@ -62,7 +62,9 @@ struct Instruction {
 
   // constructor for dummy instruction
   explicit Instruction(unsigned int offset) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC), inst_stat(NULL) {}
+    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {
+    inst_stat = new InstructionStat(this);
+  }
 
   Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
   is_call(false), is_jump(false), is_sync(false), inst_stat(NULL) {
