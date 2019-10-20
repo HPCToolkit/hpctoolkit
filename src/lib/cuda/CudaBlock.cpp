@@ -58,7 +58,7 @@ void CudaBlock::getInsns(Insns &insns) const {
 #ifdef DYNINST_INSTRUCTION_PTR
         instruction_ptr.appendOperand(reg_ptr, false, true);
 #else
-        //instruction.appendOperand(reg_ptr, false, true);
+        instruction.appendOperand(reg_ptr, false, true);
 #endif
       }
     }
