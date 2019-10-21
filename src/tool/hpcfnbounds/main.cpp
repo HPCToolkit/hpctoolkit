@@ -159,6 +159,10 @@ main(int argc, char* argv[])
     else if (strcmp(argv[n], "-v") == 0) {
       verbose = true;
     }
+    else if (strcmp(argv[n], "-x") == 0) {
+      // datacentric usage to NOT query static variables
+      query = SYSERV_QUERY_VAR_NIL;
+    }
     else if (strcmp(argv[n], "--") == 0) {
       n++;
       break;
@@ -244,9 +248,11 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
+    "\t-m send data-centric information\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
+    "\t-x\tnot to send data-centric information\n\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
@@ -425,40 +431,22 @@ static void
 dump_var_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		 DiscoverFnTy fn_discovery, int query)
 {
+  if (query != SYSERV_QUERY_VAR && query != SYSERV_QUERY_VAR_NIL)
+    return;
+
   if (c_mode()) {
     printf("unsigned long hpcrun_data_addrs[] = {\n");
   }
 
-  if (query == SYSERV_QUERY_VAR)  {
+  if (query == SYSERV_QUERY_VAR)
     dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
-  }
 
   if (c_mode()) {
     printf("\n};\n");
-    printf("unsigned long hpcrun_nm_data_len = "
+    printf("unsigned long hpcrun_data_addrs_len = "
 	   "sizeof(hpcrun_data_addrs) / sizeof(hpcrun_data_addrs[0]);\n");
   }
 }
-
-static void
-dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
-		  DiscoverFnTy fn_discovery, int query)
-{
-  if (c_mode()) {
-    printf("unsigned long hpcrun_nm_addrs[] = {\n");
-  }
-
-  if (query == SYSERV_QUERY)  {
-    dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
-  }
-
-  if (c_mode()) {
-    printf("\n};\n");
-  }
-
-  dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
-}
-
 
 // We call it "header", even though it comes at end of file.
 //
@@ -472,18 +460,39 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
 
   if (c_mode()) {
     printf("unsigned long hpcrun_nm_addrs_len = "
-	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n"
-	   "unsigned long hpcrun_reference_offset = 0x%" PRIxPTR ";\n"
-	   "int hpcrun_is_relocatable = %d;\n",
-	   ref_offset, is_relocatable);
+     "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n"
+     "unsigned long hpcrun_reference_offset = 0x%" PRIxPTR ";\n"
+     "int hpcrun_is_relocatable = %d;\n",
+     ref_offset, is_relocatable);
     return;
   }
 
   // default is text mode
   printf("num symbols = %ld, reference offset = 0x%" PRIxPTR ", "
-	 "relocatable = %d\n",
-	 num_function_entries(), ref_offset, is_relocatable);
+   "relocatable = %d\n",
+   num_function_entries(), ref_offset, is_relocatable);
 }
+
+static void
+dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+		  DiscoverFnTy fn_discovery, int query,
+		  int relocatable, uintptr_t image_offset)
+{
+  if (query != SYSERV_QUERY)
+    return;
+
+  if (c_mode()) {
+    printf("unsigned long hpcrun_nm_addrs[] = {\n");
+  }
+
+  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+
+  if (c_mode()) {
+    printf("\n};\n");
+  }
+  dump_header_info(relocatable, image_offset);
+}
+
 
 
 static void
@@ -584,13 +593,15 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
       fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
     }
 
-    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
-    close(dwarf_fd);
-
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
+
+    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query, relocatable, image_offset);
+
+    dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
+
+    close(dwarf_fd);
   }
-  dump_header_info(relocatable, image_offset);
 
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can
