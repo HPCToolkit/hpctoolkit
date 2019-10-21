@@ -52,6 +52,7 @@
 #include "hpcrun_stats.h"
 #include "sample_event.h"
 #include "epoch.h"
+#include "data_tree.h"
 
 #include <messages/messages.h>
 
@@ -62,20 +63,30 @@
 
 #define UW_RECIPE_MAP_DEBUG 0
 
+//***************************************************************************
+// data structure
+//***************************************************************************
+
+struct data_var_info_s
+{
+  struct datatree_info_s *data_root;
+  spinlock_t data_lock;
+};
+
+//***************************************************************************
+// static variable
+//***************************************************************************
+
 static hpcrun_loadmap_t  s_loadmap;
 static hpcrun_loadmap_t* s_loadmap_ptr = NULL;
 
 static dso_info_t* s_dso_free_list = NULL;
 
-
 static loadmap_notify_t *notification_recipients = NULL;
 
-void
-hpcrun_loadmap_notify_register(loadmap_notify_t *n)
-{
-  n->next = notification_recipients;
-  notification_recipients = n;
-}
+//***************************************************************************
+// static methods
+//***************************************************************************
 
 
 static void
@@ -103,6 +114,13 @@ hpcrun_loadmap_notify_unmap(void *start, void *end)
 //***************************************************************************
 // 
 //***************************************************************************
+
+void
+hpcrun_loadmap_notify_register(loadmap_notify_t *n)
+{
+  n->next = notification_recipients;
+  notification_recipients = n;
+}
 
 dso_info_t*
 hpcrun_dso_new()
@@ -167,6 +185,62 @@ hpcrun_dso_make(const char* name, void** table,
   return x;
 }
 
+
+//---------------------------------------------------------------------
+// Function: insert_var_table
+// Purpose:
+//    create a tree of static variables to be used later by datacentric
+//    or other modules
+//---------------------------------------------------------------------
+
+void
+hpcrun_dso_insert_data_var(dso_info_t *dso, void **var_table, unsigned long num)
+{
+  if(!var_table || !dso) return;
+
+  struct data_var_info_s *data_var = hpcrun_malloc(sizeof(struct data_var_info_s));
+  data_var->data_root = NULL;
+
+  spinlock_init(&data_var->data_lock);
+
+  dso->info = data_var;
+
+  int i;
+  for (i = 0; i < num; i+=2) {
+    size_t num_bytes   = (size_t)var_table[i+1];
+
+    // create splay node
+    struct datatree_info_s *data_info = hpcrun_malloc(sizeof(struct datatree_info_s));
+
+    data_info->memblock  = var_table[i];
+    data_info->bytes     = num_bytes;
+    data_info->rmemblock = data_info->memblock + num_bytes;
+
+    data_info->left      = data_info->right = NULL;
+
+    data_info->magic     = DATA_STATIC_MAGIC;
+    data_info->context   = NULL;
+    data_info->status    = DATATREE_INFO_UNHANDLED;
+
+    datatree_info_insert_ext(&data_var->data_root, &data_var->data_lock, data_info);
+  }
+}
+
+
+//---------------------------------------------------------------------
+// Function: find a variable info inside a load module
+//---------------------------------------------------------------------
+
+struct datatree_info_s*
+hpcrun_dso_find_data_var(dso_info_t *dso, void *key, void **start, void **end)
+{
+
+  struct data_var_info_s *var_info = (struct data_var_info_s*) dso->info;
+  if (!var_info) return NULL;
+
+  return datatree_info_lookup_ext(&var_info->data_root, &var_info->data_lock,
+                                  key, start, end);
+}
 
 //***************************************************************************
 

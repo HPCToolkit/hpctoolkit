@@ -91,6 +91,7 @@
 #include <safe-sampling.h>
 #include <sample_event.h>
 #include <env.h>
+#include <cct/cct.h>
 
 #include <monitor-exts/monitor_ext.h>
 #include "lib/support-lean/datacentric_config.h"
@@ -131,7 +132,6 @@ typedef void *realloc_fcn(void *, size_t);
 
 #define DATACENTRIC_USE_HYBRID_LAYOUT 0
 
-#define DATACENTRIC_MAGIC 0x68706374
 #define DATACENTRIC_DEFAULT_PAGESIZE  4096
 
 #define HPCRUN_DATACENTRIC_PROB  "HPCRUN_DATACENTRIC_PROB"
@@ -189,8 +189,6 @@ static int datainfo_size = sizeof(struct datatree_info_s);
 static int addr_end_metric_id  = -1;
 static int addr_start_metric_id   = -1;
 #endif
-
-static int metric_variable_size = -1;
 
 
 /******************************************************************************
@@ -307,10 +305,6 @@ datacentric_initialize(void)
 #if SUPPORT_FOR_ADDRESS_CENTRIC  
   metric_initialize();
 #endif
-  metric_variable_size = hpcrun_new_metric();
-
-  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   overrides_status = OVERRIDES_INITIALIZED;
 
@@ -366,7 +360,7 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
   // try header first
   *info_ptr = (datatree_info_t *) (appl_ptr - datainfo_size);
   if (datacentric_same_page(*info_ptr, appl_ptr)
-      && (*info_ptr)->magic == DATACENTRIC_MAGIC
+      && (*info_ptr)->magic == DATA_DYNAMIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
     *sys_ptr = *info_ptr;
     return DATACENTRIC_LOC_HEAD;
@@ -375,11 +369,11 @@ datacentric_get_free_loc(void *appl_ptr, void **sys_ptr, datatree_info_t **info_
 
   // always try footer
   *sys_ptr = appl_ptr;
-  *info_ptr = datatree_splay_delete(appl_ptr);
+  *info_ptr = datatree_info_delete(appl_ptr);
   if (*info_ptr == NULL) {
     return DATACENTRIC_LOC_NONE;
   }
-  if ((*info_ptr)->magic == DATACENTRIC_MAGIC
+  if ((*info_ptr)->magic == DATA_DYNAMIC_MAGIC
       && (*info_ptr)->memblock == appl_ptr) {
     return DATACENTRIC_LOC_FOOT;
   }
@@ -417,7 +411,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
 
   memset(info_ptr, 0, sizeof(datatree_info_t));
 
-  info_ptr->magic      = DATACENTRIC_MAGIC;
+  info_ptr->magic      = DATA_DYNAMIC_MAGIC;
   info_ptr->bytes      = bytes;
   info_ptr->memblock   = appl_ptr;
   info_ptr->rmemblock  = info_ptr->memblock + info_ptr->bytes;
@@ -435,7 +429,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
       return;
     }
 
-    int metric = metric_variable_size;
+    int metric = datacentric_get_metric_variable_size();
     sampling_info_t sampling_info;
 
     // warn sample callpath not to record the trace of this sample
@@ -481,7 +475,7 @@ datacentric_add_leakinfo(const char *name, void *sys_ptr, void *appl_ptr,
     loc_str = "inactive";
   }
   if (loc == DATACENTRIC_LOC_FOOT) {
-    datatree_splay_insert(info_ptr);
+    datatree_info_insert(info_ptr);
   }
 
   TMSG(DATACENTRIC, "%s: bytes: %ld sys: %p appl: %p info: %p cct: %p (%s)",
@@ -848,12 +842,6 @@ finish:
 //
 // Exported functions
 /////////////////////////////////////////////////////////
-
-int
-datacentric_get_metric_variable_size()
-{
-  return metric_variable_size;
-}
 
 #if SUPPORT_FOR_ADDRESS_CENTRIC  
 /***

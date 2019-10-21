@@ -87,7 +87,6 @@
 #include "include/queue.h"  // linked-list
 
 #include "datacentric.h"
-#include "data-overrides.h"
 #include "data_tree.h"
 #include "env.h"
 
@@ -120,6 +119,8 @@ enum datacentric_status_e { UNINITIALIZED, INITIALIZED };
  *****************************************************************************/
 
 static enum datacentric_status_e plugin_status = UNINITIALIZED;
+
+static int metric_variable_size = -1;
 
 
 /******************************************************************************
@@ -227,7 +228,7 @@ datacentric_pre_handler(event_handler_arg_t *args)
 
     void *start = NULL, *end = NULL;
 
-    datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+    datatree_info_t *info   = datatree_info_lookup((void*) mmap_data->addr, &start, &end);
     if (info == NULL || info->status == DATATREE_INFO_HANDLED)
       return REJECT_EVENT;  // the address is NOT in the database
                             // or the memory has been handled
@@ -237,6 +238,19 @@ datacentric_pre_handler(event_handler_arg_t *args)
   return ACCEPT_EVENT;
 }
 
+
+static void
+datacentric_record_size_variable(datatree_info_t *info , cct_node_t * var_decl_node)
+{
+  // record the size of the variable
+  metric_set_t *mset       = hpcrun_reify_metric_set(var_decl_node);
+  const int size_in_bytes  = info->rmemblock - info->memblock;
+  hpcrun_metricVal_t value = {.i = size_in_bytes};
+
+  hpcrun_metric_std_set( datacentric_get_metric_variable_size(), mset, value );
+
+  info->status = DATATREE_INFO_HANDLED;
+}
 
 
 /***
@@ -272,7 +286,7 @@ datacentric_post_handler(event_handler_arg_t *args)
 
   void *start = NULL, *end = NULL;
 
-  datatree_info_t *info   = datatree_splay_lookup((void*) mmap_data->addr, &start, &end);
+  datatree_info_t *info   = datatree_info_lookup((void*) mmap_data->addr, &start, &end);
   cct_node_t *var_context = NULL;
   thread_data_t* td       = hpcrun_get_thread_data();
   cct_bundle_t *bundle    = &(td->core_profile_trace_data.epoch->csdata);
@@ -283,59 +297,67 @@ datacentric_post_handler(event_handler_arg_t *args)
   // either static variable or heap allocation
   // otherwise, we encounter an unknown variable
   // --------------------------------------------------------------
-  cct_node_t* var_node = NULL;
 
   if (info) {
+    // ---------------------------
+    // found dynamic variable
+    // ---------------------------
     var_context = info->context;
 
-    if (info->magic == DATA_STATIC_MAGIC) {
-      // attach this node of static variable to the datacentric root
+    cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+    cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
 
-      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-      cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
-      cct_addr_t *addr             = hpcrun_cct_addr(sample_node);
+    cct_node_t* var_decl_node = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
+    hpcrun_cct_set_node_allocation(var_decl_node);
 
-      var_context = datacentric_create_root_node(variable_root, addr->ip_norm.lm_id,
-                      (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+    // add artificial root for memory-access call-path
+    var_context = hpcrun_insert_special_node(var_decl_node, DATACENTRIC_MemoryAccess);
 
-      var_node    = var_context;
+    hpcrun_cct_set_node_memaccess_root(var_context);
 
-      // mark that this is a special node for global variable
-      // hpcprof will treat specially to print the name of the variable to xml file
-      // (if hpcstruct provides the information)
-
-      hpcrun_cct_set_node_variable(var_context);
-
-    } else {
-      // dynamic allocation
-      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-      cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
-
-      var_node = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
-      hpcrun_cct_set_node_allocation(var_node);
-
-      // add artificial root for memory-access call-path
-      var_context = hpcrun_insert_special_node(var_node, DATACENTRIC_MemoryAccess);
-
-      hpcrun_cct_set_node_memaccess_root(var_context);
-    }
-
-    // record the size of the variable
-    metric_set_t *mset       = hpcrun_reify_metric_set(var_node);
-    const int size_in_bytes  = info->rmemblock - info->memblock;
-    hpcrun_metricVal_t value = {.i = size_in_bytes};
-
-    hpcrun_metric_std_set( datacentric_get_metric_variable_size(), mset, value );
-
-    info->status = DATATREE_INFO_HANDLED;
+    datacentric_record_size_variable(info, var_decl_node);
 
   } else {
-    // unknown variable
-    cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
-    var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
+    cct_addr_t * addr = hpcrun_cct_addr(sample_node);
+    load_module_t *lm = hpcrun_loadmap_findById(addr->ip_norm.lm_id);
 
-    hpcrun_cct_set_node_unknown_attribute(var_context);
-    var_node = var_context;
+    if (lm && lm->dso_info) {
+      info = hpcrun_dso_find_data_var(lm->dso_info, (void*)mmap_data->addr, &start, &end);
+      if (info) {
+        // ---------------------------
+        // found static variable
+        // ---------------------------
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Static);
+
+        var_context = datacentric_create_root_node(variable_root, lm->id,
+                        (uintptr_t)info->memblock, (uintptr_t)info->rmemblock);
+
+        datacentric_record_size_variable(info, var_context);
+
+        // mark that this is a special node for global variable
+        // hpcprof will treat specially to print the name of the variable to xml file
+        // (if hpcstruct provides the information)
+
+        hpcrun_cct_set_node_variable(var_context);
+      }
+      else {
+
+        // unknown variable
+        cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+        var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
+
+        hpcrun_cct_set_node_unknown_attribute(var_context);
+      }
+    } else {
+      // unlikely to be here
+      // but let assume it's unknown variable
+      cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
+      var_context                  = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Unknown);
+
+      hpcrun_cct_set_node_unknown_attribute(var_context);
+      EMSG("Warning. Fail to find load module for pc: %x", addr->ip_norm.lm_ip);
+    }
   }
 
   // copy the callpath of the sample to the variable context
@@ -344,8 +366,8 @@ datacentric_post_handler(event_handler_arg_t *args)
 #if 0
   // sample node will point to this var node.
   // we need this node to keep the id so that hpcprof/hpcviewer will not lose the pointer
-  hpcrun_cct_retain(var_node);
-  hpcrun_cct_link_source_memaccess(sample_node, var_node);
+  hpcrun_cct_retain(var_decl_node);
+  hpcrun_cct_link_source_memaccess(sample_node, var_decl_node);
 #endif
 
   metric_set_t *mset = hpcrun_reify_metric_set(node);
@@ -473,12 +495,20 @@ datacentric_register(sample_source_t *self,
                      event_custom_t  *event,
                      struct event_threshold_s *period)
 {
-  struct event_threshold_s threshold;
-  perf_util_get_default_threshold( &threshold );
+  // ------------------------------------------
+  // metric for variable size (in bytes)
+  // ------------------------------------------
+  metric_variable_size = hpcrun_new_metric();
+
+  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
+      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
 
   // ------------------------------------------
   // hardware-specific data centric setup (if supported)
   // ------------------------------------------
+  struct event_threshold_s threshold;
+  perf_util_get_default_threshold( &threshold );
+
   int result = datacentric_hw_register(self, event, &threshold);
   if (result == 0)
     return 0;
@@ -521,5 +551,11 @@ int
 datacentric_is_active()
 {
   return (plugin_status == INITIALIZED);
+}
+
+int
+datacentric_get_metric_variable_size()
+{
+  return metric_variable_size;
 }
 
