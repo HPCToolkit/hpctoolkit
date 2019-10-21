@@ -10,8 +10,8 @@
 #  normally either <spack-root>/etc/spack, or else in its own,
 #  separate directory (and then use 'spack -C dir').
 #
-#  There are two main sections: hpctoolkit dependency specs and system
-#  build tools: cmake, perl, python, MPI and GCC.
+#  There are two main sections: (1) hpctoolkit dependency specs,
+#  and (2) system build tools: cmake, perl, python, MPI and GCC.
 #
 #  See also:
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
@@ -31,7 +31,7 @@ packages:
   # for your local system.
   #
   #   1. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
-  #     1.66.0 is good for all dyninst revs.
+  #   1.66.0 is good for all dyninst revs.
   #
   #   2. dyninst -- use version 9.3.2 for Blue Gene with the default
   #   gcc 4.4 compilers.  (not recommended)
@@ -49,26 +49,27 @@ packages:
   # hpctoolkit -- these settings can be specified here or else on the
   # spack install command line.
   #
-  # Use version 'develop' for the latest snapshot from master.
+  # Use version 'master' for the latest snapshot from master.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2018.11.05, develop]
+  #   version:  [2019.08.14, master]
   #   variants: +mpi
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
   # line map info) and for VMA types in various places.
   #
-  # Prefer a fairly recent version.
+  # Best to use >= 2.32, earlier versions have a bug causing duplicate
+  # function names in the viewer (from hpcprof and struct simple).
   #
   # +libiberty is needed for xmalloc functions in libbfd.
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   binutils:
-    version:  [2.31.1]
+    version:  [2.32]
     variants: +libiberty ~nls
 
 
@@ -84,24 +85,34 @@ packages:
   # +graph, +regex, etc are for toolkit proper.
   # ~mpi, ~python, etc are to reduce prereqs.
   # ~debug is to build release (optimized) variant.
+  # master-gpu branch requires visibility=global
   #
   boost:
     version:  [1.66.0]
     variants: >
       +atomic +chrono +date_time +filesystem +system +thread +timer
-      +graph +regex +serialization
-      +shared +multithreaded ~debug
+      +graph +regex +shared +multithreaded ~debug
       ~mpi ~python ~iostreams ~numpy
+      visibility=global
 
 
   # bzip2 -- used by elfutils to read compressed sections (and copy
   # libs).
   #
-  # Bzip2 has stopped development, but 1.0.6 is good.
+  # Bzip2 has resumed development, anything after 1.0.6 is good.
   #
   bzip2:
-    version:  [1.0.6]
+    version:  [1.0.8]
     variants: +shared
+
+
+  # cuda -- used by the gpu branch.
+  #
+  # If there is a pre-built cuda for the system, then it may be better
+  # to use that with a 'paths:' or 'modules:' entry.
+  #
+  cuda:
+    version:  [10.1.243]
 
 
   # dyninst -- used in hpcstruct for line map info, inline sequences
@@ -127,7 +138,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.176]
+    version:  [0.177]
     variants: +bzip2 +xz ~nls
 
 
@@ -206,6 +217,17 @@ packages:
     version:  [4.10.1]
 
 
+  # mbedtls -- used by the gpu branch.
+  #
+  # Use a recent version >= 2.16.1.
+  #
+  # +pic is required for linking with hpcrun.
+  #
+  mbedtls:
+    version:  [2.16.1]
+    variants: +pic
+
+
   # libunwind -- used in hpcrun to help with unwinding.
   #
   # Normally, we need the most recent snapshot (not the default), or
@@ -271,7 +293,7 @@ packages:
   # 2 -- System Build Tools
   #------------------------------------------------------------
 
-  # We require cmake >= 3.0, perl >= 5.x and python 2.7.x or 3.x.
+  # We require cmake >= 3.4, perl >= 5.x and python 2.7.x or 3.x.
   # There are three ways to satisfy these requirements: a system
   # installed version (eg, /usr), a module or build from scratch.
   #
@@ -378,5 +400,5 @@ packages:
   # want to build first.  4.8.4 is really only for Blue Gene.
 
   # gcc:
-  #   version:  [7.3.0, 6.4.0, 5.5.0, 4.8.4]
+  #   version:  [7.4.0, 6.4.0, 5.5.0, 4.8.4]
 

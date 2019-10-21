@@ -46,8 +46,9 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets">2.1 (2019-09-25) New micro-architecture targets</a></li>
-  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.2 (2019-08-28) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI" href="#g_t_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI">2.1 (2019-10-08) Python 3.x breaks PAPI</a></li>
+  <li><a name="toc-_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets">2.2 (2019-09-25) New micro-architecture targets</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.3 (2019-08-28) Cray front-end compilers</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
@@ -90,14 +91,51 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Oct 4, 2019.
+<p>Last revised: Oct 9, 2019.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
+<a name="g_t_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI"></a>
+<h4 class="subsection">2.1 (2019-10-08) Python 3.x breaks PAPI</h4>
+
+<p>Python 2.x is nearing end-of-life and Spack recently changed their
+launch script to look for and use python 3.x if available.  There are
+incompatibilities and some spack packages (including PAPI) currently
+break with python 3.x.  (The papi recipe hangs while patching files with
+<code>filter_file</code>.)  There are two workarounds, depending on whether
+python 2.x is available on your system.
+</p>
+<p><b>Workaround:</b> If python 2.x is available on your system, then the
+simplest solution is to remove the test for <code>python3</code> in the
+<code>bin/spack</code> launch script.
+</p>
+<div class="example">
+<pre class="example"># This file is bilingual. The following shell code finds our preferred python.
+# Following line is a shell no-op, and starts a multi-line Python comment.
+# See https://stackoverflow.com/a/47886254
+&quot;&quot;&quot;:&quot;
+# prefer python3, then python, then python2
+for cmd in python3 python python2; do
+   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$"
+done
+</pre></div>
+
+<p><b>Workaround:</b> If python 2.x is not available on your system, then
+apply the patch to <code>lib/spack/llnl/util/filesystem.py</code> from spack
+issue 12765.
+</p>
+<div class="example">
+<pre class="example"><a href="https://github.com/spack/spack/pull/12765/files">https://github.com/spack/spack/pull/12765/files</a>
+</pre></div>
+
+<p>You only need the patch to <code>filesystem.py</code>.  The other two files
+are tests.
+</p>
+
 <a name="g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets"></a>
-<h4 class="subsection">2.1 (2019-09-25) New micro-architecture targets</h4>
+<h4 class="subsection">2.2 (2019-09-25) New micro-architecture targets</h4>
 
 <p>Spack recently changed how it treats a system&rsquo;s architecture and target
 to allow a hierarchy of fine-grained micro-architectures.  The &rsquo;target&rsquo;
@@ -143,7 +181,7 @@ specify this in <code>packages.yaml</code>.
 
 
 <a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
-<h4 class="subsection">2.2 (2019-08-28) Cray front-end compilers</h4>
+<h4 class="subsection">2.3 (2019-08-28) Cray front-end compilers</h4>
 
 <p><code>Spack compiler find</code> is currently broken for detecting the
 front-end compilers on Cray that HPCToolkit uses.  Normally, you would
