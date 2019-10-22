@@ -66,6 +66,7 @@ enum {
   SYSERV_ACK = 1,
   SYSERV_QUERY,
   SYSERV_QUERY_VAR, /* query for static variables */
+  SYSERV_QUERY_VAR_NIL, /* empty static variables */
   SYSERV_EXIT,
   SYSERV_OK,
   SYSERV_ERR
