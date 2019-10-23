@@ -403,35 +403,6 @@ void roctracer_activity_attribute
     td->overhead--;
 }
 
-void
-roctracer_init
-(
-
-)
-{
-    roctracer_properties_t properties;
-    properties.buffer_size = 0x1000;
-    properties.buffer_callback_fun = roctracer_buffer_completion_callback;
-    properties.mode = 0;
-    properties.alloc_fun = 0;
-    properties.alloc_arg = 0;
-    properties.buffer_callback_arg = 0;
-    roctracer_open_pool(&properties, NULL);
-    roctracer_enable_callback(roctracer_subscriber_callback, NULL);
-    roctracer_enable_activity(NULL);
-}
-
-void
-roctracer_fini
-(
-
-)
-{
-    roctracer_disable_callback();
-    roctracer_disable_activity();
-    roctracer_flush_activity(NULL);
-}
-
 static void
 METHOD_FN(init)
 {
@@ -678,17 +649,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     close_cur_kind;
 
-/*#ifndef HPCRUN_STATIC_LINK
-    if (cuda_bind()) {
-        EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
+#ifndef HPCRUN_STATIC_LINK
+    if (roctracer_bind()) {
+        EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
         monitor_real_exit(-1);
     }
-
-    if (cupti_bind()) {
-        EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
-        monitor_real_exit(-1);
-    }
-#endif*/
+#endif
 
     // Fetch the event string for the sample source
     // only one event is allowed
@@ -696,7 +662,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     char* event = start_tok(evlist);
     if (hpcrun_ev_is(amd_name, AMD_ROCM)) {
         hip_init_placeholders();
-    }
+    }    
     roctracer_init();
 }
 

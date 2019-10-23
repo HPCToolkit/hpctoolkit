@@ -548,10 +548,6 @@ hpcrun_init_internal(bool is_child)
   hpcrun_is_initialized_private = true;
 
   stream_tracing_init();
-
-/*#ifdef USE_ROCM
-  roctracer_init();
-#endif*/
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \

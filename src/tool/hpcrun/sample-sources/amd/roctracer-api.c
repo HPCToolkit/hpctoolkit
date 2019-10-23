@@ -53,7 +53,80 @@
 #define HSA_OP_ID_COPY  1
 //static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
 
+#define FORALL_ROCTRACER_ROUTINES(macro)			\
+  macro(roctracer_open_pool)		\
+  macro(roctracer_enable_callback)  \
+  macro(roctracer_enable_activity)  \
+  macro(roctracer_disable_callback) \
+  macro(roctracer_disable_activity) \
+  macro(roctracer_flush_activity)
 
+#define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
+
+#define ROCTRACER_FN(fn, args) \
+  static roctracer_status_t (*ROCTRACER_FN_NAME(fn)) args
+
+#define HPCRUN_ROCTRACER_CALL(fn, args) \
+{      \
+  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;	\
+  if (status != ROCTRACER_STATUS_SUCCESS) {		\
+    /* use roctracer_error_string() */ \
+  }						\
+}
+
+//----------------------------------------------------------
+// roctracer function pointers for late binding
+//----------------------------------------------------------
+
+ROCTRACER_FN
+(
+ roctracer_open_pool,
+ (
+  const roctracer_properties_t*,
+  roctracer_pool_t**
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_enable_callback,
+ (
+  activity_rtapi_callback_t,
+  void*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_enable_activity,
+ (
+  roctracer_pool_t*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_callback,
+ (
+
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_activity,
+ (
+       
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_flush_activity,
+ (
+  roctracer_pool_t*
+ )
+);
 
 void
 roctracer_activity_handle
@@ -469,4 +542,67 @@ roctracer_buffer_completion_callback
     }
 }
 
+const char *
+roctracer_path
+(
+  void
+)
+{
+  const char *path = "libroctracer64.so";
+  return path;
+}
+
+int
+roctracer_bind
+(
+  void
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  // dynamic libraries only availabile in non-static case
+  hpcrun_force_dlopen(true);
+  CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
+  hpcrun_force_dlopen(false);
+
+#define ROCTRACER_BIND(fn) \
+  CHK_DLSYM(roctracer, fn);
+
+  FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND)
+
+#undef ROCTRACER_BIND
+
+  return 0;
+#else
+  return -1;
+#endif // ! HPCRUN_STATIC_LINK
+}
+
+void
+roctracer_init
+(
+
+)
+{
+    roctracer_properties_t properties;
+    properties.buffer_size = 0x1000;
+    properties.buffer_callback_fun = roctracer_buffer_completion_callback;
+    properties.mode = 0;
+    properties.alloc_fun = 0;
+    properties.alloc_arg = 0;
+    properties.buffer_callback_arg = 0;
+    HPCRUN_ROCTRACER_CALL(roctracer_open_pool,(&properties, NULL));
+    HPCRUN_ROCTRACER_CALL(roctracer_enable_callback,(roctracer_subscriber_callback, NULL));
+    HPCRUN_ROCTRACER_CALL(roctracer_enable_activity,(NULL));
+}
+
+void
+roctracer_fini
+(
+
+)
+{
+    HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
+    HPCRUN_ROCTRACER_CALL(roctracer_disable_activity,());
+    HPCRUN_ROCTRACER_CALL(roctracer_flush_activity,(NULL));
+}
 
