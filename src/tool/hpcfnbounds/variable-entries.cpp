@@ -61,8 +61,6 @@
 #include <map>
 #include <set>
 
-#include "lib/support-lean/datacentric_config.h"
-
 using namespace std;
 
 
@@ -131,6 +129,17 @@ variable_entries_reinit(void)
 void
 dump_variables()
 {
+  if (variable_entries.size() == 0) {
+    // corner case: empty variable:
+    // we need to add a dummy variable to send to the client.
+    // The protocol doesn't handle empty information, so we need
+    // to add something
+    void *addr = NULL;
+
+    dump_variable_entry(addr, 0, "variable_dummy");
+    return;
+  }
+
   VariableSet::iterator i = variable_entries.begin();
 
   for (; i != variable_entries.end();) {
@@ -153,9 +162,6 @@ dump_variables()
 void
 add_variable_entry(void *addr, long size, const string *comment, bool isvisible)
 {
-  if (size < env_get_datacentric_min_bytes())
-    return;
-
   VariableSet::iterator it = variable_entries.find(addr);
 
   if (it == variable_entries.end()) {

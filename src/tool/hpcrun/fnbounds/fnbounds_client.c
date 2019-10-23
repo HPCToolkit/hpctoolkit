@@ -408,10 +408,6 @@ launch_server(void)
     arglist[n++] = "-s";
     arglist[n++] = fdin_str;
     arglist[n++] = fdout_str;
-
-    if (datacentric_is_enabled())
-      arglist[n++] = "-m";
-
     arglist[n++] = NULL;
 
     monitor_real_execve(server, arglist, environ);

@@ -303,7 +303,7 @@ signal_handler_init(void)
 //*****************************************************************
 
 static void
-do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
+do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg, int query)
 {
   int ret;
   long k;
@@ -333,7 +333,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     code_ranges_reinit();
     function_entries_reinit();
 
-    dump_file_info(inbuf, fn_discovery, SYSERV_QUERY);
+    dump_file_info(inbuf, fn_discovery, query);
     jmpbuf_ok = 0;
 
     // pad list of addrs in case there are fewer function addrs than
@@ -382,89 +382,6 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 }
 
 
-/***
- * query static variable:
- * send a list of addresses of the static variable if exists
- */
-static void
-do_query_var(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
-{
-  int ret;
-  long k;
-
-  if (mesg->len > inbuf_size) {
-    inbuf_size += mesg->len;
-    inbuf = (char *) realloc(inbuf, inbuf_size);
-    if (inbuf == NULL) {
-      err(1, "realloc for inbuf failed");
-    }
-  }
-
-  ret = read_all(fdin, inbuf, mesg->len);
-  if (ret != SUCCESS) {
-    err(1, "read from fdin failed");
-  }
-
-  num_addrs = 0;
-  total_num_addrs = 0;
-  max_num_addrs = 0;
-  sent_ok_mesg = 0;
-
-  if (sigsetjmp(jmpbuf, 1) == 0) {
-    // initial return on success
-    jmpbuf_ok = 1;
-    memset(&fnb_info, 0, sizeof(fnb_info));
-    code_ranges_reinit();
-    variable_entries_reinit();
-
-    dump_file_info(inbuf, fn_discovery, SYSERV_QUERY_VAR);
-    jmpbuf_ok = 0;
-
-    // pad list of addrs in case there are fewer function addrs than
-    // size of map.
-    fnb_info.num_entries = total_num_addrs;
-    for (k = total_num_addrs; k < max_num_addrs; k++) {
-      syserv_add_addr(NULL, 0);
-    }
-    if (num_addrs > 0) {
-      ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
-      if (ret != SUCCESS) {
-  errx(1, "write to fdout failed");
-      }
-      num_addrs = 0;
-    }
-
-    // add rusage maxrss to allow client to track memory usage.
-    // units are Kbytes
-    struct rusage usage;
-    if (getrusage(RUSAGE_SELF, &usage) == 0) {
-      fnb_info.memsize = usage.ru_maxrss;
-    } else {
-      fnb_info.memsize = -1;
-    }
-
-    fnb_info.magic = FNBOUNDS_MAGIC;
-    fnb_info.status = SYSERV_OK;
-    ret = write_all(fdout, &fnb_info, sizeof(fnb_info));
-    if (ret != SUCCESS) {
-      err(1, "write to fdout failed");
-    }
-  }
-  else if (sent_ok_mesg) {
-    // failed return from long jmp after we've told the client ok.
-    // for now, close the pipe and exit.
-    errx(1, "caught signal after telling client ok");
-  }
-  else {
-    // failed return from long jmp before we've told the client ok.
-    // in this case, we can send an ERR mesg.
-    ret = write_mesg(SYSERV_ERR, 0);
-    if (ret != SUCCESS) {
-      errx(1, "write to fdout failed");
-    }
-  }
-}
-
 
 void
 system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
@@ -500,13 +417,9 @@ system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
     }
 
     // query
-    else if (mesg.type == SYSERV_QUERY) {
+    else if (mesg.type == SYSERV_QUERY || mesg.type == SYSERV_QUERY_VAR) {
       write_mesg(SYSERV_ACK, 0);
-      do_query(fn_discovery, &mesg);
-    }
-    else if (mesg.type == SYSERV_QUERY_VAR) {
-      write_mesg(SYSERV_ACK, 0);
-      do_query_var(fn_discovery, &mesg);
+      do_query(fn_discovery, &mesg, mesg.type);
     }
 
     // unknown message
