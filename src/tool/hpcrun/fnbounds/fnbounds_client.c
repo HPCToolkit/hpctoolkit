@@ -96,6 +96,7 @@
 #define monitor_real_fork  fork
 #define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
+int datacentric_is_enabled() { return 1; }
 int zero_fcn(void) { return 0; }
 #endif
 
