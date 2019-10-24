@@ -319,12 +319,13 @@ code_range_comment(string &name, string section, const char *which)
 
 
 static void
-note_code_range(const char *sname, Region *s, long memaddr, DiscoverFnTy discover)
+note_code_range(const char *sname, Region *s, DiscoverFnTy discover)
 {
   char *start = (char *) s->getDiskOffset();
   char *end = start + s->getDiskSize();
+  long offset = (long) s->getPtrToRawData() - (long) start;
   string ntmp;
-  new_code_range(sname, start, end, memaddr, discover);
+  new_code_range(sname, start, end, offset, discover);
 
   add_function_entry(start, code_range_comment(ntmp, s->getRegionName(), "start"), true /* global */);
   add_function_entry(end, code_range_comment(ntmp, s->getRegionName(), "end"), true /* global */);
@@ -334,10 +335,9 @@ note_code_range(const char *sname, Region *s, long memaddr, DiscoverFnTy discove
 static void
 note_section(Symtab *syms, const char *sname, DiscoverFnTy discover)
 {
-  long memaddr = (long) syms->mem_image();
   Region *s;
   if (syms->findRegion(s, sname) && s) 
-    note_code_range(sname, s, memaddr - syms->imageOffset(), discover);
+    note_code_range(sname, s, discover);
 }
 
 
