@@ -499,7 +499,8 @@ hpcrun_cct_set_node_memaccess(cct_node_t *node)
 void
 hpcrun_cct_set_node_memaccess_root(cct_node_t *root)
 {
-  root->node_type |= NODE_TYPE_MEMACCESS_ROOT;
+  hpcrun_cct_set_node_memaccess(root);
+  hpcrun_cct_set_node_root(root);
 }
 
 // mark that the node is supposed to be a root

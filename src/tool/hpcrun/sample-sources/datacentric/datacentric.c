@@ -313,7 +313,7 @@ datacentric_post_handler(event_handler_arg_t *args)
     // add artificial root for memory-access call-path
     var_context = hpcrun_insert_special_node(var_decl_node, DATACENTRIC_MemoryAccess);
 
-    hpcrun_cct_set_node_memaccess_root(var_context);
+    hpcrun_cct_set_node_memaccess(var_context);
 
     datacentric_record_size_variable(info, var_decl_node);
 

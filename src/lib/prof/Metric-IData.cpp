@@ -72,15 +72,10 @@ using std::string;
 #include <include/uint.h>
 
 #include "Metric-IData.hpp"
-#include "Metric-Mgr.hpp"       // for Prof::Metric::Mgr
 
 #include <lib/xml/xml.hpp>
 
-#include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/support/diagnostics.h>
-
-#include <lib/support/ExprEval.hpp>
-#include <lib/support/VarMapMetric.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -94,7 +89,6 @@ namespace Metric {
 //***************************************************************************
 // IData
 //***************************************************************************
-
 
 std::string
 IData::toStringMetrics(int oFlags, const char* pfx) const
@@ -118,49 +112,12 @@ IData::writeMetricsXML(std::ostream& os,
   }
   mEndId = std::min(numMetrics(), mEndId);
 
-  ExprEval     eval;
-  VarMapMetric varMap(metricMgr, mBegId);
-
   for (uint i = mBegId; i < mEndId; i++) {
-
-    hpcrun_metricVal_t val     = {.r=0.0};
-    uint desc_id               = i-mBegId;
-    const Metric::ADesc* adesc = metricMgr->metric(desc_id);
-
     if (hasMetric(i)) {
-      val = m_metrics[i];
-
-    } else {
-      // no metric value:
-      // perhaps we need to compute using the formula
-      // from hpcrun
-
-      uint desc_id = i-mBegId;
-      const Metric::ADesc* adesc = metricMgr->metric(desc_id);
-
-      char *formula = adesc->formula();
-      if (formula != NULL) {
-        varMap.setMetrics(&m_metrics);
-        double result = eval.Eval(formula, &varMap);
-
-        if (eval.GetErr() == EEE_NO_ERROR) {
-          val.r        = result;
-          m_metrics[i] = val;
-        }
-      }
-    }
-    // print to xml
-    if (val.r != 0.0) {
-
-      // specific case for address-base type:
-      // use the integer format to print to the xml to make it easy the xml parser
-      // to parse the number.
-
-      std::string mval = adesc->getXMLValue(val);
-
+      double m = metric(i);
       os << ((!wasMetricWritten) ? pfx : "");
       os << "<M " << "n" << xml::MakeAttrNum(i) 
-         << " v" << mval << "/>";
+	 << " v" << xml::MakeAttrNum(m) << "/>";
       wasMetricWritten = true;
     }
   }
