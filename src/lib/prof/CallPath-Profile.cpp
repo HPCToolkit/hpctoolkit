@@ -70,7 +70,6 @@ using std::dec;
 #include <string>
 using std::string;
 
-#include <vector>
 #include <map>
 #include <algorithm>
 #include <sstream>
@@ -1743,8 +1742,6 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
   ret = hpcfmt_int8_fwrite(numNodes, fs);
   if (ret != HPCFMT_OK) return HPCFMT_ERR;
 
-  DIAG_DevMsgIf(DBG_DATA, ". write nodes: " << numNodes );
-
   // ------------------------------------------------------------
   // Write each CCT node
   // ------------------------------------------------------------
@@ -1979,7 +1976,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
       // special treatment for address-type metric
-      // we don't want to convert to double and multiply by period
+      // we don't want to convert an address to double and multiplied by period
       metricData.metricObject(i_dst) = m;
 
     } else {

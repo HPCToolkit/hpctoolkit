@@ -509,18 +509,20 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
-//
+// ---------------------------------
 // hpcrun node types
-//
+// ---------------------------------
 #define NODE_TYPE_REGULAR             0
 #define NODE_TYPE_LEAF                1
+
+// variable types: dynamic, static or unknown
 #define NODE_TYPE_ALLOCATION          2
 #define NODE_TYPE_GLOBAL_VARIABLE     4
-#define NODE_TYPE_MEMACCESS           8
-#define NODE_TYPE_MEMACCESS_ROOT     10
+#define NODE_TYPE_UNKNOWN_ATTRIBUTE   8
+
+// cct node type: memory access, or artificial tree root
 #define NODE_TYPE_ROOT               16
-#define NODE_TYPE_VARIABLE           32
-#define NODE_TYPE_UNKNOWN_ATTRIBUTE  64
+#define NODE_TYPE_MEMACCESS          32
 
 
 #define HPCRUN_FMT_LMId_NULL (0)
@@ -589,6 +591,8 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 
 // --------------------------------------------------------------
 // Node types inquiries
+// the get methods are used by both hpcrun and hpcprof
+// the set methods only used by hpcrun, and defined in hpcrun/cct/cct.c
 // --------------------------------------------------------------
 
 // check if the node is supposed to be a root
@@ -616,12 +620,6 @@ hpcrun_fmt_node_type_memaccess(uint16_t type)
   return (type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
 }
 
-// check if this node is the start of call path to memory access
-static inline bool
-hpcrun_fmt_node_type_memaccess_root(uint16_t type)
-{
-  return (type & NODE_TYPE_MEMACCESS_ROOT) == NODE_TYPE_MEMACCESS_ROOT;
-}
 
 // check if the node is a global variable node
 static inline bool
