@@ -46,7 +46,7 @@ CC='@HPCLINK_CC@ @CFLAGS@'
 
 hello="_hpc_hello_$$"
 nm_addrs="_hpc_nm_addrs_$$"
-data_addrs="_hpc_data_addrs_$$"
+#data_addrs="_hpc_data_addrs_$$"
 cmd_out="_hpc_output_$$"
 
 # Space-separated list of symbol names to force undefined.
@@ -433,7 +433,7 @@ test -f "$libhpcrun" || die "no such file: $libhpcrun"
 liblzma="${ext_libs_dir}/liblzma.a"
 set -- $undef_args $wrap_args $libhpcrun "$liblzma"  "$@"
 set -- "$@" "${nm_addrs}.o"
-set -- "$@" "${data_addrs}.o"
+#set -- "$@" "${data_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"
 test -f "$libhpcrun_wrap" || die "no such file: $libhpcrun_wrap"
@@ -467,12 +467,12 @@ EOF
 $CC -o "$hello" "${hello}.c"
 
 rm -f "${nm_addrs}.c" "${nm_addrs}.o"
-rm -f "${data_addrs}.c" "${data_addrs}.o"
+#rm -f "${data_addrs}.c" "${data_addrs}.o"
 $hpcfnbounds -c "$hello"    > "${nm_addrs}.c"   || die "hpcfnbounds failed on $hello"
-$hpcfnbounds -c -m "$hello" > "${data_addrs}.c" || die "hpcfnbounds failed on $hello (datacentric)"
+#$hpcfnbounds -c -m "$hello" > "${data_addrs}.c" || die "hpcfnbounds failed on $hello (datacentric)"
 
 $CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
-$CC -c -o "${data_addrs}.o" "${data_addrs}.c"
+#$CC -c -o "${data_addrs}.o" "${data_addrs}.c"
 
 #
 # Some compiler scripts add extra function calls to the end of the
@@ -559,9 +559,9 @@ rm -f "${nm_addrs}.c" "${nm_addrs}.o"
 $hpcfnbounds -c "$appl_out" > "${nm_addrs}.c" || die "hpcfnbounds failed on $appl_out"
 $CC -c -o "${nm_addrs}.o" "${nm_addrs}.c"
 
-rm -f "${data_addrs}.c" "${data_addrs}.o"
-$hpcfnbounds -c "$fnbound_ext_option" "$appl_out" > "${data_addrs}.c" || die "hpcfnbounds failed on $appl_out"
-$CC -c -o "${data_addrs}.o" "${data_addrs}.c"
+#rm -f "${data_addrs}.c" "${data_addrs}.o"
+#$hpcfnbounds -c "$fnbound_ext_option" "$appl_out" > "${data_addrs}.c" || die "hpcfnbounds failed on $appl_out"
+#$CC -c -o "${data_addrs}.o" "${data_addrs}.c"
 
 rm -f "$cmd_out"
 command_line_args="$*"

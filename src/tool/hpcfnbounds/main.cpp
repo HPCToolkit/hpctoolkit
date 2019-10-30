@@ -433,9 +433,6 @@ static void
 dump_var_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		 DiscoverFnTy fn_discovery, int query)
 {
-  if (query != SYSERV_QUERY_VAR && query != SYSERV_QUERY_VAR_NIL)
-    return;
-
   if (c_mode()) {
     printf("unsigned long hpcrun_data_addrs[] = {\n");
   }
@@ -479,14 +476,12 @@ static void
 dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery, int query)
 {
-  if (query != SYSERV_QUERY)
-    return;
-
   if (c_mode()) {
     printf("unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+  if (query == SYSERV_QUERY || c_mode())
+    dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
 
   if (c_mode()) {
     printf("\n};\n");
@@ -596,15 +591,12 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
 
-    if (query == SYSERV_QUERY)
-      dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
-    else   if (query == SYSERV_QUERY_VAR)
-      dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
+    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
+    dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
 
     close(dwarf_fd);
   }
-  if (query == SYSERV_QUERY)
-    dump_header_info(relocatable, image_offset);
+  dump_header_info(relocatable, image_offset);
 
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can
