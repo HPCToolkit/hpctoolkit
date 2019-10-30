@@ -1,5 +1,10 @@
 #include "AnalyzeInstruction.hpp"
 
+#include <Instruction.h>
+#include <AbslocInterface.h>
+#include <slicing.h>
+#include <Graph.h>
+
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/lexical_cast.hpp>
@@ -7,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
@@ -299,6 +304,31 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
+  Dyninst::AssignmentConverter ac(true, false);
+  for (auto *dyn_func : func_set) {
+    for (auto *dyn_block : dyn_func->blocks()) {
+      Dyninst::ParseAPI::Block::Insns insns;
+      dyn_block->getInsns(insns);
+      for (auto &p : insns) {
+        std::vector<Dyninst::Assignment::Ptr> assignments;
+        ac.convert(p.second, p.first, dyn_func, dyn_block, assignments); 
+        for (auto a : assignments) {
+          Dyninst::Slicer s(a, dyn_block, dyn_func);
+          Dyninst::Slicer::Predicates p;
+          Dyninst::GraphPtr g = s.backwardSlice(p); 
+          if (INSTRUCTION_ANALYZER_DEBUG) {
+            Dyninst::NodeIterator begin;
+            Dyninst::NodeIterator end;
+            g->allNodes(begin, end);
+            for (auto iter = begin; iter != end; ++iter) {
+              auto addr = (*iter)->addr();
+              std::cout << "addr " << addr << std::endl;
+            }
+          }
+        }
+      }
+    }   
+  }
 }
 
 
