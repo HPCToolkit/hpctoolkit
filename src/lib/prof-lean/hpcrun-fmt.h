@@ -120,6 +120,9 @@ static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
 // currently supported versions
+static const double HPCRUN_FMT_Version_21 = 2.1;
+
+// supported old versions
 static const double HPCRUN_FMT_Version_20 = 2.0;
 
 
@@ -576,7 +579,7 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 
 // N.B.: assumes space for metrics has been allocated
 extern int
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs);
 
 extern int

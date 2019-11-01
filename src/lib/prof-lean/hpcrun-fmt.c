@@ -619,10 +619,11 @@ hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc)
 //***************************************************************************
 
 int
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->node_type, fs));
+  if (fmtVersion >= HPCRUN_FMT_Version_21)
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->node_type, fs));
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_parent, fs));
