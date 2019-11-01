@@ -84,6 +84,13 @@
 // (1) turn on this #if and (2) fetch copies of syserv-mesg.h
 // and fnbounds_file_header.h.
 
+// Usage:
+// To trace the client-side messages, use -v
+// To tell the server to run in verbose mode, use -V
+// To tell the server not to do agressive function searching, use -d
+// To have the client write its output to a file, use -o <outfile>
+// The last argument should be the path to the server
+
 #if 0
 #define STAND_ALONE_CLIENT
 #define EMSG(...)
@@ -97,6 +104,14 @@
 #define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
 int zero_fcn(void) { return 0; }
+#include <stdio.h>
+int verbose = 0;
+FILE	*outf;
+int serv_verbose = 0;
+int noscan = 0;
+
+char	*outfile;
+
 #endif
 
 //***************************************************************************
@@ -172,6 +187,12 @@ read_all(int fd, void *buf, size_t count)
   ssize_t ret;
   size_t len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+	fprintf(stderr, "Client read_all, count = %ld bytes\n",
+	    count);
+  }
+#endif
   len = 0;
   while (len < count) {
     ret = read(fd, ((char *) buf) + len, count - len);
@@ -199,6 +220,12 @@ write_all(int fd, const void *buf, size_t count)
   ssize_t ret;
   size_t len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+	fprintf(stderr, "Client write_all, count = %ld bytes\n",
+	    count);
+  }
+#endif
   len = 0;
   while (len < count) {
     ret = write(fd, ((const char *) buf) + len, count - len);
@@ -227,6 +254,12 @@ read_mesg(struct syserv_mesg *mesg)
   if (ret == SUCCESS && mesg->magic != SYSERV_MAGIC) {
     ret = FAILURE;
   }
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+	fprintf(stderr, "Client read message, type = %d, len = %ld\n",
+	    mesg->type, mesg->len);
+  }
+#endif
 
   return ret;
 }
@@ -244,6 +277,12 @@ write_mesg(int32_t type, int64_t len)
   mesg.type = type;
   mesg.len = len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+	fprintf(stderr, "Client write message, type = %d, len = %ld\n",
+	    type, len);
+  }
+#endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 
@@ -400,11 +439,20 @@ launch_server(void)
     sprintf(fdin_str,  "%d", sendfd[0]);
     sprintf(fdout_str, "%d", recvfd[1]);
 
-    arglist[0] = server;
-    arglist[1] = "-s";
-    arglist[2] = fdin_str;
-    arglist[3] = fdout_str;
-    arglist[4] = NULL;
+    int j = 0;
+    arglist[j++] = server;
+#ifdef STAND_ALONE_CLIENT
+    if (serv_verbose) {
+      arglist[j++] = "-v";
+    }
+    if (noscan) {
+      arglist[j++] = "-d";
+    }
+#endif
+    arglist[j++] = "-s";
+    arglist[j++] = fdin_str;
+    arglist[j++] = fdout_str;
+    arglist[j++] = NULL;
 
     monitor_real_execve(server, arglist, environ);
     err(1, "hpcrun system server: exec(%s) failed", server);
@@ -638,7 +686,7 @@ query_loop(void)
   long k;
 
   for (;;) {
-    printf("\nfnbounds> ");
+    fprintf(outf, "\nclientfnbounds> ");
     if (fgets(fname, BUF_SIZE, stdin) == NULL) {
       break;
     }
@@ -650,13 +698,13 @@ query_loop(void)
     addr = (void **) hpcrun_syserv_query(fname, &fnb_hdr);
 
     if (addr == NULL) {
-      printf("error\n");
+      fprintf(outf, "Client error NULL return from hpcrun_syserv_query\n");
     }
     else {
       for (k = 0; k < fnb_hdr.num_entries; k++) {
-	printf("  %p\n", addr[k]);
+	fprintf(outf, "  %p\n", addr[k]);
       }
-      printf("num symbols = %ld, offset = 0x%lx, reloc = %d\n",
+      fprintf(outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n",
 	     fnb_hdr.num_entries, fnb_hdr.reference_offset,
 	     fnb_hdr.is_relocatable);
 
@@ -667,16 +715,53 @@ query_loop(void)
   }
 }
 
-
 int
 main(int argc, char *argv[])
 {
   struct sigaction act;
+  int i;
 
-  if (argc < 2) {
-    errx(1, "usage: client /path/to/fnbounds");
+  outf = stdout;
+  server = NULL;
+  for (i = 1; i < argc; i++) {
+    // fprintf (stderr, "argv[%d] = \"%s\"\n", i, argv[i] );
+    if (*argv[i] == '-') {
+      // control arguments
+      switch (argv[i][1]) {
+      case 'd':
+        noscan = 1;
+        break;
+      case 'V':
+        serv_verbose = 1;
+        break;
+      case 'v':
+        verbose = 1;
+        break;
+      case 'o':
+        if ( (i+1) >= argc) {
+	  errx(1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	}
+	i++;
+	outfile = argv[i];
+	outf = fopen(outfile, "w");
+	if (outf == NULL) {
+	    errx(1,"outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	}
+        break;
+      default:
+	errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	break;
+      }
+    } else {
+      // no - flag; must be the path to the server
+      server = argv[i];
+      break;	// from argument loop
+    }
   }
-  server = argv[1];
+  // Make sure the server is non-NULL
+  if ( (server == NULL) || (strlen(server) == 0) ) {
+    errx(1,"NULL server name; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+  }
 
   memset(&act, 0, sizeof(act));
   act.sa_handler = SIG_IGN;
@@ -688,15 +773,15 @@ main(int argc, char *argv[])
   if (launch_server() != 0) {
     errx(1, "fnbounds server failed");
   }
-  printf("server: %s\n", server);
-  printf("parent: %d, child: %d\n", my_pid, server_pid);
-  printf("connected\n");
+  fprintf(outf, "server: %s\n", server);
+  fprintf(outf, "parent: %d, child: %d\n", my_pid, server_pid);
+  fprintf(outf, "connected\n");
 
   query_loop();
 
   write_mesg(SYSERV_EXIT, 0);
 
-  printf("done\n");
+  fprintf(outf, "done\n");
   return 0;
 }
 
