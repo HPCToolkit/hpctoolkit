@@ -158,8 +158,6 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
     } else {
       type += ".BLOCK";
     }
-  } else if (opcode.find("SHFL") != std::string::npos) {
-    type = ".SHFL";
   } else if (opcode.find("CAL") != std::string::npos) {
     type = ".CALL";
   } else if (opcode.find("EXIT") != std::string::npos) {
@@ -189,6 +187,9 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op
   if (opcode.find("I2") != std::string::npos ||
     opcode.find("F2") != std::string::npos || opcode == "FRND") {
     type = ".CONVERT";
+  } else if (opcode.find("SHFL") != std::string::npos ||
+    opcode.find("PRMT") != std::string::npos) {
+    type = ".SHUFFLE";
   } else {
     type = ".OTHER";
   }
