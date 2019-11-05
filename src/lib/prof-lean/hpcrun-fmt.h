@@ -537,10 +537,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
 
 
-// -------------------------
-// data-centric fields
-// -------------------------
-
 
 typedef struct hpcrun_fmt_cct_node_t {
 
