@@ -148,12 +148,6 @@ Mgr::makeSummaryMetrics(bool needAllStats, bool needMultiOccurance,
 
   uint threshold = (needMultiOccurance) ? 2 : 1;
 
-  // needAllStats will generate additional 10 metrics (mean, stddev, ...)
-  // hence the total metrics added is: (1+10) x 2 = 22
-  //
-  // if all stats is not needed, we only have 2 additional metrics: incl and excl
-  m_numMetricsPerGroup = needAllStats ? 22 : 2;
-
   // -------------------------------------------------------
   // collect like metrics
   // -------------------------------------------------------
@@ -248,12 +242,6 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
   if (srcEndId == Mgr::npos) {
     srcEndId = m_metrics.size();
   }
-
-  // needAllStats will generate additional 10 metrics (mean, stddev, ...)
-  // hence the total metrics added is: (1+10) x 2 = 22
-  //
-  // if all stats is not needed, we only have 2 additional metrics: incl and excl
-  m_numMetricsPerGroup = needAllStats ? 22 : 2;
 
   uint firstId = Mgr::npos;
 

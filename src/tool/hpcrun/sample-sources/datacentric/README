@@ -25,19 +25,23 @@ Mechanism
 =========
 
                                 wrapped alloc routines
+ hpclink                              |
+   |                                  | var bounds (dynamic)
+   |                                  | 
+   V            var bounds (static)   V       ip, offset addr
+hpcfnbounds ----------------------> hpcrun <--------------- HW counter
                                       |
-                                      | var bounds 
-                                      | 
-                var bounds           \|/       ip, offset
-hpcfnbounds  ---------------------> hpcrun <--------------- HW counter
- /|\                                  |
-  |                                  \|/
-  |                                .hpcrun file
-hpclink                               |
                                       |
-            var info (name, bounds)  \|/
-hpcstruct  -----------------------> hpcprof
-
+                                      V 
+                             *.hpcrun, *.hpctrace files
+                                      |
+                                      |
+            var info (name, bounds)   V  
+hpcstruct ------------------------> hpcprof
+                                      |
+                                      |
+                                      V
+                    experiment.xml, *.hpctrace & *.metric-db files
 
 To associate between a memory reference from hardware counter and code
 variables, we require to wrap allocation routines (for dynamic variables)
@@ -167,7 +171,7 @@ Datacentric tree has three subroots defined in datacentric.c:
 - Datacentric_Static, renamed into <static variable> in hpcprof
 - Datacentric_Unknown, rename into <unknown attribute> in hpcprof
 
-   top
+  top
    | 
    +----------------------------+------------+....
    |                            |            |
@@ -249,4 +253,29 @@ the same time with Memleak (--memleak flag) since both of them also
 wrap allocation routines.
 
 
+hpcstruct
+=========
+
+To expose variable information, we add a new tag <V> in hpcstruct file.
+This tag can be embedded within <F> tag for global variables, or <P> 
+tag for local variables (not supported yet). 
+Similar to <P> tag, <V> tag contains three attributes: "i" for variable
+index, "n" for variable name, and "v" for the upper and lower bounds. 
+
+Example list of variables in Nekbone:
+
+<LM i="2" n="/home/la5/git/hpctoolkit-tests/applications/nekbone-2.3.4/test/example1/nekbone" v="{}">
+  <F i="3" n="&lt;unknown file&gt;">
+    <V i="4" n="g.2733" v="{[0x107f0308-0x13070308)}"/>
+    <V i="5" n="c.2725" v="{[0x10130308-0x107f0308)}"/>
+    <V i="29" n="input5_" v="{[0x170f7320-0x17169320)}"/>
+    <V i="30" n="scruz_" v="{[0x1a7849f0-0x1c2849f0)}"/>
+    <V i="31" n="scrmg_" v="{[0x1c2849f0-0x1dd849f0)}"/>
+    <V i="32" n="timer_" v="{[0x171693a0-0x171773a0)}"/>
+    <V i="33" n="scrcg_" v="{[0x17f04220-0x17f049f0)}"/>
+    <V i="34" n="wxyz_" v="{[0x171773a0-0x1717aac0)}"/>
+    <V i="35" n="mass_" v="{[0x1717aac0-0x17efaac8)}"/>
+    <V i="36" n="hcglb_" v="{[0x17f02ed0-0x17f036f0)}"/>
+    <V i="37" n="dxyz_" v="{[0x17f03720-0x17f04020)}"/>
+  </F>
 
