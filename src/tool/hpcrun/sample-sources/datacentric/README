@@ -8,10 +8,10 @@ modules:
 - hpcrun: to sample using specific hardware counters
 - hpclink: to wrap alloc routines and run hpcfnbounds
 - hpcfnbounds: to compute variable bounds and send them to hpcrun
-- hpcstruct: to retrieve variable information
+- hpcstruct: to retrieve variable information (name and its bounds)
 - hpcprof: to collect information from hpcrun and hpcstruct, and generate
-  datacentric information inside database
-- hpcviewer: to display datacentric view
+  datacentric information in the database
+- hpcviewer: to display a special datacentric view
 
 Support modules:
 - lib/support-lean/datacentric_config.[ch]: datacentric configuration 
@@ -43,18 +43,18 @@ hpcstruct ------------------------> hpcprof
                                       V
                     experiment.xml, *.hpctrace & *.metric-db files
 
-To associate between a memory reference from hardware counter and code
-variables, we require to wrap allocation routines (for dynamic variables)
+To associate between a memory reference from hardware counter and a code
+variable, we require to wrap allocation routines (for dynamic variables)
 and to parse object files to grab static variables. 
-The information of staticc variables are stored as a splay tree inside 
-load module data structure (loadmap.c), while dynamic variables are stored
-as a splay tree inside data_tree.c
-The reason the information of static variables is stored inside its 
+The information of static variables are stored in a splay tree within 
+a load module data structure (loadmap.c), while dynamic variables are stored
+in a splay tree in data_tree.c file.
+The information of static variables is stored inside its 
 load_module is to associate between the variable and its load module
-easily. If the load module is unmapped, the variable information should
+easily. If a load module is unmapped, the variable information can
 also be removed. 
 
-[NEED TO BE FIXED]: However, due to the information is allocated with
+[NEED TO BE FIXED]: However, due to the data is allocated with
 hpcrun_malloc, we don't free the allocation if the load module is unmmaped.
 Note: can we use malloc instead of hpcrun_malloc ? I don't know. All
       code inside loadmap.c uses hpcrun_malloc instead of malloc.
@@ -75,7 +75,7 @@ When a signal from perf_events arrives:
 - If it isn't a datacentric event, we attribute the cost to the sampled
   node in CCT.
 - If it is a datacentric event, we attribute the cost to the sampled
-  node in CCT, and to a variable in datacentric tree.
+  node in CCT, and to its variable in datacentric tree.
   Datacentric sample-source will try to see if the memory reference can 
   be found in dynamic variable tree. If not, it will look at the static 
   variable tree. If none is found, we declare the memory reference is 
@@ -93,12 +93,12 @@ On all platforms, this event creates 2 metrics:
 		is hidden.
 - FAULTS: 	Number of page faults
 
-On some platforms, datacentric event triggers one or more hardware
+On some platforms, datacentric event creates one or more hardware
 counters like MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD on Intel platform,
 or 0x34340401e0 (MMCRA on PM_MRK_INST_CMPL?)
 
-In some platforms that provide data source record like Intel nehalem and 
-IBM Power 9, this event collect additional 20 information (metrics) :
+On some platforms that provide data source record like Intel nehalem and 
+IBM Power 9, this event collects additional 20 information (metrics) :
 
 - MEM-Load		: Total of memory loads
 - MEM-Load-FBhit	: Line fill buffer
@@ -124,8 +124,8 @@ IBM Power 9, this event collect additional 20 information (metrics) :
 
 The above metrics are based on perf_event support for data source 
 (PERF_SAMPLE_DATA_SRC) and thus depends on the information from 
-perf_events. Some Linux kernel may not support some CPUs. Hence, it is
-preferable to have newer version of kernel.
+perf_events. Some Linux kernel may not fully support some hw counters. 
+Hence, it is preferable to have newer version of kernel.
 
 I think it is possible to grab directly raw information from hardware
 counter, but it requires huge amount of effort to maintain support for
