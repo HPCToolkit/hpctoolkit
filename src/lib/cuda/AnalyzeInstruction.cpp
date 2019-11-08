@@ -243,6 +243,8 @@ InstructionStat::InstructionStat(const Instruction *inst) {
   this->predicate = -1;
   this->dst = -1;
 
+  std::cout << inst->offset << " " << op << " ";
+
   if (inst->predicate.size() != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << inst->predicate << " ";
@@ -310,9 +312,11 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     for (auto *dyn_block : dyn_func->blocks()) {
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
-      for (auto &p : insns) {
+      for (auto &inst_iter : insns) {
+        auto inst = inst_iter.second;
+        auto inst_addr = inst_iter.first;
         std::vector<Dyninst::Assignment::Ptr> assignments;
-        ac.convert(p.second, p.first, dyn_func, dyn_block, assignments); 
+        ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
         for (auto a : assignments) {
           Dyninst::Slicer s(a, dyn_block, dyn_func);
           Dyninst::Slicer::Predicates p;
@@ -323,8 +327,10 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
             g->allNodes(begin, end);
             for (auto iter = begin; iter != end; ++iter) {
               auto addr = (*iter)->addr();
-              std::cout << "addr " << addr << std::endl;
+              auto func_addr = dyn_func->addr();
+              std::cout << "inst_addr " << inst_addr - func_addr << "-> addr " << addr - func_addr << std::endl;
             }
+            std::cout << std::endl;
           }
         }
       }
