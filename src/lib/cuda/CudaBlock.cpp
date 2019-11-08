@@ -45,9 +45,9 @@ void CudaBlock::getInsns(Insns &insns) const {
       MachRegister r(dst | cuda::GPR | Arch_cuda);
       InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
 #ifdef DYNINST_INSTRUCTION_PTR
-      instruction_ptr->appendOperand(reg_ptr, true, false);
+      instruction_ptr->appendOperand(reg_ptr, false, true);
 #else
-      instruction.appendOperand(reg_ptr, true, false);
+      instruction.appendOperand(reg_ptr, false, true);
 #endif
     }
 
@@ -56,9 +56,9 @@ void CudaBlock::getInsns(Insns &insns) const {
         MachRegister r(src | cuda::GPR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
 #ifdef DYNINST_INSTRUCTION_PTR
-        instruction_ptr.appendOperand(reg_ptr, false, true);
+        instruction_ptr.appendOperand(reg_ptr, true, false);
 #else
-        instruction.appendOperand(reg_ptr, false, true);
+        instruction.appendOperand(reg_ptr, true, false);
 #endif
       }
     }
