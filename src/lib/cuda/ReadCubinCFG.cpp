@@ -208,7 +208,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
+            block->insts.push_back(new CudaParse::Instruction(function_size));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
