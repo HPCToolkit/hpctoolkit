@@ -3248,6 +3248,64 @@ fi
 
 AM_CONDITIONAL([OPT_ENABLE_KERNEL_4_3], [test "$kernel_blocking" = yes])
 
+#-------------------------------------------------
+# perf event: check if AMD IBS OP is supported
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the AMD IBS OP is supported])
+
+IBS_OP_PATH="/sys/bus/event_source/devices/ibs_op/type"
+IBS_OP_AVAIL=no
+
+if test -f $IBS_OP_PATH; then
+  IBS_OP_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$IBS_OP_AVAIL])
+
+AM_CONDITIONAL([OPT_IBS_OP], [test "$IBS_OP_AVAIL" = yes])
+
+
+#-------------------------------------------------
+# perf event: check if AMD IBS FETCH is supported
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the AMD IBS FETCH is supported])
+
+IBS_FETCH_PATH="/sys/bus/event_source/devices/ibs_fetch/type"
+IBS_FETCH_AVAIL=no
+
+if test -f $IBS_FETCH_PATH; then
+  IBS_FETCH_AVAIL=yes
+fi
+
+AC_MSG_RESULT([$IBS_FETCH_AVAIL])
+
+AM_CONDITIONAL([OPT_IBS_FETCH], [test "$IBS_FETCH_AVAIL" = yes])
+
+
+#-------------------------------------------------
+# perf event: existence of perf mem data src
+#-------------------------------------------------
+
+AC_MSG_CHECKING([if the kernel supports perf_mem_data_src])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <linux/perf_event.h>
+
+static union perf_mem_data_src d;
+int check_kernel()
+{
+  return d.mem_lvl;
+}
+]])], [perf_mem_data_src=yes], [perf_mem_data_src=no])
+
+AC_MSG_RESULT([$perf_mem_data_src])
+
+AM_CONDITIONAL([OPT_PERF_MEM_DATA_SRC], [test "$perf_mem_data_src" = yes])
+
+
 
 #-------------------------------------------------
 # Test consistency of papi and perfmon
@@ -4577,10 +4635,10 @@ AC_MSG_NOTICE([  hpcprof-mpi:  ${prof_mpi_avail}])
 AC_MSG_NOTICE([  unwinder:     ${unwinder_mesg}])
 AC_MSG_NOTICE([  mpi wrapper?: ${enable_mpi_wrapper}])
 AC_MSG_NOTICE([  hpcrun/lush?: ${opt_enable_lush}])
-AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
+AC_MSG_NOTICE([  datacentric-trace?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])

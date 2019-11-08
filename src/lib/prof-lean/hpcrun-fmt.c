@@ -467,6 +467,10 @@ hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric
   else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
     return metric.r;
   }
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Address) {
+    double *pointer_double = (double*)metric.p;
+    return *pointer_double;
+  }
   // TODO: default value
   return metric.r;
 }
@@ -481,6 +485,11 @@ hpcrun_fmt_metric_set_value(metric_desc_t metric_desc,
   } 
   else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Real) {
     metric->r = value;
+  }
+  else if (metric_desc.flags.fields.valFmt == MetricFlags_ValFmt_Address) {
+    // conversion yuck
+    double *ptr_double = (double*) &value;
+    metric->p = *(void**) ptr_double;
   }
 }
 
@@ -609,10 +618,13 @@ hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc)
 // cct
 //***************************************************************************
 
- int
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
+int
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs)
 {
+  if (fmtVersion >= HPCRUN_FMT_Version_21)
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->node_type, fs));
+
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id_parent, fs));
 
@@ -632,7 +644,6 @@ hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
   for (int i = 0; i < x->num_metrics; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->metrics[i].bits, fs));
   }
-  
   return HPCFMT_OK;
 }
 
@@ -641,6 +652,8 @@ int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs)
 {
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->node_type, fs));
+
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->id_parent, fs));
 
@@ -663,15 +676,14 @@ hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 }
 
 
+
 int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre)
 {
-  // N.B.: convert 'id' and 'id_parent' to ints so leaf flag
-  // (negative) is apparent
-  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) ",
-	  pre, (int)x->id, (int)x->id_parent);
+  fprintf(fs, "%s[node: (id: %d) (id-parent: %d) (type: %d) ",
+	  pre, (int)x->id, (int)x->id_parent, x->node_type);
 
   if (flags.fields.isLogicalUnwind) {
     char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
@@ -697,13 +709,16 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
     }
 
     switch (mflags.fields.valFmt) {
-      default:
-      case MetricFlags_ValFmt_Int:
-	fprintf(fs, " %"PRIu64, x->metrics[i].i);
-	break;
-      case MetricFlags_ValFmt_Real:
-	fprintf(fs, " %g", x->metrics[i].r);
-	break;
+    default:
+    case MetricFlags_ValFmt_Int:
+      fprintf(fs, " %"PRIu64, x->metrics[i].i);
+      break;
+    case MetricFlags_ValFmt_Real:
+      fprintf(fs, " %g", x->metrics[i].r);
+      break;
+    case MetricFlags_ValFmt_Address:
+      fprintf(fs, " %p", x->metrics[i].p);
+      break;
     }
 
     if (i + 1 < x->num_metrics) {

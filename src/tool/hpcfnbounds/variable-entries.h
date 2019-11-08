@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
+// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcvarbounds/function-entries.cpp $
+// $Id: function-entries.cpp 4099 2013-02-10 20:13:32Z krentel $
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2017, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,52 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/* -*-C-*- */
+#ifndef SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
+#define SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_
 
-/****************************************************************************
-//
-// File: 
-//    events.h
-//
-// Purpose:
-//    Supported events for profiling.
-//
-// Description:
-//    [The set of functions, macros, etc. defined in the file]
-//
-// Author:
-//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
-//
-//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
-//    (events.h).
-//    
-*****************************************************************************/
+#include <string>
 
-#ifndef _event_h
-#define _event_h
+using namespace std;
 
-typedef struct papi_event {
-  int code;                 /* PAPI event code */
-  const char *name;         /* PAPI event name */
-  const char *description;  /* Event description */
-} papi_event_t;
+void variable_entries_reinit(void);
 
+void dump_variables();
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void add_variable_entry(void *addr, long size, const string *comment, bool isvisible);
 
-  extern papi_event_t hpcrun_event_table[];
-  
-  const papi_event_t *hpcrun_event_by_name(const char *name);
-  const papi_event_t *hpcrun_event_by_code(int code);
-  
-  void hpcrun_write_wrapped_event_list(FILE* fs, const papi_event_t* e);
-  void hpcrun_write_event(FILE* fs, const papi_event_t* e);
+long num_variable_entries(void);
 
-#ifdef __cplusplus
-}
-#endif
-
-
-#endif
+#endif /* SRC_TOOL_HPCFNBOUNDS_VARIABLE_ENTRIES_H_ */

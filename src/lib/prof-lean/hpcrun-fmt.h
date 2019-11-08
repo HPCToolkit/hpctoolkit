@@ -111,7 +111,7 @@ static const char HPCPROF_TmpFnmSfx[] = "tmp";
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "02.00";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "02.10";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -120,6 +120,9 @@ static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
 // currently supported versions
+static const double HPCRUN_FMT_Version_21 = 2.1;
+
+// supported old versions
 static const double HPCRUN_FMT_Version_20 = 2.0;
 
 
@@ -250,6 +253,7 @@ typedef enum {
   MetricFlags_ValFmt_NULL = 0,
   MetricFlags_ValFmt_Int,
   MetricFlags_ValFmt_Real,
+  MetricFlags_ValFmt_Address
 
 } MetricFlags_ValFmt_t;
 
@@ -508,6 +512,22 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
+// ---------------------------------
+// hpcrun node types
+// ---------------------------------
+#define NODE_TYPE_REGULAR             0
+#define NODE_TYPE_LEAF                1
+
+// variable types: dynamic, static or unknown
+#define NODE_TYPE_ALLOCATION          2
+#define NODE_TYPE_GLOBAL_VARIABLE     4
+#define NODE_TYPE_UNKNOWN_ATTRIBUTE   8
+
+// cct node type: memory access, or artificial tree root
+#define NODE_TYPE_ROOT               16
+#define NODE_TYPE_MEMACCESS          32
+
+
 #define HPCRUN_FMT_LMId_NULL (0)
 
 #define HPCRUN_FMT_LMIp_NULL  (0)
@@ -517,7 +537,10 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
 
 
+
 typedef struct hpcrun_fmt_cct_node_t {
+
+  uint32_t node_type; // see hpcrun node type above
 
   // id and parent id.  0 is reserved as a NULL value
   uint32_t id;
@@ -552,7 +575,7 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 
 // N.B.: assumes space for metrics has been allocated
 extern int
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs);
 
 extern int
@@ -564,6 +587,51 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
 
+
+// --------------------------------------------------------------
+// Node types inquiries
+// the get methods are used by both hpcrun and hpcprof
+// the set methods only used by hpcrun, and defined in hpcrun/cct/cct.c
+// --------------------------------------------------------------
+
+// check if the node is supposed to be a root
+static inline bool
+hpcrun_fmt_node_type_root(uint16_t type)
+{
+  return (type & NODE_TYPE_ROOT) == NODE_TYPE_ROOT;
+}
+
+// check if the node is memory allocation node
+// (PF to malloc, calloc, ...etc)
+static inline bool
+hpcrun_fmt_node_type_allocation(uint16_t type)
+{
+  return (type & NODE_TYPE_ALLOCATION) == NODE_TYPE_ALLOCATION;
+}
+
+//
+// check if the node is a memory access node
+// which  means the node has access to the memory hierarchy
+
+static inline bool
+hpcrun_fmt_node_type_memaccess(uint16_t type)
+{
+  return (type & NODE_TYPE_MEMACCESS) == NODE_TYPE_MEMACCESS;
+}
+
+
+// check if the node is a global variable node
+static inline bool
+hpcrun_fmt_node_type_variable(uint16_t type)
+{
+  return (type & NODE_TYPE_GLOBAL_VARIABLE) == NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+static inline bool
+hpcrun_fmt_node_type_unknown(uint16_t type)
+{
+  return (type & NODE_TYPE_UNKNOWN_ATTRIBUTE) == NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
 
 // --------------------------------------------------------------------------
 // 
@@ -730,15 +798,6 @@ hpcmetricDB_fmt_hdr_fwrite(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 
 int
 hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
-
-// --------------------------------------------------------------------------
-// additional sampling info
-// --------------------------------------------------------------------------
-
-typedef struct sampling_info_s {
-  uint64_t  sample_clock;
-  void     *sample_data;
-} sampling_info_t;
 
 
 //***************************************************************************

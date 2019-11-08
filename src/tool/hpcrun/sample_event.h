@@ -52,6 +52,8 @@
 
 #include "cct.h"
 #include "thread_data.h"
+#include "cct_insert_backtrace.h"
+
 #include <trampoline/common/trampoline.h>
 #include <unwind/common/backtrace.h>
 #include <messages/messages.h>
@@ -103,6 +105,21 @@ hpcrun_sample_val_init(sample_val_t* x)
   x->sample_node = 0;
   x->trace_node = 0;
 }
+
+// --------------------------------------------------------------------------
+// additional sampling info
+// --------------------------------------------------------------------------
+
+#define SAMPLING_NO_TRACES    1
+#define SAMPLING_FIRST_TOUCH  2
+#define SAMPLING_DATA_NODE    4
+
+typedef struct sampling_info_s {
+  uint64_t  flags;        // see the above constants SAMPLING_*
+
+  uint64_t  sample_clock; // time can be used for tracing
+  struct cct_custom_update_s sample_custom_cct; 
+} sampling_info_t;
 
 
 extern sample_val_t hpcrun_sample_callpath(void *context, int metricId, 

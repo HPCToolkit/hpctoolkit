@@ -89,4 +89,16 @@ extern const char* HPCRUN_EVENT_LIST;
 extern const char* HPCRUN_MEMSIZE;
 extern const char* HPCRUN_LOW_MEMSIZE;
 
+extern const char* EVNAME_DATACENTRIC;
+
+
+/***
+ * Check if datacentric event is enabled
+ * Return 1 (true) if this is the case
+ *        0 (false) if not
+ */
+int
+datacentric_is_enabled();
+
+
 #endif /* hpcrun_env_h */

@@ -254,7 +254,7 @@ public:
   void
   ddump() const;
 
-public:
+
 
 private:
   bool

@@ -110,6 +110,8 @@ const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
   ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyRef).c_str(), ANode::TyRef),
   ANodeFilter(HasANodeTy,
+        ANode::ANodeTyToName(ANode::TyVariable).c_str(), ANode::TyVariable),
+  ANodeFilter(HasANodeTy,
 	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };
 

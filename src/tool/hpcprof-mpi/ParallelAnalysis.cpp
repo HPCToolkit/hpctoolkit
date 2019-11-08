@@ -88,6 +88,7 @@ using std::string;
 //*************************** Forward Declarations **************************
 
 #define DBG_CCT_MERGE 0
+#define DBG_PARALLEL_ANALYSIS 0
 
 //***************************************************************************
 
@@ -148,6 +149,7 @@ broadcast
     buf = (uint8_t *)malloc(size * sizeof(uint8_t));
   }
 
+  DIAG_DevMsgIf(DBG_PARALLEL_ANALYSIS, myRank << ": broadcast " << size << " bytes" << std::endl);
   MPI_Bcast(buf, size, MPI_BYTE, 0, comm);
 
   if (myRank != 0) {

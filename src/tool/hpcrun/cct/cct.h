@@ -91,6 +91,8 @@
 
 #include "cct_addr.h"
 
+//*************************** Macros ****************************
+
 //
 // Readability Macros (to facilitate coding initialization operations)
 //
@@ -274,5 +276,43 @@ typedef void (*merge_op_t)(cct_node_t* a, cct_node_t*b, merge_op_arg_t arg);
 
 extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 			     merge_op_t merge, merge_op_arg_t arg);
+
+
+cct_node_t*
+hpcrun_insert_special_node(cct_node_t *root, void *addr);
+
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
+
+
+
+
+// --------------------------------------------------------------
+// Node types get and set
+// --------------------------------------------------------------
+
+uint32_t
+hpcrun_cct_get_node_type(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_memaccess(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_memaccess_root(cct_node_t *root);
+
+void
+hpcrun_cct_set_node_root(cct_node_t *root);
+
+void
+hpcrun_cct_set_node_variable(cct_node_t *node);
+
+void
+hpcrun_cct_set_node_unknown_attribute(cct_node_t *root);
+
+void
+hpcrun_cct_link_source_memaccess(cct_node_t *node, cct_node_t *source);
 
 #endif // cct_h

@@ -87,7 +87,11 @@
 #include "cct_addr.h"
 #include "cct2metrics.h"
 
+//***************************** macros **********
+
+
 //***************************** concrete data structure definition **********
+
 
 struct cct_node_t {
 
@@ -100,11 +104,11 @@ struct cct_node_t {
   // ---------------------------------------------------------
   int32_t persistent_id;
   
- // bundle abstract address components into a data type
-  cct_addr_t addr;
+  // the value of node_type is defined in lib/prof-lean/hpcrun-fmt.h
+  uint32_t node_type;
 
-  bool is_leaf;
-  
+  cct_addr_t addr; // bundle abstract address components into a data type
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -159,9 +163,11 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
 
   memset(node, 0, sz);
 
-  node->addr.as_info = addr->as_info; // LUSH
-  node->addr.ip_norm = addr->ip_norm;
-  node->addr.lip = addr->lip;         // LUSH
+  if (addr != NULL) {
+    node->addr.as_info = addr->as_info; // LUSH
+    node->addr.ip_norm = addr->ip_norm;
+    node->addr.lip     = addr->lip;     // LUSH
+  }
 
   node->persistent_id = new_persistent_id();
 
@@ -170,7 +176,9 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->left = NULL;
   node->right = NULL;
 
-  node->is_leaf = false;
+  // by default it's a regular node.
+  // for other type of nodes, we need to assign it manually
+  node->node_type = NODE_TYPE_REGULAR;
 
   return node;
 }
@@ -291,7 +299,16 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
+  tmp->node_type = node->node_type;
+
+  // -------------------------
+  // metrics
+  // -------------------------
   tmp->num_metrics = my_arg->num_metrics;
+
+  // -------------------------
+  // write to IO
+  // -------------------------
   metric_set_t* ms = hpcrun_get_metric_set_specific(&(my_arg->cct2metrics_map), node);
 
   hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
@@ -355,11 +372,6 @@ hpcrun_cct_addr(cct_node_t* node)
   return node ? &(node->addr) : NULL;
 }
 
-bool
-hpcrun_cct_is_leaf(cct_node_t* node)
-{
-  return node ? (node->is_leaf) || (!(node->children)) : false;
-}
 
 //
 // NOTE: having no children is not exactly the same as being a leaf
@@ -430,6 +442,9 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
   return new;
 }
 
+//***************************************************************************
+// node type interface
+//***************************************************************************
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path
@@ -437,9 +452,75 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
 void
 hpcrun_cct_terminate_path(cct_node_t* node)
 {
-  node->is_leaf = true;
+  node->node_type |= NODE_TYPE_LEAF;
 }
 
+
+uint32_t
+hpcrun_cct_get_node_type(cct_node_t *node)
+{
+  return node->node_type;
+}
+
+bool
+hpcrun_cct_is_leaf(cct_node_t *node)
+{
+  if (node) {
+    bool leaf_type = (node->node_type & NODE_TYPE_LEAF) == NODE_TYPE_LEAF;
+    return leaf_type || (!node->children);
+  }
+  return false;
+}
+
+void
+hpcrun_cct_set_node_allocation(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_ALLOCATION;
+}
+
+void
+hpcrun_cct_set_node_variable(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_GLOBAL_VARIABLE;
+}
+
+//
+// mark the node as the node that has access to the memory
+// this node type is used by data-centric profiling
+void
+hpcrun_cct_set_node_memaccess(cct_node_t *node)
+{
+  node->node_type |= NODE_TYPE_MEMACCESS;
+}
+
+
+// mark that the node is supposed to be a root
+// theoretically, a root has no parent, but to make it easy
+// we need a fake root and hang it to the invisible parent
+void
+hpcrun_cct_set_node_memaccess_root(cct_node_t *root)
+{
+  hpcrun_cct_set_node_memaccess(root);
+  hpcrun_cct_set_node_root(root);
+}
+
+// mark that the node is supposed to be a root
+// theoretically, a root has no parent, but to make it easy
+// we need a fake root and hang it to the invisible parent
+void
+hpcrun_cct_set_node_root(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_ROOT;
+}
+
+void
+hpcrun_cct_set_node_unknown_attribute(cct_node_t *root)
+{
+  root->node_type |= NODE_TYPE_UNKNOWN_ATTRIBUTE;
+}
+
+
+//***************************************************************************
 //
 // Special purpose mutator:
 // This operation is somewhat akin to concatenation.
@@ -448,6 +529,7 @@ hpcrun_cct_terminate_path(cct_node_t* node)
 // cct is ASSUMED TO BE DIFFERENT FROM ANY ADDR IN target's
 // child set. [Otherwise something recursive has to happen]
 //
+//***************************************************************************
 //
 cct_node_t*
 hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
@@ -771,3 +853,26 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
   }
   target->children = src;
 }
+
+
+cct_node_t*
+hpcrun_insert_special_node(cct_node_t *root, void *addr)
+{
+  ip_normalized_t tmp_ip = hpcrun_normalize_ip(addr, NULL);
+  // plus 1 make sure lm_ip points to the correct callsite
+  cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip+1);
+  return hpcrun_cct_insert_addr(root, &tmp);
+}
+
+
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root)
+{
+  if(!path || ! path->parent) return root;
+  root = hpcrun_cct_insert_path_return_leaf(path->parent, root);
+
+  return hpcrun_cct_insert_addr(root, &(path->addr));
+}
+
+
+

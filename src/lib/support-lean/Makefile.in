@@ -141,6 +141,7 @@ libHPCsupport_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCsupport_lean_la-timer.lo \
 	libHPCsupport_lean_la-OSUtil.lo \
 	libHPCsupport_lean_la-compress_lzma.lo \
+	libHPCsupport_lean_la-datacentric_config.lo \
 	libHPCsupport_lean_la-demangle.lo
 am_libHPCsupport_lean_la_OBJECTS = $(am__objects_1)
 libHPCsupport_lean_la_OBJECTS = $(am_libHPCsupport_lean_la_OBJECTS)
@@ -497,6 +498,7 @@ MYSOURCES = \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c \
 	compress_lzma.c  \
+	datacentric_config.c \
 	demangle.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) -I$(LZMA_INC)
@@ -579,6 +581,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-OSUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-compress_lzma.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-datacentric_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-demangle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_lean_la-timer.Plo@am__quote@
 
@@ -623,6 +626,13 @@ libHPCsupport_lean_la-compress_lzma.lo: compress_lzma.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='compress_lzma.c' object='libHPCsupport_lean_la-compress_lzma.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-compress_lzma.lo `test -f 'compress_lzma.c' || echo '$(srcdir)/'`compress_lzma.c
+
+libHPCsupport_lean_la-datacentric_config.lo: datacentric_config.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-datacentric_config.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-datacentric_config.Tpo -c -o libHPCsupport_lean_la-datacentric_config.lo `test -f 'datacentric_config.c' || echo '$(srcdir)/'`datacentric_config.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCsupport_lean_la-datacentric_config.Tpo $(DEPDIR)/libHPCsupport_lean_la-datacentric_config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='datacentric_config.c' object='libHPCsupport_lean_la-datacentric_config.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_lean_la-datacentric_config.lo `test -f 'datacentric_config.c' || echo '$(srcdir)/'`datacentric_config.c
 
 libHPCsupport_lean_la-demangle.lo: demangle.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_lean_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_lean_la-demangle.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_lean_la-demangle.Tpo -c -o libHPCsupport_lean_la-demangle.lo `test -f 'demangle.c' || echo '$(srcdir)/'`demangle.c

@@ -64,6 +64,7 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <unistd.h>
+#include <cstring>   // strcmp
 
 //*****************************************************************************
 // local includes
@@ -73,11 +74,13 @@
 #include "eh-frames.h"
 #include "process-ranges.h"
 #include "function-entries.h"
+#include "variable-entries.h"
 #include "sections.h"
 #include "server.h"
 #include "syserv-mesg.h"
+
 #include "Symtab.h"
-#include "Symbol.h"
+#include "lib/support-lean/datacentric_config.h"
 
 using namespace std;
 using namespace Dyninst;
@@ -125,7 +128,7 @@ main(int argc, char* argv[])
 {
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char *object_file;
-  int n, fdin, fdout;
+  int n, fdin, fdout, query = SYSERV_QUERY;
 
   for (n = 1; n < argc; n++) {
     if (strcmp(argv[n], "-c") == 0) {
@@ -136,6 +139,10 @@ main(int argc, char* argv[])
     }
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
+    }
+    else if (strcmp(argv[n], "-m") == 0) {
+      // datacentric usage to query static variables
+      query = SYSERV_QUERY_VAR;
     }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
@@ -152,6 +159,10 @@ main(int argc, char* argv[])
     }
     else if (strcmp(argv[n], "-v") == 0) {
       verbose = true;
+    }
+    else if (strcmp(argv[n], "-x") == 0) {
+      // datacentric usage to NOT query static variables
+      query = SYSERV_QUERY_VAR_NIL;
     }
     else if (strcmp(argv[n], "--") == 0) {
       n++;
@@ -180,7 +191,7 @@ main(int argc, char* argv[])
 
   setup_segv_handler();
   if ( ! setjmp(segv_recover) ) {
-    dump_file_info(object_file, fn_discovery);
+    dump_file_info(object_file, fn_discovery, query);
   }
   else {
     fprintf(stderr,
@@ -238,9 +249,11 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
+    "\t-m send data-centric information\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
     "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
+    "\t-x\tnot to send data-centric information\n\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
@@ -356,7 +369,8 @@ note_code_ranges(Symtab *syms, DiscoverFnTy fn_discovery)
 
 
 static void 
-dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy fn_discovery)
+dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+    DiscoverFnTy fn_discovery)
 {
   note_code_ranges(syms, fn_discovery);
 
@@ -370,10 +384,11 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
     Symbol *s = symvec[i];
     Symbol::SymbolLinkage sl = s->getLinkage();
     if (report_symbol(s) && s->getOffset() != 0) {
-      string mname = s->getMangledName();
+      string mname   = s->getMangledName();
+      bool invisible = (sl & Symbol::SL_GLOBAL) || (sl & Symbol::SL_WEAK);
+
       add_function_entry((void *) s->getOffset(), &mname,
-			 ((sl & Symbol::SL_GLOBAL) ||
-			  (sl & Symbol::SL_WEAK)));
+			 invisible, 0);
     }
   }
 
@@ -387,22 +402,52 @@ dump_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec, DiscoverFnTy 
   dump_reachable_functions();
 }
 
+// dump static variable of a load module and send to the client
+// temporarily, it's tightly coupled with datacentric.
+// we only send variables if the size is bigger than datacentric_min_bytes
 
 static void 
-dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
-		  DiscoverFnTy fn_discovery)
+dump_symbols_var(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+    DiscoverFnTy fn_discovery)
 {
-  if (c_mode()) {
-    printf("unsigned long hpcrun_nm_addrs[] = {\n");
+  for (unsigned int i = 0; i < symvec.size(); i++) {
+    Symbol *s = symvec[i];
+    if (s->getOffset() != 0) {
+
+      void *addr = (void*)s->getOffset();
+      long size  = s->getSize();
+      string comment = s->getMangledName();
+
+      if (size >= env_get_datacentric_min_bytes())
+        add_variable_entry(addr, size, &comment, true);
+    }
   }
 
-  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+  //-----------------------------------------------------------------
+  // dump the address and comment for each function
+  //-----------------------------------------------------------------
+  dump_variables();
+}
+
+static void
+dump_var_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+		 DiscoverFnTy fn_discovery, int query)
+{
+  if (c_mode()) {
+    printf("unsigned long hpcrun_data_addrs[] = {\n");
+  }
+
+  // for SYSERV_QUERY_VAR_NIL: empty value for hpcrun_data_addrs
+  // only SYSERV_QUERY_VAR will send the list of variable
+  if (query == SYSERV_QUERY_VAR)
+    dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
 
   if (c_mode()) {
     printf("\n};\n");
+    printf("unsigned long hpcrun_data_addrs_len = "
+	   "sizeof(hpcrun_data_addrs) / sizeof(hpcrun_data_addrs[0]);\n");
   }
 }
-
 
 // We call it "header", even though it comes at end of file.
 //
@@ -416,18 +461,35 @@ dump_header_info(int is_relocatable, uintptr_t ref_offset)
 
   if (c_mode()) {
     printf("unsigned long hpcrun_nm_addrs_len = "
-	   "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n"
-	   "unsigned long hpcrun_reference_offset = 0x%" PRIxPTR ";\n"
-	   "int hpcrun_is_relocatable = %d;\n",
-	   ref_offset, is_relocatable);
+     "sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n"
+     "unsigned long hpcrun_reference_offset = 0x%" PRIxPTR ";\n"
+     "int hpcrun_is_relocatable = %d;\n",
+     ref_offset, is_relocatable);
     return;
   }
 
   // default is text mode
   printf("num symbols = %ld, reference offset = 0x%" PRIxPTR ", "
-	 "relocatable = %d\n",
-	 num_function_entries(), ref_offset, is_relocatable);
+   "relocatable = %d\n",
+   num_function_entries(), ref_offset, is_relocatable);
 }
+
+static void
+dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
+		  DiscoverFnTy fn_discovery, int query)
+{
+  if (c_mode()) {
+    printf("unsigned long hpcrun_nm_addrs[] = {\n");
+  }
+
+  if (query == SYSERV_QUERY)
+    dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+
+  if (c_mode()) {
+    printf("\n};\n");
+  }
+}
+
 
 
 static void
@@ -443,7 +505,7 @@ assert_file_is_readable(const char *filename)
 
 
 void 
-dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
+dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
 {
   Symtab *syms;
   string sfile(filename);
@@ -490,7 +552,16 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   }
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
-  syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+  switch (query) {
+  case SYSERV_QUERY:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+    break;
+  case SYSERV_QUERY_VAR:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
+    break;
+  default:
+    syms->getAllSymbolsByType(symvec, Symbol::ST_UNKNOWN);
+  }
 
 #ifdef __PPC64__
   {
@@ -519,13 +590,19 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
       fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
     }
 
-    dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery);
+    if (query == SYSERV_QUERY)
+      dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
+
+    if (query == SYSERV_QUERY_VAR || query == SYSERV_QUERY_VAR_NIL)
+      dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
+
     close(dwarf_fd);
 
     relocatable = syms->isExec() ? 0 : 1;
     image_offset = syms->imageOffset();
   }
-  dump_header_info(relocatable, image_offset);
+  if (query == SYSERV_QUERY)
+    dump_header_info(relocatable, image_offset);
 
   //-----------------------------------------------------------------
   // free as many of the Symtab objects as we can

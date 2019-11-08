@@ -87,6 +87,7 @@
 #include <lib/support/StringTable.hpp>
 #include <lib/support/dictionary.h>
 
+#include <lib/support-lean/datacentric_config.h>
 #include <boost/atomic.hpp>
 
 #include <CFG.h>
@@ -184,6 +185,9 @@ doWorkItem(WorkItem *, string &, bool, bool);
 
 static void
 makeWorkList(FileMap *, WorkList &, WorkList &);
+
+static void
+makeVariables(ostream * outFile);
 
 static void
 printWorkList(WorkList &, uint &, ostream *, ostream *, string &);
@@ -662,6 +666,8 @@ makeStructure(string filename,
 
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
+    makeVariables(outFile);
+
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
     firstprivate(outFile, gapsFile, search_path, gaps_filenm, cuda_file)
@@ -1047,7 +1053,38 @@ addProc(FileMap * fileMap, ProcInfo * pinfo, string & filenm,
 #endif
 }
 
+
 //----------------------------------------------------------------------
+// output the list of static variable in the current module
+// if the size of the variable is bigger than env_get_datacentric_min_bytes()
+//  we are not interested to output small size variables
+static void
+makeVariables(ostream * outFile)
+{
+  FileInfo file(unknown_file);
+
+  Output::printFileBegin(outFile, &file);
+
+  std::vector<Symbol*> symvec;
+
+  the_symtab->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);
+
+  for (unsigned int i=0; i<symvec.size(); i++) {
+    Symbol *s = symvec[i];
+    if (s->getOffset() == 0 || s->getSize()< (unsigned int)env_get_datacentric_min_bytes())
+      continue;
+
+    VariableInfo vinfo;
+    vinfo.line_num   = 0;
+    vinfo.prettyName = s->getPrettyName();
+    vinfo.entry_vma  = s->getOffset();
+    vinfo.num_bytes  = s->getSize();
+
+    Output::printVariable(outFile, NULL, vinfo);
+  }
+
+  Output::printFileEnd(outFile, &file);
+}
 
 // getFuncNames -- helper for makeSkeleton() to select the pretty
 // (demangled) and link (mangled) names for a SymtabAPI::Function.
@@ -1087,7 +1124,6 @@ getFuncNames(SymtabAPI::Function * sym_func, string & prettynm, string & linknm)
 }
 
 //----------------------------------------------------------------------
-
 // makeSkeleton -- the new buildLMSkeleton
 //
 // In the ParseAPI version, we iterate over the ParseAPI list of

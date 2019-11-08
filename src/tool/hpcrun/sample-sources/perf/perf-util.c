@@ -55,6 +55,8 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <hpcrun/utilities/tokenize.h>
+
 #include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>
@@ -62,6 +64,17 @@
 #include "perf_skid.h"
 
 
+#define HPCRUN_OPTION_PERF_COUNT "HPCRUN_PERF_COUNT"
+
+// default the number of samples per second
+// linux perf tool has default of 4000. It looks very high but
+// visually the overhead is still small for them.
+// however, for some machines, the overhead is significant, and
+//  somehow it causes the kernel to adjust the period threshold to
+//  less than 100.
+// 300 samples per sec looks has relatively similar percentage
+// with perf tool
+#define DEFAULT_THRESHOLD  300
 #define MAX_BUFFER_LINUX_KERNEL 128
 
 
@@ -85,6 +98,8 @@ static uint16_t perf_kernel_lm_id = 0;
 
 static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 
+static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
+
 
 //******************************************************************************
 // forward declaration
@@ -96,7 +111,7 @@ static enum perf_ksym_e ksym_status = PERF_UNDEFINED;
 // implementation
 //******************************************************************************
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+#if KERNEL_SAMPLING_ENABLED
 
 static spinlock_t perf_lock = SPINLOCK_UNLOCKED;
 
@@ -175,6 +190,8 @@ perf_util_get_kptr_restrict()
   return privilege;
 }
 
+
+
 static uint16_t 
 perf_get_kernel_lm_id() 
 {
@@ -202,97 +219,7 @@ perf_get_kernel_lm_id()
   }
   return perf_kernel_lm_id;
 }
-#endif
 
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
-
-//----------------------------------------------------------
-// extend a user-mode callchain with kernel frames (if any)
-//----------------------------------------------------------
-static cct_node_t *
-perf_add_kernel_callchain(
-  cct_node_t *leaf, 
-  void *data_aux
-)
-{
-  cct_node_t *parent = leaf;
-  
-  if (data_aux == NULL)  {
-    return parent;
-  }
-
-  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
-  if (data->nr > 0) {
-    uint16_t kernel_lm_id = perf_get_kernel_lm_id();
-
-    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44 
-    // if no kernel symbols are available, collapse the kernel call
-    // chain into a single node
-    if (perf_util_get_kptr_restrict() != 0) {
-      return perf_insert_cct(kernel_lm_id, parent, 0);
-    }
-
-    // add kernel IPs to the call chain top down, which is the 
-    // reverse of the order in which they appear in ips[]
-    for (int i = data->nr - 1; i > 0; i--) {
-      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
-    }
-
-    // check ip[0] before adding as it often seems seems to be anomalous
-    if (data->ips[0] != anomalous_ip) {
-      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[0]);
-    }
-  }
-  return parent;
-}
-
-#endif
-
-
-//----------------------------------------------------------
-// predicates that test perf availability
-//----------------------------------------------------------
-
-int
-perf_util_get_paranoid_level()
-{
-  FILE *pe_paranoid = fopen(LINUX_PERF_EVENTS_FILE, "r");
-  int level         = 3; // default : no access to perf event
-
-  if (pe_paranoid != NULL) {
-    fscanf(pe_paranoid, "%d", &level) ;
-  }
-  if (pe_paranoid)
-    fclose(pe_paranoid);
-
-  return level;
-}
-
-
-//----------------------------------------------------------
-// returns the maximum sample rate of this node
-// based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
-//----------------------------------------------------------
-int
-perf_util_get_max_sample_rate()
-{
-  static int initialized = 0;
-  static int max_sample_rate  = HPCRUN_DEFAULT_SAMPLE_RATE; // unless otherwise limited
-  if (!initialized) {
-    FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
-
-    if (perf_rate_file != NULL) {
-      fscanf(perf_rate_file, "%d", &max_sample_rate);
-      fclose(perf_rate_file);
-    }
-    initialized = 1;
-  }
-  return max_sample_rate;
-}
-
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
 //----------------------------------------------------------
 // testing perf availability
 //----------------------------------------------------------
@@ -315,6 +242,56 @@ perf_util_kernel_syms_avail()
 #endif
 
 
+
+//----------------------------------------------------------
+// returns the maximum sample rate of this node
+// based on info provided by LINUX_PERF_EVENTS_MAX_RATE file
+//----------------------------------------------------------
+static int
+perf_util_get_max_sample_rate()
+{
+  static int initialized = 0;
+  static int max_sample_rate  = HPCRUN_DEFAULT_SAMPLE_RATE; // unless otherwise limited
+  if (!initialized) {
+    FILE *perf_rate_file = fopen(LINUX_PERF_EVENTS_MAX_RATE, "r");
+
+    if (perf_rate_file != NULL) {
+      fscanf(perf_rate_file, "%d", &max_sample_rate);
+      fclose(perf_rate_file);
+    }
+    initialized = 1;
+  }
+  return max_sample_rate;
+}
+
+
+/***
+ * (1) ensure that the default rate for frequency-based sampling is below the maximum.
+ * (2) if the environment variable HPCRUN_PERF_COUNT is set, use it to set the threshold
+ */
+static void
+set_default_threshold()
+{
+  static int initialized = 0;
+
+  if (!initialized) {
+    int max_rate_m1 = perf_util_get_max_sample_rate() - 1;
+    if (default_threshold.threshold_num > max_rate_m1) {
+      default_threshold.threshold_num = max_rate_m1;
+    }
+    const char *val_str = getenv("HPCRUN_PERF_COUNT");
+    if (val_str != NULL) {
+      TMSG(LINUX_PERF, "HPCRUN_PERF_COUNT = %s", val_str);
+      int res = hpcrun_extract_threshold(val_str, &default_threshold.threshold_num, max_rate_m1);
+      if (res == 1) {
+        default_threshold.threshold_type = PERIOD;
+      }
+    }
+    initialized = 1;
+  }
+  TMSG(LINUX_PERF, "default threshold = %d", default_threshold.threshold_num);
+}
+
 /*************************************************************
  * Interface API
  **************************************************************/ 
@@ -325,6 +302,8 @@ perf_util_kernel_syms_avail()
 void
 perf_util_init()
 {
+  set_default_threshold();
+
   // perf_kernel_lm_id must be set for each process. here, we clear it 
   // because it is too early to allocate a load module. it will be set 
   // later, exactly once per process if ksym_status == PERF_AVAILABLE.
@@ -340,12 +319,11 @@ perf_util_init()
   // 2. paranoid_level < 2    (zero or one)
   // 3. linux version  > 3.7
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+#if KERNEL_SAMPLING_ENABLED
   int level     = perf_util_kernel_syms_avail();
   int krestrict = perf_util_get_kptr_restrict();
 
   if (krestrict == 0 && (level == 0 || level == 1)) {
-    hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
     ksym_status = PERF_AVAILABLE;
   }
 #endif
@@ -364,6 +342,109 @@ perf_util_is_ksym_available()
 }
 
 
+
+void
+perf_util_get_default_threshold(struct event_threshold_s *threshold)
+{
+  threshold->threshold_num  = default_threshold.threshold_num;
+  threshold->threshold_type = default_threshold.threshold_type;
+}
+
+//----------------------------------------------------------
+// if the kernel provides precise ip information, we should
+// create a new node based on this ip as a sibling of the current leaf.
+//
+// FIXME: this is not an ideal solution as they may have not the same
+//        parent or even the same function.
+//----------------------------------------------------------
+cct_node_t*
+perf_util_precise_ip(cct_node_t *leaf, void *data_aux)
+{
+  cct_node_t *sibling         = leaf;
+  perf_mmap_data_t *mmap_data = (perf_mmap_data_t*) data_aux;
+
+  // PEBS IP is not null, we will attribute the cost to the sibling or the child of the sample node
+  if (mmap_data->ip != 0 && leaf != NULL) {
+
+    cct_addr_t *addr = hpcrun_cct_addr(leaf);
+    if (addr->ip_norm.lm_ip == mmap_data->ip)
+      return sibling;
+
+    load_module_t* loadmap =
+    hpcrun_loadmap_findByAddr((void*)mmap_data->ip, (void*)mmap_data->ip);
+
+    if (loadmap != NULL) {
+      // Create a new node for precise IP
+      // The new node may have different parent than the sampled one, but since we lose
+      //   the information of context, we just assume it's okay to have it
+
+      cct_addr_t precise_addr;
+      memcpy(&precise_addr, addr, sizeof(cct_addr_t));
+
+      precise_addr.ip_norm.lm_ip = mmap_data->ip;
+      precise_addr.ip_norm.lm_id = loadmap->id;
+
+      // If precise ip load module is not the same as the load module in the signal context,
+      // the precise ip node is the child of the sampled one
+      // otherwise, we create it as a sibling (assuming it's in the same function).
+      // Statistically, when they are in the same module, the difference of addresses
+      //  is not big (around 5 to 8 bytes). 
+
+      if (loadmap->id == addr->ip_norm.lm_id) {
+        sibling = hpcrun_cct_insert_addr(hpcrun_cct_parent(leaf), &precise_addr);
+      } else {
+        sibling = hpcrun_cct_insert_addr(leaf, &precise_addr);
+      } 
+    }
+  }
+  return sibling;
+}
+
+
+#if KERNEL_SAMPLING_ENABLED
+//----------------------------------------------------------
+// extend a user-mode callchain with kernel frames (if any)
+//----------------------------------------------------------
+cct_node_t *
+perf_util_add_kernel_callchain(
+  cct_node_t *leaf,
+  void *data_aux
+)
+{
+  if (data_aux == NULL)  {
+    return leaf;
+  }
+
+  cct_node_t *parent     = perf_util_precise_ip(leaf, data_aux);
+  perf_mmap_data_t *data = (perf_mmap_data_t*) data_aux;
+
+  if (data->nr > 0) {
+    uint16_t kernel_lm_id = perf_get_kernel_lm_id();
+
+    // bug #44 https://github.com/HPCToolkit/hpctoolkit/issues/44
+    // if no kernel symbols are available, collapse the kernel call
+    // chain into a single node
+    if (perf_util_get_kptr_restrict() != 0) {
+      return perf_insert_cct(kernel_lm_id, parent, 0);
+    }
+
+    // add kernel IPs to the call chain top down, which is the
+    // reverse of the order in which they appear in ips[]
+    for (int i = data->nr - 1; i > 0; i--) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[i]);
+    }
+
+    // check ip[0] before adding as it often seems seems to be anomalous
+    if (data->ips[0] != anomalous_ip) {
+      parent = perf_insert_cct(kernel_lm_id, parent, data->ips[0]);
+    }
+  }
+  return parent;
+}
+#endif
+
+
+
 //----------------------------------------------------------
 // generic default initialization for event attributes
 // return true if the initialization is successful,
@@ -371,7 +452,7 @@ perf_util_is_ksym_available()
 //----------------------------------------------------------
 int
 perf_util_attr_init(
-  char *event_name,
+  const char *event_name,
   struct perf_event_attr *attr,
   bool usePeriod, u64 threshold,
   u64  sampletype
@@ -397,31 +478,34 @@ perf_util_attr_init(
     attr->sample_period = our_rate;
   }
 
-  attr->disabled       = 1;                 /* the counter will be enabled later  */
-  attr->wakeup_events  = 1;                 /* wake up every samples */
+  attr->disabled       = 1;    /* the counter will be enabled later  */
+  attr->wakeup_events  = 1;    /* wake up on every counter overflow  */
   attr->sample_type    = sample_type;
   attr->exclude_kernel = EXCLUDE;
   attr->exclude_hv     = EXCLUDE;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+#if KERNEL_SAMPLING_ENABLED
   attr->exclude_callchain_user   = EXCLUDE_CALLCHAIN;
   attr->exclude_callchain_kernel = EXCLUDE_CALLCHAIN;
 #endif
 
   if (perf_util_is_ksym_available()) {
     /* We have rights to record and interpret kernel callchains */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
+#if KERNEL_SAMPLING_ENABLED
     attr->sample_type             |= PERF_SAMPLE_CALLCHAIN;
     attr->exclude_callchain_kernel = INCLUDE_CALLCHAIN;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+    attr->sample_max_stack         = MAX_CALLCHAIN_FRAMES;
+#endif
 #endif
     attr->exclude_kernel           = INCLUDE;
   }
   
   char *name;
-  int precise_ip_type = perf_skid_parse_event(event_name, &name);
+  int precise_ip_type = precise_ip_type = perf_skid_parse_event(event_name, &name);
   free(name);
 
-  u64 precise_ip;
+  u64 precise_ip = 0;
 
   switch (precise_ip_type) {
     case PERF_EVENT_AUTODETECT_SKID: 
@@ -432,8 +516,6 @@ perf_util_attr_init(
 	    // check the HPCRUN_PRECISE_IP env variable
 	    precise_ip = perf_skid_get_precise_ip(attr);
 	    break;
-    default:
-            precise_ip = precise_ip_type;
   }
 
   attr->precise_ip    = precise_ip;

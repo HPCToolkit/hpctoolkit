@@ -78,7 +78,7 @@ event_custom_find(const char *name)
 
   // check if we already have the event
   SLIST_FOREACH(item, &list_events_head, entries) {
-	if (item != NULL &&	strcasecmp(item->event->name, name)==0)
+	if (item != NULL && strcasecmp(item->event->name, name)==0)
 	  return item->event;
   }
   return NULL;
@@ -105,21 +105,112 @@ event_custom_display(FILE *std)
   fprintf(std, "\n");
 }
 
+// --------------------------------------------------------------
+// Adding a new event on the head without checking if it already exists or not
+// --------------------------------------------------------------
 int
 event_custom_register(event_custom_t *event)
 {
   events_list_t item;
   item.event = event_custom_find(event->name);
-  if (item.event != NULL) return 0;
+  if (item.event != NULL)
+    return 0;
 
   events_list_t *list_item = (events_list_t *) hpcrun_malloc(sizeof(events_list_t));
   if (list_item == NULL)
-	return -1;
+    return -1;
 
   list_item->event = event;
 
   SLIST_INSERT_HEAD(&list_events_head, list_item, entries);
   return 1;
+}
+
+// --------------------------------------------------------------
+// Create a custom event
+// --------------------------------------------------------------
+/**
+ * create and register an event if the name is part of customized event
+ * returns the number of created events
+ * returns 0 if the name is not part of custom events
+ */
+int
+event_custom_create_event(sample_source_t *self, char *name)
+{
+  event_custom_t *event = event_custom_find(name);
+
+  if (event == NULL) {
+    return 0;
+  }
+
+  struct event_threshold_s default_threshold;
+  perf_util_get_default_threshold( &default_threshold );
+
+  return event->register_fn(self, event, &default_threshold);
+}
+
+event_accept_type_t
+event_custom_pre_handler(event_handler_arg_t *args)
+{
+  if (args == NULL || args->current == NULL)
+    return NOT_MY_EVENT;
+
+  events_list_t *item = NULL;
+
+  SLIST_FOREACH(item, &list_events_head, entries) {
+    if (item != NULL) {
+      // if the custom event is inclusive, we call the handler
+      //   even if this is not its event
+      // if the custom event is exclusive, we call the handler
+      //  iff the event is from the custom event
+
+      if (item->event->handle_type == INCLUSIVE &&
+          item->event->pre_handler_fn) {
+
+          item->event->pre_handler_fn(args);
+
+      } else if ( item->event->handle_type == EXCLUSIVE &&
+                  item->event == args->current->metric_custom) {
+
+        // exclusive event: make sure the event is the same is the current event
+        if (item->event->pre_handler_fn)
+          return item->event->pre_handler_fn(args);
+        else
+          return ACCEPT_EVENT;
+      }
+    }
+  }
+  return NOT_MY_EVENT;
+}
+
+
+event_accept_type_t
+event_custom_post_handler(event_handler_arg_t *args)
+{
+  if (args == NULL || args->current == NULL)
+    return NOT_MY_EVENT;
+
+  events_list_t *item = NULL;
+
+  SLIST_FOREACH(item, &list_events_head, entries) {
+    if (item != NULL) {
+      // if the custom event is inclusive, we call the handler
+      //   even if this is not its event
+      // if the custom event is exclusive, we call the handler
+      //  iff the event is from the custom event
+
+    	if (item->event->handle_type == INCLUSIVE) {
+    		if (item->event->post_handler_fn)
+    		  item->event->post_handler_fn(args);
+
+    	} else if (item->event == args->current->metric_custom) {
+    	  // exclusive event: make sure the event is the same is the current event
+        if (item->event->post_handler_fn)
+          return item->event->post_handler_fn(args);
+    	}
+    }
+  }
+  return NOT_MY_EVENT;
 }
 
 

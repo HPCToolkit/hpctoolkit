@@ -52,6 +52,7 @@
 
 typedef struct cct_addr_t cct_addr_t;
 
+
 struct cct_addr_t {
 
   lush_assoc_info_t as_info;
@@ -64,7 +65,7 @@ struct cct_addr_t {
 
   // logical instruction pointer
   lush_lip_t* lip;
-  
+
 };
 
 //

@@ -86,6 +86,7 @@
 #include "Struct-Tree.hpp"
 
 #include "LoadMap.hpp"
+#include "Metric-Mgr.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -220,16 +221,22 @@ public:
   // -------------------------------------------------------
   std::ostream&
   writeXML(std::ostream& os,
+      const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0) const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0) const;
+  dump(const Metric::Mgr *metricMgr, std::ostream& os = std::cerr, uint oFlags = 0) const;
   
   void
-  ddump() const;
+  ddump(const Metric::Mgr *metricMgr) const;
 
+  int getNumNodeId() {
+    if (m_nodeidMap)
+      return m_nodeidMap->size();
+    return 0;
+  }
 
   // Given a set of flags 'flags', determines whether we need to
   // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
@@ -318,7 +325,7 @@ public:
   ANode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct = NULL)
     : NonUniformDegreeTreeNode(parent),
       Metric::IData(),
-      m_type(type), m_id(s_nextUniqueId), m_strct(strct)
+      m_type(type), m_hpcrun_type(NODE_TYPE_REGULAR), m_id(s_nextUniqueId), m_strct(strct)
   {
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
@@ -327,7 +334,7 @@ public:
 	ANode* parent, Struct::ACodeNode* strct, const Metric::IData& metrics)
     : NonUniformDegreeTreeNode(parent),
       Metric::IData(metrics),
-      m_type(type), m_id(s_nextUniqueId), m_strct(strct)
+      m_type(type), m_hpcrun_type(NODE_TYPE_REGULAR),m_id(s_nextUniqueId), m_strct(strct)
   {
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
   }
@@ -339,7 +346,7 @@ public:
   ANode(const ANode& x)
     : NonUniformDegreeTreeNode(NULL),
       Metric::IData(x),
-      m_type(x.m_type), /*m_id: skip*/ m_strct(x.m_strct)
+      m_type(x.m_type), m_hpcrun_type(NODE_TYPE_REGULAR), /*m_id: skip*/ m_strct(x.m_strct)
   {
     zeroLinks();
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
@@ -410,6 +417,15 @@ public:
   endLine() const
   { return (m_strct) ? m_strct->endLine() : ln_NULL;  }
   
+
+  void
+  hpcrun_node_type(uint16_t type)
+  {   m_hpcrun_type = type;  }
+
+  uint16_t
+  hpcrun_node_type() const
+  { return m_hpcrun_type;   }
+
 
   // --------------------------------------------------------
   // Tree navigation
@@ -615,13 +631,14 @@ public:
   // --------------------------------------------------------
 
   virtual std::string
-  toString(uint oFlags = 0, const char* pfx = "") const;
+  toString(const Metric::Mgr *metricMgr, uint oFlags = 0, const char* pfx = "") const;
 
   virtual std::string
   toStringMe(uint oFlags = 0) const;
 
   std::ostream&
   writeXML(std::ostream& os,
+     const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
@@ -629,18 +646,20 @@ public:
 
   std::ostream&
   writeXML_path(std::ostream& os,
+     const Metric::Mgr *metricMgr,
 	   uint metricBeg = Metric::IData::npos,
 	   uint metricEnd = Metric::IData::npos,
 	   uint oFlags = 0, const char* pfx = "") const;
 
   std::ostream&
-  dump(std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
+  dump(const Metric::Mgr *metricMgr,
+      std::ostream& os = std::cerr, uint oFlags = 0, const char* pfx = "") const;
 
   void
-  adump() const;
+  adump(const Metric::Mgr *metricMgr) const;
 
   void
-  ddump() const;
+  ddump(const Metric::Mgr *metricMgr) const;
 
   void
   ddumpMe() const;
@@ -651,7 +670,7 @@ public:
 protected:
 
   bool
-  writeXML_pre(std::ostream& os,
+  writeXML_pre(std::ostream& os, const Metric::Mgr *metricMgr,
 	       uint metricBeg = Metric::IData::npos,
 	       uint metricEnd = Metric::IData::npos,
 	       uint oFlags = 0,
@@ -672,8 +691,10 @@ private:
   static uint s_nextUniqueId;
   
 protected:
-  ANodeTy m_type; // obsolete with typeid(), but hard to replace
-  uint m_id;
+  ANodeTy  m_type;      // obsolete with typeid(), but hard to replace
+  uint16_t m_hpcrun_type; // hpcrun's node type: memory access, root, variable declaration, ...
+  uint     m_id;
+
   Struct::ACodeNode* m_strct;
 };
 
@@ -706,23 +727,23 @@ public:
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info,
+	   uint cpId, hpcrun_fmt_cct_node_t node_fmt,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip)
     : ANode(type, parent, strct),
       m_cpId(cpId),
-      m_as_info(as_info),
+      m_as_info(node_fmt.as_info),
       m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
-  { }
+  { m_hpcrun_type = node_fmt.node_type; }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
-	   uint cpId, lush_assoc_info_t as_info,
+	   uint cpId, hpcrun_fmt_cct_node_t node_fmt,
 	   LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const Metric::IData& metrics)
     : ANode(type, parent, strct, metrics),
       m_cpId(cpId),
-      m_as_info(as_info),
+      m_as_info(node_fmt.as_info),
       m_lmId(lmId), m_lmIP(ip), m_opIdx(opIdx), m_lip(lip)
-  { }
+  { m_hpcrun_type = node_fmt.node_type; }
 
   virtual ~ADynNode()
   { delete m_lip; }
@@ -735,7 +756,9 @@ public:
       m_lmId(x.m_lmId),
       m_lmIP(x.m_lmIP), m_opIdx(x.m_opIdx),
       m_lip(clone_lip(x.m_lip))
-  { }
+  {
+    m_hpcrun_type = x.m_hpcrun_type;
+  }
 
   // deep copy of internals (but without children)
   ADynNode&
@@ -745,6 +768,7 @@ public:
       ANode::operator=(x);
       m_cpId = x.m_cpId;
       m_as_info = x.m_as_info;
+      m_hpcrun_type = x.m_hpcrun_type;
       m_lmId = x.m_lmId;
       m_lmIP = x.m_lmIP;
       m_opIdx = x.m_opIdx;
@@ -873,7 +897,6 @@ public:
   bool
   isValid_lip() const
   { return (m_lip && (lush_lip_getLMId(m_lip) != 0)); }
-
 
   // -------------------------------------------------------
   // 
@@ -1259,11 +1282,11 @@ public:
   { }
 
   Call(ANode* parent,
-       uint cpId, lush_assoc_info_t as_info,
+       uint cpId, hpcrun_fmt_cct_node_t node_fmt,
        LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyCall, parent, NULL,
-	       cpId, as_info, lmId, ip, opIdx, lip,
+	       cpId, node_fmt, lmId, ip, opIdx, lip,
 	       metrics)
   { }
   
@@ -1309,11 +1332,11 @@ class Stmt
   { }
 
   Stmt(ANode* parent,
-       uint cpId, lush_assoc_info_t as_info,
+       uint cpId, hpcrun_fmt_cct_node_t node_fmt,
        LoadMap::LMId_t lmId, VMA ip, ushort opIdx, lush_lip_t* lip,
        const Metric::IData& metrics)
     : ADynNode(TyStmt, parent, NULL,
-	       cpId, as_info, lmId, ip, opIdx, lip,
+	       cpId, node_fmt, lmId, ip, opIdx, lip,
 	       metrics)
   { }
   
@@ -1328,6 +1351,8 @@ class Stmt
     }
     return *this;
   }
+
+
 
   // Dump contents for inspection
   virtual std::string

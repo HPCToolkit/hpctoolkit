@@ -101,12 +101,11 @@ static __thread u32          pid = 0, tid = 0;  // last pid/tid
  *****************************************************************************/
 
 static void
-blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
-    perf_mmap_data_t *mmap_data)
+blame_kernel_time(cct_node_t *cct_kernel, perf_mmap_data_t *mmap_data)
 {
   // make sure the time is is zero or positive
   if (mmap_data->time < time_cs_out) {
-    TMSG(LINUX_PERF, "old t: %l, c: %d, p: %d, td: %d -- vs -- t: %l, c: %d, p: %d, td: %d",
+    TMSG(LINUX_PERF, "old t: %d, c: %d, p: %d, td: %d -- vs -- t: %d, c: %d, p: %d, td: %d",
         time_cs_out, cpu, pid, tid, mmap_data->time, mmap_data->cpu, mmap_data->pid, mmap_data->tid);
     return;
   }
@@ -145,22 +144,23 @@ blame_kernel_time(event_thread_t *current_event, cct_node_t *cct_kernel,
  *  time_outside_kernel - time_inside_kernel
  *
  ***********************************************************************/
-void
-kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
-    perf_mmap_data_t *mmap_data)
+static event_accept_type_t
+kernel_block_handler(event_handler_arg_t *args)
 {
   if (metric_blocking_index < 0)
-    return; // not initialized or something wrong happens in the initialization
+    return REJECT_EVENT; // not initialized or something wrong happens in the initialization
+
+  perf_mmap_data_t *mmap_data = args->data;
 
   if (mmap_data == NULL) {
 
     // somehow, at the end of the execution, a sample event is still triggered
     // and in this case, the arguments are null. Is this our bug ? or gdb ?
 
-    return;
+    return NOT_MY_EVENT;
   }
 
-  struct perf_event_attr *attr = &(current_event->event->attr);
+  struct perf_event_attr *attr = &(args->current->attr);
 
   if (attr->config == PERF_COUNT_SW_CONTEXT_SWITCHES &&
       attr->type   == PERF_TYPE_SOFTWARE) {
@@ -174,8 +174,8 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
 
     if (mmap_data->header_type == PERF_RECORD_SAMPLE) {
       // (1) sample record: store the current cct for further usage
-      cct_kernel = sv.sample_node;
-      return;
+      cct_kernel = args->sample->sample_node;
+      return ACCEPT_EVENT;
     }
 
     if (mmap_data->header_misc == PERF_RECORD_MISC_SWITCH_OUT) {
@@ -188,12 +188,13 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
     } else {
       // (3) leaving the kernel, entering the process: compute the block time
       if (cct_kernel != NULL && time_cs_out>0)
-        blame_kernel_time(current_event, cct_kernel, mmap_data);
+        blame_kernel_time(cct_kernel, mmap_data);
 
       time_cs_out  = 0;
       cct_kernel = NULL;
     }
   }
+  return ACCEPT_EVENT;
 }
 
 
@@ -207,25 +208,35 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
  * - blocking time metric to store the time spent in the kernel
  * - context switch metric to store the number of context switches
  ****************************************************************/
-static void
-register_blocking(event_info_t *event_desc)
+static int
+register_blocking(sample_source_t *self,
+                  event_custom_t *event,
+                  struct event_threshold_s *period)
 {
+  event_info_t *event_info = (event_info_t*) hpcrun_malloc(sizeof(event_info_t));
+  if (event_info == NULL)
+    return -1;
+
+  memset(event_info, 0, sizeof(event_info_t));
+
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
-  event_desc->metric_custom->metric_index = hpcrun_new_metric();
-  event_desc->metric_custom->metric_desc  = hpcrun_set_metric_info_and_period(
-      event_desc->metric_custom->metric_index, EVNAME_KERNEL_BLOCK,
+  event_info->metric_custom = event;
+  event_info->id            = EVNAME_KERNEL_BLOCK;
+
+  metric_blocking_index= hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(
+      metric_blocking_index, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
-  metric_blocking_index = event_desc->metric_custom->metric_index;
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
-  event_desc->metric      = hpcrun_new_metric();
-  event_desc->metric_desc = hpcrun_set_metric_info_and_period(
-      event_desc->metric, EVNAME_CONTEXT_SWITCHES,
-      MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+  int metric_cs     = hpcrun_new_metric();
+  hpcrun_set_metric_info_and_period(
+                         metric_cs, EVNAME_CONTEXT_SWITCHES,
+                         MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
   // ------------------------------------------
   // set context switch event description to be used when creating
@@ -236,7 +247,7 @@ register_blocking(event_info_t *event_desc)
       PERF_SAMPLE_TIME | PERF_SAMPLE_CALLCHAIN |
       PERF_SAMPLE_CPU  | PERF_SAMPLE_PERIOD;
 
-  struct perf_event_attr *attr = &(event_desc->attr);
+  struct perf_event_attr *attr = &(event_info->attr);
   attr->config = PERF_COUNT_SW_CONTEXT_SWITCHES;
   attr->type   = PERF_TYPE_SOFTWARE;
 
@@ -246,8 +257,14 @@ register_blocking(event_info_t *event_desc)
       sample_type /* need additional info for sample type */
   );
 
-  event_desc->attr.context_switch = 1;
-  event_desc->attr.sample_id_all = 1;
+  event_info->attr.context_switch = 1;
+  event_info->attr.sample_id_all  = 1;
+
+
+  METHOD_CALL(self, store_event_and_info,
+                          attr->config, 1, metric_cs, event_info);;
+
+  return 1;
 }
 
 
@@ -257,8 +274,6 @@ register_blocking(event_info_t *event_desc)
 
 void kernel_blocking_init()
 {
-  // unfortunately, the older version doesn't support context switch event properly
-
   event_custom_t *event_kernel_blocking = hpcrun_malloc(sizeof(event_custom_t));
   event_kernel_blocking->name         = EVNAME_KERNEL_BLOCK;
   event_kernel_blocking->desc         = "Approximation of a thread's blocking time."  
@@ -266,9 +281,8 @@ void kernel_blocking_init()
 					" The unit time is hardware-dependent but mostly in microseconds."  
 					" This event is only available on Linux kernel 4.3 or newer.";
   event_kernel_blocking->register_fn  = register_blocking;   // call backs
-  event_kernel_blocking->handler_fn   = NULL; 		// No call backs: we want all event to call us
-  event_kernel_blocking->metric_index = 0;   		// these fields to be defined later
-  event_kernel_blocking->metric_desc  = NULL; 	 	// these fields to be defined later
+  event_kernel_blocking->post_handler_fn   = kernel_block_handler;
+  event_kernel_blocking->handle_type  = INCLUSIVE;// please call me for all events
 
   event_custom_register(event_kernel_blocking);
 }

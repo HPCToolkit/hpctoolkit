@@ -324,20 +324,20 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
   if (!strct) {
     if (useStruct) {
       Struct::File* fileStrct =
-	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
+          Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
 
       const string* unkProcNm =
-	(unknownProcNm) ? unknownProcNm : &Struct::Tree::UnknownProcNm;
+          (unknownProcNm) ? unknownProcNm : &Struct::Tree::UnknownProcNm;
 
       Struct::Proc* procStrct =
-	Struct::Proc::demand(fileStrct, *unkProcNm);
+          Struct::Proc::demand(fileStrct, *unkProcNm);
 
       strct = BAnal::Struct::demandStmtStructure(lmStrct, procStrct,
-						Struct::Tree::UnknownLine,
-						vma, vma + 1);
+          Struct::Tree::UnknownLine,
+          vma, vma + 1);
     }
     else {
-      strct = BAnal::Struct::makeStructureSimple(lmStrct, lm, vma);
+      strct = BAnal::Struct::makeStructureSimple(lmStrct, lm, vma, unknownProcNm);
     }
   }
   return strct;

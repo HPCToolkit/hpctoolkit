@@ -69,26 +69,32 @@
 #include "cct_backtrace_finalize.h"
 
 
+//--------------------------------------------------------------------------
+// forward declaration
+//--------------------------------------------------------------------------
+
+static cct_node_t*
+help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
+	int metricId, hpcrun_metricVal_t metricIncr,
+	int skipInner, int isSync, struct cct_custom_update_s *custom_update);
+
+
 //
 // Misc externals (not in an include file)
 //
 extern bool hpcrun_inbounds_main(void* addr);
 
-//
+//--------------------------------------------------------------------------
+// local variables
+//--------------------------------------------------------------------------
 // local variable records the on/off state of
 // special recursive compression:
-//
 static bool retain_recursion = false;
 
 
-static hpcrun_kernel_callpath_t hpcrun_kernel_callpath;
-
-
-void
-hpcrun_kernel_callpath_register(hpcrun_kernel_callpath_t kcp) 
-{
-	hpcrun_kernel_callpath = kcp;
-}
+//--------------------------------------------------------------------------
+// Implementation
+//--------------------------------------------------------------------------
 
 static cct_node_t*
 cct_insert_raw_backtrace(cct_node_t* cct,
@@ -125,11 +131,6 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   return cct;
 }
 
-
-static cct_node_t*
-help_hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
-	int metricId, hpcrun_metricVal_t metricIncr,
-	int skipInner, int isSync, void *data);
 
 //
 // 
@@ -174,17 +175,27 @@ hpcrun_cct_insert_backtrace(cct_node_t* treenode, frame_t* path_beg, frame_t* pa
   return path;
 }
 
+
+
 // See usage in header.
 cct_node_t*
-hpcrun_cct_insert_backtrace_w_metric(cct_node_t* treenode,
+hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* cct, cct_node_t* treenode,
 				     int metric_id,
 				     frame_t* path_beg, frame_t* path_end,
-				     cct_metric_data_t datum, void *data_aux)
+				     cct_metric_data_t datum, 
+				     struct cct_custom_update_s *custom_update)
 {
+  // user-custom cct before official backtrace
+  if (custom_update != NULL && custom_update->update_before_fn != NULL) {
+    treenode = custom_update->update_before_fn(cct, treenode, custom_update->data_aux);
+  }
+
+  // the official backtrace insertion
   cct_node_t* path = hpcrun_cct_insert_backtrace(treenode, path_beg, path_end);
 
-  if (hpcrun_kernel_callpath) {
-    path = hpcrun_kernel_callpath(path, data_aux);
+  // user-custom cct after the official backtrace
+  if (custom_update != NULL && custom_update->update_after_fn != NULL) {
+    path = custom_update->update_after_fn(path, custom_update->data_aux);
   }
 
   metric_set_t* mset = hpcrun_reify_metric_set(path);
@@ -209,7 +220,7 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 		     backtrace_t* bt,
 		     cct_metric_data_t datum, void **trace_pc)
 {
-  return hpcrun_cct_insert_backtrace_w_metric(node, metricId, 
+  return hpcrun_cct_insert_backtrace_w_metric(NULL, node, metricId,
 					      bt->beg + bt->len - 1,
 					      bt->beg, 
 					      datum, NULL);
@@ -233,7 +244,7 @@ hpcrun_cct_insert_bt(cct_node_t* node,
 cct_node_t*
 hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
 	             int metricId, hpcrun_metricVal_t metricIncr,
-		     int skipInner, int isSync, void *data)
+		     int skipInner, int isSync, struct cct_custom_update_s *custom_update)
 {
   cct_node_t* n = NULL;
   if (hpcrun_isLogicalUnwind()) {
@@ -245,7 +256,7 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
     TMSG(BT_INSERT,"regular (NON-lush) backtrace2cct invoked");
     n = help_hpcrun_backtrace2cct(cct, context,
 				  metricId, metricIncr,
-				  skipInner, isSync, data);
+				  skipInner, isSync, custom_update);
   }
 
   // N.B.: for lush_backtrace() it may be that n = NULL
@@ -253,43 +264,6 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   return n;
 }
 
-#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
-
-static cct_node_t*
-help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	       int metricId, uint64_t metricIncr,
-	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
-
-//
-// utility routine that does 3 things:
-//   1) Generate a std backtrace
-//   2) Modifies the backtrace according to a passed in function
-//   3) enters the generated backtrace in the cct
-//
-cct_node_t*
-hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
-	      int metricId, uint64_t metricIncr,
-	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
-{
-  cct_node_t* n = NULL;
-  if (hpcrun_isLogicalUnwind()) {
-#ifdef LATER
-    TMSG(LUSH,"lush backtrace2cct invoked");
-    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
-			   isSync);
-#endif
-  }
-  else {
-    TMSG(LUSH,"regular (NON-lush) bt2cct invoked");
-    n = help_hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn);
-  }
-
-  // N.B.: for lush_backtrace() it may be that n = NULL
-
-  return n;
-}
-
-#endif
 
 cct_node_t*
 hpcrun_cct_record_backtrace(
@@ -325,11 +299,12 @@ hpcrun_cct_record_backtrace(
 
 }
 
+
 cct_node_t*
 hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
                                      backtrace_info_t *bt, bool tramp_found,
 	                             int metricId, hpcrun_metricVal_t metricIncr,
-				     void *data)
+				     struct cct_custom_update_s *custom_update)
 {
   TMSG(FENCE, "Recording backtrace");
   TMSG(BT_INSERT, "Record backtrace w metric to id %d, incr = %d", 
@@ -358,9 +333,10 @@ hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
   TMSG(FENCE, "further sanity check: bt->last frame = (%d, %p)", 
        bt->last->ip_norm.lm_id, bt->last->ip_norm.lm_ip);
 
-  return hpcrun_cct_insert_backtrace_w_metric(cct_cursor, metricId,
+  return hpcrun_cct_insert_backtrace_w_metric(cct, cct_cursor, metricId,
 					      bt->last, bt->begin, 
-					      (cct_metric_data_t) metricIncr, data);
+					      (cct_metric_data_t) metricIncr, 
+					      custom_update);
 
 }
 
@@ -369,7 +345,8 @@ static cct_node_t*
 help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 			  int metricId, 
 			  hpcrun_metricVal_t metricIncr,
-			  int skipInner, int isSync, void *data)
+			  int skipInner, int isSync, 
+			  struct cct_custom_update_s *custom_update)
 {
   bool tramp_found;
 
@@ -414,8 +391,8 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 
   cct_node_t* n = 
     hpcrun_cct_record_backtrace_w_metric(bundle, bt.partial_unwind, &bt, 
-					 tramp_found,
-					 metricId, metricIncr, data);
+					 tramp_found, metricId, metricIncr, 
+					 custom_update);
 
   // *trace_pc = bt.trace_pc;  // JMC
 

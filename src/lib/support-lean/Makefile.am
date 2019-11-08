@@ -77,6 +77,7 @@ MYSOURCES = \
 	timer.h timer.c \
 	OSUtil.h OSUtil.c \
 	compress_lzma.c  \
+	datacentric_config.c \
 	demangle.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) -I$(LZMA_INC)

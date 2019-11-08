@@ -74,6 +74,9 @@ extern unsigned long hpcrun_nm_addrs_len;
 extern unsigned long hpcrun_reference_offset;
 extern int           hpcrun_is_relocatable;
 
+// datacentric extended data
+extern unsigned long hpcrun_data_addrs[];
+extern unsigned long hpcrun_data_addrs_len;
 //-------------------------------------------------------------------------
 // local data
 //-------------------------------------------------------------------------
@@ -101,7 +104,10 @@ fnbounds_init()
   dso_info_t *dso =
     hpcrun_dso_make(hpcrun_files_executable_pathname(), (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
+
   fnbounds_executable_dso = hpcrun_loadmap_map(dso);
+
+  hpcrun_dso_insert_data_var(dso, (void*)hpcrun_data_addrs, hpcrun_data_addrs_len);
 
   return 0;
 }

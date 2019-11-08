@@ -92,7 +92,6 @@ typedef struct gpu_data_t {
 } gpu_data_t;
 
 
-
 /* ******
    TODO:
 

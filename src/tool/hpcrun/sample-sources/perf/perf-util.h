@@ -41,18 +41,21 @@
 #include <sys/syscall.h> 
 
 #include <unistd.h>
+
 #include <linux/types.h>
 #include <linux/perf_event.h>
+#include <linux/version.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <sample_event.h>
 
 #include "perf_constants.h"
-#include "event_custom.h"
 
 /******************************************************************************
  * macros
  *****************************************************************************/
+
+#define KERNEL_SAMPLING_ENABLED (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 
 
 
@@ -60,6 +63,17 @@
 // For kernel only call chain, I think 32 is a good number.
 // If we include user call chains, it should be bigger than that.
 #define MAX_CALLCHAIN_FRAMES 32
+
+// --------------------------------------------------------------------
+// threshold data structure (period or frequency
+// --------------------------------------------------------------------
+
+enum threshold_e { PERIOD, FREQUENCY };
+
+struct event_threshold_s {
+  long             threshold_num;
+  enum threshold_e threshold_type;
+};
 
 
 /******************************************************************************
@@ -89,10 +103,10 @@ typedef struct perf_mmap_data_s {
   u64    abi;        /* if PERF_SAMPLE_REGS_USER */
   u64    *regs;
                      /* if PERF_SAMPLE_REGS_USER */
-  u64    stack_size;             /* if PERF_SAMPLE_STACK_USER */
-  char   *stack_data; /* if PERF_SAMPLE_STACK_USER */
-  u64    stack_dyn_size;         /* if PERF_SAMPLE_STACK_USER &&
-                                     size != 0 */
+  u64    stack_size;                       /* if PERF_SAMPLE_STACK_USER */
+  char   stack_data[MAX_CALLCHAIN_FRAMES]; /* if PERF_SAMPLE_STACK_USER */
+  u64    stack_dyn_size;                   /* if PERF_SAMPLE_STACK_USER &&
+                                               size != 0 */
   u64    weight;     /* if PERF_SAMPLE_WEIGHT */
   u64    data_src;   /* if PERF_SAMPLE_DATA_SRC */
   u64    transaction;/* if PERF_SAMPLE_TRANSACTION */
@@ -106,20 +120,22 @@ typedef struct perf_mmap_data_s {
 
 } perf_mmap_data_t;
 
+// forward declaratio for custom event
+struct event_custom_s;
 
 // --------------------------------------------------------------
 // main data structure to store the information of an event.
 // this structure is designed to be created once during the initialization.
 // this code doesn't work if the number of events change dynamically.
+//
+// this data is designed to be stored in evlist.h's _ev_t.event_info
 // --------------------------------------------------------------
 typedef struct event_info_s {
-  int    id;
-  struct perf_event_attr attr; // the event attribute
-  int    metric;               // metric ID of the event (raw counter)
-  metric_desc_t *metric_desc;  // pointer on hpcrun metric descriptor
 
-  // predefined metric
-  event_custom_t *metric_custom;	// pointer to the predefined metric
+  const char *id;  // unique event ID. Usually the name of the event.
+
+  struct perf_event_attr attr;          // perf event attribute
+  struct event_custom_s *metric_custom;	// pointer to the predefined metric
 
 } event_info_t;
 
@@ -135,9 +151,9 @@ typedef struct event_thread_s {
 
   pe_mmap_t    *mmap;  // mmap buffer
   int          fd;     // file descriptor of the event
-  event_info_t *event; // pointer to main event description
 
 } event_thread_t;
+
 
 
 
@@ -150,9 +166,10 @@ perf_util_init();
 
 int
 perf_util_attr_init(
-  char *event_name,
+  const char *event_name,
   struct perf_event_attr *attr,
-  bool usePeriod, u64 threshold,
+  bool usePeriod, 
+  u64 threshold,
   u64  sampletype
 );
 
@@ -162,8 +179,16 @@ perf_util_is_ksym_available();
 int
 perf_util_get_paranoid_level();
 
-int
-perf_util_get_max_sample_rate();
+cct_node_t*
+perf_util_precise_ip(cct_node_t *leaf, void *data_aux);
+
+#if KERNEL_SAMPLING_ENABLED
+cct_node_t *
+perf_util_add_kernel_callchain( cct_node_t *leaf, void *data_aux);
+#endif
+
+void
+perf_util_get_default_threshold(struct event_threshold_s *threshold);
 
 int
 perf_util_check_precise_ip_suffix(char *event);

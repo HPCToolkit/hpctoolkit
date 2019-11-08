@@ -78,5 +78,4 @@ int
 read_perf_buffer(pe_mmap_t *current_perf_mmap,
     struct perf_event_attr *attr, perf_mmap_data_t *mmap_info);
 
-
 #endif

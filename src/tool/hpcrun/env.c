@@ -44,6 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
+//*********************************************************************
+// system includes
+//*********************************************************************
+
+#include <stdlib.h>
+#include <string.h>
+
+//*********************************************************************
+// constants
+//*********************************************************************
+
+
 // Names for option environment variables
 const char* HPCRUN_OPT_LUSH_AGENTS = "HPCRUN_OPT_LUSH_AGENTS";
 
@@ -55,3 +68,18 @@ const char* PAPI_EVENT_LIST        = "PAPI_EVENT_LIST";
 const char* HPCRUN_EVENT_LIST      = "HPCRUN_EVENT_LIST";
 const char* HPCRUN_MEMSIZE         = "HPCRUN_MEMSIZE";
 const char* HPCRUN_LOW_MEMSIZE     = "HPCRUN_LOW_MEMSIZE";
+
+const char* EVNAME_DATACENTRIC     = "DATACENTRIC";
+
+
+/***
+ * Check if datacentric event is enabled
+ * Return 1 (true) if this is the case
+ *        0 (false) if not
+ */
+int
+datacentric_is_enabled()
+{
+  char *events     = getenv(HPCRUN_EVENT_LIST);
+  return strcasestr(events, EVNAME_DATACENTRIC) != NULL;
+}

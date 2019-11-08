@@ -114,7 +114,6 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 #include <lib/support/ExprEval.hpp>
-#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -132,7 +131,8 @@ prof_abort
 // macros
 //***************************************************************************
 
-#define DBG 0
+#define DBG               0
+#define DBG_DATA          0
 #define MAX_PREFIX_CHARS 64
 
 
@@ -595,7 +595,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     uint id = strct->id();
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int fake_procedure = 0;
 
     if (type == 1) { // LoadModule
       nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
@@ -712,8 +712,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
+    if (fake_procedure > 0) {
+      os << " f" << MakeAttrNum(fake_procedure);
     } 
 
     os << "/>\n";
@@ -743,6 +743,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   typedef std::map<uint, string> UIntToStringMap;
   UIntToStringMap metricIdToFormula;
 
+//  m_mMgr->computeMetricsPerGroup();
+
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
@@ -764,10 +766,10 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
-       << " v=\"" << m->toValueTyStringXML() << "\""
-       << " em=\"" << m->isMultiplexed()    << "\""
-       << " es=\"" << m->num_samples()      << "\""
-       << " ep=\"" << long(m->periodMean())       << "\""
+       << " v=\""  << m->toValueTyStringXML() << "\""
+       << " em=\"" << m->isMultiplexed()      << "\""
+       << " es=\"" << m->num_samples()        << "\""
+       << " ep=\"" << m->periodMean()         << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\"";
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
@@ -901,7 +903,7 @@ Profile::dump(std::ostream& os) const
   m_loadmap->dump(os);
 
   if (m_cct) {
-    m_cct->dump(os, CCT::Tree::OFlg_DebugAll);
+    m_cct->dump(m_mMgr, os, CCT::Tree::OFlg_DebugAll);
   }
   return os;
 }
@@ -1311,6 +1313,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
 
+    // keep the show status consistent between hpcrun and experiment.xml
+    m->isVisible(mdesc.flags.fields.show == 1);
+    m->doDispPercent(mdesc.flags.fields.showPercent == 1);
+
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
     }
@@ -1326,6 +1332,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->nameSfx(m_sfx);
     }
     m->flags(mdesc.flags);
+    m->formula(mdesc.formula);
     
     // ----------------------------------------
     // 1b. Update the additional perf event attributes
@@ -1355,10 +1362,13 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	mSmpl->nameSfx(m_sfx);
+        mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
-      
+      mSmpl->formula(mdesc.formula);
+      mSmpl->isVisible(mdesc.flags.fields.show);
+      mSmpl->doDispPercent(mdesc.flags.fields.showPercent);
+
       prof->metricMgr()->insert(mSmpl);
     }
   }
@@ -1431,8 +1441,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 {
-  typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
-
   DIAG_Assert(infs, "Bad file descriptor!");
   
   CCTIdToCCTNodeMap cctNodeMap;
@@ -1473,13 +1481,14 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
-  ExprEval eval;
+  //ExprEval eval;
+  DIAG_DevMsgIf(DBG_DATA, ". read nodes: " << numNodes );
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-    ret = hpcrun_fmt_cct_node_fread(&nodeFmt, prof.m_flags, infs);
+    ret = hpcrun_fmt_cct_node_fread(&nodeFmt, prof.fmtVersion(), prof.m_flags, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }
@@ -1494,19 +1503,19 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // FIXME: we don't check the validity of the formula (yet).
     //        If hpcrun has incorrect formula, the result can be anything
     // ------------------------------------------
-    metric_desc_t* m_lst = metricTbl.lst;
+    /*metric_desc_t* m_lst = metricTbl.lst;
     VarMap var_map(nodeFmt.metrics, m_lst, numMetricsSrc);
 
-    for (uint i = 0; i < numMetricsSrc; i++) {
-      char *expr = (char*) m_lst[i].formula;
+    for (uint metricID = 0; metricID < numMetricsSrc; metricID++) {
+      char *expr = (char*) m_lst[metricID].formula;
       if (expr == NULL || strlen(expr)==0) continue;
 
       double res = eval.Eval(expr, &var_map);
       if (eval.GetErr() == EEE_NO_ERROR) {
         // the formula syntax looks "correct". Update the the metric value
-      	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
+      	hpcrun_fmt_metric_set_value(m_lst[metricID], &nodeFmt.metrics[metricID], res);
       }
-    }
+    }*/
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
@@ -1538,7 +1547,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // ----------------------------------------------------------
 
     std::pair<CCT::ADynNode*, CCT::ADynNode*> n2 =
-      cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
+        cct_makeNode(prof, nodeFmt, rFlags, ctxtStr);
     CCT::ADynNode* node = n2.first;
     CCT::ADynNode* node_sib = n2.second;
 
@@ -1547,23 +1556,28 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-	if (node->lmId_real() == LoadMap::LMId_NULL) {
-	  DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-	}
+        if (node->lmId_real() == LoadMap::LMId_NULL) {
+          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+        }
       }
 
       node->link(node_parent);
       if (node_sib) {
-	node_sib->link(node_parent);
+        node_sib->link(node_parent);
       }
     }
     else {
       DIAG_AssertWarn(cct->empty(), ctxtStr << ": CCT must only have one root!");
       DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
-      if (cct->empty()) cct->root(node);
+      cct->root(node);
     }
 
     cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
+#if DBG_DATA
+    if (node->hpcrun_node_type() > 20) {
+      std::cerr << "Error id= " << node->id() << ": hpcrun node type invalid: " << node->hpcrun_node_type() << "\n" ;
+    }
+#endif
   }
 
   if (outfs) {
@@ -1750,6 +1764,9 @@ Profile::fmt_cct_fwrite(const Profile& prof, FILE* fs, uint wFlags)
     if (ret != HPCFMT_OK) return HPCFMT_ERR;
   }
 
+  //debug
+  DIAG_DevMsgIf(DBG_DATA, "CallPath-Profile num nodes: " << numNodes << std::endl);
+
   return HPCFMT_OK;
 }
 
@@ -1897,17 +1914,19 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     cpId = nodeId;
   }
 
+  LoadMap::LMId_t lmId = nodeFmt.lm_id;
+
+  VMA lmIP        = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
+  ushort opIdx    = 0;
+  lush_lip_t* lip = NULL;
+
   // ----------------------------------------
   // normalized ip (lmId and lmIP)
   // ----------------------------------------
-  LoadMap::LMId_t lmId = nodeFmt.lm_id;
-
-  VMA lmIP = (VMA)nodeFmt.lm_ip; // FIXME:tallent: Use ISA::convertVMAToOpVMA
-  ushort opIdx = 0;
 
   if (! (lmId <= loadmap.size() /*1-based*/) ) {
     DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-	      << " has invalid load module: " << lmId);
+        << " has invalid load module: " << lmId);
     lmId = LoadMap::LMId_NULL;
   }
   loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
@@ -1917,7 +1936,6 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   // ----------------------------------------
   // normalized lip
   // ----------------------------------------
-  lush_lip_t* lip = NULL;
   if (!lush_lip_eq(&nodeFmt.lip, &lush_lip_NULL)) {
     lip = CCT::ADynNode::clone_lip(&nodeFmt.lip);
   }
@@ -1927,7 +1945,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
       DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
-		<< " has invalid (logical) load module: " << lip_lmId);
+    << " has invalid (logical) load module: " << lip_lmId);
       lip_lmId = LoadMap::LMId_NULL;
     }
     loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
@@ -1956,26 +1974,33 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     hpcrun_metricVal_t m = nodeFmt.metrics[i_src];
 
-    double mval = 0;
-    switch (mdesc->flags().fields.valFmt) {
+    if (mdesc->flags().fields.valFmt == MetricFlags_ValFmt_Address) {
+      // special treatment for address-type metric
+      // we don't want to convert an address to double and multiplied by period
+      metricData.metricObject(i_dst) = m;
+
+    } else {
+
+      double mval = 0;
+      switch (mdesc->flags().fields.valFmt) {
       case MetricFlags_ValFmt_Int:
-	mval = (double)m.i; break;
+        mval = (double)m.i; break;
       case MetricFlags_ValFmt_Real:
-	mval = m.r; break;
+        mval = m.r; break;
+
       default:
-	DIAG_Die(DIAG_UnexpectedInput);
+        DIAG_Die(DIAG_UnexpectedInput);
+      }
+      metricData.metric(i_dst) = mval * (double)mdesc->period();
     }
-
-    metricData.metric(i_dst) = mval * (double)mdesc->period();
-
     if (!hpcrun_metricVal_isZero(m)) {
       hasMetrics = true;
     }
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
-	  adesc->type() == Prof::Metric::ADesc::TyExcl) {
-	i_src++;
+          adesc->type() == Prof::Metric::ADesc::TyExcl) {
+        i_src++;
       }
       // Prof::Metric::ADesc::TyIncl: reuse i_src
     }
@@ -2001,8 +2026,8 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   Prof::CCT::ADynNode* n_leaf = NULL;
 
   if (hasMetrics || isLeaf) {
-    n = new CCT::Stmt(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx, lip,
-		      metricData);
+    n = new CCT::Stmt(NULL, cpId, nodeFmt, lmId, lmIP, opIdx, lip,
+          metricData);
   }
 
   if (!isLeaf) {
@@ -2013,14 +2038,14 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
       uint mSz = (doZeroMetrics) ? 0 : numMetricsDst;
       Metric::IData metricData0(mSz);
-      
+
       lush_lip_t* lipCopy = CCT::ADynNode::clone_lip(lip);
 
-      n = new CCT::Call(NULL, cpId0, nodeFmt.as_info, lmId, lmIP, opIdx,
-			lipCopy, metricData0);
+      n = new CCT::Call(NULL, cpId0, nodeFmt, lmId, lmIP, opIdx,
+      lipCopy, metricData0);
     }
     else {
-      n = new CCT::Call(NULL, cpId, nodeFmt.as_info, lmId, lmIP, opIdx,
+      n = new CCT::Call(NULL, cpId, nodeFmt, lmId, lmIP, opIdx,
 			lip, metricData);
     }
   }
@@ -2039,6 +2064,14 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
 
   const Prof::CCT::ADynNode* n_dyn_p =
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
+
+  n_fmt.node_type = n.hpcrun_node_type();
+#if DBG_DATA
+  if (n_fmt.node_type > 20) {
+    std::cerr << "Error: invalid-node-type: " << n_fmt.node_type <<", id: " << n_fmt.id << "\n";
+  }
+#endif
+
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
     n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;

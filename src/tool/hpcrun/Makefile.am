@@ -121,6 +121,7 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_datacentric.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
@@ -135,6 +136,7 @@ endif
 if OPT_ENABLE_HPCRUN_STATIC
   noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
+  pkglib_LIBRARIES += libhpcrun_datacentric_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
@@ -176,7 +178,7 @@ LZMA_LDFLAGS_DYN=@LZMA_LDFLAGS_DYN@
 
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 
-PLUGIN_CONFIG_FILES = ga io memleak pthread
+PLUGIN_CONFIG_FILES = datacentric ga io memleak pthread
 
 # Disable the ibm-xlomp plugin in favor of the new openmp tools
 # interface.
@@ -286,10 +288,10 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c          \
-	sample-sources/blame-shift/blame-map.c            \
+	sample-sources/blame-shift/blame-shift.c        \
+	sample-sources/blame-shift/blame-map.c          \
 	sample-sources/common.c         \
-	sample-sources/display.c		\
+	sample-sources/display.c	\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
@@ -315,6 +317,8 @@ MY_BASE_FILES =				\
 	cct/cct.c               	\
 	\
 	cct2metrics.c                   \
+	\
+	data_tree.c	\
 	\
 	trampoline/common/trampoline.c  \
 	\
@@ -359,12 +363,57 @@ else
 MY_BASE_FILES += sample-sources/perf/perfmon-util-dummy.c
 endif
 
+
+# datacentric plugin requires access to perf's data_src
+# without it, it's useless (unless for page-faults)
+
+if OPT_PERF_MEM_DATA_SRC
+if HOST_CPU_AARCH64
+# temporarily, no support for ARM
+MY_BASE_FILES +=  			 	 \
+	sample-sources/datacentric/datacentric_dummy.c \
+	sample-sources/stall/stall_dummy.c 
+else
+if OPT_IBS_OP
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
+	sample-sources/datacentric/ibsop.c	 \
+	sample-sources/stall/stall_dummy.c 
+else 
+if HOST_CPU_X86_64
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
+	utilities/arch/x86-family/cpuid.c    	 \
+	sample-sources/datacentric/pmu_x86.c	 \
+	sample-sources/datacentric/pmu_handler.c \
+	sample-sources/stall/stall.c 
+else 
+if HOST_CPU_PPC
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric.c \
+	sample-sources/datacentric/pmu_power.c	 \
+	sample-sources/datacentric/pmu_handler.c \
+	sample-sources/stall/stall.c 
+else
+MY_BASE_FILES +=  				 \
+	sample-sources/datacentric/datacentric_dummy.c \
+	sample-sources/stall/stall_dummy.c 
+endif	# HOST_CPU_PPC
+endif	# HOST_CPU_X86_64
+
+endif  # OPT_IBS_OP
+endif  # HOST_CPU_AARCH64
+endif  # OPT_PERF_MEM_DATA_SRC
+
+
+# blocktime plugin only available if the kernel version is 4.3 or newer
+#
 if OPT_ENABLE_KERNEL_4_3
 MY_BASE_FILES += sample-sources/perf/kernel_blocking.c
 else
 MY_BASE_FILES += sample-sources/perf/kernel_blocking_stub.c
-endif
-endif
+endif  # OPT_ENABLE_KERNEL_4_3
+endif  # OPT_ENABLE_PERF_EVENT
 
 ## if OPT_ENABLE_MPI_WRAP
 ## MY_BASE_FILES +=  			\
@@ -392,6 +441,7 @@ MY_MIPS_FILES = \
 MY_PPC_FILES = \
         trampoline/ppc64/ppc64-tramp.s \
         \
+        utilities/arch/ppc64/cpuid.c   \
         utilities/arch/ppc64/ppc64-context-pc.c
 
 MY_X86_FILES = \
@@ -401,10 +451,14 @@ MY_X86_FILES = \
 
 MY_IA64_FILES = \
         trampoline/ia64/ia64-tramp.s \
+        \
+        utilities/arch/ia64/cpuid.c  \
         utilities/arch/ia64/ia64-context-pc.c
 
 MY_AARCH64_FILES = \
 	trampoline/aarch64/aarch64-tramp.c \
+    \
+	utilities/arch/aarch64/cpuid.c   \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT
@@ -470,6 +524,12 @@ libhpcrun_o_SOURCES = 			\
 
 libhpcrun_wrap_a_SOURCES =		\
 	monitor-exts/openmp.c
+
+libhpcrun_datacentric_la_SOURCES = 		\
+	sample-sources/datacentric/data-overrides.c
+
+libhpcrun_datacentric_wrap_a_SOURCES = 	\
+	sample-sources/datacentric/data-overrides.c
 
 libhpcrun_ga_la_SOURCES = 		\
 	sample-sources/ga-overrides.c
@@ -539,6 +599,15 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_wrap_a_CPPFLAGS =		\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_datacentric_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_datacentric_wrap_a_CPPFLAGS =	\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -663,6 +732,8 @@ libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_datacentric_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -692,6 +763,8 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
         $(PERFMON_LDFLAGS_DYN)
+
+libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -728,6 +801,8 @@ if HOST_CPU_MIPS
   libhpcrun_o_SOURCES   += $(MY_MIPS_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
@@ -752,6 +827,8 @@ if HOST_CPU_PPC
   libhpcrun_o_SOURCES   += $(MY_PPC_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -775,7 +852,9 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
-  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
+  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -795,6 +874,8 @@ if HOST_CPU_IA64
   libhpcrun_o_SOURCES   += $(MY_IA64_FILES)
   libhpcrun_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_o_CPPFLAGS  += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_IA64_INCLUDE_DIRS)
@@ -813,6 +894,8 @@ if HOST_CPU_AARCH64
   libhpcrun_o_CPPFLAGS  += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
+  libhpcrun_datacentric_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_datacentric_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
@@ -905,6 +988,8 @@ libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS  += $(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
+libhpcrun_datacentric_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_io_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)

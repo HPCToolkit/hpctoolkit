@@ -46,8 +46,8 @@ double ExprEval::ParseAtom(EVAL_CHAR*& expr)
       return negative ? -res : res;
     }
   
-    // check if this is variable
-    bool variable = _var_map->isVariable(expr);
+    // check if this is a variable
+    bool variable = _var_map ? _var_map->isVariable(expr) : false;
     if (variable) {
       expr++;
     }
@@ -107,6 +107,7 @@ double ExprEval::ParseFactors(EVAL_CHAR*& expr)
       else
         num1 *= num2;
     }
+    return num1;
 }
 
 // Parse addition and subtraction
@@ -127,6 +128,7 @@ double ExprEval::ParseSummands(EVAL_CHAR*& expr)
       else
         num1 += num2;
     }
+    return num1;
 }
 
 double ExprEval::Eval(EVAL_CHAR* expr, BaseVarMap *var_map)

@@ -48,7 +48,7 @@
 
 #include "cct_bundle.h"
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <cct/cct_addr.h>
+#include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
@@ -61,21 +61,25 @@
 // "Special" routine to serve as a placeholder for "idle" resource
 //
 
-void
+static void
 GPU_IDLE(void)
 {
 }
 
+// special routine for datacentric resource
+static void
+DATACENTRIC()
+{}
+
+
 void
 NO_THREAD(void)
 {
-
 }
 
 //
 // Interface procedures
 //
-
 
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
@@ -101,10 +105,12 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   if (ENABLED(ATTACH_THREAD_CTXT) && ctxt) {
     hpcrun_cct_insert_path(&(bundle->thread_root), ctxt->context);
   }
-  bundle->partial_unw_root = hpcrun_cct_new_partial();
+  bundle->partial_unw_root  = hpcrun_cct_new_partial();
   bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
-  bundle->special_no_thread_node = hpcrun_cct_new_special(NO_THREAD);
+  bundle->special_datacentric_node  = hpcrun_cct_new_special(DATACENTRIC+1);
+  bundle->special_no_thread_node    = hpcrun_cct_new_special(NO_THREAD);
 }
+
 //
 // Write to file for cct bundle: 
 //
@@ -159,6 +165,16 @@ hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
   return cct->special_idle_node;
 }
 
+
+cct_node_t*
+hpcrun_cct_bundle_init_datacentric_node(cct_bundle_t *cct)
+{
+  if (!hpcrun_cct_parent(cct->special_datacentric_node)) {
+    hpcrun_cct_insert_node(cct->top, cct->special_datacentric_node);
+    hpcrun_cct_set_node_root(cct->special_datacentric_node);
+  }
+  return cct->special_datacentric_node;
+}
 
 cct_node_t*
 hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct)

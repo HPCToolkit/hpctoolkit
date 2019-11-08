@@ -68,19 +68,40 @@ void
 CMETHOD_FN(store_event, int event_id, long thresh)
 {
   TMSG(SAMPLE_SOURCE,"%s: store event %d thresh = %ld", self->name, event_id, thresh);
-  evlist_t *_p = &(self->evl);
+
+  METHOD_CALL(self, store_event_and_info, event_id, thresh, 0, NULL);
+}
+
+/***
+ * store events and its info, then returns the current event index
+ * returns -1 if fails
+ */
+int
+CMETHOD_FN(store_event_and_info, int event_id, long thresh,
+    int metric_id, void *info)
+{
+  TMSG(SAMPLE_SOURCE,"%s: store event and info %d thresh = %ld", self->name, event_id, thresh);
+
+  evlist_t *_p   = &(self->evl);
+  int num_events = _p->nevents;
+
   int* ev      = &(_p->nevents);
   if (*ev >= MAX_EVENTS) {
     EMSG("Too many events entered for sample source. Event code %d ignored", event_id);
-    return;
+    return -1;
   }
   _ev_t* current_event  = &(_p->events[*ev]);
 
-  current_event->event     = event_id;
-  current_event->thresh    = thresh;
+  current_event->event      = event_id;
+  current_event->thresh     = thresh;
+  current_event->metric_id  = metric_id;
+  current_event->event_info = info;
 
   (*ev)++;
+
   TMSG(SAMPLE_SOURCE,"%s now has %d events", self->name, *ev);
+
+  return num_events;
 }
 
 void

@@ -270,6 +270,7 @@ Mgr::makeSummaryMetricsIncr(bool needAllStats, uint srcBegId, uint srcEndId)
 }
 
 
+
 Metric::DerivedDesc*
 Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 		       const Metric::ADescVec& mOpands)
@@ -290,6 +291,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+    doDispPercent = mSrc->doDispPercent();
+    isPercent     = mSrc->isPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -335,6 +338,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->sampling_type(mSrc->sampling_type());
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
+  m->formula      (mSrc->formula());
 
   insert(m);
   expr->accumId(0, m->id());
@@ -386,6 +390,10 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+
+    // some metrics (like ratio) don't display the percent
+    // we should respect the original metric description here
+    doDispPercent = mSrc->doDispPercent();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());

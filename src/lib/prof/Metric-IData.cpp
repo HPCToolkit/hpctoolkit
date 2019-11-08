@@ -100,8 +100,10 @@ IData::toStringMetrics(int oFlags, const char* pfx) const
 
 
 std::ostream&
-IData::writeMetricsXML(std::ostream& os, uint mBegId, uint mEndId,
-		       int GCC_ATTR_UNUSED oFlags, const char* pfx) const
+IData::writeMetricsXML(std::ostream& os,
+    const Mgr *metricMgr,
+    uint mBegId, uint mEndId,
+		int GCC_ATTR_UNUSED oFlags, const char* pfx) const
 {
   bool wasMetricWritten = false;
 

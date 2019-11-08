@@ -66,6 +66,7 @@
 #include <cstdio>
 
 #include <vector>
+#include <map>
 #include <set>
 #include <string>
 
@@ -82,6 +83,12 @@
 #include <lib/support/FileUtil.hpp> // dirname
 
 #include "../binutils/SimpleSymbolsFactories.hpp"
+
+
+//*************************** Forward Declarations ***************************
+
+typedef std::map<int, Prof::CCT::ANode*> CCTIdToCCTNodeMap;
+
 
 //*************************** Forward Declarations ***************************
 
@@ -361,7 +368,6 @@ private:
 
   void
   merge_fixTrace(const CCT::MergeEffectList* mrgEffects);
-
 
 private:
   std::string m_name;

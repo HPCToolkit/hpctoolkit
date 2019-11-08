@@ -120,6 +120,8 @@ const std::string Tree::UnknownProcNm = UNKNOWN_PROC;
 
 const std::string Tree::PartialUnwindProcNm = PARTIAL_CALL_PATHS;
 
+const std::string Tree::UnknownGlobalVariable = "<unknown variable>";
+
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
 
@@ -1582,7 +1584,7 @@ ANode::writeXML_pre(ostream& os, uint oFlags, const char* pfx) const
 
   // 2. Write associated metrics
   if (doMetrics) {
-    writeMetricsXML(os, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
+    writeMetricsXML(os, NULL, Metric::IData::npos, Metric::IData::npos, oFlags, pfx);
     os << "\n";
   }
  

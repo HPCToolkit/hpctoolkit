@@ -88,6 +88,8 @@
 
 #include "code-ranges.h"
 #include "function-entries.h"
+#include "variable-entries.h"
+
 #include "process-ranges.h"
 #include "server.h"
 #include "syserv-mesg.h"
@@ -301,7 +303,7 @@ signal_handler_init(void)
 //*****************************************************************
 
 static void
-do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
+do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg, int query)
 {
   int ret;
   long k;
@@ -331,7 +333,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     code_ranges_reinit();
     function_entries_reinit();
 
-    dump_file_info(inbuf, fn_discovery);
+    dump_file_info(inbuf, fn_discovery, query);
     jmpbuf_ok = 0;
 
     // pad list of addrs in case there are fewer function addrs than
@@ -380,6 +382,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 }
 
 
+
 void
 system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
 {
@@ -414,9 +417,9 @@ system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
     }
 
     // query
-    else if (mesg.type == SYSERV_QUERY) {
+    else if (mesg.type == SYSERV_QUERY || mesg.type == SYSERV_QUERY_VAR) {
       write_mesg(SYSERV_ACK, 0);
-      do_query(fn_discovery, &mesg);
+      do_query(fn_discovery, &mesg, mesg.type);
     }
 
     // unknown message
