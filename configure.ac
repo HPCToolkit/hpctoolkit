@@ -2788,9 +2788,11 @@ AC_SUBST([LZMA_LIB])
 #
 # Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
+MBEDTLS_COPY=no
 MBEDTLS="$default_mbedtls_prefix"
 MBEDTLS_IFLAGS=
 MBEDTLS_LIBS=
+MBEDTLS_LIB=
 
 AC_ARG_WITH([mbedtls],
   [AS_HELP_STRING([--with-mbedtls=PATH],
@@ -2808,6 +2810,8 @@ case "$MBEDTLS" in
     MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+	MBEDTLS_COPY=yes
+	MBEDTLS_LIB="${MBEDTLS}/lib"
         MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
 	break
       fi
@@ -2863,6 +2867,8 @@ my_md5_hash(char *buf, size_t len)
     ;;
 esac
 
+AC_SUBST([MBEDTLS_COPY])
+AC_SUBST([MBEDTLS_LIB])
 AC_SUBST([MBEDTLS_IFLAGS])
 AC_SUBST([MBEDTLS_LIBS])
 

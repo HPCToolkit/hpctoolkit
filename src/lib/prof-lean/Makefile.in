@@ -152,12 +152,12 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-binarytree.lo \
 	libHPCprof_lean_la-cskiplist.lo \
 	libHPCprof_lean_la-crypto-hash.lo libHPCprof_lean_la-queues.lo \
-	libHPCprof_lean_la-stacks.lo \
-	libHPCprof_lean_la-unordered_stack.lo \
-	libHPCprof_lean_la-bi_unordered_channel.lo \
+	libHPCprof_lean_la-stacks.lo libHPCprof_lean_la-bistack.lo \
+	libHPCprof_lean_la-bichannel.lo \
 	libHPCprof_lean_la-producer_wfq.lo \
 	libHPCprof_lean_la-generic_pair.lo \
-	libHPCprof_lean_la-randomizer.lo
+	libHPCprof_lean_la-randomizer.lo \
+	libHPCprof_lean_la-splay-uint64.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -339,7 +339,9 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
 MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
 MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
@@ -543,12 +545,13 @@ MYSOURCES = \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
 	stacks.h stacks.c \
-	unordered_stack.h unordered_stack.c \
-	bi_unordered_channel.h bi_unordered_channel.c \
+	bistack.h bistack.c \
+	bichannel.h bichannel.c \
 	producer_wfq.h producer_wfq.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
-	randomizer.h randomizer.c
+	randomizer.h randomizer.c \
+	splay-uint64.h splay-uint64.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -652,8 +655,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-BalancedTree.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-bi_unordered_channel.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-bichannel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-binarytree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-bistack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-crypto-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-generic_pair.Plo@am__quote@
@@ -668,8 +672,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-queues.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-randomizer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-splay-uint64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-stacks.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-unordered_stack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush/$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
@@ -817,19 +821,19 @@ libHPCprof_lean_la-stacks.lo: stacks.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-stacks.lo `test -f 'stacks.c' || echo '$(srcdir)/'`stacks.c
 
-libHPCprof_lean_la-unordered_stack.lo: unordered_stack.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-unordered_stack.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-unordered_stack.Tpo -c -o libHPCprof_lean_la-unordered_stack.lo `test -f 'unordered_stack.c' || echo '$(srcdir)/'`unordered_stack.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-unordered_stack.Tpo $(DEPDIR)/libHPCprof_lean_la-unordered_stack.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unordered_stack.c' object='libHPCprof_lean_la-unordered_stack.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_lean_la-bistack.lo: bistack.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-bistack.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-bistack.Tpo -c -o libHPCprof_lean_la-bistack.lo `test -f 'bistack.c' || echo '$(srcdir)/'`bistack.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-bistack.Tpo $(DEPDIR)/libHPCprof_lean_la-bistack.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bistack.c' object='libHPCprof_lean_la-bistack.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-unordered_stack.lo `test -f 'unordered_stack.c' || echo '$(srcdir)/'`unordered_stack.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-bistack.lo `test -f 'bistack.c' || echo '$(srcdir)/'`bistack.c
 
-libHPCprof_lean_la-bi_unordered_channel.lo: bi_unordered_channel.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-bi_unordered_channel.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-bi_unordered_channel.Tpo -c -o libHPCprof_lean_la-bi_unordered_channel.lo `test -f 'bi_unordered_channel.c' || echo '$(srcdir)/'`bi_unordered_channel.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-bi_unordered_channel.Tpo $(DEPDIR)/libHPCprof_lean_la-bi_unordered_channel.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bi_unordered_channel.c' object='libHPCprof_lean_la-bi_unordered_channel.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_lean_la-bichannel.lo: bichannel.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-bichannel.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-bichannel.Tpo -c -o libHPCprof_lean_la-bichannel.lo `test -f 'bichannel.c' || echo '$(srcdir)/'`bichannel.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-bichannel.Tpo $(DEPDIR)/libHPCprof_lean_la-bichannel.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='bichannel.c' object='libHPCprof_lean_la-bichannel.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-bi_unordered_channel.lo `test -f 'bi_unordered_channel.c' || echo '$(srcdir)/'`bi_unordered_channel.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-bichannel.lo `test -f 'bichannel.c' || echo '$(srcdir)/'`bichannel.c
 
 libHPCprof_lean_la-producer_wfq.lo: producer_wfq.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-producer_wfq.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-producer_wfq.Tpo -c -o libHPCprof_lean_la-producer_wfq.lo `test -f 'producer_wfq.c' || echo '$(srcdir)/'`producer_wfq.c
@@ -851,6 +855,13 @@ libHPCprof_lean_la-randomizer.lo: randomizer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='randomizer.c' object='libHPCprof_lean_la-randomizer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-randomizer.lo `test -f 'randomizer.c' || echo '$(srcdir)/'`randomizer.c
+
+libHPCprof_lean_la-splay-uint64.lo: splay-uint64.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-splay-uint64.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-splay-uint64.Tpo -c -o libHPCprof_lean_la-splay-uint64.lo `test -f 'splay-uint64.c' || echo '$(srcdir)/'`splay-uint64.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-splay-uint64.Tpo $(DEPDIR)/libHPCprof_lean_la-splay-uint64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='splay-uint64.c' object='libHPCprof_lean_la-splay-uint64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-splay-uint64.lo `test -f 'splay-uint64.c' || echo '$(srcdir)/'`splay-uint64.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

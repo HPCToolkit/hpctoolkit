@@ -18,7 +18,6 @@
 #include "cubin-hash-map.h"
 
 
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
@@ -84,7 +83,6 @@ cubin_hash_map_delete_root()
     cubin_hash_map_root = cubin_hash_map_root->left;
   }
 }
-
 
 
 /******************************************************************************
@@ -160,9 +158,9 @@ static int
 cubin_hash_map_count_helper(cubin_hash_map_entry_t *entry) 
 {
   if (entry) {
-     int left = cubin_hash_map_count_helper(entry->left);
-     int right = cubin_hash_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cubin_hash_map_count_helper(entry->left);
+    int right = cubin_hash_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
   return 0;
 }

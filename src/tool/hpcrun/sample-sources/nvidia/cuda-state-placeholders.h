@@ -2,7 +2,7 @@
 #define _HPCTOOLKIT_CUDA_STATE_PLACEHOLDERS_H_
 
 #include <hpcrun/utilities/ip-normalized.h>
-#include <hpcrun/sample-sources/gpu/placeholders.h>
+#include <hpcrun/hpcrun-placeholders.h>
 
 
 

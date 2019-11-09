@@ -353,6 +353,22 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
+	hpcrun-placeholders.c 		\
+	gpu/gpu-activity.c 		\
+	gpu/gpu-activity-channel.c 	\
+	gpu/gpu-context-stream-id-map.c	\
+	gpu/gpu-correlation.c 		\
+	gpu/gpu-correlation-channel-set.c \
+	gpu/gpu-correlation-channel.c 	\
+	gpu/gpu-channel-item-allocator.c \
+	gpu/gpu-correlation-id-map.c 	\
+	gpu/gpu-function-id-map.c 	\
+	gpu/gpu-host-correlation-map.c 	\
+	gpu/gpu-splay-allocator.c	\
+	gpu/gpu-trace-channel.c		\
+	gpu/gpu-trace-item.c		\
+	gpu/gpu-trace.c 		\
+	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
 	ompt/ompt-device.c              \
@@ -371,12 +387,7 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c \
-	sample-sources/gpu/gpu-api.c \
-	sample-sources/gpu/gpu-correlation-id-map.c \
-	sample-sources/gpu/gpu-host-op-map.c \
-	sample-sources/gpu/gpu-record.c \
-	sample-sources/gpu/placeholders.c
+	utilities/unlink.h utilities/unlink.c
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
@@ -466,9 +477,7 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c \
-	sample-sources/nvidia/cupti-context-stream-id-map.c \
-    sample-sources/nvidia/stream-tracing.c
+	sample-sources/nvidia/cuda-state-placeholders.c
 endif
 
 if OPT_ENABLE_CUPTI
@@ -478,11 +487,10 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cubin-symbols.c			\
 	sample-sources/nvidia/cupti-analysis.c			\
 	sample-sources/nvidia/cupti-api.c			\
-	sample-sources/nvidia/cupti-correlation-id-map.c	\
-	sample-sources/nvidia/cupti-function-id-map.c		\
-	sample-sources/nvidia/cupti-host-op-map.c		\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-record.c
+	sample-sources/nvidia/cupti-trace-api.c 
+
+# sample-sources/nvidia/cupti-record.c
 endif
 
 
@@ -898,14 +906,15 @@ endif
 if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
 endif
 
 if UNW_LIBUNW

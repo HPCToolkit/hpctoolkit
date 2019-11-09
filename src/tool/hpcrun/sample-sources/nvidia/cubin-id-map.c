@@ -78,7 +78,7 @@ cubin_id_map_delete_root()
   } else {
     cubin_id_map_root->left = 
       cubin_id_map_splay(cubin_id_map_root->left, 
-			   cubin_id_map_root->cubin_id);
+        cubin_id_map_root->cubin_id);
     cubin_id_map_root->left->right = cubin_id_map_root->right;
     cubin_id_map_root = cubin_id_map_root->left;
   }
@@ -137,9 +137,9 @@ cubin_id_map_insert(uint32_t cubin_id, uint32_t hpctoolkit_module_id, Elf_Symbol
       // cubin_id already present
     }
   } else {
-      cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
-      entry->hpctoolkit_module_id = hpctoolkit_module_id;
-      cubin_id_map_root = entry;
+    cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
+    entry->hpctoolkit_module_id = hpctoolkit_module_id;
+    cubin_id_map_root = entry;
   }
 
   spinlock_unlock(&cubin_id_map_lock);
@@ -174,11 +174,11 @@ cubin_id_map_entry_elf_vector_get(cubin_id_map_entry_t *entry)
 
 
 //--------------------------------------------------------------------------
-// Transform a <cubin_id, function_id, offset> tuple to a pc address by
+// Transform a <cubin_id, function_index, offset> tuple to a pc address by
 // looking up elf symbols inside a cubin
 //--------------------------------------------------------------------------
 ip_normalized_t
-cubin_id_transform(uint32_t cubin_id, uint32_t function_id, int64_t offset)
+cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
@@ -188,7 +188,7 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_id, int64_t offset)
     PRINT("get hpctoolkit_module_id %d\n", hpctoolkit_module_id);
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
-    ip.lm_ip = (uintptr_t)(vector->symbols[function_id] + offset);
+    ip.lm_ip = (uintptr_t)(vector->symbols[function_index] + offset);
   }
   return ip;
 }
@@ -201,9 +201,9 @@ static int
 cubin_id_map_count_helper(cubin_id_map_entry_t *entry) 
 {
   if (entry) {
-     int left = cubin_id_map_count_helper(entry->left);
-     int right = cubin_id_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cubin_id_map_count_helper(entry->left);
+    int right = cubin_id_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
   return 0;
 }

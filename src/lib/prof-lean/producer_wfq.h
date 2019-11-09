@@ -70,50 +70,46 @@ typed_producer_wfq_functions(type, show)
 
 
 typedef struct producer_wfq_element_ptr_u {
-    _Atomic(struct producer_wfq_element_s*) aptr;
+  _Atomic(struct producer_wfq_element_s*) aptr;
 } producer_wfq_element_ptr_t;
 
 typedef struct producer_wfq_s {
-    producer_wfq_element_ptr_t head;
-    producer_wfq_element_ptr_t tail;
+  producer_wfq_element_ptr_t head;
+  producer_wfq_element_ptr_t tail;
 } producer_wfq_t;
 
-
-
-
 typedef struct producer_wfq_element_s {
-    producer_wfq_element_ptr_t next;
+  producer_wfq_element_ptr_t next;
 } producer_wfq_element_t;
-
 
 
 void
 producer_wfq_init
 (
-    producer_wfq_t *wfq
+ producer_wfq_t *wfq
 );
+
 
 void
 producer_wfq_ptr_set
 (
-    producer_wfq_element_ptr_t *e,
-    producer_wfq_element_t *v
+ producer_wfq_element_ptr_t *e,
+ producer_wfq_element_t *v
 );
 
 
 void
 producer_wfq_enqueue
 (
-    producer_wfq_t *wfq,
-    producer_wfq_element_t *e
+ producer_wfq_t *wfq,
+ producer_wfq_element_t *e
 );
+
 
 producer_wfq_element_t*
 producer_wfq_dequeue
 (
-    producer_wfq_t *wfq
+ producer_wfq_t *wfq
 );
-
-
 
 #endif //HPCTOOLKIT_PRODUCER_WFQ_H

@@ -66,7 +66,7 @@ cubin_id_transform
 (
  uint32_t cubin_id, 
  uint32_t function_id, 
- int64_t offset
+ uint64_t offset
 );
 
 #endif

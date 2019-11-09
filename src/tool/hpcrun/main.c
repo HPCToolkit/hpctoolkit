@@ -547,7 +547,8 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_is_initialized_private = true;
 
-  stream_tracing_init();
+  // FIXME: this isn't in master-gpu-trace. how is it managed?
+  // stream_tracing_init();
 
 #ifdef USE_ROCM
   roctracer_init();
@@ -635,7 +636,6 @@ static void hpcrun_process_aux_cleanup_action()
 void
 hpcrun_fini_internal()
 {
-  //stream_tracing_fini();
   hpcrun_disable_sampling();
 
   TMSG(FINI, "process");
@@ -671,7 +671,8 @@ hpcrun_fini_internal()
     int is_process = 1;
     thread_finalize(is_process);
 
-    stream_tracing_fini();
+// FIXME: this isn't in master-gpu-trace. how is it managed?
+    // stream_tracing_fini();
 
 #ifdef USE_ROCM
     roctracer_fini();

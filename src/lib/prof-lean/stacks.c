@@ -50,8 +50,6 @@
 
 #include "stacks.h"
 
-
-
 //*****************************************************************************
 // interface functions
 //*****************************************************************************
@@ -62,164 +60,216 @@
 
 void
 sstack_ptr_set
-        (
-                s_element_ptr_t *p,
-                s_element_t *v
-        )
+(
+ s_element_ptr_t *p,
+ s_element_t *v
+)
 {
-    atomic_store_explicit(&Ap(p), v, memory_order_relaxed);
+  atomic_store_explicit(&Ap(p), v, memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_ptr_get
-        (
-                s_element_ptr_t *e
-        )
+(
+ s_element_ptr_t *e
+)
 {
-    return atomic_load_explicit(&Ap(e), memory_order_relaxed);
+  return atomic_load_explicit(&Ap(e), memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *r
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *r
+)
 {
-    return atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
+  return atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
 }
 
 
 void
 sstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+)
 {
-    s_element_t *first = atomic_load_explicit(&Ap(q), memory_order_relaxed);
-    atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
-    atomic_store_explicit(&Ap(q), e, memory_order_relaxed);
+  s_element_t *first = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
+  atomic_store_explicit(&Ap(q), e, memory_order_relaxed);
 }
 
 
 s_element_t *
 sstack_pop
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
-    if (e) {
-        s_element_t *next = atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
-        atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
-        atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);
-    }
-    return e;
+  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  if (e) {
+    s_element_t *next = 
+      atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+    atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
+    atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);
+  }
+  return e;
 }
 
 
 s_element_t *
 sstack_steal
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = sstack_swap(q, 0);
+  s_element_t *e = sstack_swap(q, 0);
 
-    return e;
+  return e;
 }
+
+
+void
+sstack_reverse
+(
+ s_element_ptr_t *q
+)
+{
+  s_element_t *prev = NULL;
+  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  while (e) {
+    s_element_t *next = 
+      atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+    atomic_store_explicit(&(e->Ad(next)), prev, memory_order_relaxed);
+    prev = e;
+    e = next;
+  }
+  atomic_store_explicit(&Ap(q), prev, memory_order_relaxed);
+}
+
+
+void
+sstack_forall
+(
+ s_element_ptr_t *q,
+ stack_forall_fn_t fn,
+ void *arg
+)
+{
+  s_element_t *current = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  while (current) {
+    fn(current, arg);
+    current = atomic_load_explicit(&current->Ad(next), memory_order_relaxed);
+  } 
+}
+
 
 void
 cstack_ptr_set
-        (
-                s_element_ptr_t *e,
-                s_element_t *v
-        )
+(
+ s_element_ptr_t *e,
+ s_element_t *v
+)
 {
-    atomic_init(&Ap(e), v);
+  atomic_init(&Ap(e), v);
 }
 
 
 s_element_t *
 cstack_ptr_get
-        (
-                s_element_ptr_t *e
-        )
+(
+ s_element_ptr_t *e
+)
 {
-    return atomic_load(&Ap(e));
+  return atomic_load(&Ap(e));
 }
 
 
 s_element_t *
 cstack_swap
-        (
-                s_element_ptr_t *q,
-                s_element_t *r
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *r
+)
 {
-    s_element_t *e = atomic_exchange(&Ap(q),r);
+  s_element_t *e = atomic_exchange(&Ap(q), r);
 
-    return e;
+  return e;
 }
 
 
 void
 cstack_push
-        (
-                s_element_ptr_t *q,
-                s_element_t *e
-        )
+(
+ s_element_ptr_t *q,
+ s_element_t *e
+)
 {
-    s_element_t *head = atomic_load(&Ap(q));
-    s_element_t *new_head = e;
+  s_element_t *head = atomic_load(&Ap(q));
+  s_element_t *new_head = e;
 
-    // push a singleton or a chain on the list
-    for (;;) {
-        s_element_t *enext = atomic_load(&e->Ad(next));
-        if (enext == 0) break;
-        e = enext;
-    }
+  // push a singleton or a chain on the list
+  for (;;) {
+    s_element_t *enext = atomic_load(&e->Ad(next));
+    if (enext == 0) break;
+    e = enext;
+  }
 
-    do {
-        atomic_store(&e->Ad(next), head);
-    } while (!atomic_compare_exchange_strong(&Ap(q), &head, new_head));
+  do {
+    atomic_store(&e->Ad(next), head);
+  } while (!atomic_compare_exchange_strong(&Ap(q), &head, new_head));
 }
 
 
 s_element_t *
 cstack_pop
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *oldhead = atomic_load(&Ap(q));
-    s_element_t *next = 0;
+  s_element_t *oldhead = atomic_load(&Ap(q));
+  s_element_t *next = 0;
 
-    do {
-        if (oldhead == 0) return 0;
-        next = atomic_load(&oldhead->Ad(next));
-    } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
+  do {
+    if (oldhead == 0) return 0;
+    next = atomic_load(&oldhead->Ad(next));
+  } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
 
-    atomic_store(&oldhead->Ad(next),0);
+  atomic_store(&oldhead->Ad(next), 0);
 
-    return oldhead;
+  return oldhead;
 }
 
 
 s_element_t *
 cstack_steal
-        (
-                s_element_ptr_t *q
-        )
+(
+ s_element_ptr_t *q
+)
 {
-    s_element_t *e = cstack_swap(q, 0);
+  s_element_t *e = cstack_swap(q, 0);
 
-    return e;
+  return e;
 }
 
+
+void
+cstack_forall
+(
+ s_element_ptr_t *q,
+ stack_forall_fn_t fn,
+ void *arg
+)
+{
+  s_element_t *current = atomic_load(&Ap(q));
+  while (current) {
+    fn(current, arg);
+    current = atomic_load(&current->Ad(next));
+  } 
+}
 
 
 //*****************************************************************************
@@ -227,7 +277,7 @@ cstack_steal
 //*****************************************************************************
 
 #define UNIT_TEST 0
-#if UNIT_TEST
+#if UNIT_TEST 
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -236,19 +286,58 @@ cstack_steal
 typedef struct {
     s_element_ptr_t next;
     int value;
-} typed_stack_elem(int); //int_q_element_t
+} typed_stack_elem(int); // int_q_element_t
 
-typedef s_element_ptr_t typed_stack_elem_ptr(int);	 //int_q_elem_ptr_t
+typed_stack_declare_type(int);
+
+typed_stack_impl(int, cstack);
+
+typed_stack_elem_ptr(int) queue;
+
+void 
+print(typed_stack_elem(int) *e, void *arg)
+{
+  printf("%d\n", e->value);
+}
+
+int main(int argc, char **argv)
+{
+  int i;
+  for (i = 0; i < 10; i++) {
+    typed_stack_elem_ptr(int) 
+      item = (typed_stack_elem_ptr(int)) malloc(sizeof(typed_stack_elem(int)));
+    item->value = i;
+    typed_stack_elem_ptr_set(int, cstack)(item, 0);
+    typed_stack_push(int, cstack)(&queue, item);
+  }
+  typed_stack_forall(int, cstack)(&queue, print, 0);
+}
+
+#endif
+
+#if 0
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <omp.h>
+
+typedef struct {
+    s_element_ptr_t next;
+    int value;
+} typed_stack_elem(int); // int_q_element_t
+
 
 typed_stack_elem_ptr(int) queue;
 
 #define qtype cstack
-        typed_stack(int, qtype)
+
+typed_stack(int, qtype)
 
 typed_stack_elem(int) *
 typed_stack_elem_fn(int,new)(int value)
 {
-    typed_stack_elem(int) *e =(typed_stack_elem(int) *) malloc(sizeof(int_s_element_t));
+    typed_stack_elem(int) *e =
+      (typed_stack_elem(int) *) malloc(sizeof(int_s_element_t));
     e->value = value;
     typed_stack_elem_ptr_set(int, qtype)(&e->next, 0);
 }
@@ -256,71 +345,72 @@ typed_stack_elem_fn(int,new)(int value)
 
 void
 pop
-        (
-                int n
-        )
+(
+ int n
+)
 {
-    int i;
-    for(i = 0; i < n; i++) {
-        typed_stack_elem(int) *e = typed_stack_pop(int, qtype)(&queue);
-        if (e == 0) {
-            printf("%d queue empty\n", omp_get_thread_num());
-            break;
-        } else {
-            printf("%d popping %d\n", omp_get_thread_num(), e->value);
-        }
+  int i;
+  for(i = 0; i < n; i++) {
+    typed_stack_elem(int) *e = typed_stack_pop(int, qtype)(&queue);
+    if (e == 0) {
+      printf("%d queue empty\n", omp_get_thread_num());
+      break;
+    } else {
+      printf("%d popping %d\n", omp_get_thread_num(), e->value);
     }
+  }
 }
 
 
 void
 push
-        (
-                int min,
-                int n
-        )
+(
+ int min,
+ int n
+)
 {
-    int i;
-    for(i = min; i < min+n; i++) {
-        printf("%d pushing %d\n", omp_get_thread_num(), i);
-        typed_stack_push(int, qtype)(&queue, typed_stack_elem_fn(int, new)(i));
-    }
+  int i;
+  for(i = min; i < min+n; i++) {
+    printf("%d pushing %d\n", omp_get_thread_num(), i);
+    typed_stack_push(int, qtype)(&queue, typed_stack_elem_fn(int, new)(i));
+  }
 }
 
 
 void
 dump
-        (
-                int_s_element_t *e
-        )
+(
+ int_s_element_t *e
+)
 {
-    int i;
-    for(; e; e = (int_s_element_t *) typed_stack_elem_ptr_get(int,qtype)(&e->next)) {
-        printf("%d stole %d\n", omp_get_thread_num(), e->value);
-    }
+  int i;
+  for(; e; 
+      e = (int_s_element_t *) typed_stack_elem_ptr_get(int,qtype)(&e->next)) {
+    printf("%d stole %d\n", omp_get_thread_num(), e->value);
+  }
 }
 
 
 int
 main
-        (
-                int argc,
-                char **argv
-        )
+(
+ int argc,
+ char **argv
+)
 {
-    typed_stack_elem_ptr_set(int, qtype)(&queue, 0);
+  typed_stack_elem_ptr_set(int, qtype)(&queue, 0);
 #pragma omp parallel
-    {
-        push(0, 30);
-        pop(10);
-        push(100, 12);
-        // pop(100);
-        int_s_element_t *e = typed_stack_steal(int, qtype)(&queue);
-        dump(e);
-        push(300, 30);
-        typed_stack_push(int, qtype)(&queue, e);
-        pop(100);
-    }
+  {
+    push(0, 30);
+    pop(10);
+    push(100, 12);
+    // pop(100);
+    int_s_element_t *e = typed_stack_steal(int, qtype)(&queue);
+    dump(e);
+    push(300, 30);
+    typed_stack_push(int, qtype)(&queue, e);
+    pop(100);
+  }
 }
 
 #endif

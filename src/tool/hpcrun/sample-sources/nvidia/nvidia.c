@@ -79,9 +79,15 @@
  *****************************************************************************/
 
 #include "nvidia.h"
+#include "cubin-id-map.h"
 #include "cuda-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
+
+// #include "cupti-trace-api.h"
+
+#include <gpu/gpu-trace.h>
+
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -99,7 +105,6 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <ompt/ompt-interface.h>
 
 #define FORALL_ME(macro) \
   macro("MEM_ALLOC:UNKNOWN_BYTES",       0) \
@@ -273,8 +278,17 @@
 #define COUNT_FORALL_CLAUSE(a,b) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
+#define NVIDIA_CUDA "nvidia-cuda" 
+#define NVIDIA_CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
+
+/******************************************************************************
+ * local variables 
+ *****************************************************************************/
+
+// finalizers
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 static kind_info_t* stall_kind; // gpu insts
 static kind_info_t* ke_kind; // kernel execution
@@ -339,7 +353,7 @@ static const long pc_sampling_frequency_default = 10;
 // -1: disabled, 5-31: 2^frequency
 static long pc_sampling_frequency = -1;
 static int cupti_enabled_activities = 0;
-// event name, which can be either nvidia-ompt or nvidia-cuda
+// event name, which is nvidia-cuda
 static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
@@ -462,7 +476,7 @@ typedef enum cupti_activities_flags {
 
 
 void
-cupti_activity_attribute(entry_activity_t *activity, cct_node_t *cct_node)
+cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
@@ -761,16 +775,9 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, OMPT_NVIDIA) || hpcrun_ev_is(ev_str, CUDA_NVIDIA) ||
-    hpcrun_ev_is(ev_str, OMPT_PC_SAMPLING) || hpcrun_ev_is(ev_str, CUDA_PC_SAMPLING);
+  return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING);
 #else
   return false;
-#endif
-
-#if 0
-    hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
-    hpcrun_ev_is(ev_str, OMPT_MEMORY_IMPLICIT) ||
-    hpcrun_ev_is(ev_str, OMPT_KERNEL_EXECUTION);
 #endif
 }
  
@@ -982,48 +989,52 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* event = start_tok(evlist);
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &pc_sampling_frequency, pc_sampling_frequency_default);
-  if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA) || hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
-    cuda_init_placeholders();
-    
-    // Register hpcrun callbacks
-    device_finalizer_flush.fn = cupti_device_flush;
-    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
-    device_finalizer_shutdown.fn = cupti_device_shutdown;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    // Get control knobs
-    int device_buffer_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
-    int device_semaphore_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
-    if (device_buffer_size == 0) {
-      device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
-    }
-    if (device_semaphore_size == 0) {
-      device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
-    }
+  cuda_init_placeholders();
 
-    PRINT("Device buffer size %d\n", device_buffer_size);
-    PRINT("Device semaphore size %d\n", device_semaphore_size);
-    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  // Register hpcrun callbacks
+  device_finalizer_flush.fn = cupti_device_flush;
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+  device_finalizer_shutdown.fn = cupti_device_shutdown;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-    // Register cupti callbacks
-    cupti_trace_init();
-    cupti_callbacks_subscribe();
-    cupti_trace_start();
-
-    // Set enabling activities
-    cupti_enabled_activities |= CUPTI_DRIVER;
-    cupti_enabled_activities |= CUPTI_RUNTIME;
-    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-    cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-    if (hpcrun_ev_is(nvidia_name, CUDA_NVIDIA)) {
-      pc_sampling_frequency = -1;
-    }
-  } else if (hpcrun_ev_is(nvidia_name, OMPT_PC_SAMPLING)) {
-    ompt_pc_sampling_enable();
+  // Get control knobs
+  int device_buffer_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+  int device_semaphore_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
+  if (device_buffer_size == 0) {
+    device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
   }
+  if (device_semaphore_size == 0) {
+    device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
+  }
+
+  PRINT("Device buffer size %d\n", device_buffer_size);
+  PRINT("Device semaphore size %d\n", device_semaphore_size);
+  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+
+  // Register cupti callbacks
+  cupti_init();
+  cupti_callbacks_subscribe();
+  cupti_start();
+
+  // Set enabling activities
+  cupti_enabled_activities |= CUPTI_DRIVER;
+  cupti_enabled_activities |= CUPTI_RUNTIME;
+  cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+  cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+  cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+  cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    pc_sampling_frequency = -1;
+  }
+
+  // Init records
+  gpu_trace_init();
+
+  // Register shutdown functions to write trace files
+  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 static void

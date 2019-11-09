@@ -745,6 +745,8 @@ OPT_PAPI_IFLAGS
 OPT_PAPI
 MBEDTLS_LIBS
 MBEDTLS_IFLAGS
+MBEDTLS_LIB
+MBEDTLS_COPY
 LZMA_LIB
 LZMA_INC
 LZMA_COPY
@@ -21038,9 +21040,11 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 #
 # Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
+MBEDTLS_COPY=no
 MBEDTLS="$default_mbedtls_prefix"
 MBEDTLS_IFLAGS=
 MBEDTLS_LIBS=
+MBEDTLS_LIB=
 
 
 # Check whether --with-mbedtls was given.
@@ -21060,6 +21064,8 @@ case "$MBEDTLS" in
     MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+	MBEDTLS_COPY=yes
+	MBEDTLS_LIB="${MBEDTLS}/lib"
         MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
 	break
       fi
@@ -21137,6 +21143,8 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     fi
     ;;
 esac
+
+
 
 
 

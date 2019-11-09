@@ -52,8 +52,6 @@ cupti_bind
 );
 
 
-
-
 void
 cupti_activity_process
 (
@@ -127,19 +125,19 @@ cupti_device_timestamp_get
 
 
 void 
-cupti_trace_init
+cupti_init
 (
 );
 
 
 void 
-cupti_trace_start
+cupti_start
 (
 );
 
 
 void 
-cupti_trace_pause
+cupti_pause
 (
  CUcontext context,
  bool begin_pause
@@ -147,7 +145,7 @@ cupti_trace_pause
 
 
 void 
-cupti_trace_finalize
+cupti_finalize
 (
 );
 
@@ -192,7 +190,7 @@ cupti_buffer_completion_callback
 void
 cupti_load_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -201,7 +199,7 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
- int module_id, 
+ uint32_t module_id, 
  const void *cubin, 
  size_t cubin_size
 );
@@ -231,6 +229,11 @@ cupti_device_shutdown
 );
 
 
+//******************************************************************************
+// cupti status
+//******************************************************************************
+
+
 void
 cupti_stop_flag_set
 (
@@ -239,6 +242,37 @@ cupti_stop_flag_set
 
 void
 cupti_stop_flag_unset
+(
+);
+
+
+void
+cupti_runtime_api_flag_unset
+(
+);
+
+
+void
+cupti_runtime_api_flag_set
+(
+);
+
+
+void
+cupti_correlation_id_push
+(
+ uint64_t id
+);
+
+
+uint64_t
+cupti_correlation_id_pop
+(
+);
+
+
+ip_normalized_t
+cupti_kernel_ip_get
 (
 );
 
@@ -260,20 +294,5 @@ cupti_modules_ignore
  load_module_t *module
 );
 
-//******************************************************************************
-// notification stack
-//******************************************************************************
-
-void
-cupti_correlation_handle
-(
- entry_correlation_t *entry
-);
-
-void
-cupti_activity_handle
-(
- entry_activity_t *entry
-);
 
 #endif

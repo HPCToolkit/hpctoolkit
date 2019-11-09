@@ -78,8 +78,9 @@ roctracer_correlation_callback
 
 )
 {
+  void *hip_ip = NULL;
     //PRINT("enter roctracer_correlation_callback %u\n", *id);
-    gpu_correlation_callback(correlation_id, hip_state, entry_data);
+  gpu_correlation_callback(correlation_id, hip_state, hip_ip, entry_data);
 
     //PRINT("exit cupti_correlation_callback_cuda\n");
 

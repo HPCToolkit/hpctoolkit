@@ -197,20 +197,22 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
   }
 }
 
+
 void
-hpcrun_trace_append_STREAM(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA, uint64_t microtime)
+hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t* node,
+  uint metric_id, uint32_t dLCA, uint64_t microtime)
 {
-    if (tracing && hpcrun_sample_prob_active()) {
+  if (tracing && hpcrun_sample_prob_active()) {
+    // mark the leaf of a call path recorded in a trace record for retention
+    // so that the call path associated with the trace record can be recovered.
+    hpcrun_cct_retain(node);
 
-        // mark the leaf of a call path recorded in a trace record for retention
-        // so that the call path associated with the trace record can be recovered.
-        hpcrun_cct_retain(node);
+    int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
-        int32_t call_path_id = hpcrun_cct_persistent_id(node);
-
-        hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
-    }
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
+  }
 }
+
 
 void
 hpcrun_trace_close(core_profile_trace_data_t * cptd)

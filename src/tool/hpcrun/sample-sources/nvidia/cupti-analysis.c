@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "cuda-device-map.h"
-#include <hpcrun/sample-sources/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-correlation-id-map.h>
 
 /******************************************************************************
  * macros
