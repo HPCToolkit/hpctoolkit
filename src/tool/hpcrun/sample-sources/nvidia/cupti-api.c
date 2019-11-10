@@ -107,7 +107,7 @@
 #include "nvidia.h"
 
 #include "cuda-device-map.h"
-#include "cuda-state-placeholders.h"
+#include "cuda-op-placeholders.h"
 #include "gpu-driver-state-placeholders.h"
 
 #include "cubin-id-map.h"
