@@ -99,6 +99,7 @@
 #include <hpcrun/gpu/gpu-api.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
+#include <hpcrun/gpu/gpu-correlation-channel-set.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -724,16 +725,7 @@ cupti_correlation_callback_cuda
 
   ip_normalized_t *kernel_ip = is_kernel_op ? &cupti_kernel_ip : NULL;
 
-  cupti_correlation_callback(*id, cuda_state, kernel_ip);
-
-#if 0
-  // Generate notification entry
-  cupti_correlation_channel_produce(
-    cupti_correlation_channel_get(),
-    correlation_id, 
-    cupti_activity_channel_get(),
-    cct_api, cct_func);
-#endif
+  gpu_correlation_callback(correlation_id, cuda_state, kernel_ip);
 
   PRINT("exit cupti_correlation_callback_cuda\n");
 }
@@ -1144,7 +1136,7 @@ cupti_buffer_completion_callback
 )
 {
   // handle notifications
-  gpu_correlation_channels_consume();
+  gpu_correlation_channel_set_consume();
 
   if (validSize > 0) {
     // Signal advance to return pointer to first record

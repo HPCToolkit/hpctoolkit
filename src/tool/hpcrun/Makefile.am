@@ -488,8 +488,7 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cubin-symbols.c			\
 	sample-sources/nvidia/cupti-analysis.c			\
 	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-api.c			\
-	sample-sources/nvidia/cupti-trace-api.c 
+	sample-sources/nvidia/cupti-api.c
 
 # sample-sources/nvidia/cupti-record.c
 endif

@@ -17,10 +17,9 @@
 void
 gpu_correlation_callback
 (
-        uint64_t id,
-        placeholder_t state,
-        gpu_activity_details_t *entry_data,
-	ip_normalized_t *kernel_ip // NULL if not kernel submit
+ uint64_t id,
+ placeholder_t state,
+ ip_normalized_t *kernel_ip // NULL if not kernel submit
 );
 
 #endif
