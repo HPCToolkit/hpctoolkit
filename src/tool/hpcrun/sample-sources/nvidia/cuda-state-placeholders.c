@@ -1,11 +1,32 @@
-#include "cuda-state-placeholders.h"
+//******************************************************************************
+// local includes
+//******************************************************************************
 
 #include <lib/prof-lean/placeholders.h>
+
 #include <hpcrun/fnbounds/fnbounds_interface.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/hpcrun-initializers.h>
 
+#include "cuda-state-placeholders.h"
+
+
+
+//******************************************************************************
+// global data
+//******************************************************************************
+
 cuda_placeholders_t cuda_placeholders;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+//---------------------------------------------------------
+// cuda placeholder functions
+//---------------------------------------------------------
 
 void 
 cuda_copy
@@ -53,6 +74,9 @@ cuda_sync
 }
 
 
+//---------------------------------------------------------
+// initialize data structure representing cuda placeholders
+//---------------------------------------------------------
 
 void
 cuda_init_placeholders
