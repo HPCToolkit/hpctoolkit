@@ -194,12 +194,12 @@
 // types
 //*****************************************************************************
 
-typedef struct s_element_ptr_u {
-  _Atomic(struct s_element_s*) aptr;
+typedef struct s_element_ptr_t {
+  _Atomic(struct s_element_ptr_t *) aptr;
 } s_element_ptr_t;
 
 
-typedef struct s_element_s {
+typedef struct s_element_t {
   s_element_ptr_t next;
 } s_element_t;
 

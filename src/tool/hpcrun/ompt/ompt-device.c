@@ -70,14 +70,11 @@
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
 
-<<<<<<< HEAD
 // #include "sample-sources/gpu/activity-channel.h"
 #include "gpu/gpu-correlation-channel.h"
 
-=======
 #include "sample-sources/nvidia/cuda-state-placeholders.h"
 #include "sample-sources/nvidia/gpu-driver-state-placeholders.h"
->>>>>>> master-gpu-trace
 #include "sample-sources/nvidia/cupti-api.h"
 #include "sample-sources/nvidia/nvidia.h"
 
@@ -229,14 +226,12 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     trace_node = NULL;
   }
 
-<<<<<<< HEAD
+  hpcrun_safe_exit();
+
   // inform the worker about the placeholder
   gpu_correlation_channel_produce(host_op_id, cct_child, cct_func);
 
-  hpcrun_safe_exit();
-=======
   return;
->>>>>>> master-gpu-trace
 }
 
 
