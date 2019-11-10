@@ -37,15 +37,25 @@ const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
 const char *OMP_REGION_UNR   = "<omp region unresolved>";
 
 const char *OMP_TGT_ALLOC    = "<omp tgt alloc>";
+const char *OMP_TGT_DELETE   = "<omp tgt delete>";
 const char *OMP_TGT_COPYIN   = "<omp tgt copyin>";
 const char *OMP_TGT_COPYOUT  = "<omp tgt copyout>";
-const char *OMP_TGT_DELETE   = "<omp tgt delete>";
 const char *OMP_TGT_KERNEL   = "<omp tgt kernel>";
 
-const char *CUDA_MEM_ALLOC   = "<cuda alloc>";
-const char *CUDA_MEMCPY      = "<cuda copy>";
-const char *CUDA_KERNEL      = "<cuda kernel>";
-const char *CUDA_SYNC        = "<cuda sync>";
+const char *CUDA_ALLOC   = "<cuda alloc>";
+const char *CUDA_DELETE  = "<cuda delete>";
+const char *CUDA_MEMCPY  = "<cuda copy>";
+const char *CUDA_KERNEL  = "<cuda kernel>";
+const char *CUDA_SYNC    = "<cuda sync>";
+
+const char *GPU_COPY    = "<gpu copy>";
+const char *GPU_COPYIN  = "<gpu copyin>";
+const char *GPU_COPYOUT = "<gpu copyout>";
+const char *GPU_ALLOC   = "<gpu alloc>";
+const char *GPU_DELETE  = "<gpu delete>";
+const char *GPU_SYNC    = "<gpu sync>";
+const char *GPU_KERNEL  = "<gpu kernel>";
+const char *GPU_TRACE   = "<gpu trace>";
 
 const char *NO_THREAD_ROOT   = "<no thread>";
 
@@ -91,21 +101,32 @@ static NameMapping renamingTable[] = {
   { "ompt_idle_state",         OMP_IDLE              },
   { "ompt_overhead_state",     OMP_OVERHEAD          },
   { "ompt_barrier_wait_state", OMP_BARRIER_WAIT	     },
-  { "ompt_task_wait_state",    OMP_TASK_WAIT	     },
-  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	     },
+  { "ompt_task_wait_state",    OMP_TASK_WAIT	       },
+  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	       },
 
   { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
   { "ompt_tgt_copyin",         OMP_TGT_COPYIN        },
   { "ompt_tgt_copyout",        OMP_TGT_COPYOUT       },
   { "ompt_tgt_delete",         OMP_TGT_DELETE        },
+  { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
   { "ompt_tgt_kernel",         OMP_TGT_KERNEL        },
 
   { "ompt_region_unresolved",  OMP_REGION_UNR        },
 
-  { "cuda_memcpy",             CUDA_MEMCPY           },
-  { "cuda_sync",               CUDA_SYNC             },
-  { "cuda_mem_alloc",          CUDA_MEM_ALLOC        },
-  { "cuda_kernel",             CUDA_KERNEL           },
+  { "cuda_copy",           CUDA_MEMCPY           },
+  { "cuda_sync",           CUDA_SYNC             },
+  { "cuda_alloc",          CUDA_ALLOC            },
+  { "cuda_delete",         CUDA_DELETE           },
+  { "cuda_kernel",         CUDA_KERNEL           },
+
+  { "gpu_driver_copy",         GPU_COPY              },
+  { "gpu_driver_copyin",       GPU_COPYIN            },
+  { "gpu_driver_copyout",      GPU_COPYOUT           },
+  { "gpu_driver_alloc",        GPU_ALLOC             },
+  { "gpu_driver_delete",       GPU_DELETE            },
+  { "gpu_driver_sync",         GPU_SYNC              },
+  { "gpu_driver_kernel",       GPU_KERNEL            },
+  { "gpu_driver_trace",        GPU_TRACE             },
 
   { "NO_THREAD",               NO_THREAD_ROOT        }
 };

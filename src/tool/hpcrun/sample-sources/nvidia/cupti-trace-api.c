@@ -68,9 +68,10 @@
 
 #include "cupti-context-id-map.h"
 #include "cupti-channel.h"
+#include "nvidia.h"
 
 
-#define CUPTI_TRACE_API_DEBUG 1
+#define CUPTI_TRACE_API_DEBUG 0
 
 #if CUPTI_TRACE_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -124,6 +125,8 @@ cupti_trace_handle
   PRINT("Stream append node\n");
 
   static __thread bool first_pass = true;
+  static __thread uint64_t stream_start = 0;
+  static __thread uint64_t last_end = 0;
   thread_data_t *td = hpcrun_get_thread_data();
   
   // FIXME(Keren): more efficient by copying to common ancester
@@ -132,18 +135,50 @@ cupti_trace_handle
     (td->core_profile_trace_data.epoch->csdata).tree_root, path);
   cct_node_t *no_thread = td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
 
+  bool append = false;
   if (first_pass) {
-    // Special first node
+    append = true;
     first_pass = false;
+    // Start timestamp of the stream
+    stream_start = entry->start;
+    // In the begin, we do not have any activity
+    last_end = 0;
+    // Special first node
     hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
-      td->prev_dLCA, entry->start/1000 - 1);
+      td->prev_dLCA, entry->start - 1);
   }
-  hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
-    td->prev_dLCA, entry->start/1000);
-  hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
-    td->prev_dLCA, entry->end/1000 + 1);
 
-  PRINT("Write trace start %" PRIu64 " end %" PRIu64 "\n", entry->start, entry->end);
+  int frequency = cupti_trace_frequency_get();
+  if (frequency != -1 && append == false) {
+    uint64_t cur_start = entry->start;
+    uint64_t cur_end = entry->end;
+    uint64_t intervals = (cur_start - stream_start - 1) / frequency + 1;
+    uint64_t pivot = intervals * frequency + stream_start;
+    if (pivot <= cur_end && pivot >= cur_start) {
+      // only trace when the pivot is within the range
+      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64 "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+        pivot, cur_start, cur_end, intervals, frequency);
+      append = true;
+    } 
+  } else if (frequency == -1) {
+    append = true;
+  }
+
+  if (append) {
+    if (entry->start < last_end) {  // if we have hardware measurement error, set the offset as the end of the last activity
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+        td->prev_dLCA, last_end + 1);
+    } else {
+      hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
+        td->prev_dLCA, entry->start);
+    }
+    hpcrun_trace_append_stream(&td->core_profile_trace_data, no_thread, 0,
+      td->prev_dLCA, entry->end);
+    last_end = entry->end;
+    PRINT("Write node lm_id %d lm_ip %p\n", hpcrun_cct_addr(leaf)->ip_norm.lm_id,
+      hpcrun_cct_addr(leaf)->ip_norm.lm_ip);
+    PRINT("Write trace start %" PRIu64 " end %" PRIu64 "\n", entry->start, entry->end);
+  }
 }
 
 
@@ -219,6 +254,9 @@ cupti_trace_append(cupti_trace_t *trace, void *arg)
     entry_trace->end, entry_trace->node);
   trace->count++;
 
+  PRINT("Append node lm_id %d lm_ip %p\n", hpcrun_cct_addr(entry_trace->node)->ip_norm.lm_id,
+    hpcrun_cct_addr(entry_trace->node)->ip_norm.lm_ip);
+
   // Notify the stream thread when buffer limit is reached
   if (trace->count == HPCRUN_CUPTI_TRACE_BUFFER_SIZE) {
     pthread_cond_signal(&trace->cond);
@@ -239,5 +277,7 @@ cupti_trace_fini(void *arg)
 {
   atomic_store(&cupti_stop_trace_flag, true);
   cupti_context_id_map_device_process(cupti_trace_signal, NULL);
-  while (atomic_load(&cupti_stream_counter));
+  while (atomic_load(&cupti_stream_counter)) {
+    cupti_context_id_map_device_process(cupti_trace_signal, NULL);
+  }
 }

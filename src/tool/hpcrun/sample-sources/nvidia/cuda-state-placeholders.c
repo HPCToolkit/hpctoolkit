@@ -8,7 +8,7 @@
 cuda_placeholders_t cuda_placeholders;
 
 void 
-cuda_memcpy
+cuda_copy
 (
   void
 )
@@ -18,7 +18,16 @@ cuda_memcpy
 
 
 void 
-cuda_memalloc
+cuda_alloc
+(
+  void
+)
+{
+}
+
+
+void 
+cuda_delete
 (
   void
 )
@@ -50,8 +59,9 @@ cuda_init_placeholders
 (
 )
 {
-  init_placeholder(&cuda_placeholders.cuda_memcpy_state, &cuda_memcpy);
-  init_placeholder(&cuda_placeholders.cuda_memalloc_state, &cuda_memalloc);
+  init_placeholder(&cuda_placeholders.cuda_copy_state, &cuda_copy);
+  init_placeholder(&cuda_placeholders.cuda_alloc_state, &cuda_alloc);
+  init_placeholder(&cuda_placeholders.cuda_delete_state, &cuda_delete);
   init_placeholder(&cuda_placeholders.cuda_kernel_state, &cuda_kernel);
   init_placeholder(&cuda_placeholders.cuda_sync_state, &cuda_sync);
 }

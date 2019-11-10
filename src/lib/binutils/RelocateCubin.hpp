@@ -65,6 +65,8 @@
 #ifndef __RelocateCubin_hpp__
 #define __RelocateCubin_hpp__
 
+#include "ElfHelper.hpp"
+
 bool
 relocateCubin
 (

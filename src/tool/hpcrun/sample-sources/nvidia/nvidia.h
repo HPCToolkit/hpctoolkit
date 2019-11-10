@@ -9,6 +9,8 @@ void cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node);
 
 int cupti_pc_sampling_frequency_get();
 
+int cupti_trace_frequency_get();
+
 void cupti_enable_activities(CUcontext context);
 
 #endif

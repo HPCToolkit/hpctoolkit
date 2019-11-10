@@ -90,7 +90,7 @@
 //*********************************************************************
 
 static void hpcrun_trace_file_validate(int valid, char *op);
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime);
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime);
 
 
 //*********************************************************************
@@ -169,10 +169,10 @@ hpcrun_trace_open(core_profile_trace_data_t * cptd)
 
 
 void
-hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t microtime)
+hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_path_id, uint metric_id, uint64_t nanotime)
 {
 	if (tracing && hpcrun_sample_prob_active()) {
-        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, microtime);
+        hpcrun_trace_append_with_time_real(st, call_path_id, metric_id, INT_MAX, nanotime);
 	}
 }
 
@@ -184,8 +184,8 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
     assert(ret == 0 && "in trace_append: gettimeofday failed!");
-    uint64_t microtime = ((uint64_t)tv.tv_usec
-			  + (((uint64_t)tv.tv_sec) * 1000000));
+    uint64_t nanotime = ((uint64_t)tv.tv_usec
+			  + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
 
     // mark the leaf of a call path recorded in a trace record for retention
     // so that the call path associated with the trace record can be recovered.
@@ -193,14 +193,14 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
 
     int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
-    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, nanotime);
   }
 }
 
 
 void
 hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t* node,
-  uint metric_id, uint32_t dLCA, uint64_t microtime)
+  uint metric_id, uint32_t dLCA, uint64_t nanotime)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     // mark the leaf of a call path recorded in a trace record for retention
@@ -209,7 +209,7 @@ hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t* node,
 
     int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
-    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, microtime);
+    hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, nanotime);
   }
 }
 
@@ -238,15 +238,15 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 // private operations
 //*********************************************************************
 
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t microtime)
+static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime)
 {
     if (cptd->trace_min_time_us == 0) {
-        cptd->trace_min_time_us = microtime;
+        cptd->trace_min_time_us = nanotime;
     }
     
     // TODO: should we need this check???
-    if(cptd->trace_max_time_us < microtime) {
-        cptd->trace_max_time_us = microtime;
+    if(cptd->trace_max_time_us < nanotime) {
+        cptd->trace_max_time_us = nanotime;
     }
     
     hpctrace_fmt_datum_t trace_datum;
@@ -257,10 +257,10 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
       dLCA = HPCTRACE_FMT_DLCA_NULL;
 
 #if defined(LCA_TRACE)
-    HPCTRACE_FMT_SET_TIME(trace_datum.comp, microtime);
+    HPCTRACE_FMT_SET_TIME(trace_datum.comp, nanotime);
     HPCTRACE_FMT_SET_DLCA(trace_datum.comp, dLCA);
 #else
-    trace_datum.comp = microtime;
+    trace_datum.comp = nanotime;
 #endif
     
     hpctrace_hdr_flags_t flags = hpctrace_hdr_flags_NULL;

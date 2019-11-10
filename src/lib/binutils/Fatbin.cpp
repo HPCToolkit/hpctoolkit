@@ -72,9 +72,9 @@
 
 #include <Elf_X.h>
 
+#include "Fatbin.hpp"
 #include "InputFile.hpp"
 #include "ElfHelper.hpp"
-
 
 
 //******************************************************************************
@@ -119,18 +119,6 @@ static FatbinSectionVector fatbinSectionVector;
 //******************************************************************************
 
 #ifdef DYNINST_USE_CUDA
-
-static bool
-isCubin(Elf *elf)
-{
-  // open the header of the Elf object
-  GElf_Ehdr ehdr_v; 
-  GElf_Ehdr *obj_ehdr = gelf_getehdr(elf, &ehdr_v);
-
-  // check the header of the Elf object to see if it is a Cubin
-  return (obj_ehdr && (obj_ehdr->e_machine == EM_CUDA));
-}
-
 
 static bool
 recordIfNvFatbin
@@ -224,10 +212,10 @@ findCubinSections
       if (!shdr) continue;
 
       if (recordIfNvFatbin(obj_ptr, elf, ehdr, scn, shdr)) {
-	count++;
+        count++;
       } else if (recordIfCubin(elfFile, obj_ptr, elf, ehdr, scn,
 			       shdr, elfFileVector)) {
-	count++;
+        count++;
       }
     }
   }
@@ -236,18 +224,23 @@ findCubinSections
 }
 
 
+static void
+writeCubins(
+ ElfFileVector *elfFileVector
+)
+{
+  for(unsigned int i = 0; i < elfFileVector->size(); i++) {
+     ElfFile *elfFile = (*elfFileVector)[i];
+     if (isCubin(elfFile->getElf())) {
+       writeElfFile(elfFile, ".cubin");
+     }
+  }
+}
+
 
 //******************************************************************************
 // interface functions
 //******************************************************************************
-
-#ifdef DYNINST_USE_CUDA
-void
-writeCubins(
- ElfFileVector *elfFileVector
-);
-#endif
-
 
 bool
 findCubins
@@ -272,10 +265,19 @@ findCubins
 }
 
 
+#ifdef DYNINST_USE_CUDA
 
-//******************************************************************************
-// debugging support
-//******************************************************************************
+bool
+isCubin(Elf *elf)
+{
+  // open the header of the Elf object
+  GElf_Ehdr ehdr_v; 
+  GElf_Ehdr *obj_ehdr = gelf_getehdr(elf, &ehdr_v);
+
+  // check the header of the Elf object to see if it is a Cubin
+  return (obj_ehdr && (obj_ehdr->e_machine == EM_CUDA));
+}
+
 
 void
 writeElfFile
@@ -290,18 +292,4 @@ writeElfFile
   fclose(f);
 }
 
-
-#ifdef DYNINST_USE_CUDA
-void
-writeCubins(
- ElfFileVector *elfFileVector
-)
-{
-  for(unsigned int i = 0; i < elfFileVector->size(); i++) {
-     ElfFile *elfFile = (*elfFileVector)[i];
-     if (isCubin(elfFile->getElf())) {
-       writeElfFile(elfFile, ".cubin");
-     }
-  }
-}
 #endif

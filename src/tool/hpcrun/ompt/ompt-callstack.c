@@ -262,7 +262,6 @@ collapse_callstack
  ompt_placeholder_t *placeholder
 )
 {
-
   set_frame(bt->last, placeholder);
   bt->begin = bt->last;
   bt->bottom_frame_elided = false;
