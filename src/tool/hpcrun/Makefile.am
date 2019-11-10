@@ -356,6 +356,7 @@ MY_BASE_FILES =				\
 	hpcrun-placeholders.c 		\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
+	gpu/gpu-api.c 			\
 	gpu/gpu-context-stream-id-map.c	\
 	gpu/gpu-correlation.c 		\
 	gpu/gpu-correlation-channel-set.c \
@@ -486,8 +487,8 @@ MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
 	sample-sources/nvidia/cubin-hash-map.c			\
 	sample-sources/nvidia/cubin-symbols.c			\
 	sample-sources/nvidia/cupti-analysis.c			\
-	sample-sources/nvidia/cupti-api.c			\
 	sample-sources/nvidia/cupti-node.c			\
+	sample-sources/nvidia/cupti-api.c			\
 	sample-sources/nvidia/cupti-trace-api.c 
 
 # sample-sources/nvidia/cupti-record.c

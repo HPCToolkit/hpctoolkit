@@ -155,7 +155,7 @@ typedef struct entry_data {
         gpu_branch_t branch;
         gpu_synchronization_t synchronization;
     };
-} entry_data_t;
+} gpu_activity_details_t;
 
 
 typedef struct gpu_activity_t {
@@ -168,7 +168,7 @@ typedef struct gpu_activity_t {
             uint32_t kind;
         } cupti_kind;
     };
-    entry_data_t* data;
+    gpu_activity_details_t details;
     cct_node_t *cct_node;
 } gpu_activity_t;
 

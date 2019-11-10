@@ -4,7 +4,6 @@
 #include <hpcrun/loadmap.h>
 #include <cupti.h>
 #include "cupti-node.h"
-#include <lib/prof-lean/producer_wfq.h>
 
 //******************************************************************************
 // constants
