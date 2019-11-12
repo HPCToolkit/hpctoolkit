@@ -479,15 +479,17 @@ if OPT_PAPI_CUPTI
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = sample-sources/nvidia.c			\
-	gpu/nvidia/cuda-api.c \
-	gpu/nvidia/cupti-analysis.c \
-	gpu/nvidia/cubin-hash-map.c \
-	gpu/nvidia/cuda-device-map.c \
-	gpu/nvidia/cubin-symbols.c \
-	gpu/nvidia/cupti-node.c \
-	gpu/nvidia/cupti-function-id-map.c \
-	gpu/nvidia/cupti-api.c \
+MY_CUPTI_FILES = sample-sources/nvidia.c	\
+	gpu/nvidia/cuda-api.c 			\
+	gpu/nvidia/cupti-activity-process.c 	\
+	gpu/nvidia/cupti-activity-translate.c 	\
+	gpu/nvidia/cupti-analysis.c 		\
+	gpu/nvidia/cubin-hash-map.c 		\
+	gpu/nvidia/cuda-device-map.c 		\
+	gpu/nvidia/cubin-symbols.c 		\
+	gpu/nvidia/cupti-activity-translate.c 	\
+	gpu/nvidia/cupti-function-id-map.c 	\
+	gpu/nvidia/cupti-api.c 			\
 	gpu/nvidia/cubin-id-map.c
 
 #	gpu/nvidia/cupti-context-id-map.c
@@ -923,7 +925,9 @@ endif
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif
 
 if UNW_LIBUNW

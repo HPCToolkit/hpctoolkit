@@ -280,9 +280,10 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_CUDA_TRUE@am__append_117 = $(MY_CUDA_FILES)
 @OPT_ENABLE_ROCM_TRUE@am__append_118 = $(MY_ROCM_FILES)
 @OPT_ENABLE_ROCM_TRUE@am__append_119 = -DENABLE_ROCM
-@OPT_ENABLE_ROCM_TRUE@am__append_120 = $(OPT_ROCM_IFLAGS)
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_121 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_122 = libagent-pthread.la \
+@OPT_ENABLE_ROCM_TRUE@am__append_120 = $(OPT_ROCM_IFLAGS) -g
+@OPT_ENABLE_ROCM_TRUE@am__append_121 = -DHPCRUN_SS_AMD
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_122 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_123 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -494,11 +495,13 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/papi.c sample-sources/papi-c-cupti.c \
 	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
 	sample-sources/nvidia.c gpu/nvidia/cuda-api.c \
+	gpu/nvidia/cupti-activity-process.c \
+	gpu/nvidia/cupti-activity-translate.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cubin-hash-map.c \
 	gpu/nvidia/cuda-device-map.c gpu/nvidia/cubin-symbols.c \
-	gpu/nvidia/cupti-node.c gpu/nvidia/cupti-function-id-map.c \
-	gpu/nvidia/cupti-api.c gpu/nvidia/cubin-id-map.c \
-	sample-sources/upc.c sample-sources/amd/amd.c \
+	gpu/nvidia/cupti-function-id-map.c gpu/nvidia/cupti-api.c \
+	gpu/nvidia/cubin-id-map.c sample-sources/upc.c \
+	sample-sources/amd/amd.c \
 	sample-sources/amd/hip-state-placeholders.c \
 	sample-sources/amd/roctracer-api.c \
 	sample-sources/amd/roctracer-node.c \
@@ -669,11 +672,13 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_CUPTI_TRUE@am__objects_31 =  \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/libhpcrun_la-nvidia.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cuda-api.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-activity-process.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-analysis.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-hash-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cuda-device-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-symbols.lo \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-node.lo \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-function-id-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-api.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-id-map.lo
@@ -864,17 +869,18 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	trampoline/aarch64/aarch64-tramp.c \
 	utilities/arch/libunwind/libunwind-context-pc.c \
 	sample-sources/nvidia.c gpu/nvidia/cuda-api.c \
+	gpu/nvidia/cupti-activity-process.c \
+	gpu/nvidia/cupti-activity-translate.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cubin-hash-map.c \
 	gpu/nvidia/cuda-device-map.c gpu/nvidia/cubin-symbols.c \
-	gpu/nvidia/cupti-node.c gpu/nvidia/cupti-function-id-map.c \
-	gpu/nvidia/cupti-api.c gpu/nvidia/cubin-id-map.c \
-	sample-sources/papi.c sample-sources/papi-c-cupti.c \
-	sample-sources/papi-c.c sample-sources/papi-c-extended-info.c \
-	sample-sources/upc.c unwind/common/backtrace.c \
-	unwind/common/unw-throw.c unwind/common/binarytree_uwi.c \
-	unwind/common/interval_t.c unwind/common/libunw_intervals.c \
-	unwind/common/stack_troll.c unwind/common/uw_hash.c \
-	unwind/common/uw_recipe_map.c \
+	gpu/nvidia/cupti-function-id-map.c gpu/nvidia/cupti-api.c \
+	gpu/nvidia/cubin-id-map.c sample-sources/papi.c \
+	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
+	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
+	unwind/common/backtrace.c unwind/common/unw-throw.c \
+	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
+	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
+	unwind/common/uw_hash.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -1034,11 +1040,13 @@ am__objects_61 =  \
 @HOST_CPU_AARCH64_TRUE@am__objects_62 = $(am__objects_61)
 @OPT_ENABLE_CUPTI_TRUE@am__objects_63 = sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cuda-api.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-activity-process.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-activity-translate.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-analysis.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-hash-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-symbols.$(OBJEXT) \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-node.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-activity-translate.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-function-id-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-api.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-id-map.$(OBJEXT)
@@ -1568,8 +1576,8 @@ bin_SCRIPTS = $(am__append_4) $(am__append_6)
 pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
-pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_121) \
-	$(am__append_122)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_122) \
+	$(am__append_123)
 BUILT_SOURCES = $(am__append_20)
 CLEANFILES = $(am__append_21)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
@@ -1658,7 +1666,7 @@ UNW_MIPS_LD_FLAGS =
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_17) \
 	$(am__append_96) $(am__append_100) $(am__append_102) \
-	$(am__append_106)
+	$(am__append_106) $(am__append_121)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1750,15 +1758,17 @@ MY_AARCH64_FILES = \
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
 @OPT_PAPI_COMPONENT_TRUE@	$(am__append_16)
-@OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia.c			\
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cuda-api.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-analysis.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-hash-map.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cuda-device-map.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-symbols.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-node.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-function-id-map.c \
-@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-api.c \
+@OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia.c	\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cuda-api.c 			\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-activity-process.c 	\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-activity-translate.c 	\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-analysis.c 		\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-hash-map.c 		\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cuda-device-map.c 		\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-symbols.c 		\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-activity-translate.c 	\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-function-id-map.c 	\
+@OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-api.c 			\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-id-map.c
 
 
@@ -2583,6 +2593,12 @@ gpu/nvidia/$(DEPDIR)/$(am__dirstamp):
 	@: > gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_la-cuda-api.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
+gpu/nvidia/libhpcrun_la-cupti-activity-process.lo:  \
+	gpu/nvidia/$(am__dirstamp) \
+	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
+gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo:  \
+	gpu/nvidia/$(am__dirstamp) \
+	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_la-cupti-analysis.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_la-cubin-hash-map.lo: gpu/nvidia/$(am__dirstamp) \
@@ -2591,8 +2607,6 @@ gpu/nvidia/libhpcrun_la-cuda-device-map.lo:  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_la-cubin-symbols.lo: gpu/nvidia/$(am__dirstamp) \
-	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
-gpu/nvidia/libhpcrun_la-cupti-node.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_la-cupti-function-id-map.lo:  \
 	gpu/nvidia/$(am__dirstamp) \
@@ -3068,6 +3082,12 @@ sample-sources/libhpcrun_o-nvidia.$(OBJEXT):  \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_o-cuda-api.$(OBJEXT): gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
+gpu/nvidia/libhpcrun_o-cupti-activity-process.$(OBJEXT):  \
+	gpu/nvidia/$(am__dirstamp) \
+	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
+gpu/nvidia/libhpcrun_o-cupti-activity-translate.$(OBJEXT):  \
+	gpu/nvidia/$(am__dirstamp) \
+	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_o-cupti-analysis.$(OBJEXT):  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
@@ -3078,9 +3098,6 @@ gpu/nvidia/libhpcrun_o-cuda-device-map.$(OBJEXT):  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_o-cubin-symbols.$(OBJEXT):  \
-	gpu/nvidia/$(am__dirstamp) \
-	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
-gpu/nvidia/libhpcrun_o-cupti-node.$(OBJEXT):  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/nvidia/libhpcrun_o-cupti-function-id-map.$(OBJEXT):  \
@@ -3478,19 +3495,21 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cuda-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cuda-device-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-function-id-map.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cubin-hash-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cubin-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cubin-symbols.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cuda-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cuda-device-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-function-id-map.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
@@ -4890,6 +4909,20 @@ gpu/nvidia/libhpcrun_la-cuda-api.lo: gpu/nvidia/cuda-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-cuda-api.lo `test -f 'gpu/nvidia/cuda-api.c' || echo '$(srcdir)/'`gpu/nvidia/cuda-api.c
 
+gpu/nvidia/libhpcrun_la-cupti-activity-process.lo: gpu/nvidia/cupti-activity-process.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-cupti-activity-process.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-process.Tpo -c -o gpu/nvidia/libhpcrun_la-cupti-activity-process.lo `test -f 'gpu/nvidia/cupti-activity-process.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-process.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-process.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-process.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-process.c' object='gpu/nvidia/libhpcrun_la-cupti-activity-process.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-cupti-activity-process.lo `test -f 'gpu/nvidia/cupti-activity-process.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-process.c
+
+gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo: gpu/nvidia/cupti-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-translate.Tpo -c -o gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo `test -f 'gpu/nvidia/cupti-activity-translate.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-translate.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-activity-translate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-translate.c' object='gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-cupti-activity-translate.lo `test -f 'gpu/nvidia/cupti-activity-translate.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-translate.c
+
 gpu/nvidia/libhpcrun_la-cupti-analysis.lo: gpu/nvidia/cupti-analysis.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-cupti-analysis.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Tpo -c -o gpu/nvidia/libhpcrun_la-cupti-analysis.lo `test -f 'gpu/nvidia/cupti-analysis.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-analysis.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-analysis.Plo
@@ -4917,13 +4950,6 @@ gpu/nvidia/libhpcrun_la-cubin-symbols.lo: gpu/nvidia/cubin-symbols.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cubin-symbols.c' object='gpu/nvidia/libhpcrun_la-cubin-symbols.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-cubin-symbols.lo `test -f 'gpu/nvidia/cubin-symbols.c' || echo '$(srcdir)/'`gpu/nvidia/cubin-symbols.c
-
-gpu/nvidia/libhpcrun_la-cupti-node.lo: gpu/nvidia/cupti-node.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-cupti-node.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Tpo -c -o gpu/nvidia/libhpcrun_la-cupti-node.lo `test -f 'gpu/nvidia/cupti-node.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-node.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-node.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-node.c' object='gpu/nvidia/libhpcrun_la-cupti-node.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-cupti-node.lo `test -f 'gpu/nvidia/cupti-node.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-node.c
 
 gpu/nvidia/libhpcrun_la-cupti-function-id-map.lo: gpu/nvidia/cupti-function-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-cupti-function-id-map.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-cupti-function-id-map.Tpo -c -o gpu/nvidia/libhpcrun_la-cupti-function-id-map.lo `test -f 'gpu/nvidia/cupti-function-id-map.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-function-id-map.c
@@ -7081,6 +7107,34 @@ gpu/nvidia/libhpcrun_o-cuda-api.obj: gpu/nvidia/cuda-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cuda-api.obj `if test -f 'gpu/nvidia/cuda-api.c'; then $(CYGPATH_W) 'gpu/nvidia/cuda-api.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cuda-api.c'; fi`
 
+gpu/nvidia/libhpcrun_o-cupti-activity-process.o: gpu/nvidia/cupti-activity-process.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-activity-process.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-activity-process.o `test -f 'gpu/nvidia/cupti-activity-process.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-process.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-process.c' object='gpu/nvidia/libhpcrun_o-cupti-activity-process.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-activity-process.o `test -f 'gpu/nvidia/cupti-activity-process.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-process.c
+
+gpu/nvidia/libhpcrun_o-cupti-activity-process.obj: gpu/nvidia/cupti-activity-process.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-activity-process.obj -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-activity-process.obj `if test -f 'gpu/nvidia/cupti-activity-process.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-activity-process.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-activity-process.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-process.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-process.c' object='gpu/nvidia/libhpcrun_o-cupti-activity-process.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-activity-process.obj `if test -f 'gpu/nvidia/cupti-activity-process.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-activity-process.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-activity-process.c'; fi`
+
+gpu/nvidia/libhpcrun_o-cupti-activity-translate.o: gpu/nvidia/cupti-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-activity-translate.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-activity-translate.o `test -f 'gpu/nvidia/cupti-activity-translate.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-translate.c' object='gpu/nvidia/libhpcrun_o-cupti-activity-translate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-activity-translate.o `test -f 'gpu/nvidia/cupti-activity-translate.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-activity-translate.c
+
+gpu/nvidia/libhpcrun_o-cupti-activity-translate.obj: gpu/nvidia/cupti-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-activity-translate.obj -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-activity-translate.obj `if test -f 'gpu/nvidia/cupti-activity-translate.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-activity-translate.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-activity-translate.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-activity-translate.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-activity-translate.c' object='gpu/nvidia/libhpcrun_o-cupti-activity-translate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-activity-translate.obj `if test -f 'gpu/nvidia/cupti-activity-translate.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-activity-translate.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-activity-translate.c'; fi`
+
 gpu/nvidia/libhpcrun_o-cupti-analysis.o: gpu/nvidia/cupti-analysis.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-analysis.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-analysis.o `test -f 'gpu/nvidia/cupti-analysis.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-analysis.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Po
@@ -7136,20 +7190,6 @@ gpu/nvidia/libhpcrun_o-cubin-symbols.obj: gpu/nvidia/cubin-symbols.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cubin-symbols.c' object='gpu/nvidia/libhpcrun_o-cubin-symbols.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cubin-symbols.obj `if test -f 'gpu/nvidia/cubin-symbols.c'; then $(CYGPATH_W) 'gpu/nvidia/cubin-symbols.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cubin-symbols.c'; fi`
-
-gpu/nvidia/libhpcrun_o-cupti-node.o: gpu/nvidia/cupti-node.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-node.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-node.o `test -f 'gpu/nvidia/cupti-node.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-node.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-node.c' object='gpu/nvidia/libhpcrun_o-cupti-node.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-node.o `test -f 'gpu/nvidia/cupti-node.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-node.c
-
-gpu/nvidia/libhpcrun_o-cupti-node.obj: gpu/nvidia/cupti-node.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-node.obj -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-node.obj `if test -f 'gpu/nvidia/cupti-node.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-node.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-node.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-node.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/cupti-node.c' object='gpu/nvidia/libhpcrun_o-cupti-node.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-cupti-node.obj `if test -f 'gpu/nvidia/cupti-node.c'; then $(CYGPATH_W) 'gpu/nvidia/cupti-node.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/cupti-node.c'; fi`
 
 gpu/nvidia/libhpcrun_o-cupti-function-id-map.o: gpu/nvidia/cupti-function-id-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-cupti-function-id-map.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-function-id-map.Tpo -c -o gpu/nvidia/libhpcrun_o-cupti-function-id-map.o `test -f 'gpu/nvidia/cupti-function-id-map.c' || echo '$(srcdir)/'`gpu/nvidia/cupti-function-id-map.c

@@ -10,18 +10,24 @@
 //   shared by worker threads.
 //******************************************************************************
 
+//******************************************************************************
+// nvidia includes
+//******************************************************************************
+
+#include <cupti_activity.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-// #include <lib/prof-lean/stdatomic.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/gpu/gpu-activity.h>
-#include <cupti_version.h>
-#include <cupti_activity.h>
-#include "cupti-node.h"
-#include "cupti-analysis.h"
+
+#include "cupti-activity-translate.h"
+
+// #include <cupti_version.h>
+//#include "cupti-analysis.h"
 
 
 
@@ -216,7 +222,6 @@ convert_synchronization
 }
 
 
-
 static void
 convert_memory
 (
@@ -229,35 +234,6 @@ convert_memory
   ga->details.memory.bytes = activity_mem->bytes;
   ga->details.memory.start = activity_mem->start;
   ga->details.memory.end = activity_mem->end;
-}
-
-
-void
-cupti_correlation_set
-(
- cupti_entry_correlation_t *entry,
- uint64_t host_op_id,
- void *activity_channel,
- cct_node_t *copy_node,
- cct_node_t *copyin_node,
- cct_node_t *copyout_node,
- cct_node_t *alloc_node,
- cct_node_t *delete_node,
- cct_node_t *sync_node,
- cct_node_t *kernel_node,
- cct_node_t *trace_node
-)
-{
-  entry->activity_channel = activity_channel;
-  entry->host_op_id = host_op_id;
-  entry->copy_node = copy_node;
-  entry->copyin_node = copyin_node;
-  entry->copyout_node = copyout_node;
-  entry->alloc_node = alloc_node;
-  entry->delete_node = delete_node;
-  entry->sync_node = sync_node;
-  entry->kernel_node = kernel_node;
-  entry->trace_node = trace_node;
 }
 
 
@@ -278,11 +254,11 @@ convert_memset
 
 
 //******************************************************************************
-// private operations
+// interface operations
 //******************************************************************************
 
 void
-cupti_ga_activity_set
+cupti_activity_translate
 (
  gpu_activity_t *ga,
  CUpti_Activity *activity,

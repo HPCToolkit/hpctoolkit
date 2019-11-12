@@ -1,18 +1,35 @@
-#ifndef _HPCTOOLKIT_NVIDIA_H_
-#define _HPCTOOLKIT_NVIDIA_H_
+#ifndef sample_sources_nvidia_h
+#define sample_sources_nvidia_h
 
-#include <hpcrun/cct/cct.h>
-#include <cupti.h>
-// #include "cupti-node.h"
+//******************************************************************************
+// nvidia includes
+//******************************************************************************
 
-typedef struct cupti_activity_t cupti_activity_t;
+#include <cuda.h>
 
-void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
+
+
+//******************************************************************************
+// forward type declarations
+//******************************************************************************
+
+typedef struct gpu_activity_t gpu_activity_t;
+typedef struct cct_node_t cct_node_t;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node);
 
 int cupti_pc_sampling_frequency_get();
 
 int cupti_trace_frequency_get();
 
 void cupti_enable_activities(CUcontext context);
+
+
 
 #endif

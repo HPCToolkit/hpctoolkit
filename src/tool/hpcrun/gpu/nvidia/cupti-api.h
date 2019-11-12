@@ -1,10 +1,15 @@
-#ifndef _HPCTOOLKIT_CUPTI_API_H_
-#define _HPCTOOLKIT_CUPTI_API_H_
+#ifndef cupti_api_h
+#define cupti_api_h
 
-#include <hpcrun/loadmap.h>
+
+
+//******************************************************************************
+// nvidia includes
+//******************************************************************************
+
 #include <cupti.h>
-#include "cupti-node.h"
-#include <lib/prof-lean/producer_wfq.h>
+
+
 
 //******************************************************************************
 // constants
@@ -127,12 +132,14 @@ cupti_device_timestamp_get
 void 
 cupti_init
 (
+ void
 );
 
 
 void 
 cupti_start
 (
+ void
 );
 
 
@@ -270,39 +277,5 @@ cupti_correlation_id_pop
 (
 );
 
-//******************************************************************************
-// ignores
-//******************************************************************************
-
-bool
-cupti_lm_contains_fn
-(
- const char *lm,
- const char *fn
-);
-
-
-bool
-cupti_modules_ignore
-(
- load_module_t *module
-);
-
-//******************************************************************************
-// notification stack
-//******************************************************************************
-
-void
-cupti_correlation_handle
-(
- cupti_entry_correlation_t *entry
-);
-
-
-void
-cupti_activity_handle
-(
- cupti_entry_activity_t *entry
-);
 
 #endif

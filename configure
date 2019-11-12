@@ -23170,11 +23170,7 @@ if test "$OPT_HAVE_ROCM" = "yes" ; then
 
 $as_echo "#define USE_ROCM 1" >>confdefs.h
 
-
   OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
-
-  OPT_ROCM_LDFLAGS="-L${OPT_ROCM}/lib -lroctracer64"
-
 fi
 
  if test "$OPT_HAVE_ROCM" = yes; then

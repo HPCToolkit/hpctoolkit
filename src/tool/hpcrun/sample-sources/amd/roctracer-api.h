@@ -37,4 +37,15 @@ roctracer_correlation_handle
         entry_correlation_t *entry
 );
 
+void 
+roctracer_init
+(
+
+);
+
+void 
+roctracer_fini
+(
+
+);
 #endif //HPCTOOLKIT_ROCTRACER_API_H

@@ -52,6 +52,8 @@ roctracer_activity_entry_set
                     entry->data->synchronization.end = activity->end_ns;
                     break;
                 case HIP_API_ID_hipDeviceSynchronize:
+                    entry->data->synchronization.start = activity->begin_ns;
+                    entry->data->synchronization.end = activity->end_ns;
                     break;
                 case HIP_API_ID_hipEventSynchronize:
                     entry->data->synchronization.syncKind = 1;
@@ -69,20 +71,12 @@ roctracer_activity_entry_set
                     entry->data->memset.start = activity->begin_ns;
                     entry->data->memset.end = activity->end_ns;
                     break;
-            }
-            break;
-        case ACTIVITY_DOMAIN_HCC_OPS:
-            switch(activity->op)
-            {
-                case HSA_OP_ID_COPY:
+                case HIP_API_ID_hipMemcpy:
                     entry->data->memcpy.start = activity->begin_ns;
                     entry->data->memcpy.end = activity->end_ns;
-                    entry->data->memcpy.copyKind = activity->kind;
-                    entry->data->memcpy.bytes = activity->bytes;
                     break;
             }
             break;
-
         default:
             break;
     }

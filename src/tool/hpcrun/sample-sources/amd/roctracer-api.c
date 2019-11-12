@@ -24,7 +24,9 @@
 
 #include "roctracer-api.h"
 #include "roctracer-record.h"
+#include "amd.h"
 #include "hip-state-placeholders.h"
+
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
@@ -42,20 +44,89 @@
 #include <hpcrun/sample-sources/gpu/gpu-api.h>
 
 #include <roctracer_hip.h>
-#include <roctracer_hcc.h>
 
+
+// HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
+// However, this file will include many C++ code, making it impossible
+// to compile with pure C.
+// HSA_OP_ID_COPY is a constant with value 1 at the moment. 
+#define HSA_OP_ID_COPY  1
 //static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
 
-static void
-roctracer_activity_attribute
-(
-    entry_activity_t *activity,
-    cct_node_t *cct_node
-)
-{
+#define FORALL_ROCTRACER_ROUTINES(macro)			\
+  macro(roctracer_open_pool)		\
+  macro(roctracer_enable_callback)  \
+  macro(roctracer_enable_activity)  \
+  macro(roctracer_disable_callback) \
+  macro(roctracer_disable_activity) \
+  macro(roctracer_flush_activity)
 
+#define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
+
+#define ROCTRACER_FN(fn, args) \
+  static roctracer_status_t (*ROCTRACER_FN_NAME(fn)) args
+
+#define HPCRUN_ROCTRACER_CALL(fn, args) \
+{      \
+  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;	\
+  if (status != ROCTRACER_STATUS_SUCCESS) {		\
+    /* use roctracer_error_string() */ \
+  }						\
 }
 
+//----------------------------------------------------------
+// roctracer function pointers for late binding
+//----------------------------------------------------------
+
+ROCTRACER_FN
+(
+ roctracer_open_pool,
+ (
+  const roctracer_properties_t*,
+  roctracer_pool_t**
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_enable_callback,
+ (
+  activity_rtapi_callback_t,
+  void*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_enable_activity,
+ (
+  roctracer_pool_t*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_callback,
+ (
+
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_activity,
+ (
+       
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_flush_activity,
+ (
+  roctracer_pool_t*
+ )
+);
 
 void
 roctracer_activity_handle
@@ -146,6 +217,42 @@ roctracer_memset_data_set
     }
 }
 
+static void
+roctracer_memcpy_data_set
+(
+      const hip_api_data_t *data,
+      entry_data_t *entry_data,
+      uint32_t callback_id
+)
+{
+    switch(callback_id){
+        case HIP_API_ID_hipMemcpyDtoD:
+            entry_data->memcpy.copyKind = 8;
+            entry_data->memcpy.bytes = data->args.hipMemcpyDtoD.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpyAtoH:
+            entry_data->memcpy.copyKind = 4;
+            break;
+        case HIP_API_ID_hipMemcpyHtoD:
+            entry_data->memcpy.copyKind = 1;
+            entry_data->memcpy.bytes = data->args.hipMemcpyHtoD.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpyHtoA:
+            entry_data->memcpy.copyKind = 3;
+            break;
+        case HIP_API_ID_hipMemcpyDtoH:
+            entry_data->memcpy.copyKind = 2;
+            entry_data->memcpy.bytes = data->args.hipMemcpyDtoH.sizeBytes;
+            break;
+        case HIP_API_ID_hipMemcpy:
+            entry_data->memcpy.copyKind = data->args.hipMemcpy.kind;
+            entry_data->memcpy.bytes = data->args.hipMemcpy.sizeBytes;
+            break;
+    }
+
+
+}
+
 void
 roctracer_subscriber_callback
 (
@@ -155,6 +262,7 @@ roctracer_subscriber_callback
       void* arg
 )
 {
+    gpu_record_init();
     placeholder_t hip_state = hip_placeholders.hip_none_state;
     const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
     entry_data_t *entry_data;
@@ -185,6 +293,8 @@ roctracer_subscriber_callback
             case HIP_API_ID_hipMemcpyParam2D:
                 hip_state = hip_placeholders.hip_memcpy_state;
                 activities_consume(roctracer_activity_handle);
+                entry_data = (entry_data_t*)hpcrun_malloc_safe(sizeof(entry_data_t));
+                roctracer_memcpy_data_set(data, entry_data, callback_id);
                 roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
                 break;
             case HIP_API_ID_hipMalloc:
@@ -433,4 +543,67 @@ roctracer_buffer_completion_callback
     }
 }
 
+const char *
+roctracer_path
+(
+  void
+)
+{
+  const char *path = "libroctracer64.so";
+  return path;
+}
+
+int
+roctracer_bind
+(
+  void
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  // dynamic libraries only availabile in non-static case
+  hpcrun_force_dlopen(true);
+  CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
+  hpcrun_force_dlopen(false);
+
+#define ROCTRACER_BIND(fn) \
+  CHK_DLSYM(roctracer, fn);
+
+  FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND)
+
+#undef ROCTRACER_BIND
+
+  return 0;
+#else
+  return -1;
+#endif // ! HPCRUN_STATIC_LINK
+}
+
+void
+roctracer_init
+(
+
+)
+{
+    roctracer_properties_t properties;
+    properties.buffer_size = 0x1000;
+    properties.buffer_callback_fun = roctracer_buffer_completion_callback;
+    properties.mode = 0;
+    properties.alloc_fun = 0;
+    properties.alloc_arg = 0;
+    properties.buffer_callback_arg = 0;
+    HPCRUN_ROCTRACER_CALL(roctracer_open_pool,(&properties, NULL));
+    HPCRUN_ROCTRACER_CALL(roctracer_enable_callback,(roctracer_subscriber_callback, NULL));
+    HPCRUN_ROCTRACER_CALL(roctracer_enable_activity,(NULL));
+}
+
+void
+roctracer_fini
+(
+
+)
+{
+    HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
+    HPCRUN_ROCTRACER_CALL(roctracer_disable_activity,());
+    HPCRUN_ROCTRACER_CALL(roctracer_flush_activity,(NULL));
+}
 

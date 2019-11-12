@@ -48,40 +48,54 @@
 // CUPTI synchronous sampling via PAPI sample source simple oo interface
 //
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
+//******************************************************************************
+// system includes
+//******************************************************************************
 
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <setjmp.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <ucontext.h>
-#include <stdbool.h>
 
-#include <pthread.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
 #endif
 
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
+
+
+//******************************************************************************
+// nvidia includes
+//******************************************************************************
+
+#include <cupti_activity.h>
+
+
+
+//******************************************************************************
+// libmonitor includes
+//******************************************************************************
 
 #include <monitor.h>
 
-/******************************************************************************
- * local includes
- *****************************************************************************/
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
 
 #include "nvidia.h"
 // #include "cubin-id-map.h"
 // #include "cuda-state-placeholders.h"
 // #include "gpu-driver-state-placeholders.h"
+
+#include "gpu/gpu-activity.h"
 #include "gpu/nvidia/cuda-api.h"
 #include "gpu/nvidia/cupti-api.h"
 #include "gpu/gpu-trace.h"
@@ -459,29 +473,29 @@ typedef enum cupti_activities_flags {
 
 
 void
-cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
+cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
   hpcrun_safe_enter();
 
-  switch (activity->kind) {
+  switch (activity->cupti_kind.kind) {
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
       int frequency_factor = (1 << pc_sampling_frequency);
 
-      if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
-        int index = stall_metric_id[activity->data.pc_sampling.stallReason];
+      if (activity->details.pc_sampling.stallReason != 0x7fffffff) {
+        int index = stall_metric_id[activity->details.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
-          activity->data.pc_sampling.latencySamples * frequency_factor});
+          activity->details.pc_sampling.latencySamples * frequency_factor});
 
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
-          activity->data.pc_sampling.samples * frequency_factor});
+          activity->details.pc_sampling.samples * frequency_factor});
 
         hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
-          activity->data.pc_sampling.latencySamples * frequency_factor});
+          activity->details.pc_sampling.latencySamples * frequency_factor});
       }
       break;
     }
@@ -490,42 +504,42 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, info_dropped_samples_id);
       hpcrun_metric_std_inc(info_dropped_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.droppedSamples});
 
       // It is fine to use set here because sampling cycle is changed during execution
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
-        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.samplingPeriodInCycles});
 
       hpcrun_metric_std_inc(info_total_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.totalSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.totalSamples});
 
       hpcrun_metric_std_inc(info_sm_full_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.fullSMSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.fullSMSamples});
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMCPY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMCPY\n");
-      if (activity->data.memcpy.copyKind != 0x7fffffff) {
-        int index = em_metric_id[activity->data.memcpy.copyKind];
+      if (activity->details.memcpy.copyKind != 0x7fffffff) {
+        int index = em_metric_id[activity->details.memcpy.copyKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->details.memcpy.bytes});
 
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.r =
-          (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
+          (activity->details.memcpy.end - activity->details.memcpy.start) / 1000.0});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMSET:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMSET\n");
-      if (activity->data.memset.memKind != 0x7fffffff) {
-        int index = me_set_metric_id[activity->data.memset.memKind];
+      if (activity->details.memset.memKind != 0x7fffffff) {
+        int index = me_set_metric_id[activity->details.memset.memKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memset.bytes});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->details.memset.bytes});
 
         hpcrun_metric_std_inc(me_set_time_metric_id, metrics, (cct_metric_data_t){.r =
-          (activity->data.memset.end - activity->data.memset.start) / 1000.0});
+          (activity->details.memset.end - activity->details.memset.start) / 1000.0});
       }
       break;
     }
@@ -533,102 +547,102 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     {
       PRINT("CUPTI_ACTIVITY_KIND_KERNEL\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
-      hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.staticSharedMemory});
+      hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->details.kernel.staticSharedMemory});
 
-      hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.dynamicSharedMemory});
+      hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->details.kernel.dynamicSharedMemory});
 
-      hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.localMemoryTotal});
+      hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->details.kernel.localMemoryTotal});
 
       hpcrun_metric_std_inc(ke_active_warps_per_sm_metric_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.activeWarpsPerSM});
+        (cct_metric_data_t){.i = activity->details.kernel.activeWarpsPerSM});
 
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
+        (cct_metric_data_t){.i = activity->details.kernel.maxActiveWarpsPerSM});
 
       hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.threadRegisters});
+        (cct_metric_data_t){.i = activity->details.kernel.threadRegisters});
 
       hpcrun_metric_std_inc(ke_block_threads_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
+        (cct_metric_data_t){.i = activity->details.kernel.blockThreads});
 
       hpcrun_metric_std_inc(ke_block_shared_memory_id, metrics,
-        (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
+        (cct_metric_data_t){.i = activity->details.kernel.blockSharedMemory});
 
       hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
 
       hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.r =
-        (activity->data.kernel.end - activity->data.kernel.start) / 1000.0});
+        (activity->details.kernel.end - activity->details.kernel.start) / 1000.0});
       break;
     }
     case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     {
       PRINT("CUPTI_ACTIVITY_KIND_SYNCHRONIZATION\n");
-      if (activity->data.synchronization.syncKind != 0x7fffffff) {
-        int index = sync_metric_id[activity->data.synchronization.syncKind];
+      if (activity->details.synchronization.syncKind != 0x7fffffff) {
+        int index = sync_metric_id[activity->details.synchronization.syncKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
-          (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
+          (activity->details.synchronization.end - activity->details.synchronization.start) / 1000.0});
 
         hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){.r =
-          (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
+          (activity->details.synchronization.end - activity->details.synchronization.start) / 1000.0});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_MEMORY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMORY\n");
-      if (activity->data.memory.memKind != 0x7fffffff) {
-        int index = me_metric_id[activity->data.memory.memKind];
+      if (activity->details.memory.memKind != 0x7fffffff) {
+        int index = me_metric_id[activity->details.memory.memKind];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
+        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->details.memory.bytes});
 
         hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.r =
-          (activity->data.memory.end - activity->data.memory.start) / 1000.0});
+          (activity->details.memory.end - activity->details.memory.start) / 1000.0});
       }
       break;
     }
     case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
     {
       PRINT("CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS\n");
-      int type = activity->data.global_access.type;
+      int type = activity->details.global_access.type;
       int l2_transactions_index = gl_metric_id[type];
 
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, l2_transactions_index);
-      hpcrun_metric_std_inc(l2_transactions_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.l2_transactions});
+      hpcrun_metric_std_inc(l2_transactions_index, metrics, (cct_metric_data_t){.i = activity->details.global_access.l2_transactions});
 
-      int l2_theoretical_transactions_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT + type];
+      int l2_theoretical_transactions_index = gl_metric_id[GPU_GLOBAL_ACCESS_COUNT + type];
       hpcrun_metric_std_inc(l2_theoretical_transactions_index, metrics,
-        (cct_metric_data_t){.i = activity->data.global_access.theoreticalL2Transactions});
+        (cct_metric_data_t){.i = activity->details.global_access.theoreticalL2Transactions});
 
-      int bytes_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT * 2 + type];
-      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.bytes});
+      int bytes_index = gl_metric_id[GPU_GLOBAL_ACCESS_COUNT * 2 + type];
+      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.global_access.bytes});
       break;
     }
     case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
     {
       PRINT("CUPTI_ACTIVITY_KIND_SHARED_ACCESS\n");
-      int type = activity->data.shared_access.type;
+      int type = activity->details.shared_access.type;
       int shared_transactions_index = sh_metric_id[type];
 
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, shared_transactions_index);
       hpcrun_metric_std_inc(shared_transactions_index, metrics,
-        (cct_metric_data_t){.i = activity->data.shared_access.sharedTransactions});
+        (cct_metric_data_t){.i = activity->details.shared_access.sharedTransactions});
 
-      int theoretical_shared_transactions_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT + type];
+      int theoretical_shared_transactions_index = sh_metric_id[GPU_SHARED_ACCESS_COUNT + type];
       hpcrun_metric_std_inc(theoretical_shared_transactions_index, metrics,
-        (cct_metric_data_t){.i = activity->data.shared_access.theoreticalSharedTransactions});
+        (cct_metric_data_t){.i = activity->details.shared_access.theoreticalSharedTransactions});
 
-      int bytes_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT * 2 + type];
-      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.shared_access.bytes});
+      int bytes_index = sh_metric_id[GPU_SHARED_ACCESS_COUNT * 2 + type];
+      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.shared_access.bytes});
       break;
     }
     case CUPTI_ACTIVITY_KIND_BRANCH:
     {
       PRINT("CUPTI_ACTIVITY_KIND_BRANCH\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);
-      hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.diverged});
+      hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->details.branch.diverged});
 
-      hpcrun_metric_std_inc(bh_executed_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.executed});
+      hpcrun_metric_std_inc(bh_executed_metric_id, metrics, (cct_metric_data_t){.i = activity->details.branch.executed});
       break;
     }
     default:
