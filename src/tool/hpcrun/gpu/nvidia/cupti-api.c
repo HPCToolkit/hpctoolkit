@@ -95,35 +95,27 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample-sources/libdl.h>
-
-// #include <hpcrun/sample-sources/gpu/gpu-record.h>
-#include <hpcrun/gpu/gpu-api.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-host-correlation-map.h>
-#include <hpcrun/gpu/gpu-correlation-channel-set.h>
-
+#include <hpcrun/sample-sources/nvidia.h>
 #include <hpcrun/ompt/ompt-device.h>
 
-#include "nvidia.h"
 
 #include "cuda-device-map.h"
-#include "cuda-op-placeholders.h"
-#include "gpu-driver-state-placeholders.h"
+// #include "cuda-state-placeholders.h"
+#include "gpu/gpu-op-placeholders.h"
 
 #include "cubin-id-map.h"
 #include "cubin-hash-map.h"
 
 #include "cupti-api.h"
-
-// #include "cupti-record.h"
-// #include "cupti-context-stream-id-map.h"
-#include <gpu/gpu-trace.h>
-#include <gpu/gpu-host-correlation-map.h>
-#include <gpu/gpu-function-id-map.h>
-
+#include "cupti-correlation-id-map.h"
+#include "cupti-function-id-map.h"
+#include "gpu/gpu-host-correlation-map.h"
 // #include "cupti-channel.h"
 
 // #include "cupti-context-id-map.h"
+#include "gpu/gpu-context-id-map.h"
+// #include "cupti-trace-api.h"
+#include "gpu/gpu-trace.h"
 
 
 //******************************************************************************
@@ -198,13 +190,7 @@ typedef CUptiResult (*cupti_activity_enable_t)
 
 typedef cct_node_t *(*cupti_correlation_callback_t)
 (
-<<<<<<< HEAD
- uint64_t id,
- placeholder_t cuda_state,
- bool is_kernel_op
-=======
  uint64_t id
->>>>>>> master-gpu-trace
 );
 
 
@@ -252,13 +238,7 @@ cupti_error_callback_dummy
 static cct_node_t *
 cupti_correlation_callback_dummy
 (
-<<<<<<< HEAD
- uint64_t id,
- placeholder_t cuda_state,
- bool is_kernel_op
-=======
  uint64_t id
->>>>>>> master-gpu-trace
 );
 
 
@@ -567,30 +547,10 @@ cupti_bind
 }
 
 
-<<<<<<< HEAD
-static uint64_t
-generate_host_correlation_id
-(
- void
-)
-{
-  uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
-  return correlation_id;
-}
-
-
-static void
-cupti_correlation_callback_dummy // __attribute__((unused))
-(
- uint64_t id,
- placeholder_t cuda_state,
- bool is_kernel_op
-=======
 static cct_node_t *
 cupti_correlation_callback_dummy // __attribute__((unused))
 (
  uint64_t id
->>>>>>> master-gpu-trace
 )
 {
   return NULL;
@@ -708,8 +668,7 @@ cupti_load_callback_cuda
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
-    PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, 
-	  hpctoolkit_module_id);
+    PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -734,24 +693,11 @@ cupti_unload_callback_cuda
 static cct_node_t *
 cupti_correlation_callback_cuda
 (
-<<<<<<< HEAD
- uint64_t correlation_id,
- placeholder_t cuda_state,
- bool is_kernel_op
-=======
  uint64_t correlation_id
->>>>>>> master-gpu-trace
 )
 {
   PRINT("enter cupti_correlation_callback_cuda %u\n", correlation_id);
 
-<<<<<<< HEAD
-  ip_normalized_t *kernel_ip = is_kernel_op ? &cupti_kernel_ip : NULL;
-
-  gpu_correlation_callback(correlation_id, cuda_state, kernel_ip);
-
-  PRINT("exit cupti_correlation_callback_cuda\n");
-=======
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here
   ucontext_t uc;
@@ -795,7 +741,6 @@ cupti_correlation_callback_cuda
   }
 
   return node;
->>>>>>> master-gpu-trace
 }
 
 
@@ -847,13 +792,16 @@ cupti_subscriber_callback
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
 
+#if 0
+    // johnmc: replaced with lazy initialization
+    cupti_correlation_channel_init();
+    cupti_activity_channel_init();
+#endif
+
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-<<<<<<< HEAD
-    placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
-=======
->>>>>>> master-gpu-trace
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
+#if 0
     bool is_valid_op = false;
     bool is_copy_op = false;
     bool is_copyin_op = false;
@@ -862,6 +810,8 @@ cupti_subscriber_callback
     bool is_delete_op = false;
     bool is_sync_op = false;
     bool is_kernel_op = false;
+#endif
+    gpu_op_placeholder_flags_t gpu_op_placeholder_flags;
     ip_normalized_t func_ip;
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
@@ -884,7 +834,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
         {
-          is_sync_op = true;
+	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				       gpu_placeholder_type_sync);
           is_valid_op = true;
           break;
         }
@@ -896,7 +847,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz:
         {
-          is_copyin_op = true;
+	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				       gpu_placeholder_type_copyin);
           is_valid_op = true;
           break;
         }
@@ -908,7 +860,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz:
         {
-          is_copyout_op = true;
+	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				       gpu_placeholder_type_copyout);
           is_valid_op = true;
           break;
         }
@@ -969,7 +922,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
         {
-          is_copy_op = true;
+	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				       gpu_placeholder_type_copy);
           is_valid_op = true;
           break;
         }
@@ -984,30 +938,17 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
           // Process previous activities
-<<<<<<< HEAD
-          gpu_activity_channel_consume();
-
-          cuda_state = cuda_placeholders.cuda_kernel_state;
+	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				       gpu_placeholder_type_kernel);
           is_valid_op = true;
-          // XXX(Keren): cannot parse this kind of kernel launch
-          if (cb_id != 
-	      CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
-            is_kernel_op = true;
-            // CUfunction is the first param
-            CUfunction function_ptr = 
-	      *(CUfunction *)((CUfunction)cd->functionParams);
-            cupti_kernel_ip = cupti_kernel_ip_resolve(function_ptr);
-=======
-          is_valid_op = true;
-          is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
-            cupti_activity_channel_consume(cupti_activity_channel_get());
+            gpu_activity_channel_consume();
+
             // XXX(Keren): cannot parse this kind of kernel launch
             //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
             // CUfunction is the first param
             CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
             func_ip = cupti_func_ip_resolve(function_ptr);
->>>>>>> master-gpu-trace
           }
           break;
         }
@@ -1017,34 +958,20 @@ cupti_subscriber_callback
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
-<<<<<<< HEAD
-        // A driver API might be implemented by other driver APIs, so we get 
-        // an id and unwind when the API is entered
-        uint64_t correlation_id = generate_host_correlation_id();
-        cupti_correlation_callback(correlation_id, cuda_state, is_kernel_op);
-        cupti_correlation_id_push(correlation_id);
-        PRINT("Driver push externalId %lu (cb_id = %u)\n", 
-	      correlation_id, cb_id);
-      }
-      if (cd->callbackSite == CUPTI_API_EXIT) {
-        uint64_t correlation_id __attribute__((unused));
-        correlation_id = cupti_correlation_id_pop();
-        PRINT("Driver pop externalId %lu (cb_id = %u)\n", 
-	      correlation_id, cb_id);
-=======
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
         uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
         cupti_correlation_id_push(correlation_id);
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
-        gpu_driver_ccts_t gpu_driver_ccts;
-        memset(&gpu_driver_ccts, 0, sizeof(gpu_driver_ccts));
+        gpu_op_ccts_t gpu_op_ccts;
+        memset(&gpu_op_ccts, 0, sizeof(gpu_op_ccts));
         cct_addr_t api_frm;
         memset(&api_frm, 0, sizeof(cct_addr_t));
 
         hpcrun_safe_enter();
 
+#if 0
         if (is_copy_op) {
           api_frm.ip_norm = gpu_driver_placeholders.gpu_copy_state.pc_norm;
           gpu_driver_ccts.copy_node = hpcrun_cct_insert_addr(api_node, &api_frm);
@@ -1076,6 +1003,20 @@ cupti_subscriber_callback
           cct_node_t *cct_func = hpcrun_cct_insert_addr(gpu_driver_ccts.trace_node, &func_frm);
           hpcrun_cct_retain(cct_func);
         }
+#else
+	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+    if (is_kernel_op) {
+      cct_addr_t func_frm;
+
+      memset(&func_frm, 0, sizeof(cct_addr_t));
+
+      func_frm.ip_norm = func_ip;
+
+      cct_node_t *cct_func = 
+	hpcrun_cct_insert_addr(gpu_driver_ccts.trace_node, &func_frm);
+      hpcrun_cct_retain(cct_func);
+    }
+#endif
 
         hpcrun_safe_exit();
 
@@ -1090,7 +1031,6 @@ cupti_subscriber_callback
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id = cupti_correlation_id_pop();
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
->>>>>>> master-gpu-trace
       }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite == CUPTI_API_ENTER) {
       if (cupti_trace_node != NULL) {
@@ -1113,13 +1053,10 @@ cupti_subscriber_callback
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
+    cupti_correlation_channel_init();
+    cupti_activity_channel_init();
 
-<<<<<<< HEAD
-    const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-    placeholder_t cuda_state = cuda_placeholders.cuda_none_state;
-=======
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
->>>>>>> master-gpu-trace
 
     bool is_valid_op = false;
     bool is_kernel_op = false;
@@ -1204,12 +1141,6 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:
       #endif
         {
-<<<<<<< HEAD
-          // Process previous activities
-          gpu_activity_channel_consume();
-          cuda_state = cuda_placeholders.cuda_kernel_state;
-=======
->>>>>>> master-gpu-trace
           is_valid_op = true;
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
@@ -1225,23 +1156,6 @@ cupti_subscriber_callback
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // Enter a CUDA runtime api
         cupti_runtime_api_flag_set();
-<<<<<<< HEAD
-        // A runtime API must be implemented by driver APIs.
-        // For kernel launch APIs, we wait for the driver API to find 
-	// the corresponding function ip_norm
-        uint64_t correlation_id = generate_host_correlation_id();
-        cupti_correlation_id_push(correlation_id);
-        PRINT("Runtime push externalId %lu (cb_id = %u)\n", 
-	      correlation_id, cb_id);
-      }
-      if (cd->callbackSite == CUPTI_API_EXIT) {
-        cupti_runtime_api_flag_unset();
-        uint64_t correlation_id = cupti_correlation_id_pop();
-        cupti_correlation_callback(correlation_id, cuda_state, is_kernel_op);
-
-        PRINT("Runtime pop externalId %lu (cb_id = %u)\n", 
-	      correlation_id, cb_id);
-=======
         uint64_t correlation_id = atomic_fetch_add(&cupti_correlation_id, 1);
         cupti_correlation_id_push(correlation_id);
         // We should make notification records in the api enter callback.
@@ -1251,12 +1165,14 @@ cupti_subscriber_callback
         // in the interval of a runtime api.
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
-        gpu_driver_ccts_t gpu_driver_ccts;
+        gpu_op_ccts_t gpu_op_ccts;
+
+        hpcrun_safe_enter();
+
+#if 0
         memset(&gpu_driver_ccts, 0, sizeof(gpu_driver_ccts_t));
         cct_addr_t api_frm;
         memset(&api_frm, 0, sizeof(cct_addr_t));
-
-        hpcrun_safe_enter();
 
         api_frm.ip_norm = gpu_driver_placeholders.gpu_copy_state.pc_norm;
         gpu_driver_ccts.copy_node = hpcrun_cct_insert_addr(api_node, &api_frm);
@@ -1274,10 +1190,13 @@ cupti_subscriber_callback
         gpu_driver_ccts.kernel_node = hpcrun_cct_insert_addr(api_node, &api_frm);
         api_frm.ip_norm = gpu_driver_placeholders.gpu_sync_state.pc_norm;
         gpu_driver_ccts.sync_node = hpcrun_cct_insert_addr(api_node, &api_frm);
+#else
+	gpu_op_ccts_insert(api_node, &gpu_op_ccts);
+#endif
         
         hpcrun_safe_exit();
 
-        cupti_trace_node = gpu_driver_ccts.trace_node;
+        cupti_trace_node = gpu_op_ccts.ccts[gpu_placeholder_type_trace];
 
         // Generate notification entry
         cupti_correlation_channel_produce(
@@ -1293,7 +1212,6 @@ cupti_subscriber_callback
         uint64_t correlation_id = cupti_correlation_id_pop();
         cupti_trace_node = NULL;
         PRINT("Runtime pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
->>>>>>> master-gpu-trace
       }
     } else {
       PRINT("Go through runtime with kernel_op %d, valid_op %d, \
@@ -1327,14 +1245,10 @@ cupti_device_buffer_config
 )
 {
   size_t value_size = sizeof(size_t);
-
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-                   (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, 
-		    &value_size, &buf_size));
-
+                   (CUPTI_ACTIVITY_ATTR_DEVICE_BUFFER_SIZE, &value_size, &buf_size));
   HPCRUN_CUPTI_CALL(cuptiActivitySetAttribute,
-                   (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, 
-		    &value_size, &sem_size));
+                   (CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE, &value_size, &sem_size));
 }
 
 
@@ -1369,8 +1283,7 @@ cupti_buffer_cursor_advance
   CUpti_Activity **current
 )
 {
-  return (CUPTI_FN_NAME(cuptiActivityGetNextRecord)(buffer, size, current) == 
-	  CUPTI_SUCCESS);
+  return (CUPTI_FN_NAME(cuptiActivityGetNextRecord)(buffer, size, current) == CUPTI_SUCCESS);
 }
 
 
@@ -1385,7 +1298,7 @@ cupti_buffer_completion_callback
 )
 {
   // handle notifications
-  gpu_correlation_channel_set_consume();
+  cupti_correlation_channel_consume(NULL);
 
   if (validSize > 0) {
     // Signal advance to return pointer to first record
@@ -1410,7 +1323,6 @@ cupti_buffer_completion_callback
 
   free(buffer);
 }
-
 
 //-------------------------------------------------------------
 // event specification
@@ -1627,8 +1539,6 @@ cupti_pc_sampling_disable
   }
 }
 
-<<<<<<< HEAD
-=======
 
 //-------------------------------------------------------------
 // General functions
@@ -1681,19 +1591,19 @@ cupti_sample_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry = 
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry = 
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       PRINT("external_id %lu\n", external_id);
       // Delete a host op node if all the samples with the node are processed
-      if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
+      if (!gpu_host_correlation_map_samples_increase(external_id, sample->samples)) {
         cupti_correlation_id_map_delete(sample->correlationId);
       }
       // Function node has the start pc of the function
       cct_node_t *kernel_node = 
-        cupti_host_op_map_entry_kernel_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_kernel_node_get(host_op_entry);
       cct_node_t *trace_node = 
-        cupti_host_op_map_entry_trace_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_trace_node_get(host_op_entry);
       // XXX(keren): for now, suppose a runtime api only launches a single kernel
       cct_node_t *func_node = hpcrun_cct_children(trace_node);
       if (func_node != NULL) {
@@ -1706,7 +1616,7 @@ cupti_sample_process
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(kernel_node, &frm)) != NULL) {
           cupti_activity_channel_t *channel = 
-            cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+            gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
           cupti_activity_channel_produce(channel, (CUpti_Activity *)sample, cct_child);
         }
       } else {
@@ -1765,17 +1675,17 @@ cupti_sampling_record_info_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
       cct_node_t *kernel_node = 
-        cupti_host_op_map_entry_kernel_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_kernel_node_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)sri, kernel_node);
     }
     // sample record info is the last record for a given correlation id
-    if (!cupti_host_op_map_total_samples_update
+    if (!gpu_host_correlation_map_total_samples_update
       (external_id, sri->totalSamples - sri->droppedSamples)) {
       cupti_correlation_id_map_delete(sri->correlationId);
     }
@@ -1815,17 +1725,17 @@ cupti_memcpy_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = NULL;
       if (activity->copyKind == CUPTI_ACTIVITY_MEMCPY_KIND_HTOD) {
-        host_op_node = cupti_host_op_map_entry_copyin_node_get(host_op_entry);
+        host_op_node = gpu_host_correlation_map_entry_copyin_node_get(host_op_entry);
       } else if (activity->copyKind == CUPTI_ACTIVITY_MEMCPY_KIND_DTOH) {
-        host_op_node = cupti_host_op_map_entry_copyout_node_get(host_op_entry);
+        host_op_node = gpu_host_correlation_map_entry_copyout_node_get(host_op_entry);
       }
       if (host_op_node == NULL) { // If we cannot find a perfect match for the operation
-        host_op_node = cupti_host_op_map_entry_copy_node_get(host_op_entry);
+        host_op_node = gpu_host_correlation_map_entry_copy_node_get(host_op_entry);
       }
       if (hpcrun_trace_isactive()) {
         cupti_entry_trace_t entry_trace = {
@@ -1838,11 +1748,11 @@ cupti_memcpy_process
       }
 
       cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity,
         host_op_node);
       //FIXME(keren): How to clear ops
-      //cupti_host_op_map_delete(external_id);
+      //gpu_host_correlation_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   } else {
@@ -1866,11 +1776,11 @@ cupti_memcpy2_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-        cupti_host_op_map_entry_copy_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_copy_node_get(host_op_entry);
       if (hpcrun_trace_isactive()) {
         cupti_entry_trace_t entry_trace = {
           .start = activity->start,
@@ -1882,11 +1792,11 @@ cupti_memcpy2_process
       }
 
       cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity,
         host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      //cupti_host_op_map_delete(external_id);
+      //gpu_host_correlation_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1908,10 +1818,10 @@ cupti_memset_process
     cupti_correlation_id_map_lookup(activity->correlationId);
   if (cupti_entry != NULL) {
     uint64_t external_id = cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry = cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry = gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-        cupti_host_op_map_entry_host_op_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_host_op_node_get(host_op_entry);
       cupti_entry_trace_t entry_trace = {
         .start = activity->start,
         .end = activity->end,
@@ -1921,10 +1831,10 @@ cupti_memset_process
         cupti_trace_append, &entry_trace);
 
       cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      //cupti_host_op_map_delete(external_id);
+      //gpu_host_correlation_map_delete(external_id);
     }
     cupti_correlation_id_map_delete(activity->correlationId);
   }
@@ -1989,11 +1899,11 @@ cupti_kernel_process
       activity->deviceId, activity->start, activity->end);
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node = 
-        cupti_host_op_map_entry_trace_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_trace_node_get(host_op_entry);
       cct_node_t *func_node = hpcrun_cct_children(host_op_node);
       if (func_node != NULL) {
         if (hpcrun_trace_isactive()) {
@@ -2008,7 +1918,7 @@ cupti_kernel_process
         }
 
         cupti_activity_channel_t *channel = 
-          cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+          gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
         cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, host_op_node);
       } else {
         PRINT("host_op_entry %lu, func node not found\n", external_id);
@@ -2032,13 +1942,13 @@ cupti_synchronization_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *sync_node =
-        cupti_host_op_map_entry_sync_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_sync_node_get(host_op_entry);
       cupti_activity_channel_t *channel =
-        cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
       if (hpcrun_trace_isactive()) {
         cupti_entry_trace_t entry_trace = {
           .start = activity->start,
@@ -2060,7 +1970,7 @@ cupti_synchronization_process
       cupti_activity_channel_produce(channel, (CUpti_Activity *)activity, sync_node);
       // TODO(Keren): handle event synchronization
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
-      //cupti_host_op_map_delete(external_id);
+      //gpu_host_correlation_map_delete(external_id);
     } else {
       PRINT("host_op_map external id %lu not found\n", external_id);
     }
@@ -2081,11 +1991,11 @@ cupti_cdpkernel_process
   if (cupti_entry != NULL) {
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
-    cupti_host_op_map_entry_t *host_op_entry =
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-        cupti_host_op_map_entry_trace_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_trace_node_get(host_op_entry);
       cct_node_t *func_node = hpcrun_cct_children(host_op_node);
       if (func_node != NULL) {
         if (hpcrun_trace_isactive()) {
@@ -2147,14 +2057,14 @@ cupti_instruction_process
     uint64_t external_id =
       cupti_correlation_id_map_entry_external_id_get(cupti_entry);
     PRINT("external_id %lu\n", external_id);
-    cupti_host_op_map_entry_t *host_op_entry = 
-      cupti_host_op_map_lookup(external_id);
+    gpu_host_correlation_map_entry_t *host_op_entry = 
+      gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       // Function node has the start pc of the function
       cct_node_t *kernel_node = 
-        cupti_host_op_map_entry_kernel_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_kernel_node_get(host_op_entry);
       cct_node_t *trace_node = 
-        cupti_host_op_map_entry_trace_node_get(host_op_entry);
+        gpu_host_correlation_map_entry_trace_node_get(host_op_entry);
       cct_node_t *func_node = hpcrun_cct_children(trace_node);
       if (func_node != NULL) {
         cct_addr_t *func_addr = hpcrun_cct_addr(func_node);
@@ -2166,7 +2076,7 @@ cupti_instruction_process
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(kernel_node, &frm)) != NULL) {
           cupti_activity_channel_t *channel = 
-            cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+            gpu_host_correlation_map_entry_activity_channel_get(host_op_entry);
           cupti_activity_channel_produce(channel, activity, cct_child);
         }
       } else {
@@ -2254,7 +2164,6 @@ cupti_activity_process
   }
 }
 
->>>>>>> master-gpu-trace
 //******************************************************************************
 // finalizer
 //******************************************************************************
@@ -2275,7 +2184,7 @@ cupti_device_flush(void *args)
     cupti_stop_flag_unset();
     cupti_activity_flush();
     // TODO(keren): replace cupti with sth. called device queue
-    gpu_activity_channel_consume();
+    cupti_activity_channel_consume(cupti_activity_channel_get());
   }
 }
 
@@ -2331,9 +2240,6 @@ cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
   cupti_activity_flush();
-<<<<<<< HEAD
-  gpu_activity_channel_consume();
-=======
   cupti_activity_channel_consume(cupti_activity_channel_get());
 }
 
@@ -2348,9 +2254,8 @@ cupti_activity_handle(cupti_entry_activity_t *entry)
 void
 cupti_correlation_handle(cupti_entry_correlation_t *entry)
 {
-  cupti_host_op_map_insert(entry->host_op_id,
+  gpu_host_correlation_map_insert(entry->host_op_id,
     entry->activity_channel, entry->copy_node, entry->copyin_node,
     entry->copyout_node, entry->alloc_node, entry->delete_node,
     entry->sync_node, entry->kernel_node, entry->trace_node);
->>>>>>> master-gpu-trace
 }

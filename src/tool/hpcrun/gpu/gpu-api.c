@@ -97,7 +97,7 @@ gpu_correlation_callback
   hpcrun_safe_exit();
   td->overhead--;
 
-  gpu_correlation_channel_produce(id, cct_api, cct_func);
+  // gpu_correlation_channel_produce(id, gpu_op_ccts);
 }
 
 

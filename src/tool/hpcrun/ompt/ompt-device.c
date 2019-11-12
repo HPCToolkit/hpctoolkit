@@ -70,13 +70,14 @@
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
 
-// #include "sample-sources/gpu/activity-channel.h"
+// #include "sample-sources/nvidia/cuda-state-placeholders.h"
+#include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-correlation-channel.h"
+#include "gpu/gpu-correlation-channel-set.h"
 
-#include "sample-sources/nvidia/cuda-state-placeholders.h"
-#include "sample-sources/nvidia/gpu-driver-state-placeholders.h"
-#include "sample-sources/nvidia/cupti-api.h"
-#include "sample-sources/nvidia/nvidia.h"
+#include "gpu/nvidia/cupti-api.h"
+// #include "sample-sources/nvidia/cupti-channel.h"
+#include "sample-sources/nvidia.h"
 
 
 
@@ -180,8 +181,8 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     ompt_runtime_api_flag = true;
     cupti_correlation_id_push(host_op_id);
 
-    gpu_driver_ccts_t gpu_driver_ccts;
-    memset(&gpu_driver_ccts, 0, sizeof(gpu_driver_ccts_t));
+    gpu_op_ccts_t gpu_op_ccts;
+    memset(&gpu_op_ccts, 0, sizeof(gpu_op_ccts_t));
 
     hpcrun_safe_enter();
 
@@ -190,32 +191,14 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     frm.ip_norm = ip_norm;
     cct_node_t *api_node = hpcrun_cct_insert_addr(target_node, &frm);
 
-    frm.ip_norm = gpu_driver_placeholders.gpu_copy_state.pc_norm;
-    gpu_driver_ccts.copy_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_copyin_state.pc_norm;
-    gpu_driver_ccts.copyin_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_copyout_state.pc_norm;
-    gpu_driver_ccts.copyout_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_alloc_state.pc_norm;
-    gpu_driver_ccts.alloc_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_delete_state.pc_norm;
-    gpu_driver_ccts.delete_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_kernel_state.pc_norm;
-    gpu_driver_ccts.kernel_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_trace_state.pc_norm;
-    gpu_driver_ccts.trace_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_sync_state.pc_norm;
-    gpu_driver_ccts.sync_node = hpcrun_cct_insert_addr(api_node, &frm);
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placholder_flags_all);
 
     hpcrun_safe_exit();
 
-    trace_node = gpu_driver_ccts.trace_node;
+    trace_node = gpu_op_ccts.ccts[gpu_placeholder_type_trace];
 
-    // Inform the worker about the placeholder
-    cupti_correlation_channel_t *channel = cupti_correlation_channel_get();
-    cupti_activity_channel_t *activity_channel = cupti_activity_channel_get();
-    cupti_correlation_channel_produce(channel, host_op_id,
-      activity_channel, &gpu_driver_ccts);
+    // Inform the worker about the placeholders
+    gpu_correlation_channel_produce(host_op_id, &gpu_op_ccts);
   } else {
     PRINT("exit ompt runtime op %lu\n", host_op_id);
     // Enter a runtime api
@@ -225,11 +208,6 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     // Clear kernel status
     trace_node = NULL;
   }
-
-  hpcrun_safe_exit();
-
-  // inform the worker about the placeholder
-  gpu_correlation_channel_produce(host_op_id, cct_child, cct_func);
 
   return;
 }
@@ -273,12 +251,7 @@ ompt_callback_buffer_complete
  int buffer_owned
 )
 {
-
-#if 0
   // handle notifications
-#if 0
-  cupti_correlation_channel_consume(NULL);
-#endif
   gpu_correlation_channel_set_consume();
 
   // signal advance to return pointer to first record
@@ -290,8 +263,6 @@ ompt_callback_buffer_complete
     cupti_activity_process(activity);
     status = cupti_buffer_cursor_advance(buffer, bytes, (CUpti_Activity **)&next);
   } while(status);
-
-#endif
 }
 
 
@@ -407,20 +378,6 @@ ompt_target_callback
   const void *codeptr_ra
 )
 {
-
-  PRINT("ompt_target_callback->target_id %d\n", target_id);
-  // If a thread creates a target region, we init records
-  // and it must be flushed in the finalizer
-  cupti_stop_flag_set();
-
-#if 0
-  // TODO(Keren) ignore cupti thread callback
-  gpu_record_init();
-
-  // process cupti records
-  gpu_activities_consume(cupti_activity_handle);
-
-=======
   PRINT("ompt_target_callback->target_id %" PRIu64 "\n", target_id);
 
   if (endpoint == ompt_scope_end) {
@@ -435,8 +392,6 @@ ompt_target_callback
   //cupti_correlation_channel_init();
   //cupti_activity_channel_init();
   //cupti_correlation_channel_consume();
->>>>>>> master-gpu-trace
-#endif
 
   // sample a record
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};

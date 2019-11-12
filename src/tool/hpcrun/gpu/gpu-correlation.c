@@ -28,6 +28,7 @@
 
 #include "gpu-correlation.h"
 #include "gpu-correlation-channel.h"
+#include "gpu-op-placeholders.h"
 #include "gpu-channel-item-allocator.h"
 
 #if UNIT_TEST == 0
@@ -42,9 +43,8 @@ typedef struct gpu_correlation_t {
   s_element_t next;
 
   // correlation info
-  uint64_t host_op_id;
-  cct_node_t *api_node;
-  cct_node_t *func_node;
+  uint64_t host_correlation_id;
+  gpu_op_ccts_t gpu_op_ccts; 
 
   // where to report the activity
   gpu_activity_channel_t *activity_channel;
@@ -60,15 +60,13 @@ void
 gpu_correlation_produce
 (
  gpu_correlation_t *c,
- uint64_t host_op_id,
- cct_node_t *api_node,
- cct_node_t *func_node,
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
  gpu_activity_channel_t *activity_channel
 )
 {
-  c->host_op_id = host_op_id;
-  c->api_node = api_node;
-  c->func_node = func_node;
+  c->host_correlation_id = host_correlation_id;
+  c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
 }
 
@@ -79,13 +77,12 @@ gpu_correlation_consume
  gpu_correlation_t *c
 )
 {
-#if UNIT_TEST == 0
-    PRINT("Insert correlation id %ld\n", c->host_op_id);
-    gpu_host_correlation_map_insert(c->host_op_id, c->api_node, c->func_node, 
-				    c->activity_channel);
+#if UNIT_TEST 
+    printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id); 
 #else
-    printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_op_id, 
-	   (long) c->api_node, (long) c->func_node);
+    PRINT("Insert correlation id %ld\n", c->host_correlation_id);
+    gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts), 
+				    c->activity_channel);
 #endif
 }
 

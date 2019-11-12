@@ -108,9 +108,8 @@ gpu_correlation_channel_get
 void
 gpu_correlation_channel_produce
 (
- uint64_t host_op_id,
- cct_node_t *api_node,
- cct_node_t *func_node
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts
 )
 {
   gpu_correlation_channel_t *corr_channel = gpu_correlation_channel_get();
@@ -118,7 +117,7 @@ gpu_correlation_channel_produce
 
   gpu_correlation_t *c = gpu_correlation_alloc(corr_channel);
 
-  gpu_correlation_produce(c, host_op_id, api_node, func_node,
+  gpu_correlation_produce(c, host_correlation_id, gpu_op_ccts,
 			  activity_channel);
 
   channel_push(corr_channel, bichannel_direction_forward, c);
@@ -149,12 +148,13 @@ gpu_correlation_channel_consume
 //******************************************************************************
 
 
-#define UNIT_TEST 1
+#define UNIT_TEST 0
 
 #if UNIT_TEST
 
 #include <stdlib.h>
 #include "gpu-correlation-channel-set.h"
+#include "gpu-op-placeholders.h"
 
 
 void *hpcrun_malloc_safe
@@ -183,17 +183,17 @@ main
  char **argv
 )
 {
+  gpu_op_ccts_t gpu_op_ccts;
+
   int i;
   for(i = 0; i < 10; i++) {
-    cct_node_t *api = (cct_node_t *) ((long) i + 100);
-    cct_node_t *func = (cct_node_t *) ((long) i + 200);
-    gpu_correlation_channel_produce(i, api, func);
+    memset(&gpu_op_ccts, i, sizeof(gpu_op_ccts_t));
+    gpu_correlation_channel_produce(i, &gpu_op_ccts);
   }
   gpu_correlation_channel_set_consume();
   for(i = 20; i < 30; i++) {
-    cct_node_t *api = (cct_node_t *) ((long) i + 100);
-    cct_node_t *func = (cct_node_t *) ((long) i + 200);
-    gpu_correlation_channel_produce(i, api, func);
+    memset(&gpu_op_ccts, i, sizeof(gpu_op_ccts_t));
+    gpu_correlation_channel_produce(i, &gpu_op_ccts);
   }
   gpu_correlation_channel_set_consume();
 }

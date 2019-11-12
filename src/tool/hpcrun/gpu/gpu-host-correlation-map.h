@@ -24,9 +24,12 @@
 // type declarations
 //******************************************************************************
 
-typedef struct gpu_host_correlation_map_entry_t gpu_host_correlation_map_entry_t; 
+typedef struct gpu_host_correlation_map_entry_t 
+gpu_host_correlation_map_entry_t; 
 
 typedef struct cct_node_t cct_node_t; 
+
+typedef struct gpu_op_ccts_t gpu_op_ccts_t; 
 
 
 
@@ -45,8 +48,7 @@ void
 gpu_host_correlation_map_insert
 (
  uint64_t host_correlation_id,
- cct_node_t *api_node,
- cct_node_t *func_node,
+ gpu_op_ccts_t *gpu_op_ccts,
  gpu_activity_channel_t *activity_channel
 );
 
@@ -79,20 +81,6 @@ gpu_host_correlation_map_delete
 //------------------------------------------------------------------------------
 // accessor methods
 //------------------------------------------------------------------------------
-
-cct_node_t *
-gpu_host_correlation_map_entry_api_node_get
-(
- gpu_host_correlation_map_entry_t *entry
-);
-
-
-cct_node_t *
-gpu_host_correlation_map_entry_func_node_get
-(
- gpu_host_correlation_map_entry_t *entry
-);
-
 
 gpu_activity_channel_t *
 gpu_host_correlation_map_entry_channel_get

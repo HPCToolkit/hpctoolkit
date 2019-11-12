@@ -3,9 +3,11 @@
 
 #include <hpcrun/cct/cct.h>
 #include <cupti.h>
-#include "cupti-node.h"
+// #include "cupti-node.h"
 
-void cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node);
+typedef struct cupti_activity_t cupti_activity_t;
+
+void cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node);
 
 int cupti_pc_sampling_frequency_get();
 

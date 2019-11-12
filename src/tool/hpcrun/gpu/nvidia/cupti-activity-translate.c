@@ -220,7 +220,6 @@ convert_synchronization
 static void
 convert_memory
 (
-<<<<<<< HEAD
   gpu_activity_t *ga,
   CUpti_ActivityMemory *activity_mem 
 )
@@ -230,7 +229,12 @@ convert_memory
   ga->details.memory.bytes = activity_mem->bytes;
   ga->details.memory.start = activity_mem->start;
   ga->details.memory.end = activity_mem->end;
-=======
+}
+
+
+void
+cupti_correlation_set
+(
  cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
  void *activity_channel,
@@ -254,7 +258,6 @@ convert_memory
   entry->sync_node = sync_node;
   entry->kernel_node = kernel_node;
   entry->trace_node = trace_node;
->>>>>>> master-gpu-trace
 }
 
 

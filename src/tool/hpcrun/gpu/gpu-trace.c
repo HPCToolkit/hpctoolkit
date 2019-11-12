@@ -32,9 +32,11 @@ typedef void *(*pthread_start_routine_t)(void *);
 // local variables
 //******************************************************************************
 
-static atomic_ullong stream_id;
-static _Atomic(bool) stop_streams;
+static _Atomic(bool) stop_trace_flag;
+
 static atomic_ullong stream_counter;
+
+static atomic_ullong stream_id;
 
 
 
@@ -236,7 +238,7 @@ gpu_trace_init
  void
 )
 {
-  atomic_store(&stop_streams, 0);
+  atomic_store(&stop_trace_flag, false);
   atomic_store(&stream_counter, 0);
   atomic_store(&stream_id, 0);
 }
@@ -250,7 +252,7 @@ gpu_trace_record
 {
   thread_data_t* td = gpu_trace_stream_acquire();
 
-  while (!atomic_load(&stop_streams)) {
+  while (!atomic_load(&stop_trace_flag)) {
     gpu_trace_activities_process(td, thread_args);
     gpu_trace_activities_await(thread_args);
   }
@@ -266,10 +268,10 @@ gpu_trace_record
 void
 gpu_trace_fini
 (
- void
+ void *arg
 )
 {
-  atomic_store(&stop_streams, 1);
+  atomic_store(&stop_trace_flag, true);
 
   gpu_context_stream_map_signal_all();
 

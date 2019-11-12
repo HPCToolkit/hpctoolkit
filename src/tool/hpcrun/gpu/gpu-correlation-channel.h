@@ -19,6 +19,8 @@
 
 typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
 
 
 //******************************************************************************
@@ -29,9 +31,8 @@ typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 void
 gpu_correlation_channel_produce
 (
- uint64_t host_op_id,
- cct_node_t *api_node,
- cct_node_t *func_node
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_ccts
 );
 
 

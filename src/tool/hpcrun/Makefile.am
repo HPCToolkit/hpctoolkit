@@ -358,6 +358,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-api.c 			\
 	gpu/gpu-context-stream-id-map.c	\
+	gpu/gpu-context-id-map.c	\
 	gpu/gpu-correlation.c 		\
 	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-channel.c 	\
@@ -477,21 +478,28 @@ if OPT_PAPI_CUPTI
     MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
 
-if OPT_ENABLE_CUDA
-    MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
-	sample-sources/nvidia/cuda-device-map.c			
-endif
-
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = sample-sources/nvidia/nvidia.c			\
-	sample-sources/nvidia/cubin-id-map.c			\
-	sample-sources/nvidia/cubin-hash-map.c			\
-	sample-sources/nvidia/cubin-symbols.c			\
-	sample-sources/nvidia/cupti-analysis.c			\
-	sample-sources/nvidia/cupti-node.c			\
-	sample-sources/nvidia/cupti-api.c
+MY_CUPTI_FILES = sample-sources/nvidia.c			\
+	gpu/nvidia/cuda-api.c \
+	gpu/nvidia/cupti-analysis.c \
+	gpu/nvidia/cubin-hash-map.c \
+	gpu/nvidia/cuda-device-map.c \
+	gpu/nvidia/cubin-symbols.c \
+	gpu/nvidia/cupti-node.c \
+	gpu/nvidia/cupti-function-id-map.c \
+	gpu/nvidia/cupti-api.c \
+	gpu/nvidia/cubin-id-map.c
 
-# sample-sources/nvidia/cupti-record.c
+#	gpu/nvidia/cupti-context-id-map.c
+#	gpu/nvidia/cupti-host-op-map.c
+#	gpu/nvidia/cuda-state-placeholders.c
+#	gpu/nvidia/gpu-driver-state-placeholders.c
+#	gpu/nvidia/cupti-trace-channel.c
+#	gpu/nvidia/cupti-stream-id-map.c
+#	gpu/nvidia/cupti-correlation-channel.c
+#	gpu/nvidia/cupti-activity-channel.c
+#	gpu/nvidia/cupti-trace-api.c
+#	gpu/nvidia/cupti-correlation-id-map.c
 endif
 
 

@@ -39,19 +39,7 @@ typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 
 typedef struct gpu_correlation_t gpu_correlation_t;
 
-#if 0
-typedef struct gpu_correlation_t {
-  s_element_t next;
-
-  // correlation info
-  uint64_t host_op_id;
-  cct_node_t *api_node;
-  cct_node_t *func_node;
-
-  // where to report the activity
-  gpu_activity_channel_t *activity_channel;
-} gpu_correlation_t;
-#endif
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 
 
 
@@ -78,9 +66,8 @@ void
 gpu_correlation_produce
 (
  gpu_correlation_t *c,
- uint64_t host_op_id,
- cct_node_t *api_node,
- cct_node_t *func_node,
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
  gpu_activity_channel_t *activity_channel
 );
 

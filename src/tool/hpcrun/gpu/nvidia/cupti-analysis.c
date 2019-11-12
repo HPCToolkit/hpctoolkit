@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 #include "cuda-device-map.h"
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include "cupti-correlation-id-map.h"
 
 /******************************************************************************
  * macros
@@ -100,12 +100,12 @@ cupti_sm_efficiency_analyze
   *total_samples = 0;
   *full_sm_samples = 0;
   // correlation_id->device_id
-  gpu_correlation_id_map_entry_t *corr =
-    gpu_correlation_id_map_lookup(pc_sampling_record_info->correlationId);
+  cupti_correlation_id_map_entry_t *corr =
+    cupti_correlation_id_map_lookup(pc_sampling_record_info->correlationId);
   if (corr != NULL) {
-    uint32_t device_id = gpu_correlation_id_map_entry_device_id_get(corr);
-    uint64_t start = gpu_correlation_id_map_entry_start_get(corr);
-    uint64_t end = gpu_correlation_id_map_entry_end_get(corr);
+    uint32_t device_id = cupti_correlation_id_map_entry_device_id_get(corr);
+    uint64_t start = cupti_correlation_id_map_entry_start_get(corr);
+    uint64_t end = cupti_correlation_id_map_entry_end_get(corr);
     cuda_device_map_entry_t *device = 
       cuda_device_map_lookup(device_id);
     if (device != NULL) {

@@ -50,7 +50,7 @@ gpu_trace_record
 void
 gpu_trace_fini
 (
- void
+ void *arg
 );
 
 

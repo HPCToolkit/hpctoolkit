@@ -14,6 +14,7 @@
 #include <lib/prof-lean/splay-uint64.h>
 
 #include "gpu-host-correlation-map.h"
+#include "gpu-op-placeholders.h"
 #include "gpu-splay-allocator.h"
 
 
@@ -64,11 +65,13 @@
 typedef struct typed_splay_node(host_correlation) {
   struct typed_splay_node(host_correlation) *left;
   struct typed_splay_node(host_correlation) *right;
+
   uint64_t host_correlation_id; // key
 
-  cct_node_t *api_node;
-  cct_node_t *func_node;
+  gpu_op_ccts_t gpu_op_ccts;
+
   gpu_activity_channel_t *activity_channel;
+
   int samples;
   int total_samples;
 } typed_splay_node(host_correlation); 
@@ -106,8 +109,7 @@ static gpu_host_correlation_map_entry_t *
 gpu_host_correlation_map_entry_new
 (
  uint64_t host_correlation_id,
- cct_node_t *api_node, 
- cct_node_t *func_node, 
+ gpu_op_ccts_t *gpu_op_ccts, 
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -116,8 +118,7 @@ gpu_host_correlation_map_entry_new
   memset(e, 0, sizeof(gpu_host_correlation_map_entry_t)); 
 
   e->host_correlation_id = host_correlation_id;
-  e->api_node = api_node;
-  e->func_node = func_node;
+  e->gpu_op_ccts = *gpu_op_ccts;
   e->activity_channel = activity_channel;
 
   return e;
@@ -164,8 +165,7 @@ void
 gpu_host_correlation_map_insert
 (
  uint64_t host_correlation_id, 
- cct_node_t *api_node, 
- cct_node_t *func_node, 
+ gpu_op_ccts_t *gpu_op_ccts, 
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -175,14 +175,14 @@ gpu_host_correlation_map_insert
     assert(0);
   } else {
     gpu_host_correlation_map_entry_t *entry = 
-      gpu_host_correlation_map_entry_new(host_correlation_id, api_node, 
-				func_node, activity_channel);
+      gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts, 
+					 activity_channel);
 
     st_insert(&map_root, entry);
 
     PRINT("host_correlation_map insert: correlation_id=0x%lx "
-	 "api_node=%p func_node=%p activity_channel=%p (entry=%p)", 
-	  host_correlation_id, api_node, func_node, activity_channel, entry);
+	 "activity_channel=%p (entry=%p)", 
+	  host_correlation_id, activity_channel, entry);
   }
 }
 
@@ -241,26 +241,6 @@ gpu_host_correlation_map_delete
 {
   gpu_host_correlation_map_entry_t *node = st_delete(&map_root, host_correlation_id);
   st_free(free_list, node);
-}
-
-
-cct_node_t *
-gpu_host_correlation_map_entry_host_api_node_get
-(
- gpu_host_correlation_map_entry_t *entry
-)
-{
-  return entry->api_node;
-}
-
-
-cct_node_t *
-gpu_host_correlation_map_entry_host_func_node_get
-(
- gpu_host_correlation_map_entry_t *entry
-)
-{
-  return entry->func_node;
 }
 
 

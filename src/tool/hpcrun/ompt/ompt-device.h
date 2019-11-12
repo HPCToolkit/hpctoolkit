@@ -47,53 +47,9 @@
 #ifndef __OMPT_DEVICE_H__
 #define __OMPT_DEVICE_H__
 
-//******************************************************************************
-// global includes
-//******************************************************************************
-
 #include <stdbool.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
 #include <include/hpctoolkit-config.h>
 #include <cct/cct.h>
-
-
-
-
-//******************************************************************************
-// type declarations 
-//******************************************************************************
-
-#if 0
-typedef void (*device_activities_consumer_t)
-(
- int device_id,
- ompt_buffer_t *buffer,
- size_t bytes,
- ompt_buffer_cursor_t begin,
- int buffer_owned
-);
-#endif
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-#if 0
-void
-ompt_device_register_activities_consumer
-(
- ompt_device_consume_activity_fn_t consume_activity
-);
-
-#endif
 
 #if HAVE_CUPTI_H 
 
