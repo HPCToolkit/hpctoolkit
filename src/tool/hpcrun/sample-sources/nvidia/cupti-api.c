@@ -121,6 +121,10 @@
 // #include "cupti-channel.h"
 
 // #include "cupti-context-id-map.h"
+#include "cupti-function-id-map.h"
+#include "cupti-record.h"
+#include "../gpu/gpu-context-stream-id-map.h"
+#include "../gpu/stream-tracing.h"
 
 
 //******************************************************************************

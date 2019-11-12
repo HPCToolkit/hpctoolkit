@@ -128,7 +128,7 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <memory/mmap.h>
-
+#include <tool/hpcrun/sample-sources/gpu/stream-tracing.h>
 #include <monitor-exts/monitor_ext.h>
 
 #include <cct/cct.h>

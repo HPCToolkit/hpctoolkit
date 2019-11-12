@@ -388,7 +388,18 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
+<<<<<<< HEAD
 	utilities/unlink.h utilities/unlink.c
+=======
+	utilities/unlink.h utilities/unlink.c \
+	sample-sources/gpu/gpu-api.c \
+	sample-sources/gpu/gpu-correlation-id-map.c \
+	sample-sources/gpu/gpu-host-op-map.c \
+	sample-sources/gpu/gpu-record.c \
+	sample-sources/gpu/placeholders.c \
+	sample-sources/gpu/gpu-context-stream-id-map.c \
+    sample-sources/gpu/stream-tracing.c
+>>>>>>> 44f6b4543eb734364d7cc57586f4b0c3b7c5244a
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
@@ -478,7 +489,11 @@ endif
 if OPT_ENABLE_CUDA
     MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
+<<<<<<< HEAD
 	sample-sources/nvidia/cuda-state-placeholders.c
+=======
+	sample-sources/nvidia/cuda-state-placeholders.c 
+>>>>>>> 44f6b4543eb734364d7cc57586f4b0c3b7c5244a
 endif
 
 if OPT_ENABLE_CUPTI
@@ -915,7 +930,13 @@ endif
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
+<<<<<<< HEAD
   libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
+=======
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
+>>>>>>> 44f6b4543eb734364d7cc57586f4b0c3b7c5244a
 endif
 
 if UNW_LIBUNW
