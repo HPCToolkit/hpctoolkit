@@ -7,7 +7,7 @@
 // global includes
 //******************************************************************************
 
-#include <inttypes.h>
+#include <stdint.h>
 
 
 
@@ -102,8 +102,8 @@ typedef struct gpu_memset {
 typedef struct gpu_kernel {
   uint64_t start;
   uint64_t end;
-  uint32_t context_id,
-  uint32_t stream_id,
+  uint32_t context_id;
+  uint32_t stream_id;
   int32_t dynamicSharedMemory;
   int32_t staticSharedMemory;
   int32_t localMemoryTotal;
@@ -117,8 +117,8 @@ typedef struct gpu_kernel {
 typedef struct gpu_cdpkernel {
   uint64_t start;
   uint64_t end;
-  uint32_t context_id,
-  uint32_t stream_id
+  uint32_t context_id;
+  uint32_t stream_id;
 } gpu_cdpkernel_t;
 
 typedef struct gpu_global_access {

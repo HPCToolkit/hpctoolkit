@@ -356,22 +356,24 @@ MY_BASE_FILES =				\
 	hpcrun-placeholders.c 		\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
+	gpu/gpu-activity-process.c 	\
 	gpu/gpu-api.c 			\
-	gpu/gpu-context-stream-id-map.c	\
+	gpu/gpu-application-thread-api.c \
+	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-context-id-map.c	\
 	gpu/gpu-correlation.c 		\
-	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-channel.c 	\
+	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-id.c	\
-	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-correlation-id-map.c 	\
 	gpu/gpu-host-correlation-map.c 	\
+	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
 	gpu/gpu-splay-allocator.c	\
-	gpu/gpu-stream-id-map.c	\
+	gpu/gpu-stream-id-map.c		\
+	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
-	gpu/gpu-trace.c 		\
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -480,31 +482,16 @@ endif
 
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
-	gpu/nvidia/cuda-api.c 			\
-	gpu/nvidia/cupti-activity-translate.c 	\
-	gpu/nvidia/cupti-analysis.c 		\
-	gpu/nvidia/cubin-hash-map.c 		\
-	gpu/nvidia/cuda-device-map.c 		\
-	gpu/nvidia/cubin-symbols.c 		\
-	gpu/nvidia/cupti-activity-translate.c 	\
-	gpu/nvidia/cupti-api.c 			\
-	gpu/nvidia/cubin-id-map.c
-
-# this one is stubbed out temporarily
-#	gpu/nvidia/cupti-activity-process.c 	
-
-# these have been replaced by equivalents in the gpu directory
-#	gpu/nvidia/cupti-function-id-map.c 	
-#	gpu/nvidia/cupti-context-id-map.c
-#	gpu/nvidia/cupti-host-op-map.c
-#	gpu/nvidia/cuda-state-placeholders.c
-#	gpu/nvidia/gpu-driver-state-placeholders.c
-#	gpu/nvidia/cupti-trace-channel.c
-#	gpu/nvidia/cupti-stream-id-map.c
-#	gpu/nvidia/cupti-correlation-channel.c
-#	gpu/nvidia/cupti-activity-channel.c
-#	gpu/nvidia/cupti-trace-api.c
-#	gpu/nvidia/cupti-correlation-id-map.c
+	gpu/nvidia/cubin-hash-map.c		\
+	gpu/nvidia/cubin-id-map.c		\
+	gpu/nvidia/cubin-symbols.c		\
+	gpu/nvidia/cuda-api.c			\
+	gpu/nvidia/cuda-device-map.c		\
+	gpu/nvidia/cupti-activity-process.c	\
+	gpu/nvidia/cupti-activity-translate.c	\
+	gpu/nvidia/cupti-analysis.c		\
+	gpu/nvidia/cupti-api.c			\
+	gpu/nvidia/cupti-gpu-api.c		
 endif
 
 
