@@ -49,3 +49,24 @@ gpu_activity_free
   channel_item_free(channel, a);
 }
 
+void
+set_gpu_instruction
+(
+  gpu_instruction_t* insn, 
+  uint64_t pc
+)
+{
+  insn->pcOffset = pc;
+}
+
+void
+set_gpu_activity_interval
+(
+  gpu_activity_interval_t* interval,
+  uint64_t start,
+  uint64_t end
+)
+{
+  interval->start = start;
+  interval->end = end;
+}

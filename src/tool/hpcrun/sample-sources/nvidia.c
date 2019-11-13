@@ -479,8 +479,8 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
   td->overhead++;
   hpcrun_safe_enter();
 
-  switch (activity->cupti_kind.kind) {
-    case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
+  switch (activity->kind) {
+    case GPU_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
       int frequency_factor = (1 << pc_sampling_frequency);
@@ -499,7 +499,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
+    case GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, info_dropped_samples_id);
@@ -517,7 +517,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
         (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.fullSMSamples});
       break;
     }
-    case CUPTI_ACTIVITY_KIND_MEMCPY:
+    case GPU_ACTIVITY_KIND_MEMCPY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMCPY\n");
       if (activity->details.memcpy.copyKind != 0x7fffffff) {
@@ -530,7 +530,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_MEMSET:
+    case GPU_ACTIVITY_KIND_MEMSET:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMSET\n");
       if (activity->details.memset.memKind != 0x7fffffff) {
@@ -543,7 +543,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_KERNEL:
+    case GPU_ACTIVITY_KIND_KERNEL:
     {
       PRINT("CUPTI_ACTIVITY_KIND_KERNEL\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
@@ -574,7 +574,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
         (activity->details.kernel.end - activity->details.kernel.start) / 1000.0});
       break;
     }
-    case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
+    case GPU_ACTIVITY_KIND_SYNCHRONIZATION:
     {
       PRINT("CUPTI_ACTIVITY_KIND_SYNCHRONIZATION\n");
       if (activity->details.synchronization.syncKind != 0x7fffffff) {
@@ -588,7 +588,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_MEMORY:
+    case GPU_ACTIVITY_KIND_MEMORY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMORY\n");
       if (activity->details.memory.memKind != 0x7fffffff) {
@@ -601,7 +601,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       }
       break;
     }
-    case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:
+    case GPU_ACTIVITY_KIND_GLOBAL_ACCESS:
     {
       PRINT("CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS\n");
       int type = activity->details.global_access.type;
@@ -618,7 +618,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.global_access.bytes});
       break;
     }
-    case CUPTI_ACTIVITY_KIND_SHARED_ACCESS:
+    case GPU_ACTIVITY_KIND_SHARED_ACCESS:
     {
       PRINT("CUPTI_ACTIVITY_KIND_SHARED_ACCESS\n");
       int type = activity->details.shared_access.type;
@@ -636,7 +636,7 @@ cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.shared_access.bytes});
       break;
     }
-    case CUPTI_ACTIVITY_KIND_BRANCH:
+    case GPU_ACTIVITY_KIND_BRANCH:
     {
       PRINT("CUPTI_ACTIVITY_KIND_BRANCH\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);

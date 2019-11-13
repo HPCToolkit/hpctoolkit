@@ -58,9 +58,10 @@ typedef enum {
 
 // pc sampling
 typedef struct gpu_pc_sampling {
+  uint32_t pcOffset;
   uint32_t samples;
   uint32_t latencySamples;
-  uint32_t stallReason;
+  uint32_t stallReason;    
 } gpu_pc_sampling_t;
 
 
@@ -101,6 +102,8 @@ typedef struct gpu_memset {
 typedef struct gpu_kernel {
   uint64_t start;
   uint64_t end;
+  uint32_t context_id,
+  uint32_t stream_id,
   int32_t dynamicSharedMemory;
   int32_t staticSharedMemory;
   int32_t localMemoryTotal;
@@ -111,16 +114,24 @@ typedef struct gpu_kernel {
   uint32_t blockSharedMemory;
 } gpu_kernel_t;
 
+typedef struct gpu_cdpkernel {
+  uint64_t start;
+  uint64_t end;
+  uint32_t context_id,
+  uint32_t stream_id
+} gpu_cdpkernel_t;
 
 typedef struct gpu_global_access {
+  uint64_t pcOffset;
   uint64_t l2_transactions;
   uint64_t theoreticalL2Transactions;
   uint64_t bytes;
-  gpu_global_access_type_t type;
+  gpu_global_access_type_t type;  
 } gpu_global_access_t;
 
 
 typedef struct gpu_shared_access {
+  uint64_t pcOffset;
   uint64_t sharedTransactions;
   uint64_t theoreticalSharedTransactions;
   uint64_t bytes;
@@ -129,6 +140,7 @@ typedef struct gpu_shared_access {
 
 
 typedef struct gpu_branch {
+  uint64_t pcOffset;
   uint32_t diverged;
   uint32_t executed;
 } gpu_branch_t;
@@ -141,33 +153,71 @@ typedef struct gpu_synchronization {
   uint32_t syncKind;
 } gpu_synchronization_t;
 
+typedef struct gpu_correlation {
+  uint64_t externalId;
+} gpu_correlation_t;
+
+
+// Accessors for a subset of activity kinds
+
+typedef struct gpu_activity_interval {
+  uint64_t start;
+  uint64_t end;
+} gpu_activity_interval_t;
+
+typedef struct gpu_instruction {
+  uint64_t pcOffset;
+} gpu_instruction_t;
 
 typedef struct entry_data {
   union {
+    /* Each field stores the complete information needed
+       for processing each activity kind.
+     */
     gpu_pc_sampling_t pc_sampling;
     gpu_pc_sampling_record_info_t pc_sampling_record_info;
     gpu_memcpy_t memcpy;
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
+    gpu_cdpkernel_t cdpkernel;
     gpu_global_access_t global_access;
     gpu_shared_access_t shared_access;
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
+    gpu_correlation_t correlation;
+
+    /* Access short cut for activitiy fields shared by multiple kinds */
+
+    /* Activity interval is used to access start time and end time of 
+       an coarse grained activity.
+     */
+    gpu_activity_interval_t interval;
+
+    /* Fine grained measurement contains information about specific instructions */
+    gpu_instruction_t instruction;
   };
 } gpu_activity_details_t;
 
+typedef enum gpu_activity_kind {    
+    GPU_ACTIVITY_KIND_PC_SAMPLING,
+    GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO,
+    GPU_ACTIVITY_KIND_MEMCPY,
+    GPU_ACTIVITY_KIND_MEMCPY2,
+    GPU_ACTIVITY_KIND_MEMSET,
+    GPU_ACTIVITY_KIND_KERNEL,
+    GPU_ACTIVITY_KIND_SYNCHRONIZATION,
+    GPU_ACTIVITY_KIND_MEMORY,    
+    GPU_ACTIVITY_KIND_GLOBAL_ACCESS,
+    GPU_ACTIVITY_KIND_SHARED_ACCESS,
+    GPU_ACTIVITY_KIND_BRANCH,
+    GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION,
+    GPU_ACTIVITY_KIND_CDP_KERNEL
+} gpu_activity_kind_t;
 
 typedef struct gpu_activity_t {
-  union {
-    struct {
-      uint32_t op;
-      uint32_t domain;
-    } roctracer_kind;
-    struct {
-      uint32_t kind;
-    } cupti_kind;
-  };
+  gpu_activity_kind_t kind;
+  uint32_t correlationId;
   gpu_activity_details_t details;
   cct_node_t *cct_node;
 } gpu_activity_t;
@@ -199,6 +249,19 @@ gpu_activity_free
  gpu_activity_t *a
 );
 
+void
+set_gpu_instruction
+(
+  gpu_instruction_t* , 
+  uint64_t
+);
 
+void
+set_gpu_activity_interval
+(
+  gpu_activity_interval_t* interval,
+  uint64_t start,
+  uint64_t end
+);
 
 #endif
