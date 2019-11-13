@@ -6,8 +6,6 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/bichannel.h>
-
 #include "gpu-correlation.h"
 #include "gpu-activity-channel.h"
 
