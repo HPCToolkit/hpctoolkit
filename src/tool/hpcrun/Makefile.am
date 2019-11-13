@@ -488,7 +488,6 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cuda-device-map.c 		\
 	gpu/nvidia/cubin-symbols.c 		\
 	gpu/nvidia/cupti-activity-translate.c 	\
-	gpu/nvidia/cupti-function-id-map.c 	\
 	gpu/nvidia/cupti-api.c 			\
 	gpu/nvidia/cubin-id-map.c
 
@@ -496,6 +495,7 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 #	gpu/nvidia/cupti-activity-process.c 	
 
 # these have been replaced by equivalents in the gpu directory
+#	gpu/nvidia/cupti-function-id-map.c 	
 #	gpu/nvidia/cupti-context-id-map.c
 #	gpu/nvidia/cupti-host-op-map.c
 #	gpu/nvidia/cuda-state-placeholders.c
