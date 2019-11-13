@@ -365,7 +365,6 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-correlation-id-map.c 	\
-	gpu/gpu-function-id-map.c 	\
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-op-placeholders.c 	\
 	gpu/gpu-splay-allocator.c	\
