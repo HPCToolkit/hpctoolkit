@@ -7,11 +7,10 @@
 //******************************************************************************
 
 
-// #include <lib/prof-lean/bichannel.h>
+#include <lib/prof-lean/bichannel.h>
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "gpu-channel.h"
 #include "gpu-correlation.h"
 #include "gpu-correlation-channel.h"
 #include "gpu-correlation-channel-set.h"

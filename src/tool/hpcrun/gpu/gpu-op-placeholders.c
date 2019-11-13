@@ -214,16 +214,13 @@ gpu_op_ccts_insert
 )
 {
   int i;
-  cct_addr_t frm;
-
-  memset(&frm, 0, sizeof(cct_addr_t));
-
   for (i = 0; i < gpu_placeholder_type_count; i++) {
     cct_node_t *node = NULL;
+
     if (flags & (1 << i)) {
-      frm.ip_norm = gpu_op_placeholder_ip(i);
-      node = hpcrun_cct_insert_addr(api_node, &frm);
+      node = hpcrun_cct_insert_ip_norm(api_node, gpu_op_placeholder_ip(i));
     }
+
     gpu_op_ccts->ccts[i] = node;
   }
 }

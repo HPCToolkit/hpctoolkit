@@ -362,9 +362,9 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation.c 		\
 	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-channel.c 	\
+	gpu/gpu-correlation-id.c	\
 	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-correlation-id-map.c 	\
-	gpu/gpu-function-id-map.c 	\
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-op-placeholders.c 	\
 	gpu/gpu-splay-allocator.c	\
@@ -481,17 +481,20 @@ endif
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cuda-api.c 			\
-	gpu/nvidia/cupti-activity-process.c 	\
 	gpu/nvidia/cupti-activity-translate.c 	\
 	gpu/nvidia/cupti-analysis.c 		\
 	gpu/nvidia/cubin-hash-map.c 		\
 	gpu/nvidia/cuda-device-map.c 		\
 	gpu/nvidia/cubin-symbols.c 		\
 	gpu/nvidia/cupti-activity-translate.c 	\
-	gpu/nvidia/cupti-function-id-map.c 	\
 	gpu/nvidia/cupti-api.c 			\
 	gpu/nvidia/cubin-id-map.c
 
+# this one is stubbed out temporarily
+#	gpu/nvidia/cupti-activity-process.c 	
+
+# these have been replaced by equivalents in the gpu directory
+#	gpu/nvidia/cupti-function-id-map.c 	
 #	gpu/nvidia/cupti-context-id-map.c
 #	gpu/nvidia/cupti-host-op-map.c
 #	gpu/nvidia/cuda-state-placeholders.c

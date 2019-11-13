@@ -46,7 +46,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(host_correlation) gpu_context_id_map_entry_t 
+#define typed_splay_node(context_id) gpu_context_id_map_entry_t 
 
 
 
@@ -81,6 +81,9 @@ static gpu_context_id_map_entry_t *map_root = NULL;
 // private operations
 //******************************************************************************
 
+typed_splay_impl(context_id)
+
+
 static gpu_context_id_map_entry_t *
 gpu_context_id_map_entry_new(uint32_t context_id, uint32_t stream_id)
 {
@@ -111,6 +114,7 @@ gpu_context_id_map_insert
   }
 }
 
+
 static void
 trace_fn_helper
 (
@@ -125,25 +129,8 @@ trace_fn_helper
 
 
 
-static void 
-gpu_context_id_map_process_helper
-(
- gpu_context_id_map_entry_t *entry,
- gpu_trace_fn_t fn,
- void *arg
-) 
-{
-  if (entry) {
-    gpu_stream_id_map_context_process(&entry->streams, fn, arg);
-    gpu_context_id_map_process_helper(entry->left, fn, arg);
-    gpu_context_id_map_process_helper(entry->right, fn, arg);
-  } 
-}
-
-
-
 //******************************************************************************
-// type declarations
+// interface operations
 //******************************************************************************
 
 gpu_context_id_map_entry_t *
@@ -226,5 +213,5 @@ gpu_context_id_map_device_process
   trace_fn_helper_t info;
   info.fn = fn;
   info.arg = arg;
-  st_forall(map_root, splay_inorder, trace_fn_helper, arg);
+  st_forall(map_root, splay_inorder, trace_fn_helper, &info);
 }

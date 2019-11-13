@@ -15,7 +15,6 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-channel.h"
 #include "gpu-trace.h"
 #include "gpu-stream-id-map.h"
 

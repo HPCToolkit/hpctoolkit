@@ -11,9 +11,10 @@
 // local includes
 //******************************************************************************
 
+#include <lib/prof-lean/bichannel.h>
+
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "gpu-channel.h"
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
