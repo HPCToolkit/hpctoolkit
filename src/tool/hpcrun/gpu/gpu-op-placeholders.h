@@ -66,12 +66,23 @@ gpu_op_placeholder_ip
 );
 
 
+// this function implements bulk insertion. ccts for all placeholders
+// with flags set will be inserted as children of api_node. ccts for
+// all placeholders whose flags are 0 will be initialized to null.
 void
 gpu_op_ccts_insert
 (
  cct_node_t *api_node,
  gpu_op_ccts_t *gpu_op_ccts,
  gpu_op_placeholder_flags_t flags
+);
+
+
+cct_node_t *
+gpu_op_ccts_get
+(
+ gpu_op_ccts_t *gpu_op_ccts,
+ gpu_placeholder_type_t type
 );
 
 
