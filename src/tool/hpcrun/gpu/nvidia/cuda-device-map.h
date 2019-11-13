@@ -70,19 +70,17 @@
 // local includes
 //*****************************************************************************
 
-#if 0
-#include <hpcrun/cct/cct.h>
-#include <cuda.h>
-#endif
-
 #include "cuda-api.h"
+
 
 
 //*****************************************************************************
 // type definitions 
 //*****************************************************************************
 
-typedef struct cuda_device_map_entry_s cuda_device_map_entry_t;
+typedef struct cuda_device_map_entry_t cuda_device_map_entry_t;
+
+
 
 //*****************************************************************************
 // interface operations

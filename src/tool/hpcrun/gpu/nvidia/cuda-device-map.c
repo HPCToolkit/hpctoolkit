@@ -60,7 +60,8 @@
 // system includes
 //*****************************************************************************
 
-#include <assert.h>
+#include <stdio.h>
+#include <string.h>
 
 
 
@@ -68,7 +69,8 @@
 // local includes
 //*****************************************************************************
 
-#include <lib/prof-lean/splay-macros.h>
+#include <lib/prof-lean/splay-uint64.h>
+
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
@@ -77,28 +79,72 @@
 
 
 //*****************************************************************************
-// type definitions 
+// macros
 //*****************************************************************************
 
-struct cuda_device_map_entry_s {
-  uint32_t device;
+#define DEBUG 0
+
+#if DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
+
+#define st_insert				\
+  typed_splay_insert(device)
+
+#define st_lookup				\
+  typed_splay_lookup(device)
+
+#define st_delete				\
+  typed_splay_delete(device)
+
+#define st_forall				\
+  typed_splay_forall(device)
+
+#define st_count				\
+  typed_splay_count(device)
+
+#define st_alloc(free_list)			\
+  typed_splay_alloc(free_list, cuda_device_map_entry_t)
+
+#define st_free(free_list, node)		\
+  typed_splay_free(free_list, node)
+
+#undef typed_splay_node
+#define typed_splay_node(device) cuda_device_map_entry_t
+
+
+
+//*****************************************************************************
+// type declarations
+//*****************************************************************************
+
+struct cuda_device_map_entry_t {
+  struct cuda_device_map_entry_t *left;
+  struct cuda_device_map_entry_t *right;
+  uint32_t device; // key
+
   cuda_device_property_t property;
-  struct cuda_device_map_entry_s *left;
-  struct cuda_device_map_entry_s *right;
 }; 
+
 
 
 //*****************************************************************************
 // global data 
 //*****************************************************************************
 
-static cuda_device_map_entry_t *cuda_device_map_root = NULL;
+static cuda_device_map_entry_t *map_root = NULL;
 
 
 
 //*****************************************************************************
 // private operations
 //*****************************************************************************
+
+typed_splay_impl(device)
+
 
 static cuda_device_map_entry_t *
 cuda_device_map_entry_new
@@ -109,42 +155,11 @@ cuda_device_map_entry_new
   cuda_device_map_entry_t *e = (cuda_device_map_entry_t *) 
     hpcrun_malloc_safe(sizeof(cuda_device_map_entry_t));
 
+  memset(e, 0, sizeof(cuda_device_map_entry_t));
+
   e->device = device;
-  e->left = NULL;
-  e->right = NULL;
 
   return e;
-}
-
-
-static cuda_device_map_entry_t *
-cuda_device_map_splay
-(
- cuda_device_map_entry_t *root, uint32_t key
-)
-{
-  REGULAR_SPLAY_TREE(cuda_device_map_entry_s, root, key, device, left, right);
-  return root;
-}
-
-
-static void
-cuda_device_map_delete_root
-(
- void
-)
-{
-  TMSG(DEFER_CTXT, "device %d: delete", cuda_device_map_root->device);
-
-  if (cuda_device_map_root->left == NULL) {
-    cuda_device_map_root = cuda_device_map_root->right;
-  } else {
-    cuda_device_map_root->left = 
-      cuda_device_map_splay(cuda_device_map_root->left, 
-        cuda_device_map_root->device);
-    cuda_device_map_root->left->right = cuda_device_map_root->right;
-    cuda_device_map_root = cuda_device_map_root->left;
-  }
 }
 
 
@@ -159,14 +174,10 @@ cuda_device_map_lookup
  uint32_t id
 )
 {
-  cuda_device_map_entry_t *result = NULL;
+  cuda_device_map_entry_t *result = st_lookup(&map_root, id);
 
-  cuda_device_map_root = cuda_device_map_splay(cuda_device_map_root, id);
-  if (cuda_device_map_root && cuda_device_map_root->device == id) {
-    result = cuda_device_map_root;
-  }
+  PRINT("device map lookup: id=0x%lx (record %p)\n", id, result);
 
-  TMSG(DEFER_CTXT, "device map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 
@@ -180,29 +191,9 @@ cuda_device_map_insert
   cuda_device_map_entry_t *entry = cuda_device_map_entry_new(device);
   cuda_device_property_query(device, &entry->property); 
 
-  TMSG(DEFER_CTXT, "device map insert: id=0x%lx (record %p)", device, entry);
+  PRINT("device map insert: id=0x%lx (record %p)\n", device, entry);
 
-  entry->left = entry->right = NULL;
-
-  if (cuda_device_map_root != NULL) {
-    cuda_device_map_root = 
-      cuda_device_map_splay(cuda_device_map_root, device);
-
-    if (device < cuda_device_map_root->device) {
-      entry->left = cuda_device_map_root->left;
-      entry->right = cuda_device_map_root;
-      cuda_device_map_root->left = NULL;
-    } else if (device > cuda_device_map_root->device) {
-      entry->left = cuda_device_map_root;
-      entry->right = cuda_device_map_root->right;
-      cuda_device_map_root->right = NULL;
-    } else {
-      // device already present: fatal error since a device 
-      //   should only be inserted once 
-      assert(0);
-    }
-  }
-  cuda_device_map_root = entry;
+  st_insert(&map_root, entry);
 }
 
 
@@ -212,13 +203,7 @@ cuda_device_map_delete
  uint32_t device
 )
 {
-  cuda_device_map_root =
-    cuda_device_map_splay(cuda_device_map_root, device);
-
-  if (cuda_device_map_root &&
-    cuda_device_map_root->device == device) {
-    cuda_device_map_delete_root();
-  }
+  st_delete(&map_root, device);
 }
 
 
@@ -232,25 +217,10 @@ cuda_device_map_entry_device_property_get
 }
 
 
+
 //*****************************************************************************
 // debugging code
 //*****************************************************************************
-
-static int 
-cuda_device_map_count_helper
-(
- cuda_device_map_entry_t *entry
-) 
-{
-  if (entry) {
-    int left = cuda_device_map_count_helper(entry->left);
-    int right = cuda_device_map_count_helper(entry->right);
-    return 1 + right + left; 
-  } 
-
-  return 0;
-}
-
 
 int 
 cuda_device_map_count
@@ -258,6 +228,6 @@ cuda_device_map_count
  void
 )
 {
-  return cuda_device_map_count_helper(cuda_device_map_root);
+  return st_count(map_root);
 }
 
