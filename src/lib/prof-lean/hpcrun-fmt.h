@@ -514,6 +514,11 @@ hpcrun_fmt_doRetainId(uint32_t id)
 
 // ---------------------------------
 // hpcrun node types
+// bits:
+// 1   : leaf/regular
+// 2-4 : Reserved for datacentric
+// 5-6 : root type (artificial, new call path, ...)
+// 7-32: unused
 // ---------------------------------
 #define NODE_TYPE_REGULAR             0
 #define NODE_TYPE_LEAF                1
