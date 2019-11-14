@@ -498,10 +498,10 @@ endif
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES=\
 	sample-sources/amd/amd.c \
-	sample-sources/amd/hip-state-placeholders.c \
-	sample-sources/amd/roctracer-api.c \
-	sample-sources/amd/roctracer-node.c \
-	sample-sources/amd/roctracer-record.c
+	gpu/amd/hip-state-placeholders.c \
+	gpu/amd/roctracer-api.c \
+	gpu/amd/roctracer-node.c \
+	gpu/amd/roctracer-record.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
