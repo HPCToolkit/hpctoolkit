@@ -50,7 +50,7 @@
   typed_splay_count(correlation_id)
 
 #define st_alloc(free_list)			\
-  typed_splay_alloc(free_list, gpu_correlation_id_map_entry_t)
+  typed_splay_alloc(free_list, cupti_correlation_id_map_entry_t)
 
 #define st_free(free_list, node)		\
   typed_splay_free(free_list, node)
@@ -62,7 +62,7 @@
 //*****************************************************************************
 
 #undef typed_splay_node
-#define typed_splay_node(correlation_id) gpu_correlation_id_map_entry_t
+#define typed_splay_node(correlation_id) cupti_correlation_id_map_entry_t
 
 typedef struct typed_splay_node(correlation_id) {
   struct typed_splay_node(correlation_id) *left;
@@ -83,9 +83,9 @@ typedef struct typed_splay_node(correlation_id) {
 // local data
 //******************************************************************************
 
-static gpu_correlation_id_map_entry_t *map_root = NULL;
+static cupti_correlation_id_map_entry_t *map_root = NULL;
 
-static gpu_correlation_id_map_entry_t *free_list = NULL;
+static cupti_correlation_id_map_entry_t *free_list = NULL;
 
 
 
@@ -96,23 +96,23 @@ static gpu_correlation_id_map_entry_t *free_list = NULL;
 typed_splay_impl(correlation_id)
 
 
-static gpu_correlation_id_map_entry_t *
-gpu_correlation_id_map_entry_alloc()
+static cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_entry_alloc()
 {
   return st_alloc(&free_list);
 }
 
 
-static gpu_correlation_id_map_entry_t *
-gpu_correlation_id_map_entry_new
+static cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_entry_new
 (
  uint32_t correlation_id, 
  uint64_t external_id
 )
 {
-  gpu_correlation_id_map_entry_t *e = gpu_correlation_id_map_entry_alloc();
+  cupti_correlation_id_map_entry_t *e = cupti_correlation_id_map_entry_alloc();
 
-  memset(e, 0, sizeof(gpu_correlation_id_map_entry_t)); 
+  memset(e, 0, sizeof(cupti_correlation_id_map_entry_t)); 
 
   e->correlation_id = correlation_id;
   e->external_id = external_id;
@@ -126,13 +126,13 @@ gpu_correlation_id_map_entry_new
 // interface operations
 //*****************************************************************************
 
-gpu_correlation_id_map_entry_t *
-gpu_correlation_id_map_lookup
+cupti_correlation_id_map_entry_t *
+cupti_correlation_id_map_lookup
 (
  uint32_t correlation_id
 )
 {
-  gpu_correlation_id_map_entry_t *result = st_lookup(&map_root, correlation_id);
+  cupti_correlation_id_map_entry_t *result = st_lookup(&map_root, correlation_id);
 
   TMSG(DEFER_CTXT, "correlation_id map lookup: id=0x%lx (record %p)", 
        correlation_id, result);
@@ -142,7 +142,7 @@ gpu_correlation_id_map_lookup
 
 
 void
-gpu_correlation_id_map_insert
+cupti_correlation_id_map_insert
 (
  uint32_t correlation_id, 
  uint64_t external_id
@@ -153,8 +153,8 @@ gpu_correlation_id_map_insert
     // correlation should be inserted only once.
     assert(0);
   } else {
-    gpu_correlation_id_map_entry_t *entry = 
-      gpu_correlation_id_map_entry_new(correlation_id, external_id);
+    cupti_correlation_id_map_entry_t *entry = 
+      cupti_correlation_id_map_entry_new(correlation_id, external_id);
 
     st_insert(&map_root, entry);
 
@@ -166,7 +166,7 @@ gpu_correlation_id_map_insert
 
 // TODO(Keren): remove
 void
-gpu_correlation_id_map_external_id_replace
+cupti_correlation_id_map_external_id_replace
 (
  uint32_t correlation_id, 
  uint64_t external_id
@@ -174,7 +174,7 @@ gpu_correlation_id_map_external_id_replace
 {
   TMSG(DEFER_CTXT, "correlation_id map replace: id=0x%lx");
 
-  gpu_correlation_id_map_entry_t *entry = st_lookup(&map_root, correlation_id);
+  cupti_correlation_id_map_entry_t *entry = st_lookup(&map_root, correlation_id);
   if (entry) {
     entry->external_id = external_id;
   }
@@ -182,18 +182,18 @@ gpu_correlation_id_map_external_id_replace
 
 
 void
-gpu_correlation_id_map_delete
+cupti_correlation_id_map_delete
 (
  uint32_t correlation_id
 )
 {
-  gpu_correlation_id_map_entry_t *node = st_delete(&map_root, correlation_id);
+  cupti_correlation_id_map_entry_t *node = st_delete(&map_root, correlation_id);
   st_free(free_list, node);
 }
 
 
 void
-gpu_correlation_id_map_kernel_update
+cupti_correlation_id_map_kernel_update
 (
  uint32_t correlation_id,
  uint32_t device_id,
@@ -203,7 +203,7 @@ gpu_correlation_id_map_kernel_update
 {
   TMSG(DEFER_CTXT, "correlation_id map replace: id=0x%lx");
 
-  gpu_correlation_id_map_entry_t *entry = st_lookup(&map_root, correlation_id);
+  cupti_correlation_id_map_entry_t *entry = st_lookup(&map_root, correlation_id);
   if (entry) {
     entry->device_id = device_id;
     entry->start = start;
@@ -213,9 +213,9 @@ gpu_correlation_id_map_kernel_update
 
 
 uint64_t
-gpu_correlation_id_map_entry_external_id_get
+cupti_correlation_id_map_entry_external_id_get
 (
- gpu_correlation_id_map_entry_t *entry
+ cupti_correlation_id_map_entry_t *entry
 )
 {
   return entry->external_id;
@@ -223,9 +223,9 @@ gpu_correlation_id_map_entry_external_id_get
 
 
 uint64_t
-gpu_correlation_id_map_entry_start_get
+cupti_correlation_id_map_entry_start_get
 (
- gpu_correlation_id_map_entry_t *entry
+ cupti_correlation_id_map_entry_t *entry
 )
 {
   return entry->start;
@@ -233,9 +233,9 @@ gpu_correlation_id_map_entry_start_get
 
 
 uint64_t
-gpu_correlation_id_map_entry_end_get
+cupti_correlation_id_map_entry_end_get
 (
- gpu_correlation_id_map_entry_t *entry
+ cupti_correlation_id_map_entry_t *entry
 )
 {
   return entry->end;
@@ -243,9 +243,9 @@ gpu_correlation_id_map_entry_end_get
 
 
 uint32_t
-gpu_correlation_id_map_entry_device_id_get
+cupti_correlation_id_map_entry_device_id_get
 (
- gpu_correlation_id_map_entry_t *entry
+ cupti_correlation_id_map_entry_t *entry
 )
 {
   return entry->device_id;
@@ -258,7 +258,7 @@ gpu_correlation_id_map_entry_device_id_get
 //*****************************************************************************
 
 uint64_t
-gpu_correlation_id_map_count
+cupti_correlation_id_map_count
 (
  void
 )
