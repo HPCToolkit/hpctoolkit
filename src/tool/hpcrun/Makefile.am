@@ -365,6 +365,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-channel.c 	\
 	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-id.c	\
+	gpu/gpu-correlation-id-map.c 	\
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
@@ -490,7 +491,6 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
-	gpu/nvidia/cupti-correlation-id-map.c 	\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 

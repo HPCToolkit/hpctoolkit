@@ -1,5 +1,5 @@
-#ifndef cupti_correlation_id_map_h
-#define cupti_correlation_id_map_h
+#ifndef gpu_correlation_id_map_h
+#define gpu_correlation_id_map_h
 
 
 
@@ -15,7 +15,7 @@
 // type definitions 
 //*****************************************************************************
 
-typedef struct cupti_correlation_id_map_entry_t cupti_correlation_id_map_entry_t;
+typedef struct gpu_correlation_id_map_entry_t gpu_correlation_id_map_entry_t;
 
 typedef struct cct_node_t cct_node_t;
 
@@ -25,15 +25,15 @@ typedef struct cct_node_t cct_node_t;
 // interface operations
 //*****************************************************************************
 
-cupti_correlation_id_map_entry_t *
-cupti_correlation_id_map_lookup
+gpu_correlation_id_map_entry_t *
+gpu_correlation_id_map_lookup
 (
  uint32_t id
 );
 
 
 void
-cupti_correlation_id_map_insert
+gpu_correlation_id_map_insert
 (
  uint32_t correlation_id,
  uint64_t external_id
@@ -41,14 +41,14 @@ cupti_correlation_id_map_insert
 
 
 void
-cupti_correlation_id_map_delete
+gpu_correlation_id_map_delete
 (
  uint32_t correlation_id
 );
 
 
 void
-cupti_correlation_id_map_external_id_replace
+gpu_correlation_id_map_external_id_replace
 (
  uint32_t correlation_id,
  uint64_t external_id
@@ -56,7 +56,7 @@ cupti_correlation_id_map_external_id_replace
 
 
 void
-cupti_correlation_id_map_kernel_update
+gpu_correlation_id_map_kernel_update
 (
  uint32_t correlation_id,
  uint32_t device_id,
@@ -66,30 +66,30 @@ cupti_correlation_id_map_kernel_update
 
 
 uint64_t
-cupti_correlation_id_map_entry_external_id_get
+gpu_correlation_id_map_entry_external_id_get
 (
- cupti_correlation_id_map_entry_t *entry
+ gpu_correlation_id_map_entry_t *entry
 );
 
 
 uint64_t
-cupti_correlation_id_map_entry_start_get
+gpu_correlation_id_map_entry_start_get
 (
- cupti_correlation_id_map_entry_t *entry
+ gpu_correlation_id_map_entry_t *entry
 );
 
 
 uint64_t
-cupti_correlation_id_map_entry_end_get
+gpu_correlation_id_map_entry_end_get
 (
- cupti_correlation_id_map_entry_t *entry
+ gpu_correlation_id_map_entry_t *entry
 );
 
 
 uint32_t
-cupti_correlation_id_map_entry_device_id_get
+gpu_correlation_id_map_entry_device_id_get
 (
- cupti_correlation_id_map_entry_t *entry
+ gpu_correlation_id_map_entry_t *entry
 );
 
 
