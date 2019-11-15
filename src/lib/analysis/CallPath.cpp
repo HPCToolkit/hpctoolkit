@@ -84,6 +84,8 @@ using std::string;
 #include "CallPath-MetricComponentsFact.hpp"
 #include "Util.hpp"
 
+#include <lib/banal/StructSimple.hpp>
+
 #include <lib/prof/CCT-Tree.hpp>
 #include <lib/prof/Metric-Mgr.hpp>
 #include <lib/prof/Metric-ADesc.hpp>
@@ -341,7 +343,10 @@ coalesceStmts(Prof::CallPath::Profile& prof);
 
 //****************************************************************************
 
-
+//
+// The main entry point for hpcprof and prof-mpi.  Iterate over load
+// modules and overlay structure one LM at a time.
+//
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
@@ -390,6 +395,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 }
 
 
+//
+// Overlay for one load module.
+//
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
@@ -436,19 +444,6 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 }
 
 
-// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
-// nodes using a preorder walk over the CCT.
-void
-Analysis::CallPath::
-overlayStaticStructure(Prof::CallPath::Profile& prof,
-		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
-{
-  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
-}
-
-
-
 void
 Analysis::CallPath::
 noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
@@ -483,6 +478,72 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
   }
 }
 
+//****************************************************************************
+
+// Precompute the simple structure for all vma's in the CCT 'node'
+// that match load module 'lmid' and insert into 'lmStruct'.
+//
+// Overlay static structure has trouble with aliens if we compute the
+// stmt nodes incrementally (why?).
+//
+static void
+precomputeStructSimple(Prof::CCT::ANode * node,
+		       Prof::LoadMap::LMId_t lmid,
+		       Prof::Struct::LM * lmStruct,
+		       BinUtil::LM * lm)
+{
+  using namespace Prof;
+
+  if (node == NULL) { return; }
+
+  // iterate over children, ordered by cmpByDynInfo (same order as
+  // overlayStaticStructure)
+  for (CCT::ANodeSortedChildIterator it(node, CCT::ANodeSortedIterator::cmpByDynInfo);
+       it.current(); )
+  {
+    CCT::ANode * n2 = it.current();
+    it++;
+
+    // only dynamic nodes have vma address
+    CCT::ADynNode * n_dyn = dynamic_cast <CCT::ADynNode *> (n2);
+    if (n_dyn && (n_dyn->lmId() == lmid)) {
+      VMA vma = n_dyn->lmIP();
+
+      Struct::ACodeNode * stmt = lmStruct->findStmt(vma);
+
+      if (stmt == NULL) {
+	stmt = BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
+      }
+    }
+
+    // subtrees
+    if (! n2->isLeaf()) {
+      precomputeStructSimple(n2, lmid, lmStruct, lm);
+    }
+  }
+}
+
+
+// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
+// nodes using a preorder walk over the CCT.
+//
+// Note: for the struct simple case (binutils lm != NULL), precompute
+// the LM struct tree ahead of time.  Alien nodes break if this is
+// done incrementally (why?).
+//
+void
+Analysis::CallPath::
+overlayStaticStructure(Prof::CallPath::Profile& prof,
+		       Prof::LoadMap::LM* loadmap_lm,
+		       Prof::Struct::LM* lmStruct, BinUtil::LM* lm)
+{
+  if (lm != NULL) {
+    precomputeStructSimple(prof.cct()->root(), loadmap_lm->id(), lmStruct, lm);
+    lmStruct->computeVMAMaps();
+  }
+
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStruct, NULL);
+}
 
 //****************************************************************************
 
@@ -496,8 +557,6 @@ overlayStaticStructure(Prof::CCT::ANode* node,
   // procedure frame.
   
   if (!node) { return; }
-
-  bool useStruct = (!lm);
 
   // N.B.: dynamically allocate to better handle the deep recursion
   // required for very deep CCTs.
@@ -541,8 +600,7 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
-					unkProcNm);
+	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, true, unkProcNm);
       
       n->structure(strct);
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
