@@ -2,7 +2,27 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/module-ignore-map.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
+
 #include "gpu-activity-channel.h"
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define UNIT_TEST 0
+
+#define DEBUG 0
+
+#if DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
 
 
 

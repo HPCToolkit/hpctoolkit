@@ -25,16 +25,28 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/cct/cct_addr.h>
 #include <hpcrun/utilities/ip-normalized.h>
-
 #include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-host-correlation-map.h>
 
 #include "cupti-activity-translate.h"
+#include "cupti-analysis.h"
 
 
 
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define DEBUG 0
+
+
+#if DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
 
 #if CUPTI_API_VERSION >= 10
 #define CUpti_ActivityPCSamplingVersion CUpti_ActivityPCSampling3 
@@ -53,11 +65,11 @@ set_gpu_instruction_fields
 (
  gpu_instruction_t *instruction,
  uint32_t activity_correlation_id,
- uint32_t pc_offset,
+ uint32_t pc_offset
 ) 
 {
   gpu_correlation_id_map_entry_t *cid_map_entry =
-    gpu_correlation_id_map_lookup(sample->correlationId);
+    gpu_correlation_id_map_lookup(activity_correlation_id);
   assert(cid_map_entry);
 
   uint64_t host_correlation_id =
@@ -70,12 +82,13 @@ set_gpu_instruction_fields
   // get a normalized IP for the function enclosing the instruction
   cct_node_t *func_node = 
     gpu_host_correlation_map_entry_op_function_get(host_correlation_entry); 
-  ip_normalized_t pc = hpcrun_cct_get_addr(func_node)->ip_norm;
+  ip_normalized_t pc = hpcrun_cct_addr(func_node)->ip_norm;
 
   // compute a normalized IP for the instruction by adding the
   // instruction's offset in the routine to the address of the routine
   pc.lm_ip += pc_offset;
 
+  instruction->correlation_id = activity_correlation_id;
   instruction->pc = pc;
 }
 
@@ -86,16 +99,16 @@ convert_pcsampling
  CUpti_ActivityPCSamplingVersion *activity 
 )
 {
-PRINT("source %u, functionId %u, pc 0x%p, corr %u, "
-   "samples %u, latencySamples %u, stallReason %u\n",
-   activity->sourceLocatorId,
-   activity->functionId,
-   (void *)activity->pcOffset,
-   activity->correlationId,
-   activity->samples,
-   activity->latencySamples,
-   activity->stallReason);
-
+  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+	"samples %u, latencySamples %u, stallReason %u\n",
+	activity->sourceLocatorId,
+	activity->functionId,
+	activity->pcOffset,
+	activity->correlationId,
+	activity->samples,
+	activity->latencySamples,
+	activity->stallReason);
+  
   ga->kind = GPU_ACTIVITY_KIND_PC_SAMPLING;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
@@ -120,6 +133,7 @@ convert_pcsampling_record_info
    (unsigned long long)activity_info->droppedSamples);
   ga->kind = GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO;
 
+  ga->details.pc_sampling_record_info.correlation_id = activity_info->correlationId;
   ga->details.pc_sampling_record_info.totalSamples = 
     activity_info->totalSamples;
   ga->details.pc_sampling_record_info.droppedSamples = 
@@ -139,19 +153,21 @@ static void
 convert_memcpy
 (
   gpu_activity_t *ga,
-  CUpti_ActivityMemcpy *activity_memcpy
+  CUpti_ActivityMemcpy *activity
 )
 {
-  PRINT("Memcpy copy CorrelationId %u\n", activity_memcpy->correlationId);
-  PRINT("Memcpy copy kind %u\n", activity_memcpy->copyKind);
-  PRINT("Memcpy copy bytes %lu\n", activity_memcpy->bytes);
+  PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
+  PRINT("Memcpy copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy copy bytes %lu\n", activity->bytes);
 
   ga->kind = GPU_ACTIVITY_KIND_MEMCPY;
-  ga->details.memcpy.context_id = activity_memcpy->contextId;
-  ga->details.memcpy.stream_id = activity_memcpy->streamId;
-  ga->details.memcpy.copyKind = activity_memcpy->copyKind;
-  ga->details.memcpy.bytes = activity_memcpy->bytes;
-  set_gpu_activity_interval(&ga->details.interval, activity_memcpy->start, activity_memcpy->end);  
+  ga->details.memcpy.correlation_id = activity->correlationId;
+  ga->details.memcpy.context_id = activity->contextId;
+  ga->details.memcpy.stream_id = activity->streamId;
+  ga->details.memcpy.copyKind = activity->copyKind;
+  ga->details.memcpy.bytes = activity->bytes;
+
+  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
 }
 
 
@@ -159,28 +175,29 @@ static void
 convert_kernel
 (
   gpu_activity_t *ga,
-  CUpti_ActivityKernel4 *activity_kernel
+  CUpti_ActivityKernel4 *activity
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_KERNEL;
 
-  ga->details.kernel.dynamicSharedMemory = 
-    activity_kernel->dynamicSharedMemory;
+  ga->details.kernel.correlation_id = activity->correlationId;
 
-  ga->details.kernel.staticSharedMemory = activity_kernel->staticSharedMemory;
-  ga->details.kernel.localMemoryTotal = activity_kernel->localMemoryTotal;
-  set_gpu_activity_interval(&ga->details.interval, activity_kernel->start, activity_kernel->end);
-  ga->details.kernel.contextId = activity_kernel->contextId;
-  ga->details.kernel.streamId = activity_kernel->streamId;
+  ga->details.kernel.dynamicSharedMemory = activity->dynamicSharedMemory;
+
+  ga->details.kernel.staticSharedMemory = activity->staticSharedMemory;
+  ga->details.kernel.localMemoryTotal = activity->localMemoryTotal;
+  ga->details.kernel.context_id = activity->contextId;
+  ga->details.kernel.stream_id = activity->streamId;
+
+  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);
 
   uint32_t activeWarpsPerSM = 0;
   uint32_t maxActiveWarpsPerSM = 0;
   uint32_t threadRegisters = 0;
   uint32_t blockThreads = 0;
   uint32_t blockSharedMemory = 0;
-  cupti_occupancy_analyze(activity_kernel, &activeWarpsPerSM, 
-			  &maxActiveWarpsPerSM, &threadRegisters, 
-			  &blockThreads, &blockSharedMemory);
+  cupti_occupancy_analyze(activity, &activeWarpsPerSM, &maxActiveWarpsPerSM, 
+			  &threadRegisters, &blockThreads, &blockSharedMemory);
 
   ga->details.kernel.activeWarpsPerSM = activeWarpsPerSM;
   ga->details.kernel.maxActiveWarpsPerSM = maxActiveWarpsPerSM;
@@ -279,6 +296,7 @@ convert_synchronization
 {
   ga->kind = GPU_ACTIVITY_KIND_SYNCHRONIZATION;
   ga->details.synchronization.syncKind = activity_sync->type;
+
   set_gpu_activity_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
 }
 
@@ -293,6 +311,7 @@ convert_memory
   ga->kind = GPU_ACTIVITY_KIND_MEMORY;
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
+
   set_gpu_activity_interval(&ga->details.interval, activity_mem->start, activity_mem->end);
 }
 
@@ -301,43 +320,48 @@ static void
 convert_memset
 (
   gpu_activity_t *ga,
-  CUpti_ActivityMemset *activity_memset
+  CUpti_ActivityMemset *activity
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_MEMSET;
-  ga->details.memset.context_id = activity_memset->contextId;
-  ga->details.memset.stream_id = activity_memset->streamId;
-  ga->details.memset.memKind = activity_memset->memoryKind;
-  ga->details.memset.bytes = activity_memset->bytes;
-  set_gpu_activity_interval(&ga->details.interval, activity_memset->start, activity_memset->end);  
+  ga->details.memset.correlation_id = activity->correlationId;
+  ga->details.memset.context_id = activity->contextId;
+  ga->details.memset.stream_id = activity->streamId;
+  ga->details.memset.memKind = activity->memoryKind;
+  ga->details.memset.bytes = activity->bytes;
+
+  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
 }
 
 static void
 convert_correlation
 (
   gpu_activity_t *ga, 
-  CUpti_ActivityExternalCorrelation* acitivity_cor
+  CUpti_ActivityExternalCorrelation* activity
 )
 {
-  PRINT("External CorrelationId %lu\n", acitivity_cor->externalId);
-  PRINT("CorrelationId %u\n", acitivity_cor->correlationId);
+  PRINT("External CorrelationId %lu\n", activity->externalId);
+  PRINT("CorrelationId %u\n", activity->correlationId);
 
   ga->kind = GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION;
-  ga->details.correlation.externalId = acitivity_cor->externalId;
+  ga->details.correlation.correlation_id = activity->correlationId;
+  ga->details.correlation.host_correlation_id = activity->externalId;
 }
 
 static void
 convert_cdpkernel
 (
   gpu_activity_t *ga,
-  CUpti_ActivityCdpKernel *activity_kernel
+  CUpti_ActivityCdpKernel *activity
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_CDP_KERNEL;
   
-  set_gpu_activity_interval(&ga->details.interval, activity_kernel->start, activity_kernel->end);
-  ga->details.cdpkernel.contextId = activity_kernel->contextId;
-  ga->details.cdpkernel.streamId = activity_kernel->streamId;
+  ga->details.cdpkernel.correlation_id = activity->correlationId;
+  ga->details.cdpkernel.context_id = activity->contextId;
+  ga->details.cdpkernel.stream_id = activity->streamId;
+
+  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);
 }
 
 
@@ -349,14 +373,9 @@ void
 cupti_activity_translate
 (
  gpu_activity_t *ga,
- CUpti_Activity *activity,
- cct_node_t *cct_node
+ CUpti_Activity *activity
 )
 {
-
-  ga->cct_node = cct_node;
-  ga->correlationId = activity->correlationId;
-  
   switch (activity->kind) {
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
@@ -369,7 +388,7 @@ cupti_activity_translate
     break;
 
   case CUPTI_ACTIVITY_KIND_MEMCPY:
-  case CPPTI_ACTIVITY_KIND_MEMCPY2:
+  case CUPTI_ACTIVITY_KIND_MEMCPY2:
     convert_memcpy(ga, (CUpti_ActivityMemcpy *) activity);
     break;
 

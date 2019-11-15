@@ -2,13 +2,30 @@
 // local includes
 //******************************************************************************
 
+#include <pthread.h>
+
+
+
+//******************************************************************************
+// libmonitor 
+//******************************************************************************
+
+#include <monitor.h>
+
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
 #include <lib/prof-lean/stdatomic.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
+#include <hpcrun/trace.h>
 
-#include "gpu-context-stream-id-map.h"
+// #include "gpu-context-stream-id-map.h"
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"

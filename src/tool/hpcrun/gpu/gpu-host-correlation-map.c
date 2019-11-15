@@ -13,6 +13,8 @@
 
 #include <lib/prof-lean/splay-uint64.h>
 
+#include <hpcrun/cct/cct.h>
+
 #include "gpu-host-correlation-map.h"
 #include "gpu-op-placeholders.h"
 #include "gpu-splay-allocator.h"
@@ -261,7 +263,7 @@ gpu_host_correlation_map_entry_op_cct_get
  gpu_placeholder_type_t ph_type
 )
 {
-  return entry->gpu_op_ccts[ph_type];
+  return entry->gpu_op_ccts.ccts[ph_type];
 }
 
 
@@ -271,7 +273,7 @@ gpu_host_correlation_map_entry_op_function_get
  gpu_host_correlation_map_entry_t *entry
 )
 {
-  cct_node_t *trace_node = entry->gpu_op_ccts[gpu_placeholder_type_trace];
+  cct_node_t *trace_node = entry->gpu_op_ccts.ccts[gpu_placeholder_type_trace];
   cct_node_t *func_node = hpcrun_cct_children(trace_node);
 
   return func_node;

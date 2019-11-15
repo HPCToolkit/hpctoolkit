@@ -27,8 +27,7 @@ void
 cupti_activity_translate
 (
  gpu_activity_t *entry,
- CUpti_Activity *activity,
- cct_node_t *cct_node
+ CUpti_Activity *activity
 );
 
 #endif
