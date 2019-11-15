@@ -22,12 +22,13 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/cct/cct_addr.h>
+#include <hpcrun/utilities/ip-normalized.h>
+
 #include <hpcrun/gpu/gpu-activity.h>
 
 #include "cupti-activity-translate.h"
-
-// #include <cupti_version.h>
-//#include "cupti-analysis.h"
 
 
 
@@ -48,33 +49,61 @@
 //******************************************************************************
 
 static void
+set_gpu_instruction_fields
+(
+ gpu_instruction_t *instruction,
+ uint32_t activity_correlation_id,
+ uint32_t pc_offset,
+) 
+{
+  gpu_correlation_id_map_entry_t *cid_map_entry =
+    gpu_correlation_id_map_lookup(sample->correlationId);
+  assert(cid_map_entry);
+
+  uint64_t host_correlation_id =
+    gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+
+  gpu_host_correlation_map_entry_t *host_correlation_entry =
+    gpu_host_correlation_map_lookup(host_correlation_id);
+  assert(host_correlation_entry);
+
+  // get a normalized IP for the function enclosing the instruction
+  cct_node_t *func_node = 
+    gpu_host_correlation_map_entry_op_function_get(host_correlation_entry); 
+  ip_normalized_t pc = hpcrun_cct_get_addr(func_node)->ip_norm;
+
+  // compute a normalized IP for the instruction by adding the
+  // instruction's offset in the routine to the address of the routine
+  pc.lm_ip += pc_offset;
+
+  instruction->pc = pc;
+}
+
+static void
 convert_pcsampling
 (
  gpu_activity_t *ga,
- CUpti_ActivityPCSamplingVersion *sa 
+ CUpti_ActivityPCSamplingVersion *activity 
 )
 {
-#if CUPTI_API_VERSION >= 10
-  CUpti_ActivityPCSampling3 *activity_sample = (CUpti_ActivityPCSampling3 *)sa;
-#else
-  CUpti_ActivityPCSampling2 *activity_sample = (CUpti_ActivityPCSampling2 *)sa;
-#endif
 PRINT("source %u, functionId %u, pc 0x%p, corr %u, "
    "samples %u, latencySamples %u, stallReason %u\n",
-   sample->sourceLocatorId,
-   sample->functionId,
-   (void *)sample->pcOffset,
-   sample->correlationId,
-   sample->samples,
-   sample->latencySamples,
-   sample->stallReason);
+   activity->sourceLocatorId,
+   activity->functionId,
+   (void *)activity->pcOffset,
+   activity->correlationId,
+   activity->samples,
+   activity->latencySamples,
+   activity->stallReason);
 
   ga->kind = GPU_ACTIVITY_KIND_PC_SAMPLING;
-  set_gpu_instruction_fields(&ga->details.instruction, activity_sample->pcOffset);  
-  ga->details.pc_sampling.stallReason = activity_sample->stallReason;
-  ga->details.pc_sampling.samples = activity_sample->samples;
-  ga->details.pc_sampling.latencySamples = activity_sample->latencySamples;
-  
+
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
+			     activity->pcOffset); 
+
+  ga->details.pc_sampling.stallReason = activity->stallReason;
+  ga->details.pc_sampling.samples = activity->samples;
+  ga->details.pc_sampling.latencySamples = activity->latencySamples;
 }
 
 
@@ -118,6 +147,8 @@ convert_memcpy
   PRINT("Memcpy copy bytes %lu\n", activity_memcpy->bytes);
 
   ga->kind = GPU_ACTIVITY_KIND_MEMCPY;
+  ga->details.memcpy.context_id = activity_memcpy->contextId;
+  ga->details.memcpy.stream_id = activity_memcpy->streamId;
   ga->details.memcpy.copyKind = activity_memcpy->copyKind;
   ga->details.memcpy.bytes = activity_memcpy->bytes;
   set_gpu_activity_interval(&ga->details.interval, activity_memcpy->start, activity_memcpy->end);  
@@ -163,21 +194,23 @@ static void
 convert_global_access
 (
   gpu_activity_t *ga,
-  CUpti_ActivityGlobalAccess3 *activity_global_access
+  CUpti_ActivityGlobalAccess3 *activity
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_GLOBAL_ACCESS;
-  set_gpu_instruction_fields(&ga->details.instruction, activity_global_access->pcOffset);  
+
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
+			     activity->pcOffset); 
 
   ga->details.global_access.l2_transactions = 
-    activity_global_access->l2_transactions;
+    activity->l2_transactions;
 
   ga->details.global_access.theoreticalL2Transactions =
-    activity_global_access->theoreticalL2Transactions;
+    activity->theoreticalL2Transactions;
 
   gpu_global_access_type_t type;
-  if (activity_global_access->flags & (1<<8)) {
-    if (activity_global_access->flags & (1<<9)) {
+  if (activity->flags & (1<<8)) {
+    if (activity->flags & (1<<9)) {
       type = GPU_GLOBAL_ACCESS_LOAD_CACHED;
     } else {
       type = GPU_GLOBAL_ACCESS_LOAD_UNCACHED;
@@ -187,9 +220,7 @@ convert_global_access
   }
   ga->details.global_access.type = type;
 
-  uint64_t bytes = 
-    (activity_global_access->flags & 0xFF) * 
-    activity_global_access->threadsExecuted;
+  uint64_t bytes = (activity->flags & 0xFF) * activity->threadsExecuted;
 
   ga->details.global_access.bytes = bytes;
 }
@@ -199,39 +230,43 @@ static void
 convert_shared_access
 (
   gpu_activity_t *ga,
-  CUpti_ActivitySharedAccess *activity_shared_access
+  CUpti_ActivitySharedAccess *activity
 )
 { 
   ga->kind = GPU_ACTIVITY_KIND_SHARED_ACCESS;
-  set_gpu_instruction_fields(&ga->details.instruction, activity_shared_access->pcOffset); 
+
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
+			     activity->pcOffset); 
 
   ga->details.shared_access.sharedTransactions = 
-    activity_shared_access->sharedTransactions;
+    activity->sharedTransactions;
 
   ga->details.shared_access.theoreticalSharedTransactions =
-    activity_shared_access->theoreticalSharedTransactions;
+    activity->theoreticalSharedTransactions;
 
   ga->details.shared_access.type = 
-    ((activity_shared_access->flags & (1<<8)) ?
-     GPU_SHARED_ACCESS_LOAD :
+    ((activity->flags & (1<<8)) ? 
+     GPU_SHARED_ACCESS_LOAD : 
      GPU_SHARED_ACCESS_STORE);
 
-  ga->details.shared_access.bytes = 
-    (activity_shared_access->flags & 0xFF) * 
-    activity_shared_access->threadsExecuted;
+  ga->details.shared_access.bytes = (activity->flags & 0xFF) * 
+    activity->threadsExecuted;
 }
 
 static void
 convert_branch
 (
  gpu_activity_t *ga,
- CUpti_ActivityBranch2 *activity_branch
+ CUpti_ActivityBranch2 *activity
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_BRANCH;
-  set_gpu_instruction_fields(&ga->details.instruction, activity_branch->pcOffset); 
-  ga->details.branch.diverged = activity_branch->diverged;
-  ga->details.branch.executed = activity_branch->executed;
+
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
+			     activity->pcOffset); 
+
+  ga->details.branch.diverged = activity->diverged;
+  ga->details.branch.executed = activity->executed;
 }
 
 
@@ -270,6 +305,8 @@ convert_memset
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_MEMSET;
+  ga->details.memset.context_id = activity_memset->contextId;
+  ga->details.memset.stream_id = activity_memset->streamId;
   ga->details.memset.memKind = activity_memset->memoryKind;
   ga->details.memset.bytes = activity_memset->bytes;
   set_gpu_activity_interval(&ga->details.interval, activity_memset->start, activity_memset->end);  

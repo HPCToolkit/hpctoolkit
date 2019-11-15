@@ -17,6 +17,7 @@
 //******************************************************************************
 
 #include "gpu-activity-channel.h"
+#include "gpu-op-placeholders.h"
 
 
 
@@ -84,6 +85,21 @@ gpu_host_correlation_map_delete
 
 gpu_activity_channel_t *
 gpu_host_correlation_map_entry_channel_get
+(
+ gpu_host_correlation_map_entry_t *entry
+);
+
+
+cct_node_t *
+gpu_host_correlation_map_entry_op_cct_get
+(
+ gpu_host_correlation_map_entry_t *entry,
+ gpu_placeholder_type_t ph_type
+);
+
+
+cct_node_t *
+gpu_host_correlation_map_entry_op_function_get
 (
  gpu_host_correlation_map_entry_t *entry
 );

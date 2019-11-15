@@ -24,7 +24,12 @@ typedef struct thread_data_t thread_data_t;
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t; 
 
-typedef struct gpu_trace_item_t gpu_trace_item_t; 
+typedef struct gpu_trace_item_t {
+  cct_node_t *call_path_leaf;
+  uint64_t start; 
+  uint64_t end; 
+} gpu_trace_item_t;
+
 
 typedef void (*gpu_trace_item_consume_fn_t)
 (

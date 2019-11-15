@@ -487,7 +487,6 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cubin-symbols.c		\
 	gpu/nvidia/cuda-api.c			\
 	gpu/nvidia/cuda-device-map.c		\
-	gpu/nvidia/cupti-activity-process.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\

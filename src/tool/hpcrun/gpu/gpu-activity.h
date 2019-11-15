@@ -15,7 +15,7 @@
 // local includes
 //******************************************************************************
 
-// #include <lib/prof-lean/stdatomic.h>
+#include <hpcrun/utilities/ip-normalized.h>
 
 
 
@@ -56,9 +56,16 @@ typedef enum {
 } gpu_shared_access_type_t;
 
 
+typedef enum {    
+  GPU_SYNCHRONIZATION_CONTEXT,
+  GPU_SYNCHRONIZATION_STREAM,
+  GPU_SYNCHRONIZATION_DEVICE
+} gpu_synchronization_type_t;
+
+
 // pc sampling
 typedef struct gpu_pc_sampling {
-  uint32_t pcOffset;
+  ip_normalized_t pc;
   uint32_t samples;
   uint32_t latencySamples;
   uint32_t stallReason;    
@@ -77,6 +84,8 @@ typedef struct gpu_pc_sampling_record_info {
 typedef struct gpu_memcpy {
   uint64_t start;
   uint64_t end;
+  uint32_t context_id;
+  uint32_t stream_id;
   uint64_t bytes;
   uint32_t copyKind;
 } gpu_memcpy_t;
@@ -93,6 +102,8 @@ typedef struct gpu_memory {
 typedef struct gpu_memset {
   uint64_t start;
   uint64_t end;
+  uint32_t context_id;
+  uint32_t stream_id;
   uint64_t bytes;
   uint32_t memKind;
 } gpu_memset_t;
@@ -122,7 +133,7 @@ typedef struct gpu_cdpkernel {
 } gpu_cdpkernel_t;
 
 typedef struct gpu_global_access {
-  uint64_t pcOffset;
+  ip_normalized_t pc;
   uint64_t l2_transactions;
   uint64_t theoreticalL2Transactions;
   uint64_t bytes;
@@ -131,7 +142,7 @@ typedef struct gpu_global_access {
 
 
 typedef struct gpu_shared_access {
-  uint64_t pcOffset;
+  ip_normalized_t pc;
   uint64_t sharedTransactions;
   uint64_t theoreticalSharedTransactions;
   uint64_t bytes;
@@ -140,7 +151,7 @@ typedef struct gpu_shared_access {
 
 
 typedef struct gpu_branch {
-  uint64_t pcOffset;
+  ip_normalized_t pc;
   uint32_t diverged;
   uint32_t executed;
 } gpu_branch_t;
@@ -166,7 +177,7 @@ typedef struct gpu_activity_interval {
 } gpu_activity_interval_t;
 
 typedef struct gpu_instruction {
-  uint64_t pcOffset;
+  ip_normalized_t pc;
 } gpu_instruction_t;
 
 typedef struct entry_data {
@@ -215,6 +226,7 @@ typedef enum gpu_activity_kind {
     GPU_ACTIVITY_KIND_CDP_KERNEL
 } gpu_activity_kind_t;
 
+
 typedef struct gpu_activity_t {
   gpu_activity_kind_t kind;
   uint32_t correlationId;
@@ -249,12 +261,14 @@ gpu_activity_free
  gpu_activity_t *a
 );
 
+
 void
 set_gpu_instruction
 (
-  gpu_instruction_t* , 
-  uint64_t
+  gpu_instruction_t* inst, 
+  ip_normalized_t pc
 );
+
 
 void
 set_gpu_activity_interval

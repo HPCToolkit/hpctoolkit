@@ -254,6 +254,30 @@ gpu_host_correlation_map_entry_channel_get
 }
 
 
+cct_node_t *
+gpu_host_correlation_map_entry_op_cct_get
+(
+ gpu_host_correlation_map_entry_t *entry,
+ gpu_placeholder_type_t ph_type
+)
+{
+  return entry->gpu_op_ccts[ph_type];
+}
+
+
+cct_node_t *
+gpu_host_correlation_map_entry_op_function_get
+(
+ gpu_host_correlation_map_entry_t *entry
+)
+{
+  cct_node_t *trace_node = entry->gpu_op_ccts[gpu_placeholder_type_trace];
+  cct_node_t *func_node = hpcrun_cct_children(trace_node);
+
+  return func_node;
+}
+
+
 
 /******************************************************************************
  * debugging code

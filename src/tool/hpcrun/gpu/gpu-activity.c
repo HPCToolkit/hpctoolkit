@@ -53,10 +53,10 @@ void
 set_gpu_instruction
 (
   gpu_instruction_t* insn, 
-  uint64_t pc
+  ip_normalized_t pc
 )
 {
-  insn->pcOffset = pc;
+  insn->pc = pc;
 }
 
 void
