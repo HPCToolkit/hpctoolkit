@@ -168,6 +168,9 @@ typedef struct gpu_branch {
 
 // synchronization
 typedef struct gpu_synchronization {
+  uint32_t correlation_id;
+  uint32_t context_id;
+  uint32_t stream_id;
   uint64_t start;
   uint64_t end;
   uint32_t syncKind;

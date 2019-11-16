@@ -93,6 +93,17 @@ gpu_activity_channel_get
 
 
 void
+gpu_activity_channel_produce
+(
+ gpu_activity_channel_t *channel,
+ gpu_activity_t *a
+)
+{
+  channel_push(channel, bichannel_direction_forward, a);
+}
+
+
+void
 gpu_activity_channel_consume
 (
  void

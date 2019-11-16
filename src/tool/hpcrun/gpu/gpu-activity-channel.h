@@ -11,8 +11,10 @@
 
 
 //******************************************************************************
-// type declarations
+// forward type declarations
 //******************************************************************************
+
+typedef struct gpu_activity_t gpu_activity_t; 
 
 typedef struct gpu_activity_channel_t gpu_activity_channel_t; 
 
@@ -26,6 +28,14 @@ gpu_activity_channel_t *
 gpu_activity_channel_get
 (
  void
+);
+
+
+void
+gpu_activity_channel_produce
+(
+ gpu_activity_channel_t *channel,
+ gpu_activity_t *a
 );
 
 

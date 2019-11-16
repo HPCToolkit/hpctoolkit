@@ -134,6 +134,17 @@ gpu_op_kernel
 
 
 void
+gpu_op_memset
+(
+ void
+)
+{
+  // this function is not meant to be called
+  assert(0);
+}
+
+
+void
 gpu_op_sync
 (
  void
@@ -183,6 +194,7 @@ gpu_op_placeholders_init
   gpu_op_placeholder_init(gpu_placeholder_type_alloc,   &gpu_op_alloc);
   gpu_op_placeholder_init(gpu_placeholder_type_delete,  &gpu_op_delete);
   gpu_op_placeholder_init(gpu_placeholder_type_kernel,  &gpu_op_kernel);
+  gpu_op_placeholder_init(gpu_placeholder_type_memset,  &gpu_op_memset);
   gpu_op_placeholder_init(gpu_placeholder_type_sync,    &gpu_op_sync);
   gpu_op_placeholder_init(gpu_placeholder_type_trace,   &gpu_op_trace);
 }

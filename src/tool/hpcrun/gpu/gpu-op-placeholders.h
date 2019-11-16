@@ -31,10 +31,11 @@ typedef enum gpu_placeholder_type_t {
   gpu_placeholder_type_alloc   = 3,
   gpu_placeholder_type_delete  = 4,
   gpu_placeholder_type_kernel  = 5,
-  gpu_placeholder_type_sync    = 6,
-  gpu_placeholder_type_trace   = 7,
+  gpu_placeholder_type_memset  = 6,
+  gpu_placeholder_type_sync    = 7,
+  gpu_placeholder_type_trace   = 8,
 
-  gpu_placeholder_type_count   = 8
+  gpu_placeholder_type_count   = 9
 } gpu_placeholder_type_t;
 
 

@@ -295,6 +295,9 @@ convert_synchronization
 )
 {
   ga->kind = GPU_ACTIVITY_KIND_SYNCHRONIZATION;
+  ga->details.synchronization.correlation_id = activity_sync->correlationId;
+  ga->details.synchronization.context_id = activity_sync->contextId;
+  ga->details.synchronization.stream_id = activity_sync->streamId;
   ga->details.synchronization.syncKind = activity_sync->type;
 
   set_gpu_activity_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
