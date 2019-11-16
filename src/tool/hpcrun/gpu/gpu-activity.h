@@ -63,6 +63,22 @@ typedef enum {
 } gpu_synchronization_type_t;
 
 
+typedef enum {
+  GPU_MEMCPY_UNK = 0,  // unknown
+  GPU_MEMCPY_H2D = 1,  // host to device 
+  GPU_MEMCPY_D2H = 2,  // device to host 
+  GPU_MEMCPY_H2A = 3,  // host to device array 
+  GPU_MEMCPY_A2H = 4,  // device array to host
+  GPU_MEMCPY_A2A = 5,  // device array to device array
+  GPU_MEMCPY_A2D = 6,  // device array to device 
+  GPU_MEMCPY_D2A = 7,  // device to device array
+  GPU_MEMCPY_D2D = 8,  // device to device
+  GPU_MEMCPY_H2H = 9,  // host to host
+  GPU_MEMCPY_P2P = 10, // device peer to device peer
+  GPU_MEMCPY_FRC = 11  // force int
+} gpu_memcpy_type_t;
+
+
 // pc sampling
 typedef struct gpu_pc_sampling {
   uint32_t correlation_id;
@@ -118,6 +134,7 @@ typedef struct gpu_kernel {
   uint32_t correlation_id;
   uint64_t start;
   uint64_t end;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
   int32_t dynamicSharedMemory;

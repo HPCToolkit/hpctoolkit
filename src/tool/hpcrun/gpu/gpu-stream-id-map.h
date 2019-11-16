@@ -25,12 +25,6 @@
 
 typedef struct gpu_stream_id_map_entry_t gpu_stream_id_map_entry_t;
 
-typedef void (*gpu_trace_fn_t)
-(
- gpu_trace_channel_t *channel, 
- void *arg
-);
-
 
 
 //*****************************************************************************
@@ -59,7 +53,7 @@ gpu_stream_id_map_stream_process
  gpu_stream_id_map_entry_t **root,
  uint32_t stream_id,
  gpu_trace_fn_t fn,
- void *arg
+ gpu_trace_item_t *ti
 );
 
 
@@ -71,7 +65,7 @@ gpu_stream_id_map_context_process
 (
  gpu_stream_id_map_entry_t **root,
  gpu_trace_fn_t fn,
- void *arg
+ gpu_trace_item_t *ti
 );
 
 

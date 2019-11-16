@@ -19,7 +19,6 @@
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 
-
 //******************************************************************************
 // interface operations 
 //******************************************************************************
@@ -35,9 +34,7 @@ void
 gpu_trace_channel_produce
 (
  gpu_trace_channel_t *channel,
- uint64_t start,
- uint64_t end,
- cct_node_t *call_path_leaf
+ gpu_trace_item_t *ti
 );
 
 

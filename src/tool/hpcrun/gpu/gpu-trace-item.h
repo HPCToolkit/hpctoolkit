@@ -40,6 +40,13 @@ typedef void (*gpu_trace_item_consume_fn_t)
 );
 
 
+typedef void (*gpu_trace_fn_t)
+(
+ gpu_trace_channel_t *channel, 
+ gpu_trace_item_t *ti
+);
+
+
 
 //******************************************************************************
 // interface operations 

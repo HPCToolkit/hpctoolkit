@@ -74,7 +74,7 @@ typedef struct typed_splay_node(stream_id) {
 
 typedef struct trace_fn_helper_t {
   gpu_trace_fn_t fn;
-  void *arg;
+  gpu_trace_item_t *ti
 } trace_fn_helper_t;
 
 
@@ -110,7 +110,7 @@ trace_fn_helper
 )
 {
   trace_fn_helper_t *info = (trace_fn_helper_t *) arg;
-  info->fn(node->trace, info->arg);
+  info->fn(node->trace, info->ti);
 }
 
 
@@ -152,11 +152,11 @@ gpu_stream_id_map_stream_process
  gpu_stream_id_map_entry_t **root,
  uint32_t stream_id,
  gpu_trace_fn_t fn,
- void *arg
+ gpu_trace_item_t *ti
 )
 {
   gpu_stream_id_map_insert(root, stream_id);
-  fn((*root)->trace, arg); 
+  fn((*root)->trace, ti); 
 }
 
 
@@ -182,12 +182,12 @@ gpu_stream_id_map_context_process
 (
  gpu_stream_id_map_entry_t **root,
  gpu_trace_fn_t fn,
- void *arg
+ gpu_trace_item_t *ti
 )
 {
   trace_fn_helper_t info;
   info.fn = fn;
-  info.arg = arg;
+  info.ti = ti;
   st_forall(*root, splay_inorder, trace_fn_helper, &info);
 }
 

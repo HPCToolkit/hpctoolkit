@@ -149,11 +149,34 @@ convert_pcsampling_record_info
 }
 
 
+static gpu_memcpy_type_t 
+convert_memcpy_type
+(
+ CUpti_ActivityMemcpyKind kind
+)
+{
+  switch (kind) {
+  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   return GPU_MEMCPY_UNK;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOD:      return GPU_MEMCPY_H2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOH:      return GPU_MEMCPY_D2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOA:      return GPU_MEMCPY_H2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOH:      return GPU_MEMCPY_A2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOA:      return GPU_MEMCPY_A2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOD:      return GPU_MEMCPY_A2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOA:      return GPU_MEMCPY_D2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:      return GPU_MEMCPY_D2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_FORCE_INT: return GPU_MEMCPY_FRC;
+  }
+}
+
+
 static void
 convert_memcpy
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityMemcpy *activity
+ gpu_activity_t *ga,
+ CUpti_ActivityMemcpy *activity
 )
 {
   PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
@@ -164,7 +187,7 @@ convert_memcpy
   ga->details.memcpy.correlation_id = activity->correlationId;
   ga->details.memcpy.context_id = activity->contextId;
   ga->details.memcpy.stream_id = activity->streamId;
-  ga->details.memcpy.copyKind = activity->copyKind;
+  ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
   set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
@@ -186,6 +209,7 @@ convert_kernel
 
   ga->details.kernel.staticSharedMemory = activity->staticSharedMemory;
   ga->details.kernel.localMemoryTotal = activity->localMemoryTotal;
+  ga->details.kernel.device_id = activity->deviceId;
   ga->details.kernel.context_id = activity->contextId;
   ga->details.kernel.stream_id = activity->streamId;
 

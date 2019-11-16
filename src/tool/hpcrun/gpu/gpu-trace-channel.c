@@ -114,17 +114,10 @@ void
 gpu_trace_channel_produce
 (
  gpu_trace_channel_t *channel,
- uint64_t start,
- uint64_t end,
- cct_node_t *call_path_leaf
+ gpu_trace_item_t *ti
 )
 {
-  gpu_trace_item_t *ti = gpu_trace_item_alloc(channel);
-
-  gpu_trace_item_produce(ti, start, end, call_path_leaf);
-
   channel_push(channel, bichannel_direction_forward, ti);
-  
   gpu_trace_channel_signal_consumer_when_full(channel);
 }
 
