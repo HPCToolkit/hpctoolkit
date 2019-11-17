@@ -1040,7 +1040,7 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placholder_flags_all);
+	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
         
         hpcrun_safe_exit();
 

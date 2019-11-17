@@ -80,5 +80,14 @@ gpu_context_id_map_device_process
  void *arg
 );
 
+
+void
+gpu_context_stream_map_signal_all
+(
+ void
+);
+
+
+
 #endif
 

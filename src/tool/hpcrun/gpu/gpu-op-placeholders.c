@@ -41,7 +41,7 @@ typedef struct gpu_op_placeholders_t {
 
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_none = 0; 
 
-gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all = 
+gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all =
   (~0 << gpu_placeholder_type_count);
 
 
@@ -214,6 +214,17 @@ gpu_op_placeholder_ip
   pthread_once(&is_initialized, gpu_op_placeholders_init);
 
   return gpu_op_placeholders.ph[type].pc_norm;
+}
+
+
+cct_node_t *
+gpu_op_ccts_get
+(
+ gpu_op_ccts_t *gpu_op_ccts,
+ gpu_placeholder_type_t type
+)
+{
+  return gpu_op_ccts->ccts[type];
 }
 
 

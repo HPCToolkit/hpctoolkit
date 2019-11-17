@@ -128,6 +128,18 @@ trace_fn_helper
 }
 
 
+static void
+signal_context
+(
+ gpu_context_id_map_entry_t *entry,
+ splay_visit_t visit_type,
+ void *arg
+)
+{
+  gpu_stream_map_signal_all(&entry->streams);
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -215,3 +227,14 @@ gpu_context_id_map_device_process
   info.arg = arg;
   st_forall(map_root, splay_inorder, trace_fn_helper, &info);
 }
+
+
+void
+gpu_context_stream_map_signal_all
+(
+ void
+)
+{
+  st_forall(map_root, splay_inorder, signal_context, 0);
+}
+

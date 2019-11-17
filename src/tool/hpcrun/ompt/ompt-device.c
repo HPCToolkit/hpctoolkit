@@ -191,7 +191,7 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     frm.ip_norm = ip_norm;
     cct_node_t *api_node = hpcrun_cct_insert_addr(target_node, &frm);
 
-    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placholder_flags_all);
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
 
     hpcrun_safe_exit();
 

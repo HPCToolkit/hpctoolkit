@@ -75,4 +75,13 @@ gpu_stream_id_map_entry_new
  uint32_t stream_id
 );
 
+
+void
+gpu_stream_map_signal_all
+(
+ gpu_stream_id_map_entry_t **root
+);
+
+
+
 #endif
