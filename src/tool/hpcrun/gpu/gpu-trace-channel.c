@@ -117,7 +117,12 @@ gpu_trace_channel_produce
  gpu_trace_item_t *ti
 )
 {
-  channel_push(channel, bichannel_direction_forward, ti);
+  gpu_trace_item_t *cti = gpu_trace_item_alloc(channel);
+
+  *cti = *ti;
+
+  channel_push(channel, bichannel_direction_forward, cti);
+  
   gpu_trace_channel_signal_consumer_when_full(channel);
 }
 
