@@ -20,6 +20,7 @@
 #include <include/gcc-attr.h>
 
 #include "CallPath-CudaInstruction.hpp"
+#include "CallPath-CudaAdvisor.hpp"
 
 using std::string;
 
@@ -259,7 +260,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     return;
   }
 
-  //CudaAdvisor cuda_advisor;
+  CudaAdvisor cuda_advisor(&prof);
   MetricNameProfMap metric_name_prof_map;
   // Read instruction files
   for (auto &file: instruction_files) {
@@ -286,12 +287,9 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     CudaParse::readCudaInstructions(file, functions);
 
     // Step 2: Blame instruction latencies
-    //cuda_advisor.blame(functions);
+    cuda_advisor.blame(functions);
 
-    //cuda_advisor.advise(functions);
-
-    //// output logs
-    //cuda_advisor.output();
+    cuda_advisor.advise(functions);
     
     // Step 3: Merge metrics
     // Sort the instructions by PC
