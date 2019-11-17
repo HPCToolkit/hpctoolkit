@@ -259,6 +259,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     return;
   }
 
+  //CudaAdvisor cuda_advisor;
   MetricNameProfMap metric_name_prof_map;
   // Read instruction files
   for (auto &file: instruction_files) {
@@ -284,20 +285,28 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     std::vector<CudaParse::Function *> functions;
     CudaParse::readCudaInstructions(file, functions);
 
+    // Step 2: Blame instruction latencies
+    //cuda_advisor.blame(functions);
+
+    //cuda_advisor.advise(functions);
+
+    //// output logs
+    //cuda_advisor.output();
+    
+    // Step 3: Merge metrics
     // Sort the instructions by PC
     std::vector<CudaParse::InstructionStat *> inst_stats;
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
-    
-    // Step 2: Merge metrics
+
     // Find new metric names and insert new mappings between from name to prof metric ids
     createMetrics(inst_stats, metric_name_prof_map, *mgr);
     
-    // Step 3: Gather all CCT nodes with lm_id
+    // Step 4: Gather all CCT nodes with lm_id
     std::vector<VMAStmt> vma_stmts;
     auto *prof_root = prof.cct()->root();
     gatherStmts(lm_id, inst_stats, prof_root, vma_stmts);
 
-    // Step 4: Lay metrics over prof tree
+    // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map, *mgr);
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {

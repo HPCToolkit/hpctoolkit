@@ -535,7 +535,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int dst = ptree_inst.second.get<int>("dst", -1);
 
         std::vector<int> srcs; 
-        std::map<int, std::vector<int>> assign_pcs;
+        std::map<int, std::vector<int> > assign_pcs;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
         for (auto &ptree_src : ptree_srcs) {
           int src = ptree_src.second.get<int>("id", 0);
@@ -547,7 +547,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs, assign_pcs);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -558,7 +558,13 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           std::cout << "     dst: " << dst << std::endl;
           std::cout << "     srcs: ";
           for (auto src : srcs) {
-            std::cout << src << ",";
+            std::cout << src << ": ";
+            auto iter = assign_pcs.find(src);
+            if (iter != assign_pcs.end()) {
+              for (auto assign_pc : iter->second) {
+                std::cout << assign_pc << ", ";
+              }
+            }
           }
           std::cout << std::endl;
         }

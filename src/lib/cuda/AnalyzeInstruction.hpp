@@ -29,6 +29,12 @@ struct InstructionStat {
     op(op), pc(pc), predicate(predicate), dst(dst),
     srcs(srcs) {}
 
+  InstructionStat(const std::string &op,
+    unsigned int pc, int predicate, int dst, std::vector<int> &srcs,
+    std::map<int, std::vector<int> > &assign_pcs) :
+    op(op), pc(pc), predicate(predicate), dst(dst),
+    srcs(srcs), assign_pcs(assign_pcs) {}
+
   bool operator < (const InstructionStat &other) const {
     return this->pc < other.pc;
   }

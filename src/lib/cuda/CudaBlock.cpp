@@ -33,6 +33,7 @@ void CudaBlock::getInsns(Insns &insns) const {
     } 
 
     // TODO(Keren): sm_60-> size 8
+    // It does not matter now because hpcstruct explicitly set length of instructions
 #ifdef DYNINST_INSTRUCTION_PTR
     InstructionAPI::InstructionPtr instruction_ptr(
       new InstructionAPI::Instruction(*operation, 16, NULL, Arch_cuda));
