@@ -14,11 +14,11 @@ class Instruction;
 
 struct InstructionStat {
   std::string op;
-  int pc;
+  unsigned int pc;
   int predicate;  // P0-P6
   int dst;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255, only records normal registers
-  std::vector<int> assign_pcs;
+  std::map<int, std::vector<int> > assign_pcs;
 
   InstructionStat() {}
 

@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
@@ -243,7 +243,9 @@ InstructionStat::InstructionStat(const Instruction *inst) {
   this->predicate = -1;
   this->dst = -1;
 
-  std::cout << inst->offset << " " << op << " ";
+  if (INSTRUCTION_ANALYZER_DEBUG) {
+    std::cout << inst->offset << " " << op << " ";
+  }
 
   if (inst->predicate.size() != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
@@ -305,32 +307,74 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
 }
 
 
+static int reg_name_to_id(const std::string &name) {
+  // first 7 letters cuda::r
+  std::cout << name << std::endl;
+  auto str = name.substr(7);
+  return std::stoi(str);
+}
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
+  // Build a instruction map
+  std::map<unsigned int, InstructionStat *> inst_stats_map;
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        if (inst->inst_stat) {
+          auto *inst_stat = inst->inst_stat;
+          inst_stats_map[inst->offset] = inst_stat;
+        }
+      }
+    }
+  }
+
   Dyninst::AssignmentConverter ac(true, false);
   for (auto *dyn_func : func_set) {
+    auto func_addr = dyn_func->addr();
+
     for (auto *dyn_block : dyn_func->blocks()) {
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
+
       for (auto &inst_iter : insns) {
         auto inst = inst_iter.second;
         auto inst_addr = inst_iter.first;
+        auto *inst_stat = inst_stats_map[inst_addr];
+
         std::vector<Dyninst::Assignment::Ptr> assignments;
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
+
         for (auto a : assignments) {
           Dyninst::Slicer s(a, dyn_block, dyn_func);
           Dyninst::Slicer::Predicates p;
           Dyninst::GraphPtr g = s.backwardSlice(p); 
-          if (INSTRUCTION_ANALYZER_DEBUG) {
-            Dyninst::NodeIterator exit_begin, exit_end;
-            g->exitNodes(exit_begin, exit_end);
-            for (; exit_begin != exit_end; ++exit_begin) {
-              Dyninst::NodeIterator in_begin, in_end;
-              (*exit_begin)->ins(in_begin, in_end);
-              for (; in_begin != in_end; ++in_begin) {
-                auto addr = (*in_begin)->addr();
-                auto func_addr = dyn_func->addr();
-                std::cout << "inst_addr " << inst_addr - func_addr << " <- addr " << addr - func_addr << std::endl;
+
+          Dyninst::NodeIterator exit_begin, exit_end;
+          g->exitNodes(exit_begin, exit_end);
+
+          for (; exit_begin != exit_end; ++exit_begin) {
+            Dyninst::NodeIterator in_begin, in_end;
+            (*exit_begin)->ins(in_begin, in_end);
+            for (; in_begin != in_end; ++in_begin) {
+              auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
+              auto addr = slice_node->addr();
+
+              Dyninst::Assignment::Ptr aptr = slice_node->assign();
+              auto reg_name = aptr->out().absloc().reg().name();
+              int reg_id = reg_name_to_id(reg_name);
+
+              for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
+                if (reg_id == inst_stat->srcs[i]) {
+                  inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+                  break;
+                }
+              }
+              
+              if (INSTRUCTION_ANALYZER_DEBUG) {
+                std::cout << "reg " << reg_id << " inst_addr " << inst_addr - func_addr <<
+                  " <- addr " << addr - func_addr << std::endl;
               }
             }
           }
@@ -402,7 +446,19 @@ bool dumpCudaInstructions(const std::string &file_path,
 
           for (auto src : inst->inst_stat->srcs) {
             boost::property_tree::ptree t;
-            t.put("", src);
+            t.put("id", src);
+
+            boost::property_tree::ptree ptree_assign_pcs;
+            auto iter = inst->inst_stat->assign_pcs.find(src);
+            if (iter != inst->inst_stat->assign_pcs.end()) {
+              for (auto assign_pc : iter->second) {
+                boost::property_tree::ptree tt;
+                tt.put("", assign_pc);
+                ptree_assign_pcs.push_back(std::make_pair("", tt));
+              }
+            }
+            t.add_child("assign_pcs", ptree_assign_pcs);
+
             ptree_srcs.push_back(std::make_pair("", t));
           }
 
@@ -479,9 +535,16 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int dst = ptree_inst.second.get<int>("dst", -1);
 
         std::vector<int> srcs; 
+        std::map<int, std::vector<int>> assign_pcs;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
         for (auto &ptree_src : ptree_srcs) {
-          srcs.push_back(boost::lexical_cast<int>(ptree_src.second.data()));
+          int src = ptree_src.second.get<int>("id", 0);
+          srcs.push_back(src);
+          auto &ptree_assign_pcs = ptree_src.second.get_child("assign_pcs");
+          for (auto &ptree_assign_pc : ptree_assign_pcs) {
+            int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
+            assign_pcs[src].push_back(assign_pc);
+          }
         }
 
         auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs);
