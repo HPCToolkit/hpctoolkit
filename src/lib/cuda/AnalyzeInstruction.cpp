@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 1
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
 
@@ -322,15 +322,17 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
           Dyninst::Slicer::Predicates p;
           Dyninst::GraphPtr g = s.backwardSlice(p); 
           if (INSTRUCTION_ANALYZER_DEBUG) {
-            Dyninst::NodeIterator begin;
-            Dyninst::NodeIterator end;
-            g->allNodes(begin, end);
-            for (auto iter = begin; iter != end; ++iter) {
-              auto addr = (*iter)->addr();
-              auto func_addr = dyn_func->addr();
-              std::cout << "inst_addr " << inst_addr - func_addr << "-> addr " << addr - func_addr << std::endl;
+            Dyninst::NodeIterator exit_begin, exit_end;
+            g->exitNodes(exit_begin, exit_end);
+            for (; exit_begin != exit_end; ++exit_begin) {
+              Dyninst::NodeIterator in_begin, in_end;
+              (*exit_begin)->ins(in_begin, in_end);
+              for (; in_begin != in_end; ++in_begin) {
+                auto addr = (*in_begin)->addr();
+                auto func_addr = dyn_func->addr();
+                std::cout << "inst_addr " << inst_addr - func_addr << " <- addr " << addr - func_addr << std::endl;
+              }
             }
-            std::cout << std::endl;
           }
         }
       }
