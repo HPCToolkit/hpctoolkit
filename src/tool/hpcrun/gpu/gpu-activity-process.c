@@ -1,4 +1,12 @@
 //******************************************************************************
+// global includes
+//******************************************************************************
+
+#include <stdio.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -19,7 +27,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #if DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -67,9 +75,8 @@ trace_item_set
  cct_node_t *call_path_leaf
  )
 {
-  ti->start = ga->details.interval.start;
-  ti->end = ga->details.interval.end;
-  ti->call_path_leaf = call_path_leaf;
+  gpu_trace_item_produce(ti, ga->details.interval.start, ga->details.interval.end,
+			 call_path_leaf);
 }
 
 
@@ -125,11 +132,11 @@ gpu_memcpy_process
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
-    PRINT("Memcpy copy CorrelationId %u cannot be found\n", correlation_id);
+    PRINT("Memcpy copy correlation_id %u cannot be found\n", correlation_id);
   }
   PRINT("Memcpy copy CorrelationId %u\n", correlation_id);
-  PRINT("Memcpy copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy copy bytes %lu\n", activity->bytes);
+  PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
+  PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
 }
 
 
@@ -163,7 +170,7 @@ gpu_sample_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      PRINT("external_id %d\n", external_id);
+      PRINT("external_id %lu\n", external_id);
 
       bool more_samples = 
 	gpu_host_correlation_map_samples_increase
@@ -179,14 +186,14 @@ gpu_sample_process
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
       if (cct_child) {
-	PRINT("frm %d\n", ip);
+	PRINT("cct_child %p\n", cct_child);
 	attribute_activity(host_op_entry, sample, cct_child);
       }
     } else {
-      PRINT("host_map_entry %d not found\n", external_id);
+      PRINT("host_map_entry %lu not found\n", external_id);
     }
   } else {
-    PRINT("host_correlation_map_entry %lu not found\n", external_id);
+    PRINT("correlation_id_map_entry %u not found\n", correlation_id);
   }
 }
 
@@ -232,15 +239,16 @@ gpu_correlation_process
  gpu_activity_t *activity
 )
 {
-  uint32_t correlation_id = activity->details.correlation.correlation_id;
-  uint64_t external_id = activity->details.correlation.host_correlation_id;
+  uint32_t gpu_correlation_id = activity->details.correlation.correlation_id;
+  uint64_t host_correlation_id = activity->details.correlation.host_correlation_id;
 
-  if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
-    gpu_correlation_id_map_insert(correlation_id, external_id);
+  if (gpu_correlation_id_map_lookup(gpu_correlation_id) == NULL) {
+    gpu_correlation_id_map_insert(gpu_correlation_id, host_correlation_id);
   } else {
-    PRINT("External CorrelationId Replace %lu)\n", external_id);
-    gpu_correlation_id_map_external_id_replace(correlation_id, external_id);
+    gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
   }
+  PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
+	gpu_correlation_id, host_correlation_id);
 }
 
 
@@ -277,8 +285,8 @@ gpu_memset_process
     gpu_correlation_id_map_delete(correlation_id);
   }
   PRINT("Memset CorrelationId %u\n", correlation_id);
-  PRINT("Memset kind %u\n", activity->memoryKind);
-  PRINT("Memset bytes %lu\n", activity->bytes);
+  PRINT("Memset kind %u\n", activity->details.memset.memKind);
+  PRINT("Memset bytes %lu\n", activity->details.memset.bytes);
 }
 
 
@@ -324,7 +332,7 @@ gpu_kernel_process
     }
   }
 
-  PRINT("Kernel execution deviceId %u\n", activity->deviceId);
+  PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
   PRINT("Kernel execution CorrelationId %u\n", correlation_id);
 }
 
@@ -355,15 +363,16 @@ gpu_synchronization_process
 
       if (activity->kind == GPU_ACTIVITY_KIND_SYNCHRONIZATION) {
 	uint32_t context_id = activity->details.synchronization.context_id;
+	uint32_t stream_id = activity->details.synchronization.stream_id;
 
 	switch (activity->details.synchronization.syncKind) {
-	case GPU_SYNCHRONIZATION_STREAM:
+	case GPU_SYNCHRONIZATION_STREAM_SYNC:
+	case GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT:
 	  // Insert a event for a specific stream
 	  PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-	  gpu_context_stream_trace
-	    (context_id, activity->details.synchronization.stream_id, &entry_trace); 
+	  gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
 	  break;
-	case GPU_SYNCHRONIZATION_CONTEXT:
+	case GPU_SYNCHRONIZATION_CONTEXT_SYNC:
 	  // Insert events for all current active streams
 	  // TODO(Keren): What if the stream is created
 	  PRINT("Add context %u sync\n", context_id);

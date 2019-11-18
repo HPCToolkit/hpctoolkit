@@ -15,6 +15,7 @@
 // local includes
 //******************************************************************************
 
+#include <lib/prof-lean/stacks.h>
 #include <hpcrun/utilities/ip-normalized.h>
 
 
@@ -52,14 +53,16 @@ typedef enum {
 typedef enum {
   GPU_SHARED_ACCESS_LOAD,
   GPU_SHARED_ACCESS_STORE,
-  GPU_SHARED_ACCESS_COUNT,
+  GPU_SHARED_ACCESS_COUNT
 } gpu_shared_access_type_t;
 
 
 typedef enum {    
-  GPU_SYNCHRONIZATION_CONTEXT,
-  GPU_SYNCHRONIZATION_STREAM,
-  GPU_SYNCHRONIZATION_DEVICE
+  GPU_SYNCHRONIZATION_UNKNOWN           = 0,
+  GPU_SYNCHRONIZATION_EVENT_SYNC        = 1,
+  GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT = 2,
+  GPU_SYNCHRONIZATION_STREAM_SYNC       = 3,
+  GPU_SYNCHRONIZATION_CONTEXT_SYNC      = 4
 } gpu_synchronization_type_t;
 
 
@@ -100,9 +103,9 @@ typedef struct gpu_pc_sampling_record_info {
 
 // memory
 typedef struct gpu_memcpy {
-  uint32_t correlation_id;
   uint64_t start;
   uint64_t end;
+  uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   uint64_t bytes;
@@ -119,9 +122,9 @@ typedef struct gpu_memory {
 
 
 typedef struct gpu_memset {
-  uint32_t correlation_id;
   uint64_t start;
   uint64_t end;
+  uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   uint64_t bytes;
@@ -131,9 +134,9 @@ typedef struct gpu_memset {
 
 // kernel
 typedef struct gpu_kernel {
-  uint32_t correlation_id;
   uint64_t start;
   uint64_t end;
+  uint32_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
@@ -148,9 +151,9 @@ typedef struct gpu_kernel {
 } gpu_kernel_t;
 
 typedef struct gpu_cdpkernel {
-  uint32_t correlation_id;
   uint64_t start;
   uint64_t end;
+  uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
 } gpu_cdpkernel_t;
@@ -185,11 +188,11 @@ typedef struct gpu_branch {
 
 // synchronization
 typedef struct gpu_synchronization {
+  uint64_t start;
+  uint64_t end;
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
-  uint64_t start;
-  uint64_t end;
   uint32_t syncKind;
 } gpu_synchronization_t;
 
@@ -241,24 +244,27 @@ typedef struct entry_data {
   };
 } gpu_activity_details_t;
 
+
 typedef enum gpu_activity_kind {    
-    GPU_ACTIVITY_KIND_PC_SAMPLING,
-    GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO,
-    GPU_ACTIVITY_KIND_MEMCPY,
-    GPU_ACTIVITY_KIND_MEMCPY2,
-    GPU_ACTIVITY_KIND_MEMSET,
-    GPU_ACTIVITY_KIND_KERNEL,
-    GPU_ACTIVITY_KIND_SYNCHRONIZATION,
-    GPU_ACTIVITY_KIND_MEMORY,    
-    GPU_ACTIVITY_KIND_GLOBAL_ACCESS,
-    GPU_ACTIVITY_KIND_SHARED_ACCESS,
-    GPU_ACTIVITY_KIND_BRANCH,
-    GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION,
-    GPU_ACTIVITY_KIND_CDP_KERNEL
+  GPU_ACTIVITY_KIND_UNKNOWN                 = 0,
+  GPU_ACTIVITY_KIND_KERNEL                  = 1,
+  GPU_ACTIVITY_KIND_MEMCPY                  = 2,
+  GPU_ACTIVITY_KIND_MEMCPY2                 = 3,
+  GPU_ACTIVITY_KIND_MEMSET                  = 4,
+  GPU_ACTIVITY_KIND_MEMORY                  = 5,    
+  GPU_ACTIVITY_KIND_SYNCHRONIZATION         = 6,
+  GPU_ACTIVITY_KIND_GLOBAL_ACCESS           = 7,
+  GPU_ACTIVITY_KIND_SHARED_ACCESS           = 8,
+  GPU_ACTIVITY_KIND_BRANCH                  = 9,
+  GPU_ACTIVITY_KIND_CDP_KERNEL              = 10,
+  GPU_ACTIVITY_KIND_PC_SAMPLING             = 11,
+  GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO = 12, 
+  GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION    = 13
 } gpu_activity_kind_t;
 
 
 typedef struct gpu_activity_t {
+  s_element_ptr_t next;
   gpu_activity_kind_t kind;
   gpu_activity_details_t details;
   cct_node_t *cct_node;
@@ -298,6 +304,14 @@ set_gpu_activity_interval
   gpu_activity_interval_t* interval,
   uint64_t start,
   uint64_t end
+);
+
+
+void
+gpu_context_activity_dump
+(
+ gpu_activity_t *activity,
+ const char *context
 );
 
 #endif

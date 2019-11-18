@@ -28,30 +28,30 @@ typedef struct cct_node_t cct_node_t;
 gpu_correlation_id_map_entry_t *
 gpu_correlation_id_map_lookup
 (
- uint32_t id
+ uint32_t gpu_correlation_id
 );
 
 
 void
 gpu_correlation_id_map_insert
 (
- uint32_t correlation_id,
- uint64_t external_id
+ uint32_t gpu_correlation_id,
+ uint64_t host_correlation_id
 );
 
 
 void
 gpu_correlation_id_map_delete
 (
- uint32_t correlation_id
+ uint32_t gpu_correlation_id
 );
 
 
 void
 gpu_correlation_id_map_external_id_replace
 (
- uint32_t correlation_id,
- uint64_t external_id
+ uint32_t gpu_correlation_id,
+ uint64_t host_correlation_id
 );
 
 

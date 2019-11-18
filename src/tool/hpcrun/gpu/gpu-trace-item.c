@@ -47,6 +47,7 @@ gpu_trace_item_produce
   ti->start = start;
   ti->end = end;
   ti->call_path_leaf = call_path_leaf;
+  cstack_ptr_set(&(ti->next), 0);
 }
 
 

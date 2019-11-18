@@ -8,6 +8,15 @@
 #include <inttypes.h>
 
 
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <lib/prof-lean/stacks.h>
+
+
+
 //******************************************************************************
 // forward type declarations
 //******************************************************************************
@@ -25,6 +34,7 @@ typedef struct thread_data_t thread_data_t;
 typedef struct gpu_trace_channel_t gpu_trace_channel_t; 
 
 typedef struct gpu_trace_item_t {
+  s_element_ptr_t next;
   cct_node_t *call_path_leaf;
   uint64_t start; 
   uint64_t end; 

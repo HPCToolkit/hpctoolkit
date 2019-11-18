@@ -5,7 +5,9 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+#include "gpu-activity.h"
 #include "gpu-activity-channel.h"
+#include "gpu-channel-item-allocator.h"
 
 
 //******************************************************************************
@@ -30,6 +32,12 @@
 
 #define channel_steal \
   typed_bichannel_steal(gpu_activity_t)
+
+#define gpu_activity_alloc(channel)		\
+  channel_item_alloc(channel, gpu_activity_t)
+
+#define gpu_activity_free(channel, item)	\
+  channel_item_free(channel, item)
 
 
 //******************************************************************************
@@ -99,7 +107,12 @@ gpu_activity_channel_produce
  gpu_activity_t *a
 )
 {
-  channel_push(channel, bichannel_direction_forward, a);
+  gpu_activity_t *channel_activity = gpu_activity_alloc(channel);
+  *channel_activity = *a;
+
+  gpu_context_activity_dump(channel_activity, "PRODUCE");
+
+  channel_push(channel, bichannel_direction_forward, channel_activity);
 }
 
 

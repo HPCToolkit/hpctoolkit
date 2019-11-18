@@ -156,7 +156,6 @@ convert_memcpy_type
 )
 {
   switch (kind) {
-  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   return GPU_MEMCPY_UNK;
   case CUPTI_ACTIVITY_MEMCPY_KIND_HTOD:      return GPU_MEMCPY_H2D;
   case CUPTI_ACTIVITY_MEMCPY_KIND_DTOH:      return GPU_MEMCPY_D2H;
   case CUPTI_ACTIVITY_MEMCPY_KIND_HTOA:      return GPU_MEMCPY_H2A;
@@ -167,7 +166,9 @@ convert_memcpy_type
   case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:      return GPU_MEMCPY_D2D;
   case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
   case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_FORCE_INT: return GPU_MEMCPY_FRC;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   
+  case CUPTI_ACTIVITY_MEMCPY_KIND_FORCE_INT: 
+  default:                                   return GPU_MEMCPY_UNK;
   }
 }
 
@@ -311,6 +312,29 @@ convert_branch
 }
 
 
+static uint32_t
+convert_sync_type
+(
+ uint32_t cupti_sync_kind
+)
+{
+  switch(cupti_sync_kind) {
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_EVENT_SYNCHRONIZE:
+    return GPU_SYNCHRONIZATION_EVENT_SYNC;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT:
+    return GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE:
+    return GPU_SYNCHRONIZATION_STREAM_SYNC;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE:
+    return GPU_SYNCHRONIZATION_CONTEXT_SYNC;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_UNKNOWN:
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_FORCE_INT:
+  default:
+    return GPU_SYNCHRONIZATION_UNKNOWN;
+  }
+}
+
+
 static void
 convert_synchronization
 (
@@ -322,7 +346,7 @@ convert_synchronization
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
   ga->details.synchronization.stream_id = activity_sync->streamId;
-  ga->details.synchronization.syncKind = activity_sync->type;
+  ga->details.synchronization.syncKind = convert_sync_type(activity_sync->type);
 
   set_gpu_activity_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
 }
@@ -392,6 +416,16 @@ convert_cdpkernel
 }
 
 
+void
+convert_unknown
+(
+ gpu_activity_t *ga,
+ CUpti_Activity *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_KIND_UNKNOWN;
+}
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -446,13 +480,18 @@ cupti_activity_translate
   case CUPTI_ACTIVITY_KIND_MEMSET:
     convert_memset(ga, (CUpti_ActivityMemset *) activity);
     break;
+
   case CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION:
     convert_correlation(ga, (CUpti_ActivityExternalCorrelation*) activity);
     break;
+
   case CUPTI_ACTIVITY_KIND_CDP_KERNEL:
     convert_cdpkernel(ga, (CUpti_ActivityCdpKernel*) activity);
     break;
+
   default:
+    convert_unknown(ga, activity);
     break;
   }
+  cstack_ptr_set(&(ga->next), 0);
 }

@@ -7,6 +7,22 @@
 
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define UNIT_TEST 0
+
+#define DEBUG 1
+
+#if DEBUG
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+#else
+#define PRINT(...)
+#endif
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -20,11 +36,34 @@
 //******************************************************************************
 
 void
+gpu_context_activity_dump
+(
+ gpu_activity_t *activity,
+ const char *context
+)
+{
+  PRINT("context %s gpu activity %p kind = %d\n", context, activity, activity->kind);
+}
+
+
+void
+gpu_activity_dump
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_context_activity_dump(activity, "DEBUGGER");
+}
+
+
+void
 gpu_activity_consume
 (
  gpu_activity_t *activity
 )
 {
+  gpu_context_activity_dump(activity, "CONSUME");
+
   assert(0);
 }
 

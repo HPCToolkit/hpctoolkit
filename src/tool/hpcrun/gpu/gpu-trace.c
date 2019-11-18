@@ -25,7 +25,7 @@
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
 
-// #include "gpu-context-stream-id-map.h"
+#include "gpu-context-id-map.h"
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
