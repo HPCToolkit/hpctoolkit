@@ -42,7 +42,7 @@ gpu_activity_channel_produce
 void
 gpu_activity_channel_consume
 (
- void
+ gpu_activity_attribute_fn_t aa_fn
 );
 
 

@@ -119,7 +119,7 @@ gpu_activity_channel_produce
 void
 gpu_activity_channel_consume
 (
- void
+ gpu_activity_attribute_fn_t aa_fn
 )
 {
   gpu_activity_channel_t *channel = gpu_activity_channel_get();
@@ -131,7 +131,7 @@ gpu_activity_channel_consume
   for (;;) {
     gpu_activity_t *a = channel_pop(channel, bichannel_direction_forward);
     if (!a) break;
-    gpu_activity_consume(a);
+    gpu_activity_consume(a, aa_fn);
     gpu_activity_free(channel, a);
   }
 }

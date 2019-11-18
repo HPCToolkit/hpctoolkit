@@ -22,7 +22,7 @@ typedef struct cct_node_t cct_node_t;
 // interface operations
 //******************************************************************************
 
-void cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node);
+void cupti_activity_attribute(gpu_activity_t *activity);
 
 int cupti_pc_sampling_frequency_get();
 

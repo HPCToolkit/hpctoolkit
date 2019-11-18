@@ -473,8 +473,10 @@ typedef enum cupti_activities_flags {
 
 
 void
-cupti_activity_attribute(gpu_activity_t *activity, cct_node_t *cct_node)
+cupti_activity_attribute(gpu_activity_t *activity)
 {
+  cct_node_t *cct_node = activity->cct_node;
+
   thread_data_t *td = hpcrun_get_thread_data();
   td->overhead++;
   hpcrun_safe_enter();

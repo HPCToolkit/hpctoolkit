@@ -271,6 +271,12 @@ typedef struct gpu_activity_t {
 } gpu_activity_t;
 
 
+typedef void (*gpu_activity_attribute_fn_t)
+(
+ gpu_activity_t *a
+);
+
+
 
 //******************************************************************************
 // interface functions
@@ -279,7 +285,8 @@ typedef struct gpu_activity_t {
 void
 gpu_activity_consume
 (
- gpu_activity_t *activity
+ gpu_activity_t *activity,
+ gpu_activity_attribute_fn_t aa_fn
 );
 
 

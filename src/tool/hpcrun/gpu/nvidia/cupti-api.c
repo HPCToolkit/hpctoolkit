@@ -863,7 +863,8 @@ cupti_subscriber_callback
           is_valid_op = true;
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
-            gpu_activity_channel_consume(); // Process previous activities
+	    // Process previous activities
+            gpu_activity_channel_consume(cupti_activity_attribute); 
 
             // XXX(Keren): cannot parse this kind of kernel launch
             //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
@@ -1016,7 +1017,8 @@ cupti_subscriber_callback
           is_valid_op = true;
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
-            gpu_activity_channel_consume(); // Process previous activities
+	    // Process previous activities
+            gpu_activity_channel_consume(cupti_activity_attribute); 
           }
           break;
         }
@@ -1412,7 +1414,7 @@ cupti_device_flush(void *args)
     cupti_stop_flag_unset();
     cupti_activity_flush();
     // TODO(keren): replace cupti with sth. called device queue
-    gpu_application_thread_process_activities();
+    gpu_application_thread_process_activities(cupti_activity_attribute);
   }
 }
 

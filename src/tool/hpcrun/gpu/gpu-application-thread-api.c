@@ -33,10 +33,10 @@
 void
 gpu_application_thread_process_activities
 (
- void
+ gpu_activity_attribute_fn_t aa_fn
 )
 {
-  gpu_activity_channel_consume();
+  gpu_activity_channel_consume(aa_fn);
 }
 
 

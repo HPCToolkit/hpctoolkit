@@ -26,6 +26,8 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/sample-sources/nvidia.h>
+
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
 
@@ -59,12 +61,13 @@ gpu_activity_dump
 void
 gpu_activity_consume
 (
- gpu_activity_t *activity
+ gpu_activity_t *activity,
+ gpu_activity_attribute_fn_t aa_fn
 )
 {
   gpu_context_activity_dump(activity, "CONSUME");
 
-  assert(0);
+  aa_fn(activity);
 }
 
 
