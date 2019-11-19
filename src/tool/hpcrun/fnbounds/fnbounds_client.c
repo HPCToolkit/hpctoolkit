@@ -104,11 +104,12 @@
 #define monitor_real_execve  execve
 #define monitor_sigaction(...)  0
 int zero_fcn(void) { return 0; }
-#include <stdio.h>
 int verbose = 0;
-FILE	*outf;
 int serv_verbose = 0;
 int noscan = 0;
+
+#include <stdio.h>
+FILE	*outf;
 
 char	*outfile;
 
@@ -189,8 +190,7 @@ read_all(int fd, void *buf, size_t count)
 
 #ifdef STAND_ALONE_CLIENT
   if(verbose) {
-	fprintf(stderr, "Client read_all, count = %ld bytes\n",
-	    count);
+    fprintf(stderr, "Client read_all, count = %ld bytes\n", count);
   }
 #endif
   len = 0;
@@ -222,8 +222,7 @@ write_all(int fd, const void *buf, size_t count)
 
 #ifdef STAND_ALONE_CLIENT
   if(verbose) {
-	fprintf(stderr, "Client write_all, count = %ld bytes\n",
-	    count);
+    fprintf(stderr, "Client write_all, count = %ld bytes\n", count);
   }
 #endif
   len = 0;
@@ -256,8 +255,7 @@ read_mesg(struct syserv_mesg *mesg)
   }
 #ifdef STAND_ALONE_CLIENT
   if(verbose) {
-	fprintf(stderr, "Client read message, type = %d, len = %ld\n",
-	    mesg->type, mesg->len);
+    fprintf(stderr, "Client read message, type = %d, len = %ld\n", mesg->type, mesg->len);
   }
 #endif
 
@@ -279,8 +277,7 @@ write_mesg(int32_t type, int64_t len)
 
 #ifdef STAND_ALONE_CLIENT
   if(verbose) {
-	fprintf(stderr, "Client write message, type = %d, len = %ld\n",
-	    type, len);
+    fprintf(stderr, "Client write message, type = %d, len = %ld\n", type, len);
   }
 #endif
   return write_all(fdout, &mesg, sizeof(mesg));
