@@ -1508,6 +1508,7 @@ public:
   // search for enclosing nodes
   // --------------------------------------------------------
 
+#if 0
   // FIXME: confusion between native and alien statements
   Stmt*
   findStmt(SrcFile::ln begLn)
@@ -1516,6 +1517,7 @@ public:
     Stmt* x = (it != m_stmtMap->end()) ? it->second : NULL;
     return x;
   }
+#endif
 
 
   // --------------------------------------------------------
@@ -1538,8 +1540,10 @@ private:
   void
   Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
 
+#if 0
   void
   insertStmtMap(Stmt* stmt);
+#endif
 
   friend class Stmt;
 
@@ -1547,6 +1551,9 @@ private:
   std::string m_name;
   std::string m_linkname;
   bool m_hasSym;
+
+  // for struct simple and guard aliens only.  all access should go
+  // through demandStmtSimple() and demandGuardAlien().
   StmtMap* m_stmtMap;
   AlienFileMap* m_alienMap;
 };
@@ -1667,6 +1674,8 @@ private:
   std::string m_filenm;
   std::string m_name;
   std::string m_displaynm;
+
+  // for struct simple only
   StmtMap *   m_stmtMap;
 
   Prof::Struct::Proc *m_proc;
@@ -1760,6 +1769,7 @@ public:
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
 		|| (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
 
+#if 0
     // if parent is proc or alien, add to stmt map
     if (t == TyProc) {
       ((Proc *) parent)->insertStmtMap(this);
@@ -1768,6 +1778,7 @@ public:
       Alien * alien = (Alien *) parent;
       (* (alien->m_stmtMap))[begLn] = this;
     }
+#endif
 
     // add vma to LM vma interval map
     LM* lmStrct = parent->ancestorLM();

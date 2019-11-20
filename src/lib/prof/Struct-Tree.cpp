@@ -426,8 +426,8 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
   m_hasSym = hasSym;
-  m_stmtMap = new StmtMap();
-  m_alienMap = new AlienFileMap();
+  m_stmtMap = NULL;
+  m_alienMap = NULL;
 
   if (parent) {
     relocate();
@@ -448,8 +448,8 @@ Proc::operator=(const Proc& x)
     m_name     = x.m_name;
     m_linkname = x.m_linkname;
     m_hasSym   = x.m_hasSym;
-    m_stmtMap  = new StmtMap();
-    m_alienMap = new AlienFileMap();
+    m_stmtMap  = NULL;
+    m_alienMap = NULL;
   }
   return *this;
 }
@@ -480,6 +480,11 @@ Stmt *
 Proc::demandStmtSimple(SrcFile::ln line, VMA beg_vma, VMA end_vma)
 {
   Stmt * stmt = NULL;
+
+  // create stmt map on demand for struct simple
+  if (m_stmtMap == NULL) {
+    m_stmtMap = new StmtMap();
+  }
   auto it = m_stmtMap->find(line);
 
   if (it != m_stmtMap->end()) {
@@ -502,6 +507,11 @@ Alien *
 Proc::demandGuardAlien(std::string & filenm, SrcFile::ln line)
 {
   Alien * alien = NULL;
+
+  // create alien map on demand for struct simple
+  if (m_alienMap == NULL) {
+    m_alienMap = new AlienFileMap();
+  }
   auto it = m_alienMap->find(filenm);
 
   if (it != m_alienMap->end()) {
@@ -535,7 +545,7 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
   m_displaynm = (displaynm) ? displaynm : "";
   freezeLine();
 
-  m_stmtMap = new StmtMap();
+  m_stmtMap = NULL;
 }
 
 
@@ -547,7 +557,7 @@ Alien::operator=(const Alien& x)
     m_filenm = x.m_filenm;
     m_name   = x.m_name;
     m_displaynm = x.m_displaynm;
-    m_stmtMap = new StmtMap();
+    m_stmtMap = NULL;
   }
   return *this;
 }
@@ -559,6 +569,11 @@ Stmt *
 Alien::demandStmt(SrcFile::ln line, VMA beg_vma, VMA end_vma)
 {
   Stmt * stmt = NULL;
+
+  // create stmt map on demand for struct simple
+  if (m_stmtMap == NULL) {
+    m_stmtMap = new StmtMap();
+  }
   auto it = m_stmtMap->find(line);
 
   if (it != m_stmtMap->end()) {
@@ -1008,12 +1023,14 @@ File::insertProcMap(Proc* p)
 }
 
 
+#if 0
 void
 Proc::insertStmtMap(Stmt* stmt)
 {
   // FIXME: confusion between native and alien statements
   (*m_stmtMap)[stmt->begLine()] = stmt;
 }
+#endif
 
 
 File*
