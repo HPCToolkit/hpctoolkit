@@ -42,12 +42,6 @@ const char *OMP_TGT_COPYIN   = "<omp tgt copyin>";
 const char *OMP_TGT_COPYOUT  = "<omp tgt copyout>";
 const char *OMP_TGT_KERNEL   = "<omp tgt kernel>";
 
-const char *CUDA_ALLOC   = "<cuda alloc>";
-const char *CUDA_DELETE  = "<cuda delete>";
-const char *CUDA_MEMCPY  = "<cuda copy>";
-const char *CUDA_KERNEL  = "<cuda kernel>";
-const char *CUDA_SYNC    = "<cuda sync>";
-
 const char *GPU_COPY    = "<gpu copy>";
 const char *GPU_COPYIN  = "<gpu copyin>";
 const char *GPU_COPYOUT = "<gpu copyout>";
@@ -113,20 +107,14 @@ static NameMapping renamingTable[] = {
 
   { "ompt_region_unresolved",  OMP_REGION_UNR        },
 
-  { "cuda_copy",           CUDA_MEMCPY           },
-  { "cuda_sync",           CUDA_SYNC             },
-  { "cuda_alloc",          CUDA_ALLOC            },
-  { "cuda_delete",         CUDA_DELETE           },
-  { "cuda_kernel",         CUDA_KERNEL           },
-
-  { "gpu_driver_copy",         GPU_COPY              },
-  { "gpu_driver_copyin",       GPU_COPYIN            },
-  { "gpu_driver_copyout",      GPU_COPYOUT           },
-  { "gpu_driver_alloc",        GPU_ALLOC             },
-  { "gpu_driver_delete",       GPU_DELETE            },
-  { "gpu_driver_sync",         GPU_SYNC              },
-  { "gpu_driver_kernel",       GPU_KERNEL            },
-  { "gpu_driver_trace",        GPU_TRACE             },
+  { "gpu_op_copy",         GPU_COPY              },
+  { "gpu_op_copyin",       GPU_COPYIN            },
+  { "gpu_op_copyout",      GPU_COPYOUT           },
+  { "gpu_op_alloc",        GPU_ALLOC             },
+  { "gpu_op_delete",       GPU_DELETE            },
+  { "gpu_op_sync",         GPU_SYNC              },
+  { "gpu_op_kernel",       GPU_KERNEL            },
+  { "gpu_op_trace",        GPU_TRACE             },
 
   { "NO_THREAD",               NO_THREAD_ROOT        }
 };

@@ -108,7 +108,8 @@ void
 gpu_correlation_channel_produce
 (
  uint64_t host_correlation_id,
- gpu_op_ccts_t *gpu_op_ccts
+ gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_submit_time
 )
 {
   gpu_correlation_channel_t *corr_channel = gpu_correlation_channel_get();
@@ -116,7 +117,7 @@ gpu_correlation_channel_produce
 
   gpu_correlation_t *c = gpu_correlation_alloc(corr_channel);
 
-  gpu_correlation_produce(c, host_correlation_id, gpu_op_ccts,
+  gpu_correlation_produce(c, host_correlation_id, gpu_op_ccts, cpu_submit_time,
 			  activity_channel);
 
   channel_push(corr_channel, bichannel_direction_forward, c);

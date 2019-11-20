@@ -35,9 +35,10 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 typedef struct gpu_trace_item_t {
   s_element_ptr_t next;
-  cct_node_t *call_path_leaf;
+  uint64_t cpu_submit_time; 
   uint64_t start; 
   uint64_t end; 
+  cct_node_t *call_path_leaf;
 } gpu_trace_item_t;
 
 
@@ -50,13 +51,6 @@ typedef void (*gpu_trace_item_consume_fn_t)
 );
 
 
-typedef void (*gpu_trace_fn_t)
-(
- gpu_trace_channel_t *channel, 
- gpu_trace_item_t *ti
-);
-
-
 
 //******************************************************************************
 // interface operations 
@@ -66,6 +60,7 @@ void
 gpu_trace_item_produce
 (
  gpu_trace_item_t *ti,
+ uint64_t cpu_submit_time,
  uint64_t start,
  uint64_t end,
  cct_node_t *call_path_leaf

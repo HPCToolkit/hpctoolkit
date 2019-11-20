@@ -68,6 +68,7 @@ gpu_correlation_produce
  gpu_correlation_t *c,
  uint64_t host_correlation_id,
  gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 );
 

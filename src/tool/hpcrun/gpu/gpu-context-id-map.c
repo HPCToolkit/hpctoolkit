@@ -3,6 +3,7 @@
 //******************************************************************************
 
 #include <assert.h>
+#include <string.h>
 
 
 
@@ -57,7 +58,9 @@
 struct gpu_context_id_map_entry_t {
   struct gpu_context_id_map_entry_t *left;
   struct gpu_context_id_map_entry_t *right;
-  uint32_t context_id;
+  uint64_t context_id;
+  uint64_t first_time;
+  uint64_t time_offset;
   gpu_stream_id_map_entry_t *streams;
 }; 
 
@@ -90,10 +93,11 @@ gpu_context_id_map_entry_new(uint32_t context_id, uint32_t stream_id)
   gpu_context_id_map_entry_t *e;
   e = (gpu_context_id_map_entry_t *)
     hpcrun_malloc_safe(sizeof(gpu_context_id_map_entry_t));
+
+  memset(e, 0, sizeof(gpu_context_id_map_entry_t));
+
   e->context_id = context_id;
   e->streams = gpu_stream_id_map_entry_new(stream_id);
-  e->left = NULL;
-  e->right = NULL;
 
   return e;
 }
@@ -137,6 +141,26 @@ signal_context
 )
 {
   gpu_stream_map_signal_all(&entry->streams);
+}
+
+
+static void
+gpu_context_id_map_adjust_times
+(
+ gpu_context_id_map_entry_t *entry,
+ gpu_trace_item_t *ti
+)
+{
+  if (entry->first_time == 0) {
+    entry->first_time = ti->cpu_submit_time;
+    if (ti->start < entry->first_time) {
+      entry->time_offset = entry->first_time - ti->start;
+    } else {
+      entry->time_offset = 0;
+    }
+  }
+  ti->start += entry->time_offset;
+  ti->end += entry->time_offset;
 }
 
 
@@ -195,6 +219,7 @@ gpu_context_id_map_stream_process
 )
 {
   gpu_context_id_map_insert(context_id, stream_id);
+  gpu_context_id_map_adjust_times(map_root, ti);
   gpu_stream_id_map_stream_process(&(map_root->streams), 
 				   stream_id, fn, ti);
 }
@@ -210,6 +235,7 @@ gpu_context_id_map_context_process
 {
   gpu_context_id_map_entry_t *entry = gpu_context_id_map_lookup(context_id);
   if (entry != NULL) {
+    gpu_context_id_map_adjust_times(entry, ti);
     gpu_stream_id_map_context_process(&(entry->streams), fn, ti);
   }
 }

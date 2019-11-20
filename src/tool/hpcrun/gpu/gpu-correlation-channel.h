@@ -30,7 +30,8 @@ void
 gpu_correlation_channel_produce
 (
  uint64_t host_correlation_id,
- gpu_op_ccts_t *gpu_ccts
+ gpu_op_ccts_t *gpu_ccts,
+ uint64_t cpu_submit_time
 );
 
 

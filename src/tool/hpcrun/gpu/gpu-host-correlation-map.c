@@ -72,6 +72,8 @@ typedef struct typed_splay_node(host_correlation) {
 
   gpu_op_ccts_t gpu_op_ccts;
 
+  uint64_t cpu_submit_time;
+
   gpu_activity_channel_t *activity_channel;
 
   int samples;
@@ -112,6 +114,7 @@ gpu_host_correlation_map_entry_new
 (
  uint64_t host_correlation_id,
  gpu_op_ccts_t *gpu_op_ccts, 
+ uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -121,6 +124,7 @@ gpu_host_correlation_map_entry_new
 
   e->host_correlation_id = host_correlation_id;
   e->gpu_op_ccts = *gpu_op_ccts;
+  e->cpu_submit_time = cpu_submit_time;
   e->activity_channel = activity_channel;
 
   return e;
@@ -168,6 +172,7 @@ gpu_host_correlation_map_insert
 (
  uint64_t host_correlation_id, 
  gpu_op_ccts_t *gpu_op_ccts, 
+ uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -178,7 +183,7 @@ gpu_host_correlation_map_insert
   } else {
     gpu_host_correlation_map_entry_t *entry = 
       gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts, 
-					 activity_channel);
+					 cpu_submit_time, activity_channel);
 
     st_insert(&map_root, entry);
 
@@ -277,6 +282,16 @@ gpu_host_correlation_map_entry_op_function_get
   cct_node_t *func_node = hpcrun_cct_children(trace_node);
 
   return func_node;
+}
+
+
+uint64_t
+gpu_host_correlation_map_entry_cpu_submit_time
+(
+ gpu_host_correlation_map_entry_t *entry
+)
+{
+  return entry->cpu_submit_time;
 }
 
 

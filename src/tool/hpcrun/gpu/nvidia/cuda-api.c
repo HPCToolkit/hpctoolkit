@@ -120,6 +120,15 @@ CUDA_FN
   CUdevice dev
  )
 );
+
+
+CUDA_FN
+(
+ cuCtxGetCurrent, 
+ (
+  CUcontext *ctx
+ )
+);
 #endif
 
 
@@ -138,6 +147,7 @@ cuda_bind
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute); 
+  CHK_DLSYM(cuda, cuCtxGetCurrent); 
 
   return 0;
 #else
@@ -169,6 +179,20 @@ cuda_device_sm_blocks_query
 //******************************************************************************
 // interface operations 
 //******************************************************************************
+
+int 
+cuda_context
+(
+ CUcontext *ctx
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
+  return 0;
+#else
+  return -1;
+#endif
+}
 
 int
 cuda_device_property_query

@@ -79,6 +79,7 @@
 //***************************************************************************
 
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/usec_time.h>
 
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -98,6 +99,7 @@
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/sample-sources/nvidia.h>
 
+#include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
 #include "cubin-hash-map.h"
@@ -154,6 +156,10 @@
   macro(cuptiGetResultString)                    \
   macro(cuptiSubscribe)                          \
   macro(cuptiUnsubscribe)
+
+#define CPU_NANOTIME() (usec_time() * 1000)
+
+
 
 
 //******************************************************************************
@@ -729,7 +735,7 @@ cupti_subscriber_callback
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
     bool is_valid_op = false;
-    gpu_op_placeholder_flags_t gpu_op_placeholder_flags;
+    gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
     ip_normalized_t func_ip;
 
     switch (cb_id) {
@@ -905,7 +911,9 @@ cupti_subscriber_callback
         hpcrun_safe_exit();
 
         // Generate notification entry
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts);
+	uint64_t cpu_submit_time = CPU_NANOTIME();
+        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
+					cpu_submit_time);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -913,12 +921,14 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
-    } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite == CUPTI_API_ENTER) {
+    } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite == 
+	       CUPTI_API_ENTER) {
       if (cupti_trace_node != NULL) {
         cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(cupti_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
-    } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite == CUPTI_API_ENTER) {
+    } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite == 
+	       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
 	cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
@@ -1049,7 +1059,9 @@ cupti_subscriber_callback
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts);
+	uint64_t cpu_submit_time = CPU_NANOTIME();
+        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
+					cpu_submit_time);
 
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {

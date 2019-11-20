@@ -46,6 +46,8 @@ typedef struct gpu_correlation_t {
   uint64_t host_correlation_id;
   gpu_op_ccts_t gpu_op_ccts; 
 
+  uint64_t cpu_submit_time;
+
   // where to report the activity
   gpu_activity_channel_t *activity_channel;
 } gpu_correlation_t;
@@ -62,12 +64,14 @@ gpu_correlation_produce
  gpu_correlation_t *c,
  uint64_t host_correlation_id,
  gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 )
 {
   c->host_correlation_id = host_correlation_id;
   c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
+  c->cpu_submit_time = cpu_submit_time;
 }
 
 
@@ -82,7 +86,7 @@ gpu_correlation_consume
 #else
     PRINT("Insert correlation id %ld\n", c->host_correlation_id);
     gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts), 
-				    c->activity_channel);
+				    c->cpu_submit_time, c->activity_channel);
 #endif
 }
 

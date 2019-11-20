@@ -39,11 +39,13 @@ void
 gpu_trace_item_produce
 (
  gpu_trace_item_t *ti,
+ uint64_t cpu_submit_time,
  uint64_t start,
  uint64_t end,
  cct_node_t *call_path_leaf
 )
 {
+  ti->cpu_submit_time = cpu_submit_time;
   ti->start = start;
   ti->end = end;
   ti->call_path_leaf = call_path_leaf;

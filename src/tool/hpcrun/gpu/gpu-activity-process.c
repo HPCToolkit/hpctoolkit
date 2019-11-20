@@ -27,7 +27,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 1
+#define DEBUG 0
 
 #if DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -51,7 +51,7 @@ gpu_context_stream_trace
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_channel_produce, ti);
+  gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
 }
 
 
@@ -62,7 +62,7 @@ gpu_context_trace
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_context_process(context_id, gpu_trace_channel_produce, ti);
+  gpu_context_id_map_context_process(context_id, gpu_trace_produce, ti);
   
 }
 
@@ -72,11 +72,15 @@ trace_item_set
 (
  gpu_trace_item_t *ti,
  gpu_activity_t *ga,
+ gpu_host_correlation_map_entry_t *host_op_entry,
  cct_node_t *call_path_leaf
  )
 {
-  gpu_trace_item_produce(ti, ga->details.interval.start, ga->details.interval.end,
-			 call_path_leaf);
+  uint64_t cpu_submit_time =
+    gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
+
+  gpu_trace_item_produce(ti, cpu_submit_time, ga->details.interval.start,
+			 ga->details.interval.end, call_path_leaf);
 }
 
 
@@ -112,18 +116,24 @@ gpu_memcpy_process
     if (host_op_entry != NULL) {
       gpu_placeholder_type_t mct;
       switch (activity->details.memcpy.copyKind) {
-      case GPU_MEMCPY_H2D: mct = gpu_placeholder_type_copyin;
-      case GPU_MEMCPY_D2H: mct = gpu_placeholder_type_copyout;
-      default: mct = gpu_placeholder_type_copy;
+      case GPU_MEMCPY_H2D: 
+	mct = gpu_placeholder_type_copyin;
+	break;
+      case GPU_MEMCPY_D2H: 
+	mct = gpu_placeholder_type_copyout;
+	break;
+      default: 
+	mct = gpu_placeholder_type_copy;
+	break;
       }
       cct_node_t *host_op_node =
 	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, mct);
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, host_op_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
+	(activity->details.memcpy.context_id, activity->details.memcpy.stream_id, 
 	 &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
@@ -271,7 +281,7 @@ gpu_memset_process
 						  gpu_placeholder_type_memset);
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, host_op_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
 	(activity->details.memset.context_id, activity->details.memset.stream_id,
@@ -322,7 +332,7 @@ gpu_kernel_process
       // do not delete it because it shares external_id with activity samples
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, func_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
 	(activity->details.kernel.context_id, activity->details.kernel.stream_id,
@@ -359,7 +369,7 @@ gpu_synchronization_process
       attribute_activity(host_op_entry, activity, host_op_node);
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, host_op_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       if (activity->kind == GPU_ACTIVITY_KIND_SYNCHRONIZATION) {
 	uint32_t context_id = activity->details.synchronization.context_id;
@@ -414,7 +424,7 @@ gpu_cdpkernel_process
       cct_node_t *func_node = hpcrun_cct_children(host_op_node);
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, func_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
 	(activity->details.cdpkernel.context_id, activity->details.cdpkernel.stream_id,

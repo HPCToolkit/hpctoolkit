@@ -62,7 +62,7 @@ static atomic_ullong stream_id;
 //******************************************************************************
 
 static gpu_trace_t *
-gpu_trace_new
+gpu_trace_alloc
 (
  void
 )
@@ -303,7 +303,7 @@ gpu_trace_create
 )
 {
   // Init variables
-  gpu_trace_t *trace = gpu_trace_new();
+  gpu_trace_t *trace = gpu_trace_alloc();
 
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
@@ -316,4 +316,25 @@ gpu_trace_create
   monitor_enable_new_threads();
 
   return trace;
+}
+
+
+void 
+gpu_trace_produce
+(
+ gpu_trace_t *t,
+ gpu_trace_item_t *ti
+)
+{
+  gpu_trace_channel_produce(t->trace_channel, ti);
+}
+
+
+void 
+gpu_trace_signal_consumer
+(
+ gpu_trace_t *t
+)
+{
+  gpu_trace_channel_signal_consumer(t->trace_channel);
 }

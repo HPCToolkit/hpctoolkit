@@ -68,7 +68,7 @@ typedef struct typed_splay_node(stream_id) {
   struct typed_splay_node(stream_id) *left;
   struct typed_splay_node(stream_id) *right;
   uint32_t stream_id;
-  gpu_trace_channel_t *trace;
+  gpu_trace_t *trace;
 } typed_splay_node(stream_id);
 
 
@@ -109,7 +109,7 @@ signal_stream
  void *arg
 )
 {
-  gpu_trace_channel_signal_consumer(entry->trace);
+  gpu_trace_signal_consumer(entry->trace);
 }
 
 
@@ -183,7 +183,7 @@ gpu_stream_id_map_entry_new(uint32_t stream_id)
   memset(e, 0, sizeof(gpu_stream_id_map_entry_t));
 
   e->stream_id = stream_id;
-  e->trace = gpu_trace_channel_alloc();
+  e->trace = gpu_trace_create();
 
   return e;
 }

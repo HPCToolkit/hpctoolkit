@@ -50,6 +50,13 @@ typedef enum {
 // interface functions
 //******************************************************************************
 
+uint64_t 
+cupti_nanotime_offset
+(
+ void
+);
+
+
 int
 cupti_bind
 (

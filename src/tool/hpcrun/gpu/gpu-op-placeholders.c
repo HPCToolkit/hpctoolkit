@@ -42,7 +42,7 @@ typedef struct gpu_op_placeholders_t {
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_none = 0; 
 
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all =
-  (~0 << gpu_placeholder_type_count);
+  (~0) ^ (~0 << gpu_placeholder_type_count); // set the lowest "count" bits
 
 
 
@@ -197,6 +197,21 @@ gpu_op_placeholders_init
   gpu_op_placeholder_init(gpu_placeholder_type_memset,  &gpu_op_memset);
   gpu_op_placeholder_init(gpu_placeholder_type_sync,    &gpu_op_sync);
   gpu_op_placeholder_init(gpu_placeholder_type_trace,   &gpu_op_trace);
+}
+
+
+// debugging support
+bool
+gpu_op_ccts_empty
+(
+ gpu_op_ccts_t *gpu_op_ccts
+)
+{
+  int i;
+  for (i = 0; i < gpu_placeholder_type_count; i++) {
+    if (gpu_op_ccts->ccts[i] != NULL) return false;
+  }
+  return true;
 }
 
 
