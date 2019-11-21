@@ -46,8 +46,9 @@ typedef struct gpu_op_ccts_t {
 } gpu_op_ccts_t;
 
 
+
 //******************************************************************************
-// global data
+// public data
 //******************************************************************************
 
 extern gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all;

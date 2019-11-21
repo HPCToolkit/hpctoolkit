@@ -1,6 +1,8 @@
 #ifndef gpu_stream_id_map_h
 #define gpu_stream_id_map_h
 
+
+
 //*****************************************************************************
 // system includes
 //*****************************************************************************
@@ -57,9 +59,7 @@ gpu_stream_id_map_stream_process
 );
 
 
-// Two usage cases:
-// 1. Append events to all active streams (cuContextSynchronize)
-// 2. Signal all active streams
+// append a synchronization event to all streams in a context
 void
 gpu_stream_id_map_context_process
 (
@@ -76,6 +76,7 @@ gpu_stream_id_map_entry_new
 );
 
 
+// signal all active streams
 void
 gpu_stream_map_signal_all
 (

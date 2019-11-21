@@ -1,3 +1,8 @@
+#ifndef gpu_application_thread_api_h
+#define gpu_application_thread_api_h
+
+
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -30,3 +35,7 @@ gpu_application_thread_correlation_callback
 (
  uint64_t correlation_id
 );
+
+
+
+#endif

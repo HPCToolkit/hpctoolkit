@@ -1,11 +1,13 @@
 #ifndef gpu_correlation_h
 #define gpu_correlation_h
 
+
+
 //******************************************************************************
-// global includes
+// system includes
 //******************************************************************************
 
-#include <inttypes.h>
+#include <stdint.h>
 
 
 
@@ -18,22 +20,12 @@
 
 
 //******************************************************************************
-// local includes
-//******************************************************************************
-
-// #include <lib/prof-lean/stacks.h>
-
-
-#include "gpu-activity-channel.h"
-#include "gpu-correlation-channel.h"
-
-
-
-//******************************************************************************
-// type declarations
+// forward type declarations
 //******************************************************************************
 
 typedef struct cct_node_t cct_node_t;
+
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 
 typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 

@@ -1,6 +1,8 @@
 #ifndef gpu_channel_util_h
 #define gpu_channel_util_h
 
+
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -20,7 +22,7 @@
 
 #define channel_item_free(channel, item)			\
     channel_item_free_helper					\
-    ((bichannel_t *) channel,			\
+    ((bichannel_t *) channel,					\
      (s_element_t *) item)
 
 

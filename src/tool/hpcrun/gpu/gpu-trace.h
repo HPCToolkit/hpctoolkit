@@ -1,11 +1,13 @@
 #ifndef gpu_trace_h
 #define gpu_trace_h
 
+
+
 //******************************************************************************
-// global includes
+// system includes
 //******************************************************************************
 
-#include <inttypes.h>
+#include <stdint.h>
 
 
 

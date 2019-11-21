@@ -10,19 +10,14 @@
 #include "gpu-activity-channel.h"
 
 
+
 //******************************************************************************
 // macros
 //******************************************************************************
 
-#define UNIT_TEST 0
-
 #define DEBUG 0
 
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
+#include "gpu-print.h"
 
 
 
@@ -50,42 +45,45 @@ gpu_application_thread_correlation_callback
 
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here
+
   ucontext_t uc;
-  getcontext(&uc);
+  getcontext(&uc); // current context, where unwind will begin 
 
-  // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  hpcrun_safe_enter();
+  // prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
 
-  cct_node_t *node =
+  cct_node_t *node = 
     hpcrun_sample_callpath(&uc, zero_metric_id,
-      zero_metric_incr, 0, 1, NULL).sample_node;
+			   zero_metric_incr, 0, 1, NULL).sample_node;
 
   hpcrun_safe_exit();
 
-  // Compress callpath
-  // Highest cupti node
   cct_addr_t *node_addr = hpcrun_cct_addr(node);
+
+  // elide unwanted context from GPU calling context: frames from 
+  // libhpcrun and any from GPU load modules registered in the 
+  // module ignore map (e.g. libcupti and libcuda, which are stripped)
   static __thread uint16_t libhpcrun_id = 0;
 
-  // The lowest module must be libhpcrun, which is not 0
-  // Update libhpcrun_id only the first time
+  // the module id of the cct leaf must be libhpcrun, which is not 0.
+  // initialize libhpcrun_id once, when it is found to be 0
   if (libhpcrun_id == 0) {
-    load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
+    load_module_t *module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
     if (module != NULL && strstr(module->name, "libhpcrun") != NULL) {
       libhpcrun_id = node_addr->ip_norm.lm_id;
     }
   }
 
-  // Skip libhpcrun
+
+  // skip procedure frames in libhpcrun
   while (libhpcrun_id != 0 && node_addr->ip_norm.lm_id == libhpcrun_id) {
-    //hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
   }
 
-  // Skip libcupti and libcuda
+  // skip any procedure frames that should be suppressed,
+  // e.g. stripped procedure frames inside libcupti and libcuda
   while (module_ignore_map_module_id_lookup(node_addr->ip_norm.lm_id)) {
-    //hpcrun_cct_delete_self(node);
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
   }

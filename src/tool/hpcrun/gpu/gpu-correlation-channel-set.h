@@ -1,11 +1,13 @@
 #ifndef gpu_correlation_channel_set_h
 #define gpu_correlation_channel_set_h
 
+
+
 //******************************************************************************
-// local includes 
+// forward type declarations
 //******************************************************************************
 
-#include "gpu-correlation-channel.h"
+typedef struct gpu_correlation_channel_t gpu_correlation_channel_t;
 
 
 

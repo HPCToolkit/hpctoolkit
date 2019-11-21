@@ -1,5 +1,5 @@
 //*****************************************************************************
-// global includes
+// system includes
 //*****************************************************************************
 
 #include <assert.h>
@@ -13,9 +13,6 @@
 
 #include <lib/prof-lean/splay-uint64.h>
 
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-
 #include "gpu-correlation-id-map.h"
 #include "gpu-splay-allocator.h"
 
@@ -27,11 +24,7 @@
 
 #define DEBUG 0
 
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
+#include "gpu-print.h"
 
 
 #define st_insert				\

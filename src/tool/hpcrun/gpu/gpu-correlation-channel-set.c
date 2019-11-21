@@ -7,6 +7,7 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+#include "gpu-correlation-channel.h"
 #include "gpu-correlation-channel-set.h"
 
 

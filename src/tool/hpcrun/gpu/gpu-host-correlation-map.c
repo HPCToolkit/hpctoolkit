@@ -27,11 +27,7 @@
 
 #define DEBUG 0
 
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
+#include "gpu-print.h"
 
 
 #define st_insert				\

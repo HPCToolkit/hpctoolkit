@@ -60,4 +60,6 @@ gpu_trace_channel_signal_consumer
  gpu_trace_channel_t *trace_channel
 );
 
+
+
 #endif

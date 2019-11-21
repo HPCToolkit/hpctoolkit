@@ -4,7 +4,6 @@
 
 #include <assert.h>
 #include <cuda.h>
-#include <stdio.h>
 #include <string.h>
 
 
@@ -27,11 +26,8 @@
 
 #define DEBUG 0
 
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
+#include "gpu-print.h"
+
 
 #undef typed_splay_node
 #define typed_splay_node(stream_id) gpu_stream_id_map_entry_t

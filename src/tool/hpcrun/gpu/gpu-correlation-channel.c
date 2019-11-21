@@ -11,6 +11,7 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+#include "gpu-activity-channel.h"
 #include "gpu-correlation.h"
 #include "gpu-correlation-channel.h"
 #include "gpu-correlation-channel-set.h"

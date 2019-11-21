@@ -1,5 +1,5 @@
 //******************************************************************************
-// global includes
+// system includes
 //******************************************************************************
 
 #include <assert.h>
@@ -16,12 +16,13 @@
 
 #include "gpu-op-placeholders.h"
 
-#if 0
-#include <lib/prof-lean/placeholders.h>
-#include <hpcrun/fnbounds/fnbounds_interface.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/hpcrun-initializers.h>
-#endif
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define SET_LOW_N_BITS(n, type) (~(((type) ~0) << n))
 
 
 
@@ -36,13 +37,13 @@ typedef struct gpu_op_placeholders_t {
 
 
 //******************************************************************************
-// global data
+// public data
 //******************************************************************************
 
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_none = 0; 
 
 gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all =
-  (~0) ^ (~0 << gpu_placeholder_type_count); // set the lowest "count" bits
+  SET_LOW_N_BITS(gpu_placeholder_type_count, gpu_op_placeholder_flags_t);
 
 
 

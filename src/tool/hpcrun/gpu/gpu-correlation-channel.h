@@ -7,7 +7,6 @@
 //******************************************************************************
 
 #include "gpu-correlation.h"
-#include "gpu-activity-channel.h"
 
 
 

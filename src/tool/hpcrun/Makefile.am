@@ -357,7 +357,6 @@ MY_BASE_FILES =				\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-activity-process.c 	\
-	gpu/gpu-api.c 			\
 	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c \
 	gpu/gpu-context-id-map.c	\
@@ -394,6 +393,8 @@ MY_BASE_FILES =				\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
+
+# 	gpu/gpu-api.c
 
 if HOST_CPU_PPC
 MY_BASE_FILES +=			\
@@ -491,9 +492,6 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
 	gpu/nvidia/cupti-gpu-api.c		
-
-
-#	gpu/nvidia/cuda-context-id-map.c
 endif
 
 
