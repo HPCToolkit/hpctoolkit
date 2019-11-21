@@ -50,6 +50,8 @@
 
 #include "stacks.h"
 
+
+
 //*****************************************************************************
 // interface functions
 //*****************************************************************************
@@ -75,7 +77,7 @@ sstack_ptr_get
  s_element_ptr_t *e
 )
 {
-  return atomic_load_explicit(&Ap(e), memory_order_relaxed);
+  return (s_element_t *) atomic_load_explicit(&Ap(e), memory_order_relaxed);
 }
 
 
@@ -86,7 +88,7 @@ sstack_swap
  s_element_t *r
 )
 {
-  return atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
+  return (s_element_t *) atomic_exchange_explicit(&Ap(q), r, memory_order_relaxed);
 }
 
 
@@ -97,7 +99,9 @@ sstack_push
  s_element_t *e
 )
 {
-  s_element_t *first = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  s_element_t *first = 
+    (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
+
   atomic_store_explicit(&(e->Ad(next)), first, memory_order_relaxed);
   atomic_store_explicit(&Ap(q), e, memory_order_relaxed);
 }
@@ -109,10 +113,10 @@ sstack_pop
  s_element_ptr_t *q
 )
 {
-  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  s_element_t *e = (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
   if (e) {
     s_element_t *next = 
-      atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+      (s_element_t *) atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
     atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
     atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);
   }
@@ -139,10 +143,10 @@ sstack_reverse
 )
 {
   s_element_t *prev = NULL;
-  s_element_t *e = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  s_element_t *e = (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
   while (e) {
     s_element_t *next = 
-      atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
+      (s_element_t *) atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
     atomic_store_explicit(&(e->Ad(next)), prev, memory_order_relaxed);
     prev = e;
     e = next;
@@ -159,10 +163,13 @@ sstack_forall
  void *arg
 )
 {
-  s_element_t *current = atomic_load_explicit(&Ap(q), memory_order_relaxed);
+  s_element_t *current = 
+    (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
+
   while (current) {
     fn(current, arg);
-    current = atomic_load_explicit(&current->Ad(next), memory_order_relaxed);
+    current = 
+      (s_element_t *) atomic_load_explicit(&current->Ad(next), memory_order_relaxed);
   } 
 }
 
@@ -174,7 +181,7 @@ cstack_ptr_set
  s_element_t *v
 )
 {
-  atomic_init(&Ap(e), v);
+  atomic_init(&Ap(e), (s_element_ptr_t *) v);
 }
 
 
@@ -184,7 +191,7 @@ cstack_ptr_get
  s_element_ptr_t *e
 )
 {
-  return atomic_load(&Ap(e));
+  return (s_element_t *) atomic_load(&Ap(e));
 }
 
 
@@ -195,7 +202,7 @@ cstack_swap
  s_element_t *r
 )
 {
-  s_element_t *e = atomic_exchange(&Ap(q), r);
+  s_element_t *e = (s_element_t *) atomic_exchange(&Ap(q), r);
 
   return e;
 }
@@ -208,12 +215,12 @@ cstack_push
  s_element_t *e
 )
 {
-  s_element_t *head = atomic_load(&Ap(q));
+  s_element_t *head = (s_element_t *) atomic_load(&Ap(q));
   s_element_t *new_head = e;
 
   // push a singleton or a chain on the list
   for (;;) {
-    s_element_t *enext = atomic_load(&e->Ad(next));
+    s_element_t *enext = (s_element_t *) atomic_load(&e->Ad(next));
     if (enext == 0) break;
     e = enext;
   }
@@ -230,12 +237,12 @@ cstack_pop
  s_element_ptr_t *q
 )
 {
-  s_element_t *oldhead = atomic_load(&Ap(q));
+  s_element_t *oldhead = (s_element_t *) atomic_load(&Ap(q));
   s_element_t *next = 0;
 
   do {
     if (oldhead == 0) return 0;
-    next = atomic_load(&oldhead->Ad(next));
+    next = (s_element_t *) atomic_load(&oldhead->Ad(next));
   } while (!atomic_compare_exchange_strong(&Ap(q), &oldhead, next));
 
   atomic_store(&oldhead->Ad(next), 0);
@@ -264,10 +271,10 @@ cstack_forall
  void *arg
 )
 {
-  s_element_t *current = atomic_load(&Ap(q));
+  s_element_t *current = (s_element_t *) atomic_load(&Ap(q));
   while (current) {
     fn(current, arg);
-    current = atomic_load(&current->Ad(next));
+    current = (s_element_t *) atomic_load(&current->Ad(next));
   } 
 }
 

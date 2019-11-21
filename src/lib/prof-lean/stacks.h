@@ -183,7 +183,8 @@
   }) \
 \
  void typed_stack_forall(type, qtype) \
- (typed_stack_elem_ptr(type) *s, void (*fn)(typed_stack_elem(type) *, void *), void *arg) \
+ (typed_stack_elem_ptr(type) *s, \
+  void (*fn)(typed_stack_elem(type) *, void *), void *arg) \
   macro({ \
     stack_op(qtype,forall)((s_element_ptr_t *) s, (stack_forall_fn_t) fn, arg);	\
   })
