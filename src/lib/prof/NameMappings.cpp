@@ -49,7 +49,7 @@ const char *GPU_ALLOC   = "<gpu alloc>";
 const char *GPU_DELETE  = "<gpu delete>";
 const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
-const char *GPU_TRACE   = "<gpu trace>";
+const char *GPU_TRACE   = "<gpu kernel>";
 
 const char *NO_THREAD_ROOT   = "<no thread>";
 
