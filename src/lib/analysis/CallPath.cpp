@@ -70,6 +70,8 @@ using std::string;
 
 #include <climits>
 #include <cstring>
+#include <map>
+#include <vector>
 
 #include <typeinfo>
 
@@ -107,17 +109,14 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 
-
 //********************************** Macros **********************************
 
 #define DEBUG_COALESCING 0
 
 
-
 //*************************** Forward Declarations ***************************
 
 std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
-
 
 
 //****************************************************************************
@@ -314,10 +313,101 @@ coalesceStmts(Prof::Struct::ANode* node)
 
 
 //****************************************************************************
+// Precompute Struct Simple
+//****************************************************************************
+
+//
+// Use use binutils to pre-compute the struct simple tree for all load
+// modules that don't have a full structure file.  Overlay static
+// structure has trouble with aliens if we compute the stmt nodes
+// incrementally.  (why?)
+//
+// Note: adding inline sequences from a struct file can blow up the
+// size of the CCT by 50x, so we gather all the vma's per load module
+// early in one pass.
+//
+
+typedef std::vector <VMA> VmaVec;
+typedef std::map <int, VmaVec *> VmaVecMap;
+
+//
+// Traverse CCT Tree, collect (VMA, LM) pairs for each dyn node, and
+// make a vector of VMA's per load module.
+//
+static void
+makeVMAmap(VmaVecMap & vmaMap, Prof::CCT::ANode * node)
+{
+  using namespace Prof;
+
+  // traverse CCT tree, same order as overlayStaticStructure()
+  for (CCT::ANodeSortedChildIterator nit(node, CCT::ANodeSortedIterator::cmpByDynInfo);
+       nit.current(); )
+  {
+    CCT::ANode * n2 = nit.current();
+    nit++;
+
+    // only dynamic nodes have vma address
+    CCT::ADynNode * n_dyn = dynamic_cast <CCT::ADynNode *> (n2);
+    if ( n_dyn ) {
+      Prof::LoadMap::LMId_t lmid = n_dyn->lmId();
+      VMA vma = n_dyn->lmIP();
+      VmaVec * vec = NULL;
+
+      auto it = vmaMap.find(lmid);
+      if (it != vmaMap.end()) {
+	vec = it->second;
+      }
+      else {
+	vec = new VmaVec;
+	vmaMap[lmid] = vec;
+      }
+      vec->push_back(vma);
+    }
+
+    if (! n2->isLeaf()) {
+      makeVMAmap(vmaMap, n2);
+    }
+  }
+}
+
+
+//
+// Precompute struct simple for one struct tree (lmStruct) from the
+// binutils load module (lm) and vma vector (vmaVec).
+//
+static void
+precomputeStructSimple(Prof::Struct::LM * lmStruct,
+		       BinUtil::LM * lm,
+		       VmaVec * vmaVec)
+{
+  if (lm == NULL || vmaVec == NULL) {
+    return;
+  }
+
+  for (uint i = 0; i < vmaVec->size(); i++) {
+    VMA vma = (*vmaVec)[i];
+
+    if (lmStruct->findStmt(vma) == NULL) {
+      BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
+    }
+  }
+
+  lmStruct->computeVMAMaps();
+}
+
+
+//****************************************************************************
 // Overlaying static structure on a CCT
 //****************************************************************************
 
 typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
+
+static void
+overlayStaticStructureMain(Prof::CallPath::Profile& prof,
+			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::Struct::LM* lmStrct,
+			   VmaVec * vmaVec,
+                           bool printProgress);
 
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
@@ -355,6 +445,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 {
   const Prof::LoadMap* loadmap = prof.loadmap();
   Prof::Struct::Root* rootStrct = prof.structure()->root();
+  VmaVecMap vmaMap;
+
+  makeVMAmap(vmaMap, prof.cct()->root());
 
   std::string errors;
 
@@ -365,13 +458,19 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
       i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
+
     if (lm->isUsed()) {
       try {
         const string& lm_nm = lm->name();
-
         Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct,
-                                                       printProgress);
+
+	VmaVec * vmaVec = NULL;
+	auto it = vmaMap.find(i);
+	if (it != vmaMap.end()) {
+	  vmaVec = it->second;
+	}
+
+	overlayStaticStructureMain(prof, lm, lmStrct, vmaVec, printProgress);
       }
       catch (const Diagnostics::Exception& x) {
         errors += "  " + x.what() + "\n";
@@ -383,6 +482,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
+  // delete VMA vectors
+  for (auto it = vmaMap.begin(); it != vmaMap.end(); ++it) {
+    delete it->second;
+  }
 
   // -------------------------------------------------------
   // Basic normalization
@@ -398,11 +501,11 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 //
 // Overlay for one load module.
 //
-void
-Analysis::CallPath::
+static void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   Prof::LoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct,
+			   VmaVec * vmaVec,
                            bool printProgress)
 {
   const string& lm_nm = loadmap_lm->name();
@@ -412,16 +515,27 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   if (useStruct) {
     DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_nm);
-  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+  }
+  else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  } else if (vdso_loadmodule(lm_nm.c_str()))  {
+  }
+  else if (vdso_loadmodule(lm_nm.c_str()))  {
     DIAG_WMsgIf(printProgress, "Cannot fully process samples for virtual load module " << lm_nm);
-  } else {
+  }
+  else {
+    // fill in lmStrct with struct simple
 
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
       lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
+
+      if (vmaVec == NULL) {
+	DIAG_WMsgIf(printProgress, "Unable to compute struct simple for " << lm_nm);
+      }
+      else {
+	precomputeStructSimple(lmStrct, lm, vmaVec);
+      }
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
@@ -435,7 +549,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   if (lm) {
     lmStrct->pretty_name(lm->name().c_str());
   }
-  Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
+
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, NULL);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()
   lmStrct->computeVMAMaps();
@@ -478,75 +593,29 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
   }
 }
 
-//****************************************************************************
 
-// Precompute the simple structure for all vma's in the CCT 'node'
-// that match load module 'lmid' and insert into 'lmStruct'.
 //
-// Overlay static structure has trouble with aliens if we compute the
-// stmt nodes incrementally (why?).
-//
-static void
-precomputeStructSimple(Prof::CCT::ANode * node,
-		       Prof::LoadMap::LMId_t lmid,
-		       Prof::Struct::LM * lmStruct,
-		       BinUtil::LM * lm)
-{
-  using namespace Prof;
-
-  if (node == NULL) { return; }
-
-  // iterate over children, ordered by cmpByDynInfo (same order as
-  // overlayStaticStructure)
-  for (CCT::ANodeSortedChildIterator it(node, CCT::ANodeSortedIterator::cmpByDynInfo);
-       it.current(); )
-  {
-    CCT::ANode * n2 = it.current();
-    it++;
-
-    // only dynamic nodes have vma address
-    CCT::ADynNode * n_dyn = dynamic_cast <CCT::ADynNode *> (n2);
-    if (n_dyn && (n_dyn->lmId() == lmid)) {
-      VMA vma = n_dyn->lmIP();
-
-      Struct::ACodeNode * stmt = lmStruct->findStmt(vma);
-
-      if (stmt == NULL) {
-	stmt = BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
-      }
-    }
-
-    // subtrees
-    if (! n2->isLeaf()) {
-      precomputeStructSimple(n2, lmid, lmStruct, lm);
-    }
-  }
-}
-
-
 // overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
 // nodes using a preorder walk over the CCT.
 //
-// Note: for the struct simple case (binutils lm != NULL), precompute
-// the LM struct tree ahead of time.  Alien nodes break if this is
-// done incrementally (why?).
+// Technically an entry point for one load module, but nothing
+// actually uses this.
 //
 void
 Analysis::CallPath::
 overlayStaticStructure(Prof::CallPath::Profile& prof,
 		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStruct, BinUtil::LM* lm)
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
 {
-  if (lm != NULL) {
-    precomputeStructSimple(prof.cct()->root(), loadmap_lm->id(), lmStruct, lm);
-    lmStruct->computeVMAMaps();
-  }
-
-  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStruct, NULL);
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
 }
+
 
 //****************************************************************************
 
+//
+// Where the overlay actually happens.  This is per load module.
+//
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
 		       Prof::LoadMap::LM* loadmap_lm,
@@ -557,6 +626,8 @@ overlayStaticStructure(Prof::CCT::ANode* node,
   // procedure frame.
   
   if (!node) { return; }
+
+  bool useStruct = (!lm);
 
   // N.B.: dynamically allocate to better handle the deep recursion
   // required for very deep CCTs.
@@ -600,7 +671,8 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, true, unkProcNm);
+	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
+					unkProcNm);
       
       n->structure(strct);
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;

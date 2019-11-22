@@ -337,8 +337,10 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStruct,
       stmt = BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
     }
     else {
+      string unknown_proc = (unknownProcNm) ? *unknownProcNm : string(UNKNOWN_PROC);
       Struct::File * fileStruct = Struct::File::demand(lmStruct, UNKNOWN_FILE);
-      Struct::Proc * procStruct = Struct::Proc::demand(fileStruct, UNKNOWN_PROC);
+      Struct::Proc * procStruct = Struct::Proc::demand(fileStruct, unknown_proc);
+
       stmt = procStruct->demandStmtSimple(0, vma, vma + 1);
     }
   }
