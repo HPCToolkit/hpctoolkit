@@ -37,6 +37,8 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
       scope = ".LOCAL";
     } else if (opcode == "LDG") {
       scope = ".GLOBAL";
+    } else if (opcode == "LDC") {
+      scope = ".CONSTANT";
     }
   } else if (opcode.find("ST") != std::string::npos) {
     ldst = ".STORE";
@@ -298,7 +300,17 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
-        inst_stats.emplace_back(inst->inst_stat);
+        if (inst->inst_stat) {
+          // Calculate absolute address
+          auto *inst_stat = inst->inst_stat;
+          inst_stat->pc += function->address;
+          for (auto &iter : inst_stat->assign_pcs) {
+            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
+              *piter += function->address;
+            }
+          }
+          inst_stats.emplace_back(inst_stat);
+        }
       }
     }
   }

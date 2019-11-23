@@ -57,9 +57,8 @@
 //
 //***************************************************************************
 
-
-#ifndef Analysis_CallPath_CallPath_CudaAdvisor_hpp 
-#define Analysis_CallPath_CallPath_CudaAdvisor_hpp
+#ifndef Analysis_CCTGraph_hpp 
+#define Analysis_CCTGraph_hpp
 
 //************************* System Include Files ****************************
 
@@ -67,105 +66,134 @@
 #include <vector>
 #include <stack>
 #include <string>
-#include <map>
 
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
-#include <lib/binutils/LM.hpp>
-
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <lib/cuda/AnalyzeInstruction.hpp>
-
-#include "CCTGraph.hpp"
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
 
 namespace Analysis {
 
 namespace CallPath {
 
-struct Bottleneck {
-  Prof::LoadMap::LMId_t lm_id;
-  size_t function_id;
-  size_t block_id;
+// Directed edge
+template<class T>
+struct CCTEdge {
+  T from;
+  T to;
 
-  // BLAME latency->pcs
-  std::map<std::string, std::vector<std::pair<VMA, double> > > hotspots;
+  CCTEdge(T from, T to) : from(from), to(to) {}
+
+  bool operator < (const CCTEdge &other) const {
+    if (this->from < other.from) {
+      return true; 
+    } else if (this->to < other.to) {
+      return true;
+    }
+    return false;
+  }
 };
 
 
-class CudaAdvisor {
+template<class T>
+class CCTGraph {
  public:
-  explicit CudaAdvisor(Prof::CallPath::Profile *prof) : _prof(prof) {}
+  typedef std::map<T, std::vector<T> > NeighborNodeMap;
 
-  void init();
+ public:
+  CCTGraph() {}
 
-  void blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::InstructionStat *> &inst_stats);
+  typename std::set<CCTEdge<T> >::iterator edgeBegin() {
+    return _edges.begin();
+  }
 
-  void advise(Prof::LoadMap::LMId_t lm_id);
+  typename std::set<CCTEdge<T> >::iterator edgeEnd() {
+    return _edges.end();
+  }
 
-  void save(const std::string &file_name);
- 
- private:
-  typedef std::map<VMA, Prof::CCT::ANode *> VMAProfMap;
+  std::set<T> nodes() {
+    return _nodes;
+  }
 
-  typedef std::map<VMA, Prof::Struct::ANode *> VMAStructMap;
+  typename std::set<T>::iterator nodeBegin() {
+    return _nodes.begin();
+  }
 
-  typedef std::map<VMA, CudaParse::InstructionStat *> VMAInstMap;
+  typename std::set<T>::iterator nodeEnd() {
+    return _nodes.end();
+  }
 
- private:
-  void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id,
-    std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::CCT::ANode *> &vma_prof_map);
+  typename NeighborNodeMap::iterator incoming_nodes(T node) {
+    return _incoming_nodes.find(node);
+  }
 
-  void constructVMAStructMap(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::Struct::ANode *> &vma_struct_map);
+  typename NeighborNodeMap::iterator incoming_nodes_end() {
+    return _incoming_nodes.end();
+  }
 
-  void initStructGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAStructMap &vma_struct_map);
+  size_t outgoing_nodes_size(T node) {
+    auto iter = _outgoing_nodes.find(node); 
+    if (iter == _outgoing_nodes.end()) {
+      return 0;
+    }
+    return _outgoing_nodes[node].size();
+  }
+
+  size_t incoming_nodes_size(T node) {
+    auto iter = _incoming_nodes.find(node); 
+    if (iter == _incoming_nodes.end()) {
+      return 0;
+    }
+    return _incoming_nodes[node].size();
+  }
+
+  typename NeighborNodeMap::iterator outgoing_nodes(T node) {
+    return _outgoing_nodes.find(node);
+  }
   
-  void initCCTGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAProfMap &vma_prof_map);
+  typename NeighborNodeMap::iterator outgoing_nodes_end() {
+    return _outgoing_nodes.end();
+  }
+ 
+  void addEdge(T from, T to) {
+    if (_nodes.find(from) == _nodes.end()) {
+      _nodes.insert(from);
+    }
 
-  void updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAProfMap &vma_prof_map,
-    VMAStructMap &vma_struct_map);
+    if (_nodes.find(to) == _nodes.end()) {
+      _nodes.insert(to);
+    }
 
-  void blameCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAInstMap &vma_inst_map);
+    CCTEdge<T> edge(from, to);
+    if (_edges.find(edge) == _edges.end()) {
+      _edges.insert(std::move(edge));
+      _incoming_nodes[to].push_back(from);
+      _outgoing_nodes[from].push_back(to);
+    }
+  }
+
+  void addNode(T node) {
+    if (_nodes.find(node) != _nodes.end()) {
+      _nodes.insert(node);
+    }
+  }
+
+  size_t size() {
+    return _nodes.size();
+  }  
 
  private:
-  std::string _inst_metric;
-  std::string _issue_metric;
-
-  std::string _invalid_stall_metric;
-  std::string _tex_stall_metric;
-  std::string _ifetch_stall_metric;
-  std::string _pipe_bsy_stall_metric;
-  std::string _mem_thr_stall_metric;
-  std::string _nosel_stall_metric;
-  std::string _other_stall_metric;
-  std::string _sleep_stall_metric;
-
-  std::string _exec_dep_stall_metric;
-  std::string _mem_dep_stall_metric;
-  std::string _cmem_dep_stall_metric;
-  std::string _sync_stall_metric;
-
-  std::set<std::string> _inst_stall_metrics;
-  std::set<std::string> _dep_stall_metrics;
-  Prof::CallPath::Profile *_prof;
-  std::vector<std::map<std::string, std::pair<size_t, size_t> > > _metric_name_prof_maps;
+  NeighborNodeMap _incoming_nodes;
+  NeighborNodeMap _outgoing_nodes;
+  typename std::set<CCTEdge<T> > _edges;
+  std::set<T> _nodes;
 };
-
 
 }  // CallPath
 
 }  // Analysis
 
-#endif  // Analysis_CallPath_CallPath_CudaAdvisor_hpp
+#endif  // Analysis_CCTGraph_hpp

@@ -261,6 +261,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
   }
 
   CudaAdvisor cuda_advisor(&prof);
+  cuda_advisor.init();
   MetricNameProfMap metric_name_prof_map;
   // Read instruction files
   for (auto &file: instruction_files) {
@@ -286,15 +287,15 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     std::vector<CudaParse::Function *> functions;
     CudaParse::readCudaInstructions(file, functions);
 
-    // Step 2: Blame instruction latencies
-    cuda_advisor.blame(functions);
-
-    cuda_advisor.advise(functions);
-    
-    // Step 3: Merge metrics
+    // Step 2: Merge metrics
     // Sort the instructions by PC
     std::vector<CudaParse::InstructionStat *> inst_stats;
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
+
+    // Step 3: Blame instruction latencies
+    cuda_advisor.blame(lm_id, inst_stats);
+
+    cuda_advisor.advise(lm_id);
 
     // Find new metric names and insert new mappings between from name to prof metric ids
     createMetrics(inst_stats, metric_name_prof_map, *mgr);
