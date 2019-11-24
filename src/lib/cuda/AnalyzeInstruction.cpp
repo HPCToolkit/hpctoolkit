@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 1
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
 
@@ -321,7 +321,6 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
 
 static int reg_name_to_id(const std::string &name) {
   // first 7 letters cuda::r
-  std::cout << name << std::endl;
   auto str = name.substr(7);
   return std::stoi(str);
 }
@@ -373,6 +372,11 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
               auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
               auto addr = slice_node->addr();
 
+              if (INSTRUCTION_ANALYZER_DEBUG) {
+                std::cout << "inst_addr " << inst_addr - func_addr <<
+                  " <- addr: " << addr - func_addr;
+              }
+
               Dyninst::Assignment::Ptr aptr = slice_node->assign();
               auto reg_name = aptr->out().absloc().reg().name();
               int reg_id = reg_name_to_id(reg_name);
@@ -383,10 +387,9 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
                   break;
                 }
               }
-              
+
               if (INSTRUCTION_ANALYZER_DEBUG) {
-                std::cout << "reg " << reg_id << " inst_addr " << inst_addr - func_addr <<
-                  " <- addr " << addr - func_addr << std::endl;
+                std::cout << " reg " << reg_id << std::endl;
               }
             }
           }
@@ -510,8 +513,9 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   for (auto &ptree_function : root) {
     int function_id = ptree_function.second.get<int>("id", 0);
+    int function_address = ptree_function.second.get<int>("address", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(function_id, name);
+    auto *function = new Function(function_id, name, function_address);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;

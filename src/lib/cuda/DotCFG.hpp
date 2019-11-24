@@ -76,6 +76,9 @@ struct Function {
   Function(size_t id, const std::string &name) : id(id), name(name),
     address(0) {}
 
+  Function(size_t id, const std::string &name, int address) : id(id), name(name),
+    address(address) {}
+
   ~Function() {
     for (auto *block : blocks) {
       delete block;

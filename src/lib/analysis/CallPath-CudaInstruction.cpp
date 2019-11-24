@@ -49,15 +49,13 @@ using std::string;
 #include <vector>
 #include <iostream>
 
-#define DEBUG_CALLPATH_CUDAINSTRUCTION 0
+#define DEBUG_CALLPATH_CUDAINSTRUCTION 1
 
 namespace Analysis {
 
 namespace CallPath {
 
 typedef std::map<std::string, std::pair<int, int> > MetricNameProfMap;
-
-typedef std::map<std::string, int> MetricNameIdMap;
 
 static std::vector<size_t> gpu_issue_index;
 
