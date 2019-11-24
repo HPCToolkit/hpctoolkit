@@ -6,6 +6,13 @@
 #include <pthread.h>
 
 
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define SECONDS_UNTIL_WAKEUP 2
+
+
 
 //******************************************************************************
 // local includes
@@ -157,7 +164,13 @@ gpu_trace_channel_await
  gpu_trace_channel_t *channel
 )
 {
-  pthread_cond_wait(&channel->cond, &channel->mutex);
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time); // get current time
+  time.tv_sec += SECONDS_UNTIL_WAKEUP;
+
+  // wait for a signal or for a few seconds. periodically waking
+  // up avoids missing a signal.
+  pthread_cond_timedwait(&channel->cond, &channel->mutex, &time); 
 }
 
 

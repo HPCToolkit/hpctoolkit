@@ -243,7 +243,7 @@ gpu_host_correlation_map_delete
 )
 {
   gpu_host_correlation_map_entry_t *node = st_delete(&map_root, host_correlation_id);
-  st_free(free_list, node);
+  st_free(&free_list, node);
 }
 
 

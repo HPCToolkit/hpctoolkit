@@ -1,4 +1,12 @@
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <assert.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -490,13 +498,10 @@ gpu_activity_process
   case GPU_ACTIVITY_KIND_MEMCPY:
     gpu_memcpy_process(ga);
     break;
-/*
-  case GPU_ACTIVITY_KIND_MEMCPY2:
-    gpu_memcpy2_process(ga);
-    break;
-*/
+
   case GPU_ACTIVITY_KIND_MEMSET:
     gpu_memset_process(ga);
+    break;
 
   case GPU_ACTIVITY_KIND_KERNEL:
     gpu_kernel_process(ga);
@@ -520,6 +525,7 @@ gpu_activity_process
      gpu_cdpkernel_process(ga);
      break;
 
+  case GPU_ACTIVITY_KIND_MEMCPY2:
   default:
     gpu_unknown_process(ga);
     break;

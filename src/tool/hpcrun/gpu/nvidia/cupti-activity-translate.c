@@ -14,6 +14,7 @@
 // nvidia includes
 //******************************************************************************
 
+#include <cupti_version.h>
 #include <cupti_activity.h>
 
 
@@ -167,7 +168,6 @@ convert_memcpy_type
   case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
   case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
   case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   
-  case CUPTI_ACTIVITY_MEMCPY_KIND_FORCE_INT: 
   default:                                   return GPU_MEMCPY_UNK;
   }
 }
@@ -328,7 +328,6 @@ convert_sync_type
   case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE:
     return GPU_SYNCHRONIZATION_CONTEXT_SYNC;
   case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_UNKNOWN:
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_FORCE_INT:
   default:
     return GPU_SYNCHRONIZATION_UNKNOWN;
   }
@@ -426,6 +425,8 @@ convert_unknown
   ga->kind = GPU_ACTIVITY_KIND_UNKNOWN;
 }
 
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -493,5 +494,6 @@ cupti_activity_translate
     convert_unknown(ga, activity);
     break;
   }
+
   cstack_ptr_set(&(ga->next), 0);
 }

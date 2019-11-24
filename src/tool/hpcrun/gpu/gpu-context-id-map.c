@@ -77,6 +77,7 @@ typedef struct trace_fn_helper_t {
 //******************************************************************************
 
 static gpu_context_id_map_entry_t *map_root = NULL;
+static gpu_context_id_map_entry_t *free_list = NULL;
 
 
 
@@ -190,8 +191,8 @@ gpu_context_id_map_context_delete
  uint32_t context_id
 )
 {
-  // FIXME leak deleted node
-  (void) st_delete(&map_root, context_id);
+  gpu_context_id_map_entry_t *node = st_delete(&map_root, context_id);
+  st_free(&free_list, node);
 }
 
 
