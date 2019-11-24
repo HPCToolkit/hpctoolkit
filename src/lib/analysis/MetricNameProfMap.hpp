@@ -57,9 +57,8 @@
 //
 //***************************************************************************
 
-
-#ifndef Analysis_CallPath_CallPath_CudaAdvisor_hpp 
-#define Analysis_CallPath_CallPath_CudaAdvisor_hpp
+#ifndef Analysis_MetricNameProfMap_hpp 
+#define Analysis_MetricNameProfMap_hpp
 
 //************************* System Include Files ****************************
 
@@ -67,107 +66,57 @@
 #include <vector>
 #include <stack>
 #include <string>
-#include <map>
 
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
-#include <lib/binutils/LM.hpp>
-
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <lib/cuda/AnalyzeInstruction.hpp>
-
-#include "CCTGraph.hpp"
-#include "MetricNameProfMap.hpp"
-
-//*************************** Forward Declarations ***************************
-
-//****************************************************************************
 
 namespace Analysis {
 
 namespace CallPath {
 
-struct Bottleneck {
-  Prof::LoadMap::LMId_t lm_id;
-  size_t function_id;
-  size_t block_id;
-
-  // BLAME latency->pcs
-  std::map<std::string, std::vector<std::pair<VMA, double> > > hotspots;
-};
-
-
-class CudaAdvisor {
+class MetricNameProfMap {
  public:
-  explicit CudaAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
-    _prof(prof), _metric_name_prof_map(metric_name_prof_map) {}
+  MetricNameProfMap(Prof::Metric::Mgr *mgr) : _mgr(mgr) {}
 
   void init();
 
-  void blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::InstructionStat *> &inst_stats);
+  std::vector<int> metric_ids(const std::string &metric_name, bool inclusive = true);
 
-  void advise(Prof::LoadMap::LMId_t lm_id);
-
-  void save(const std::string &file_name);
- 
- private:
-  typedef std::map<VMA, Prof::CCT::ANode *> VMAProfMap;
-
-  typedef std::map<VMA, Prof::Struct::ANode *> VMAStructMap;
-
-  typedef std::map<VMA, CudaParse::InstructionStat *> VMAInstMap;
-
- private:
-  void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id,
-    std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::CCT::ANode *> &vma_prof_map);
-
-  void constructVMAStructMap(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::Struct::ANode *> &vma_struct_map);
-
-  void initStructGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAStructMap &vma_struct_map);
+  int metric_id(size_t mpi_rank, size_t thread_id, const std::string &metric_name, bool inclusive = true);
   
-  void initCCTGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAProfMap &vma_prof_map);
+  int num_mpi_ranks() {
+    return _metric_name_prof_maps.size();
+  }
 
-  void updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAProfMap &vma_prof_map,
-    VMAStructMap &vma_struct_map);
+  int num_thread_ids(size_t mpi_rank) {
+    if (mpi_rank < _metric_name_prof_maps.size()) {
+      return _metric_name_prof_maps[mpi_rank].size();
+    }
+    return -1;
+  }
 
-  void blameCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAInstMap &vma_inst_map);
+  bool add(const std::string &metric_name);
+
+  const std::string name(size_t metric_id) {
+    std::string ret;
+    if (metric_id < _mgr->size()) {
+      ret = _mgr->metric(metric_id)->name();
+    }
+    return ret;
+  }
 
  private:
-  std::string _inst_metric;
-  std::string _issue_metric;
-
-  std::string _invalid_stall_metric;
-  std::string _tex_stall_metric;
-  std::string _ifetch_stall_metric;
-  std::string _pipe_bsy_stall_metric;
-  std::string _mem_thr_stall_metric;
-  std::string _nosel_stall_metric;
-  std::string _other_stall_metric;
-  std::string _sleep_stall_metric;
-
-  std::string _exec_dep_stall_metric;
-  std::string _mem_dep_stall_metric;
-  std::string _cmem_dep_stall_metric;
-  std::string _sync_stall_metric;
-
-  std::set<std::string> _inst_stall_metrics;
-  std::set<std::string> _dep_stall_metrics;
-  Prof::CallPath::Profile *_prof;
-  MetricNameProfMap *_metric_name_prof_map;
+  Prof::Metric::Mgr *_mgr;
+  std::map<int, std::map<int, std::map<std::string, std::pair<int, int> > > > _metric_name_prof_maps;
 };
-
-
-}  // CallPath
 
 }  // Analysis
 
-#endif  // Analysis_CallPath_CallPath_CudaAdvisor_hpp
+}  // CallPath
+
+#endif  // Analysis_MetricNameProfMap_hpp

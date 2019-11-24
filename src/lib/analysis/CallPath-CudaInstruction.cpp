@@ -55,8 +55,6 @@ namespace Analysis {
 
 namespace CallPath {
 
-typedef std::map<std::string, std::pair<int, int> > MetricNameProfMap;
-
 static std::vector<size_t> gpu_issue_index;
 
 struct VMAStmt {
@@ -70,17 +68,6 @@ struct VMAStmt {
     return this->lm_ip < other.lm_ip;
   }
 };
-
-
-static inline int
-getTotalGPUInst(Prof::CCT::ANode *node) {
-  int sum = 0;
-  // GPU INST - GPU LAT
-  for (size_t i = 0; i < gpu_issue_index.size(); ++i) {
-    sum += node->demandMetric(gpu_issue_index[i]);
-  }
-  return sum;
-}
 
 
 static inline std::string
@@ -110,36 +97,25 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
   // Existing metric names
   for (auto *inst_stat : inst_stats) {
     auto &metric_name = inst_stat->op;
-    int in_id = -1;
-    int ex_id = -1;
-    if (metric_name_prof_map.find(metric_name) == metric_name_prof_map.end()) {
-      // Create inclusive and exclusive descriptors
-      auto *in_desc = new Prof::Metric::ADesc(metric_name.c_str(), NULL);
-      auto *ex_desc = new Prof::Metric::ADesc(metric_name.c_str(), NULL);
-      in_desc->type(Prof::Metric::ADesc::TyIncl);
-      ex_desc->type(Prof::Metric::ADesc::TyExcl);
-      in_desc->partner(ex_desc);
-      ex_desc->partner(in_desc);
-
-      if (mgr.insertIf(in_desc) && mgr.insertIf(ex_desc)) {
-        in_id = in_desc->id();
-        ex_id = ex_desc->id();
-        // Add new metric names
-        metric_name_prof_map[metric_name] = std::pair<int, int>(in_id, ex_id);
+    auto metric_ids = metric_name_prof_map.metric_ids(metric_name);
+    if (metric_ids.size() == 0) {
+      if (metric_name_prof_map.add(metric_name)) {
         if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-          std::cout << "Create metric " << metric_name <<
-            " inclusive id " << in_desc->id() <<
-            " exclusive id " << ex_desc->id() << std::endl;
+          metric_ids = metric_name_prof_map.metric_ids(metric_name);
+          for (auto id : metric_ids) {
+            std::cout << "Create metric " << metric_name <<
+              " inclusive id " << id << std::endl;
+          }
         }
       }
     } else {
       // we already have raw_id-><inclusive id, exclusive id> mappings
-      in_id = metric_name_prof_map[metric_name].first;
-      ex_id = metric_name_prof_map[metric_name].second;
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-        std::cout << "Existing metric " << metric_name <<
-          " inclusive id " << in_id <<
-          " exclusive id " << ex_id << std::endl;
+        metric_ids = metric_name_prof_map.metric_ids(metric_name);
+        for (auto id : metric_ids) {
+          std::cout << "Existing metric " << metric_name <<
+            " inclusive id " << id << std::endl;
+        }
       }
     }
   }
@@ -187,8 +163,9 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
 
 
 static void
-associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  MetricNameProfMap &metric_name_prof_map, Prof::Metric::Mgr &mgr) {
+associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
+  const std::vector<CudaParse::InstructionStat *> &inst_stats,
+  MetricNameProfMap &metric_name_prof_map) {
   size_t cur_stmt_index = 0;
 
   // Lay metrics over prof tree O(n)
@@ -210,28 +187,34 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<Cuda
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
     auto *node = vma_stmts[cur_stmt_index].node;
-    double sum_insts_f = getTotalGPUInst(node);
-    if (metric_name_prof_map.find(inst_stat->op) == metric_name_prof_map.end()) {
+    auto issue_metric_ids = metric_name_prof_map.metric_ids("STALL:NONE");
+    auto in_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, true);
+    auto ex_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, false);
+    if (in_metric_ids.size() != ex_metric_ids.size()) {
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-        std::cout << "Fail to find metric: " << inst_stat->op << std::endl;
+        std::cout << "Inclusive and exclusive metrics not match: " << inst_stat->op << std::endl;
       }
       continue;
     }
-    auto in_metric_id = metric_name_prof_map[inst_stat->op].first;
-    auto ex_metric_id = metric_name_prof_map[inst_stat->op].second;
+    for (size_t i = 0; i < issue_metric_ids.size(); ++i) {
+      double sum_insts_f = node->demandMetric(issue_metric_ids[i]);
+      auto in_metric_id = in_metric_ids[i];
+      auto ex_metric_id = ex_metric_ids[i];
 
-    // Calculate estimate number of executed instructions
-    node->demandMetric(in_metric_id) += sum_insts_f;
-    node->demandMetric(ex_metric_id) += sum_insts_f;
-    if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-      auto in_count = node->metric(in_metric_id);
-      auto ex_count = node->metric(ex_metric_id);
-      std::cout << "Associate pc: 0x" << std::hex << inst_stat->pc <<
-        " with vma: " << cur_vma << std::dec <<
-        " inclusive id " << in_metric_id <<
-        " name " << mgr.metric(in_metric_id)->name() << " count " << in_count <<
-        " exclusive id " << ex_metric_id <<
-        " name " << mgr.metric(ex_metric_id)->name() << " count " << ex_count << std::endl;
+      // Calculate estimate number of executed instructions
+      node->demandMetric(in_metric_id) += sum_insts_f;
+      node->demandMetric(ex_metric_id) += sum_insts_f;
+
+      if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+        auto in_count = node->metric(in_metric_id);
+        auto ex_count = node->metric(ex_metric_id);
+        std::cout << "Associate pc: 0x" << std::hex << inst_stat->pc <<
+          " with vma: " << cur_vma << std::dec <<
+          " inclusive id " << in_metric_id <<
+          " name " << metric_name_prof_map.name(in_metric_id) << " count " << in_count <<
+          " exclusive id " << ex_metric_id <<
+          " name " << metric_name_prof_map.name(ex_metric_id) << " count " << ex_count << std::endl;
+      }
     }
   }
 }
@@ -240,27 +223,21 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts, const std::vector<Cuda
 void
 overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
+  auto *mgr = prof.metricMgr(); 
+  MetricNameProfMap metric_name_prof_map(mgr);
+  metric_name_prof_map.init();
 
   // Check if prof contains gpu metrics
-  auto *mgr = prof.metricMgr(); 
-  for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "STALL:NONE" &&
-      mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
-      // Assume exclusive metrics index is i+1
-      gpu_issue_index.push_back(i);
-    }
-  }
   // Skip non-gpu prof
-  if (gpu_issue_index.size() == 0) {
+  if (metric_name_prof_map.metric_ids("STALL:NONE").size() == 0) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }
     return;
   }
 
-  CudaAdvisor cuda_advisor(&prof);
+  CudaAdvisor cuda_advisor(&prof, &metric_name_prof_map);
   cuda_advisor.init();
-  MetricNameProfMap metric_name_prof_map;
   // Read instruction files
   for (auto &file: instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -304,7 +281,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     gatherStmts(lm_id, inst_stats, prof_root, vma_stmts);
 
     // Step 5: Lay metrics over prof tree
-    associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map, *mgr);
+    associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;

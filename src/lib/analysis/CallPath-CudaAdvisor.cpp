@@ -21,6 +21,7 @@
 #include <include/gcc-attr.h>
 
 #include "CallPath-CudaAdvisor.hpp"
+#include "MetricNameProfMap.hpp"
 #include "CCTGraph.hpp"
 
 using std::string;
@@ -53,9 +54,9 @@ namespace CallPath {
 
 
 void CudaAdvisor::init() {
-  // Init already
-  if (_metric_name_prof_maps.size() != 0) {
-    return ;
+  if (_inst_stall_metrics.size() != 0) {
+    // Init already
+    return;
   }
 
   // init individual metrics
@@ -90,56 +91,12 @@ void CudaAdvisor::init() {
   _dep_stall_metrics.insert(_cmem_dep_stall_metric);
   _dep_stall_metrics.insert(_sync_stall_metric);
 
-  // Map metric names to index
-  auto *mgr = _prof->metricMgr(); 
-  std::map<std::string, std::pair<size_t, size_t> > metric_name_prof_map;
-
-  for (size_t i = 0; i < mgr->size(); ++i) {
-    auto prefix = mgr->metric(i)->namePfxBase();
-    if (_inst_stall_metrics.find(prefix) == _inst_stall_metrics.end() &&
-       _dep_stall_metrics.find(prefix) == _dep_stall_metrics.end() &&
-      _issue_metric != prefix && _inst_metric != prefix) {
-      continue;
-    }
-
-    if (mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
-      // Assume exclusive metrics index is i+1
-      std::pair<size_t, size_t> metric_ids(i, i + 1);
-      metric_name_prof_map[prefix] = metric_ids;
-    }
-    if (prefix == _sleep_stall_metric) {
-      // The end of the current CPU thread metrics
-      _metric_name_prof_maps.push_back(metric_name_prof_map);
-      metric_name_prof_map.clear();
-    }
+  for (auto &s : _inst_stall_metrics) {
+    _metric_name_prof_map->add("BLAME" + s);
   }
 
-  // Create new metrics and mappings
-  // TODO(Keren): fix multiple CPU threads
-  for (auto &metric_name_prof_map : _metric_name_prof_maps) {
-    std::map<std::string, std::pair<size_t, size_t> > new_metric_name_prof_map;
-
-    for (auto &iter : metric_name_prof_map) {
-      auto metric_name = "BLAME " + iter.first;
-      auto *in_desc = new Prof::Metric::ADesc(metric_name.c_str(), NULL);
-      auto *ex_desc = new Prof::Metric::ADesc(metric_name.c_str(), NULL);
-      in_desc->type(Prof::Metric::ADesc::TyIncl);
-      ex_desc->type(Prof::Metric::ADesc::TyExcl);
-      in_desc->partner(ex_desc);
-      ex_desc->partner(in_desc);
-
-      if (mgr->insertIf(in_desc) && mgr->insertIf(ex_desc)) {
-        auto in_id = in_desc->id();
-        auto ex_id = ex_desc->id();
-        new_metric_name_prof_map[metric_name] = std::pair<size_t, size_t>(in_id, ex_id);
-      }
-    }
-
-    for (auto &iter : new_metric_name_prof_map) {
-      auto &metric_name = iter.first;
-      auto &metric_ids = iter.second;
-      metric_name_prof_map[metric_name] = metric_ids;
-    }
+  for (auto &s : _dep_stall_metrics) {
+    _metric_name_prof_map->add("BLAME" + s);
   }
 }
 
@@ -214,13 +171,18 @@ void CudaAdvisor::initStructGraph(std::vector<CudaParse::InstructionStat *> &ins
 void CudaAdvisor::updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
   CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAProfMap &vma_prof_map,
   VMAStructMap &vma_struct_map) {
+  auto in_inst_metric_ids = _metric_name_prof_map->metric_ids(_inst_metric, true);
+  auto ex_inst_metric_ids = _metric_name_prof_map->metric_ids(_inst_metric, false);
+  auto in_issue_metric_ids = _metric_name_prof_map->metric_ids(_issue_metric, true);
+  auto ex_issue_metric_ids = _metric_name_prof_map->metric_ids(_issue_metric, false);
+
   // For each thread O(T)
-  for (auto &metric_name_prof_map : _metric_name_prof_maps) {
+  for (size_t i = 0; i < in_inst_metric_ids.size(); ++i) {
     // Init queue
     std::queue<Prof::CCT::ANode *> nodes;
     for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
       auto *node = *iter;
-      if (node->demandMetric(metric_name_prof_map[_inst_metric].first) != 0.0) {
+      if (node->demandMetric(in_inst_metric_ids[i]) != 0.0) {
         nodes.push(node);
       }
     }
@@ -244,11 +206,7 @@ void CudaAdvisor::updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
             // Existed CCT node
             auto *neighbor_node = iter->second;
             cct_dep_graph.addEdge(node, neighbor_node);
-            if (neighbor_node->demandMetric(metric_name_prof_map[_issue_metric].first) != 0.0) {
-              neighbor_node->demandMetric(metric_name_prof_map[_issue_metric].first) = 1.0;
-              neighbor_node->demandMetric(metric_name_prof_map[_issue_metric].second) = 1.0;
-              neighbor_node->demandMetric(metric_name_prof_map[_inst_metric].first) += 1.0;
-              neighbor_node->demandMetric(metric_name_prof_map[_inst_metric].second) += 1.0;
+            if (neighbor_node->demandMetric(in_issue_metric_ids[i]) != 0.0) {
               find = true;
             }
           }
@@ -263,10 +221,10 @@ void CudaAdvisor::updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
             auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(nstrct);
             auto *neighbor_node = new Prof::CCT::Stmt(parent, 0);
             neighbor_node->structure(stmt);
-            neighbor_node->demandMetric(metric_name_prof_map[_issue_metric].first) = 1.0;
-            neighbor_node->demandMetric(metric_name_prof_map[_issue_metric].second) = 1.0;
-            neighbor_node->demandMetric(metric_name_prof_map[_inst_metric].first) += 1.0;
-            neighbor_node->demandMetric(metric_name_prof_map[_inst_metric].second) += 1.0;
+            neighbor_node->demandMetric(in_issue_metric_ids[i]) = 1.0;
+            neighbor_node->demandMetric(in_issue_metric_ids[i]) = 1.0;
+            neighbor_node->demandMetric(in_inst_metric_ids[i]) += 1.0;
+            neighbor_node->demandMetric(in_inst_metric_ids[i]) += 1.0;
 
             cct_dep_graph.addEdge(node, neighbor_node);
             auto vma = stmt->vmaSet().begin()->beg();
@@ -282,77 +240,81 @@ void CudaAdvisor::updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
 
 void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAInstMap &vma_inst_map) {
   // for each thread
-  for (auto &metric_name_prof_map : _metric_name_prof_maps) {
-    for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
-      auto *node = *iter;
-      auto niter = cct_dep_graph.outgoing_nodes(node);
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
+      for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
+        auto *node = *iter;
+        auto niter = cct_dep_graph.outgoing_nodes(node);
 
-      std::map<std::string, double> sum;
-      if (niter != cct_dep_graph.outgoing_nodes_end()) {
-        for (auto *dep_node : niter->second) {
-          auto *strct = dep_node->structure();
-          auto vma = strct->vmaSet().begin()->beg();
-          auto *inst_stat = vma_inst_map[vma];
-          auto metrics_index = metric_name_prof_map[_issue_metric];
+        std::map<std::string, double> sum;
+        if (niter != cct_dep_graph.outgoing_nodes_end()) {
+          for (auto *dep_node : niter->second) {
+            auto *strct = dep_node->structure();
+            auto vma = strct->vmaSet().begin()->beg();
+            auto *inst_stat = vma_inst_map[vma];
+            auto issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric);
 
-          // sum up all neighbor node's instructions
-          if (inst_stat->op.find("MEMORY") != std::string::npos) {
-            if (inst_stat->op.find("CONSTANT") != std::string::npos) {
-              sum[_cmem_dep_stall_metric] += dep_node->demandMetric(metrics_index.first);
-            } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
-              sum[_mem_dep_stall_metric] += dep_node->demandMetric(metrics_index.first);
-            } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
-              sum[_mem_dep_stall_metric] += dep_node->demandMetric(metrics_index.first);
+            // sum up all neighbor node's instructions
+            if (inst_stat->op.find("MEMORY") != std::string::npos) {
+              if (inst_stat->op.find("CONSTANT") != std::string::npos) {
+                sum[_cmem_dep_stall_metric] += dep_node->demandMetric(issue_metric_index);
+              } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
+                sum[_mem_dep_stall_metric] += dep_node->demandMetric(issue_metric_index);
+              } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
+                sum[_mem_dep_stall_metric] += dep_node->demandMetric(issue_metric_index);
+              } else {
+                sum[_exec_dep_stall_metric] += dep_node->demandMetric(issue_metric_index);
+              }
             } else {
-              sum[_exec_dep_stall_metric] += dep_node->demandMetric(metrics_index.first);
+              sum[_exec_dep_stall_metric] += dep_node->demandMetric(issue_metric_index);
             }
-          } else {
-            sum[_exec_dep_stall_metric] += dep_node->demandMetric(metrics_index.first);
           }
         }
-      }
 
-      if (niter != cct_dep_graph.outgoing_nodes_end()) {
-        for (auto *dep_node : niter->second) {
-          auto *strct = dep_node->structure();
-          auto vma = strct->vmaSet().begin()->beg();
-          auto *inst_stat = vma_inst_map[vma];
-          std::string latency_metric;
-          if (inst_stat->op.find("MEMORY") != std::string::npos) {
-            if (inst_stat->op.find("CONSTANT") != std::string::npos) {
-              latency_metric = _cmem_dep_stall_metric;
-            } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
-              latency_metric = _mem_dep_stall_metric;
-            } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
-              latency_metric = _mem_dep_stall_metric;
+        if (niter != cct_dep_graph.outgoing_nodes_end()) {
+          for (auto *dep_node : niter->second) {
+            auto *strct = dep_node->structure();
+            auto vma = strct->vmaSet().begin()->beg();
+            auto *inst_stat = vma_inst_map[vma];
+            std::string latency_metric;
+            if (inst_stat->op.find("MEMORY") != std::string::npos) {
+              if (inst_stat->op.find("CONSTANT") != std::string::npos) {
+                latency_metric = _cmem_dep_stall_metric;
+              } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
+                latency_metric = _mem_dep_stall_metric;
+              } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
+                latency_metric = _mem_dep_stall_metric;
+              } else {
+                latency_metric = _exec_dep_stall_metric;
+              }
             } else {
               latency_metric = _exec_dep_stall_metric;
             }
-          } else {
-            latency_metric = _exec_dep_stall_metric;
-          }
 
-          if (latency_metric.size() != 0) {
-            double div = sum[latency_metric];
-            auto issue_metrics_index = metric_name_prof_map[_issue_metric];
-            auto neighbor_ratio = dep_node->demandMetric(issue_metrics_index.first) / div;
-            auto metric_index = metric_name_prof_map[latency_metric];
-            auto latency = node->demandMetric(metric_index.first);
-            auto blame_metrics_index = metric_name_prof_map["BLAME " + latency_metric];
-            // inclusive and exclusive metrics have the same value
-            // blame dep_node
-            dep_node->demandMetric(blame_metrics_index.first) += latency * neighbor_ratio;
-            dep_node->demandMetric(blame_metrics_index.second) += latency * neighbor_ratio;
-          }
+            if (latency_metric.size() != 0) {
+              double div = sum[latency_metric];
+              auto issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric);
+              auto neighbor_ratio = dep_node->demandMetric(issue_metric_index) / div;
+              auto latency_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, latency_metric);
+              auto latency = node->demandMetric(latency_metric_index);
+              // inclusive and exclusive metrics have the same value
+              auto in_blame_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, "BLAME " + latency_metric, true);
+              auto ex_blame_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, "BLAME " + latency_metric, false);
+              // blame dep_node
+              dep_node->demandMetric(in_blame_metric_index) += latency * neighbor_ratio;
+              dep_node->demandMetric(ex_blame_metric_index) += latency * neighbor_ratio;
+            }
 
-          for (auto &s : _inst_stall_metrics) {
-            auto metrics_index = metric_name_prof_map[s];
-            auto latency = node->demandMetric(metrics_index.first);
-            auto blame_metrics_index = metric_name_prof_map["BLAME " + s];
-            // inclusive and exclusive metrics have the same value
-            // blame itself
-            node->demandMetric(blame_metrics_index.first) += latency;
-            node->demandMetric(blame_metrics_index.second) += latency;
+            for (auto &s : _inst_stall_metrics) {
+              auto stall_metrics_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, s);
+              auto latency = node->demandMetric(stall_metrics_index);
+              auto in_blame_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, "BLAME " + s, true);
+              auto ex_blame_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, "BLAME " + s, false);
+              // inclusive and exclusive metrics have the same value
+              // blame itself
+              node->demandMetric(in_blame_metric_index) += latency;
+              node->demandMetric(ex_blame_metric_index) += latency;
+            }
           }
         }
       }
