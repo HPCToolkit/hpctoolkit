@@ -176,7 +176,7 @@ class CCTGraph {
   }
 
   void addNode(T node) {
-    if (_nodes.find(node) != _nodes.end()) {
+    if (_nodes.find(node) == _nodes.end()) {
       _nodes.insert(node);
     }
   }

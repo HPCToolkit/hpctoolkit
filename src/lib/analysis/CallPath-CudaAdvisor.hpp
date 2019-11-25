@@ -115,31 +115,34 @@ class CudaAdvisor {
   void save(const std::string &file_name);
  
  private:
-  typedef std::map<VMA, Prof::CCT::ANode *> VMAProfMap;
-
-  typedef std::map<VMA, Prof::Struct::ANode *> VMAStructMap;
+  typedef std::map<VMA, Prof::CCT::ADynNode *> VMAProfMap;
 
   typedef std::map<VMA, CudaParse::InstructionStat *> VMAInstMap;
 
+  typedef VMAIntervalMap<Prof::Struct::ANode *> VMAStructMap;
+
  private:
-  void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id,
-    std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::CCT::ANode *> &vma_prof_map);
+  void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id, VMAProfMap &vma_prof_map,
+    VMAInstMap &vma_inst_map);
 
-  void constructVMAStructMap(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    std::map<VMA, Prof::Struct::ANode *> &vma_struct_map);
+  void constructVMAStructMap(VMAStructMap &vma_struct_map);
 
-  void initStructGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAStructMap &vma_struct_map);
+  void constructVMAInstMap(std::vector<CudaParse::InstructionStat *> &inst_stats,
+    VMAInstMap &vma_inst_map);
+
+  void initInstGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAInstMap &vma_inst_map);
   
   void initCCTGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAProfMap &vma_prof_map);
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAProfMap &vma_prof_map);
 
-  void updateCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph,
-    CCTGraph<Prof::Struct::ANode *> &struct_dep_graph, VMAProfMap &vma_prof_map,
-    VMAStructMap &vma_struct_map);
+  void updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
+    VMAStructMap &vma_struct_map, VMAInstMap &vma_inst_map);
 
-  void blameCCTGraph(CCTGraph<Prof::CCT::ANode *> &cct_dep_graph, VMAInstMap &vma_inst_map);
+  void blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map);
+
+  void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
  private:
   std::string _inst_metric;
