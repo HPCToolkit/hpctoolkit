@@ -196,6 +196,28 @@ convert_memcpy
 
 
 static void
+convert_memcpy2
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityMemcpy2 *activity
+)
+{
+  PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
+  PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy2 copy bytes %lu\n", activity->bytes);
+
+  ga->kind = GPU_ACTIVITY_KIND_MEMCPY;
+  ga->details.memcpy.correlation_id = activity->correlationId;
+  ga->details.memcpy.context_id = activity->contextId;
+  ga->details.memcpy.stream_id = activity->streamId;
+  ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
+  ga->details.memcpy.bytes = activity->bytes;
+
+  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
+}
+
+
+static void
 convert_kernel
 (
   gpu_activity_t *ga,
@@ -449,8 +471,11 @@ cupti_activity_translate
       (ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
     break;
 
-  case CUPTI_ACTIVITY_KIND_MEMCPY:
   case CUPTI_ACTIVITY_KIND_MEMCPY2:
+    convert_memcpy2(ga, (CUpti_ActivityMemcpy2 *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_MEMCPY:
     convert_memcpy(ga, (CUpti_ActivityMemcpy *) activity);
     break;
 

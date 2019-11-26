@@ -112,25 +112,31 @@ gpu_memcpy_process
     if (host_op_entry != NULL) {
       gpu_placeholder_type_t mct;
       switch (activity->details.memcpy.copyKind) {
-      case GPU_MEMCPY_H2D: 
-	mct = gpu_placeholder_type_copyin;
-	break;
-      case GPU_MEMCPY_D2H: 
-	mct = gpu_placeholder_type_copyout;
-	break;
-      default: 
-	mct = gpu_placeholder_type_copy;
-	break;
+        case GPU_MEMCPY_H2D: 
+          mct = gpu_placeholder_type_copyin;
+          break;
+        case GPU_MEMCPY_D2H: 
+          mct = gpu_placeholder_type_copyout;
+          break;
+        default: 
+          mct = gpu_placeholder_type_copy;
+          break;
       }
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, mct);
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, mct);
+      if (host_op_node == NULL) {
+        // If we cannot find a perfect match for the operation
+        // e.g. cuMemcpy
+        host_op_node = gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+          gpu_placeholder_type_copy);
+      }
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memcpy.context_id, activity->details.memcpy.stream_id, 
-	 &entry_trace);
+        (activity->details.memcpy.context_id, activity->details.memcpy.stream_id, 
+         &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
