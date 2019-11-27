@@ -144,6 +144,8 @@ class CudaAdvisor {
 
   void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
+  int demandNodeMetrics(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
+
  private:
   std::string _inst_metric;
   std::string _issue_metric;
