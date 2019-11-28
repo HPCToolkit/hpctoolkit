@@ -71,6 +71,8 @@ using std::set;
 #include <algorithm>
 using std::max;
 
+#include <stdio.h>
+
 namespace TraceAnalysis {
   struct CallpathMetrics {
     uint originalLabel;
@@ -195,6 +197,8 @@ namespace TraceAnalysis {
       generateDiagnosis();
       
       printExecutionSegments();
+      
+      writeSummaryFile();
     }
     virtual ~PerformanceDiagnoserImpl() {
       for (auto it = metricsMap.begin(); it != metricsMap.end(); it++)
@@ -749,7 +753,7 @@ namespace TraceAnalysis {
       }
     }
     
-    const int MSG_PRIO = MSG_PRIO_NORMAL;
+    const int MSG_PRIO = MSG_PRIO_HIGH;
     
     void printLoadImbalance(ExecutionSegment* segment) {
       for (uint k = 0; k < segment->imbs.size(); k++) {
@@ -840,6 +844,13 @@ namespace TraceAnalysis {
                 indent += " (inclusive) ";
             else
                 indent += " (exclusive) ";
+            
+            if ((metrics->derivedLabel & SEMANTIC_LABEL_SYNC) == SEMANTIC_LABEL_SYNC) 
+              significantCallpathTable[node->id.procID] = 'S';
+            else if ((metrics->derivedLabel & SEMANTIC_LABEL_COMMUNICATION) == SEMANTIC_LABEL_COMMUNICATION)
+              significantCallpathTable[node->id.procID] = 'W';
+            else
+              significantCallpathTable[node->id.procID] = 'C';
           }
 
           print_msg(MSG_PRIO, "%s%s%s [%s]: all = %.2f%%(%.2f%%)", indent.c_str(), node->getName().c_str(), node->id.toString().c_str(),
@@ -870,6 +881,15 @@ namespace TraceAnalysis {
       }
     }
     
+    void writeSummaryFile() {
+      string fileName = dbDir + "/trace_report.txt";
+      FILE *fp = fopen(fileName.c_str(), "w");
+      fprintf(fp, "%lu\n", significantCallpathTable.size());
+      for (auto it = significantCallpathTable.begin(); it != significantCallpathTable.end(); it++)
+        fprintf(fp, "%d %c\n", it->first, it->second);
+      fclose(fp);
+    }
+    
   private:
     TCTRootNode* root;
     long numProc;
@@ -880,6 +900,7 @@ namespace TraceAnalysis {
     
     ExecutionSegment* currentSegment;
     vector<ExecutionSegment*> allSegments;
+    unordered_map<int, char> significantCallpathTable;
   };
   
   void PerformanceDiagnoser::generateDiagnosis(TCTRootNode* mergedRoot, string dbDir) {

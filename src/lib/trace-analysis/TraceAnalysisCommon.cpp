@@ -87,7 +87,7 @@ namespace TraceAnalysis {
     return std::to_string(t) + "s";
   }
   
-  #define MSG_LEVEL MSG_PRIO_NORMAL
+  #define MSG_LEVEL MSG_PRIO_HIGH
   void print_msg(int level, const char *fmt,...) {
     if (level >= MSG_LEVEL) {
       va_list args;
