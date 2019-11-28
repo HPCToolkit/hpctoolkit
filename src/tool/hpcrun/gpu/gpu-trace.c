@@ -36,7 +36,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "gpu-print.h"
 
@@ -163,6 +163,27 @@ gpu_trace_first
 }
 
 
+static uint64_t
+gpu_trace_start_adjust
+(
+ uint64_t start,
+ uint64_t end
+)
+{
+  static __thread uint64_t last_end = 0;
+
+  if (start < last_end) {
+    // If we have a hardware measurement error (Power9),
+    // set the offset as the end of the last activity
+    start = last_end + 1;
+  }
+
+  last_end = end;
+
+  return start;
+}
+
+
 static void
 consume_one_trace_item
 (
@@ -179,13 +200,15 @@ consume_one_trace_item
   uint64_t start = gpu_trace_time(start_time);
   uint64_t end   = gpu_trace_time(end_time);
 
+  start = gpu_trace_start_adjust(start, end);
+
   gpu_trace_first(td, no_thread, start);
 
   gpu_trace_stream_append(td, leaf, start);
 
   gpu_trace_stream_append(td, no_thread, end + 1);
 
-  PRINT("%p Append trace activity [%lu, %lu]\n", td, start_time, end_time);
+  PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
 }
 
 
