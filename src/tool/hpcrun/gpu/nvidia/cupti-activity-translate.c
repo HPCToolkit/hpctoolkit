@@ -367,6 +367,7 @@ convert_synchronization
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
   ga->details.synchronization.stream_id = activity_sync->streamId;
+  ga->details.synchronization.event_id = activity_sync->cudaEventId;
   ga->details.synchronization.syncKind = convert_sync_type(activity_sync->type);
 
   set_gpu_activity_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
@@ -436,6 +437,19 @@ convert_cdpkernel
   set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);
 }
 
+static void
+convert_event
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityCudaEvent *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_KIND_EVENT;
+
+  ga->details.event.event_id = activity->eventId;
+  ga->details.event.context_id = activity->contextId;
+  ga->details.event.stream_id = activity->streamId;
+}
 
 void
 convert_unknown
@@ -513,6 +527,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_CDP_KERNEL:
     convert_cdpkernel(ga, (CUpti_ActivityCdpKernel*) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_CUDA_EVENT:
+    convert_event(ga, (CUpti_ActivityCudaEvent *) activity);
     break;
 
   default:

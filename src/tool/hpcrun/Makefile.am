@@ -365,6 +365,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-correlation-id-map.c 	\
+	gpu/gpu-event-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\

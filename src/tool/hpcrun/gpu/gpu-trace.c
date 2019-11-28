@@ -36,7 +36,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "gpu-print.h"
 
@@ -184,6 +184,8 @@ consume_one_trace_item
   gpu_trace_stream_append(td, leaf, start);
 
   gpu_trace_stream_append(td, no_thread, end + 1);
+
+  PRINT("%p Append trace activity [%lu, %lu]\n", td, start_time, end_time);
 }
 
 
