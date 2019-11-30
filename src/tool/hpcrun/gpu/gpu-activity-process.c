@@ -16,6 +16,7 @@
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
+#include <hpcrun/gpu/gpu-event-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -70,7 +71,7 @@ trace_item_set
  gpu_activity_t *ga,
  gpu_host_correlation_map_entry_t *host_op_entry,
  cct_node_t *call_path_leaf
- )
+)
 {
   uint64_t cpu_submit_time =
     gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
@@ -365,8 +366,8 @@ gpu_synchronization_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_sync);
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
+          gpu_placeholder_type_sync);
 
       attribute_activity(host_op_entry, activity, host_op_node);
 
@@ -374,26 +375,39 @@ gpu_synchronization_process
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       if (activity->kind == GPU_ACTIVITY_KIND_SYNCHRONIZATION) {
-	uint32_t context_id = activity->details.synchronization.context_id;
-	uint32_t stream_id = activity->details.synchronization.stream_id;
+        uint32_t context_id = activity->details.synchronization.context_id;
+        uint32_t stream_id = activity->details.synchronization.stream_id;
+        uint32_t event_id = activity->details.synchronization.event_id;
 
-	switch (activity->details.synchronization.syncKind) {
-	case GPU_SYNCHRONIZATION_STREAM_SYNC:
-	case GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT:
-	  // Insert a event for a specific stream
-	  PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-	  gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
-	  break;
-	case GPU_SYNCHRONIZATION_CONTEXT_SYNC:
-	  // Insert events for all current active streams
-	  // TODO(Keren): What if the stream is created
-	  PRINT("Add context %u sync\n", context_id);
-	  gpu_context_trace(context_id, &entry_trace);
-	  break;
-	default:
-	  // unimplemented
-	  assert(0);
-	}
+        switch (activity->details.synchronization.syncKind) {
+          case GPU_SYNCHRONIZATION_STREAM_SYNC:
+          case GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT:
+            // Insert a event for a specific stream
+            PRINT("Add context %u stream %u sync\n", context_id, stream_id);
+            gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
+            break;
+          case GPU_SYNCHRONIZATION_CONTEXT_SYNC:
+            // Insert events for all current active streams
+            // TODO(Keren): What if the stream is created
+            PRINT("Add context %u sync\n", context_id);
+            gpu_context_trace(context_id, &entry_trace);
+            break;
+          case GPU_SYNCHRONIZATION_EVENT_SYNC:
+            {
+              // Find the corresponding stream that records the event 
+              gpu_event_id_map_entry_t *event_id_entry = gpu_event_id_map_lookup(event_id);
+              if (event_id_entry != NULL) {
+                context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
+                stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
+                PRINT("Add context %u stream %u event %u sync\n", context_id, stream_id, event_id);
+                gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
+              }
+              break;
+            }
+          default:
+            // invalid
+            PRINT("Invalid synchronization %u\n", correlation_id);
+        }
       }
       // TODO(Keren): handle event synchronization
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
@@ -435,6 +449,21 @@ gpu_cdpkernel_process
     gpu_correlation_id_map_delete(correlation_id);
   }
   PRINT("Cdp Kernel CorrelationId %u\n", correlation_id);
+}
+
+
+static void
+gpu_event_process
+(
+ gpu_activity_t *activity
+)
+{
+  uint32_t event_id = activity->details.event.event_id;
+  uint32_t context_id = activity->details.event.context_id;
+  uint32_t stream_id = activity->details.event.stream_id;
+  gpu_event_id_map_insert(event_id, context_id, stream_id);
+
+  PRINT("CUDA event %u\n", event_id);
 }
 
 
@@ -528,8 +557,12 @@ gpu_activity_process
     break;
 
   case GPU_ACTIVITY_KIND_CDP_KERNEL:
-     gpu_cdpkernel_process(ga);
-     break;
+    gpu_cdpkernel_process(ga);
+    break;
+
+  case GPU_ACTIVITY_KIND_EVENT:
+    gpu_event_process(ga);
+    break;
 
   case GPU_ACTIVITY_KIND_MEMCPY2:
   default:
