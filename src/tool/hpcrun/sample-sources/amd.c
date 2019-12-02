@@ -25,11 +25,11 @@
 #include <monitor.h>
 
 #include "amd.h"
-#include "roctracer-api.h"
+#include "gpu/amd/roctracer-api.h"
 
-#include "../simple_oo.h"
-#include "../sample_source_obj.h"
-#include "../common.h"
+#include "simple_oo.h"
+#include "sample_source_obj.h"
+#include "common.h"
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -288,10 +288,10 @@ static const unsigned int MAX_CHAR_FORMULA = 32;
 
 void roctracer_activity_attribute
 (
-        entry_activity_t *activity,
-        cct_node_t *cct_node
+        gpu_activity_t *activity        
 )
 {
+  /*
     thread_data_t *td = hpcrun_get_thread_data();
     td->overhead++;
     hpcrun_safe_enter();
@@ -401,6 +401,7 @@ void roctracer_activity_attribute
 
     hpcrun_safe_exit();
     td->overhead--;
+    */
 }
 
 static void
@@ -684,7 +685,7 @@ METHOD_FN(display_events)
 #define ss_name amd_gpu
 #define ss_cls SS_HARDWARE
 
-#include "../ss_obj.h"
+#include "ss_obj.h"
 
 /******************************************************************************
  * private operations

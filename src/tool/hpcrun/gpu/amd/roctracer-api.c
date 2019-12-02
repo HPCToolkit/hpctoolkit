@@ -23,14 +23,12 @@
 #endif
 
 #include "roctracer-api.h"
-#include "roctracer-record.h"
-#include "amd.h"
-#include "hip-state-placeholders.h"
+#include <hpcrun/sample-sources/amd.h>
+#include <hpcrun/gpu/gpu-op-placeholders.h>
 
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
-#include <hpcrun/sample-sources/gpu/gpu-host-op-map.h>
 
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/files.h>
@@ -41,16 +39,9 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/cct/cct.h>
-#include <hpcrun/sample-sources/gpu/gpu-api.h>
 
 #include <roctracer_hip.h>
 
-
-// HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
-// However, this file will include many C++ code, making it impossible
-// to compile with pure C.
-// HSA_OP_ID_COPY is a constant with value 1 at the moment. 
-#define HSA_OP_ID_COPY  1
 //static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
 
 #define FORALL_ROCTRACER_ROUTINES(macro)			\
@@ -59,7 +50,10 @@
   macro(roctracer_enable_activity)  \
   macro(roctracer_disable_callback) \
   macro(roctracer_disable_activity) \
-  macro(roctracer_flush_activity)
+  macro(roctracer_flush_activity)   \
+  macro(roctracer_activity_push_external_correlation_id) \
+  macro(roctracer_activity_pop_external_correlation_id)
+
 
 #define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -128,35 +122,46 @@ ROCTRACER_FN
  )
 );
 
+ROCTRACER_FN
+(
+ roctracer_flush_activity,
+ (
+  roctracer_pool_t*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_activity_push_external_correlation_id,
+ (
+  activity_correlation_id_t
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_activity_pop_external_correlation_id,
+ (
+  activity_correlation_id_t*
+ )
+);
+
 void
-roctracer_activity_handle
-(
-        entry_activity_t *entry
-)
+roctracer_correlation_id_push(uint64_t id)
 {
-    roctracer_activity_attribute(entry,
-                             entry->cct_node);
+  HPCRUN_ROCTRACER_CALL(roctracer_activity_push_external_correlation_id,
+    (id));
+}
+
+void
+roctracer_correlation_id_pop(uint64_t* id)
+{
+  HPCRUN_ROCTRACER_CALL(roctracer_activity_pop_external_correlation_id,
+    (id));
 }
 
 
-
-static void
-roctracer_correlation_callback
-(
-        uint64_t correlation_id,
-        placeholder_t hip_state,
-        entry_data_t *entry_data
-
-)
-{
-  void *hip_ip = NULL;
-    //PRINT("enter roctracer_correlation_callback %u\n", *id);
-  gpu_correlation_callback(correlation_id, hip_state, hip_ip, entry_data);
-
-    //PRINT("exit cupti_correlation_callback_cuda\n");
-
-}
-
+/*
 static void
 roctracer_kernel_data_set
 (
@@ -182,76 +187,8 @@ roctracer_kernel_data_set
             break;
     }
 }
+*/
 
-static void
-roctracer_memset_data_set
-(
-        const hip_api_data_t *data,
-        entry_data_t *entry_data,
-        uint32_t callback_id
-)
-{
-    switch(callback_id)
-    {
-        case HIP_API_ID_hipMemset2D:
-            entry_data->memset.bytes = data->args.hipMemset2D.width * data->args.hipMemset2D.height;
-            break;
-        case HIP_API_ID_hipMemset2DAsync:
-            entry_data->memset.bytes = data->args.hipMemset2DAsync.width * data->args.hipMemset2DAsync.height;
-            break;
-        case HIP_API_ID_hipMemset:
-            entry_data->memset.bytes = data->args.hipMemset.sizeBytes;
-            break;
-        case HIP_API_ID_hipMemsetD8:
-            entry_data->memset.bytes = data->args.hipMemsetD8.sizeBytes;
-            break;
-        /*case HIP_API_ID_hipMemset3D:
-            entry_data->memset.bytes = data->args.hipMemset3D.
-            break;*/
-        case HIP_API_ID_hipMemsetAsync:
-            entry_data->memset.bytes = data->args.hipMemsetAsync.sizeBytes;
-            break;
-       /* case HIP_API_ID_hipMemsetD32Async:
-            entry_data->memset.bytes = data->args.hipMemsetD32Async.
-            break;*/
-    }
-}
-
-static void
-roctracer_memcpy_data_set
-(
-      const hip_api_data_t *data,
-      entry_data_t *entry_data,
-      uint32_t callback_id
-)
-{
-    switch(callback_id){
-        case HIP_API_ID_hipMemcpyDtoD:
-            entry_data->memcpy.copyKind = 8;
-            entry_data->memcpy.bytes = data->args.hipMemcpyDtoD.sizeBytes;
-            break;
-        case HIP_API_ID_hipMemcpyAtoH:
-            entry_data->memcpy.copyKind = 4;
-            break;
-        case HIP_API_ID_hipMemcpyHtoD:
-            entry_data->memcpy.copyKind = 1;
-            entry_data->memcpy.bytes = data->args.hipMemcpyHtoD.sizeBytes;
-            break;
-        case HIP_API_ID_hipMemcpyHtoA:
-            entry_data->memcpy.copyKind = 3;
-            break;
-        case HIP_API_ID_hipMemcpyDtoH:
-            entry_data->memcpy.copyKind = 2;
-            entry_data->memcpy.bytes = data->args.hipMemcpyDtoH.sizeBytes;
-            break;
-        case HIP_API_ID_hipMemcpy:
-            entry_data->memcpy.copyKind = data->args.hipMemcpy.kind;
-            entry_data->memcpy.bytes = data->args.hipMemcpy.sizeBytes;
-            break;
-    }
-
-
-}
 
 void
 roctracer_subscriber_callback
@@ -262,93 +199,117 @@ roctracer_subscriber_callback
       void* arg
 )
 {
+    /* Will need to deal with place holder in this function */
     gpu_record_init();
-    placeholder_t hip_state = hip_placeholders.hip_none_state;
-    const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-    entry_data_t *entry_data;
-    if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-        switch (callback_id) {
-            case HIP_API_ID_hipMemcpy:
-            case HIP_API_ID_hipMemcpyToSymbolAsync:
-            case HIP_API_ID_hipMemcpyFromSymbolAsync:
-            case HIP_API_ID_hipMemcpyDtoD:
-            case HIP_API_ID_hipMemcpy2DToArray:
-            case HIP_API_ID_hipMemcpyAsync:
-            case HIP_API_ID_hipMemcpyFromSymbol:
-            case HIP_API_ID_hipMemcpy3D:
-            case HIP_API_ID_hipMemcpyAtoH:
-            case HIP_API_ID_hipMemcpyHtoD:
-            case HIP_API_ID_hipMemcpyHtoA:
-            case HIP_API_ID_hipMemcpy2D:
-            case HIP_API_ID_hipMemcpyPeerAsync:
-            case HIP_API_ID_hipMemcpyDtoH:
-            case HIP_API_ID_hipMemcpyHtoDAsync:
-            case HIP_API_ID_hipMemcpyFromArray:
-            case HIP_API_ID_hipMemcpy2DAsync:
-            case HIP_API_ID_hipMemcpyToArray:
-            case HIP_API_ID_hipMemcpyToSymbol:
-            case HIP_API_ID_hipMemcpyPeer:
-            case HIP_API_ID_hipMemcpyDtoDAsync:
-            case HIP_API_ID_hipMemcpyDtoHAsync:
-            case HIP_API_ID_hipMemcpyParam2D:
-                hip_state = hip_placeholders.hip_memcpy_state;
-                activities_consume(roctracer_activity_handle);
-                entry_data = (entry_data_t*)hpcrun_malloc_safe(sizeof(entry_data_t));
-                roctracer_memcpy_data_set(data, entry_data, callback_id);
-                roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
-                break;
-            case HIP_API_ID_hipMalloc:
-            case HIP_API_ID_hipMallocPitch:
-            case HIP_API_ID_hipMalloc3DArray:
-            case HIP_API_ID_hipMallocArray:
-            case HIP_API_ID_hipHostMalloc:
-            case HIP_API_ID_hipMallocManaged:
-            case HIP_API_ID_hipMalloc3D:
-            case HIP_API_ID_hipExtMallocWithFlags:
-                hip_state = hip_placeholders.hip_memalloc_state;
-                activities_consume(roctracer_activity_handle);
-                roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
-                break;
-            case HIP_API_ID_hipMemset3DAsync:
-            case HIP_API_ID_hipMemset2D:
-            case HIP_API_ID_hipMemset2DAsync:
-            case HIP_API_ID_hipMemset:
-            case HIP_API_ID_hipMemsetD8:
-            case HIP_API_ID_hipMemset3D:
-            case HIP_API_ID_hipMemsetAsync:
-            case HIP_API_ID_hipMemsetD32Async:
-                hip_state = hip_placeholders.hip_memset_state;
-                activities_consume(roctracer_activity_handle);
-                entry_data = (entry_data_t*)hpcrun_malloc_safe(sizeof(entry_data_t));
-                roctracer_memset_data_set(data, entry_data, callback_id);
-                roctracer_correlation_callback(data->correlation_id, hip_state, entry_data);
-                break;
-            case HIP_API_ID_hipFree:
-            case HIP_API_ID_hipFreeArray:
-                hip_state = hip_placeholders.hip_free_state;
-                activities_consume(roctracer_activity_handle);
-                roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
-                break;
-            case HIP_API_ID_hipModuleLaunchKernel:
-            case HIP_API_ID_hipLaunchCooperativeKernel:
-            case HIP_API_ID_hipHccModuleLaunchKernel:
-            //case HIP_API_ID_hipExtModuleLaunchKernel:
-                hip_state = hip_placeholders.hip_kernel_state;
-                activities_consume(roctracer_activity_handle);
-                entry_data = (entry_data_t*)hpcrun_malloc_safe(sizeof(entry_data_t));
-                roctracer_kernel_data_set(data, entry_data, callback_id);
-                roctracer_correlation_callback(data->correlation_id, hip_state, entry_data);
-                break;
-            case HIP_API_ID_hipCtxSynchronize:
-            case HIP_API_ID_hipStreamSynchronize:
-            case HIP_API_ID_hipDeviceSynchronize:
-            case HIP_API_ID_hipEventSynchronize:
-                hip_state = hip_placeholders.hip_sync_state;
-                activities_consume(roctracer_activity_handle);
-                roctracer_correlation_callback(data->correlation_id, hip_state, NULL);
-            default:
-                break;
+    gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+    bool is_valid_op = false;
+    const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);    
+    
+    switch (callback_id) {
+        case HIP_API_ID_hipMemcpy:
+        case HIP_API_ID_hipMemcpyToSymbolAsync:
+        case HIP_API_ID_hipMemcpyFromSymbolAsync:
+        case HIP_API_ID_hipMemcpyDtoD:
+        case HIP_API_ID_hipMemcpy2DToArray:
+        case HIP_API_ID_hipMemcpyAsync:
+        case HIP_API_ID_hipMemcpyFromSymbol:
+        case HIP_API_ID_hipMemcpy3D:
+        case HIP_API_ID_hipMemcpyAtoH:
+        case HIP_API_ID_hipMemcpyHtoD:
+        case HIP_API_ID_hipMemcpyHtoA:
+        case HIP_API_ID_hipMemcpy2D:
+        case HIP_API_ID_hipMemcpyPeerAsync:
+        case HIP_API_ID_hipMemcpyDtoH:
+        case HIP_API_ID_hipMemcpyHtoDAsync:
+        case HIP_API_ID_hipMemcpyFromArray:
+        case HIP_API_ID_hipMemcpy2DAsync:
+        case HIP_API_ID_hipMemcpyToArray:
+        case HIP_API_ID_hipMemcpyToSymbol:
+        case HIP_API_ID_hipMemcpyPeer:
+        case HIP_API_ID_hipMemcpyDtoDAsync:
+        case HIP_API_ID_hipMemcpyDtoHAsync:
+        case HIP_API_ID_hipMemcpyParam2D:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
+            is_valid_op = true;
+            break;
         }
+        
+        case HIP_API_ID_hipMalloc:
+        case HIP_API_ID_hipMallocPitch:
+        case HIP_API_ID_hipMalloc3DArray:
+        case HIP_API_ID_hipMallocArray:
+        case HIP_API_ID_hipHostMalloc:
+        case HIP_API_ID_hipMallocManaged:
+        case HIP_API_ID_hipMalloc3D:
+        case HIP_API_ID_hipExtMallocWithFlags:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_alloc);
+            is_valid_op = true;
+            break;
+        }            
+        case HIP_API_ID_hipMemset3DAsync:
+        case HIP_API_ID_hipMemset2D:
+        case HIP_API_ID_hipMemset2DAsync:
+        case HIP_API_ID_hipMemset:
+        case HIP_API_ID_hipMemsetD8:
+        case HIP_API_ID_hipMemset3D:
+        case HIP_API_ID_hipMemsetAsync:
+        case HIP_API_ID_hipMemsetD32Async:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_memset);
+            is_valid_op = true;
+            break;                
+        }
+        
+        case HIP_API_ID_hipFree:
+        case HIP_API_ID_hipFreeArray:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_delete);
+            is_valid_op = true;
+            break;                                
+        }
+        case HIP_API_ID_hipModuleLaunchKernel:
+        case HIP_API_ID_hipLaunchCooperativeKernel:
+        case HIP_API_ID_hipHccModuleLaunchKernel:
+        //case HIP_API_ID_hipExtModuleLaunchKernel:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+            is_valid_op = true;
+            break;                
+        }                
+        case HIP_API_ID_hipCtxSynchronize:
+        case HIP_API_ID_hipStreamSynchronize:
+        case HIP_API_ID_hipDeviceSynchronize:
+        case HIP_API_ID_hipEventSynchronize:
+        {
+            gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_sync);
+            is_valid_op = true;
+            break;                
+
+        }
+        default:
+            break;
+    }
+
+    if (!is_valid_op) return;
+
+
+    if (data->phase == ACTIVITY_API_PHASE_ENTER) {
+        uint64_t correlation_id = gpu_correlation_id();
+        roctracer_correlation_id_push(correlation_id);
+        cct_node_t *api_node = roctracer_correlation_callback(correlation_id);
+        gpu_op_ccts_t gpu_op_ccts;
+        hpcrun_safe_enter();
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+        hpcrun_safe_exit();
+        
+        // Generate notification entry
+        uint64_t cpu_submit_time = CPU_NANOTIME();
+        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+    } else if (data->phase == ACTIVITY_API_PHASE_EXIT) {
+        uint64_t correlation_id;
+        roctracer_correlation_id_pop(&correlation_id);
     }
 }
 

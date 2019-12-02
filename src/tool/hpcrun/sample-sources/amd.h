@@ -6,10 +6,10 @@
 #define HPCTOOLKIT_AMD_H
 
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/sample-sources/gpu/gpu-record.h>
+typedef struct gpu_activity_t gpu_activity_t;
+typedef struct cct_node_t cct_node_t;
 
-void roctracer_activity_attribute(entry_activity_t *activity, cct_node_t *cct_node);
+void roctracer_activity_attribute(gpu_activity_t *activity);
 
 void roctracer_init();
 void roctracer_fini();

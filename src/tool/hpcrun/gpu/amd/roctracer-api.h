@@ -5,8 +5,7 @@
 #ifndef HPCTOOLKIT_ROCTRACER_API_H
 #define HPCTOOLKIT_ROCTRACER_API_H
 
-#include <hpcrun/sample-sources/gpu/gpu-record.h>
-
+#include <roctracer_hip.h>
 
 void
 roctracer_subscriber_callback
@@ -26,26 +25,21 @@ roctracer_buffer_completion_callback
 );
 
 void
-roctracer_activity_handle
-(
-        entry_activity_t *entry
-);
-
-void
-roctracer_correlation_handle
-(
-        entry_correlation_t *entry
-);
-
-void 
 roctracer_init
 (
 
 );
 
-void 
+void
 roctracer_fini
 (
 
 );
+
+int
+roctracer_bind
+(
+  void
+);
+
 #endif //HPCTOOLKIT_ROCTRACER_API_H

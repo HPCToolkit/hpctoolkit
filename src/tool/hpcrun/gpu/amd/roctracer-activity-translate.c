@@ -1,8 +1,10 @@
-//
-// Created by user on 17.8.2019..
-//
-
 #include "roctracer-activity-translate.h"
+
+// HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
+// However, this file will include many C++ code, making it impossible
+// to compile with pure C.
+// HSA_OP_ID_COPY is a constant with value 1 at the moment. 
+#define HSA_OP_ID_COPY  1
 
 static void
 convert_kernel_launch
@@ -13,6 +15,7 @@ convert_kernel_launch
 {
     ga->kind = GPU_ACTIVITY_KIND_KERNEL;
     set_gpu_activity_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+    ga->details.kernel.correlation_id = activity->correlation_id;
 }
 
 static void
@@ -24,7 +27,7 @@ convert_memcpy
 {
     ga->kind = GPU_ACTIVITY_KIND_MEMCPY;
     set_gpu_activity_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
-    
+    ga->details.memcpy.correlation_id = activity->correlation_id;
 }
 
 
@@ -37,6 +40,7 @@ convert_memset
 {
     ga->kind = GPU_ACTIVITY_KIND_MEMSET;
     set_gpu_activity_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+    ga->details.memset.correlation_id = activity->correlation_id;
 }
 
 static void
@@ -44,12 +48,13 @@ convert_sync
 (
     gpu_activity_t *ga,
     roctracer_record_t *activity,
-    uint32_t syncKind
+    gpu_synchronization_type_t syncKind
 )
 {
     ga->kind = GPU_ACTIVITY_KIND_SYNCHRONIZATION;
     set_gpu_activity_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
     ga->details.synchronization.syncKind = syncKind;
+    ga->details.synchronization.correlation_id = activity->correlation_id;
 }
 
 
@@ -63,8 +68,7 @@ roctracer_activity_translate
 )
 {
     const char * name = roctracer_op_string(record->domain, record->op, record->kind);
-    ga->cct_node = cct_node;
-    ga->correlationId = activity->correlationId;
+    ga->cct_node = cct_node;    
 
     if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
         switch(record->op){
@@ -100,19 +104,19 @@ roctracer_activity_translate
                 convert_kernel_launch(ga, record);
                 break;
             case HIP_API_ID_hipCtxSynchronize:
-                convert_sync(ga, record, 4);
+                convert_sync(ga, record, GPU_SYNCHRONIZATION_UNKNOWN);
                 break;            
             case HIP_API_ID_hipStreamSynchronize:
-                convert_sync(ga, record, 3);
+                convert_sync(ga, record, GPU_SYNCHRONIZATION_STREAM_SYNC);
                 break;            
             case HIP_API_ID_hipStreamWaitEvent:
-                convert_sync(ga, record, 2);
+                convert_sync(ga, record, GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT);
                 break;            
             case HIP_API_ID_hipDeviceSynchronize:
-                convert_sync(ga, record, 0);
+                convert_sync(ga, record, GPU_SYNCHRONIZATION_UNKNOWN);
                 break;            
             case HIP_API_ID_hipEventSynchronize:
-                convert_sync(ga, record, 1);
+                convert_sync(ga, record, GPU_SYNCHRONIZATION_EVENT_SYNC);
                 break;
             case HIP_API_ID_hipMemset3DAsync:
             case HIP_API_ID_hipMemset2D:
