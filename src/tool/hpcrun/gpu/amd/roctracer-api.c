@@ -25,6 +25,7 @@
 #include "roctracer-api.h"
 #include <hpcrun/sample-sources/amd.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-application-thread-api.h>
 
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
@@ -67,6 +68,8 @@
     /* use roctracer_error_string() */ \
   }						\
 }
+
+#define CPU_NANOTIME() (usec_time() * 1000)
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -198,9 +201,7 @@ roctracer_subscriber_callback
       const void* callback_data,
       void* arg
 )
-{
-    /* Will need to deal with place holder in this function */
-    gpu_record_init();
+{    
     gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
     bool is_valid_op = false;
     const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);    
@@ -298,7 +299,7 @@ roctracer_subscriber_callback
     if (data->phase == ACTIVITY_API_PHASE_ENTER) {
         uint64_t correlation_id = gpu_correlation_id();
         roctracer_correlation_id_push(correlation_id);
-        cct_node_t *api_node = roctracer_correlation_callback(correlation_id);
+        cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
         gpu_op_ccts_t gpu_op_ccts;
         hpcrun_safe_enter();
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
@@ -321,12 +322,12 @@ roctracer_buffer_completion_callback
       void* arg
 )
 {
-    correlations_consume();
+    //correlations_consume();
     roctracer_record_t* record = (roctracer_record_t*)(begin);
     roctracer_record_t* end_record = (roctracer_record_t*)(end);
     while (record < end_record)
     {
-        roctracer_activity_process(record);
+        //roctracer_activity_process(record);
 //        roctracer_next_record(record, &record);
         record++;
     }
