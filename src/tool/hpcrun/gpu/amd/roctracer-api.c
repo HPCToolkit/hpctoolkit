@@ -23,9 +23,12 @@
 #endif
 
 #include "roctracer-api.h"
+#include "roctracer-activity-translate.h"
 #include <hpcrun/sample-sources/amd.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/sample-sources/amd.h>
 
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
@@ -304,6 +307,8 @@ roctracer_subscriber_callback
         hpcrun_safe_enter();
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
         hpcrun_safe_exit();
+
+        gpu_activity_channel_consume(roctracer_activity_attribute);
         
         // Generate notification entry
         uint64_t cpu_submit_time = CPU_NANOTIME();
@@ -315,6 +320,27 @@ roctracer_subscriber_callback
 }
 
 void
+roctracer_buffer_completion_notify
+(
+  void
+)
+{
+  gpu_monitoring_thread_activities_ready();
+}
+
+void
+roctracer_activity_process
+(
+ roctracer_record_t* roctracer_record
+)
+{
+  gpu_activity_t gpu_activity;
+  roctracer_activity_translate(&gpu_activity, roctracer_record); 
+  gpu_activity_process(&gpu_activity);
+}
+
+
+void
 roctracer_buffer_completion_callback
 (
       const char* begin,
@@ -322,13 +348,12 @@ roctracer_buffer_completion_callback
       void* arg
 )
 {
-    //correlations_consume();
+    roctracer_buffer_completion_notify();
     roctracer_record_t* record = (roctracer_record_t*)(begin);
     roctracer_record_t* end_record = (roctracer_record_t*)(end);
     while (record < end_record)
     {
-        //roctracer_activity_process(record);
-//        roctracer_next_record(record, &record);
+        roctracer_activity_process(record);
         record++;
     }
 }
@@ -395,5 +420,6 @@ roctracer_fini
     HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
     HPCRUN_ROCTRACER_CALL(roctracer_disable_activity,());
     HPCRUN_ROCTRACER_CALL(roctracer_flush_activity,(NULL));
+    gpu_application_thread_process_activities(roctracer_activity_attribute);
 }
 

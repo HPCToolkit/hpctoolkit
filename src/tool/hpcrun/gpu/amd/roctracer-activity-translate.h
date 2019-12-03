@@ -13,8 +13,7 @@ void
 roctracer_activity_translate
 (
  gpu_activity_t *entry,
- roctracer_record_t *record,
- cct_node_t *cct_node        
+ roctracer_record_t *record     
 );
 
 #endif //HPCTOOLKIT_ROCTRACER_NODE_H

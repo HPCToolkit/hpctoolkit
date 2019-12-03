@@ -63,12 +63,10 @@ void
 roctracer_activity_translate
 (
  gpu_activity_t *ga,
- roctracer_record_t *record,
- cct_node_t *cct_node        
+ roctracer_record_t *record   
 )
 {
-    const char * name = roctracer_op_string(record->domain, record->op, record->kind);
-    ga->cct_node = cct_node;    
+    const char * name = roctracer_op_string(record->domain, record->op, record->kind);        
 
     if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
         switch(record->op){
