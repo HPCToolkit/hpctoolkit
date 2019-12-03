@@ -204,7 +204,7 @@ roctracer_subscriber_callback
       const void* callback_data,
       void* arg
 )
-{    
+{
     gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
     bool is_valid_op = false;
     const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);    
@@ -300,8 +300,7 @@ roctracer_subscriber_callback
 
 
     if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-        uint64_t correlation_id = gpu_correlation_id();
-        roctracer_correlation_id_push(correlation_id);
+        uint64_t correlation_id = data->correlation_id;
         cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
         gpu_op_ccts_t gpu_op_ccts;
         hpcrun_safe_enter();
@@ -313,9 +312,6 @@ roctracer_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
-    } else if (data->phase == ACTIVITY_API_PHASE_EXIT) {
-        uint64_t correlation_id;
-        roctracer_correlation_id_pop(&correlation_id);
     }
 }
 
@@ -336,6 +332,9 @@ roctracer_activity_process
 {
   gpu_activity_t gpu_activity;
   roctracer_activity_translate(&gpu_activity, roctracer_record); 
+  if (gpu_correlation_id_map_lookup(roctracer_record->correlation_id) == NULL) {
+    gpu_correlation_id_map_insert(roctracer_record->correlation_id, roctracer_record->correlation_id);
+  }
   gpu_activity_process(&gpu_activity);
 }
 
