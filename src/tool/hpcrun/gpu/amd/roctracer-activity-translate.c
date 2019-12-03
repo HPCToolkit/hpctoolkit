@@ -2,7 +2,7 @@
 
 #define DEBUG 0
 
-#include "gpu-print.h"
+#include <hpcrun/gpu/gpu-print.h>
 
 
 // HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
