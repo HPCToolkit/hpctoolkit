@@ -121,6 +121,25 @@ CUDA_FN
 );
 
 
+CUDA_FN
+(
+ cuCtxGetStreamPriorityRange, 
+ (
+  int *leastPriority,
+  int *greatestPriority
+ ) 
+);
+
+
+CUDA_FN
+(
+  cuStreamCreateWithPriority,
+  (
+   CUstream *phStream,
+   unsigned int flags,
+   int priority
+  );
+);
 
 //******************************************************************************
 // private operations 
@@ -137,6 +156,10 @@ cuda_bind
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute); 
+
+  CHK_DLSYM(cuda, cuCtxGetStreamPriorityRange);
+
+  CHK_DLSYM(cuda, cuStreamCreateWithPriority);
 
   return 0;
 #else
@@ -175,6 +198,23 @@ cuda_path
 #else
   return -1;
 #endif
+}
+
+
+CUstream
+cuda_priority_stream_create
+(
+)
+{
+  int priority_high, priority_low;
+  CUstream stream;
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuCtxGetStreamPriorityRange,
+    (&priority_low, &priority_high));
+  HPCRUN_CUDA_API_CALL(cuStreamCreateWithPriority,
+    (&stream, CU_STREAM_NON_BLOCKING, priority_high));
+#endif
+  return stream;
 }
 
 

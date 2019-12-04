@@ -58,6 +58,7 @@
 #define _HPCTOOLKIT_CUDA_API_H_
 
 #include <link.h>
+#include <cuda.h>
 
 //*****************************************************************************
 // interface operations
@@ -101,6 +102,11 @@ cuda_device_property_query
 (
  int device_id, 
  cuda_device_property_t *property
+);
+
+CUstream
+cuda_priority_stream_create
+(
 );
 
 #endif

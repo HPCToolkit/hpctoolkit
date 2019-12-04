@@ -795,8 +795,8 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_CREATION_FINISHED:
         {
-          // single thread
-          // TODO
+          // Create a thread with highest priority stream
+          cu_priority_stream_create();
           break;
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_DESTROY_STARTING:
@@ -951,3 +951,78 @@ sanitizer_device_shutdown(void *args)
 {
   sanitizer_callbacks_unsubscribe();
 }
+
+//
+//static _Atomic(bool) stop_trace_flag;
+//
+//#define SECONDS_UNTIL_WAKEUP 1
+//
+//typedef sanitizer_trace_record_t {
+//  pthread_mutex_t mutex;
+//  pthread_cond_t cond;
+//  cudaStream_t stream;
+//};
+//
+//
+//void
+//sanitizer_trace_activities_await
+//(
+// pthread_cond_t *cond,
+// pthread_mutex_t *mutex
+//)
+//{
+//  struct timespec time;
+//  clock_gettime(CLOCK_REALTIME, &time); // get current time
+//  time.tv_sec += SECONDS_UNTIL_WAKEUP;
+//
+//  // wait for a signal or for a few seconds. periodically waking
+//  // up avoids missing a signal.
+//  pthread_cond_timedwait(cond, mutex, &time); 
+//}
+//
+//
+//void
+//sanitizer_trace_activities_process
+//(
+// cudaStream_t stream
+//)
+//{
+//  while (gpu_patch_queue_empty()) {
+//    gpu_patch_queue_pop(); 
+//
+//
+//    sanitizer_trace_activities_await();
+//  }
+//}
+//
+//
+//void *
+//sanitizer_trace_thread
+//(
+// cudaStream_t *stream
+//)
+//{
+//  while (!atomic_load(&stop_trace_flag)) {
+//    sanitizer_trace_activities_process(stream);
+//    sanitizer_trace_activities_await(cond, mutex);
+//  }
+//
+//  sanitizer_trace_activities_process(stream);
+//
+//  return NULL;
+//}
+//
+//
+//void
+//sanitizer_trace_init()
+//{
+//  cudaStream_t stream = cuda_create_priority_stream();
+//
+//  // Create a new thread for the stream without libmonitor watching
+//  monitor_disable_new_threads();
+//
+//  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) sanitizer_trace_thread, 
+//		&stream);
+//
+//  monitor_enable_new_threads();
+//}
