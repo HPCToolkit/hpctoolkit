@@ -11,6 +11,7 @@ size_t	maxfunc = 0;
 size_t	nfunc = 0;
 Function_t *farray = NULL;
 
+char	*xname;
 char 	**secstr = NULL;
 int	nsecstr;
 
@@ -29,6 +30,7 @@ main(int argc, char **argv, char **envp)
 	for (i = 1; i < argc; i ++) {
 	    if ( strcmp (*p, "-v") == 0 ) {
 		verbose = 1;
+		fprintf(stderr, "\nBegin hpcfnbounds2\n" );
 		p++;
 		continue;
 	    }
@@ -71,6 +73,7 @@ main(int argc, char **argv, char **envp)
 	    if (verbose) {
 		fprintf(stderr, "\nBegin processing %s\n", *p);
 	    }
+	    xname = *p;
 	    ret = get_funclist (*p);
 	    if ( ret != NULL) {
 		fprintf(stderr, "\nFailure processing %s: %s\n", *p, ret );
@@ -104,6 +107,8 @@ get_funclist(char *name)
 		fprintf(stderr, "Initial farray allocated for %d functions\n", maxfunc);
 	    }
 	}
+/// XXXX -- temp
+	xname = name;
 
 	// Special-ccase the name "[vdso]"
 	if (strcmp (name, "[vdso]") == 0 ) {
@@ -294,6 +299,7 @@ process_mapped_header(char *addr, int fd, size_t sz)
 		continue;
 	    }
 	}
+
 #if 0
 	// Print the function list, unsorted
 	printf ( "\n\n\tFunction list, unsorted:\n");

@@ -124,6 +124,10 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdin = fd1;
   fdout = fd2;
 
+#if 1
+// XXXX -- debug to get version into output
+  fprintf(stderr, "Begin hpcfnbounds2 server\n");
+#endif
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
   if (inbuf == NULL) {
