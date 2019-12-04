@@ -61,6 +61,89 @@
 // private operations
 //******************************************************************************
 
+static gpu_inst_stall_t 
+convert_stall_type
+(
+ CUpti_ActivityPCSamplingStallReason reason
+)
+{
+  switch(reason) {
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_NONE:
+    return GPU_INST_STALL_NONE;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_INST_FETCH:  
+    return GPU_INST_STALL_IFETCH;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_EXEC_DEPENDENCY:  
+    return GPU_INST_STALL_IDEPEND;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_MEMORY_DEPENDENCY:  
+    return GPU_INST_STALL_GMEM;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_TEXTURE: 
+    return GPU_INST_STALL_TMEM;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_SYNC:
+    return GPU_INST_STALL_SYNC;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_CONSTANT_MEMORY_DEPENDENCY:
+    return GPU_INST_STALL_CMEM;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_PIPE_BUSY:
+    return GPU_INST_STALL_PIPE_BUSY;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_MEMORY_THROTTLE:
+    return GPU_INST_STALL_MEM_THROTTLE;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_NOT_SELECTED:
+    return GPU_INST_STALL_NOT_SELECTED;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_OTHER:
+    return GPU_INST_STALL_OTHER;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_SLEEPING:
+    return GPU_INST_STALL_SLEEP;
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_INVALID:
+  default:
+    return GPU_INST_STALL_INVALID;
+  }
+}
+
+
+static gpu_memcpy_type_t 
+convert_memcpy_type
+(
+ CUpti_ActivityMemcpyKind kind
+)
+{
+  switch (kind) {
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOD:      return GPU_MEMCPY_H2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOH:      return GPU_MEMCPY_D2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOA:      return GPU_MEMCPY_H2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOH:      return GPU_MEMCPY_A2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOA:      return GPU_MEMCPY_A2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOD:      return GPU_MEMCPY_A2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOA:      return GPU_MEMCPY_D2A;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:      return GPU_MEMCPY_D2D;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
+  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   
+  default:                                   return GPU_MEMCPY_UNK;
+  }
+}
+
+
+static gpu_sync_type_t
+convert_sync_type
+(
+ uint32_t cupti_sync_kind
+)
+{
+  switch(cupti_sync_kind) {
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_EVENT_SYNCHRONIZE:
+    return GPU_SYNC_EVENT;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT:
+    return GPU_SYNC_STREAM_EVENT_WAIT;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE:
+    return GPU_SYNC_STREAM;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE:
+    return GPU_SYNC_CONTEXT;
+  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_UNKNOWN:
+  default:
+    return GPU_SYNC_UNKNOWN;
+  }
+}
+
+
 static void
 set_gpu_instruction_fields
 (
@@ -110,12 +193,12 @@ convert_pcsampling
 	activity->latencySamples,
 	activity->stallReason);
   
-  ga->kind = GPU_ACTIVITY_KIND_PC_SAMPLING;
+  ga->kind = GPU_ACTIVITY_PC_SAMPLING;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
 			     activity->pcOffset); 
 
-  ga->details.pc_sampling.stallReason = activity->stallReason;
+  ga->details.pc_sampling.stallReason = convert_stall_type(activity->stallReason);
   ga->details.pc_sampling.samples = activity->samples;
   ga->details.pc_sampling.latencySamples = activity->latencySamples;
 }
@@ -132,44 +215,21 @@ convert_pcsampling_record_info
    activity_info->correlationId,
    (unsigned long long)activity_info->totalSamples,
    (unsigned long long)activity_info->droppedSamples);
-  ga->kind = GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO;
+  ga->kind = GPU_ACTIVITY_PC_SAMPLING_INFO;
 
-  ga->details.pc_sampling_record_info.correlation_id = activity_info->correlationId;
-  ga->details.pc_sampling_record_info.totalSamples = 
+  ga->details.pc_sampling_info.correlation_id = activity_info->correlationId;
+  ga->details.pc_sampling_info.totalSamples = 
     activity_info->totalSamples;
-  ga->details.pc_sampling_record_info.droppedSamples = 
+  ga->details.pc_sampling_info.droppedSamples = 
     activity_info->droppedSamples;
-  ga->details.pc_sampling_record_info.samplingPeriodInCycles = 
+  ga->details.pc_sampling_info.samplingPeriodInCycles = 
     activity_info->samplingPeriodInCycles;
   
   uint64_t totalSamples = 0;
   uint64_t fullSMSamples = 0;
   cupti_sm_efficiency_analyze(activity_info, &totalSamples, &fullSMSamples);
   
-  ga->details.pc_sampling_record_info.fullSMSamples = fullSMSamples;
-}
-
-
-static gpu_memcpy_type_t 
-convert_memcpy_type
-(
- CUpti_ActivityMemcpyKind kind
-)
-{
-  switch (kind) {
-  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOD:      return GPU_MEMCPY_H2D;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOH:      return GPU_MEMCPY_D2H;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOA:      return GPU_MEMCPY_H2A;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOH:      return GPU_MEMCPY_A2H;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOA:      return GPU_MEMCPY_A2A;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_ATOD:      return GPU_MEMCPY_A2D;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOA:      return GPU_MEMCPY_D2A;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:      return GPU_MEMCPY_D2D;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   
-  default:                                   return GPU_MEMCPY_UNK;
-  }
+  ga->details.pc_sampling_info.fullSMSamples = fullSMSamples;
 }
 
 
@@ -184,7 +244,7 @@ convert_memcpy
   PRINT("Memcpy copy kind %u\n", activity->copyKind);
   PRINT("Memcpy copy bytes %lu\n", activity->bytes);
 
-  ga->kind = GPU_ACTIVITY_KIND_MEMCPY;
+  ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.correlation_id = activity->correlationId;
   ga->details.memcpy.context_id = activity->contextId;
   ga->details.memcpy.stream_id = activity->streamId;
@@ -202,7 +262,7 @@ convert_kernel
   CUpti_ActivityKernel4 *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_KERNEL;
+  ga->kind = GPU_ACTIVITY_KERNEL;
 
   ga->details.kernel.correlation_id = activity->correlationId;
 
@@ -239,7 +299,7 @@ convert_global_access
   CUpti_ActivityGlobalAccess3 *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_GLOBAL_ACCESS;
+  ga->kind = GPU_ACTIVITY_GLOBAL_ACCESS;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
 			     activity->pcOffset); 
@@ -275,23 +335,23 @@ convert_shared_access
   CUpti_ActivitySharedAccess *activity
 )
 { 
-  ga->kind = GPU_ACTIVITY_KIND_SHARED_ACCESS;
+  ga->kind = GPU_ACTIVITY_LOCAL_ACCESS;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
 			     activity->pcOffset); 
 
-  ga->details.shared_access.sharedTransactions = 
+  ga->details.local_access.sharedTransactions = 
     activity->sharedTransactions;
 
-  ga->details.shared_access.theoreticalSharedTransactions =
+  ga->details.local_access.theoreticalSharedTransactions =
     activity->theoreticalSharedTransactions;
 
-  ga->details.shared_access.type = 
+  ga->details.local_access.type = 
     ((activity->flags & (1<<8)) ? 
-     GPU_SHARED_ACCESS_LOAD : 
-     GPU_SHARED_ACCESS_STORE);
+     GPU_LOCAL_ACCESS_LOAD : 
+     GPU_LOCAL_ACCESS_STORE);
 
-  ga->details.shared_access.bytes = (activity->flags & 0xFF) * 
+  ga->details.local_access.bytes = (activity->flags & 0xFF) * 
     activity->threadsExecuted;
 }
 
@@ -302,35 +362,13 @@ convert_branch
  CUpti_ActivityBranch2 *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_BRANCH;
+  ga->kind = GPU_ACTIVITY_BRANCH;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
 			     activity->pcOffset); 
 
   ga->details.branch.diverged = activity->diverged;
   ga->details.branch.executed = activity->executed;
-}
-
-
-static uint32_t
-convert_sync_type
-(
- uint32_t cupti_sync_kind
-)
-{
-  switch(cupti_sync_kind) {
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_EVENT_SYNCHRONIZE:
-    return GPU_SYNCHRONIZATION_EVENT_SYNC;
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT:
-    return GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT;
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE:
-    return GPU_SYNCHRONIZATION_STREAM_SYNC;
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_CONTEXT_SYNCHRONIZE:
-    return GPU_SYNCHRONIZATION_CONTEXT_SYNC;
-  case CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_UNKNOWN:
-  default:
-    return GPU_SYNCHRONIZATION_UNKNOWN;
-  }
 }
 
 
@@ -341,7 +379,7 @@ convert_synchronization
  CUpti_ActivitySynchronization *activity_sync
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_SYNCHRONIZATION;
+  ga->kind = GPU_ACTIVITY_SYNCHRONIZATION;
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
   ga->details.synchronization.stream_id = activity_sync->streamId;
@@ -358,7 +396,7 @@ convert_memory
   CUpti_ActivityMemory *activity_mem 
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_MEMORY;
+  ga->kind = GPU_ACTIVITY_MEMORY;
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
 
@@ -373,7 +411,7 @@ convert_memset
   CUpti_ActivityMemset *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_MEMSET;
+  ga->kind = GPU_ACTIVITY_MEMSET;
   ga->details.memset.correlation_id = activity->correlationId;
   ga->details.memset.context_id = activity->contextId;
   ga->details.memset.stream_id = activity->streamId;
@@ -393,7 +431,7 @@ convert_correlation
   PRINT("External CorrelationId %lu\n", activity->externalId);
   PRINT("CorrelationId %u\n", activity->correlationId);
 
-  ga->kind = GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION;
+  ga->kind = GPU_ACTIVITY_EXTERNAL_CORRELATION;
   ga->details.correlation.correlation_id = activity->correlationId;
   ga->details.correlation.host_correlation_id = activity->externalId;
 }
@@ -405,7 +443,7 @@ convert_cdpkernel
   CUpti_ActivityCdpKernel *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_CDP_KERNEL;
+  ga->kind = GPU_ACTIVITY_CDP_KERNEL;
   
   ga->details.cdpkernel.correlation_id = activity->correlationId;
   ga->details.cdpkernel.context_id = activity->contextId;
@@ -422,7 +460,7 @@ convert_unknown
  CUpti_Activity *activity
 )
 {
-  ga->kind = GPU_ACTIVITY_KIND_UNKNOWN;
+  ga->kind = GPU_ACTIVITY_UNKNOWN;
 }
 
 

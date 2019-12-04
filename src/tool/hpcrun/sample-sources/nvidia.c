@@ -131,171 +131,176 @@
 #endif
 
 #define FORALL_ME(macro) \
-  macro("MEM_ALLOC:UNKNOWN_BYTES",       0) \
-  macro("MEM_ALLOC:PAGEABLE_BYTES",      1) \
-  macro("MEM_ALLOC:PINNED_BYTES",        2) \
-  macro("MEM_ALLOC:DEVICE_BYTES",        3) \
-  macro("MEM_ALLOC:ARRAY_BYTES",         4) \
-  macro("MEM_ALLOC:MANAGED_BYTES",       5) \
-  macro("MEM_ALLOC:DEVICE_STATIC_BYTES", 6)
+  macro("GMAL:UNK (b)",       0) \
+  macro("GMAL:PAG (b)",      1) \
+  macro("GMAL:PIN (b)",       2) \
+  macro("GMAL:DEV (b)",       3) \
+  macro("GMAL:ARY (b)",       4) \
+  macro("GMAL:MAN (b)",       5) \
+  macro("GMAL:DST (b)",     6)
 
 #define FORALL_ME_TIME(macro) \
   macro("MEM_ALLOC:TIME (us)",           7)
 
 #define FORALL_ME_SET(macro) \
-  macro("MEM_SET:UNKNOWN_BYTES",       0) \
-  macro("MEM_SET:PAGEABLE_BYTES",      1) \
-  macro("MEM_SET:PINNED_BYTES",        2) \
-  macro("MEM_SET:DEVICE_BYTES",        3) \
-  macro("MEM_SET:ARRAY_BYTES",         4) \
-  macro("MEM_SET:MANAGED_BYTES",       5) \
-  macro("MEM_SET:DEVICE_STATIC_BYTES", 6)
+  macro("GMSET:UNK (b)",       0) \
+  macro("GMSET:PAG (b)",       1) \
+  macro("GMSET:PIN (b)",       2) \
+  macro("GMSET:DEV (b)",       3) \
+  macro("GMSET:ARY (b)",       4) \
+  macro("GMSET:MAN (b)",       5) \
+  macro("GMSET:DST (b)",       6)
 
 #define FORALL_ME_SET_TIME(macro) \
-  macro("MEM_SET:TIME (us)",           7)
+  macro("GMSET:TIME (us)",           7)
 
 #define FORALL_KE(macro) \
-  macro("KERNEL:STATIC_MEM_BYTES",  0)       \
-  macro("KERNEL:DYNAMIC_MEM_BYTES", 1)       \
-  macro("KERNEL:LOCAL_MEM_BYTES",   2)       \
-  macro("KERNEL:ACTIVE_WARPS_PER_SM", 3)     \
-  macro("KERNEL:MAX_ACTIVE_WARPS_PER_SM", 4) \
-  macro("KERNEL:THREAD_REGISTERS", 5)       \
-  macro("KERNEL:BLOCK_THREADS", 6)           \
-  macro("KERNEL:BLOCK_SHARED_MEMORY", 7)     \
-  macro("KERNEL:COUNT ", 8)                  \
+  macro("GKER:STMEM (b)",  0)       \
+  macro("GKER:DYMEM (b)", 1)       \
+  macro("GKER:LMEM (b)",   2)       \
+  macro("GKER:ACT_FGP", 3)     \
+  macro("GKER:MAX_FGP", 4) \
+  macro("GKER:THR_REG", 5)       \
+  macro("GKER:BLK_THR", 6)           \
+  macro("GKER:BLK_SM", 7)     \
+  macro("GKER:COUNT ", 8)                  \
 
 #define FORALL_KE_TIME(macro) \
   macro("KERNEL:TIME (us)", 9)
 
 #define FORALL_KE_OCCUPANCY(macro) \
-  macro("KERNEL:OCCUPANCY", 10)
+  macro("GKER:OCC", 10)
 
 #define FORALL_EM(macro) \
-  macro("XDMOV:INVALID",       0)	\
-  macro("XDMOV:HTOD_BYTES",    1)	\
-  macro("XDMOV:DTOH_BYTES",    2)	\
-  macro("XDMOV:HTOA_BYTES",    3)	\
-  macro("XDMOV:ATOH_BYTES",    4)	\
-  macro("XDMOV:ATOA_BYTES",    5)	\
-  macro("XDMOV:ATOD_BYTES",    6)	\
-  macro("XDMOV:DTOA_BYTES",    7)	\
-  macro("XDMOV:DTOD_BYTES",    8)	\
-  macro("XDMOV:HTOH_BYTES",    9)	\
-  macro("XDMOV:PTOP_BYTES",   10) 
+  macro("GXMV:INVL",       0)	\
+  macro("GXMV:H2DB",    1)	\
+  macro("GXMV:D2HB",    2)	\
+  macro("GXMV:H2AB",    3)	\
+  macro("GXMV:A2HB",    4)	\
+  macro("GXMV:A2AB",    5)	\
+  macro("GXMV:A2DB",    6)	\
+  macro("GXMV:D2AB",    7)	\
+  macro("GXMV:D2DB",    8)	\
+  macro("GXMV:H2HB",    9)	\
+  macro("GXMV:P2PB",   10) 
 
 #define FORALL_EM_TIME(macro) \
-  macro("XDMOV:TIME (us)",    11)  
+  macro("GXMV:TIME (us)",    11)  
 
 #define FORALL_SYNC(macro) \
-  macro("SYNC:UNKNOWN (us)",     0) \
-  macro("SYNC:EVENT (us)",       1) \
-  macro("SYNC:STREAM_WAIT (us)", 2) \
-  macro("SYNC:STREAM (us)",      3) \
-  macro("SYNC:CONTEXT (us)",     4)
+  macro("GSYNC:UNK (us)",       0) \
+  macro("GSYNC:EVT (us)",       1) \
+  macro("GSYNC:STRW (us)",      2) \
+  macro("GSYNC:STR (us)",       3) \
+  macro("GSYNC:CTX (us)",       4)
 
 #define FORALL_SYNC_TIME(macro) \
-  macro("SYNC:TIME (us)",     5)
+  macro("GSYNC:TIME (us)",     5)
 
-#define FORALL_GL(macro) \
-  macro("GMEM:LOAD_CACHED_BYTES",             0) \
-  macro("GMEM:LOAD_UNCACHED_BYTES",           1) \
-  macro("GMEM:STORE_BYTES",                   2) \
-  macro("GMEM:LOAD_CACHED_L2_TRANS",          3) \
-  macro("GMEM:LOAD_UNCACHED_L2_TRANS",        4) \
-  macro("GMEM:STORE_L2_TRANS",                5) \
-  macro("GMEM:LOAD_CACHED_THEORETIC_TRANS",   6) \
-  macro("GMEM:LOAD_UNCACHED_THEORETIC_TRANS", 7) \
-  macro("GMEM:STORE_THEORETIC_TRANS",         8)
+#define FORALL_GL(macro)	    \
+  macro("GGM:CLD (B)",          0) \
+  macro("GGM:ULD (B)",          1) \
+  macro("GGM:ST (B)",           2) \
+  macro("GGM:CLD (L2T)",          3)		\
+  macro("GGM:ULD (L2T)",          4)		\
+  macro("GGM:ST (L2T)",           5)		\
+  macro("GGM:TCLD (L2T)",          6)		\
+  macro("GGM:TULD (L2T)",          7)		\
+  macro("GGM:TST (L2T)",           8)
 
 #define FORALL_SH(macro) \
-  macro("SMEM:LOAD_BYTES",            0) \
-  macro("SMEM:STORE_BYTES",           1) \
-  macro("SMEM:LOAD_TRANS",            2) \
-  macro("SMEM:STORE_TRANS",           3) \
-  macro("SMEM:LOAD_THEORETIC_TRANS",  4) \
-  macro("SMEM:STORE_THEORETIC_TRANS", 5)
+  macro("GLM:LD (B)",            0)	\
+  macro("GLM:ST (B)",           1)	 \
+  macro("GLM:LD (T)",            2)	 \
+  macro("GLM:ST (T)",           3)	 \
+  macro("GLM:TLD (T)",  4)	\
+  macro("GLM:TST (T)", 5)
 
 #define FORALL_BH(macro) \
   macro("BRANCH:WARP_DIVERGED", 0) \
   macro("BRANCH:WARP_EXECUTED", 1)
 
 #define FORALL_INFO(macro) \
-  macro("KERNEL:DROPPED_SAMPLES",  0) \
-  macro("KERNEL:PERIOD_IN_CYCLES", 1) \
-  macro("KERNEL:TOTAL_SAMPLES",    2) \
-  macro("KERNEL:SM_FULL_SAMPLES",  3)
+  macro("GKER:SAMPLES_DROPPED",   0) \
+  macro("GKER:PERIOD_CYCLES",     1) \
+  macro("GKER:SAMPLES_TOTAL",     2) \
+  macro("GKER:SAMPLES_EXPECTED",  3)
 
 #define FORALL_INFO_EFFICIENCY(macro) \
-  macro("KERNEL:SM_EFFICIENCY", 4)
+  macro("GKER:SM_EFFICIENCY", 4)
 
 #if CUPTI_API_VERSION >= 10
 #define FORALL_IM(macro) \
-  macro("IDMOV:INVALID",       0)	\
-  macro("IDMOV:HTOD_BYTES",    1)	\
-  macro("IDMOV:DTOH_BYTES",    2)	\
-  macro("IDMOV:CPU_PF",        3)	\
-  macro("IDMOV:GPU_PF",        4)	\
-  macro("IDMOV:THRASH",        5)	\
-  macro("IDMOV:THROT",         6)	\
-  macro("IDMOV:RMAP",          7)	\
-  macro("IDMOV:DTOD_BYTES",    8)
+  macro("GIMV:INVALID",       0)	\
+  macro("GIMV:H2D (B)",    1)		\
+  macro("GIMV:D2H (B)",    2)		\
+  macro("GIMV:CPU_PF",        3)	\
+  macro("GIMV:GPU_PF",        4)	\
+  macro("GIMV:THRASH",        5)	\
+  macro("GIMV:THROT",         6)	\
+  macro("GIMV:RMAP",          7)	\
+  macro("GIMV:D2D (B)",    8)
 
 #define FORALL_IM_TIME(macro) \
-  macro("IDMOV:TIME (us)",     9)  
+  macro("GIMV:TIME (us)",     9)  
 #else
 #define FORALL_IM(macro) \
-  macro("IDMOV:INVALID",       0)	\
-  macro("IDMOV:HTOD_BYTES",    1)	\
-  macro("IDMOV:DTOH_BYTES",    2)	\
-  macro("IDMOV:CPU_PF",        3)	\
-  macro("IDMOV:GPU_PF",        4)
+  macro("GIMV:INVL",       0)	\
+  macro("GIMV:H2D (B)",    1)	\
+  macro("GIMV:D2H (B)",    2)			\
+  macro("GIMV:CPU (PF)",        3)		\
+  macro("GIMV:GPU (PF)",        4)
 
-#define FORALL_IM_TIME(macro) \
-  macro("IDMOV:TIME (us)",     5)
+#define F
+  macro("GIMV:TIME (us)",     5)
 #endif
 
+// note: the code in this file related to stall reasons should be
+// improved. it uses stall reason codes as indices. it expects stall
+// reason codes to be dense. there should be a level of indirection
+// between stall reason codes and metric indices.
+
 #if CUPTI_API_VERSION >= 10
 #define FORALL_STL(macro)	\
-  macro("STALL:INVALID",      0) \
-  macro("STALL:NONE",         1) \
-  macro("STALL:IFETCH",       2) \
-  macro("STALL:EXC_DEP",      3) \
-  macro("STALL:MEM_DEP",      4) \
-  macro("STALL:TEX",          5) \
-  macro("STALL:SYNC",         6) \
-  macro("STALL:CMEM_DEP",     7) \
-  macro("STALL:PIPE_BSY",     8) \
-  macro("STALL:MEM_THR",      9) \
-  macro("STALL:NOSEL",       10) \
-  macro("STALL:OTHR",        11) \
-  macro("STALL:SLEEP",       12)
+  macro("GSTL:INVL",         GPU_INST_STALL_INVALID)	   \
+  macro("GSTL:NONE",         GPU_INST_STALL_NONE)		   \
+  macro("GSTL:IFET",         GPU_INST_STALL_IFETCH)		   \
+  macro("GSTL:IDEP",         GPU_INST_STALL_IDEPEND)	   \
+  macro("GSTL:GMEM",         GPU_INST_STALL_GMEM)		   \
+  macro("GSTL:TMEM",         GPU_INST_STALL_TMEM)		   \
+  macro("GSTL:SYNC",         GPU_INST_STALL_SYNC)		   \
+  macro("GSTL:CMEM",         GPU_INST_STALL_CMEM)		   \
+  macro("GSTL:PIPE",         GPU_INST_STALL_PIPE_BUSY)	   \
+  macro("GSTL:MTHR",         GPU_INST_STALL_MEM_THROTTLE) \
+  macro("GSTL:NSEL",         GPU_INST_STALL_NOT_SELECTED) \
+  macro("GSTL:OTHR",         GPU_INST_STALL_OTHER)	   \
+  macro("GSTL:SLP",          GPU_INST_STALL_SLEEP)
 
 #define FORALL_GPU_INST(macro) \
-  macro("GPU INST",          13)  
+  macro("GINS",           13)  
 
 #define FORALL_GPU_INST_LAT(macro) \
-  macro("GPU STALL",         14)  
+  macro("GSTL",          14)  
 #else
 #define FORALL_STL(macro)	\
-  macro("STALL:INVALID",      0) \
-  macro("STALL:NONE",         1) \
-  macro("STALL:IFETCH",       2) \
-  macro("STALL:EXC_DEP",      3) \
-  macro("STALL:MEM_DEP",      4) \
-  macro("STALL:TEX",          5) \
-  macro("STALL:SYNC",         6) \
-  macro("STALL:CMEM_DEP",     7) \
-  macro("STALL:PIPE_BSY",     8) \
-  macro("STALL:MEM_THR",      9) \
-  macro("STALL:NOSEL",       10) \
-  macro("STALL:OTHR",        11)
+  macro("GSTL:INVL",         GPU_GSTL_INVALID)		   \
+  macro("GSTL:NONE",         GPU_GSTL_NONE)		   \
+  macro("GSTL:IFET",         GPU_GSTL_IFETCH)		   \
+  macro("GSTL:IDEP",         GPU_GSTL_IDEPEND)		   \
+  macro("GSTL:GMEM",         GPU_GSTL_GMEM)		   \
+  macro("GSTL:TMEM",         GPU_GSTL_TMEM)		   \
+  macro("GSTL:SYNC",         GPU_GSTL_SYNC)		   \
+  macro("GSTL:CMEM",         GPU_GSTL_CMEM)		   \
+  macro("GSTL:PIPE",         GPU_GSTL_PIPE_BUSY)	   \
+  macro("GSTL:MTHR",         GPU_GSTL_MEM_THROTTLE)   \
+  macro("GSTL:NSEL",         GPU_GSTL_NOT_SELECTED)   \
+  macro("GSTL:OTHR",         GPU_GSTL_OTHER)	   
 
 #define FORALL_GPU_INST(macro) \
-  macro("GPU INST",       12)  
+  macro("GINS",           12)  
 
 #define FORALL_GPU_INST_LAT(macro) \
-  macro("GPU STALL",   13)  
+  macro("GSTL",          13)  
 #endif
 
 
@@ -468,7 +473,7 @@ typedef enum cupti_activities_flags {
   CUPTI_KERNEL_EXECUTION     = 8,
   CUPTI_DRIVER               = 16,
   CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	           = 64
+  CUPTI_OVERHEAD	     = 64
 } cupti_activities_flags_t;
 
 
@@ -482,44 +487,42 @@ cupti_activity_attribute(gpu_activity_t *activity)
   hpcrun_safe_enter();
 
   switch (activity->kind) {
-    case GPU_ACTIVITY_KIND_PC_SAMPLING:
+    case GPU_ACTIVITY_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
       int frequency_factor = (1 << pc_sampling_frequency);
 
-      if (activity->details.pc_sampling.stallReason != 0x7fffffff) {
-        int index = stall_metric_id[activity->details.pc_sampling.stallReason];
-        metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
-        hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
-          activity->details.pc_sampling.latencySamples * frequency_factor});
-
-        hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
-          activity->details.pc_sampling.samples * frequency_factor});
-
-        hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
-          activity->details.pc_sampling.latencySamples * frequency_factor});
-      }
+      int index = stall_metric_id[activity->details.pc_sampling.stallReason];
+      metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
+      hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i =
+	    activity->details.pc_sampling.latencySamples * frequency_factor});
+      
+      hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
+	    activity->details.pc_sampling.samples * frequency_factor});
+      
+      hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
+	    activity->details.pc_sampling.latencySamples * frequency_factor});
       break;
     }
-    case GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
+    case GPU_ACTIVITY_PC_SAMPLING_INFO:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, info_dropped_samples_id);
       hpcrun_metric_std_inc(info_dropped_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.droppedSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_info.droppedSamples});
 
       // It is fine to use set here because sampling cycle is changed during execution
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
-        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.samplingPeriodInCycles});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_info.samplingPeriodInCycles});
 
       hpcrun_metric_std_inc(info_total_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.totalSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_info.totalSamples});
 
       hpcrun_metric_std_inc(info_sm_full_samples_id, metrics,
-        (cct_metric_data_t){.i = activity->details.pc_sampling_record_info.fullSMSamples});
+        (cct_metric_data_t){.i = activity->details.pc_sampling_info.fullSMSamples});
       break;
     }
-    case GPU_ACTIVITY_KIND_MEMCPY:
+    case GPU_ACTIVITY_MEMCPY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMCPY\n");
       if (activity->details.memcpy.copyKind != 0x7fffffff) {
@@ -532,7 +535,7 @@ cupti_activity_attribute(gpu_activity_t *activity)
       }
       break;
     }
-    case GPU_ACTIVITY_KIND_MEMSET:
+    case GPU_ACTIVITY_MEMSET:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMSET\n");
       if (activity->details.memset.memKind != 0x7fffffff) {
@@ -545,7 +548,7 @@ cupti_activity_attribute(gpu_activity_t *activity)
       }
       break;
     }
-    case GPU_ACTIVITY_KIND_KERNEL:
+    case GPU_ACTIVITY_KERNEL:
     {
       PRINT("CUPTI_ACTIVITY_KIND_KERNEL\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
@@ -576,7 +579,7 @@ cupti_activity_attribute(gpu_activity_t *activity)
         (activity->details.kernel.end - activity->details.kernel.start) / 1000.0});
       break;
     }
-    case GPU_ACTIVITY_KIND_SYNCHRONIZATION:
+    case GPU_ACTIVITY_SYNCHRONIZATION:
     {
       PRINT("CUPTI_ACTIVITY_KIND_SYNCHRONIZATION\n");
       if (activity->details.synchronization.syncKind != 0x7fffffff) {
@@ -590,7 +593,7 @@ cupti_activity_attribute(gpu_activity_t *activity)
       }
       break;
     }
-    case GPU_ACTIVITY_KIND_MEMORY:
+    case GPU_ACTIVITY_MEMORY:
     {
       PRINT("CUPTI_ACTIVITY_KIND_MEMORY\n");
       if (activity->details.memory.memKind != 0x7fffffff) {
@@ -603,7 +606,7 @@ cupti_activity_attribute(gpu_activity_t *activity)
       }
       break;
     }
-    case GPU_ACTIVITY_KIND_GLOBAL_ACCESS:
+    case GPU_ACTIVITY_GLOBAL_ACCESS:
     {
       PRINT("CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS\n");
       int type = activity->details.global_access.type;
@@ -620,25 +623,25 @@ cupti_activity_attribute(gpu_activity_t *activity)
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.global_access.bytes});
       break;
     }
-    case GPU_ACTIVITY_KIND_SHARED_ACCESS:
+    case GPU_ACTIVITY_LOCAL_ACCESS:
     {
-      PRINT("CUPTI_ACTIVITY_KIND_SHARED_ACCESS\n");
-      int type = activity->details.shared_access.type;
+      PRINT("GPU_ACTIVITY_LOCAL_ACCESS\n");
+      int type = activity->details.local_access.type;
       int shared_transactions_index = sh_metric_id[type];
 
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, shared_transactions_index);
       hpcrun_metric_std_inc(shared_transactions_index, metrics,
-        (cct_metric_data_t){.i = activity->details.shared_access.sharedTransactions});
+        (cct_metric_data_t){.i = activity->details.local_access.sharedTransactions});
 
-      int theoretical_shared_transactions_index = sh_metric_id[GPU_SHARED_ACCESS_COUNT + type];
+      int theoretical_shared_transactions_index = sh_metric_id[GPU_LOCAL_ACCESS_COUNT + type];
       hpcrun_metric_std_inc(theoretical_shared_transactions_index, metrics,
-        (cct_metric_data_t){.i = activity->details.shared_access.theoreticalSharedTransactions});
+        (cct_metric_data_t){.i = activity->details.local_access.theoreticalSharedTransactions});
 
-      int bytes_index = sh_metric_id[GPU_SHARED_ACCESS_COUNT * 2 + type];
-      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.shared_access.bytes});
+      int bytes_index = sh_metric_id[GPU_LOCAL_ACCESS_COUNT * 2 + type];
+      hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->details.local_access.bytes});
       break;
     }
-    case GPU_ACTIVITY_KIND_BRANCH:
+    case GPU_ACTIVITY_BRANCH:
     {
       PRINT("CUPTI_ACTIVITY_KIND_BRANCH\n");
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);

@@ -98,9 +98,9 @@ set_gpu_instruction
 }
 
 void
-set_gpu_activity_interval
+set_gpu_interval
 (
-  gpu_activity_interval_t* interval,
+  gpu_interval_t* interval,
   uint64_t start,
   uint64_t end
 )

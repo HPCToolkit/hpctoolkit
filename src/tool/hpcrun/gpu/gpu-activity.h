@@ -34,36 +34,55 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 // type declarations
 //******************************************************************************
 
+typedef enum {    
+  GPU_ACTIVITY_UNKNOWN                 = 0,
+  GPU_ACTIVITY_KERNEL                  = 1,
+  GPU_ACTIVITY_MEMCPY                  = 2,
+  GPU_ACTIVITY_MEMCPY2                 = 3,
+  GPU_ACTIVITY_MEMSET                  = 4,
+  GPU_ACTIVITY_MEMORY                  = 5,    
+  GPU_ACTIVITY_SYNCHRONIZATION         = 6,
+  GPU_ACTIVITY_GLOBAL_ACCESS           = 7,
+  GPU_ACTIVITY_LOCAL_ACCESS            = 8,
+  GPU_ACTIVITY_BRANCH                  = 9,
+  GPU_ACTIVITY_CDP_KERNEL              = 10,
+  GPU_ACTIVITY_PC_SAMPLING             = 11,
+  GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
+  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13
+} gpu_activity_kind_t;
+
+
 typedef enum {
-    GPU_ENTRY_TYPE_ACTIVITY = 1,
-    GPU_ENTRY_TYPE_NOTIFICATION = 2,
-    GPU_ENTRY_TYPE_BUFFER = 3,
-    GPU_ENTRY_TYPE_COUNT = 4
+  GPU_ENTRY_TYPE_ACTIVITY     = 1,
+  GPU_ENTRY_TYPE_NOTIFICATION = 2,
+  GPU_ENTRY_TYPE_BUFFER       = 3,
+  GPU_ENTRY_TYPE_COUNT        = 4
 } gpu_entry_type_t;
 
 
+// values are used to index within GMEM metric kinds
 typedef enum {
-  GPU_GLOBAL_ACCESS_LOAD_CACHED,
-  GPU_GLOBAL_ACCESS_LOAD_UNCACHED,
-  GPU_GLOBAL_ACCESS_STORE,
-  GPU_GLOBAL_ACCESS_COUNT,
+  GPU_GLOBAL_ACCESS_LOAD_CACHED = 0,
+  GPU_GLOBAL_ACCESS_LOAD_UNCACHED = 1,
+  GPU_GLOBAL_ACCESS_STORE = 2,
+  GPU_GLOBAL_ACCESS_COUNT = 3
 } gpu_global_access_type_t;
 
 
 typedef enum {
-  GPU_SHARED_ACCESS_LOAD,
-  GPU_SHARED_ACCESS_STORE,
-  GPU_SHARED_ACCESS_COUNT
-} gpu_shared_access_type_t;
+  GPU_LOCAL_ACCESS_LOAD,
+  GPU_LOCAL_ACCESS_STORE,
+  GPU_LOCAL_ACCESS_COUNT
+} gpu_local_access_type_t;
 
 
 typedef enum {    
-  GPU_SYNCHRONIZATION_UNKNOWN           = 0,
-  GPU_SYNCHRONIZATION_EVENT_SYNC        = 1,
-  GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT = 2,
-  GPU_SYNCHRONIZATION_STREAM_SYNC       = 3,
-  GPU_SYNCHRONIZATION_CONTEXT_SYNC      = 4
-} gpu_synchronization_type_t;
+  GPU_SYNC_UNKNOWN               = 0,
+  GPU_SYNC_EVENT                 = 1,
+  GPU_SYNC_STREAM_EVENT_WAIT     = 2,
+  GPU_SYNC_STREAM                = 3,
+  GPU_SYNC_CONTEXT               = 4
+} gpu_sync_type_t;
 
 
 typedef enum {
@@ -77,63 +96,103 @@ typedef enum {
   GPU_MEMCPY_D2A = 7,  // device to device array
   GPU_MEMCPY_D2D = 8,  // device to device
   GPU_MEMCPY_H2H = 9,  // host to host
-  GPU_MEMCPY_P2P = 10, // device peer to device peer
-  GPU_MEMCPY_FRC = 11  // force int
+  GPU_MEMCPY_P2P = 10  // device peer to device peer
 } gpu_memcpy_type_t;
 
 
+typedef enum {    
+  GPU_INST_STALL_NONE         = 1,
+  GPU_INST_STALL_IFETCH       = 2,
+  GPU_INST_STALL_IDEPEND      = 3,
+  GPU_INST_STALL_GMEM         = 4,
+  GPU_INST_STALL_TMEM         = 5,
+  GPU_INST_STALL_SYNC         = 6,
+  GPU_INST_STALL_CMEM         = 7,
+  GPU_INST_STALL_PIPE_BUSY    = 8,
+  GPU_INST_STALL_MEM_THROTTLE = 9,
+  GPU_INST_STALL_NOT_SELECTED = 10,
+  GPU_INST_STALL_OTHER        = 11,
+  GPU_INST_STALL_SLEEP        = 12,
+  GPU_INST_STALL_INVALID      = 13
+} gpu_inst_stall_t;
+
+
+typedef enum {
+  GPU_MEM_ARRAY           = 0,
+  GPU_MEM_DEVICE          = 1,
+  GPU_MEM_MANAGED         = 2,
+  GPU_MEM_PAGEABLE        = 3,
+  GPU_MEM_PINNED          = 4,
+  GPU_MEM_DEVICE_STATIC   = 5,
+  GPU_MEM_MANAGED_STATIC  = 6,
+  GPU_MEM_UNKNOWN         = 7
+} gpu_mem_kind_t;
+
+
 // pc sampling
-typedef struct gpu_pc_sampling {
+typedef struct gpu_pc_sampling_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
   uint32_t samples;
   uint32_t latencySamples;
-  uint32_t stallReason;    
+  gpu_inst_stall_t stallReason;    
 } gpu_pc_sampling_t;
 
 
-typedef struct gpu_pc_sampling_record_info {
+typedef struct gpu_pc_sampling_info_t {
   uint32_t correlation_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
   uint64_t fullSMSamples;
-} gpu_pc_sampling_record_info_t;
+} gpu_pc_sampling_info_t;
 
 
-// memory
-typedef struct gpu_memcpy {
+// this type is prefix of all memory structures
+// gpu_interval_t is a prefix 
+typedef struct gpu_mem_t {
   uint64_t start;
   uint64_t end;
+  uint64_t bytes;
+} gpu_mem_t;
+
+
+// gpu_mem_t is a prefix 
+typedef struct gpu_memcpy_t {
+  uint64_t start;
+  uint64_t end;
+  uint64_t bytes;
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
-  uint64_t bytes;
-  uint32_t copyKind;
+  gpu_memcpy_type_t copyKind;
 } gpu_memcpy_t;
 
 
-typedef struct gpu_memory {
+// memory allocation or free operation
+// gpu_mem_t is a prefix 
+typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint32_t memKind;
+  gpu_mem_kind_t memKind;
 } gpu_memory_t;
 
 
-typedef struct gpu_memset {
+// gpu_mem_t is a prefix 
+typedef struct gpu_memset_t {
   uint64_t start;
   uint64_t end;
+  uint64_t bytes;
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
-  uint64_t bytes;
-  uint32_t memKind;
+  gpu_mem_kind_t memKind;
 } gpu_memset_t;
 
 
-// kernel
-typedef struct gpu_kernel {
+// gpu kernel execution
+typedef struct gpu_kernel_t {
   uint64_t start;
   uint64_t end;
   uint32_t correlation_id;
@@ -150,7 +209,8 @@ typedef struct gpu_kernel {
   uint32_t blockSharedMemory;
 } gpu_kernel_t;
 
-typedef struct gpu_cdpkernel {
+
+typedef struct gpu_cdpkernel_t {
   uint64_t start;
   uint64_t end;
   uint32_t correlation_id;
@@ -158,7 +218,8 @@ typedef struct gpu_cdpkernel {
   uint32_t stream_id;
 } gpu_cdpkernel_t;
 
-typedef struct gpu_global_access {
+
+typedef struct gpu_global_access_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
   uint64_t l2_transactions;
@@ -168,17 +229,17 @@ typedef struct gpu_global_access {
 } gpu_global_access_t;
 
 
-typedef struct gpu_shared_access {
+typedef struct gpu_local_access_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
   uint64_t sharedTransactions;
   uint64_t theoreticalSharedTransactions;
   uint64_t bytes;
-  gpu_shared_access_type_t type;
-} gpu_shared_access_t;
+  gpu_local_access_type_t type;
+} gpu_local_access_t;
 
 
-typedef struct gpu_branch {
+typedef struct gpu_branch_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
   uint32_t diverged;
@@ -186,8 +247,7 @@ typedef struct gpu_branch {
 } gpu_branch_t;
 
 
-// synchronization
-typedef struct gpu_synchronization {
+typedef struct gpu_synchronization_t {
   uint64_t start;
   uint64_t end;
   uint32_t correlation_id;
@@ -196,38 +256,42 @@ typedef struct gpu_synchronization {
   uint32_t syncKind;
 } gpu_synchronization_t;
 
+
 typedef struct gpu_host_correlation_t {
   uint32_t correlation_id;
   uint64_t host_correlation_id;
 } gpu_host_correlation_t;
 
 
-// Accessors for a subset of activity kinds
-
-typedef struct gpu_activity_interval {
+// a type that can be used to access start and end times
+// for a subset of activity kinds including kernel execution,
+// memcpy, memset, 
+typedef struct gpu_interval_t {
   uint64_t start;
   uint64_t end;
-} gpu_activity_interval_t;
+} gpu_interval_t;
 
-typedef struct gpu_instruction {
+
+typedef struct gpu_instruction_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
 } gpu_instruction_t;
 
-typedef struct entry_data {
+
+typedef struct gpu_activity_details_t { 
   union {
     /* Each field stores the complete information needed
        for processing each activity kind.
      */
     gpu_pc_sampling_t pc_sampling;
-    gpu_pc_sampling_record_info_t pc_sampling_record_info;
+    gpu_pc_sampling_info_t pc_sampling_info;
     gpu_memcpy_t memcpy;
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
     gpu_cdpkernel_t cdpkernel;
     gpu_global_access_t global_access;
-    gpu_shared_access_t shared_access;
+    gpu_local_access_t local_access;
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
@@ -237,30 +301,12 @@ typedef struct entry_data {
     /* Activity interval is used to access start time and end time of 
        an coarse grained activity.
      */
-    gpu_activity_interval_t interval;
+    gpu_interval_t interval;
 
     /* Fine grained measurement contains information about specific instructions */
     gpu_instruction_t instruction;
   };
 } gpu_activity_details_t;
-
-
-typedef enum gpu_activity_kind {    
-  GPU_ACTIVITY_KIND_UNKNOWN                 = 0,
-  GPU_ACTIVITY_KIND_KERNEL                  = 1,
-  GPU_ACTIVITY_KIND_MEMCPY                  = 2,
-  GPU_ACTIVITY_KIND_MEMCPY2                 = 3,
-  GPU_ACTIVITY_KIND_MEMSET                  = 4,
-  GPU_ACTIVITY_KIND_MEMORY                  = 5,    
-  GPU_ACTIVITY_KIND_SYNCHRONIZATION         = 6,
-  GPU_ACTIVITY_KIND_GLOBAL_ACCESS           = 7,
-  GPU_ACTIVITY_KIND_SHARED_ACCESS           = 8,
-  GPU_ACTIVITY_KIND_BRANCH                  = 9,
-  GPU_ACTIVITY_KIND_CDP_KERNEL              = 10,
-  GPU_ACTIVITY_KIND_PC_SAMPLING             = 11,
-  GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO = 12, 
-  GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION    = 13
-} gpu_activity_kind_t;
 
 
 typedef struct gpu_activity_t {
@@ -306,9 +352,9 @@ gpu_activity_free
 
 
 void
-set_gpu_activity_interval
+set_gpu_interval
 (
-  gpu_activity_interval_t* interval,
+  gpu_interval_t* interval,
   uint64_t start,
   uint64_t end
 );
@@ -320,5 +366,7 @@ gpu_context_activity_dump
  gpu_activity_t *activity,
  const char *context
 );
+
+
 
 #endif

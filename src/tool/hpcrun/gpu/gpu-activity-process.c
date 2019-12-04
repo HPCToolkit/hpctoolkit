@@ -205,12 +205,12 @@ gpu_sample_process
 
 
 static void
-gpu_sampling_record_info_process
+gpu_sampling_info_process
 (
  gpu_activity_t *sri
 )
 {
-  uint32_t correlation_id = sri->details.pc_sampling_record_info.correlation_id;
+  uint32_t correlation_id = sri->details.pc_sampling_info.correlation_id;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
@@ -225,17 +225,17 @@ gpu_sampling_record_info_process
 
       attribute_activity(host_op_entry, sri, host_op_node);
     }
-    // sample record info is the last record for a given correlation id
+    // sample info is the last record for a given correlation id
     bool more_samples = 
       gpu_host_correlation_map_total_samples_update
-      (external_id, sri->details.pc_sampling_record_info.totalSamples - 
-       sri->details.pc_sampling_record_info.droppedSamples);
+      (external_id, sri->details.pc_sampling_info.totalSamples - 
+       sri->details.pc_sampling_info.droppedSamples);
     if (!more_samples) {
       gpu_correlation_id_map_delete(correlation_id);
     }
   }
-  hpcrun_stats_acc_samples_add(sri->details.pc_sampling_record_info.totalSamples);
-  hpcrun_stats_acc_samples_dropped_add(sri->details.pc_sampling_record_info.droppedSamples);
+  hpcrun_stats_acc_samples_add(sri->details.pc_sampling_info.totalSamples);
+  hpcrun_stats_acc_samples_dropped_add(sri->details.pc_sampling_info.droppedSamples);
 }
 
 
@@ -367,18 +367,18 @@ gpu_synchronization_process
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
-      if (activity->kind == GPU_ACTIVITY_KIND_SYNCHRONIZATION) {
+      if (activity->kind == GPU_ACTIVITY_SYNCHRONIZATION) {
 	uint32_t context_id = activity->details.synchronization.context_id;
 	uint32_t stream_id = activity->details.synchronization.stream_id;
 
 	switch (activity->details.synchronization.syncKind) {
-	case GPU_SYNCHRONIZATION_STREAM_SYNC:
-	case GPU_SYNCHRONIZATION_STREAM_EVENT_WAIT:
+	case GPU_SYNC_STREAM:
+	case GPU_SYNC_STREAM_EVENT_WAIT:
 	  // Insert a event for a specific stream
 	  PRINT("Add context %u stream %u sync\n", context_id, stream_id);
 	  gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
 	  break;
-	case GPU_SYNCHRONIZATION_CONTEXT_SYNC:
+	case GPU_SYNC_CONTEXT:
 	  // Insert events for all current active streams
 	  // TODO(Keren): What if the stream is created
 	  PRINT("Add context %u sync\n", context_id);
@@ -483,49 +483,49 @@ gpu_activity_process
 {
   switch (ga->kind) {
 
-  case GPU_ACTIVITY_KIND_PC_SAMPLING:
+  case GPU_ACTIVITY_PC_SAMPLING:
     gpu_sample_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
-    gpu_sampling_record_info_process(ga);
+  case GPU_ACTIVITY_PC_SAMPLING_INFO:
+    gpu_sampling_info_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_EXTERNAL_CORRELATION: 
+  case GPU_ACTIVITY_EXTERNAL_CORRELATION: 
     gpu_correlation_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_MEMCPY:
+  case GPU_ACTIVITY_MEMCPY:
     gpu_memcpy_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_MEMSET:
+  case GPU_ACTIVITY_MEMSET:
     gpu_memset_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_KERNEL:
+  case GPU_ACTIVITY_KERNEL:
     gpu_kernel_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_SYNCHRONIZATION:
+  case GPU_ACTIVITY_SYNCHRONIZATION:
     gpu_synchronization_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_MEMORY:
+  case GPU_ACTIVITY_MEMORY:
     gpu_memory_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_SHARED_ACCESS:
-  case GPU_ACTIVITY_KIND_GLOBAL_ACCESS:
-  case GPU_ACTIVITY_KIND_BRANCH:
+  case GPU_ACTIVITY_LOCAL_ACCESS:
+  case GPU_ACTIVITY_GLOBAL_ACCESS:
+  case GPU_ACTIVITY_BRANCH:
     gpu_instruction_process(ga);
     break;
 
-  case GPU_ACTIVITY_KIND_CDP_KERNEL:
+  case GPU_ACTIVITY_CDP_KERNEL:
      gpu_cdpkernel_process(ga);
      break;
 
-  case GPU_ACTIVITY_KIND_MEMCPY2:
+  case GPU_ACTIVITY_MEMCPY2:
   default:
     gpu_unknown_process(ga);
     break;
