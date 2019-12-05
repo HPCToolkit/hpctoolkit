@@ -251,7 +251,29 @@ convert_memcpy
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
-  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
+}
+
+
+static void
+convert_memcpy2
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityMemcpy2 *activity
+)
+{
+  PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
+  PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
+  PRINT("Memcpy2 copy bytes %lu\n", activity->bytes);
+
+  ga->kind = GPU_ACTIVITY_MEMCPY;
+  ga->details.memcpy.correlation_id = activity->correlationId;
+  ga->details.memcpy.context_id = activity->contextId;
+  ga->details.memcpy.stream_id = activity->streamId;
+  ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
+  ga->details.memcpy.bytes = activity->bytes;
+
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
 }
 
 
@@ -274,7 +296,7 @@ convert_kernel
   ga->details.kernel.context_id = activity->contextId;
   ga->details.kernel.stream_id = activity->streamId;
 
-  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 
   uint32_t activeWarpsPerSM = 0;
   uint32_t maxActiveWarpsPerSM = 0;
@@ -383,9 +405,10 @@ convert_synchronization
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
   ga->details.synchronization.stream_id = activity_sync->streamId;
+  ga->details.synchronization.event_id = activity_sync->cudaEventId;
   ga->details.synchronization.syncKind = convert_sync_type(activity_sync->type);
 
-  set_gpu_activity_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
+  set_gpu_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
 }
 
 
@@ -400,7 +423,7 @@ convert_memory
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
 
-  set_gpu_activity_interval(&ga->details.interval, activity_mem->start, activity_mem->end);
+  set_gpu_interval(&ga->details.interval, activity_mem->start, activity_mem->end);
 }
 
 
@@ -418,7 +441,7 @@ convert_memset
   ga->details.memset.memKind = activity->memoryKind;
   ga->details.memset.bytes = activity->bytes;
 
-  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);  
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
 }
 
 static void
@@ -449,9 +472,22 @@ convert_cdpkernel
   ga->details.cdpkernel.context_id = activity->contextId;
   ga->details.cdpkernel.stream_id = activity->streamId;
 
-  set_gpu_activity_interval(&ga->details.interval, activity->start, activity->end);
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 }
 
+static void
+convert_event
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityCudaEvent *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_EVENT;
+
+  ga->details.event.event_id = activity->eventId;
+  ga->details.event.context_id = activity->contextId;
+  ga->details.event.stream_id = activity->streamId;
+}
 
 void
 convert_unknown
@@ -487,8 +523,11 @@ cupti_activity_translate
       (ga, (CUpti_ActivityPCSamplingRecordInfo *)activity);
     break;
 
-  case CUPTI_ACTIVITY_KIND_MEMCPY:
   case CUPTI_ACTIVITY_KIND_MEMCPY2:
+    convert_memcpy2(ga, (CUpti_ActivityMemcpy2 *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_MEMCPY:
     convert_memcpy(ga, (CUpti_ActivityMemcpy *) activity);
     break;
 
@@ -526,6 +565,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_CDP_KERNEL:
     convert_cdpkernel(ga, (CUpti_ActivityCdpKernel*) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_CUDA_EVENT:
+    convert_event(ga, (CUpti_ActivityCudaEvent *) activity);
     break;
 
   default:

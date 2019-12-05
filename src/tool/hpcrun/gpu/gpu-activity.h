@@ -48,7 +48,8 @@ typedef enum {
   GPU_ACTIVITY_CDP_KERNEL              = 10,
   GPU_ACTIVITY_PC_SAMPLING             = 11,
   GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
-  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13
+  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
+  GPU_ACTIVITY_EVENT                   = 14
 } gpu_activity_kind_t;
 
 
@@ -219,6 +220,13 @@ typedef struct gpu_cdpkernel_t {
 } gpu_cdpkernel_t;
 
 
+typedef struct gpu_event_t {
+  uint32_t event_id;
+  uint32_t context_id;
+  uint32_t stream_id;
+} gpu_event_t;
+
+
 typedef struct gpu_global_access_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
@@ -253,6 +261,7 @@ typedef struct gpu_synchronization_t {
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
+  uint32_t event_id;
   uint32_t syncKind;
 } gpu_synchronization_t;
 
@@ -290,6 +299,7 @@ typedef struct gpu_activity_details_t {
     gpu_memset_t memset;
     gpu_kernel_t kernel;
     gpu_cdpkernel_t cdpkernel;
+    gpu_event_t event;
     gpu_global_access_t global_access;
     gpu_local_access_t local_access;
     gpu_branch_t branch;

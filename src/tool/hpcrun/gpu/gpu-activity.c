@@ -22,8 +22,6 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/sample-sources/nvidia.h>
-
 #include "gpu-activity.h"
 #include "gpu-channel-item-allocator.h"
 
