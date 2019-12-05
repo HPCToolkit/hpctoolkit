@@ -4486,6 +4486,88 @@ AC_SUBST([OPT_CUDA_SANITIZER_IFLAGS])
 AC_SUBST([OPT_CUDA_SANITIZER_LDFLAGS])
 
 #-------------------------------------------------
+# Option: --with-gpu-patch=PATH
+#-------------------------------------------------
+OPT_HAVE_GPU_PATCH=no
+OPT_GPU_PATCH=
+OPT_GPU_PATCH_INCPATH=
+OPT_GPU_PATCH_IFLAGS=
+OPT_GPU_PATCH_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    GPU_PATCH_LIB_SEARCH_ORDER="lib32 lib"
+else
+    GPU_PATCH_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+AC_ARG_WITH([gpu-patch],
+  AS_HELP_STRING([--with-gpu-patch=PATH],
+                 [use given GPU_PATCH installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_GPU_PATCH=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-gpu-patch requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_GPU_PATCH=${withval}
+   fi])
+
+#
+# Valid gpu-patch library
+#
+if test "$OPT_HAVE_GPU_PATCH" = yes; then
+    OPT_GPU_PATCH_IFLAGS="-I$OPT_GPU_PATCH/include"
+fi
+
+if test "$OPT_HAVE_GPU_PATCH" = "yes" ; then
+ AC_ARG_WITH([gpu-patch-include],
+  AS_HELP_STRING([--with-gpu-patch-include=PATH],
+                 [use given gpu-patch include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-gpu-patch-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_GPU_PATCH_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_GPU_PATCH}/include/gpu-patch.h; then
+         OPT_GPU_PATCH_INCPATH=${OPT_GPU_PATCH}/include
+         AC_DEFINE(HAVE_GPU_PATCH_H, 1, [gpu-patch include file available])
+     else
+         AC_MSG_ERROR(['${OPT_GPU_PATCH}/include/gpu-patch.h' not found])
+     fi])  
+
+  OPT_GPU_PATCH_IFLAGS="-I${OPT_GPU_PATCH_INCPATH} "
+
+  AC_ARG_WITH([gpu-patch-lib],
+  AS_HELP_STRING([--with-gpu-patch-lib=PATH],
+                 [use given gpu-patch lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-gpu-patch-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_GPU_PATCH_LIBPATH=${withval}
+   fi], 
+  
+    [if test -f "${OPT_GPU_PATCH}/lib/gpu-patch.fatbin" 
+    then
+      OPT_GPU_PATCH_LIBPATH="${OPT_GPU_PATCH}"
+      break
+    fi
+    if test  -z "${OPT_GPU_PATCH_LIBPATH}" ; then
+      AC_MSG_ERROR([gpu-patch.fatbin not found])
+    fi
+   ] )
+
+  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/gpu-patch.fatbin"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_GPU_PATCH], [test "$OPT_HAVE_GPU_PATCH" = yes])
+
+AC_SUBST([OPT_GPU_PATCH])
+AC_SUBST([OPT_GPU_PATCH_IFLAGS])
+AC_SUBST([OPT_GPU_PATCH_LDFLAGS])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 

@@ -265,24 +265,25 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_CUDA_SANITIZER_TRUE@am__append_102 = $(MY_CUDA_SANITIZER_FILES)
 @OPT_ENABLE_CUDA_SANITIZER_TRUE@am__append_103 = $(CUDA_SANITIZER_INC_FLGS)
 @OPT_ENABLE_CUDA_SANITIZER_TRUE@am__append_104 = -DHPCRUN_SS_NVIDIA
-@OPT_PAPI_CUPTI_TRUE@am__append_105 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_106 = -DHPCRUN_SS_PAPI_C_CUPTI
-@OPT_PAPI_STATIC_TRUE@am__append_107 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_108 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_109 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_110 = -DHPCRUN_SS_PAPI
-@OPT_ENABLE_UPC_TRUE@am__append_111 = $(MY_UPC_FILES)
+@OPT_ENABLE_GPU_PATCH_TRUE@am__append_105 = -DHPCTOOLKIT_GPU_PATCH=$(GPU_PATCH_LD_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_106 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_107 = -DHPCRUN_SS_PAPI_C_CUPTI
+@OPT_PAPI_STATIC_TRUE@am__append_108 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_109 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_110 = $(PAPI_LD_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_111 = -DHPCRUN_SS_PAPI
 @OPT_ENABLE_UPC_TRUE@am__append_112 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_113 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_113 = $(MY_UPC_FILES)
 @OPT_ENABLE_UPC_TRUE@am__append_114 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_115 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_116 = -DLUSH_PTHREADS
+@OPT_ENABLE_UPC_TRUE@am__append_115 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_116 = $(OPT_UPC_LDFLAGS)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_117 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_118 = $(MY_CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_119 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_120 = $(OPT_CUDA_IFLAGS) -g
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_121 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_122 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_118 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_119 = $(MY_CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_120 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(OPT_CUDA_IFLAGS) -g
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_122 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_123 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -1354,6 +1355,9 @@ OPT_CUDA_SANITIZER_LDFLAGS = @OPT_CUDA_SANITIZER_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_GPU_PATCH = @OPT_GPU_PATCH@
+OPT_GPU_PATCH_IFLAGS = @OPT_GPU_PATCH_IFLAGS@
+OPT_GPU_PATCH_LDFLAGS = @OPT_GPU_PATCH_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -1534,8 +1538,8 @@ bin_SCRIPTS = $(am__append_4) $(am__append_6)
 pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
-pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_121) \
-	$(am__append_122)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_122) \
+	$(am__append_123)
 BUILT_SOURCES = $(am__append_20)
 CLEANFILES = $(am__append_21)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
@@ -1545,6 +1549,9 @@ CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 CUDA_SANITIZER_INC_FLGS = @OPT_CUDA_SANITIZER_IFLAGS@
 CUDA_SANITIZER_BASE = @OPT_CUDA_SANITIZER@
+GPU_PATCH_INC_FLGS = @OPT_GPU_PATCH_IFLAGS@
+GPU_PATCH_LD_FLGS = @OPT_GPU_PATCH_LDFLAGS@
+GPU_PATCH_BASE = @OPT_GPU_PATCH@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
 PLUGIN_CONFIG_FILES = ga io memleak pthread
 UNW_UNIV_FILES = \
@@ -1625,7 +1632,8 @@ UNW_MIPS_INCLUDE_DIRS = \
 UNW_MIPS_LD_FLAGS = 
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 $(am__append_11) \
 	$(am__append_17) $(am__append_96) $(am__append_100) \
-	$(am__append_104) $(am__append_106) $(am__append_110)
+	$(am__append_104) $(am__append_105) $(am__append_107) \
+	$(am__append_111)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1749,6 +1757,7 @@ MY_INCLUDE_DIRS = \
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)            \
         $(OPT_CUDA_SANITIZER_IFLAGS)   \
+        $(OPT_GPU_PATCH_IFLAGS)        \
 	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)
 
@@ -1771,12 +1780,12 @@ libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_24) $(am__append_25) $(am__append_38) \
 	$(am__append_51) $(am__append_67) $(am__append_80) \
 	$(am__append_93) $(am__append_97) $(am__append_101) \
-	$(am__append_111) $(am__append_118) $(UNW_SOURCE_FILES) \
+	$(am__append_112) $(am__append_119) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_26) $(am__append_39) $(am__append_52) \
 	$(am__append_68) $(am__append_81) $(am__append_98) \
-	$(am__append_102) $(am__append_107) $(am__append_112) \
+	$(am__append_102) $(am__append_108) $(am__append_113) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -1822,13 +1831,13 @@ libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(LIBUNWIND_CPPFLAGS_DYN) \
 	$(MY_INCLUDE_DIRS) $(am__append_18) $(am__append_27) \
 	$(am__append_40) $(am__append_53) $(am__append_69) \
 	$(am__append_82) $(am__append_94) $(am__append_99) \
-	$(am__append_103) $(am__append_105) $(am__append_113) \
-	$(am__append_116) $(am__append_119) $(UNW_INCLUDE_DIRS)
+	$(am__append_103) $(am__append_106) $(am__append_114) \
+	$(am__append_117) $(am__append_120) $(UNW_INCLUDE_DIRS)
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(LIBUNWIND_CPPFLAGS_STAT) $(MY_INCLUDE_DIRS) $(am__append_19) \
 	$(am__append_28) $(am__append_41) $(am__append_54) \
-	$(am__append_70) $(am__append_83) $(am__append_108) \
-	$(am__append_114) $(am__append_117) $(UNW_INCLUDE_DIRS)
+	$(am__append_70) $(am__append_83) $(am__append_109) \
+	$(am__append_115) $(am__append_118) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -1880,7 +1889,7 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_120)
+	$(am__append_121)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1903,7 +1912,7 @@ libhpcrun_o_LDADD = $(HPCLIB_ProfLean) $(HPCLIB_SupportLean) \
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -L$(LIBELF_LIB) -lelf $(LIBUNWIND_LDFLAGS_DYN) \
 	$(LZMA_LDFLAGS_DYN) $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) \
-	$(am__append_55) $(am__append_95) $(am__append_115) \
+	$(am__append_55) $(am__append_95) $(am__append_116) \
 	$(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
@@ -1911,7 +1920,7 @@ libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
-	$(PERFMON_LDFLAGS_STAT) $(am__append_56) $(am__append_109) \
+	$(PERFMON_LDFLAGS_STAT) $(am__append_56) $(am__append_110) \
 	$(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_66) \
 	$(UNW_INCLUDE_DIRS)

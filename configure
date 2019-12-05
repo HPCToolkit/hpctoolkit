@@ -644,6 +644,11 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_GPU_PATCH_LDFLAGS
+OPT_GPU_PATCH_IFLAGS
+OPT_GPU_PATCH
+OPT_ENABLE_GPU_PATCH_FALSE
+OPT_ENABLE_GPU_PATCH_TRUE
 OPT_CUDA_SANITIZER_LDFLAGS
 OPT_CUDA_SANITIZER_IFLAGS
 OPT_CUDA_SANITIZER
@@ -958,7 +963,6 @@ infodir
 docdir
 oldincludedir
 includedir
-runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -1047,6 +1051,9 @@ with_cupti_lib
 with_cuda_sanitizer
 with_cuda_sanitizer_include
 with_cuda_sanitizer_lib
+with_gpu_patch
+with_gpu_patch_include
+with_gpu_patch_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1112,7 +1119,6 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
-runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1365,15 +1371,6 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
-  -runstatedir | --runstatedir | --runstatedi | --runstated \
-  | --runstate | --runstat | --runsta | --runst | --runs \
-  | --run | --ru | --r)
-    ac_prev=runstatedir ;;
-  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
-  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
-  | --run=* | --ru=* | --r=*)
-    runstatedir=$ac_optarg ;;
-
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1511,7 +1508,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir runstatedir
+		libdir localedir mandir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1664,7 +1661,6 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
-  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1822,6 +1818,14 @@ Optional Packages:
   --with-cuda-sanitizer-lib=PATH
                           use given cuda-sanitizer lib (absolute path) with
                           hpcrun (default is NO)
+  --with-gpu-patch=PATH   use given GPU_PATCH installation (absolute path)
+                          with hpcrun (default is NO)
+  --with-gpu-patch-include=PATH
+                          use given gpu-patch include (absolute path) with
+                          hpcrun (default is NO)
+  --with-gpu-patch-lib=PATH
+                          use given gpu-patch lib (absolute path) with hpcrun
+                          (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -23290,6 +23294,103 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-gpu-patch=PATH
+#-------------------------------------------------
+OPT_HAVE_GPU_PATCH=no
+OPT_GPU_PATCH=
+OPT_GPU_PATCH_INCPATH=
+OPT_GPU_PATCH_IFLAGS=
+OPT_GPU_PATCH_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    GPU_PATCH_LIB_SEARCH_ORDER="lib32 lib"
+else
+    GPU_PATCH_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+# Check whether --with-gpu-patch was given.
+if test "${with_gpu_patch+set}" = set; then :
+  withval=$with_gpu_patch; if test $withval != no; then
+     OPT_HAVE_GPU_PATCH=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-gpu-patch requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_GPU_PATCH=${withval}
+   fi
+fi
+
+
+#
+# Valid gpu-patch library
+#
+if test "$OPT_HAVE_GPU_PATCH" = yes; then
+    OPT_GPU_PATCH_IFLAGS="-I$OPT_GPU_PATCH/include"
+fi
+
+if test "$OPT_HAVE_GPU_PATCH" = "yes" ; then
+
+# Check whether --with-gpu-patch-include was given.
+if test "${with_gpu_patch_include+set}" = set; then :
+  withval=$with_gpu_patch_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-gpu-patch-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_GPU_PATCH_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_GPU_PATCH}/include/gpu-patch.h; then
+         OPT_GPU_PATCH_INCPATH=${OPT_GPU_PATCH}/include
+
+$as_echo "#define HAVE_GPU_PATCH_H 1" >>confdefs.h
+
+     else
+         as_fn_error $? "'${OPT_GPU_PATCH}/include/gpu-patch.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_GPU_PATCH_IFLAGS="-I${OPT_GPU_PATCH_INCPATH} "
+
+
+# Check whether --with-gpu-patch-lib was given.
+if test "${with_gpu_patch_lib+set}" = set; then :
+  withval=$with_gpu_patch_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-gpu-patch-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_GPU_PATCH_LIBPATH=${withval}
+   fi
+else
+  if test -f "${OPT_GPU_PATCH}/lib/gpu-patch.fatbin"
+    then
+      OPT_GPU_PATCH_LIBPATH="${OPT_GPU_PATCH}"
+      break
+    fi
+    if test  -z "${OPT_GPU_PATCH_LIBPATH}" ; then
+      as_fn_error $? "gpu-patch.fatbin not found" "$LINENO" 5
+    fi
+
+fi
+
+
+  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/gpu-patch.fatbin"
+fi
+
+ if test "$OPT_HAVE_GPU_PATCH" = yes; then
+  OPT_ENABLE_GPU_PATCH_TRUE=
+  OPT_ENABLE_GPU_PATCH_FALSE='#'
+else
+  OPT_ENABLE_GPU_PATCH_TRUE='#'
+  OPT_ENABLE_GPU_PATCH_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -23817,6 +23918,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_SANITIZER_TRUE}" && test -z "${OPT_ENABLE_CUDA_SANITIZER_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUDA_SANITIZER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_GPU_PATCH_TRUE}" && test -z "${OPT_ENABLE_GPU_PATCH_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_GPU_PATCH\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
