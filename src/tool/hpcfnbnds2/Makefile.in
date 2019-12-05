@@ -137,7 +137,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(pkglibexecdir)"
 PROGRAMS = $(pkglibexec_PROGRAMS)
 am__objects_1 = hpcfnbounds2-fnbounds.$(OBJEXT) \
-	hpcfnbounds2-debug_fn.$(OBJEXT) hpcfnbounds2-server.$(OBJEXT)
+	hpcfnbounds2-debug_fn.$(OBJEXT) hpcfnbounds2-scan.$(OBJEXT) \
+	hpcfnbounds2-server.$(OBJEXT)
 am_hpcfnbounds2_OBJECTS = $(am__objects_1)
 hpcfnbounds2_OBJECTS = $(am_hpcfnbounds2_OBJECTS)
 hpcfnbounds2_DEPENDENCIES =
@@ -495,6 +496,7 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = \
 	fnbounds.c \
 	debug_fn.c \
+	scan.c \
 	server.c
 
 MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
@@ -644,6 +646,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds2-debug_fn.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds2-fnbounds.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds2-scan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcfnbounds2-server.Po@am__quote@
 
 .c.o:
@@ -694,6 +697,20 @@ hpcfnbounds2-debug_fn.obj: debug_fn.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='debug_fn.c' object='hpcfnbounds2-debug_fn.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hpcfnbounds2-debug_fn.obj `if test -f 'debug_fn.c'; then $(CYGPATH_W) 'debug_fn.c'; else $(CYGPATH_W) '$(srcdir)/debug_fn.c'; fi`
+
+hpcfnbounds2-scan.o: scan.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hpcfnbounds2-scan.o -MD -MP -MF $(DEPDIR)/hpcfnbounds2-scan.Tpo -c -o hpcfnbounds2-scan.o `test -f 'scan.c' || echo '$(srcdir)/'`scan.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds2-scan.Tpo $(DEPDIR)/hpcfnbounds2-scan.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='scan.c' object='hpcfnbounds2-scan.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hpcfnbounds2-scan.o `test -f 'scan.c' || echo '$(srcdir)/'`scan.c
+
+hpcfnbounds2-scan.obj: scan.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hpcfnbounds2-scan.obj -MD -MP -MF $(DEPDIR)/hpcfnbounds2-scan.Tpo -c -o hpcfnbounds2-scan.obj `if test -f 'scan.c'; then $(CYGPATH_W) 'scan.c'; else $(CYGPATH_W) '$(srcdir)/scan.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/hpcfnbounds2-scan.Tpo $(DEPDIR)/hpcfnbounds2-scan.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='scan.c' object='hpcfnbounds2-scan.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hpcfnbounds2-scan.obj `if test -f 'scan.c'; then $(CYGPATH_W) 'scan.c'; else $(CYGPATH_W) '$(srcdir)/scan.c'; fi`
 
 hpcfnbounds2-server.o: server.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(hpcfnbounds2_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hpcfnbounds2-server.o -MD -MP -MF $(DEPDIR)/hpcfnbounds2-server.Tpo -c -o hpcfnbounds2-server.o `test -f 'server.c' || echo '$(srcdir)/'`server.c

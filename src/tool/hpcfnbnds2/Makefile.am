@@ -92,6 +92,7 @@ ZLIB_LIB = @ZLIB_LIB@
 MYSOURCES = \
 	fnbounds.c \
 	debug_fn.c \
+	scan.c \
 	server.c
 
 MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
