@@ -34,6 +34,14 @@ sanitizer_context_map_lookup
 
 
 void
+sanitizer_context_map_init
+(
+ CUcontext context,
+ CUstream priority_stream
+);
+
+
+void
 sanitizer_context_map_insert
 (
  CUcontext context,
@@ -86,6 +94,13 @@ void
 sanitizer_context_map_delete
 (
  CUcontext context
+);
+
+
+CUstream
+sanitizer_context_map_entry_priority_stream_get
+(
+ sanitizer_context_map_entry_t *entry
 );
 
 #endif

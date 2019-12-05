@@ -795,8 +795,6 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_CREATION_FINISHED:
         {
-          // Create a thread with highest priority stream
-          cu_priority_stream_create();
           break;
         }
       case SANITIZER_CBID_RESOURCE_CONTEXT_DESTROY_STARTING:
@@ -831,6 +829,12 @@ sanitizer_subscribe_callback
       // multi-thread
       // gaurantee that each time only a single callback data is associated with a stream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
+      sanitizer_context_map_entry_t *entry = sanitizer_context_map_lookup(ld->context);
+      // Create a high priority stream for the context at the first time
+      if (entry == NULL || sanitizer_context_map_entry_priority_stream_get(entry) == NULL) {
+        CUstream stream = cuda_priority_stream_create();
+        sanitizer_context_map_init(ld->context, stream);
+      }
       sanitizer_kernel_launch_callback(ld->context, ld->module, ld->function, ld->stream);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);

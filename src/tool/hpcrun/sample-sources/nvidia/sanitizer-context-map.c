@@ -24,6 +24,7 @@
 
 struct sanitizer_context_map_entry_s {
   CUcontext context;
+  CUstream priority_stream;
   sanitizer_stream_map_entry_t *streams;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;
@@ -42,12 +43,13 @@ static __thread sanitizer_context_map_entry_t *sanitizer_context_map_root = NULL
  *****************************************************************************/
 
 static sanitizer_context_map_entry_t *
-sanitizer_context_map_entry_new(CUcontext context)
+sanitizer_context_map_entry_new(CUcontext context, CUstream priority_stream)
 {
   sanitizer_context_map_entry_t *e;
   e = (sanitizer_context_map_entry_t *)
     hpcrun_malloc(sizeof(sanitizer_context_map_entry_t));
   e->context = context;
+  e->priority_stream = priority_stream;
   e->streams = NULL;
   e->left = NULL;
   e->right = NULL;
@@ -82,7 +84,7 @@ sanitizer_context_map_delete_root()
 
 
 static void
-sanitizer_context_map_init_internal(CUcontext context)
+sanitizer_context_map_init_internal(CUcontext context, CUstream priority_stream)
 {
   sanitizer_context_map_entry_t *entry = NULL;
 
@@ -91,14 +93,14 @@ sanitizer_context_map_init_internal(CUcontext context)
       sanitizer_context_map_splay(sanitizer_context_map_root, context);
 
     if (context < sanitizer_context_map_root->context) {
-      entry = sanitizer_context_map_entry_new(context);
+      entry = sanitizer_context_map_entry_new(context, priority_stream);
       entry->left = entry->right = NULL;
       entry->left = sanitizer_context_map_root->left;
       entry->right = sanitizer_context_map_root;
       sanitizer_context_map_root->left = NULL;
       sanitizer_context_map_root = entry;
     } else if (context > sanitizer_context_map_root->context) {
-      entry = sanitizer_context_map_entry_new(context);
+      entry = sanitizer_context_map_entry_new(context, priority_stream);
       entry->left = entry->right = NULL;
       entry->left = sanitizer_context_map_root;
       entry->right = sanitizer_context_map_root->right;
@@ -108,7 +110,7 @@ sanitizer_context_map_init_internal(CUcontext context)
       // context already present
     }
   } else {
-    entry = sanitizer_context_map_entry_new(context);
+    entry = sanitizer_context_map_entry_new(context, priority_stream);
     entry->left = entry->right = NULL;
     sanitizer_context_map_root = entry;
   }
@@ -169,10 +171,15 @@ sanitizer_context_map_lookup(CUcontext context)
 
 
 void
+sanitizer_context_map_init(CUcontext context, CUstream priority_stream)
+{
+  sanitizer_context_map_init_internal(context, priority_stream);
+}
+
+
+void
 sanitizer_context_map_insert(CUcontext context, CUstream stream, cstack_node_t *notification)
 {
-  sanitizer_context_map_init_internal(context);
-
   sanitizer_stream_map_insert(&sanitizer_context_map_root->streams, stream, notification);
 }
 
@@ -241,4 +248,14 @@ sanitizer_context_map_stream_unlock
   if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
     sanitizer_stream_map_stream_unlock(&entry->streams, stream);
   }
+}
+
+
+CUstream
+sanitizer_context_map_entry_priority_stream_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->priority_stream;
 }
