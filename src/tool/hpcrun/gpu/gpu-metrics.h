@@ -13,19 +13,6 @@
 // macros
 //*****************************************************************************
 
-/*
-typedef enum {
-  GPU_MEM_UNKNOWN = 0,
-  GPU_MEM_PAGEABLE = 1,
-  GPU_MEM_PINNED = 2,
-  GPU_MEM_DEVICE = 3,
-  GPU_MEM_ARRAY = 4,
-  GPU_MEM_MANAGED = 5,
-  GPU_MEM_DEVICE_STATIC = 6,
-  GPU_MEM_MANAGED_STATIC = 7
-} gpu_memory_metric_t;
-*/
-
 typedef enum {
   GPU_XCOPY_INVALID = 0,
   GPU_XCOPY_H2D_BYTES = 1,
