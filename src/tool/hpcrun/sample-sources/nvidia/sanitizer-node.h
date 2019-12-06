@@ -31,7 +31,6 @@ typedef struct sanitizer_entry_notification {
 
 // buffer: device only
 typedef struct sanitizer_entry_buffer {
-  CUcontext context;
   void *buffer;
 } sanitizer_entry_buffer_t;
 
@@ -77,7 +76,6 @@ sanitizer_notification_node_set
  dim3 grid_size,
  dim3 block_size
 );
-
 
 
 cstack_node_t *

@@ -94,8 +94,6 @@
   macro(sanitizerGetResultString)          \
   macro(sanitizerUnpatchModule)
 
-#define STRINGFY(x) #x
-
 // only subscribe by the main thread
 static spinlock_t cubin_files_lock = SPINLOCK_UNLOCKED;
 static spinlock_t allocate_buffer_lock = SPINLOCK_UNLOCKED;
@@ -420,8 +418,9 @@ sanitizer_load_callback
   }
 
   PRINT("Patch CUBIN\n");
+  PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
   // patch binary
-  HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, (STRINGFY(HPCTOOLKIT_GPU_PATCH), context));
+  HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, (HPCTOOLKIT_GPU_PATCH, context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -530,6 +529,8 @@ sanitizer_buffer_process
   }
 
   while (true) {
+    PRINT("Copying gpu_patch_buffer %p\n", buffer_device_entry->buffer);
+
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_buffer, buffer_device_entry->buffer, sizeof(gpu_patch_buffer_t), stream));
 
@@ -539,7 +540,9 @@ sanitizer_buffer_process
     }
 
     size_t num_records = gpu_patch_buffer->head_index;
-    PRINT("sanitizer_buffer_process->num_records %lu\n", num_records);
+    PRINT("gpu_patch_buffer head_index %u, tail_index %u, size %u, num_blocks %u, block_sampling_frequency %u\n",
+      gpu_patch_buffer->head_index, gpu_patch_buffer->tail_index, gpu_patch_buffer->size,
+      gpu_patch_buffer->num_blocks, gpu_patch_buffer->block_sampling_frequency);
     
     // first time copy back, allocate memory
     if (gpu_patch_record == NULL) {
@@ -574,7 +577,7 @@ sanitizer_buffer_process
         uint32_t bid_x, bid_y, bid_z;
         uint32_t tid_x, tid_y, tid_z;
         dim3_id_transform(grid_size, record->flat_block_id, &bid_x, &bid_y, &bid_z);
-        dim3_id_transform(block_size, record->flat_thread_id, &tid_x, &tid_y, &tid_z);
+        dim3_id_transform(block_size, record->flat_thread_id + j, &tid_x, &tid_y, &tid_z);
         used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|",
           pc, bid_x, bid_y, bid_z, tid_x, tid_y, tid_z);
         if (record->address[j]) {
@@ -604,6 +607,10 @@ sanitizer_buffer_process
       if (sanitizer_write_trace(hash, hash_len, sanitizer_trace, used) == false) {
         PRINT("Write file error\n");
       }
+    }
+
+    if (gpu_patch_buffer->num_blocks == 0) {
+      break;
     }
   }
 
@@ -716,7 +723,7 @@ sanitizer_kernel_launch_callback
       // Use a background thread to handle other context
       sanitizer_context_map_context_process(context, sanitizer_buffer_dispatch);
     } else {
-      if (atomic_compare_exchange(&sanitizer_allocated_buffer_num,
+      if (atomic_compare_exchange_strong(&sanitizer_allocated_buffer_num,
         &allocated_buffer_num, allocated_buffer_num + 1)) {
         // allocate a new one
         break;
@@ -736,6 +743,8 @@ sanitizer_kernel_launch_callback
     // gpu_patch_buffer
     HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&(buffer_device_entry->buffer), sizeof(gpu_patch_buffer_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (buffer_device_entry->buffer, 0, sizeof(gpu_patch_buffer_t), stream));
+
+    PRINT("Allocate gpu_patch_buffer %p, size %zu\n", buffer_device_entry->buffer, sizeof(gpu_patch_buffer_t));
 
     // gpu_patch_buffer_t->records
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
