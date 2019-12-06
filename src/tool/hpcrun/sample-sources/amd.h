@@ -9,8 +9,6 @@
 typedef struct gpu_activity_t gpu_activity_t;
 typedef struct cct_node_t cct_node_t;
 
-void roctracer_activity_attribute(gpu_activity_t *activity);
-
 void roctracer_init();
 void roctracer_fini();
 

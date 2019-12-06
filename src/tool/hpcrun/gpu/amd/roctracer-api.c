@@ -28,6 +28,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/sample-sources/amd.h>
 
 #include <lib/prof-lean/stdatomic.h>
@@ -307,7 +308,7 @@ roctracer_subscriber_callback
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
         hpcrun_safe_exit();
 
-        gpu_activity_channel_consume(roctracer_activity_attribute);
+        gpu_activity_channel_consume(gpu_metrics_attribute);
         
         // Generate notification entry
         uint64_t cpu_submit_time = CPU_NANOTIME();
@@ -419,6 +420,6 @@ roctracer_fini
     HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
     HPCRUN_ROCTRACER_CALL(roctracer_disable_activity,());
     HPCRUN_ROCTRACER_CALL(roctracer_flush_activity,(NULL));
-    gpu_application_thread_process_activities(roctracer_activity_attribute);
+    gpu_application_thread_process_activities(gpu_metrics_attribute);
 }
 

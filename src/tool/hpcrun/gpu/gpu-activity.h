@@ -262,7 +262,7 @@ typedef struct gpu_synchronization_t {
   uint32_t context_id;
   uint32_t stream_id;
   uint32_t event_id;
-  uint32_t syncKind;
+  gpu_sync_type_t syncKind;
 } gpu_synchronization_t;
 
 
