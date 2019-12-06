@@ -343,6 +343,8 @@ gpu_kernel_process
 
       attribute_activity(host_op_entry, activity, func_node);
     }
+  } else {
+    PRINT("Kernel execution correlation_id %u cannot be found", correlation_id);
   }
 
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);

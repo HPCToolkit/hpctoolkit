@@ -98,20 +98,20 @@
 #define METRIC_KIND(name)			\
 name ## _metric_kind
 
-#define DECLARE_METRIC_KINDS(name, value)	\
+#define INITIALIZE_METRIC_KINDS(name, value)	\
   static kind_info_t * METRIC_KIND(name) = NULL;
 
 #define METRIC_ID(name) \
   name ## _metric_id
 
-#define DECLARE_INDEXED_METRIC(name, value)			\
+#define INITIALIZE_INDEXED_METRIC(name, value)			\
   static int METRIC_ID(name)[NUM_CLAUSES( FORALL_ ## name)];
 
-#define DECLARE_SCALAR_METRIC(string, name)	\
+#define INITIALIZE_SCALAR_METRIC(string, name)	\
   static int METRIC_ID(name);
 
-#define DECLARE_SCALAR_METRIC_KIND(kind, value)	\
-  FORALL_ ## kind (DECLARE_SCALAR_METRIC)
+#define INITIALIZE_SCALAR_METRIC_KIND(kind, value)	\
+  FORALL_ ## kind (INITIALIZE_SCALAR_METRIC)
 
 
 //------------------------------------------------------------------------------
@@ -120,32 +120,32 @@ name ## _metric_kind
 
 #define APPLY(f,n) f(n)
 
-#define INITIALIZE_METRICS()					\
+#define INITIALIZE_METRIC_KIND()					\
   APPLY(METRIC_KIND,CURRENT_METRIC) = hpcrun_metrics_new_kind()
 
 
-#define FINALIZE_METRICS()				\
+#define FINALIZE_METRIC_KIND()				\
   hpcrun_close_kind(APPLY(METRIC_KIND,CURRENT_METRIC))
 
 
-#define DECLARE_INDEXED_METRIC_INT(metric_desc, index) \
+#define INITIALIZE_INDEXED_METRIC_INT(metric_desc, index) \
    APPLY(METRIC_ID,CURRENT_METRIC)[index] =				\
     hpcrun_set_new_metric_info(APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc);
 
 
-#define DECLARE_INDEXED_METRIC_REAL(metric_desc, index)	\
+#define INITIALIZE_INDEXED_METRIC_REAL(metric_desc, index)	\
    APPLY(METRIC_ID,CURRENT_METRIC)[index] =		\
     hpcrun_set_new_metric_info_and_period		\
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc,	\
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 
-#define DECLARE_SCALAR_METRIC_INT(metric_desc, metric_name) \
+#define INITIALIZE_SCALAR_METRIC_INT(metric_desc, metric_name) \
    METRIC_ID(metric_name) =				\
     hpcrun_set_new_metric_info(APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc);
 
 
-#define DECLARE_SCALAR_METRIC_REAL(metric_desc, metric_name)	\
+#define INITIALIZE_SCALAR_METRIC_REAL(metric_desc, metric_name)	\
   METRIC_ID(metric_name) =				\
     hpcrun_set_new_metric_info_and_period			\
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc,	\
@@ -161,11 +161,11 @@ name ## _metric_kind
 // local variables 
 //*****************************************************************************
 
-FORALL_METRIC_KINDS(DECLARE_METRIC_KINDS)
+FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS)
 
-FORALL_INDEXED_METRICS(DECLARE_INDEXED_METRIC)
+FORALL_INDEXED_METRICS(INITIALIZE_INDEXED_METRIC)
 
-FORALL_SCALAR_METRICS(DECLARE_SCALAR_METRIC_KIND)
+FORALL_SCALAR_METRICS(INITIALIZE_SCALAR_METRIC_KIND)
 
 static int gpu_sample_period = 0;
 
@@ -541,14 +541,96 @@ gpu_metrics_GTIMES_enable
  void
 )
 {
+
+// Execution time metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GTIMES
 
-  INITIALIZE_METRICS();
+  INITIALIZE_METRIC_KIND();
 
-  FORALL_GTIMES(DECLARE_SCALAR_METRIC_REAL)
+  FORALL_GTIMES(INITIALIZE_SCALAR_METRIC_REAL)
 
-  FINALIZE_METRICS();
+  FINALIZE_METRIC_KIND();
+
+// Memcpy metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GMEM
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GMEM(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+
+// Memset metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GMSET
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GMSET(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU explicit copy merics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GXCOPY
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GXCOPY(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU synchonrization merics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GSYNC
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GSYNC(INITIALIZE_INDEXED_METRIC_REAL)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU kernel characteristics metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC KINFO
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_KINFO(INITIALIZE_SCALAR_METRIC_REAL)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU implicit copy metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GICOPY
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GICOPY(INITIALIZE_SCALAR_METRIC_REAL)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU global memory access metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GGMEM
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GGMEM(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+
+// GPU local memory access metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GLMEM
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GLMEM(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
 }
 
 
@@ -561,20 +643,30 @@ gpu_metrics_pcsampling_enable
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GPU_INST_STALL
 
-  INITIALIZE_METRICS();
+  INITIALIZE_METRIC_KIND();
 
-  FORALL_GPU_INST_STALL(DECLARE_INDEXED_METRIC_INT)
+  FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
 
-  FINALIZE_METRICS();
+  FINALIZE_METRIC_KIND();
 
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GSAMP
 
-  INITIALIZE_METRICS();
+  INITIALIZE_METRIC_KIND();
 
-  FORALL_GSAMP(DECLARE_SCALAR_METRIC_INT)
+  FORALL_GSAMP(INITIALIZE_SCALAR_METRIC_INT)
 
-  FINALIZE_METRICS();
+  FINALIZE_METRIC_KIND();
+
+// GPU branch instruction metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GBR
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GBR(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
 }
 
 

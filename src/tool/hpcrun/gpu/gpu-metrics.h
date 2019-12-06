@@ -13,10 +13,24 @@
 // macros
 //*****************************************************************************
 
+typedef enum {
+  GPU_XCOPY_INVALID = 0,
+  GPU_XCOPY_H2D_BYTES = 1,
+  GPU_XCOPY_D2H_BYTES = 2,
+  GPU_XCOPY_H2A_BYTES = 3,
+  GPU_XCOPY_A2H_BYTES = 4,
+  GPU_XCOPY_A2A_BYTES = 5,
+  GPU_XCOPY_A2D_BYTES = 6,
+  GPU_XCOPY_D2A_BYTES = 7,
+  GPU_XCOPY_D2D_BYTES = 8,
+  GPU_XCOPY_H2H_BYTES = 9,
+  GPU_XCOPY_P2P_BYTES = 10
+} gpu_explicit_copy_metric_t;
+
+
 enum {
   GPU_INST_STALL_ALL = 0
 } gpu_inst_stall_all_t;
-
 
 typedef enum {
   GPU_GMEM_LD_CACHED_BYTES = 0,
@@ -41,7 +55,6 @@ typedef enum {
 } gpu_lmem_ops_t;
 
 
-#if 0
 typedef enum {
   GPU_TIME_KERNEL  = 0,
   GPU_TIME_MEM     = 1,
@@ -50,7 +63,6 @@ typedef enum {
   GPU_TIME_ICOPY   = 4,	
   GPU_TIME_SYNC    = 5,
 } gpu_times_t;
-#endif
 
 
 //--------------------------------------------------------------------------
@@ -119,6 +131,31 @@ typedef enum {
   macro("GSYNC:STR (us)",         GPU_SYNC_STREAM)		\
   macro("GSYNC:CTX (us)",         GPU_SYNC_CONTEXT)
 
+// gpu global memory access
+#define FORALL_GGMEM(macro)						\
+  macro("GGMEM:LDC (B)",          GPU_GMEM_LD_CACHED_BYTES)		\
+  macro("GGMEM:LDU (B)",          GPU_GMEM_LD_UNCACHED_BYTES)		\
+  macro("GGMEM:ST (B)",           GPU_GMEM_ST_BYTES)			\
+  									\
+  macro("GGMEM:LDC (L2T)",        GPU_GMEM_LD_CACHED_L2TRANS)		\
+  macro("GGMEM:LDU (L2T)",        GPU_GMEM_LD_UNCACHED_L2TRANS)		\
+  macro("GGMEM:ST (L2T)",         GPU_GMEM_ST_L2TRANS)			\
+  				  					\
+  macro("GGMEM:LDCT (L2T)",       GPU_GMEM_LD_CACHED_L2TRANS_THEOR)	\
+  macro("GGMEM:LDUT (L2T)",       GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR)	\
+  macro("GGMEM:STT (L2T)",        GPU_GMEM_ST_L2TRANS_THEOR)
+
+
+// gpu local memory access
+#define FORALL_GLMEM(macro)					\
+  macro("GLMEM:LD (B)",           GPU_LMEM_LD_BYTES)		\
+  macro("GLMEM:ST (B)",           GPU_LMEM_ST_BYTES)		\
+								\
+  macro("GLMEM:LD (T)",           GPU_LMEM_LD_TRANS)		\
+  macro("GLMEM:ST (T)",           GPU_LMEM_ST_TRANS)		\
+								\
+  macro("GLMEM:LDT (T)",          GPU_LMEM_LD_TRANS_THEOR)	\
+  macro("GLMEM:STT (T)",          GPU_LMEM_ST_TRANS_THEOR)
 
 //--------------------------------------------------------------------------
 // scalar metrics 
@@ -167,33 +204,6 @@ typedef enum {
   macro("GICOPY:RMAP",            GPU_ICOPY_RMAP)		
 
 
-// gpu global memory access
-#define FORALL_GGMEM(macro)						\
-  macro("GGMEM:LDC (B)",          GPU_GMEM_LD_CACHED_BYTES)		\
-  macro("GGMEM:LDU (B)",          GPU_GMEM_LD_UNCACHED_BYTES)		\
-  macro("GGMEM:ST (B)",           GPU_GMEM_ST_BYTES)			\
-  									\
-  macro("GGMEM:LDC (L2T)",        GPU_GMEM_LD_CACHED_L2TRANS)		\
-  macro("GGMEM:LDU (L2T)",        GPU_GMEM_LD_UNCACHED_L2TRANS)		\
-  macro("GGMEM:ST (L2T)",         GPU_GMEM_ST_L2TRANS)			\
-  				  					\
-  macro("GGMEM:LDCT (L2T)",       GPU_GMEM_LD_CACHED_L2TRANS_THEOR)	\
-  macro("GGMEM:LDUT (L2T)",       GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR)	\
-  macro("GGMEM:STT (L2T)",        GPU_GMEM_ST_L2TRANS_THEOR)
-
-
-// gpu local memory access
-#define FORALL_GLMEM(macro)					\
-  macro("GLMEM:LD (B)",           GPU_LMEM_LD_BYTES)		\
-  macro("GLMEM:ST (B)",           GPU_LMEM_ST_BYTES)		\
-								\
-  macro("GLMEM:LD (T)",           GPU_LMEM_LD_TRANS)		\
-  macro("GLMEM:ST (T)",           GPU_LMEM_ST_TRANS)		\
-								\
-  macro("GLMEM:LDT (T)",          GPU_LMEM_LD_TRANS_THEOR)	\
-  macro("GLMEM:STT (T)",          GPU_LMEM_ST_TRANS_THEOR)
-
-
 // gpu branch
 #define FORALL_GBR(macro)					\
   macro("GBR:DIV",                GPU_BR_DIVERGED)		\
@@ -209,6 +219,23 @@ typedef enum {
   macro("GSAMP:EFF",              GPU_SAMPLE_EFFICIENCY)
 
 
+void
+gpu_metrics_attribute
+(
+ gpu_activity_t *activity
+);
+
+void
+gpu_metrics_GTIMES_enable
+(
+ void
+);
+
+void
+gpu_metrics_pcsampling_enable
+(
+ void
+);
 
 #endif
 

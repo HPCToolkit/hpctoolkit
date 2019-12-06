@@ -504,9 +504,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-activity-translate.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cupti-api.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/upc.c \
-	sample-sources/amd/amd.c gpu/amd/hip-state-placeholders.c \
-	gpu/amd/roctracer-api.c gpu/amd/roctracer-node.c \
-	gpu/amd/roctracer-record.c unwind/common/backtrace.c \
+	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
+	gpu/amd/roctracer-api.c unwind/common/backtrace.c \
 	unwind/common/unw-throw.c unwind/common/binarytree_uwi.c \
 	unwind/common/interval_t.c unwind/common/libunw_intervals.c \
 	unwind/common/stack_troll.c unwind/common/uw_hash.c \
@@ -689,11 +688,9 @@ am__objects_33 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
 am__objects_35 =
 @OPT_ENABLE_ROCM_TRUE@am__objects_36 =  \
-@OPT_ENABLE_ROCM_TRUE@	sample-sources/amd/libhpcrun_la-amd.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-hip-state-placeholders.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-node.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-record.lo
+@OPT_ENABLE_ROCM_TRUE@	sample-sources/libhpcrun_la-amd.lo \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-activity-translate.lo \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo
 @OPT_ENABLE_ROCM_TRUE@am__objects_37 = $(am__objects_36)
 am__objects_38 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
@@ -1776,11 +1773,9 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c		
 
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
-@OPT_ENABLE_ROCM_TRUE@	sample-sources/amd/amd.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/hip-state-placeholders.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-api.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-node.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-record.c
+@OPT_ENABLE_ROCM_TRUE@	sample-sources/amd.c \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-activity-translate.c \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-api.c 	
 
 MY_UPC_FILES = sample-sources/upc.c
 MY_INCLUDE_DIRS = \
@@ -2612,28 +2607,17 @@ gpu/nvidia/libhpcrun_la-cupti-gpu-api.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
-sample-sources/amd/$(am__dirstamp):
-	@$(MKDIR_P) sample-sources/amd
-	@: > sample-sources/amd/$(am__dirstamp)
-sample-sources/amd/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) sample-sources/amd/$(DEPDIR)
-	@: > sample-sources/amd/$(DEPDIR)/$(am__dirstamp)
-sample-sources/amd/libhpcrun_la-amd.lo:  \
-	sample-sources/amd/$(am__dirstamp) \
-	sample-sources/amd/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_la-amd.lo: sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 gpu/amd/$(am__dirstamp):
 	@$(MKDIR_P) gpu/amd
 	@: > gpu/amd/$(am__dirstamp)
 gpu/amd/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) gpu/amd/$(DEPDIR)
 	@: > gpu/amd/$(DEPDIR)/$(am__dirstamp)
-gpu/amd/libhpcrun_la-hip-state-placeholders.lo:  \
+gpu/amd/libhpcrun_la-roctracer-activity-translate.lo:  \
 	gpu/amd/$(am__dirstamp) gpu/amd/$(DEPDIR)/$(am__dirstamp)
 gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/$(am__dirstamp) \
-	gpu/amd/$(DEPDIR)/$(am__dirstamp)
-gpu/amd/libhpcrun_la-roctracer-node.lo: gpu/amd/$(am__dirstamp) \
-	gpu/amd/$(DEPDIR)/$(am__dirstamp)
-gpu/amd/libhpcrun_la-roctracer-record.lo: gpu/amd/$(am__dirstamp) \
 	gpu/amd/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-backtrace.lo:  \
 	unwind/common/$(am__dirstamp) \
@@ -3321,8 +3305,6 @@ mostlyclean-compile:
 	-rm -f os/linux/*.lo
 	-rm -f sample-sources/*.$(OBJEXT)
 	-rm -f sample-sources/*.lo
-	-rm -f sample-sources/amd/*.$(OBJEXT)
-	-rm -f sample-sources/amd/*.lo
 	-rm -f sample-sources/blame-shift/*.$(OBJEXT)
 	-rm -f sample-sources/blame-shift/*.lo
 	-rm -f sample-sources/perf/*.$(OBJEXT)
@@ -3498,10 +3480,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-hip-state-placeholders.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-node.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-hash-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
@@ -3579,6 +3559,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_la-io-over.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_wrap_a-io-over.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-amd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
@@ -3623,7 +3604,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-upc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_pthread_la-pthread-blame-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_pthread_wrap_a-pthread-blame-overrides.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/amd/$(DEPDIR)/libhpcrun_la-amd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_la-blame-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_la-blame-shift.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/blame-shift/$(DEPDIR)/libhpcrun_la-directed.Plo@am__quote@
@@ -4999,19 +4979,19 @@ sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
 
-sample-sources/amd/libhpcrun_la-amd.lo: sample-sources/amd/amd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/amd/libhpcrun_la-amd.lo -MD -MP -MF sample-sources/amd/$(DEPDIR)/libhpcrun_la-amd.Tpo -c -o sample-sources/amd/libhpcrun_la-amd.lo `test -f 'sample-sources/amd/amd.c' || echo '$(srcdir)/'`sample-sources/amd/amd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/amd/$(DEPDIR)/libhpcrun_la-amd.Tpo sample-sources/amd/$(DEPDIR)/libhpcrun_la-amd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/amd/amd.c' object='sample-sources/amd/libhpcrun_la-amd.lo' libtool=yes @AMDEPBACKSLASH@
+sample-sources/libhpcrun_la-amd.lo: sample-sources/amd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-amd.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-amd.Tpo -c -o sample-sources/libhpcrun_la-amd.lo `test -f 'sample-sources/amd.c' || echo '$(srcdir)/'`sample-sources/amd.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-amd.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-amd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/amd.c' object='sample-sources/libhpcrun_la-amd.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/amd/libhpcrun_la-amd.lo `test -f 'sample-sources/amd/amd.c' || echo '$(srcdir)/'`sample-sources/amd/amd.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-amd.lo `test -f 'sample-sources/amd.c' || echo '$(srcdir)/'`sample-sources/amd.c
 
-gpu/amd/libhpcrun_la-hip-state-placeholders.lo: gpu/amd/hip-state-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-hip-state-placeholders.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-hip-state-placeholders.Tpo -c -o gpu/amd/libhpcrun_la-hip-state-placeholders.lo `test -f 'gpu/amd/hip-state-placeholders.c' || echo '$(srcdir)/'`gpu/amd/hip-state-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-hip-state-placeholders.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-hip-state-placeholders.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/hip-state-placeholders.c' object='gpu/amd/libhpcrun_la-hip-state-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/amd/libhpcrun_la-roctracer-activity-translate.lo: gpu/amd/roctracer-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-roctracer-activity-translate.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Tpo -c -o gpu/amd/libhpcrun_la-roctracer-activity-translate.lo `test -f 'gpu/amd/roctracer-activity-translate.c' || echo '$(srcdir)/'`gpu/amd/roctracer-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/roctracer-activity-translate.c' object='gpu/amd/libhpcrun_la-roctracer-activity-translate.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-hip-state-placeholders.lo `test -f 'gpu/amd/hip-state-placeholders.c' || echo '$(srcdir)/'`gpu/amd/hip-state-placeholders.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-roctracer-activity-translate.lo `test -f 'gpu/amd/roctracer-activity-translate.c' || echo '$(srcdir)/'`gpu/amd/roctracer-activity-translate.c
 
 gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/roctracer-api.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-roctracer-api.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Tpo -c -o gpu/amd/libhpcrun_la-roctracer-api.lo `test -f 'gpu/amd/roctracer-api.c' || echo '$(srcdir)/'`gpu/amd/roctracer-api.c
@@ -5019,20 +4999,6 @@ gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/roctracer-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/roctracer-api.c' object='gpu/amd/libhpcrun_la-roctracer-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-roctracer-api.lo `test -f 'gpu/amd/roctracer-api.c' || echo '$(srcdir)/'`gpu/amd/roctracer-api.c
-
-gpu/amd/libhpcrun_la-roctracer-node.lo: gpu/amd/roctracer-node.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-roctracer-node.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-node.Tpo -c -o gpu/amd/libhpcrun_la-roctracer-node.lo `test -f 'gpu/amd/roctracer-node.c' || echo '$(srcdir)/'`gpu/amd/roctracer-node.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-node.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-node.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/roctracer-node.c' object='gpu/amd/libhpcrun_la-roctracer-node.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-roctracer-node.lo `test -f 'gpu/amd/roctracer-node.c' || echo '$(srcdir)/'`gpu/amd/roctracer-node.c
-
-gpu/amd/libhpcrun_la-roctracer-record.lo: gpu/amd/roctracer-record.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-roctracer-record.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-record.Tpo -c -o gpu/amd/libhpcrun_la-roctracer-record.lo `test -f 'gpu/amd/roctracer-record.c' || echo '$(srcdir)/'`gpu/amd/roctracer-record.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-record.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-record.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/roctracer-record.c' object='gpu/amd/libhpcrun_la-roctracer-record.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-roctracer-record.lo `test -f 'gpu/amd/roctracer-record.c' || echo '$(srcdir)/'`gpu/amd/roctracer-record.c
 
 unwind/common/libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-backtrace.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o unwind/common/libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -7830,7 +7796,6 @@ clean-libtool:
 	-rm -rf ompt/.libs ompt/_libs
 	-rm -rf os/linux/.libs os/linux/_libs
 	-rm -rf sample-sources/.libs sample-sources/_libs
-	-rm -rf sample-sources/amd/.libs sample-sources/amd/_libs
 	-rm -rf sample-sources/blame-shift/.libs sample-sources/blame-shift/_libs
 	-rm -rf sample-sources/perf/.libs sample-sources/perf/_libs
 	-rm -rf trampoline/aarch64/.libs trampoline/aarch64/_libs
@@ -8089,8 +8054,6 @@ distclean-generic:
 	-rm -f os/linux/$(am__dirstamp)
 	-rm -f sample-sources/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/$(am__dirstamp)
-	-rm -f sample-sources/amd/$(DEPDIR)/$(am__dirstamp)
-	-rm -f sample-sources/amd/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(am__dirstamp)
 	-rm -f sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
@@ -8139,7 +8102,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/amd/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -8189,7 +8152,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/amd/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
