@@ -25,6 +25,7 @@
 struct sanitizer_context_map_entry_s {
   CUcontext context;
   CUstream priority_stream;
+  cstack_node_t *active_device_buffers;
   sanitizer_stream_map_entry_t *streams;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;

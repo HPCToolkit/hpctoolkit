@@ -1053,6 +1053,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
     cupti_enabled_activities |= CUPTI_OVERHEAD;
   } else if (hpcrun_ev_is(nvidia_name, CUDA_SANITIZER)) {
+#ifndef HPCTOOLKIT_GPU_PATCH
+    monitor_real_exit(-1);
+#endif
+
     block_sampling_frequency = sample_frequency == 0 ?
       block_sampling_frequency_default : sample_frequency;
     cuda_init_placeholders();

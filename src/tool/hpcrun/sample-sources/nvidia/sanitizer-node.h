@@ -1,13 +1,14 @@
 #ifndef _HPCTOOLKIT_SANITIZER_NODE_H_
 #define _HPCTOOLKIT_SANITIZER_NODE_H_
 
+// gpu_patch_buffer_t
+// gpu_patch_record_t
+#include <gpu-patch.h>
 #include <hpcrun/cct/cct.h>
 #include <cuda.h>
 #include <vector_types.h>
 
 #include "cstack.h"
-
-#define MAX_ACCESS_SIZE (16)
 
 typedef enum {
   SANITIZER_ACTIVITY_TYPE_MEMORY = 0,
@@ -15,40 +16,22 @@ typedef enum {
 } sanitizer_activity_type_t;
 
 
-// sanitizer buffers
-typedef struct sanitizer_memory_buffer {
-  uint64_t pc;
-  uint64_t address;
-  uint32_t size;
-  uint32_t flags;
-  uint8_t value[MAX_ACCESS_SIZE];  // STS.128->16 bytes
-  dim3 thread_ids;
-  dim3 block_ids;
-} sanitizer_memory_buffer_t;
-
-
-typedef struct sanitizer_buffer {
-  uint32_t cur_index;
-  uint32_t max_index;
-  uint32_t *thread_hash_locks;
-  uint32_t block_sampling_frequency;
-  void *buffers;
-} sanitizer_buffer_t;
-
-
 // notification: host only
 typedef struct sanitizer_entry_notification {
   CUmodule module;
+  CUcontext context;
   CUstream stream;
   uint64_t function_addr;
-  cct_node_t *host_op_node;
-  sanitizer_activity_type_t type;
   cstack_node_t *buffer_device;
+  cct_node_t *host_op_node;
+  dim3 grid_size;
+  dim3 block_size;
 } sanitizer_entry_notification_t;
 
 
 // buffer: device only
 typedef struct sanitizer_entry_buffer {
+  CUcontext context;
   void *buffer;
 } sanitizer_entry_buffer_t;
 
@@ -71,11 +54,13 @@ cstack_node_t *
 sanitizer_notification_node_new
 (
  CUmodule module,
+ CUcontext context,
  CUstream stream,
- uint64_t function_addr,
+ uint64_t function_addr, 
+ cstack_node_t *buffer_device,
  cct_node_t *host_op_node,
- sanitizer_activity_type_t type,
- cstack_node_t *buffer_device
+ dim3 grid_size,
+ dim3 block_size
 );
 
 
@@ -84,11 +69,13 @@ sanitizer_notification_node_set
 (
  cstack_node_t *node,
  CUmodule module,
+ CUcontext context,
  CUstream stream,
- uint64_t function_addr,
+ uint64_t function_addr, 
+ cstack_node_t *buffer_device,
  cct_node_t *host_op_node,
- sanitizer_activity_type_t type,
- cstack_node_t *buffer_device
+ dim3 grid_size,
+ dim3 block_size
 );
 
 

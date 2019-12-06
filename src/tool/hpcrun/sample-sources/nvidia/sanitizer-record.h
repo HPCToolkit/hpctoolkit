@@ -5,7 +5,6 @@
 #include "sanitizer-node.h"
 #include "cstack.h"
 
-
 typedef void (*sanitizer_record_fn_t)(cstack_t *stack);
 
 
@@ -16,13 +15,14 @@ sanitizer_record_init();
 void
 sanitizer_notification_insert
 (
- CUcontext context,
  CUmodule module,
+ CUcontext context,
  CUstream stream,
  uint64_t function_addr, 
- sanitizer_activity_type_t type,
  cstack_node_t *buffer_device,
- cct_node_t *host_op_node
+ cct_node_t *host_op_node,
+ dim3 grid_size,
+ dim3 block_size
 );
 
 
@@ -37,7 +37,6 @@ sanitizer_notification_apply
 void
 sanitizer_buffer_device_push
 (
- sanitizer_activity_type_t type,
  cstack_node_t *buffer_device
 );
 
@@ -45,7 +44,6 @@ sanitizer_buffer_device_push
 cstack_node_t *
 sanitizer_buffer_device_pop
 (
- sanitizer_activity_type_t type
 );
 
 #endif
