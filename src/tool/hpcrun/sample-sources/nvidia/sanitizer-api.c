@@ -56,7 +56,7 @@
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
-#define GPU_PATCH_RECORD_NUM (64 * 1024)
+#define GPU_PATCH_RECORD_NUM (256 * 1024)
 #define GPU_PATCH_BUFFER_POOL_NUM (128)
 
 #define CUFUNCTION_SYMBOL_INDEX_OFFSET (16)
@@ -108,7 +108,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
  .head_index = 0,
  .tail_index = 0,
  .size = GPU_PATCH_RECORD_NUM,
- .full = false
+ .full = 0
 };
 static __thread gpu_patch_buffer_t *gpu_patch_buffer = NULL;
 static __thread gpu_patch_record_t *gpu_patch_record = NULL;
@@ -516,6 +516,7 @@ sanitizer_buffer_process
   sanitizer_entry_notification_t *notification = node->entry;
   cct_node_t *host_op_node = notification->host_op_node;
   CUmodule module = notification->module;
+  CUcontext context = notification->context;
   CUstream stream = notification->stream;
   dim3 grid_size = notification->grid_size;
   dim3 block_size = notification->block_size;
@@ -528,38 +529,53 @@ sanitizer_buffer_process
     gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
   }
 
+  sanitizer_context_map_entry_t *entry = sanitizer_context_map_lookup(context);
+  CUstream priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+
   while (true) {
-    PRINT("Copying gpu_patch_buffer %p\n", buffer_device_entry->buffer);
+    //PRINT("Copying gpu_patch_buffer %p\n", buffer_device_entry->buffer);
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-      (gpu_patch_buffer, buffer_device_entry->buffer, sizeof(gpu_patch_buffer_t), stream));
+      (gpu_patch_buffer, buffer_device_entry->buffer, sizeof(gpu_patch_buffer_t), priority_stream));
 
-    if (!(gpu_patch_buffer->num_blocks == 0 || gpu_patch_buffer->full)) {
+    size_t num_records = gpu_patch_buffer->head_index;
+
+    //PRINT("gpu_patch_buffer full %u, head_index %u, tail_index %u, size %u, num_blocks %u, block_sampling_frequency %u\n",
+    //  gpu_patch_buffer->full, gpu_patch_buffer->head_index, gpu_patch_buffer->tail_index,
+    //  gpu_patch_buffer->size, gpu_patch_buffer->num_blocks, gpu_patch_buffer->block_sampling_frequency);
+
+    size_t num_left_blocks = 0;
+    if (gpu_patch_buffer->block_sampling_frequency != 0) {
+      size_t total = grid_size.x * grid_size.y * grid_size.z;
+      num_left_blocks = total - ((total - 1) / gpu_patch_buffer->block_sampling_frequency + 1);
+    }
+
+    if (!(gpu_patch_buffer->num_blocks == num_left_blocks || gpu_patch_buffer->full) || num_records == 0) {
       // Wait until the buffer is full or the kernel is finished
+      if (SANITIZER_API_DEBUG) {
+        //sleep(1);
+      }
       continue;
     }
 
-    size_t num_records = gpu_patch_buffer->head_index;
-    PRINT("gpu_patch_buffer head_index %u, tail_index %u, size %u, num_blocks %u, block_sampling_frequency %u\n",
-      gpu_patch_buffer->head_index, gpu_patch_buffer->tail_index, gpu_patch_buffer->size,
-      gpu_patch_buffer->num_blocks, gpu_patch_buffer->block_sampling_frequency);
-    
     // first time copy back, allocate memory
     if (gpu_patch_record == NULL) {
-      gpu_patch_record = (gpu_patch_record_t *) hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
+      gpu_patch_record = (gpu_patch_record_t *) hpcrun_malloc_safe(
+        GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
     }
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-      (gpu_patch_record, gpu_patch_buffer->records, sizeof(gpu_patch_record_t) * num_records, stream));
+      (gpu_patch_record, gpu_patch_buffer->records, sizeof(gpu_patch_record_t) * num_records, priority_stream));
     // copy finished
-    gpu_patch_buffer->full = false;
+    gpu_patch_buffer->full = 0;
     // sync stream?
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (buffer_device_entry->buffer, gpu_patch_buffer, sizeof(gpu_patch_buffer_t), stream));
+      (buffer_device_entry->buffer, gpu_patch_buffer, sizeof(gpu_patch_buffer_t), priority_stream));
 
     if (sanitizer_trace == NULL) {
-      // first time to allocate trace buffer
+      // first time to allocate trace buffer,
+      // * WARP_SIZE to guarantee sanitizer_trace buffer is greater than record size
       sanitizer_trace = (char *)
-        hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
+        hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * WARP_SIZE * sizeof(gpu_patch_record_t));
     }
 
     // XXX(Keren): tricky change offset here
@@ -609,7 +625,7 @@ sanitizer_buffer_process
       }
     }
 
-    if (gpu_patch_buffer->num_blocks == 0) {
+    if (gpu_patch_buffer->num_blocks == num_left_blocks) {
       break;
     }
   }
@@ -762,12 +778,11 @@ sanitizer_kernel_launch_callback
       (buffer_device_entry->buffer, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
   } else {
     buffer_device_entry = (sanitizer_entry_buffer_t *)buffer_device->entry;
-    gpu_patch_buffer_t *gpu_patch_buffer = (gpu_patch_buffer_t *)buffer_device_entry->buffer;
     // reset buffer
-    gpu_patch_buffer_reset.records = gpu_patch_buffer->records;
     gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (buffer_device_entry->buffer, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
+      (buffer_device_entry->buffer, &gpu_patch_buffer_reset,
+       sizeof(gpu_patch_buffer_t) - sizeof(void *), stream));
   }
 
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, buffer_device_entry->buffer));
@@ -885,18 +900,22 @@ sanitizer_subscribe_callback
         priority_stream, grid_size, block_size);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
+      sanitizer_context_map_stream_process(ld->context, ld->stream,
+        sanitizer_buffer_dispatch);
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
-    //Sanitizer_SynchronizeData *sd = (Sanitizer_SynchronizeData*)cbdata;
-    //if (cbid == SANITIZER_CBID_SYNCHRONIZE_STREAM_SYNCHRONIZED) {
-    //  // multi-thread
-    //  sanitizer_context_map_stream_process(sd->context, sd->stream, sanitizer_buffer_dispatch);
-    //} else if (cbid == SANITIZER_CBID_SYNCHRONIZE_CONTEXT_SYNCHRONIZED) {
-    //  // multi-thread
-    //  sanitizer_context_map_context_process(sd->context, sanitizer_buffer_dispatch);
-    //}
+    Sanitizer_SynchronizeData *sd = (Sanitizer_SynchronizeData*)cbdata;
+    if (cbid == SANITIZER_CBID_SYNCHRONIZE_STREAM_SYNCHRONIZED) {
+      // multi-thread
+      PRINT("Synchronize stream %p\n", sd->stream);
+      sanitizer_context_map_stream_process(sd->context, sd->stream, sanitizer_buffer_dispatch);
+    } else if (cbid == SANITIZER_CBID_SYNCHRONIZE_CONTEXT_SYNCHRONIZED) {
+      // multi-thread
+      PRINT("Synchronize context %p\n", sd->context);
+      sanitizer_context_map_context_process(sd->context, sanitizer_buffer_dispatch);
+    }
   }
 }
 
