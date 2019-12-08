@@ -158,10 +158,10 @@ class CudaAdvisor {
   std::string _nosel_stall_metric;
   std::string _other_stall_metric;
   std::string _sleep_stall_metric;
+  std::string _cmem_stall_metric;
 
   std::string _exec_dep_stall_metric;
   std::string _mem_dep_stall_metric;
-  std::string _cmem_dep_stall_metric;
   std::string _sync_stall_metric;
 
   std::set<std::string> _inst_stall_metrics;

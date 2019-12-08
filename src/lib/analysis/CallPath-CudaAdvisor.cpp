@@ -72,6 +72,7 @@ void CudaAdvisor::init() {
   _nosel_stall_metric = "STALL:NOSEL";
   _other_stall_metric = "STALL:OTHER";
   _sleep_stall_metric = "STALL:SLEEP";
+  _cmem_stall_metric = "STALL:CMEM_DEP";
   
   _inst_stall_metrics.insert(_invalid_stall_metric);
   _inst_stall_metrics.insert(_tex_stall_metric);
@@ -81,15 +82,14 @@ void CudaAdvisor::init() {
   _inst_stall_metrics.insert(_nosel_stall_metric);
   _inst_stall_metrics.insert(_other_stall_metric);
   _inst_stall_metrics.insert(_sleep_stall_metric);
+  _dep_stall_metrics.insert(_cmem_stall_metric);
 
   _exec_dep_stall_metric = "STALL:EXC_DEP";
   _mem_dep_stall_metric = "STALL:MEM_DEP";
-  _cmem_dep_stall_metric = "STALL:CMEM_DEP";
   _sync_stall_metric = "STALL:SYNC";
 
   _dep_stall_metrics.insert(_exec_dep_stall_metric);
   _dep_stall_metrics.insert(_mem_dep_stall_metric);
-  _dep_stall_metrics.insert(_cmem_dep_stall_metric);
   _dep_stall_metrics.insert(_sync_stall_metric);
 
   for (auto &s : _inst_stall_metrics) {
@@ -278,9 +278,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
 
             // sum up all neighbor node's instructions
             if (inst_stat->op.find("MEMORY") != std::string::npos) {
-              if (inst_stat->op.find("CONSTANT") != std::string::npos) {
-                sum[_cmem_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
-              } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
+              if (inst_stat->op.find("GLOBAL") != std::string::npos) {
                 sum[_mem_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
               } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
                 sum[_mem_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
@@ -299,9 +297,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
             auto *inst_stat = vma_inst_map[vma];
             std::string latency_metric;
             if (inst_stat->op.find("MEMORY") != std::string::npos) {
-              if (inst_stat->op.find("CONSTANT") != std::string::npos) {
-                latency_metric = _cmem_dep_stall_metric;
-              } else if (inst_stat->op.find("GLOBAL") != std::string::npos) {
+              if (inst_stat->op.find("GLOBAL") != std::string::npos) {
                 latency_metric = _mem_dep_stall_metric;
               } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
                 latency_metric = _mem_dep_stall_metric;
