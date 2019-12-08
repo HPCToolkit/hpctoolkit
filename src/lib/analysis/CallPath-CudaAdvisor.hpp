@@ -91,6 +91,27 @@ namespace Analysis {
 
 namespace CallPath {
 
+struct InstructionBlame {
+  VMA src, dst; 
+  int metric_id;
+  double value;
+
+  InstructionBlame() {}
+  InstructionBlame(VMA src, VMA dst, int metric_id, double value) : 
+    src(src), dst(dst), metric_id(metric_id), value(value) {}
+};
+
+
+struct BlockBlame {
+  std::vector<InstructionBlame *> inst_blames;
+};
+
+
+struct FunctionBlame {
+  std::vector<FunctionBlame *> block_blames;
+};
+
+
 struct Bottleneck {
   Prof::LoadMap::LMId_t lm_id;
   size_t function_id;
@@ -168,6 +189,9 @@ class CudaAdvisor {
   std::set<std::string> _dep_stall_metrics;
   Prof::CallPath::Profile *_prof;
   MetricNameProfMap *_metric_name_prof_map;
+
+  // <mpi_rank, <thread_id, <blames>>>
+  std::map<int, std::map<int, std::vector<InstructionBlame>>> _inst_blames;
 };
 
 

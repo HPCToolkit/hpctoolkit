@@ -268,6 +268,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
       for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
         auto *node = *iter;
+        auto src_vma = node->lmIP();
         auto niter = cct_dep_graph.outgoing_nodes(node);
 
         std::map<std::string, double> sum;
@@ -291,6 +292,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
           }
         }
 
+        // dependent latencies
         if (niter != cct_dep_graph.outgoing_nodes_end()) {
           for (auto *dep_node : niter->second) {
             auto vma = dep_node->lmIP();
@@ -320,10 +322,14 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
               // blame dep_node
               dep_node->demandMetric(in_blame_metric_index) += latency * neighbor_ratio;
               dep_node->demandMetric(ex_blame_metric_index) += latency * neighbor_ratio;
+              // one metric id is enough for inst blame analysis
+              _inst_blames[mpi_rank][thread_id].emplace_back(
+                InstructionBlame(src_vma, vma, ex_blame_metric_index, latency * neighbor_ratio));
             }
           }
         }
 
+        // stall latencies
         for (auto &s : _inst_stall_metrics) {
           auto stall_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, s);
           auto stall = node->demandMetric(stall_metric_index);
@@ -336,6 +342,9 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
           // blame itself
           node->demandMetric(in_blame_metric_index) += stall;
           node->demandMetric(ex_blame_metric_index) += stall;
+          // one metric id is enough for inst blame analysis
+          _inst_blames[mpi_rank][thread_id].emplace_back(
+            InstructionBlame(src_vma, src_vma, ex_blame_metric_index, stall));
         }
       }
     }
@@ -404,6 +413,24 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Inst
   // 4. accumulate blames
   blameCCTGraph(cct_dep_graph, vma_inst_map);
 
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    for (auto &mpi_inst_blames : _inst_blames) {
+      std::cout << "[" << mpi_inst_blames.first << ",";
+      for (auto &thread_inst_blames : mpi_inst_blames.second) {
+        std::cout << thread_inst_blames.first << "]:" << std::endl;
+        for (auto &inst_blame : thread_inst_blames.second) {
+          std::cout << std::hex << inst_blame.dst << "->";
+          if (inst_blame.src != inst_blame.dst) {
+            std::cout << inst_blame.src << ", ";
+          } else {
+            std::cout << "-1, ";
+          }
+          std::cout << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
+            inst_blame.value << std::endl;
+        }
+      }
+    }
+  }
   // 5. find bottlenecks
 }
 
