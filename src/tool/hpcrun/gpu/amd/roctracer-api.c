@@ -420,6 +420,6 @@ roctracer_fini
     HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
     HPCRUN_ROCTRACER_CALL(roctracer_disable_activity,());
     HPCRUN_ROCTRACER_CALL(roctracer_flush_activity,(NULL));
-    gpu_application_thread_process_activities(gpu_metrics_attribute);
+    gpu_application_thread_process_activities();
 }
 

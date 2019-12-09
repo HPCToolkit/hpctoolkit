@@ -129,9 +129,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     // only one event is allowed
     char* evlist = METHOD_CALL(self, get_event_str);
     char* event = start_tok(evlist);
-    if (hpcrun_ev_is(amd_name, AMD_ROCM)) {
-        gpu_metrics_GTIMES_enable();
-    }    
+    //if (hpcrun_ev_is(amd_name, AMD_ROCM)) {
+        gpu_metrics_default_enable();
+    //}    
     roctracer_init();
 }
 
