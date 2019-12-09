@@ -104,6 +104,7 @@ struct cct_node_t {
   // ---------------------------------------------------------
   int32_t persistent_id;
   
+  // the value of node_type is defined in lib/prof-lean/hpcrun-fmt.h
   uint32_t node_type;
 
   cct_addr_t addr; // bundle abstract address components into a data type

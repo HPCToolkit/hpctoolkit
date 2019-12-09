@@ -1,0 +1,281 @@
+Datacentric sample-source
+=========================
+
+This sample-source provides measurement and analysis for data movement 
+analsys of an application. It requires many changes inside HPCToolkit 
+modules:
+
+- hpcrun: to sample using specific hardware counters
+- hpclink: to wrap alloc routines and run hpcfnbounds
+- hpcfnbounds: to compute variable bounds and send them to hpcrun
+- hpcstruct: to retrieve variable information (name and its bounds)
+- hpcprof: to collect information from hpcrun and hpcstruct, and generate
+  datacentric information in the database
+- hpcviewer: to display a special datacentric view
+
+Support modules:
+- lib/support-lean/datacentric_config.[ch]: datacentric configuration 
+   used by hpcrun, hpcstruct and hpcfnbounds (to be checked)
+- configure.ac: add a test whether perf's data_src is supported or not.
+- hpcrun/Makefile.am: only include datacentric sample-source if 
+  configure.ac detects the presence of perf's data_src. 
+
+
+Mechanism
+=========
+
+                                wrapped alloc routines
+ hpclink                              |
+   |                                  | var bounds (dynamic)
+   |                                  | 
+   V            var bounds (static)   V       ip, offset addr
+hpcfnbounds ----------------------> hpcrun <--------------- HW counter
+                                      |
+                                      |
+                                      V 
+                             *.hpcrun, *.hpctrace files
+                                      |
+                                      |
+            var info (name, bounds)   V  
+hpcstruct ------------------------> hpcprof
+                                      |
+                                      |
+                                      V
+                    experiment.xml, *.hpctrace & *.metric-db files
+
+To associate between a memory reference from hardware counter and a code
+variable, we require to wrap allocation routines (for dynamic variables)
+and to parse object files to grab static variables. 
+The information of static variables are stored in a splay tree within 
+a load module data structure (loadmap.c), while dynamic variables are stored
+in a splay tree in data_tree.c file.
+The information of static variables is stored inside its 
+load_module is to associate between the variable and its load module
+easily. If a load module is unmapped, the variable information can
+also be removed. 
+
+[NEED TO BE FIXED]: However, due to the data is allocated with
+hpcrun_malloc, we don't free the allocation if the load module is unmmaped.
+Note: can we use malloc instead of hpcrun_malloc ? I don't know. All
+      code inside loadmap.c uses hpcrun_malloc instead of malloc.
+
+Local variables are not supported yet due to complexity to compute 
+the offset address of local variables.
+
+To reduce the overhead, we don't wrap all allocated variables. Only if
+the size is bigger or equal the threshold defined in datacentric_config.h
+then variable information is stored. By default, the minimum size of
+variables is 1024. Users can change the value by setting the environment
+variable DATACENTRIC_MIN_BYTES.
+
+
+Algorithm:
+---------
+When a signal from perf_events arrives:
+- If it isn't a datacentric event, we attribute the cost to the sampled
+  node in CCT.
+- If it is a datacentric event, we attribute the cost to the sampled
+  node in CCT, and to its variable in datacentric tree.
+  Datacentric sample-source will try to see if the memory reference can 
+  be found in dynamic variable tree. If not, it will look at the static 
+  variable tree. If none is found, we declare the memory reference is 
+  from unknown variable (stack).
+
+Hence, for every datacentric event, we attribute the cost to both node
+in CCT and node in datacentric tree.
+
+
+Metrics
+=======
+On all platforms, this event creates 2 metrics:
+
+- Size (byte): 	The size of variable (in bytes). By default this metric
+		is hidden.
+- FAULTS: 	Number of page faults
+
+On some platforms, datacentric event creates one or more hardware
+counters like MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD on Intel platform,
+or 0x34340401e0 (MMCRA on PM_MRK_INST_CMPL?)
+
+On some platforms that provide data source record like Intel nehalem and 
+IBM Power 9, this event collects additional 20 information (metrics) :
+
+- MEM-Load		: Total of memory loads
+- MEM-Load-FBhit	: Line fill buffer
+- MEM-Load-L1hit	: Level 1 cache
+- MEM-Load-L2hit	: Level 2 cache
+- MEM-LLC-hit		: Level 3 cache: Loads that hit LLC
+- MEM-hitm-local	: Level 3 cache: Loads with local HITM
+- MEM-hitm-rmt		: Remote access: count of loads with remote HITM 
+- MEM-rmt-hit		: Remote access: count of loads with remote hit clean 
+			  (the sum of snoop hit and hitm)
+- Load-miss-to-lcl-DRAM	: Load miss: count of loads miss to local DRAM
+- Load-miss-to-rmt-DRAM	: Load miss: count of loads miss to remote DRAM
+- MEM-Load-miss		: Load miss: unknown criteria given by perf_events
+- Load I/O Address	: I/O memory: loads to I/O address 
+- Load MESI State Shared: Snoop hit: shared loads, remote/local DRAM
+- Load Uncache	        : loads to uncacheable address
+- Load Exclusive	: exclusive loads, remote/local DRAM, either 
+			  snoop none or miss 
+- MEM-Store		: count of all stores in trace
+- MEM-Store-L1hit	: count of stores that hit L1D 
+- MEM-Store-L1miss	: count of stores that miss L1D
+- MEM-Store-Uncache	: stores to uncacheable address 
+
+The above metrics are based on perf_event support for data source 
+(PERF_SAMPLE_DATA_SRC) and thus depends on the information from 
+perf_events. Some Linux kernel may not fully support some hw counters. 
+Hence, it is preferable to have newer version of kernel.
+
+I think it is possible to grab directly raw information from hardware
+counter, but it requires huge amount of effort to maintain support for
+different CPUs.
+
+
+Using datacentric event in hpcrun
+=================================
+
+To profile with datacentric sample-source, users need to use datacentric
+event:
+
+hpcrun -e datacentric ....
+
+This event will setup hardware counter sampling based on the architecture.
+Currently only two architectures are supported:
+
+- Intel (x86). See pmu_x86.c and pmu_x86.h
+- IBM Power. See pmu_power.c 
+
+The association between cpu type and hardware counter is hard-coded.
+To modify or add event in an architecture, user needs to modify the above
+code and rebuild HPCToolkit.
+
+
+Data structure
+--------------
+
+Datacentric has its own tree where the root is stored in cct_bundle_t
+defined in cct_bundle.h (this is not a good practice, we need to
+fix this):
+
+typedef struct cct_bundle_t {
+  ...
+  cct_node_t* special_datacentric_node; // root for datacentric dynamic variables
+
+  cct_node_t* special_no_thread_node; // trace node when outside the thread
+  ...
+}
+
+Datacentric tree has three subroots defined in datacentric.c: 
+- Datacentric_Dynamic, renamed into <dynamic variable> in hpcprof
+- Datacentric_Static, renamed into <static variable> in hpcprof
+- Datacentric_Unknown, rename into <unknown attribute> in hpcprof
+
+  top
+   | 
+   +----------------------------+------------+....
+   |                            |            |
+ DATACENTRIC                  NO_THREAD      .....
+ |    |    |
+ |    |    +-- Datacentric_Dynamic
+ |    |
+ |    +-- Datacentric_Static
+ |
+ +-- Datacentric_Unknown
+
+
+To add information about the node, we add a field in cct_node_t data
+structure to identify the type of the node and its additional info:
+
+struct cct_node_t {
+  ...
+  uint32_t node_type;
+  ...
+}
+
+The value of node_type should be a constant defined in 
+lib/prof-lean/hpcrun-fmt.h
+
+// ---------------------------------
+// hpcrun node types
+// ---------------------------------
+#define NODE_TYPE_REGULAR             0
+#define NODE_TYPE_LEAF                1
+
+// variable types: dynamic, static or unknown
+#define NODE_TYPE_ALLOCATION          2
+#define NODE_TYPE_GLOBAL_VARIABLE     4
+#define NODE_TYPE_UNKNOWN_ATTRIBUTE   8
+
+// cct node type: memory access, or artificial tree root
+#define NODE_TYPE_ROOT               16
+#define NODE_TYPE_MEMACCESS          32
+
+
+To check if the type of the node e.g. if a node is a variable declaration
+developers have to use query functions in lib/prof-lean/hpcrun-fmt.h
+
+static inline bool
+hpcrun_fmt_node_type_variable(uint16_t type)
+...
+
+
+
+
+Caveats:
+-------
+Datacentric sample-source cannot be used together at 
+the same time with Memleak (--memleak flag) since both of them also
+wrap allocation routines.
+
+
+hpcrun file format
+------------------
+
+Datacentric requires to add a new record for each cct node to store the
+status of the node (see lib/prof-lean/hpcrun-fmt.h):
+- if the node is variable declaration: static, dynamic, unknown
+- if the node is an artificial root
+  In this case, hpcprof and hpcdata should create a new tree separate to
+  cct.
+
+
+hpclink
+=======
+
+To enable full support of datacentric, users need to add --data-centric
+flag on hpclink:
+
+hpclink --datacentric .....
+
+Similar to hpcrun, Datacentric sample-source cannot be used together at 
+the same time with Memleak (--memleak flag) since both of them also
+wrap allocation routines.
+
+
+hpcstruct
+=========
+
+To expose variable information, we add a new tag <V> in hpcstruct file.
+This tag can be embedded within <F> tag for global variables, or <P> 
+tag for local variables (not supported yet). 
+Similar to <P> tag, <V> tag contains three attributes: "i" for variable
+index, "n" for variable name, and "v" for the upper and lower bounds. 
+
+Example list of variables in Nekbone:
+
+<LM i="2" n="/home/la5/git/hpctoolkit-tests/applications/nekbone-2.3.4/test/example1/nekbone" v="{}">
+  <F i="3" n="&lt;unknown file&gt;">
+    <V i="4" n="g.2733" v="{[0x107f0308-0x13070308)}"/>
+    <V i="5" n="c.2725" v="{[0x10130308-0x107f0308)}"/>
+    <V i="29" n="input5_" v="{[0x170f7320-0x17169320)}"/>
+    <V i="30" n="scruz_" v="{[0x1a7849f0-0x1c2849f0)}"/>
+    <V i="31" n="scrmg_" v="{[0x1c2849f0-0x1dd849f0)}"/>
+    <V i="32" n="timer_" v="{[0x171693a0-0x171773a0)}"/>
+    <V i="33" n="scrcg_" v="{[0x17f04220-0x17f049f0)}"/>
+    <V i="34" n="wxyz_" v="{[0x171773a0-0x1717aac0)}"/>
+    <V i="35" n="mass_" v="{[0x1717aac0-0x17efaac8)}"/>
+    <V i="36" n="hcglb_" v="{[0x17f02ed0-0x17f036f0)}"/>
+    <V i="37" n="dxyz_" v="{[0x17f03720-0x17f04020)}"/>
+  </F>
+

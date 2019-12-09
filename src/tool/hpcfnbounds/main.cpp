@@ -433,13 +433,12 @@ static void
 dump_var_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		 DiscoverFnTy fn_discovery, int query)
 {
-  if (query != SYSERV_QUERY_VAR && query != SYSERV_QUERY_VAR_NIL)
-    return;
-
   if (c_mode()) {
     printf("unsigned long hpcrun_data_addrs[] = {\n");
   }
 
+  // for SYSERV_QUERY_VAR_NIL: empty value for hpcrun_data_addrs
+  // only SYSERV_QUERY_VAR will send the list of variable
   if (query == SYSERV_QUERY_VAR)
     dump_symbols_var(dwarf_fd, syms, symvec, fn_discovery);
 
@@ -479,14 +478,12 @@ static void
 dump_file_symbols(int dwarf_fd, Symtab *syms, vector<Symbol *> &symvec,
 		  DiscoverFnTy fn_discovery, int query)
 {
-  if (query != SYSERV_QUERY)
-    return;
-
   if (c_mode()) {
     printf("unsigned long hpcrun_nm_addrs[] = {\n");
   }
 
-  dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
+  if (query == SYSERV_QUERY)
+    dump_symbols(dwarf_fd, syms, symvec, fn_discovery);
 
   if (c_mode()) {
     printf("\n};\n");
@@ -593,15 +590,16 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
       fprintf(stderr, "hpcfnbounds: unable to open: %s", filename);
     }
 
-    relocatable = syms->isExec() ? 0 : 1;
-    image_offset = syms->imageOffset();
-
     if (query == SYSERV_QUERY)
       dump_file_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
-    else   if (query == SYSERV_QUERY_VAR)
+
+    if (query == SYSERV_QUERY_VAR || query == SYSERV_QUERY_VAR_NIL)
       dump_var_symbols(dwarf_fd, syms, symvec, fn_discovery, query);
 
     close(dwarf_fd);
+
+    relocatable = syms->isExec() ? 0 : 1;
+    image_offset = syms->imageOffset();
   }
   if (query == SYSERV_QUERY)
     dump_header_info(relocatable, image_offset);

@@ -106,10 +106,10 @@ static struct perf_mem_metric metric;
 static char formula_llc_miss[MAX_FORMULA_CHAR];
 static char formula_percent_l1_hit[MAX_FORMULA_CHAR];
 static char formula_percent_l2_hit[MAX_FORMULA_CHAR];
-#endif
 static char formula_percent_l3_hit[MAX_FORMULA_CHAR];
 
 static char FORMAT_PERCENT[] = "6.2f \%";
+#endif
 
 
 /******************************************************************************
@@ -317,7 +317,7 @@ pmu_handler_init()
   // percent l3 hit
   // ------------------------------------------
 
-#if 1
+#if 0
   int percent_llc_hit = hpcrun_new_metric();
   metric_desc_t* metric_llc_hit_desc = hpcrun_set_metric_and_attributes(percent_llc_hit,  "% Load LLC Hit",
                       MetricFlags_ValFmt_Real, 1, metric_property_none, true /* disable show*/, false );
@@ -380,19 +380,19 @@ pmu_handler_init()
   // misc
   // ------------------------------------------
   metric.memld_io = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_io, "Load I/O Address",
+  hpcrun_set_metric_and_attributes(metric.memld_io, "MEM-Load I/O Address",
       MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
 
   metric.memld_shared = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_shared, "Load MESI State Shared",
+  hpcrun_set_metric_and_attributes(metric.memld_shared, "MEM-Load MESI State Shared",
       MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
 
   metric.memld_uncache = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_uncache, "Load Uncache",
+  hpcrun_set_metric_and_attributes(metric.memld_uncache, "MEM-Load Uncache",
       MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
 
   metric.memld_excl = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_excl, "Load Exclusive",
+  hpcrun_set_metric_and_attributes(metric.memld_excl, "MEM-Load Exclusive",
       MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
 
   // ------------------------------------------

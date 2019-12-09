@@ -111,7 +111,7 @@ static const char HPCPROF_TmpFnmSfx[] = "tmp";
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "02.00";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "02.10";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -120,6 +120,9 @@ static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
 // currently supported versions
+static const double HPCRUN_FMT_Version_21 = 2.1;
+
+// supported old versions
 static const double HPCRUN_FMT_Version_20 = 2.0;
 
 
@@ -511,6 +514,11 @@ hpcrun_fmt_doRetainId(uint32_t id)
 
 // ---------------------------------
 // hpcrun node types
+// bits:
+// 1   : leaf/regular
+// 2-4 : Reserved for datacentric
+// 5-6 : root type (artificial, new call path, ...)
+// 7-32: unused
 // ---------------------------------
 #define NODE_TYPE_REGULAR             0
 #define NODE_TYPE_LEAF                1
@@ -533,10 +541,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
 // Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
 
-
-// -------------------------
-// data-centric fields
-// -------------------------
 
 
 typedef struct hpcrun_fmt_cct_node_t {
@@ -576,7 +580,7 @@ hpcrun_fmt_cct_node_init(hpcrun_fmt_cct_node_t* x)
 
 // N.B.: assumes space for metrics has been allocated
 extern int
-hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x,
+hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs);
 
 extern int

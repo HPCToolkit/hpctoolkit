@@ -1488,7 +1488,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // ----------------------------------------------------------
     // Read the node
     // ----------------------------------------------------------
-    ret = hpcrun_fmt_cct_node_fread(&nodeFmt, prof.m_flags, infs);
+    ret = hpcrun_fmt_cct_node_fread(&nodeFmt, prof.fmtVersion(), prof.m_flags, infs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }

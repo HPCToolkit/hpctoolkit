@@ -214,7 +214,7 @@ dump_variable_entry(void *addr, long size, const char *comment)
 
   // default is text mode
   printf("0x%" PRIxPTR "    %s\n", (uintptr_t) addr, comment);
-  printf("%ld  /* %s */\n", size, comment);
+  printf("%ld  %s\n", size, comment);
 }
 
 
