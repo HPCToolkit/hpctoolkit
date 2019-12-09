@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
@@ -326,6 +326,14 @@ static int reg_name_to_id(const std::string &name) {
 }
 
 
+class FirstMatchPred : public Dyninst::Slicer::Predicates {
+ public:
+  virtual bool endAtPoint(Dyninst::Assignment::Ptr ap) {
+    return true;
+  }
+};
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
@@ -359,7 +367,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
 
         for (auto a : assignments) {
           Dyninst::Slicer s(a, dyn_block, dyn_func);
-          Dyninst::Slicer::Predicates p;
+          FirstMatchPred p;
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
           Dyninst::NodeIterator exit_begin, exit_end;
