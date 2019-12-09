@@ -302,7 +302,8 @@ ompt_trace_configure(ompt_device_t *device)
   
   // set pc sampling after other traces
   if (ompt_pc_sampling_enabled) {
-    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
+    int freq_bits = gpu_monitoring_instruction_sample_frequency_get();
+    ompt_set_pc_sampling(device, true, freq_bits);
   }
 
   // turn on monitoring previously indicated

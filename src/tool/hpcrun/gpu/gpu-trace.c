@@ -26,6 +26,7 @@
 #include <hpcrun/trace.h>
 
 #include "gpu-context-id-map.h"
+#include "gpu-monitoring.h"
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
@@ -65,11 +66,33 @@ static atomic_ullong stream_counter;
 
 static atomic_ullong stream_id;
 
+static __thread uint64_t stream_start = 0;
+
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static void
+stream_start_set
+(
+ uint64_t start_time
+)
+{
+  if (!stream_start) stream_start = start_time;
+}
+
+
+static uint64_t
+stream_start_get
+(
+ void
+)
+{
+  return stream_start;
+}
+
 
 static gpu_trace_t *
 gpu_trace_alloc
@@ -193,6 +216,7 @@ consume_one_trace_item
  uint64_t end_time
 )
 {
+
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
   cct_node_t *no_thread = gpu_trace_cct_no_thread(td);
@@ -200,15 +224,40 @@ consume_one_trace_item
   uint64_t start = gpu_trace_time(start_time);
   uint64_t end   = gpu_trace_time(end_time);
 
+  stream_start_set(start_time);
+
   start = gpu_trace_start_adjust(start, end);
 
-  gpu_trace_first(td, no_thread, start);
+  int frequency = gpu_monitoring_trace_sample_frequency_get();
 
-  gpu_trace_stream_append(td, leaf, start);
+  bool append = false;
 
-  gpu_trace_stream_append(td, no_thread, end + 1);
+  if (frequency != -1) {
+    uint64_t cur_start = start_time;
+    uint64_t cur_end = end_time;
+    uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
+    uint64_t pivot = intervals * frequency + stream_start;
 
-  PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+    if (pivot <= cur_end && pivot >= cur_start) {
+      // only trace when the pivot is within the range
+      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64 
+	    "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+        pivot, cur_start, cur_end, intervals, frequency);
+      append = true;
+    }
+  } else {
+    append = true;
+  }
+
+  if (append) {
+    gpu_trace_first(td, no_thread, start);
+    
+    gpu_trace_stream_append(td, leaf, start);
+    
+    gpu_trace_stream_append(td, no_thread, end + 1);
+    
+    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+  }
 }
 
 

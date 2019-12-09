@@ -32,6 +32,7 @@ enum {
   GPU_INST_STALL_ALL = 0
 } gpu_inst_stall_all_t;
 
+
 typedef enum {
   GPU_GMEM_LD_CACHED_BYTES = 0,
   GPU_GMEM_LD_UNCACHED_BYTES = 1,
@@ -54,15 +55,6 @@ typedef enum {
   GPU_LMEM_ST_TRANS_THEOR = 5
 } gpu_lmem_ops_t;
 
-
-typedef enum {
-  GPU_TIME_KERNEL  = 0,
-  GPU_TIME_MEM     = 1,
-  GPU_TIME_MEMSET  = 2,
-  GPU_TIME_XCOPY   = 3,
-  GPU_TIME_ICOPY   = 4,	
-  GPU_TIME_SYNC    = 5,
-} gpu_times_t;
 
 
 //--------------------------------------------------------------------------
@@ -211,13 +203,112 @@ typedef enum {
 
 
 // gpu sampling information
-#define FORALL_GSAMP(macro)					\
+#define FORALL_GSAMP_INT(macro)					\
   macro("GSAMP:DRP",              GPU_SAMPLE_DROPPED)		\
   macro("GSAMP:EXP",              GPU_SAMPLE_EXPECTED)		\
   macro("GSAMP:TOT",              GPU_SAMPLE_TOTAL)		\
-  macro("GSAMP:PER (cyc)",        GPU_SAMPLE_PERIOD)		\
-  macro("GSAMP:EFF",              GPU_SAMPLE_EFFICIENCY)
+  macro("GSAMP:PER (cyc)",        GPU_SAMPLE_PERIOD)
 
+#define FORALL_GSAMP_REAL(macro)				\
+  macro("GSAMP:UTIL",             GPU_SAMPLE_UTILIZATION)
+
+#define FORALL_GSAMP(macro)			\
+  FORALL_GSAMP_INT(macro)			\
+  FORALL_GSAMP_REAL(macro)				
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+//--------------------------------------------------
+// enable default GPU metrics
+//--------------------------------------------------
+
+void
+gpu_metrics_default_enable
+(
+ void
+);
+
+
+
+//--------------------------------------------------
+// record implicit copy metrics for unified memory
+//--------------------------------------------------
+
+void
+gpu_metrics_GICOPY_enable
+(
+ void
+);
+
+
+//----------------------------------------
+// instruction sampling metrics
+//----------------------------------------
+
+// record gpu instruction sample counts
+void
+gpu_metrics_GPU_INST_enable
+(
+ void
+);
+ 
+
+// record NVIDIA GPU instruction stall reasons
+void
+gpu_metrics_GPU_INST_STALL_enable
+(
+ void
+);
+
+
+// record NVIDIA GPU instruction sampling statistics
+void
+gpu_metrics_GSAMP_enable
+(
+ void
+);
+
+
+//--------------------------------------------------
+// record global memory access statistics
+//--------------------------------------------------
+
+void
+gpu_metrics_GGMEM_enable
+(
+ void
+);
+
+
+//--------------------------------------------------
+// record local memory access statistics
+//--------------------------------------------------
+
+void
+gpu_metrics_GLMEM_enable
+(
+ void
+);
+
+
+//--------------------------------------------------
+// record branch statistics
+//--------------------------------------------------
+
+void
+gpu_metrics_GBR_enable
+(
+ void
+);
+
+
+//--------------------------------------------------
+// attribute GPU measurements to an application 
+// thread's calling context tree
+//--------------------------------------------------
 
 void
 gpu_metrics_attribute
@@ -225,17 +316,7 @@ gpu_metrics_attribute
  gpu_activity_t *activity
 );
 
-void
-gpu_metrics_GTIMES_enable
-(
- void
-);
 
-void
-gpu_metrics_pcsampling_enable
-(
- void
-);
 
 #endif
 

@@ -368,6 +368,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-event-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
 	gpu/gpu-metrics.c 		\
+	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
 	gpu/gpu-splay-allocator.c	\
@@ -499,7 +500,7 @@ endif
 
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES=\
-	sample-sources/amd.c \	
+	sample-sources/amd.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c 	
 endif

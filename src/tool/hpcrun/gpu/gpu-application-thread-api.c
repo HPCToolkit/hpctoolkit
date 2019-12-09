@@ -8,6 +8,7 @@
 #include <hpcrun/sample_event.h>
 
 #include "gpu-activity-channel.h"
+#include "gpu-metrics.h"
 
 
 
@@ -28,10 +29,10 @@
 void
 gpu_application_thread_process_activities
 (
- gpu_activity_attribute_fn_t aa_fn
+ void
 )
 {
-  gpu_activity_channel_consume(aa_fn);
+  gpu_activity_channel_consume(gpu_metrics_attribute);
 }
 
 

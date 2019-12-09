@@ -26,7 +26,7 @@ typedef struct cct_node_t cct_node_t;
 void
 gpu_application_thread_process_activities
 (
- gpu_activity_attribute_fn_t aa_fn
+ void
 );
 
 

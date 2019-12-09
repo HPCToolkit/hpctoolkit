@@ -50,12 +50,14 @@
 //******************************************************************************
 
 #include <hpcrun/cct2metrics.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 
 #include "gpu-activity.h"
 #include "gpu-metrics.h"
+#include "gpu-monitoring.h"
 
 
 
@@ -63,7 +65,7 @@
 // macros
 //*****************************************************************************
 
-#define FORALL_INDEXED_METRICS(macro)		\
+#define FORALL_INDEXED_METRIC_KINDS(macro)	\
   macro(GMEM, 0)				\
   macro(GMSET, 1)				\
   macro(GPU_INST_STALL, 2)			\
@@ -73,7 +75,7 @@
   macro(GLMEM, 6)
 
 
-#define FORALL_SCALAR_METRICS(macro)		\
+#define FORALL_SCALAR_METRIC_KINDS(macro)	\
   macro(GBR, 7)					\
   macro(GICOPY, 8)				\
   macro(GPU_INST, 9)				\
@@ -83,8 +85,8 @@
 
 
 #define FORALL_METRIC_KINDS(macro)	\
-  FORALL_INDEXED_METRICS(macro)		\
-  FORALL_SCALAR_METRICS(macro)
+  FORALL_INDEXED_METRIC_KINDS(macro)	\
+  FORALL_SCALAR_METRIC_KINDS(macro)
 
 
 //------------------------------------------------------------------------------
@@ -163,11 +165,11 @@ name ## _metric_kind
 
 FORALL_METRIC_KINDS(INITIALIZE_METRIC_KINDS)
 
-FORALL_INDEXED_METRICS(INITIALIZE_INDEXED_METRIC)
+FORALL_INDEXED_METRIC_KINDS(INITIALIZE_INDEXED_METRIC)
 
-FORALL_SCALAR_METRICS(INITIALIZE_SCALAR_METRIC_KIND)
+FORALL_SCALAR_METRIC_KINDS(INITIALIZE_SCALAR_METRIC_KIND)
 
-static int gpu_sample_period = 0;
+static const unsigned int MAX_CHAR_FORMULA = 32;
 
 
 
@@ -215,22 +217,27 @@ gpu_metrics_attribute_metric_time_interval
 static void
 gpu_metrics_attribute_pc_sampling
 (
- gpu_activity_t *activity,
- uint64_t sample_period
+ gpu_activity_t *activity
 )
 {
+  uint32_t sample_period = 
+    1 << gpu_monitoring_instruction_sample_frequency_get();
+
   gpu_pc_sampling_t *sinfo = &(activity->details.pc_sampling);
   cct_node_t *cct_node = activity->cct_node;
 
   int inst_count = sinfo->samples * sample_period;
 
-  metric_data_list_t *inst_metric = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
+  metric_data_list_t *inst_metric = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
 
   // instruction execution metric
-  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), inst_count);
+  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
+				   inst_count);
 
   if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
-    int stall_summary_metric_index = METRIC_ID(GPU_INST_STALL)[GPU_INST_STALL_ALL];
+    int stall_summary_metric_index = 
+      METRIC_ID(GPU_INST_STALL)[GPU_INST_STALL_ALL];
 
     int stall_kind_metric_index = METRIC_ID(GPU_INST_STALL)[sinfo->stallReason];
 
@@ -240,10 +247,12 @@ gpu_metrics_attribute_pc_sampling
     int stall_count = sinfo->latencySamples * sample_period;
 
     // stall summary metric
-    gpu_metrics_attribute_metric_int(stall_metrics, stall_summary_metric_index, stall_count);
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+				     stall_summary_metric_index, stall_count);
 
     // stall reason specific metric
-    gpu_metrics_attribute_metric_int(stall_metrics, stall_kind_metric_index, stall_count);
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+				     stall_kind_metric_index, stall_count);
   }
 }
 
@@ -257,18 +266,22 @@ gpu_metrics_attribute_pc_sampling_info
   gpu_pc_sampling_info_t *s = &(activity->details.pc_sampling_info);
   cct_node_t *cct_node = activity->cct_node;
 
-  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_SAMPLE_DROPPED));
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_SAMPLE_DROPPED));
 
   
-  // It is fine to use set here because sampling cycle is changed during execution
+  // OK to use set here because sampling cycle is changed during execution
   hpcrun_metric_std_set(METRIC_ID(GPU_SAMPLE_PERIOD), metrics,
 			(cct_metric_data_t){.i = s->samplingPeriodInCycles});
   
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_TOTAL), s->totalSamples);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_TOTAL), 
+				   s->totalSamples);
   
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_EXPECTED), s->fullSMSamples);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_EXPECTED), 
+				   s->fullSMSamples);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_DROPPED), s->droppedSamples);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_SAMPLE_DROPPED), 
+				   s->droppedSamples);
 }
 
 
@@ -281,10 +294,13 @@ gpu_metrics_attribute_mem_op
  gpu_mem_t *m
 )
 {
-  metric_data_list_t *bytes_metrics = hpcrun_reify_metric_set(cct_node, bytes_metric_index);
+  metric_data_list_t *bytes_metrics = 
+    hpcrun_reify_metric_set(cct_node, bytes_metric_index);
+
   gpu_metrics_attribute_metric_int(bytes_metrics, bytes_metric_index, m->bytes);
 
-  gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, (gpu_interval_t *) m);
+  gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, 
+					     (gpu_interval_t *) m);
 }
 
 
@@ -299,8 +315,8 @@ gpu_metrics_attribute_memory
 
   int bytes_metric_index = METRIC_ID(GMEM)[m->memKind];
 
-  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, METRIC_ID(GPU_TIME_MEM), 
-		       (gpu_mem_t *) m);
+  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
+			       METRIC_ID(GPU_TIME_MEM), (gpu_mem_t *) m);
 }
 
 
@@ -315,8 +331,8 @@ gpu_metrics_attribute_memcpy
 
   int bytes_metric_index = METRIC_ID(GXCOPY)[m->copyKind];
 
-  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, METRIC_ID(GPU_TIME_XCOPY), 
-		       (gpu_mem_t *) m);
+  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
+			       METRIC_ID(GPU_TIME_XCOPY), (gpu_mem_t *) m);
 }
 
 
@@ -331,8 +347,8 @@ gpu_metrics_attribute_memset
 
   int bytes_metric_index = METRIC_ID(GMSET)[m->memKind];
 
-  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, METRIC_ID(GPU_TIME_MSET), 
-		       (gpu_mem_t *) m);
+  gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
+			       METRIC_ID(GPU_TIME_MSET), (gpu_mem_t *) m);
 }
 
 
@@ -348,21 +364,29 @@ gpu_metrics_attribute_kernel
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM));
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), k->staticSharedMemory);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), 
+				   k->staticSharedMemory);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), k->dynamicSharedMemory);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), 
+				   k->dynamicSharedMemory);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), k->localMemoryTotal);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), 
+				   k->localMemoryTotal);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), k->activeWarpsPerSM);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), 
+				   k->activeWarpsPerSM);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), k->maxActiveWarpsPerSM);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), 
+				   k->maxActiveWarpsPerSM);
   
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), k->threadRegisters);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), 
+				   k->threadRegisters);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), k->blockThreads);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), 
+				   k->blockThreads);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), k->blockSharedMemory);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
+				   k->blockSharedMemory);
   
   // number of kernel launches
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
@@ -387,8 +411,9 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node, sync_kind_metric_id, 
 				     (gpu_interval_t *) s);
 
-  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_SYNC), 
-				     (gpu_interval_t *) s);
+  gpu_metrics_attribute_metric_time_interval(cct_node, 
+					     METRIC_ID(GPU_TIME_SYNC), 
+					     (gpu_interval_t *) s);
 }
 
 
@@ -409,8 +434,11 @@ gpu_metrics_attribute_global_access
 
   gpu_metrics_attribute_metric_int(metrics, l2t_index, g->l2_transactions);
   
-  int l2t_theoretical_index = METRIC_ID(GMEM)[GPU_GMEM_LD_CACHED_L2TRANS_THEOR + type];
-  gpu_metrics_attribute_metric_int(metrics, l2t_theoretical_index, g->theoreticalL2Transactions);
+  int l2t_theoretical_index = 
+    METRIC_ID(GMEM)[GPU_GMEM_LD_CACHED_L2TRANS_THEOR + type];
+
+  gpu_metrics_attribute_metric_int(metrics, l2t_theoretical_index, 
+				   g->theoreticalL2Transactions);
 
   int bytes_index = METRIC_ID(GMEM)[GPU_GMEM_LD_CACHED_BYTES + type];
   gpu_metrics_attribute_metric_int(metrics, bytes_index, g->bytes);
@@ -430,12 +458,15 @@ gpu_metrics_attribute_local_access
 
   int lmem_trans_index = METRIC_ID(GLMEM)[GPU_LMEM_LD_TRANS + type];
   
-  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, lmem_trans_index);
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, lmem_trans_index);
 
-  gpu_metrics_attribute_metric_int(metrics, lmem_trans_index, l->sharedTransactions);
+  gpu_metrics_attribute_metric_int(metrics, lmem_trans_index, 
+				   l->sharedTransactions);
   
   int lmem_trans_theor_index = METRIC_ID(GLMEM)[GPU_LMEM_LD_TRANS_THEOR + type];
-  gpu_metrics_attribute_metric_int(metrics, lmem_trans_theor_index, l->theoreticalSharedTransactions);
+  gpu_metrics_attribute_metric_int(metrics, lmem_trans_theor_index, 
+				   l->theoreticalSharedTransactions);
   
   int bytes_index = METRIC_ID(GLMEM)[GPU_LMEM_LD_BYTES + type];
   gpu_metrics_attribute_metric_int(metrics, bytes_index, l->bytes);
@@ -451,27 +482,20 @@ gpu_metrics_attribute_branch
   gpu_branch_t *b = &(activity->details.branch);
   cct_node_t *cct_node = activity->cct_node;
 
-  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_BR_DIVERGED));
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_BR_DIVERGED));
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_BR_DIVERGED), b->diverged);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_BR_DIVERGED), 
+				   b->diverged);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_BR_EXECUTED), b->executed);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_BR_EXECUTED), 
+				   b->executed);
 }
 
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-void
-gpu_metrics_set_sample_period
-(
- uint32_t sample_period
-)
-{
-  gpu_sample_period = sample_period;
-}
-
 
 void
 gpu_metrics_attribute
@@ -484,9 +508,8 @@ gpu_metrics_attribute
   hpcrun_safe_enter();
 
   switch (activity->kind) {
-  case GPU_ACTIVITY_PC_SAMPLING:
-    assert(gpu_sample_period);
-    gpu_metrics_attribute_pc_sampling(activity, gpu_sample_period);
+  case GPU_ACTIVITY_PC_SAMPLING: 
+    gpu_metrics_attribute_pc_sampling(activity);
     break;
 
   case GPU_ACTIVITY_PC_SAMPLING_INFO:
@@ -536,7 +559,7 @@ gpu_metrics_attribute
 
 
 void
-gpu_metrics_GTIMES_enable
+gpu_metrics_default_enable
 (
  void
 )
@@ -601,7 +624,15 @@ gpu_metrics_GTIMES_enable
   FORALL_KINFO(INITIALIZE_SCALAR_METRIC_REAL)
 
   FINALIZE_METRIC_KIND();
+}
 
+
+void
+gpu_metrics_GICOPY_enable
+(
+ void
+)
+{
 // GPU implicit copy metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GICOPY
@@ -611,17 +642,15 @@ gpu_metrics_GTIMES_enable
   FORALL_GICOPY(INITIALIZE_SCALAR_METRIC_REAL)
 
   FINALIZE_METRIC_KIND();
+}
 
-// GPU global memory access metrics
-#undef CURRENT_METRIC 
-#define CURRENT_METRIC GGMEM
 
-  INITIALIZE_METRIC_KIND();
-
-  FORALL_GGMEM(INITIALIZE_INDEXED_METRIC_INT)
-
-  FINALIZE_METRIC_KIND();
-
+void
+gpu_metrics_GLMEM_enable
+(
+ void
+)
+{
 // GPU local memory access metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GLMEM
@@ -635,29 +664,77 @@ gpu_metrics_GTIMES_enable
 
 
 void
-gpu_metrics_pcsampling_enable
+gpu_metrics_GGMEM_enable
+(
+ void
+)
+{
+// GPU global memory access metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GGMEM
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GGMEM(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_INST_enable
 (
  void
 )
 {
 #undef CURRENT_METRIC 
-#define CURRENT_METRIC GPU_INST_STALL
+#define CURRENT_METRIC GPU_INST
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
+  FORALL_GPU_INST(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+}
 
+
+void
+gpu_metrics_GSAMP_enable
+(
+ void
+)
+{
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GSAMP
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GSAMP(INITIALIZE_SCALAR_METRIC_INT)
+  FORALL_GSAMP_INT(INITIALIZE_SCALAR_METRIC_INT);
+
+  FORALL_GSAMP_REAL(INITIALIZE_SCALAR_METRIC_REAL);
 
   FINALIZE_METRIC_KIND();
 
+  hpcrun_set_percent(METRIC_ID(GPU_SAMPLE_UTILIZATION), 1);
+
+  metric_desc_t* util_metric = 
+    hpcrun_id2metric_linked(METRIC_ID(GPU_SAMPLE_UTILIZATION));
+
+  char *util_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
+
+  sprintf(util_formula, "$%d/$%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
+	  METRIC_ID(GPU_SAMPLE_EXPECTED));
+
+  util_metric->formula = util_formula;
+}
+
+
+void
+gpu_metrics_GBR_enable
+(
+ void
+)
+{
 // GPU branch instruction metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GBR
@@ -670,37 +747,18 @@ gpu_metrics_pcsampling_enable
 }
 
 
-#if 0
 void
-cupti_enable_activities
+gpu_metrics_GPU_INST_STALL_enable
 (
- CUcontext context
+ void
 )
 {
-  PRINT("Enter cupti_enable_activities\n");
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GPU_INST_STALL
 
-  #define FORALL_ACTIVITIES(macro, context)                                      \
-    macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
-    macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
-    macro(context, CUPTI_DRIVER, driver_activities)                              \
-    macro(context, CUPTI_RUNTIME, runtime_activities)                            \
-    macro(context, CUPTI_OVERHEAD, overhead_activities)
+  INITIALIZE_METRIC_KIND();
 
-  #define CUPTI_SET_ACTIVITIES(context, activity_kind, activity)  \
-    if (cupti_enabled_activities & activity_kind) {               \
-      cupti_monitoring_set(context, activity, true);              \
-    }
+  FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
 
-  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
-
-  if (pc_sampling_frequency != -1) {
-    PRINT("pc sampling enabled\n");
-    cupti_pc_sampling_enable(context, pc_sampling_frequency);
-  }
-
-  cupti_correlation_enable();
-
-  PRINT("Exit cupti_enable_activities\n");
+  FINALIZE_METRIC_KIND();
 }
-#endif
