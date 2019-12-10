@@ -90,7 +90,7 @@ struct CCTEdge {
   bool operator < (const CCTEdge &other) const {
     if (this->from < other.from) {
       return true; 
-    } else if (this->to < other.to) {
+    } else if ((this->from == other.from) && (this->to < other.to)) {
       return true;
     }
     return false;
@@ -169,6 +169,7 @@ class CCTGraph {
 
     CCTEdge<T> edge(from, to);
     if (_edges.find(edge) == _edges.end()) {
+      std::cout << "add " << from << ", " << to << std::endl;
       _edges.insert(std::move(edge));
       _incoming_nodes[to].push_back(from);
       _outgoing_nodes[from].push_back(to);
