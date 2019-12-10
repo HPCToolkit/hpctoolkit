@@ -13,21 +13,6 @@
 // macros
 //*****************************************************************************
 
-typedef enum {
-  GPU_XCOPY_INVALID = 0,
-  GPU_XCOPY_H2D_BYTES = 1,
-  GPU_XCOPY_D2H_BYTES = 2,
-  GPU_XCOPY_H2A_BYTES = 3,
-  GPU_XCOPY_A2H_BYTES = 4,
-  GPU_XCOPY_A2A_BYTES = 5,
-  GPU_XCOPY_A2D_BYTES = 6,
-  GPU_XCOPY_D2A_BYTES = 7,
-  GPU_XCOPY_D2D_BYTES = 8,
-  GPU_XCOPY_H2H_BYTES = 9,
-  GPU_XCOPY_P2P_BYTES = 10
-} gpu_explicit_copy_metric_t;
-
-
 enum {
   GPU_INST_STALL_ALL = 0
 } gpu_inst_stall_all_t;
@@ -103,17 +88,17 @@ typedef enum {
 
 // gpu explicit copy
 #define FORALL_GXCOPY(macro)					\
-  macro("GXCOPY:INVL",            GPU_XCOPY_INVALID)		\
-  macro("GXCOPY:H2D (B)",         GPU_XCOPY_H2D_BYTES)		\
-  macro("GXCOPY:D2H (B)",         GPU_XCOPY_D2H_BYTES)		\
-  macro("GXCOPY:H2A (B)",         GPU_XCOPY_H2A_BYTES)		\
-  macro("GXCOPY:A2H (B)",         GPU_XCOPY_A2H_BYTES)		\
-  macro("GXCOPY:A2A (B)",         GPU_XCOPY_A2A_BYTES)		\
-  macro("GXCOPY:A2D (B)",         GPU_XCOPY_A2D_BYTES)		\
-  macro("GXCOPY:D2A (B)",         GPU_XCOPY_D2A_BYTES)		\
-  macro("GXCOPY:D2D (B)",         GPU_XCOPY_D2D_BYTES)		\
-  macro("GXCOPY:H2H (B)",         GPU_XCOPY_H2H_BYTES)		\
-  macro("GXCOPY:P2P (B)",         GPU_XCOPY_P2P_BYTES)
+  macro("GXCOPY:UNK (B)",         GPU_MEMCPY_UNK)		\
+  macro("GXCOPY:H2D (B)",         GPU_MEMCPY_H2D)		\
+  macro("GXCOPY:D2H (B)",         GPU_MEMCPY_D2H)		\
+  macro("GXCOPY:H2A (B)",         GPU_MEMCPY_H2A)		\
+  macro("GXCOPY:A2H (B)",         GPU_MEMCPY_A2H)		\
+  macro("GXCOPY:A2A (B)",         GPU_MEMCPY_A2A)		\
+  macro("GXCOPY:A2D (B)",         GPU_MEMCPY_A2D)		\
+  macro("GXCOPY:D2A (B)",         GPU_MEMCPY_D2A)		\
+  macro("GXCOPY:D2D (B)",         GPU_MEMCPY_D2D)		\
+  macro("GXCOPY:H2H (B)",         GPU_MEMCPY_H2H)		\
+  macro("GXCOPY:P2P (B)",         GPU_MEMCPY_P2P)
 
 
 #define FORALL_GSYNC(macro)					\
