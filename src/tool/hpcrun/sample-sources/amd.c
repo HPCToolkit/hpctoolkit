@@ -1,6 +1,6 @@
-//
-// Created by user on 17.8.2019..
-//
+//******************************************************************************
+// system includes
+//******************************************************************************
 
 #include <alloca.h>
 #include <assert.h>
@@ -18,41 +18,68 @@
 #include <dlfcn.h>
 #endif
 
-/******************************************************************************
- * libmonitor
- *****************************************************************************/
+
+
+//******************************************************************************
+// libmonitor
+//******************************************************************************
 
 #include <monitor.h>
 
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
 #include "amd.h"
-#include "gpu/amd/roctracer-api.h"
 
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+
+#include <hpcrun/control-knob.h>
+#include <hpcrun/device-finalizers.h>
+#include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
+#include <hpcrun/module-ignore-map.h>
+#include <hpcrun/ompt/ompt-interface.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/module-ignore-map.h>
-#include <hpcrun/device-finalizers.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/control-knob.h>
-#include <hpcrun/gpu/gpu-activity.h>
 
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <ompt/ompt-interface.h>
+
 #include <roctracer_hip.h>
 
-#define AMD_ROCM "amd-rocm"
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define AMD_ROCM "gpu=amd"
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
+
 static char amd_name[128];
 
-static const unsigned int MAX_CHAR_FORMULA = 32;
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 static void
 METHOD_FN(init)
@@ -60,28 +87,34 @@ METHOD_FN(init)
     self->state = INIT;
 }
 
+
 static void
 METHOD_FN(thread_init)
 {
     TMSG(CUDA, "thread_init");
 }
 
+
 static void
 METHOD_FN(thread_init_action)
 {
     TMSG(CUDA, "thread_init_action");
 }
+
+
 static void
 METHOD_FN(start)
 {
     TMSG(CUDA, "start");
 }
 
+
 static void
 METHOD_FN(thread_fini_action)
 {
     TMSG(CUDA, "thread_fini_action");
 }
+
 
 static void
 METHOD_FN(stop)
@@ -90,6 +123,7 @@ METHOD_FN(stop)
 
     TD_GET(ss_state)[self->sel_idx] = STOP;
 }
+
 
 static void
 METHOD_FN(shutdown)
@@ -117,7 +151,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     TMSG(CUDA,"nevents = %d", nevents);
 
-
 #ifndef HPCRUN_STATIC_LINK
     if (roctracer_bind()) {
         EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
@@ -129,32 +162,39 @@ METHOD_FN(process_event_list, int lush_metrics)
     // only one event is allowed
     char* evlist = METHOD_CALL(self, get_event_str);
     char* event = start_tok(evlist);
-    //if (hpcrun_ev_is(amd_name, AMD_ROCM)) {
-        gpu_metrics_default_enable();
-    //}    
+    gpu_metrics_default_enable();
     roctracer_init();
 }
+
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
 }
 
+
 static void
 METHOD_FN(display_events)
 {
-    printf("\n");
+  printf("===========================================================================\n");
+  printf("Available AMD GPU events\n");
+  printf("===========================================================================\n");
+  printf("Name\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+  printf("%s\tComprehensive operation-level monitoring on an AMD GPU.\n"
+	 "\t\tCollect timing information on GPU kernel invocations,\n"
+	 "\t\tmemory copies, etc.\n"
+	 AMD_ROCM);
+  printf("\n");
 }
 
-/***************************************************************************
- * object
- ***************************************************************************/
+
+
+//**************************************************************************
+// object
+//**************************************************************************
 
 #define ss_name amd_gpu
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"
-
-/******************************************************************************
- * private operations
- *****************************************************************************/

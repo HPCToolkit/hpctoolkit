@@ -104,8 +104,8 @@
 #define PRINT(...)
 #endif
 
-#define NVIDIA_CUDA "nvidia-cuda" 
-#define NVIDIA_CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
+#define NVIDIA_CUDA "gpu=nvidia" 
+#define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc" 
 
 
 
@@ -439,6 +439,24 @@ METHOD_FN(gen_event_set,int lush_metrics)
 static void
 METHOD_FN(display_events)
 {
+  printf("===========================================================================\n");
+  printf("Available NVIDIA GPU events\n");
+  printf("===========================================================================\n");
+  printf("Name\t\tDescription\n");
+  printf("---------------------------------------------------------------------------\n");
+  printf("%s\tComprehensive operation-level monitoring on an NVIDIA GPU.\n"
+	 "\t\tCollect timing information on GPU kernel invocations,\n"
+	 "\t\tmemory copies (implicit and explicit), driver and runtime\n"
+	 "\t\tactivity, and overhead.\n",
+	 NVIDIA_CUDA);
+  printf("\n");
+  printf("%s\tComprehensive monitoring on an NVIDIA GPU as described above\n"
+	 "\t\twith the addition of PC sampling. PC sampling attributes\n"
+	 "\t\tSTALL reasons to individual GPU instructions. PC sampling also\n"
+	 "\t\trecords aggregate statistics about the TOTAL number of samples measured,\n"
+	 "\t\tthe number of samples EXPECTED, and the number of samples DROPPED.\n"
+	 "\t\tGPU utilization for a kernel may be computed as (TOTAL+DROPPED)/EXPECTED.\n",
+	 NVIDIA_CUDA_PC_SAMPLING);
   printf("\n");
 }
 
