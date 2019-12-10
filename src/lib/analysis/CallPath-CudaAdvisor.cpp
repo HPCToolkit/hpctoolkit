@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <queue>
+#include <limits>
 
 #include <sys/stat.h>
 
@@ -82,7 +83,7 @@ void CudaAdvisor::init() {
   _inst_stall_metrics.insert(_nosel_stall_metric);
   _inst_stall_metrics.insert(_other_stall_metric);
   _inst_stall_metrics.insert(_sleep_stall_metric);
-  _dep_stall_metrics.insert(_cmem_stall_metric);
+  _inst_stall_metrics.insert(_cmem_stall_metric);
 
   _exec_dep_stall_metric = "STALL:EXC_DEP";
   _mem_dep_stall_metric = "STALL:MEM_DEP";
@@ -202,9 +203,9 @@ void CudaAdvisor::updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT
     std::queue<Prof::CCT::ADynNode *> nodes;
     for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
       auto *node = *iter;
-      if (node->demandMetric(in_issue_metric_ids[i]) != 0.0) {
-        nodes.push(node);
-      }
+      // Every stalled instruction must be issued at least once
+      demandNodeMetrics(node);
+      nodes.push(node);
     }
 
     // Complexity O(N)
@@ -226,7 +227,6 @@ void CudaAdvisor::updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT
             // Existed CCT node
             auto *neighbor_node = iter->second;
             cct_dep_graph.addEdge(node, neighbor_node);
-
           } else {
             Prof::Metric::IData metric_data(_prof->metricMgr()->size());
             metric_data.clearMetrics();
@@ -244,7 +244,20 @@ void CudaAdvisor::updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT
 }
 
 
-int CudaAdvisor::demandNodeMetrics(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node) {
+void CudaAdvisor::demandNodeMetrics(Prof::CCT::ADynNode *node) {
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
+      auto ex_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, false);
+      int inst = node->demandMetric(ex_inst_metric_index);
+      if (inst != 0) {
+        demandNodeMetric(mpi_rank, thread_id, node);
+      }
+    }
+  }
+}
+
+
+int CudaAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node) {
   auto in_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, true);
   auto ex_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, false);
   auto in_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
@@ -262,7 +275,8 @@ int CudaAdvisor::demandNodeMetrics(int mpi_rank, int thread_id, Prof::CCT::ADynN
 }
 
 
-void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map) {
+void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map,
+  InstBlames &inst_blames) {
   // for each thread
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
@@ -280,14 +294,14 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
             // sum up all neighbor node's instructions
             if (inst_stat->op.find("MEMORY") != std::string::npos) {
               if (inst_stat->op.find("GLOBAL") != std::string::npos) {
-                sum[_mem_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
+                sum[_mem_dep_stall_metric] += demandNodeMetric(mpi_rank, thread_id, dep_node);
               } else if (inst_stat->op.find("LOCAL") != std::string::npos) {
-                sum[_mem_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
+                sum[_mem_dep_stall_metric] += demandNodeMetric(mpi_rank, thread_id, dep_node);
               } else {
-                sum[_exec_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
+                sum[_exec_dep_stall_metric] += demandNodeMetric(mpi_rank, thread_id, dep_node);
               }
             } else {
-              sum[_exec_dep_stall_metric] += demandNodeMetrics(mpi_rank, thread_id, dep_node);
+              sum[_exec_dep_stall_metric] += demandNodeMetric(mpi_rank, thread_id, dep_node);
             }
           }
         }
@@ -323,7 +337,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
               dep_node->demandMetric(in_blame_metric_index) += latency * neighbor_ratio;
               dep_node->demandMetric(ex_blame_metric_index) += latency * neighbor_ratio;
               // one metric id is enough for inst blame analysis
-              _inst_blames[mpi_rank][thread_id].emplace_back(
+              inst_blames[mpi_rank][thread_id].emplace_back(
                 InstructionBlame(src_vma, vma, ex_blame_metric_index, latency * neighbor_ratio));
             }
           }
@@ -343,9 +357,58 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
           node->demandMetric(in_blame_metric_index) += stall;
           node->demandMetric(ex_blame_metric_index) += stall;
           // one metric id is enough for inst blame analysis
-          _inst_blames[mpi_rank][thread_id].emplace_back(
+          inst_blames[mpi_rank][thread_id].emplace_back(
             InstructionBlame(src_vma, src_vma, ex_blame_metric_index, stall));
         }
+      }
+    }
+  }
+}
+
+
+void CudaAdvisor::overlayInstructionBlames(std::vector<CudaParse::Function *> &functions,
+  InstBlames &inst_blames) {
+  for (auto *function : functions) {
+    // Construct function boundaries
+    VMA function_start_pc = std::numeric_limits<VMA>::max();
+    VMA function_end_pc = std::numeric_limits<VMA>::min();
+    FunctionBlame function_blame;
+    for (auto *block : function->blocks) {
+      VMA block_start_pc = block->insts.front()->inst_stat->pc;
+      VMA block_end_pc = block->insts.back()->inst_stat->pc; 
+      function_start_pc = std::min(block_start_pc, function_start_pc);
+      function_end_pc = std::max(block_end_pc, function_end_pc);
+      BlockBlame block_blame(block_start_pc, block_end_pc);
+      function_blame.block_blames.push_back(block_blame);
+    }
+    function_blame.start = function_start_pc;
+    function_blame.end = function_end_pc;
+
+    // Overlay instructions
+    for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
+      ++mpi_rank) {
+      for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
+        ++thread_id) {
+        auto &thread_inst_blames = inst_blames[mpi_rank][thread_id];
+        std::sort(thread_inst_blames.begin(), thread_inst_blames.end());
+
+        auto block_blame_index = 0;
+        for (size_t i = 0; i < thread_inst_blames.size(); ++i) {
+          auto &block_blame = function_blame.block_blames[block_blame_index];
+          auto &inst_blame = thread_inst_blames[i];
+          while (block_blame.end < inst_blame.src) {
+            ++block_blame_index;
+            block_blame = function_blame.block_blames[block_blame_index];
+          }
+          if (inst_blame.src >= block_blame.start) {
+            block_blame.inst_blames.push_back(inst_blame);
+            block_blame.blames[inst_blame.metric_id] += inst_blame.value;
+            block_blame.blame_sum += inst_blame.value;
+            function_blame_blame.blames[inst_blame.metric_id] += inst_blame.value;
+            function_blame_blame.blame_sum += inst_blame.value;
+          }
+        }
+        _function_blames[mpi_rank][thread_id].push_back(function_blame);
       }
     }
   }
@@ -374,7 +437,8 @@ void CudaAdvisor::debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_grap
 }
 
 
-void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::InstructionStat *> &inst_stats) {
+void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Function *> &functions,
+  std::vector<CudaParse::InstructionStat *> &inst_stats) {
   // 1. Map pc to CCT and structs
   VMAInstMap vma_inst_map;
   constructVMAInstMap(inst_stats, vma_inst_map);
@@ -411,13 +475,14 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Inst
   }
 
   // 4. accumulate blames
-  blameCCTGraph(cct_dep_graph, vma_inst_map);
+  InstBlames inst_blames;
+  blameCCTGraph(cct_dep_graph, vma_inst_map, inst_blames);
 
   if (DEBUG_CALLPATH_CUDAADVISOR) {
-    for (auto &mpi_inst_blames : _inst_blames) {
-      std::cout << "[" << mpi_inst_blames.first << ",";
+    for (auto &mpi_inst_blames : inst_blames) {
       for (auto &thread_inst_blames : mpi_inst_blames.second) {
-        std::cout << thread_inst_blames.first << "]:" << std::endl;
+        std::cout << "[" << mpi_inst_blames.first << "," <<
+          thread_inst_blames.first << "]:" << std::endl;
         for (auto &inst_blame : thread_inst_blames.second) {
           std::cout << std::hex << inst_blame.dst << "->";
           if (inst_blame.src != inst_blame.dst) {
@@ -425,17 +490,21 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Inst
           } else {
             std::cout << "-1, ";
           }
-          std::cout << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
+          std::cout << std::dec << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
             inst_blame.value << std::endl;
         }
       }
     }
   }
-  // 5. find bottlenecks
+
+  // 4. overlay blames
+  overlayInstructionBlames(functions, inst_blames);
 }
 
 
 void CudaAdvisor::advise(Prof::LoadMap::LMId_t lm_id) {
+  // 1. construct function blames, block blames, and instruction blames
+
 }
 
 

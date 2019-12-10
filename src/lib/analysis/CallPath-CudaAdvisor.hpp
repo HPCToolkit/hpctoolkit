@@ -99,16 +99,29 @@ struct InstructionBlame {
   InstructionBlame() {}
   InstructionBlame(VMA src, VMA dst, int metric_id, double value) : 
     src(src), dst(dst), metric_id(metric_id), value(value) {}
+
+  bool operator < (const InstructionBlame &other) const {
+    return this->src < other.src;
+  }
 };
 
 
 struct BlockBlame {
-  std::vector<InstructionBlame *> inst_blames;
+  VMA start, end;
+  std::vector<InstructionBlame> inst_blames;
+  std::map<int, double> blames;
+  double blame_sum;
+
+  BlockBlame() {}
+  BlockBlame(VMA start, VMA end) : start(start), end(end) {}
 };
 
 
 struct FunctionBlame {
-  std::vector<FunctionBlame *> block_blames;
+  VMA start, end;
+  std::vector<BlockBlame> block_blames;
+  std::map<int, double> blames;
+  double blame_sum;
 };
 
 
@@ -129,7 +142,8 @@ class CudaAdvisor {
 
   void init();
 
-  void blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::InstructionStat *> &inst_stats);
+  void blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Function *> &functions,
+    std::vector<CudaParse::InstructionStat *> &inst_stats);
 
   void advise(Prof::LoadMap::LMId_t lm_id);
 
@@ -141,6 +155,10 @@ class CudaAdvisor {
   typedef std::map<VMA, CudaParse::InstructionStat *> VMAInstMap;
 
   typedef VMAIntervalMap<Prof::Struct::ANode *> VMAStructMap;
+
+  typedef std::map<int, std::map<int, std::vector<InstructionBlame>>> InstBlames;
+
+  typedef std::map<int, std::map<int, std::vector<FunctionBlame>>> FunctionBlames;
 
  private:
   void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id, VMAProfMap &vma_prof_map,
@@ -161,11 +179,15 @@ class CudaAdvisor {
     CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
     VMAStructMap &vma_struct_map, VMAInstMap &vma_inst_map);
 
-  void blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map);
+  void blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map, InstBlames &inst_blames);
+
+  void overlayInstructionBlames(std::vector<CudaParse::Function *> &functions, InstBlames &inst_blames);
 
   void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  int demandNodeMetrics(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
+  void demandNodeMetrics(Prof::CCT::ADynNode *node);
+
+  int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
  private:
   std::string _inst_metric;
@@ -191,7 +213,7 @@ class CudaAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   // <mpi_rank, <thread_id, <blames>>>
-  std::map<int, std::map<int, std::vector<InstructionBlame>>> _inst_blames;
+  std::map<int, std::map<int, std::vector<FunctionBlame>>> _function_blames;
 };
 
 

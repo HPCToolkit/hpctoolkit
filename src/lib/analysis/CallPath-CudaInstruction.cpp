@@ -268,7 +268,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
     // Step 3: Blame instruction latencies
-    cuda_advisor.blame(lm_id, inst_stats);
+    cuda_advisor.blame(lm_id, functions, inst_stats);
 
     cuda_advisor.advise(lm_id);
 

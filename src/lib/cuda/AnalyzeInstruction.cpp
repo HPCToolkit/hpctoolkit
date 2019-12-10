@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 1
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 namespace CudaParse {
 
