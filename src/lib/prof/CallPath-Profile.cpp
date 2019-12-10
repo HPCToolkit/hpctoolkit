@@ -1433,6 +1433,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   hpcrun_fmt_epochHdr_free(&ehdr, free);
   hpcrun_fmt_metricTbl_free(&metricTbl, free);
+
+  if (aux_info) {
+    free(aux_info);
+  }
   
   return HPCFMT_OK;
 }

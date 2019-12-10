@@ -50,6 +50,10 @@
 #include <setjmp.h>
 #include <stdbool.h>
 
+// FIXME: not in master-gpu-trace. why?
+// #include <tool/hpcrun/sample-sources/nvidia/stream-tracing.h>
+//#include <tool/hpcrun/sample-sources/amd/amd.h>
+
 extern bool hpcrun_is_initialized();
 
 extern bool hpcrun_is_safe_to_sync(const char* fn);

@@ -98,11 +98,16 @@ MYSOURCES = \
 	cskiplist.h cskiplist.c \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
+	stacks.h stacks.c \
+	bistack.h bistack.c \
+	bichannel.h bichannel.c \
+	producer_wfq.h producer_wfq.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
 	procmaps.h procmaps.c \
+	vdso.h vdso.c \
 	randomizer.h randomizer.c \
-	vdso.h vdso.c
+	splay-uint64.h splay-uint64.c
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
 

@@ -484,6 +484,20 @@ hpcrun_cct_is_dummy(cct_node_t* node)
 // ********** Mutator functions: modify a given cct
 //
 
+cct_node_t*
+hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm)
+{
+  cct_addr_t frm;
+
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = ip_norm;
+
+  cct_node_t *child = hpcrun_cct_insert_addr(node, &frm);
+
+  return child;
+}
+
+
 //
 // Fundamental mutation operation: insert a given addr into the
 // set of children of a given cct node. Return the cct_node corresponding
