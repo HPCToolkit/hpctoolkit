@@ -1665,3 +1665,23 @@ monitor_post_dlclose(void* handle, int ret)
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */
+
+
+//----------------------------------------------------------------------
+
+// FIXME: Add a weak symbol for cplus_demangle() for hpclink in the
+// static case.  Something is pulling in hpctoolkit_demangle() and
+// thus cplus_demangle() into libhpcrun.o and this breaks hpclink,
+// even though nothing actually uses them.  But the real fix should be
+// in the lib Makefiles.
+
+#ifdef HPCRUN_STATIC_LINK
+
+char * __attribute__ ((weak))
+cplus_demangle(char *str, int opts)
+{
+  return strdup(str);
+}
+
+#endif
+
