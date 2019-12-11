@@ -70,13 +70,12 @@
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
 
-// #include "sample-sources/nvidia/cuda-state-placeholders.h"
 #include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-correlation-channel.h"
 #include "gpu/gpu-correlation-channel-set.h"
+#include "gpu/gpu-monitoring.h"
 
 #include "gpu/nvidia/cupti-api.h"
-// #include "sample-sources/nvidia/cupti-channel.h"
 #include "sample-sources/nvidia.h"
 
 
