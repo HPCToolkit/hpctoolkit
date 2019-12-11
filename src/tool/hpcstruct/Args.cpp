@@ -62,10 +62,7 @@
 #include <iostream>
 using std::cerr;
 using std::endl;
-#include <dirent.h>
-#include <sys/stat.h>
 
-#include <vector>
 #include <string>
 using std::string;
 
@@ -79,7 +76,6 @@ using std::string;
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
@@ -100,15 +96,6 @@ static const char* usage_summary =
 static const char* usage_details = 
 #include "usage.h"
 ;
-
-// Possible extensions:
-//  --Li : Select the opposite of the --loop-intvl default.
-//  --Lf : Select the opposite of the --loop-fwd-subst default.
-
-static const char* cubins_analysis_makefile =
-#include "cubins-analysis.h"
-;
-
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
@@ -243,16 +230,8 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string&
 Args::getCmd() const
 {
-  static std::string command = std::string("hpcstruct");
-  return  command;
-}
-
-
-static inline bool is_directory(const std::string &path) {
-  struct stat statbuf;
-  if (stat(path.c_str(), &statbuf) != 0)
-    return 0;
-  return S_ISDIR(statbuf.st_mode);
+  static const std::string command = std::string("hpcstruct");
+  return command;
 }
 
 
@@ -374,99 +353,20 @@ Args::parse(int argc, const char* const argv[])
       demangle_function = parser.getOptArg("demangle-function");
     }
 
-    std::string output_name;
     // Check for other options: Output options
     if (parser.isOpt("output")) {
-      output_name = parser.getOptArg("output");
-    }
-    if (parser.isOpt("compact")) {
-      prettyPrintOutput = false;
+      out_filenm = parser.getOptArg("output");
     }
 
     // Check for required arguments
     if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
     }
+    in_filenm = parser.getArg(0);
 
-    std::string input_name = parser.getArg(0);
-
-    if (is_directory(input_name)) {
-      auto input_path = std::string(RealPath(input_name.c_str()));
-      auto cubins_dir = input_path + "/cubins";
-      DIR *dir;
-      if ((dir = opendir(cubins_dir.c_str())) != NULL) {
-#if 0
-	auto structs_dir = input_path + "/structs";
-        mkdir(structs_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-	struct dirent *ent;
-        /* append files within the directory */
-        while ((ent = readdir(dir)) != NULL) {
-          std::string file_name = std::string(ent->d_name);
-          if (!is_directory(cubins_dir + "/" + file_name)) {
-            in_filenm.push_back(cubins_dir + "/" + file_name);
-            if (output_name.size() == 0) {
-              out_filenm.push_back(structs_dir + "/" + file_name + ".hpcstruct");
-            } else {
-              if (output_name == "-") {
-                out_filenm.push_back("-");
-              } else {
-                out_filenm.push_back(output_name + "/" + file_name + ".hpcstruct");
-              }
-            }
-          }
-        }
-#else
-
-	struct dirent *ent;
-	bool cubins_found = false;
-        std::string cubin_suffix = std::string("cubin");
-        while ((ent = readdir(dir)) != NULL) {
-          std::string file_name = std::string(ent->d_name);
-          if (file_name.find(cubin_suffix) != std::string::npos) {
-            cubins_found = true;
-            break;
-          }
-        }
-
-        if (!cubins_found) {
-	  ARG_ERROR("specified directory is not a hpctoolkit measurement directory containing cubins");
-        }
-
-	auto structs_dir = input_path + "/structs";
-        mkdir(structs_dir.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
-	// use "make" to launch parallel analysis of a directory full of cubin files
-	auto makefile_name = structs_dir + "/Makefile";
-        FILE *makefile = fopen(makefile_name.c_str(),"w");
-        if (makefile) {
-          size_t len =  strlen(cubins_analysis_makefile);
-          size_t bytes_written = fwrite(cubins_analysis_makefile, (size_t) 1, len, makefile);
-          if (bytes_written == len) {
-	    fclose(makefile);
-
-	    // see cubins-analysis.txt in this directory to understand this command
-            std::string make_cmd = 
-	      "make -C " + structs_dir + " CUBINS_DIR=" + cubins_dir + 
-              " STRUCTS_DIR=" + structs_dir + " --no-print-directory";
-
-            system(make_cmd.c_str());
-          } else {
-            fclose(makefile);
-          }
-        }
-#endif
-        closedir(dir);
-      } else {
-	  ARG_ERROR("specified directory is not a hpctoolkit measurement directory containing cubins");
-      }
-    } else {
-      in_filenm.push_back(std::string(input_name));
-      if (output_name.size() == 0) {
-        string base_filenm = FileUtil::basename(input_name);
-        out_filenm.push_back(base_filenm + ".hpcstruct");
-      } else {
-        out_filenm.push_back(output_name);
-      }
+    if (out_filenm.empty()) {
+      string base_filenm = FileUtil::basename(in_filenm);
+      out_filenm = base_filenm + ".hpcstruct";
     }
   }
   catch (const CmdLineParser::ParseError& x) {
@@ -483,9 +383,7 @@ void
 Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl;
-  for (auto &input_name : in_filenm) {
-    os << "Args.in_filenm= " << input_name << endl;
-  }
+  os << "Args.in_filenm= " << in_filenm << endl;
 }
 
 
