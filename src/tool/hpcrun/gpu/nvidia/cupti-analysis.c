@@ -1,3 +1,46 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2019, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
 //*****************************************************************************
 // system includes
 //*****************************************************************************
@@ -35,11 +78,18 @@
 
 #define UPPER_DIV(a, b) a == 0 ? 0 : (a - 1) / b + 1
 
-/*
- * Theoretical occupancy = active_warps_per_sm / max_active_warps_per_sm
- * Ref: section 3.2.3 in
- * A Performance Analysis Framework for Exploiting GPU Microarchitectural Capability
- */
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+
+//------------------------------------------------------------------------------
+// Theoretical occupancy = active_warps_per_sm / max_active_warps_per_sm
+// Ref: section 3.2.3 in
+// A Performance Analysis Framework for Exploiting GPU Microarchitectural Capability
+//------------------------------------------------------------------------------
+
 void
 cupti_occupancy_analyze
 (
@@ -57,6 +107,7 @@ cupti_occupancy_analyze
   if (device != NULL) {
     cuda_device_property_t *device_property =
       cuda_device_map_entry_device_property_get(device);
+
     uint32_t num_threads_per_warp = device_property->num_threads_per_warp;
     uint32_t sm_threads = device_property->sm_threads;
     uint32_t sm_registers = device_property->sm_registers;
@@ -70,12 +121,17 @@ cupti_occupancy_analyze
     uint32_t block_registers = (kernel->registersPerThread) * (*block_threads);
     uint32_t max_blocks_by_threads = sm_threads / *block_threads;
     uint32_t max_blocks_by_registers = sm_registers / block_registers;
-    uint32_t max_blocks_by_shared_memory = *block_shared_memory == 0 ? UINT32_MAX : sm_shared_memory / *block_shared_memory;
+
+    uint32_t max_blocks_by_shared_memory = 
+      (*block_shared_memory == 0) ?  UINT32_MAX : sm_shared_memory / *block_shared_memory;
+
     *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
 
     uint32_t active_blocks = MIN4(max_blocks_by_threads, max_blocks_by_registers,
       max_blocks_by_shared_memory, sm_blocks);
+
     *active_warps_per_sm = active_blocks * (UPPER_DIV(*block_threads, num_threads_per_warp));
+
     PRINT("sm_threads %u\n", sm_threads);
     PRINT("max_blocks_by_registers %u\n", max_blocks_by_registers);
     PRINT("max_blocks_by_threads %u\n", max_blocks_by_threads);
@@ -90,18 +146,19 @@ cupti_occupancy_analyze
 }
 
 
-/*
- * Two facts:
- * 1. SMs are profiled simultaneously, which means the total number
- * of samples equals to the sum of samples of each SM.
- * 2. On each SM, active warps are profiled concurrently in a round
- * robin manner, no matter a warp is issuing an instruction or not.
- * This fact can be confirmed in NVIDIA's Volta tuning guide. 
- *
- * sm_efficiency = active_cycles / elapsed_cycles
- * estimated sm_efficiency =
- * total_samples / (clock_rate * kernel_runtime * #SM / sample_rate).
- */
+//------------------------------------------------------------------------------
+// Two facts:
+// 1. SMs are profiled simultaneously, which means the total number
+// of samples equals to the sum of samples of each SM.
+// 2. On each SM, active warps are profiled concurrently in a round
+// robin manner, no matter a warp is issuing an instruction or not.
+// This fact can be confirmed in NVIDIA's Volta tuning guide. 
+//
+// sm_efficiency = active_cycles / elapsed_cycles
+// estimated sm_efficiency =
+// total_samples / (clock_rate * kernel_runtime * #SM / sample_rate).
+//------------------------------------------------------------------------------
+
 void
 cupti_sm_efficiency_analyze
 (

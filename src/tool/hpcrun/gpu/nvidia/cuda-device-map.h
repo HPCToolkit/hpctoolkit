@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -55,8 +52,10 @@
 //  
 //***************************************************************************
 
-#ifndef _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
-#define _HPCTOOLKIT_CUDA_DEVICE_MAP_H_
+#ifndef cuda_device_map_h
+#define cuda_device_map_h
+
+
 
 //*****************************************************************************
 // system includes
@@ -112,5 +111,7 @@ cuda_device_map_entry_device_property_get
 (
  cuda_device_map_entry_t *entry
 );
+
+
 
 #endif

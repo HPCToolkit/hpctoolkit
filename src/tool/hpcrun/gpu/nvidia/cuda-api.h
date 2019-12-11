@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -54,8 +51,8 @@
 //  
 //***************************************************************************
 
-#ifndef _HPCTOOLKIT_CUDA_API_H_
-#define _HPCTOOLKIT_CUDA_API_H_
+#ifndef cuda_api_h
+#define cuda_api_h
 
 
 
@@ -109,5 +106,7 @@ cuda_device_property_query
  int device_id, 
  cuda_device_property_t *property
 );
+
+
 
 #endif
