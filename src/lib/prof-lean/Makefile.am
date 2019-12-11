@@ -104,6 +104,8 @@ MYSOURCES = \
 	producer_wfq.h producer_wfq.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
+	procmaps.h procmaps.c \
+	vdso.h vdso.c \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c
 
@@ -115,9 +117,9 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = 
+MYLIBADD =
 
-MYCLEAN = 
+MYCLEAN =
 
 #############################################################################
 # zlib

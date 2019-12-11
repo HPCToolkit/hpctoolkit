@@ -50,6 +50,8 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#include <ucontext.h>
+
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
@@ -104,6 +106,10 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   int32_t flags:30;
   enum libunw_state libunw_status:2;
+
+#ifdef HOST_CPU_PPC
+  ucontext_t *ctxt; // needed for register-based unwinding
+#endif
 
   unw_cursor_t uc;
 } hpcrun_unw_cursor_t;

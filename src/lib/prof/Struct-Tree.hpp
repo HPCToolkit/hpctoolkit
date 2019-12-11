@@ -1098,14 +1098,6 @@ public:
   codeName() const
   { return name(); }
 
-  const char *
-  pretty_name() const
-  { return m_pretty_name.c_str(); }
-
-  void
-  pretty_name(const char *nm)
-  { m_pretty_name = nm; }
-
   std::string
   baseName() const
   { return FileUtil::basename(m_name); }
@@ -1262,7 +1254,7 @@ protected:
 private:
   std::string m_name; // the load module name
 
-  // for pseudo module, this will be set
+  // for pseudo modules, this will be set
   // keep this in addition to m_name to avoid disturbing other
   // things that depend upon a full path
   std::string m_pretty_name;

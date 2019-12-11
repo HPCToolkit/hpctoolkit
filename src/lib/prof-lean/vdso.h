@@ -1,5 +1,3 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -44,53 +42,69 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __LINUXKERNELSYMBOLS_HPP__
-#define __LINUXKERNELSYMBOLS_HPP__
+//***************************************************************************
+//
+// File:
+//   vdso.c
+//
+// Purpose:
+//   interface for information about VDSO segment in linux
+//
+// Description:
+//   identify VDSO segment and its properties
+//
+//***************************************************************************
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+#ifndef __VDSO_H__
+#define __VDSO_H__
 
-#include "SimpleSymbols.hpp"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
+#define VDSO_SEGMENT_NAME_SHORT "[vdso]"
+#define VDSO_SEGMENT_NAME_LONG  "linux-vdso.so"
 
 
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
+//***************************************************************************
+// interface declarations
+//***************************************************************************
 
-class LinuxKernelSymbols : public SimpleSymbols {
-public:
-  LinuxKernelSymbols();
-  bool parse(const std::set<std::string> &directorySet, const char *pathname);
+// returns non-zero value if segname is used for a VDSO segment
+int
+vdso_segment_p
+(
+ const char *filename
+);
+
+
+// returns address of VDSO segment
+void *
+vdso_segment_addr
+(
+);
+
+
+// returns length of VDSO segment
+size_t
+vdso_segment_len
+(
+);
+
+const char*
+get_saved_vdso_path();
+
+int
+set_saved_vdso_path(const char*);
+
+
+#ifdef __cplusplus
 };
+#endif
 
-enum init_status_e {UNINITIALIZED, INITIALIZED};
-
-class LinuxKernelSymbolsFactory : public SimpleSymbolsFactory {
-public:
-  LinuxKernelSymbolsFactory():m_kernelSymbol(NULL), m_id(0), m_fileId(0),
-    m_id_status(UNINITIALIZED), m_fileId_status(UNINITIALIZED)
-  {}
-  ~LinuxKernelSymbolsFactory() {
-    if (m_kernelSymbol) {
-      delete m_kernelSymbol;
-    }
-  }
-
-  const char *unified_name();
-
-  bool match(const char *pathname);
-  SimpleSymbols *create();
-
-
-private:
-  LinuxKernelSymbols *m_kernelSymbol;
-  uint m_id;
-  uint m_fileId;
-
-  enum init_status_e m_id_status;
-  enum init_status_e m_fileId_status;
-};
-     
 #endif
