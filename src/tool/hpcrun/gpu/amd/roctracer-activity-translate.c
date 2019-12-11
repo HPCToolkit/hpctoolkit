@@ -151,7 +151,10 @@ roctracer_activity_translate
  roctracer_record_t *record   
 )
 {
-  const char * name = roctracer_op_string(record->domain, record->op, record->kind);        
+#if DEBUG
+  const char * name = roctracer_op_string(record->domain, record->op, record->kind);
+#endif
+
   if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
     switch(record->op){
     case HIP_API_ID_hipMemcpyDtoD:
