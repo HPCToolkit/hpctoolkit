@@ -126,11 +126,14 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
 
-
 static bool
-vdso_loadmodule(const char *pathname)
-{
-  return pathname && strstr(pathname,  "vdso");
+isVDSOLoadModule(string name) {  
+  // vdso load module name is in the following format:
+  // vdso/<md5 hash>.vdso
+  size_t ret = name.rfind("/");  
+  if (ret == string::npos) return false;
+  if (name.substr(0, ret) != "vdso") return false; 
+  return name.find(".[vdso]") == name.size() - 7;
 }
 
 
@@ -398,35 +401,46 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
                            bool printProgress)
 {
   const string& lm_nm = loadmap_lm->name();
+  const string& lm_pretty_name = Prof::LoadMap::LM::pretty_name(lm_nm);
+
   BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_nm);
+    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_pretty_name);
   } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  } else if (vdso_loadmodule(lm_nm.c_str()))  {
-    DIAG_WMsgIf(printProgress, "Cannot fully process samples for virtual load module " << lm_nm);
   } else {
 
     try {
       lm = new BinUtil::LM();
-      lm->open(lm_nm.c_str());
+      if (isVDSOLoadModule(lm_nm)) {        
+        string path = "";
+        if (!prof.directorySet().empty()) {
+          // Assume we can find all version of the vdso in all measurement directories.          
+          // Can different runs encounter different vdso?
+          // If they can, it means a particular version of vdso may only
+          // show up in some of the measurement directories (not all).
+          // Then we cannot just choose the first measurement directory.                    
+          path = *(prof.directorySet().begin());
+        }        
+        path += "/" + lm_nm;
+        lm->open(path.c_str());
+      } else {
+        lm->open(lm_nm.c_str());
+      }
       lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
       lm = NULL;
       DIAG_WMsgIf(printProgress, "Cannot fully process samples for load module " << 
-                  lm_nm << ": " << x.what());
+                  lm_pretty_name << ": " << x.what());
     }
-    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_nm);
+    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_pretty_name);
   }
 
-  if (lm) {
-    lmStrct->pretty_name(lm->name().c_str());
-  }
   Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()

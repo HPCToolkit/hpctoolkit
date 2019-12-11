@@ -227,4 +227,19 @@ LoadMap::LM::ddump() const
 }
 
 
+const std::string&
+LoadMap::LM::pretty_name(const std::string& lm_nm)
+{
+  static const std::string vdso_nm("[vdso]");
+
+  static const std::string vmlinux_nm("<vmlinux");
+  static const std::string vmlinux_pretty_nm("[vmlinux]");
+
+  if (lm_nm.find(vdso_nm) != std::string::npos) return vdso_nm;
+  if (lm_nm.find(vmlinux_nm) != std::string::npos) return vmlinux_pretty_nm;
+
+  return lm_nm;
+}
+
+
 } // namespace Prof

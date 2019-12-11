@@ -57,6 +57,7 @@
 #include <dlfcn.h> // dladdr
 
 
+
 //*****************************************************************************
 // local includes
 //*****************************************************************************
@@ -64,7 +65,9 @@
 #include "dylib.h"
 #include "fnbounds_interface.h"
 
+#include <lib/prof-lean/vdso.h>
 #include <messages/messages.h>
+
 
 
 //*****************************************************************************
@@ -125,6 +128,11 @@ void
 dylib_map_open_dsos()
 {
   dl_iterate_phdr(dylib_map_open_dsos_callback, (void *)0);
+  char *vdso_start = (char *) vdso_segment_addr();
+  if (vdso_start) {
+    char *vdso_end = vdso_start + vdso_segment_len();
+    fnbounds_ensure_mapped_dso(get_saved_vdso_path(), vdso_start, vdso_end);
+  }
 }
 
 

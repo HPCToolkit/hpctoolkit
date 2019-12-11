@@ -223,6 +223,20 @@ hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
   return cursor->ra_loc;
 }
 
+void *
+getNxtPCFromReg(hpcrun_unw_cursor_t* cursor) 
+{
+	unwind_interval *intvl = cursor->unwr_info.btuwi;
+	if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+		if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
+			return (void*)(cursor->ctxt->uc_mcontext.regs->link);
+		} else {
+			return (void*)(cursor->ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+		}
+	} 
+	return 0;
+}
+
 
 void 
 hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
@@ -231,9 +245,13 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
   cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
+  cursor->ra        = NULL;
+  cursor->sp        = ucontext_sp(ctxt);
+  cursor->bp        = NULL;
+  cursor->flags     = UnwFlg_StackTop;
+  cursor->ctxt      = ctxt;
   cursor->ra_loc    = NULL;
 
-  cursor->flags     = UnwFlg_StackTop;
   bitree_uwi_t* intvl = NULL;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
@@ -256,8 +274,8 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   compute_normalized_ips(cursor);
 
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
-       cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
+  TMSG(UNW, "init: pc=%p, sp=%p, fp=%p", 
+       cursor->pc_unnorm, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
 
@@ -315,12 +333,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   if (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg) {
     // SP already points to caller's stack frame
     nxt_sp = sp;
-    
-    // consistency check: interior frames should not have type SPTy_Reg
-    if (isInteriorFrm) {
-      nxt_sp = *sp;
-      TMSG(UNW, "warning: correcting sp: %p -> %p", sp, nxt_sp);
-    }
   }
   else if (UWI_RECIPE(intvl)->sp_ty == SPTy_SPRel) {
     // SP points to parent's SP
@@ -337,17 +349,13 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
   if (UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
-    nxt_pc = cursor->ra;
-    ra_loc = cursor->ra_loc;
-    
-    // consistency check: interior frames should not have type RATy_Reg
-    if (isInteriorFrm) {
-      nxt_pc = getNxtPCFromSP(nxt_sp);
-      ra_loc = (void*)getNxtPCLocFromSP(nxt_sp); 
-      TMSG(UNW, "warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
+    nxt_pc = getNxtPCFromReg(cursor);
+    if (nxt_pc == 0) {
+       EMSG("bad register-based unwind at pc: %p, sp: %p", pc, sp);
+       return STEP_ERROR;
     }
-  }
-  else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
+    ra_loc = cursor->ra_loc;
+  } else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
     nxt_pc = getNxtPCFromSP(nxt_sp);
     ra_loc = (void*)getNxtPCLocFromSP(nxt_sp);
   }
@@ -402,13 +410,20 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
 
-  // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg && !isInteriorFrm);
-  if (!mayFrameSizeBe0 && !isPossibleParentSP(sp, nxt_sp)) {
-    // TMSG(UNW, " warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
-    // nxt_sp = sp + 1
-    TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
-    return STEP_ERROR;
+  // INVARIANT: Ensure we always make progress unwinding ...
+  bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg);
+  if (mayFrameSizeBe0) { 
+    if (cursor->pc_unnorm == nxt_pc && cursor->sp == nxt_sp) {
+      // no forward progess with a register-based unwind
+      TMSG(UNW, "error: loop! pc = nxt_pc = %p sp = nxt_sp = %p", nxt_pc, nxt_sp);
+      return STEP_ERROR;
+    }
+  } else {
+    if (!isPossibleParentSP(sp, nxt_sp)) {
+      // no forward progess with a stack-based unwind
+      TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
+      return STEP_ERROR;
+    }
   }
 
 

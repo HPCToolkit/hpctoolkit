@@ -115,7 +115,6 @@
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
 #include "control-knob.h"
-#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -416,6 +415,8 @@ hpcrun_init_internal(bool is_child)
   // must initialize unwind recipe map before initializing fnbounds
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
+
+  hpcrun_save_vdso();
 
   // init callbacks for each device
   hpcrun_initializer_init();
