@@ -367,6 +367,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   gpu_metrics_default_enable();
+  gpu_metrics_KINFO_enable();
 
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {

@@ -217,6 +217,16 @@ gpu_metrics_default_enable
 );
 
 
+//--------------------------------------------------
+// record NVIDIA kernel info
+//--------------------------------------------------
+
+void
+gpu_metrics_KINFO_enable
+(
+ void
+);
+
 
 //--------------------------------------------------
 // record implicit copy metrics for unified memory

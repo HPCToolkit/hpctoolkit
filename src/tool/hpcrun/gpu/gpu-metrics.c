@@ -361,35 +361,37 @@ gpu_metrics_attribute_kernel
   gpu_kernel_t *k = &(activity->details.kernel);
   cct_node_t *cct_node = activity->cct_node;
 
-  metric_data_list_t *metrics = 
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM));
+  if (METRIC_KIND(KINFO)) {
+    metric_data_list_t *metrics = 
+      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM));
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), 
-				   k->staticSharedMemory);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), 
+				     k->staticSharedMemory);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), 
-				   k->dynamicSharedMemory);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), 
+				     k->dynamicSharedMemory);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), 
-				   k->localMemoryTotal);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), 
+				     k->localMemoryTotal);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), 
-				   k->activeWarpsPerSM);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), 
+				     k->activeWarpsPerSM);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), 
-				   k->maxActiveWarpsPerSM);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), 
+				     k->maxActiveWarpsPerSM);
   
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), 
-				   k->threadRegisters);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), 
+				     k->threadRegisters);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), 
-				   k->blockThreads);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), 
+				     k->blockThreads);
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
-				   k->blockSharedMemory);
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
+				     k->blockSharedMemory);
   
-  // number of kernel launches
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
+    // number of kernel launches
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
+  }
   
   // kernel execution time
   gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER), 
@@ -614,7 +616,15 @@ gpu_metrics_default_enable
   FORALL_GSYNC(INITIALIZE_INDEXED_METRIC_REAL)
 
   FINALIZE_METRIC_KIND();
+}
 
+
+void
+gpu_metrics_KINFO_enable
+(
+ void
+)
+{
 // GPU kernel characteristics metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC KINFO
