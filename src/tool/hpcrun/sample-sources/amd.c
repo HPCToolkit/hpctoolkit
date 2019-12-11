@@ -40,8 +40,9 @@
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
-#include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/amd/roctracer-api.h>
+#include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -66,14 +67,6 @@
 //******************************************************************************
 
 #define AMD_ROCM "gpu=amd"
-
-
-
-//******************************************************************************
-// local variables
-//******************************************************************************
-
-static char amd_name[128];
 
 
 
@@ -158,10 +151,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
 #endif
 
+#if 0
     // Fetch the event string for the sample source
     // only one event is allowed
     char* evlist = METHOD_CALL(self, get_event_str);
     char* event = start_tok(evlist);
+#endif
+
     gpu_metrics_default_enable();
     roctracer_init();
 }
