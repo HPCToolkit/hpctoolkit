@@ -1,53 +1,31 @@
-//
-// Created by tx7 on 8/15/19.
-//
-
-#include <stdio.h>
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <limits.h>    // PATH_MAX
-// #include <pthread.h>
-#include <stdio.h>     // sprintf
-#include <unistd.h>
-#include <sys/stat.h>  // mkdir
-
-#include <monitor.h>
-
-#ifndef HPCRUN_STATIC_LINK
-#include <dlfcn.h>
-#undef _GNU_SOURCE
-#define _GNU_SOURCE
-#include <link.h>          // dl_iterate_phdr
-#include <linux/limits.h>  // PATH_MAX
-#include <string.h>        // strstr
-#endif
+//******************************************************************************
+// local includes
+//******************************************************************************
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
-#include <hpcrun/sample-sources/amd.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/sample-sources/amd.h>
-
-#include <lib/prof-lean/stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/stdatomic.h>
-
-#include <hpcrun/cct2metrics.h>
-#include <hpcrun/files.h>
-#include <hpcrun/hpcrun_stats.h>
-#include <hpcrun/module-ignore-map.h>
-#include <hpcrun/main.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample_event.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/cct/cct.h>
 
 #include <roctracer_hip.h>
 
-//static atomic_long roctracer_correlation_id = ATOMIC_VAR_INIT(1);
+#include <hpcrun/gpu/gpu-activity-channel.h>
+#include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/gpu/gpu-correlation-channel.h>
+#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-op-placeholders.h>
+
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample-sources/libdl.h>
+
+#include <lib/prof-lean/usec_time.h>
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
 
 #define FORALL_ROCTRACER_ROUTINES(macro)			\
   macro(roctracer_open_pool)		\
@@ -74,6 +52,12 @@
 }
 
 #define CPU_NANOTIME() (usec_time() * 1000)
+
+
+
+//******************************************************************************
+// local variables
+//******************************************************************************
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -153,19 +137,34 @@ ROCTRACER_FN
  )
 );
 
-void
-roctracer_correlation_id_push(uint64_t id)
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+#if 0
+static void
+roctracer_correlation_id_push
+(
+ uint64_t id
+)
 {
   HPCRUN_ROCTRACER_CALL(roctracer_activity_push_external_correlation_id,
     (id));
 }
 
-void
-roctracer_correlation_id_pop(uint64_t* id)
+
+static void
+roctracer_correlation_id_pop
+(
+ uint64_t* id
+)
 {
   HPCRUN_ROCTRACER_CALL(roctracer_activity_pop_external_correlation_id,
     (id));
 }
+#endif
 
 
 /*
@@ -197,13 +196,13 @@ roctracer_kernel_data_set
 */
 
 
-void
+static void
 roctracer_subscriber_callback
 (
-      uint32_t domain,
-      uint32_t callback_id,
-      const void* callback_data,
-      void* arg
+ uint32_t domain,
+ uint32_t callback_id,
+ const void* callback_data,
+ void* arg
 )
 {
     gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
@@ -316,7 +315,8 @@ roctracer_subscriber_callback
     }
 }
 
-void
+
+static void
 roctracer_buffer_completion_notify
 (
   void
@@ -325,7 +325,8 @@ roctracer_buffer_completion_notify
   gpu_monitoring_thread_activities_ready();
 }
 
-void
+
+static void
 roctracer_activity_process
 (
  roctracer_record_t* roctracer_record
@@ -340,12 +341,12 @@ roctracer_activity_process
 }
 
 
-void
+static void
 roctracer_buffer_completion_callback
 (
-      const char* begin,
-      const char* end,
-      void* arg
+ const char* begin,
+ const char* end,
+ void* arg
 )
 {
     roctracer_buffer_completion_notify();
@@ -358,7 +359,8 @@ roctracer_buffer_completion_callback
     }
 }
 
-const char *
+
+static const char *
 roctracer_path
 (
   void
@@ -367,6 +369,13 @@ roctracer_path
   const char *path = "libroctracer64.so";
   return path;
 }
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 
 int
 roctracer_bind
@@ -396,7 +405,7 @@ roctracer_bind
 void
 roctracer_init
 (
-
+ void
 )
 {
     roctracer_properties_t properties;
@@ -414,7 +423,7 @@ roctracer_init
 void
 roctracer_fini
 (
-
+ void
 )
 {
     HPCRUN_ROCTRACER_CALL(roctracer_disable_callback,());
