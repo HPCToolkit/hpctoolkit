@@ -110,7 +110,7 @@ using namespace xml;
 
 #define DEBUG_COALESCING 0
 
-#define DATABASE_VERSION "3.0"
+#define DATABASE_VERSION "2.2"
 
 
 //*************************** Forward Declarations ***************************
