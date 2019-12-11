@@ -3,6 +3,7 @@
 //******************************************************************************
 
 #include "gpu-correlation-channel-set.h"
+#include "gpu-monitoring-thread-api.h"
 
 
 
