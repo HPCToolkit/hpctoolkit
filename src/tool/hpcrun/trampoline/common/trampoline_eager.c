@@ -79,6 +79,14 @@
 extern bool hpcrun_get_retain_recursion_mode();
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define RETURN_ADDRESS_IS_MARKED(addr) (((unsigned long) addr) & 1)
+
+
+
+//******************************************************************************
 // external declarations
 //******************************************************************************
 
@@ -174,7 +182,7 @@ hpcrun_trampoline_interior(void* addr)
 bool
 hpcrun_trampoline_at_entry(void* addr)
 {
-  return ((unsigned long)addr & 1 == 1);
+  return RETURN_ADDRESS_IS_MARKED(addr);
 }
 
 
@@ -203,7 +211,7 @@ hpcrun_trampoline_insert(cct_node_t* node)
     }
     if (ra_loc) {
       void* ra = *((void**) ra_loc);
-      if ((unsigned long)ra & 1 == 1) {
+      if (RETURN_ADDRESS_IS_MARKED(ra)) {
           frame->ra_val = ra; // ra_val of the first RA marked frame may have been reset. Take a copy of the value of marked RA
 		  break; // RA has already been marked
 	  }
