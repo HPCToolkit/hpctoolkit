@@ -247,8 +247,8 @@ StmtMap::insert(StmtInfo * sinfo)
   // compare vma with stmt to the left
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, end_vma - vma, file, base, line,
-			sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
+    info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
   else if (left->base_index == base && left->line_num == line
@@ -265,8 +265,8 @@ StmtMap::insert(StmtInfo * sinfo)
     // truncate interval to start at left_end and insert
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
-      info = new StmtInfo(vma, end_vma - vma, file, base, line,
-        sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
+      info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			  sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }

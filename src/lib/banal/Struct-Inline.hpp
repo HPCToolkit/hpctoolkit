@@ -202,9 +202,8 @@ public:
 
   // constructor by index
   StmtInfo(VMA vm, int ln, long file, long base, long line,
-     const std::string & device_tag,
-	   bool call = false, bool sink = false,
-     VMA targ = 0)
+	   const std::string & device_tag,
+	   bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -220,9 +219,8 @@ public:
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
 	   const std::string & filenm, long line,
-     const std::string & device_tag,
-	   bool call = false, bool sink = false,
-     VMA targ = 0)
+	   const std::string & device_tag,
+	   bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;
