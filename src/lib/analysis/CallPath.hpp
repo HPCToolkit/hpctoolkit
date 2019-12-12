@@ -133,17 +133,11 @@ readStructure(Prof::Struct::Tree* structure, const Analysis::Args& args);
 //   has a CCT::Call node for a parent.
 // - Every CCT::Call and CCT::Stmt is a descendant of a CCT::ProcFrm
 // - A CCT::Stmt node is always a leaf.
+
 void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   string agent, bool doNormalizeTy,
                            bool printProgress);
-
-void
-overlayStaticStructureMain(Prof::CallPath::Profile& prof,
-			   Prof::LoadMap::LM* loadmap_lm,
-			   Prof::Struct::LM* lmStrct,
-                           bool printProgress);
-
 
 // lm is optional and may be NULL
 void 

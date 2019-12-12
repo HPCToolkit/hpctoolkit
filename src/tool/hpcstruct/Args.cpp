@@ -91,41 +91,72 @@ using std::string;
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
-"[options] <binary | executable | measurement directory>\n";
+"[options] <binary>\n";
 
-static const char* usage_details = 
-#include "usage.h"
-;
+static const char* usage_details = "\
+Given an application binary or DSO <binary>, hpcstruct recovers the program\n\
+structure of its object code.  Program structure is a mapping of a program's\n\
+static source-level structure to its object code.  By default, hpcstruct\n\
+writes its results to the file 'basename(<binary>).hpcstruct'.  This file\n\
+is typically passed to HPCToolkit's correlation tool hpcprof.\n\
+\n\
+hpcstruct is designed primarily for highly optimized binaries created from\n\
+C, C++ and Fortran source code. Because hpcstruct's algorithms exploit a\n\
+binary's debugging information, for best results, binary should be compiled\n\
+with standard debugging information.  See the documentation for more\n\
+information.\n\
+\n\
+Options: General\n\
+  -v [<n>], --verbose [<n>]\n\
+                       Verbose: generate progress messages to stderr at\n\
+                       verbosity level <n>. {1}\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print this help.\n\
+  --debug=[<n>]        Debug: use debug level <n>. {1}\n\
+  --debug-proc <glob>  Debug structure recovery for procedures matching\n\
+                       the procedure glob <glob>\n\
+\n\
+Options: Parallel usage\n\
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
+  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
+                       default is same value for --jobs.\n\
+  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
+                       (unsafe for num > 1)\n\
+  --time               Display stats on time and space usage.\n\
+\n\
+Options: Structure recovery\n\
+  -I <path>, --include <path>\n\
+                       Use <path> when resolving source file names. For a\n\
+                       recursive search, append a '*' after the last slash,\n\
+                       e.g., '/mypath/*' (quote or escape to protect from\n\
+                       the shell.) May pass multiple times.\n\
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
+                       Substitute instances of <old-path> with <new-path>;\n\
+                       apply to all paths (profile's load map, source code)\n\
+                       for which <old-path> is a prefix.  Use '\\' to escape\n\
+                       instances of '=' within a path. May pass multiple\n\
+                       times.\n\
+  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
+                       in the control-flow graph.\n\
+\n\
+Options: Output files\n\
+  -o <file>, --output <file>\n\
+                       Write hpcstruct file to <file>.\n\
+                       Use '--output=-' to write output to stdout.\n\
+";
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  {  0 , "agent-c++",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "agent-cilk",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
-  // Demangler library
-  {  0 , "demangle-library",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
-  // Demangler function
-  {  0 , "demangle-function",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
   // Structure recovery options
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
-     NULL },
-  {  0 , "loop-intvl",      CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "loop-fwd-subst",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
@@ -134,8 +165,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
@@ -148,10 +177,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
   {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
-     NULL },
-
-  // Instruction decoder options
-  { 0, "use-binutils",     CLP::ARG_NONE,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
@@ -185,10 +210,6 @@ Args::Ctor()
   jobs_symtab = -1;
   show_time = false;
   searchPathStr = ".";
-  isIrreducibleIntervalLoop = true;
-  isForwardSubstitution = true;
-  prettyPrintOutput = true;
-  useBinutils = false;
   show_gaps = false;
 }
 
@@ -294,29 +315,10 @@ Args::parse(int argc, const char* const argv[])
       show_time = true;
     }
 
-    // Check for LUSH options (TODO)
-    if (parser.isOpt("agent-c++")) {
-      lush_agent = "agent-c++";
-    }
-    if (parser.isOpt("agent-cilk")) {
-      lush_agent = "agent-cilk";
-    }
-
     // Check for other options: Structure recovery
     if (parser.isOpt("include")) {
       searchPathStr += ":" + parser.getOptArg("include");
     }
-    if (parser.isOpt("loop-intvl")) {
-      const string& arg = parser.getOptArg("loop-intvl");
-      isIrreducibleIntervalLoop =
-	CmdLineParser::parseArg_bool(arg, "--loop-intvl option");
-    }
-    if (parser.isOpt("loop-fwd-subst")) {
-      const string& arg = parser.getOptArg("loop-fwd-subst");
-      isForwardSubstitution =
-	CmdLineParser::parseArg_bool(arg, "--loop-fwd-subst option");
-    }
-
     if (parser.isOpt("replace-path")) {
       string arg = parser.getOptArg("replace-path");
       
@@ -338,19 +340,6 @@ Args::parse(int argc, const char* const argv[])
 
     if (parser.isOpt("show-gaps")) {
       show_gaps = true;
-    }
-
-    // Instruction decoder options
-    useBinutils = parser.isOpt("use-binutils");
-
-    // Check for other options: Demangling
-    if (parser.isOpt("demangle-library")) {
-      demangle_library = parser.getOptArg("demangle-library");
-    }
-
-    // Check for other options: Demangling
-    if (parser.isOpt("demangle-function")) {
-      demangle_function = parser.getOptArg("demangle-function");
     }
 
     // Check for other options: Output options
@@ -392,32 +381,3 @@ Args::ddump() const
 {
   dump(std::cerr);
 }
-
-
-//***************************************************************************
-
-#if 0
-void
-Args::setHPCHome()
-{
-  char * home = getenv(HPCTOOLKIT.c_str());
-  if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
-	 << endl;
-    exit(1);
-  }
-   
-  // chop of trailing slashes
-  int len = strlen(home);
-  if (home[len-1] == '/') home[--len] = 0;
-   
-  DIR *fp = opendir(home);
-  if (fp == NULL) {
-    cerr << "Error: " << home << " is not a directory" << endl;
-    exit(1);
-  }
-  closedir(fp);
-  hpcHome = home;
-}
-#endif
-

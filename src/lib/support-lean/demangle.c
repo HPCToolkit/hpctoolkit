@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: $
-// $Id: $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,63 +44,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+// This file provides a wrapper around libiberty's cplus_demangle() to
+// provide a uniform interface for the options that we want for
+// hpcstruct and hpcprof.  All cases wanting to do demangling should
+// use this file.
 //
-// File: Demangler.cpp
-//   $HeadURL: $
-//
-// Purpose: 
-//   Implement an API that enables an HPCToolkit user to provide and employ 
-//   an arbitrary C++ Standard to demangle symbols.
-//
-// Description:
-//   The API includes an interface to register a C++ Standard Library that
-//   will be used to demangle symbols and a demangler interface that will
-//   employ the specified library to perform demangling.
-//
+// Libiberty cplus_demangle() does many malloc()s, but does appear to
+// be reentrant and thread-safe.  But not signal safe.
+
 //***************************************************************************
 
+#include <string.h>
+
+#include <include/gnu_demangle.h>
+#include <lib/support-lean/demangle.h>
+
+#define DEMANGLE_FLAGS  (DMGL_PARAMS | DMGL_ANSI | DMGL_VERBOSE | DMGL_RET_DROP)
 
 
-//******************************************************************************
-// global includes
-//******************************************************************************
-
-#include <cxxabi.h>
-
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "Demangler.hpp"
-
-
-
-//******************************************************************************
-// local variables
-//******************************************************************************
-
-static demangler_t demangle_fn = abi::__cxa_demangle;
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void 
-hpctoolkit_demangler_set(demangler_t _demangle_fn)
-{
-  demangle_fn = _demangle_fn;
-}
-
-
+// Returns: malloc()ed string for the demangled name, or else NULL if
+// 'name' is not a mangled name.
+//
+// Note: the caller is resposible for calling free() on the result.
+//
 char *
-hpctoolkit_demangle(const char *mangled_name, 
-                    char *output_buffer, 
-                    size_t *length, 
-                    int *status)
+hpctoolkit_demangle(const char * name)
 {
-  return demangle_fn(mangled_name, output_buffer, length, status);
+  if (name == NULL) {
+    return NULL;
+  }
+
+  if (strncmp(name, "_Z", 2) != 0) {
+    return NULL;
+  }
+
+  return cplus_demangle(name, DEMANGLE_FLAGS);
 }

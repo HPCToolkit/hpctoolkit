@@ -69,7 +69,7 @@ using std::endl;
 using std::string;
 
 #include <typeinfo>
-
+#include <vector>
 #include <algorithm>
 
 #include <cstring> // for 'strcmp'
@@ -86,6 +86,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/dictionary.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -112,13 +113,13 @@ RealPathMgr& s_realpathMgr = RealPathMgr::singleton();
 
 uint ANode::s_nextUniqueId = 1;
 
-const std::string Tree::UnknownLMNm   = "<unknown load module>";
+const std::string Tree::UnknownLMNm   = UNKNOWN_LOAD_MODULE;
 
-const std::string Tree::UnknownFileNm = "<unknown file>";
+const std::string Tree::UnknownFileNm = UNKNOWN_FILE;
 
-const std::string Tree::UnknownProcNm = "<unknown procedure>";
+const std::string Tree::UnknownProcNm = UNKNOWN_PROC;
 
-const std::string Tree::PartialUnwindProcNm = "<partial call paths>";
+const std::string Tree::PartialUnwindProcNm = PARTIAL_CALL_PATHS;
 
 const SrcFile::ln Tree::UnknownLine = SrcFile::ln_NULL;
 
@@ -425,7 +426,9 @@ Proc::Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym)
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
   m_hasSym = hasSym;
-  m_stmtMap = new StmtMap();
+  m_stmtMap = NULL;
+  m_alienMap = NULL;
+
   if (parent) {
     relocate();
   }
@@ -445,7 +448,8 @@ Proc::operator=(const Proc& x)
     m_name     = x.m_name;
     m_linkname = x.m_linkname;
     m_hasSym   = x.m_hasSym;
-    m_stmtMap  = new StmtMap();
+    m_stmtMap  = NULL;
+    m_alienMap = NULL;
   }
   return *this;
 }
@@ -469,6 +473,59 @@ Proc::demand(File* file, const string& name, const std::string& linkname,
 }
 
 
+// Lookup stmt by line number in proc's stmt map and create one if
+// needed.  This is for struct simple for a stmt directly attached to
+// a proc (no alien).
+Stmt *
+Proc::demandStmtSimple(SrcFile::ln line, VMA beg_vma, VMA end_vma)
+{
+  Stmt * stmt = NULL;
+
+  // create stmt map on demand for struct simple
+  if (m_stmtMap == NULL) {
+    m_stmtMap = new StmtMap();
+  }
+  auto it = m_stmtMap->find(line);
+
+  if (it != m_stmtMap->end()) {
+    stmt = it->second;
+    stmt->vmaSet().insert(beg_vma, end_vma);
+  }
+  else {
+    stmt = new Stmt(this, line, line, beg_vma, end_vma);
+    (*m_stmtMap)[line] = stmt;
+  }
+
+  return stmt;  
+}
+
+
+// Lookup alien by file name in proc's alien map and create one if
+// needed.  This is for struct simple for stmts from a different file
+// (alien).
+Alien *
+Proc::demandGuardAlien(std::string & filenm, SrcFile::ln line)
+{
+  Alien * alien = NULL;
+
+  // create alien map on demand for struct simple
+  if (m_alienMap == NULL) {
+    m_alienMap = new AlienFileMap();
+  }
+  auto it = m_alienMap->find(filenm);
+
+  if (it != m_alienMap->end()) {
+    alien = it->second;
+  }
+  else {
+    alien = new Alien(this, filenm, GUARD_NAME, GUARD_NAME, line, line);
+    (* m_alienMap)[filenm] = alien;
+  }
+
+  return alien;
+}
+
+
 #if 0
 RealPathMgr& Alien::s_realpathMgr = RealPathMgr::singleton();
 #endif
@@ -487,6 +544,8 @@ Alien::Ctor(ACodeNode* parent, const char* filenm, const char* nm,
   m_name   = (nm) ? nm : "";
   m_displaynm = (displaynm) ? displaynm : "";
   freezeLine();
+
+  m_stmtMap = NULL;
 }
 
 
@@ -498,8 +557,40 @@ Alien::operator=(const Alien& x)
     m_filenm = x.m_filenm;
     m_name   = x.m_name;
     m_displaynm = x.m_displaynm;
+    m_stmtMap = NULL;
   }
   return *this;
+}
+
+
+// Lookup stmt by line number in alien's stmt map and create one if
+// needed.  This is for struct simple for a stmt with a guard alien.
+Stmt *
+Alien::demandStmt(SrcFile::ln line, VMA beg_vma, VMA end_vma)
+{
+  Stmt * stmt = NULL;
+
+  // create stmt map on demand for struct simple
+  if (m_stmtMap == NULL) {
+    m_stmtMap = new StmtMap();
+  }
+  auto it = m_stmtMap->find(line);
+
+  if (it != m_stmtMap->end()) {
+    stmt = it->second;
+    stmt->vmaSet().insert(beg_vma, end_vma);
+  }
+  else {
+    stmt = new Stmt(this, line, line, beg_vma, end_vma);
+    (*m_stmtMap)[line] = stmt;
+  }
+
+  // update alien min line number, but don't propagate up
+  if (0 < line && line < begLine()) {
+    begLine(line);
+  }
+
+  return stmt;
 }
 
 
@@ -932,12 +1023,14 @@ File::insertProcMap(Proc* p)
 }
 
 
+#if 0
 void
 Proc::insertStmtMap(Stmt* stmt)
 {
   // FIXME: confusion between native and alien statements
   (*m_stmtMap)[stmt->begLine()] = stmt;
 }
+#endif
 
 
 File*
@@ -1867,6 +1960,32 @@ ANode::dumpme(ostream& os, uint oFlags, const char* prefix) const
 }
 
 
+// Dump the nodes on the path from LM down to this.
+ostream&
+ANode::dumpmePath(ostream& os, uint oFlags, const char* prefix) const
+{
+  std::vector <ANode *> nvec;
+  ANode * node = (ANode *) this;
+
+  // find path from this up to LM (or NULL)
+  while (node != NULL) {
+    nvec.push_back(node);
+    if (node->type() == ANode::TyLM) {
+      break;
+    }
+    node = node->parent();
+  }
+
+  // print path from LM down to this
+  for (int i = nvec.size() - 1; i >= 0; i--) {
+    nvec[i]->dumpme(os, oFlags, prefix);
+    os << "\n";
+  }
+
+  return os;
+}
+
+
 ostream&
 ACodeNode::dumpme(ostream& os, uint oFlags, const char* prefix) const
 {
@@ -1874,6 +1993,7 @@ ACodeNode::dumpme(ostream& os, uint oFlags, const char* prefix) const
      << lineRange() << " " << m_vmaSet.toString();
   return os;
 }
+
 
 
 ostream&
@@ -1920,6 +2040,7 @@ ostream&
 Alien::dumpme(ostream& os, uint oFlags, const char* prefix) const
 {
   ACodeNode::dumpme(os, oFlags, prefix);
+  os << " f=" << m_filenm << " n=" << m_name;
   return os;
 }
 

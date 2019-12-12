@@ -86,10 +86,6 @@ namespace Struct {
   Prof::Struct::Stmt*
   makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
 
-  Prof::Struct::Stmt*
-  demandStmtStructure(Prof::Struct::LM* lmStrct, Prof::Struct::Proc* procStrct,
-		      SrcFile::ln line, VMA begVMA, VMA endVMA);
-
 } // namespace Struct
 
 } // namespace BAnal

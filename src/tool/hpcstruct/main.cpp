@@ -73,12 +73,12 @@ using std::endl;
 
 #include <include/hpctoolkit-config.h>
 
+#include <include/hpctoolkit-config.h>
+
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-#include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
