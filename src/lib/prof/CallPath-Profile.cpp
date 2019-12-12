@@ -592,6 +592,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     Struct::ANode* strct = it.current();
 
     uint id = strct->id();
+    std::string pretty_filename;
     const char* nm = NULL;
 
     bool fake_procedure = false;
@@ -617,7 +618,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 2) { // File
-      nm = getFileName(strct);	
+      pretty_filename = getFileName(strct);
+      pretty_filename = Prof::LoadMap::LM::pretty_file_name(pretty_filename);
+      nm = pretty_filename.c_str();
       // ---------------------------------------
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
