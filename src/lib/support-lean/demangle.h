@@ -2,8 +2,8 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: $
-// $Id: $
+// $HeadURL$
+// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,52 +44,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+// This file provides a wrapper around libiberty's cplus_demangle() to
+// provide a uniform interface for the options that we want for
+// hpcstruct and hpcprof.  All cases wanting to do demangling should
+// use this file.
 
 //***************************************************************************
-//
-// File: Demangler.hpp
-//
-// Purpose: 
-//   Define an API that enables an HPCToolkit user to provide and employ 
-//   an arbitrary C++ Standard to demangle symbols.
-//
-// Description:
-//   The API includes an interface to register a C++ Standard Library that
-//   will be used to demangle symbols and a demangler interface that will
-//   employ the specified library to perform demangling.
-//
-//***************************************************************************
 
-#ifndef __Demangler_hpp__
-#define __Demangler_hpp__
+#ifndef support_lean_demangle_h
+#define support_lean_demangle_h
 
-//***************************************************************************
-// types
-//***************************************************************************
-
-typedef char *(*demangler_t)
-  (const char *mangled_name, 
-   char *output_buffer, 
-   size_t *length, 
-   int *status);
-
-
-
-//***************************************************************************
-// interface operations
-//***************************************************************************
-
+#if defined(__cplusplus)
 extern "C" {
+#endif
 
-void
-hpctoolkit_demangler_set(demangler_t _demangle_fn);
+// Returns: malloc()ed string for the demangled name, or else NULL.
+// Note: the caller is resposible for calling free() on the result.
+//
+char * hpctoolkit_demangle(const char *);
 
-
-char *
-hpctoolkit_demangle(const char *mangled_name, 
-                    char *output_buffer, 
-                    size_t *length, 
-                    int *status);
-};
+#if defined(__cplusplus)
+}
+#endif
 
 #endif

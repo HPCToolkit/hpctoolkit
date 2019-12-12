@@ -79,6 +79,8 @@
 // LoadMap
 //****************************************************************************
 
+#define HASH_LEN 32
+
 namespace Prof {
 
 
@@ -241,5 +243,15 @@ LoadMap::LM::pretty_name(const std::string& lm_nm)
   return lm_nm;
 }
 
+std::string
+LoadMap::LM::pretty_file_name(const std::string& name)
+{
+  static const std::string vdso_suffix(".[vdso]");
+  size_t pos = name.find(vdso_suffix);
+  if (pos == std::string::npos) return name;
+  std::string new_name = name;
+  new_name.replace(pos - HASH_LEN, HASH_LEN + vdso_suffix.size(), "vdso");
+  return new_name;
+}
 
 } // namespace Prof

@@ -86,7 +86,7 @@ mpirun -n 4 hpcrun -e CYCLES mpiapp arg ...
 \end{quote}
 
 Note that \hpcrun{} is intended for profiling dynamically linked {\it
-binaries}.  It will not work well if used to launch a shell script.
+binaries}.  It will not work well if used to profile a shell script.
 At best, you would be profiling the shell interpreter, not the script
 commands, and sometimes this will fail outright.
 
@@ -121,7 +121,7 @@ An event name is case insensitive and is defined as followed:
 \begin{itemize}
 	\item \textbf{pmu}.  Optional name of the PMU (group of events) to which the event belongs to. This is useful to disambiguate events in case events from difference sources have the same name. If no pmu is specified, the first match event is used.
 	\item \textbf{event\_name}.  The name of the event. It must be the complete name, partial matches are not accepted. 
-	\item \textbf{unit\_mask}.  This designate an optional sub-events. Some events can be refined using sub-events. An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
+	\item \textbf{unit\_mask}.  Some events can be refined using sub-events. A {\tt unit\_mask} designates an optional sub-event.  An event may have multiple unit masks and it is possible to combine them (for some events) by repeating \texttt{:unit\_mask} pattern.
 	\item \textbf{modifier}.  A modifier is an optional filter that restricts when an event counts.
                 The form of a  modifier may be either \texttt{:modifier} or \texttt{:modifier=val}.
 		For modifiers without a value, the presence of the modifier is 
@@ -143,7 +143,7 @@ don't support anything more precise.  One may optionally specify one of the foll
 				\item \verb|:P| : autodetect the least skid possible.
 			\end{itemize}
 			NOTE: If the kernel or the hardware does not support the specified value of the skid, no error message will be reported 
-but no samples will be delivered.
+but no samples will be recorded.
 	\end{itemize}
 \end{itemize}
 
@@ -153,7 +153,7 @@ but no samples will be delivered.
 \section{Sample Sources}
 \label{sample-sources}
 
-This section provide an overview of how to use sample sources supported by HPCToolkit.  To
+This section provides an overview of how to use sample sources supported by HPCToolkit.  To
 see a list of the available sample sources and events that \hpcrun{}
 supports, use `\verb|hpcrun -L|' (dynamic) or set
 `\verb|HPCRUN_EVENT_LIST=LIST|' (static).  Note that on systems with
@@ -230,7 +230,7 @@ a thread may block waiting for the kernel to complete some operation on its beha
 For instance, a thread may block waiting for data to become available so that a {\tt read} operation 
 can complete. On systems running Linux 4.3 or newer, one can use the \perfevents{} sample source to monitor how much time a thread is blocked and where the blocking occurs. To measure
 the time a thread spends blocked, one can profile with \verb|BLOCKTIME| event and
-another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shouldn't have any frequency or period specified, whereas \verb|CYCLES| should have a frequency or period specified.
+another time-based event, such as \verb|CYCLES|. The \verb|BLOCKTIME| event shouldn't have any frequency or period specified, whereas \verb|CYCLES| may have a frequency or period specified.
 
 \subsubsection{Launching}
 \label{sec:perf-launching}
@@ -246,13 +246,15 @@ hpcrun -e papi::CYCLES
 \end{verbatim}
 \end{quote}
 
-For PAPI presets, there is no need to prefix the event with
+\noindent For PAPI presets, there is no need to prefix the event with
  \lq{\verb|papi::|}\rq. For instance it is sufficient to specify \verb|PAPI_TOT_CYC| event
-without any prefix to profile using PAPI.
+without any prefix to profile using PAPI. For more information about using PAPI, see Section~\ref{section:papi}.
+
+Below, we provide some examples of various ways to measure \verb|CYCLES| 
+and \verb|INSTRUCTIONS|  using \HPCToolkit{}'s \perfevents{} measurement substrate:
 
 To sample an execution 100 times per second (frequency-based sampling) counting \verb|CYCLES| 
 and 100 times a second counting \verb|INSTRUCTIONS|:
-
 \begin{quote}
 \begin{verbatim}
 hpcrun -e CYCLES@f100 -e INSTRUCTIONS@f100 ...
@@ -268,7 +270,7 @@ hpcrun -e CYCLES@1000000 -e INSTRUCTIONS@1000000
 \end{quote}
 
 By default, hpcrun uses frequency-based sampling with the rate
-300 samples per second per event type. Hence the following command causes HPCToolkit to
+300 samples per second per event type. Hence the following command causes \HPCToolkit{} to
 sample \verb|CYCLES| at 300 samples per second and \verb|INSTRUCTIONS| at 300 samples per second:
 
 \begin{quote}
@@ -278,7 +280,7 @@ hpcrun -e CYCLES -e INSTRUCTIONS …
 \end{quote}
 
 One can specify a different default sampling period or frequency using the \verb|-c| option. 
-The command below will sample \verb|CYCLES| at 200 samples per second and \verb|INSTRUCTIONS| at 200 samples per second:
+The command below will sample  \verb|CYCLES| and \verb|INSTRUCTIONS| at 200 samples per second each:
 
 \begin{quote}
 \begin{verbatim}
@@ -304,8 +306,8 @@ then the required number of file descriptors is
   500 threads $\times$ 4 events + 500 hpcrun files + 500 hpctrace files \\
   = 3000 file descriptors
 \end{quote}
-If the number of file descriptors exceeds the number of maximum opened files, then the program will crash. 
-To remedy this issue, one needs to increase the number of maximum opened files.
+If the number of file descriptors exceeds the number of maximum number of open files, then the program will crash. 
+To remedy this issue, one needs to increase the number of maximum number of open files allowed.
 
 \item
 \sloppy
@@ -334,6 +336,7 @@ multiplexed is only available in the \verb|experiment.xml| file produced when po
 \end{itemize}
 
 \subsection{PAPI}
+\label{section:papi}
 
 PAPI, the Performance API, is a library for providing access to the
 hardware performance counters. PAPI aims to provide a
@@ -344,11 +347,7 @@ represent quantities synthesized by combining measurements based on multiple nat
 available on a particular processor.
 For instance, in some cases PAPI reports
 total cache misses by measuring and combining data misses and instruction misses. 
-PAPI is available from the University of Tennessee at:
-
-\begin{quote}
-\url{http://icl.cs.utk.edu/papi/}
-\end{quote}
+PAPI is available from the University of Tennessee at \url{http://icl.cs.utk.edu/papi}.
 
 PAPI focuses mostly on in-core CPU events: cycles, cache misses,
 floating point operations, mispredicted branches, etc.  For example,
@@ -431,10 +430,9 @@ overhead and distort the execution of your program; they won't yield more
 accurate results.
 
 Beginning with Linux kernel version 2.6.32,
-support for accessing the performance counters is now 
-built in to the standard Linux kernel.  On kernels
-2.6.32 or later, PAPI can be compiled and run entirely in user mode
-without patching the kernel. 
+support for accessing  performance counters 
+using the Linux \perfevents{} performance monitoring subsystem is
+built into the kernel.  \perfevents{}  provides a measurement substrate for PAPI on Linux.
 
 On Blue Gene platforms that are not based on Linux,
 PAPI is highly recommended as it provides an essential substrate for accessing
@@ -572,7 +570,7 @@ to activate the \verb|IO| source at runtime.  For example,
 The \verb|IO| source is mainly used to find where your program reads or
 writes large amounts of data.  However, it is also useful for tracing
 a program that spends much time in \verb|read| and \verb|write|.  The
-hardware performance counters (PAPI) do not advance while running in
+hardware performance counters do not advance while running in
 the kernel, so the trace viewer may misrepresent the amount of time
 spent in syscalls such as \verb|read| and \verb|write|.  By adding the
 \verb|IO| source, \hpcrun{} overrides \verb|read| and \verb|write| and
@@ -827,19 +825,32 @@ would be convenient for users.
 %
 \subsection{Cray Systems}
 
-The ALPS job launcher used on Cray systems copies 
-programs to a special staging area before launching them,
-as described in Section~\ref{sec:env-vars}.
-Consequently, when using \hpcrun{} to monitor dynamically-linked binaries on Cray systems, you
-should add the \verb|HPCTOOLKIT| environment variable to your launch
-script.  
-Set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} installation directory
+If you are trying to profile a dynamically-linked executable on a Cray that is still using the ALPS job launcher and you see an error like the following 
+
+\begin{quote}
+\begin{verbatim}
+/var/spool/alps/103526/hpcrun: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+\end{verbatim}
+\end{quote}
+
+\noindent 
+in your job's error log then read on. Otherwise, skip this section.
+
+The problem is that the Cray job launcher copies HPCToolkit's \hpcrun{}
+script to a directory somewhere below \verb|/var/spool/alps/|\ and runs
+it from there.  By moving \hpcrun{} to a different directory, this
+breaks \hpcrun{}'s method for finding \HPCToolkit{}'s install directory.
+
+To fix this problem, in your job script, set \verb|HPCTOOLKIT| to the top-level \HPCToolkit{} installation directory
 (the directory containing the \verb|bin|, \verb|lib| and
 \verb|libexec| subdirectories) and export it to the environment.  
 (If launching statically-linked binaries created using \hpclink{}, this step is unnecessary, but harmless.)
-Below we show a skeletal job script that sets the \verb|HPCTOOLKIT| environment variable  before monitoring 
+Figure~\ref{cray-alps} show a skeletal job script that sets the \verb|HPCTOOLKIT| environment variable  before monitoring 
 a dynamically-linked executable with \hpcrun{}: 
 
+\begin{figure}
 \begin{quote}
 \begin{verbatim}
 #!/bin/sh
@@ -854,25 +865,9 @@ cd $PBS_O_WORKDIR
 aprun -n #nodes hpcrun -e event@howoften dynamic-app arg ...
 \end{verbatim}
 \end{quote}
-% $
-
-If \verb|HPCTOOLKIT| is not set, you may see errors such as the
-following in your job's error log.
-
-\begin{quote}
-\begin{verbatim}
-/var/spool/alps/103526/hpcrun: Unable to find HPCTOOLKIT root directory.
-Please set HPCTOOLKIT to the install prefix, either in this script,
-or in your environment, and try again.
-\end{verbatim}
-\end{quote}
-
-The problem is that the Cray job launcher copies the \hpcrun{}
-script to a directory somewhere below \verb|/var/spool/alps/|\ and runs
-it from there.  By moving \hpcrun{} to a different directory, this
-breaks \hpcrun{}'s method for finding its own install directory.
-The solution is to add \verb|HPCTOOLKIT| to your environment so that
-\hpcrun{} can find its install directory.
+\caption{A sketch of how to help HPCToolkit find its dynamic libraries when using Cray's ALPS job launcher.} 
+\label{cray-alps}
+\end{figure}
 
 Your system may have a module installed for \verb|hpctoolkit| with the
 correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
@@ -888,9 +883,3 @@ One should use the PAPI interface to monitor executions using hardware performan
 
 \subsection{ARM Systems}
 \HPCToolkit{}'s measurement infrastructure depends upon \verb|libunwind| for call stack unwinding on ARM.
-On some ARM systems, compilers put DWARF Function Descriptor Entries (FDEs) in the ELF \verb|.debug_frame| segment rather 
-than the \verb|.eh_frame| segment. In such cases, \HPCToolkit{} requires a bleeding-edge version of \verb|libunwind| that is not included in 
-\HPCToolkit{}'s \verb|hpctoolkit-externals| package. 
-\footnote{We are in the midst of deprecating {\tt hpctoolkit-externals} as we move to a spack-based distribution system. While it is used for the
-current release, we are no longer maintaining it.}
-Contact the \HPCToolkit{} forum if you need a copy of a newer \verb|libunwind|. 
