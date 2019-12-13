@@ -84,7 +84,6 @@
 #include <utility>
 #include <vector>
 
-#include <lib/isa/ISA.hpp>
 #include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>

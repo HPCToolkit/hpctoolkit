@@ -1741,6 +1741,7 @@ doLoopLate(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 
   return root;
 }
+
 //----------------------------------------------------------------------
 
 // Process one basic block.
@@ -1783,19 +1784,19 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 #endif
   block->getInsns(imap);
 
-  int len = 0; // avoid warning about uninitialized
-  std::string device;
+  int len = 0;
+  string device;
 
   if (cuda_arch > 0) {
-    device= "NVIDIA sm_" + std::to_string(cuda_arch);
-    len = cuda_arch >= 70 ? 16 : 8;
+    device = "NVIDIA sm_" + std::to_string(cuda_arch);
+    len = (cuda_arch >= 70) ? 16 : 8;
   }
   
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
     auto next_it = iit;  next_it++;
     Offset vma = iit->first;
     string filenm = "";
-    uint line;
+    uint line = 0;
 
     if (cuda_arch == 0) {
 #ifdef DYNINST_INSTRUCTION_PTR

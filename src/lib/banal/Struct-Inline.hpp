@@ -70,7 +70,6 @@
 #include <list>
 #include <map>
 
-#include <lib/isa/ISA.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
