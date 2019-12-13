@@ -284,14 +284,15 @@ readCubinCFG
  const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
+ bool cfg_wanted,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
 ) 
 {
-  static bool nvdisasm_usable = test_nvdisasm();
+  static bool compute_cfg = cfg_wanted && test_nvdisasm();
   bool dump_cubin_success = false;
 
-  if (nvdisasm_usable) {
+  if (compute_cfg) {
     std::string filename = getFilename();
     std::string cubin = filename;
     std::string dot = filename + ".dot";

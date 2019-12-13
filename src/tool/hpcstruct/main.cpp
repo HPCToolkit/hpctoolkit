@@ -169,8 +169,11 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
     exit(1);
   }
 
+  string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
+
   makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
-	   << "STRUCTS_DIR = " << structs_dir << "\n\n"
+	   << "STRUCTS_DIR = " << structs_dir << "\n"
+	   << "CUBIN_CFG = " << gpucfg << "\n\n"
 	   << cubins_analysis_makefile << endl;
   makefile.close();
 
@@ -250,6 +253,7 @@ realmain(int argc, char* argv[])
 #endif
 
   opts.show_time = args.show_time;
+  opts.compute_gpu_cfg = args.compute_gpu_cfg;
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately

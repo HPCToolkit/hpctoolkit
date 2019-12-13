@@ -113,6 +113,7 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
+  bool compute_gpu_cfg;
 
   // Parsed Data: optional arguments
   std::string searchPathStr;          // default: "."
