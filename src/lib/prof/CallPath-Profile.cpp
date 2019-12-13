@@ -195,6 +195,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   Profile& x = (*this);
 
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
+  DIAG_Assert(y.m_fmtVersion == x.m_fmtVersion, "Error: cannot merge two different versions of measurement");
 
   // -------------------------------------------------------
   // merge name, flags, etc
@@ -863,8 +864,13 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   //
   // -------------------------------------------------------
   if (!traceFileNameSet().empty()) {
+    long unit_time_per_second = 1000000000L;
+    if (m_fmtVersion < 3) {
+      unit_time_per_second = 1000000;
+    }
     os << "  <TraceDBTable>\n";
     os << "    <TraceDB i" << MakeAttrNum(0)
+       << " u=\"" << unit_time_per_second << "\""
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
        << " db-min-time=\"" << m_traceMinTime << "\""
        << " db-max-time=\"" << m_traceMaxTime << "\""
