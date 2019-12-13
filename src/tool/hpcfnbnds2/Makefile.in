@@ -141,7 +141,8 @@ am__objects_1 = hpcfnbounds2-fnbounds.$(OBJEXT) \
 	hpcfnbounds2-server.$(OBJEXT)
 am_hpcfnbounds2_OBJECTS = $(am__objects_1)
 hpcfnbounds2_OBJECTS = $(am_hpcfnbounds2_OBJECTS)
-hpcfnbounds2_DEPENDENCIES =
+am__DEPENDENCIES_1 =
+hpcfnbounds2_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -503,6 +504,7 @@ MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 	$(DYNINST_IFLAGS)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
+MYLDADD = -L$(LIBELF_LIB) -lelf
 
 # MYLDADD = libeh_frames.a  \
 # 	$(HPCLIB_SupportLean) \

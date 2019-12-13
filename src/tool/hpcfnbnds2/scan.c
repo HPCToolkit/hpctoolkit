@@ -48,23 +48,84 @@
 #include <fnbounds.h>
 
 // scan the .plt section
-void
-pltscan()
+// this should take the already open elf descriptor, but that will screw the 
+// existing code.  So for now use the fd, and FIXME later.
+//
+uint64_t
+pltscan(int fd)
 {
 	if (pltscan_f == 0) {
 	    if(verbose) {
 		fprintf (stderr, "Skipping scanning .plt instructions\n");
 	    }
-	    return;
+	    return 0;
 	} else {
 	    if(verbose) {
 		fprintf (stderr, "Processing functions from scanning .plt instructions\n");
 	    }
 	}
+#if 0
 	// NOT YET IMPLEMENTED
 	if(verbose) {
 	    fprintf (stderr, "\tscanning .plt instructions not yet implemented\n");
 	}
+#else
+Elf *e;
+GElf_Shdr secHead;
+size_t n, sz, secHeadStringIndex;
+char *secName;
+Elf_Scn *section;
+uint64_t pltFound,ii;
+uint64_t startAddr, endAddr, pltEntrySize;
+char nameBuff[256];
+static char ss[] = {"start .plt section"};
+static char es[] = {"end .plt section"};
+
+	pltFound = 0;
+	
+	if (elf_version(EV_CURRENT) == EV_NONE) return 1;
+	e = elf_begin(fd,ELF_C_READ, NULL);
+	if (e == NULL) return 1;
+
+	elf_getshdrstrndx(e, &secHeadStringIndex);   // get sec header string index
+
+	section = NULL; // this makes nextscn give pointer to first
+
+	do {
+	    section = elf_nextscn(e, section);
+	    if (section == NULL) break; // no more sections
+
+	    gelf_getshdr(section, &secHead);
+	    secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+
+	    if (strcmp((const char *)secName,".plt")) { // not the .plt section?
+		continue;
+	    }
+
+	    pltFound = 1;
+
+	    startAddr = secHead.sh_addr;
+	    endAddr = startAddr + secHead.sh_size;
+	    pltEntrySize = secHead.sh_entsize;
+
+	    // add_function(startAddr, ss,"p");
+
+	    for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
+		sprintf(nameBuff,"stripped_0x%.lx",ii);
+	        char *vegamite = strdup(nameBuff);
+		add_function(ii, vegamite, "p");
+	    }
+
+	    // add_function(endAddr, es,"p");
+
+	} while (section != NULL);
+
+	elf_end(e);
+	return !pltFound;
+
+
+
+#endif
 	// use "p" as source string in add_function() calls
 }
 

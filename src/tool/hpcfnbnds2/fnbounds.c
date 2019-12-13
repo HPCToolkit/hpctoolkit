@@ -337,6 +337,11 @@ process_mapped_header(char *addr, int fd, size_t sz)
 		char foo[1024];
 		char *sn = (sh_str + sh_table[i].sh_name);
 		sprintf(foo, "start %s section", sn);
+		// FIXME: strdup uses malloc so fn is a leak
+		// But! add_function actually requires that the pointer fn be
+		// persistent, since it only copies the pointer.  So really, add_function
+		// requires that this leak happens it seems.  Or does the limited context
+		// of the variable force cleanup?  Depends on the compiler.
 		char *fn = strdup(foo);
 		add_function ( sh_table[i].sh_addr, fn, "");
 		secstr[nsecstr] = fn;
@@ -354,7 +359,12 @@ process_mapped_header(char *addr, int fd, size_t sz)
  	symtabread();
  	ehframeread();
 
- 	pltscan();
+ 	uint64_t rr = pltscan(fd);  // use elf record eventually
+	if (rr) {
+	    sprintf( ebuf2, ".plt scan requested but section unavailable" );
+	    return ebuf2;
+	}
+	    
  	initscan();
  	textscan();
  	finiscan();
