@@ -1102,6 +1102,47 @@ AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
+# CXXFLAGS for extended C++ alignment: -faligned-new
+#-------------------------------------------------
+
+# Test if CXX supports '-faligned-new' and add it to CXXFLAGS if
+# supported and not already supplied.  This suppresses warnings from
+# boost and dyninst:
+#   warning: 'new' of type 'SymtabCodeSource' with extended alignment 128
+
+flag='-faligned-new'
+
+AC_MSG_CHECKING([if CXX supports $flag])
+
+AC_LANG_PUSH([C++])
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <list>
+long mylen(std::list <int> lst)
+{
+  return (long) lst.size();
+}
+]])], [ans=yes], [ans=no])
+
+AC_MSG_RESULT([$ans])
+
+AC_LANG_POP
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# Add to CXXFLAGS if supported and not already supplied.
+if test "$ans" = yes ; then
+  case "x$CXXFLAGS" in
+    *${flag}* ) ;;
+    * ) HOST_CXXFLAGS="$HOST_CXXFLAGS $flag" ;;
+  esac
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for OpenMP
 #-------------------------------------------------
 

@@ -19057,6 +19057,68 @@ esac
 
 
 #-------------------------------------------------
+# CXXFLAGS for extended C++ alignment: -faligned-new
+#-------------------------------------------------
+
+# Test if CXX supports '-faligned-new' and add it to CXXFLAGS if
+# supported and not already supplied.  This suppresses warnings from
+# boost and dyninst:
+#   warning: 'new' of type 'SymtabCodeSource' with extended alignment 128
+
+flag='-faligned-new'
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if CXX supports $flag" >&5
+$as_echo_n "checking if CXX supports $flag... " >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <list>
+long mylen(std::list <int> lst)
+{
+  return (long) lst.size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ans=yes
+else
+  ans=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ans" >&5
+$as_echo "$ans" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# Add to CXXFLAGS if supported and not already supplied.
+if test "$ans" = yes ; then
+  case "x$CXXFLAGS" in
+    *${flag}* ) ;;
+    * ) HOST_CXXFLAGS="$HOST_CXXFLAGS $flag" ;;
+  esac
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for OpenMP
 #-------------------------------------------------
 
