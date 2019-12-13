@@ -537,7 +537,7 @@ hpcrun_save_vdso()
 {
   char name[PATH_MAX];
   int fd;
-  int error;
+  int error = 0;
 
   // don't need to try writing it again after a fork
   if (vdso_written) return;
