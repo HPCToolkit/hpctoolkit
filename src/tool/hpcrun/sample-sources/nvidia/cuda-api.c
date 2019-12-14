@@ -110,6 +110,7 @@
 // static data
 //******************************************************************************
 
+#ifndef HPCRUN_STATIC_LINK
 CUDA_FN
 (
  cuDeviceGetAttribute, 
@@ -119,7 +120,7 @@ CUDA_FN
   CUdevice dev
  )
 );
-
+#endif
 
 CUDA_FN
 (
@@ -264,6 +265,7 @@ cuda_device_property_query
  cuda_device_property_t *property
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -299,4 +301,7 @@ cuda_device_property_query
   property->sm_schedulers = cuda_device_sm_schedulers_query(major, minor);
 
   return 0;
+#else
+  return -1;
+#endif
 }

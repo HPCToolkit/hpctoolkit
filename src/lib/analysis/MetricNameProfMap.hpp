@@ -1,3 +1,5 @@
+// -*-Mode: C++;-*-
+
 // * BeginRiceCopyright *****************************************************
 //
 // $HeadURL$
@@ -10,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2018, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -42,37 +44,79 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //***************************************************************************
 //
-// File: Fatbin.hpp
+// File:
+//   $HeadURL$
 //
 // Purpose:
-//   Interface for a routine that inspects and Elf module and collects
-//   nested Elf modules.
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef __Fatbin_hpp__
-#define __Fatbin_hpp__
+#ifndef Analysis_MetricNameProfMap_hpp 
+#define Analysis_MetricNameProfMap_hpp
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+//************************* System Include Files ****************************
 
-#include "ElfHelper.hpp"
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <string>
+
+//*************************** User Include Files ****************************
+
+#include <include/uint.h>
+
+#include <lib/prof/CallPath-Profile.hpp>
+#include <lib/prof/Struct-Tree.hpp>
 
 
+namespace Analysis {
 
-//******************************************************************************
-// interface functions
-//******************************************************************************
+namespace CallPath {
 
-bool
-findCubins
-(
- ElfFile *elfFile,
- ElfFileVector *elfFileVector
-);
+class MetricNameProfMap {
+ public:
+  MetricNameProfMap(Prof::Metric::Mgr *mgr) : _mgr(mgr) {}
 
-#endif
+  void init();
+
+  std::vector<int> metric_ids(const std::string &metric_name, bool inclusive = true);
+
+  int metric_id(size_t mpi_rank, size_t thread_id, const std::string &metric_name, bool inclusive = true);
+  
+  int num_mpi_ranks() {
+    return _metric_name_prof_maps.size();
+  }
+
+  int num_thread_ids(size_t mpi_rank) {
+    if (mpi_rank < _metric_name_prof_maps.size()) {
+      return _metric_name_prof_maps[mpi_rank].size();
+    }
+    return -1;
+  }
+
+  bool add(const std::string &metric_name);
+
+  const std::string name(size_t metric_id) {
+    std::string ret;
+    if (metric_id < _mgr->size()) {
+      ret = _mgr->metric(metric_id)->name();
+    }
+    return ret;
+  }
+
+ private:
+  Prof::Metric::Mgr *_mgr;
+  std::map<int, std::map<int, std::map<std::string, std::pair<int, int> > > > _metric_name_prof_maps;
+};
+
+}  // Analysis
+
+}  // CallPath
+
+#endif  // Analysis_MetricNameProfMap_hpp

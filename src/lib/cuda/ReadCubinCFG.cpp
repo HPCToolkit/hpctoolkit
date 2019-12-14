@@ -27,7 +27,7 @@
 #include "CudaCodeSource.hpp"
 #include "CFGParser.hpp"
 #include "Instruction.hpp"
-#include "InstructionAnalyzer.hpp"
+#include "AnalyzeInstruction.hpp"
 #include "GraphReader.hpp"
 #include "ReadCubinCFG.hpp"
 
@@ -208,7 +208,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
+            block->insts.push_back(new CudaParse::Instruction(function_size));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
@@ -240,16 +240,13 @@ parseDotCFG
 
 
 static void
-analyzeCudaInstruction
+dumpCudaInstructions
 (
  const std::string &search_path,
  const std::string &elf_filename,
  const std::vector<CudaParse::Function *> &functions
 )
 {
-  CudaParse::InstructionAnalyzer instruction_analyzer;
-  CudaParse::InstructionMetrics instruction_metrics;
-  instruction_analyzer.analyze(functions, instruction_metrics);
   // Create a nvidia directory and dump instruction files
   if (functions.size() > 0) {
     const std::string dot_dir = search_path + "/nvidia";
@@ -260,7 +257,7 @@ analyzeCudaInstruction
     }
 
     const std::string inst_output = search_path + "/nvidia/" + FileUtil::basename(elf_filename) + ".inst";
-    if (CudaParse::InstructionAnalyzer::dump(inst_output, instruction_metrics) != true) {
+    if (CudaParse::dumpCudaInstructions(inst_output, functions) != true) {
       std::cout << "WARNING: failed to dump static database file: " << inst_output << std::endl;
     }
   }
@@ -287,7 +284,10 @@ readCubinCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj
+ Dyninst::ParseAPI::CodeObject **code_obj,
+ bool dump_insts,
+ bool slice,
+ bool liveness
 ) 
 {
   static bool nvdisasm_usable = test_nvdisasm();
@@ -302,15 +302,30 @@ readCubinCFG
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
+      // Get raw dot functions
       std::vector<CudaParse::Function *> functions;
       parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
-      // Analyze Cuda instructions
-      analyzeCudaInstruction(search_path, elfFile->getFileName(), functions);
-      // Dyninst adapter
+
+      // Dyninst adapters
+      // First construct dyninst functions, blocks, and instructions
+      // Then parse slice and liveness, and update instruction_stats
       CFGFactory *cfg_fact = new CudaCFGFactory(functions);
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
+
+      if (slice) {
+        sliceCudaInstructions((*code_obj)->funcs(), functions);
+      }
+
+      if (liveness) {
+        processLivenessCudaInstructions((*code_obj)->funcs(), functions);
+      }
+
+      if (dump_insts) {
+        dumpCudaInstructions(search_path, elfFile->getFileName(), functions);
+      }
+
       unlink(dot.c_str());
       unlink(cubin.c_str());
       return true;

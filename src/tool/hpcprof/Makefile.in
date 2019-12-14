@@ -143,9 +143,11 @@ hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
-	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_ProfLean) \
-	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
-	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+	$(HPCLIB_Cuda) $(HPCLIB_ProfXML) $(HPCLIB_Prof) \
+	$(HPCLIB_ProfLean) $(HPCLIB_Binutils) $(HPCLIB_ISA) \
+	$(am__DEPENDENCIES_2) $(HPCLIB_XML) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -285,6 +287,14 @@ BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
@@ -378,7 +388,9 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
 MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
 MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
@@ -443,14 +455,6 @@ XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 XED2_HPCRUN_LIBS = @XED2_HPCRUN_LIBS@
 XED2_INC = @XED2_INC@
 XED2_LIB_DIR = @XED2_LIB_DIR@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_PROF_MPI_LIBS = @XED2_PROF_MPI_LIBS@
 XERCES = @XERCES@
@@ -548,6 +552,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
+HPCLIB_Cuda = $(top_builddir)/src/lib/cuda/libHPCcuda.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
@@ -556,12 +561,14 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+@OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+@OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ $(DYNINST_IFLAGS)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	@XERCES_LDFLAGS@ \
@@ -571,6 +578,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal_Simple) \
+	$(HPCLIB_Cuda) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_ProfLean) \
@@ -580,6 +588,9 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(DYNINST_LFLAGS) \
+	$(MY_ELF_DWARF) \
+	$(BOOST_LFLAGS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \

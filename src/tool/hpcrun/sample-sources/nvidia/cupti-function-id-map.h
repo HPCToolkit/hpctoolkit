@@ -12,6 +12,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/utilities/ip-normalized.h>
 
 /******************************************************************************
  * type definitions 
@@ -26,28 +27,20 @@ typedef struct cupti_function_id_map_entry_s cupti_function_id_map_entry_t;
 cupti_function_id_map_entry_t *
 cupti_function_id_map_lookup
 (
- uint64_t id
+ uint32_t function_id
 );
 
 
 void
 cupti_function_id_map_insert
 (
- uint64_t function_id,
- uint64_t function_index,
- uint64_t cubin_id
+ uint32_t function_id,
+ ip_normalized_t ip_norm
 );
 
 
-uint64_t
-cupti_function_id_map_entry_function_index_get
-(
- cupti_function_id_map_entry_t *entry
-);
-
-
-uint64_t
-cupti_function_id_map_entry_cubin_id_get
+ip_normalized_t
+cupti_function_id_map_entry_ip_norm_get
 (
  cupti_function_id_map_entry_t *entry
 );

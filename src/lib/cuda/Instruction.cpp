@@ -5,7 +5,7 @@
 namespace CudaParse {
 
 // include sm_50-sm_70 instructions
-std::map<std::string, InstructionTypes> Instruction::opcode_types = {
+std::map<std::string, InstructionType> Instruction::opcode_types = {
   // sm_60 
   { "FCMP", INS_TYPE_FLOAT },
   { "RRO", INS_TYPE_FLOAT },

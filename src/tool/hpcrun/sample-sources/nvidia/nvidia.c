@@ -79,11 +79,14 @@
  *****************************************************************************/
 
 #include "nvidia.h"
+#include "cubin-id-map.h"
 #include "cuda-state-placeholders.h"
+#include "gpu-driver-state-placeholders.h"
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "sanitizer-api.h"
 #include "sanitizer-record.h"
+#include "cupti-trace-api.h"
 #include "../simple_oo.h"
 #include "../sample_source_obj.h"
 #include "../common.h"
@@ -102,7 +105,6 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <ompt/ompt-interface.h>
 
 
 /******************************************************************************
@@ -304,6 +306,10 @@
 #define CUDA_PC_SAMPLING "nvidia-cuda-pc-sampling" 
 #define CUDA_SANITIZER "nvidia-cuda-memory"
 
+#define COUNT_FORALL_CLAUSE(a,b) + 1
+#define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
+
+
 /******************************************************************************
  * local variables 
  *****************************************************************************/
@@ -311,6 +317,7 @@
 // finalizers
 static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 static kind_info_t* stall_kind; // gpu insts
 static kind_info_t* ke_kind; // kernel execution
@@ -377,8 +384,13 @@ static const long block_sampling_frequency_default = 0;
 // -1: disabled, 5-31: 2^frequency
 static long pc_sampling_frequency = 0;
 static long block_sampling_frequency = 0;
+// default trace all the activities
+// -1: disabled, >0: x ms per activity
+static long trace_frequency = -1;
+static long trace_frequency_default = -1;
+
 static int cupti_enabled_activities = 0;
-// event name, which can be either nvidia-ompt or nvidia-cuda
+// event name, which is nvidia-cuda
 static char nvidia_name[128];
 
 static const unsigned int MAX_CHAR_FORMULA = 32;
@@ -479,11 +491,8 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
     case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     {
       PRINT("CUPTI_ACTIVITY_KIND_PC_SAMPLING\n");
-      int64_t frequency_factor = 1;
-      if (frequency_factor != -1) {
-        frequency_factor = (1 << pc_sampling_frequency);
-        PRINT("frequency_factor %ld\n", frequency_factor);
-      }
+      int frequency_factor = (1 << pc_sampling_frequency);
+
       if (activity->data.pc_sampling.stallReason != 0x7fffffff) {
         int index = stall_metric_id[activity->data.pc_sampling.stallReason];
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
@@ -495,11 +504,9 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
             activity->data.pc_sampling.latencySamples * frequency_factor});
         }
 
-        metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_metric_id);
         hpcrun_metric_std_inc(gpu_inst_metric_id, metrics, (cct_metric_data_t){.i =
           activity->data.pc_sampling.samples * frequency_factor});
 
-        metrics = hpcrun_reify_metric_set(cct_node, gpu_inst_lat_metric_id);
         hpcrun_metric_std_inc(gpu_inst_lat_metric_id, metrics, (cct_metric_data_t){.i =
           activity->data.pc_sampling.latencySamples * frequency_factor});
       }
@@ -513,15 +520,12 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.droppedSamples});
 
       // It is fine to use set here because sampling cycle is changed during execution
-      metrics = hpcrun_reify_metric_set(cct_node, info_period_in_cycles_id);
       hpcrun_metric_std_set(info_period_in_cycles_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.samplingPeriodInCycles});
 
-      metrics = hpcrun_reify_metric_set(cct_node, info_total_samples_id);
       hpcrun_metric_std_inc(info_total_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.totalSamples});
 
-      metrics = hpcrun_reify_metric_set(cct_node, info_sm_full_samples_id);
       hpcrun_metric_std_inc(info_sm_full_samples_id, metrics,
         (cct_metric_data_t){.i = activity->data.pc_sampling_record_info.fullSMSamples});
       break;
@@ -534,7 +538,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memcpy.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, em_time_metric_id);
         hpcrun_metric_std_inc(em_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memcpy.end - activity->data.memcpy.start) / 1000.0});
       }
@@ -548,7 +551,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memset.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, me_set_time_metric_id);
         hpcrun_metric_std_inc(me_set_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memset.end - activity->data.memset.start) / 1000.0});
       }
@@ -560,17 +562,13 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, ke_static_shared_metric_id);
       hpcrun_metric_std_inc(ke_static_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.staticSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_dynamic_shared_metric_id);
       hpcrun_metric_std_inc(ke_dynamic_shared_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.dynamicSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_local_metric_id);
       hpcrun_metric_std_inc(ke_local_metric_id, metrics, (cct_metric_data_t){.i = activity->data.kernel.localMemoryTotal});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.activeWarpsPerSM});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_max_active_warps_per_sm_metric_id);
       hpcrun_metric_std_inc(ke_max_active_warps_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.maxActiveWarpsPerSM});
 
@@ -579,22 +577,17 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(ke_schedulers_per_sm_metric_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.schedulersPerSM});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_thread_registers_id);
       hpcrun_metric_std_inc(ke_thread_registers_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.threadRegisters});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_threads_id);
       hpcrun_metric_std_inc(ke_block_threads_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockThreads});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_block_shared_memory_id);
       hpcrun_metric_std_inc(ke_block_shared_memory_id, metrics,
         (cct_metric_data_t){.i = activity->data.kernel.blockSharedMemory});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_count_metric_id);
       hpcrun_metric_std_inc(ke_count_metric_id, metrics, (cct_metric_data_t){.i = 1});
 
-      metrics = hpcrun_reify_metric_set(cct_node, ke_time_metric_id);
       hpcrun_metric_std_inc(ke_time_metric_id, metrics, (cct_metric_data_t){.r =
         (activity->data.kernel.end - activity->data.kernel.start) / 1000.0});
       break;
@@ -608,7 +601,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){ .r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
 
-        metrics = hpcrun_reify_metric_set(cct_node, sync_time_metric_id);
         hpcrun_metric_std_inc(sync_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.synchronization.end - activity->data.synchronization.start) / 1000.0});
       }
@@ -622,7 +614,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, index);
         hpcrun_metric_std_inc(index, metrics, (cct_metric_data_t){.i = activity->data.memory.bytes});
 
-        metrics = hpcrun_reify_metric_set(cct_node, me_time_metric_id);
         hpcrun_metric_std_inc(me_time_metric_id, metrics, (cct_metric_data_t){.r =
           (activity->data.memory.end - activity->data.memory.start) / 1000.0});
       }
@@ -638,12 +629,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       hpcrun_metric_std_inc(l2_transactions_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.l2_transactions});
 
       int l2_theoretical_transactions_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT + type];
-      metrics = hpcrun_reify_metric_set(cct_node, l2_theoretical_transactions_index);
       hpcrun_metric_std_inc(l2_theoretical_transactions_index, metrics,
         (cct_metric_data_t){.i = activity->data.global_access.theoreticalL2Transactions});
 
       int bytes_index = gl_metric_id[CUPTI_GLOBAL_ACCESS_COUNT * 2 + type];
-      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.global_access.bytes});
       break;
     }
@@ -658,12 +647,10 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
         (cct_metric_data_t){.i = activity->data.shared_access.sharedTransactions});
 
       int theoretical_shared_transactions_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT + type];
-      metrics = hpcrun_reify_metric_set(cct_node, theoretical_shared_transactions_index);
       hpcrun_metric_std_inc(theoretical_shared_transactions_index, metrics,
         (cct_metric_data_t){.i = activity->data.shared_access.theoreticalSharedTransactions});
 
       int bytes_index = sh_metric_id[CUPTI_SHARED_ACCESS_COUNT * 2 + type];
-      metrics = hpcrun_reify_metric_set(cct_node, bytes_index);
       hpcrun_metric_std_inc(bytes_index, metrics, (cct_metric_data_t){.i = activity->data.shared_access.bytes});
       break;
     }
@@ -673,7 +660,6 @@ cupti_activity_attribute(cupti_activity_t *activity, cct_node_t *cct_node)
       metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, bh_diverged_metric_id);
       hpcrun_metric_std_inc(bh_diverged_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.diverged});
 
-      metrics = hpcrun_reify_metric_set(cct_node, bh_executed_metric_id);
       hpcrun_metric_std_inc(bh_executed_metric_id, metrics, (cct_metric_data_t){.i = activity->data.branch.executed});
       break;
     }
@@ -690,6 +676,12 @@ int
 cupti_pc_sampling_frequency_get()
 {
   return pc_sampling_frequency;
+}
+
+int
+cupti_trace_frequency_get()
+{
+  return trace_frequency;
 }
 
 
@@ -710,7 +702,6 @@ cupti_enable_activities
 
   #define FORALL_ACTIVITIES(macro, context)                                      \
     macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(context, CUPTI_DATA_MOTION_IMPLICIT, data_motion_explicit_activities)  \
     macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
     macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
     macro(context, CUPTI_DRIVER, driver_activities)                              \
@@ -792,12 +783,6 @@ METHOD_FN(supports_event, const char *ev_str)
 #else
   return false;
 #endif
-
-#if 0
-    hpcrun_ev_is(ev_str, OMPT_MEMORY_EXPLICIT) ||
-    hpcrun_ev_is(ev_str, OMPT_MEMORY_IMPLICIT) ||
-    hpcrun_ev_is(ev_str, OMPT_KERNEL_EXECUTION);
-#endif
 }
  
 static void
@@ -806,6 +791,25 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+
+  // Fetch the event string for the sample source
+  // only one event is allowed
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  int frequency = 0;
+  int frequency_default = -1;
+  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
+    &frequency, frequency_default);
+
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    trace_frequency = frequency == frequency_default ?
+      trace_frequency_default : frequency;
+    pc_sampling_frequency = frequency_default;
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+    pc_sampling_frequency = frequency == frequency_default ?
+      pc_sampling_frequency_default : frequency;
+    trace_frequency = frequency_default;
+  }
 
 #define getindex(name, index) index
 
@@ -822,22 +826,25 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define create_cur_kind cur_kind = hpcrun_metrics_new_kind()
 #define close_cur_kind hpcrun_close_kind(cur_kind)
 
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
 #define cur_kind stall_kind
 #define cur_metrics stall_metric_id
 
-  create_cur_kind;
-  // GPU INST must be the first kind for sample apportion
-  FORALL_GPU_INST(declare_cur_metrics);
-  FORALL_GPU_INST_LAT(declare_cur_metrics);
-  FORALL_STL(declare_cur_metrics);	
-  FORALL_STL(hide_cur_metrics);
-  gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
-  gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
-  close_cur_kind;
+    create_cur_kind;
+    // GPU INST must be the first kind for sample apportion
+    FORALL_GPU_INST(declare_cur_metrics);
+    FORALL_GPU_INST_LAT(declare_cur_metrics);
+    FORALL_STL(declare_cur_metrics);	
+    FORALL_STL(hide_cur_metrics);
+    gpu_inst_metric_id = stall_metric_id[FORALL_GPU_INST(getindex)];
+    gpu_inst_lat_metric_id = stall_metric_id[FORALL_GPU_INST_LAT(getindex)];
+    close_cur_kind;
 
 #undef cur_kind
 #undef cur_metrics
+  }
 
+#if 0 // Do not process im metrics for now
 #define cur_kind im_kind
 #define cur_metrics im_metric_id
 
@@ -850,6 +857,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
 #define cur_kind em_kind
 #define cur_metrics em_metric_id
@@ -935,6 +943,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #undef cur_kind
 #undef cur_metrics
 
+#if 0 // do not process global memory metrics for now
 #define cur_kind gl_kind
 #define cur_metrics gl_metric_id
 
@@ -945,7 +954,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+#if 0 // do not process shared memory metrics for now
 #define cur_kind sh_kind
 #define cur_metrics sh_metric_id
 
@@ -956,7 +967,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+#if 0 // do not process branch metrics for now
 #define cur_kind bh_kind
 #define cur_metrics bh_metric_id
 
@@ -969,25 +982,32 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #undef cur_kind
 #undef cur_metrics
+#endif
 
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
 #define cur_kind info_kind
 #define cur_metrics info_metric_id
 
-  create_cur_kind;
-  FORALL_INFO(declare_cur_metrics);	
-  FORALL_INFO(hide_cur_metrics);
-  FORALL_INFO_EFFICIENCY(declare_cur_metrics_real);
-  info_dropped_samples_id = info_metric_id[0];
-  info_period_in_cycles_id = info_metric_id[1];
-  info_total_samples_id = info_metric_id[2];
-  info_sm_full_samples_id = info_metric_id[3];
-  info_sm_efficiency_id = info_metric_id[4];
+    create_cur_kind;
+    FORALL_INFO(declare_cur_metrics);	
+    FORALL_INFO(hide_cur_metrics);
+    FORALL_INFO_EFFICIENCY(declare_cur_metrics_real);
+    info_dropped_samples_id = info_metric_id[0];
+    info_period_in_cycles_id = info_metric_id[1];
+    info_total_samples_id = info_metric_id[2];
+    info_sm_full_samples_id = info_metric_id[3];
+    info_sm_efficiency_id = info_metric_id[4];
 
-  hpcrun_set_percent(info_sm_efficiency_id, 1);
-  metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
-  char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
-  sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
-  sm_efficiency_metric->formula = sm_efficiency_buffer;
+    hpcrun_set_percent(info_sm_efficiency_id, 1);
+    metric_desc_t* sm_efficiency_metric = hpcrun_id2metric_linked(info_sm_efficiency_id);
+    char *sm_efficiency_buffer = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
+    sprintf(sm_efficiency_buffer, "$%d/$%d", info_total_samples_id, info_sm_full_samples_id);
+    sm_efficiency_metric->formula = sm_efficiency_buffer;
+    close_cur_kind;
+
+#undef cur_kind
+#undef cur_metrics
+  }
 
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {
@@ -1019,12 +1039,16 @@ METHOD_FN(process_event_list, int lush_metrics)
       pc_sampling_frequency_default : sample_frequency;
     cupti_metrics_init();
     cuda_init_placeholders();
+    gpu_driver_init_placeholders();
     
     // Register hpcrun callbacks
     device_finalizer_flush.fn = cupti_device_flush;
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = cupti_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+    // Register shutdown functions to write trace files
+    device_trace_finalizer_shutdown.fn = cupti_trace_fini;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 
     // Get control knobs
     int device_buffer_size = control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
@@ -1040,11 +1064,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     PRINT("Device semaphore size %d\n", device_semaphore_size);
     cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
-    // Register cupti callbacks
-    cupti_trace_init();
-    cupti_callbacks_subscribe();
-    cupti_trace_start();
-
     // Set enabling activities
     cupti_enabled_activities |= CUPTI_DRIVER;
     cupti_enabled_activities |= CUPTI_RUNTIME;
@@ -1052,6 +1071,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
     cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
     cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+    // Register cupti callbacks
+    cupti_trace_init();
+    cupti_callbacks_subscribe();
+    cupti_trace_start();
   } else if (hpcrun_ev_is(nvidia_name, CUDA_SANITIZER)) {
 #ifndef HPCTOOLKIT_GPU_PATCH
     monitor_real_exit(-1);
@@ -1060,6 +1084,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     block_sampling_frequency = sample_frequency == 0 ?
       block_sampling_frequency_default : sample_frequency;
     cuda_init_placeholders();
+    gpu_driver_init_placeholders();
 
     // Register hpcrun callbacks
     device_finalizer_flush.fn = sanitizer_device_flush;

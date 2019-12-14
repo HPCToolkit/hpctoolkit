@@ -7,6 +7,8 @@
 #include <string>
 #include <set>
 
+#include "AnalyzeInstruction.hpp"
+
 #define INSTRUCTION_DEBUG 0
 
 #define FORALL_INS_TYPES(macro) \
@@ -26,7 +28,7 @@ namespace CudaParse {
 #define DECLARE_INS_TYPE(TYPE, VALUE) \
   TYPE = VALUE,
 
-enum InstructionTypes {
+enum InstructionType {
   FORALL_INS_TYPES(DECLARE_INS_TYPE)
   FORALL_INS_COUNT(DECLARE_INS_TYPE)
 };
@@ -48,18 +50,24 @@ struct Instruction {
   std::string target;
   std::vector<std::string> modifiers;
   std::vector<std::string> operands;
-  InstructionTypes type;
-  static std::map<std::string, InstructionTypes> opcode_types;
+  InstructionType type;
+  InstructionStat *inst_stat;
+
+  static std::map<std::string, InstructionType> opcode_types;
   static std::set<std::string> opcode_call;
   static std::set<std::string> opcode_jump;
   static std::set<std::string> opcode_sync;
 
+  explicit Instruction(InstructionStat *inst_stat) : inst_stat(inst_stat) {}
+
   // constructor for dummy instruction
   explicit Instruction(unsigned int offset) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {}
+    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {
+    inst_stat = new InstructionStat(this);
+  }
 
   Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
-  is_call(false), is_jump(false), is_sync(false) {
+  is_call(false), is_jump(false), is_sync(false), inst_stat(NULL) {
     if (INSTRUCTION_DEBUG) {
       std::cout << inst_str << std::endl;
     }
@@ -165,6 +173,8 @@ struct Instruction {
         }
       }
     }
+
+    inst_stat = new InstructionStat(this);
   }
 
   std::string to_string() const {
@@ -176,6 +186,12 @@ struct Instruction {
       ret += " " + o;
     }
     return ret;
+  }
+
+  ~Instruction() {
+    if (inst_stat) {
+      delete inst_stat;
+    }
   }
 };
 

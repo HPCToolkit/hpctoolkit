@@ -72,6 +72,7 @@ if OPT_BUILD_LIB_ALL
 SUBDIRS += \
 	analysis \
 	banal \
+	cuda \
 	binutils \
 	isa \
 	prof \

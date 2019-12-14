@@ -62,19 +62,6 @@ DWARF_IFLAGS = -I$(LIBDWARF_INC)
 endif
 
 MYSOURCES = \
-	cuda/CFGParser.cpp  \
-	cuda/CudaCFGFactory.cpp  \
-	cuda/CudaFunction.cpp  \
-	cuda/GraphReader.cpp \
-	cuda/CudaBlock.cpp  \
-	cuda/CudaCodeSource.cpp  \
-	cuda/ReadCubinCFG.cpp \
-	cuda/InstructionAnalyzer.cpp \
-	cuda/Instruction.cpp \
-	ElfHelper.cpp \
-	Fatbin.cpp \
-	InputFile.cpp \
-	RelocateCubin.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp

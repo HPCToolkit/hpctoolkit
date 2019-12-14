@@ -13,7 +13,7 @@
 
 #include <hpcrun/cct/cct.h>
 
-#include "cupti-record.h"
+#include "cupti-channel.h"
 
 /******************************************************************************
  * type definitions 
@@ -36,10 +36,18 @@ void
 cupti_host_op_map_insert
 (
  uint64_t host_op_id,
- cct_node_t *host_op_node,
- cupti_record_t *record
+ cupti_activity_channel_t *channel,
+ cct_node_t *copy_node,
+ cct_node_t *copyin_node,
+ cct_node_t *copyout_node,
+ cct_node_t *alloc_node,
+ cct_node_t *delete_node,
+ cct_node_t *sync_node,
+ cct_node_t *kernel_node,
+ cct_node_t *trace_node
 );
 
+// TODO(Keren): find another way to remove nodes
 // samples == total_samples remove the node and return false
 bool
 cupti_host_op_map_samples_increase
@@ -65,14 +73,63 @@ cupti_host_op_map_delete
 
 
 cct_node_t *
-cupti_host_op_map_entry_host_op_node_get
+cupti_host_op_map_entry_copy_node_get
 (
  cupti_host_op_map_entry_t *entry
 );
 
 
-cupti_record_t *
-cupti_host_op_map_entry_record_get
+cct_node_t *
+cupti_host_op_map_entry_copyin_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_copyout_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_alloc_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_delete_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_sync_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_kernel_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cct_node_t *
+cupti_host_op_map_entry_trace_node_get
+(
+ cupti_host_op_map_entry_t *entry
+);
+
+
+cupti_activity_channel_t *
+cupti_host_op_map_entry_activity_channel_get
 (
  cupti_host_op_map_entry_t *entry
 );

@@ -160,11 +160,12 @@ am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
-	$(HPCLIB_ISA) $(am__DEPENDENCIES_3) $(HPCLIB_XML) \
-	$(HPCLIB_Support) $(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Cuda) $(HPCLIB_Prof) \
+	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(am__DEPENDENCIES_3) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 hpcstruct_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -379,7 +380,9 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
 MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
 MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
@@ -539,6 +542,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
+HPCLIB_Cuda = $(top_builddir)/src/lib/cuda/libHPCcuda.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
@@ -562,6 +566,7 @@ MYLDADD = \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal) \
 	$(HPCLIB_Banal_Simple) \
+	$(HPCLIB_Cuda) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
 	$(HPCLIB_ISA) \

@@ -86,13 +86,13 @@
 
 #include <lib/isa/ISA.hpp>
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
 
-#include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
 
 #include <Module.h>

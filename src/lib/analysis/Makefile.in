@@ -141,7 +141,9 @@ libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-CallPath-MetricComponentsFact.lo \
 	libHPCanalysis_la-CallPath-CudaCFG.lo \
+	libHPCanalysis_la-CallPath-CudaAdvisor.lo \
 	libHPCanalysis_la-CallPath-CudaInstruction.lo \
+	libHPCanalysis_la-MetricNameProfMap.lo \
 	libHPCanalysis_la-Flat-SrcCorrelation.lo \
 	libHPCanalysis_la-Flat-ObjCorrelation.lo \
 	libHPCanalysis_la-Raw.lo libHPCanalysis_la-Args.lo \
@@ -278,6 +280,14 @@ DLLTOOL = @DLLTOOL@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
 DYNINST_COPY = @DYNINST_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 DYNINST_IFLAGS = @DYNINST_IFLAGS@
 DYNINST_LFLAGS = @DYNINST_LFLAGS@
 DYNINST_LIB_DIR = @DYNINST_LIB_DIR@
@@ -346,7 +356,9 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
 MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
 MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
@@ -508,6 +520,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
+HPCLIB_Cuda = $(top_builddir)/src/lib/cuda/libHPCcuda.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
@@ -516,20 +529,14 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
 	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
+	CallPath-CudaAdvisor.hpp CallPath-CudaAdvisor.cpp \
 	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
 	\
+	MetricNameProfMap.cpp \
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
 	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
 	\
@@ -544,7 +551,7 @@ MYSOURCES = \
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ $(DYNINST_IFLAGS) $(TBB_IFLAGS)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -625,12 +632,14 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-ArgsHPCProf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaCFG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-MetricComponentsFact.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-ObjCorrelation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-SrcCorrelation.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-TextUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
@@ -677,12 +686,26 @@ libHPCanalysis_la-CallPath-CudaCFG.lo: CallPath-CudaCFG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaCFG.lo `test -f 'CallPath-CudaCFG.cpp' || echo '$(srcdir)/'`CallPath-CudaCFG.cpp
 
+libHPCanalysis_la-CallPath-CudaAdvisor.lo: CallPath-CudaAdvisor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath-CudaAdvisor.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Tpo -c -o libHPCanalysis_la-CallPath-CudaAdvisor.lo `test -f 'CallPath-CudaAdvisor.cpp' || echo '$(srcdir)/'`CallPath-CudaAdvisor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-CudaAdvisor.cpp' object='libHPCanalysis_la-CallPath-CudaAdvisor.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaAdvisor.lo `test -f 'CallPath-CudaAdvisor.cpp' || echo '$(srcdir)/'`CallPath-CudaAdvisor.cpp
+
 libHPCanalysis_la-CallPath-CudaInstruction.lo: CallPath-CudaInstruction.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath-CudaInstruction.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Tpo -c -o libHPCanalysis_la-CallPath-CudaInstruction.lo `test -f 'CallPath-CudaInstruction.cpp' || echo '$(srcdir)/'`CallPath-CudaInstruction.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-CudaInstruction.cpp' object='libHPCanalysis_la-CallPath-CudaInstruction.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaInstruction.lo `test -f 'CallPath-CudaInstruction.cpp' || echo '$(srcdir)/'`CallPath-CudaInstruction.cpp
+
+libHPCanalysis_la-MetricNameProfMap.lo: MetricNameProfMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-MetricNameProfMap.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Tpo -c -o libHPCanalysis_la-MetricNameProfMap.lo `test -f 'MetricNameProfMap.cpp' || echo '$(srcdir)/'`MetricNameProfMap.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Tpo $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='MetricNameProfMap.cpp' object='libHPCanalysis_la-MetricNameProfMap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-MetricNameProfMap.lo `test -f 'MetricNameProfMap.cpp' || echo '$(srcdir)/'`MetricNameProfMap.cpp
 
 libHPCanalysis_la-Flat-SrcCorrelation.lo: Flat-SrcCorrelation.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Flat-SrcCorrelation.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Flat-SrcCorrelation.Tpo -c -o libHPCanalysis_la-Flat-SrcCorrelation.lo `test -f 'Flat-SrcCorrelation.cpp' || echo '$(srcdir)/'`Flat-SrcCorrelation.cpp

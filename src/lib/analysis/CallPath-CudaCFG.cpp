@@ -141,28 +141,28 @@ static void
 constructStructCallMap(Prof::Struct::ANode *struct_root, StructCallMap &struct_call_map);
 
 static void
-constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallMap &struct_call_map);
+constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph<Prof::CCT::ANode *> *cct_graph, StructCallMap &struct_call_map);
 
 static void
 findGPURoots(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root, std::set<Prof::CCT::ANode *> &gpu_roots);
 
 static bool
-findRecursion(CCTGraph *cct_graph,
+findRecursion(CCTGraph<Prof::CCT::ANode *> *cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups);
 
 static void
-mergeSCCNodes(CCTGraph *cct_graph, CCTGraph *old_cct_graph,
+mergeSCCNodes(CCTGraph<Prof::CCT::ANode *> *cct_graph, CCTGraph<Prof::CCT::ANode *> *old_cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups);
 
 static void
-gatherIncomingSamples(CCTGraph *cct_graph, IncomingInstMap &node_map, bool find_recursion);
+gatherIncomingSamples(CCTGraph<Prof::CCT::ANode *> *cct_graph, IncomingInstMap &node_map, bool find_recursion);
 
 static void
-constructCallingContext(CCTGraph *cct_graph, IncomingInstMap &incoming_samples);
+constructCallingContext(CCTGraph<Prof::CCT::ANode *> *cct_graph, IncomingInstMap &incoming_samples);
 
 static void
 copyPath(IncomingInstMap &incoming_samples,
-  CCTGraph *cct_graph,
+  CCTGraph<Prof::CCT::ANode *> *cct_graph,
   Prof::CCT::ANode *cur, 
   Prof::CCT::ANode *prev,
   AdjustFactor adjust_factor);
@@ -225,7 +225,16 @@ debugGPUInst() {
 
 
 static inline void
-debugCallGraph(CCTGraph *cct_graph) {
+debugGPUProf() {
+  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+    std::cout << "  " << gpu_inst_index[i];
+  }
+  std::cout << std::endl;
+}
+
+
+static inline void
+debugCallGraph(CCTGraph<Prof::CCT::ANode *> *cct_graph) {
   for (auto it = cct_graph->edgeBegin(); it != cct_graph->edgeEnd(); ++it) {
     std::string from, to;
     if (getProcStmt(it->from) != NULL) {
@@ -269,9 +278,12 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
       auto *stmt = getProcStmt(n); 
       auto *p_stmt = n->parent()->structure();
       std::cout << stmt->ancestorFile()->name() << ": " << dynamic_cast<Prof::CCT::AProcNode *>(n)->procName() <<
-        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec << ") called from " <<
-        dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
-        " node " << n->parent() << std::endl;
+        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec;
+      if (p_stmt) { 
+        std::cout << ") called from " <<
+          dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
+          " node " << n->parent() << std::endl;
+      }
     }
   }
 }
@@ -301,8 +313,14 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     }
     return;
   }
+
   if (DEBUG_CALLPATH_CUDACFG) {
     debugGPUInst();
+  }
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Initial prof tree: " << std::endl;
+    debugProfTree(prof.cct()->root());
   }
 
   // Find the parents of gpu global functions
@@ -337,7 +355,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
       std::cout << "-------------------------------------------------" << std::endl;
     }
     // Construct a call map for a target
-    CCTGraph *cct_graph = new CCTGraph();
+    auto *cct_graph = new CCTGraph<Prof::CCT::ANode *>();
     constructCallGraph(gpu_root, cct_graph, struct_call_map);
 
     if (DEBUG_CALLPATH_CUDACFG) {
@@ -357,8 +375,8 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
         std::cout << "Step 1.1: Construct call graph for recursive calls" << std::endl;
         std::cout << "-------------------------------------------------" << std::endl;
       }
-      CCTGraph *old_cct_graph = cct_graph;
-      cct_graph = new CCTGraph();
+      CCTGraph<Prof::CCT::ANode *> *old_cct_graph = cct_graph;
+      cct_graph = new CCTGraph<Prof::CCT::ANode *>();
       mergeSCCNodes(cct_graph, old_cct_graph, cct_groups);
       delete old_cct_graph;
       if (DEBUG_CALLPATH_CUDACFG) {
@@ -429,7 +447,7 @@ constructStructCallMap(Prof::Struct::ANode *struct_root, StructCallMap &struct_c
 
 
 static void
-constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallMap &struct_call_map) {
+constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph<Prof::CCT::ANode *> *cct_graph, StructCallMap &struct_call_map) {
   // In this function, we only have flat samples without call stacks
   // struct_prof_map maps structs to unique ccts
   // prof_inst_map records samples withint the procedures exclusively 
@@ -614,7 +632,7 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph *cct_graph, StructCallM
 
 
 static bool
-findRecursion(CCTGraph *cct_graph,
+findRecursion(CCTGraph<Prof::CCT::ANode *> *cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups) {
   if (DEBUG_CALLPATH_CUDACFG) {
     std::cout << std::endl;
@@ -677,7 +695,7 @@ findRecursion(CCTGraph *cct_graph,
 
 
 static void
-mergeSCCNodes(CCTGraph *cct_graph, CCTGraph *old_cct_graph,
+mergeSCCNodes(CCTGraph<Prof::CCT::ANode *> *cct_graph, CCTGraph<Prof::CCT::ANode *> *old_cct_graph,
   std::unordered_map<Prof::CCT::ANode *, std::vector<Prof::CCT::ANode *> > &cct_groups) {
   // Map node to group
   std::unordered_map<Prof::CCT::ANode *, Prof::CCT::ANode *> cct_group_reverse_map;
@@ -746,7 +764,7 @@ findGPURoots(Prof::CCT::ANode *prof_root, Prof::Struct::ANode *struct_root, std:
 
 
 static void
-gatherIncomingSamples(CCTGraph *cct_graph, IncomingInstMap &node_map, bool find_recursion) {
+gatherIncomingSamples(CCTGraph<Prof::CCT::ANode *> *cct_graph, IncomingInstMap &node_map, bool find_recursion) {
   // Gather call and scc samples
   for (auto it = cct_graph->nodeBegin(); it != cct_graph->nodeEnd(); ++it) {
     Prof::CCT::ANode *node = *it;
@@ -765,7 +783,7 @@ gatherIncomingSamples(CCTGraph *cct_graph, IncomingInstMap &node_map, bool find_
 
 
 static void
-constructCallingContext(CCTGraph *cct_graph, IncomingInstMap &incoming_samples) {
+constructCallingContext(CCTGraph<Prof::CCT::ANode *> *cct_graph, IncomingInstMap &incoming_samples) {
   // Init adjust factor for each thread
   AdjustFactor adjust_factor;
   for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
@@ -810,7 +828,7 @@ constructCallingContext(CCTGraph *cct_graph, IncomingInstMap &incoming_samples) 
 
 static void
 copyPath(IncomingInstMap &incoming_samples,
-  CCTGraph *cct_graph, 
+  CCTGraph<Prof::CCT::ANode *> *cct_graph, 
   Prof::CCT::ANode *cur, Prof::CCT::ANode *prev,
   AdjustFactor adjust_factor) {
   bool isSCC = isSCCNode(cur);

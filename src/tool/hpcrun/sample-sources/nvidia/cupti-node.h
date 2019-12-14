@@ -4,7 +4,13 @@
 #include <cupti_activity.h>
 #include <hpcrun/cct2metrics.h>
 
-#include "cstack.h"
+typedef enum {
+  CUPTI_ENTRY_TYPE_ACTIVITY = 1,
+  CUPTI_ENTRY_TYPE_NOTIFICATION = 2,
+  CUPTI_ENTRY_TYPE_BUFFER = 3,
+  CUPTI_ENTRY_TYPE_TRACE = 4,
+  CUPTI_ENTRY_TYPE_COUNT = 5
+} cupti_entry_type_t;
 
 // pc sampling
 typedef struct cupti_pc_sampling {
@@ -120,50 +126,61 @@ typedef struct cupti_entry_activity {
 } cupti_entry_activity_t;
 
 // notification entry
-typedef struct cupti_entry_notification {
+typedef struct cupti_entry_correlation {
   uint64_t host_op_id;
-  cct_node_t *cct_node;
-  void *record;
-} cupti_entry_notification_t;
+  void *activity_channel;
+  cct_node_t *copy_node;
+  cct_node_t *copyin_node;
+  cct_node_t *copyout_node;
+  cct_node_t *alloc_node;
+  cct_node_t *delete_node;
+  cct_node_t *sync_node;
+  cct_node_t *kernel_node;
+  cct_node_t *trace_node;
+} cupti_entry_correlation_t;
 
-// activity allocator
-cstack_node_t *
-cupti_activity_node_new
+// trace entry
+typedef struct cupti_entry_trace {
+  uint64_t start;
+  uint64_t end;
+  cct_node_t *node;
+} cupti_entry_trace_t;
+
+
+void
+cupti_entry_activity_set
 (
+ cupti_entry_activity_t *entry,
  CUpti_Activity *activity,
- cct_node_t *cct_node,
- cstack_node_t *next
+ cct_node_t *cct_node
 );
 
 
 void
-cupti_activity_node_set
+cupti_entry_correlation_set
 (
- cstack_node_t *cupti_node,
- CUpti_Activity *activity,
- cct_node_t *cct_node,
- cstack_node_t *next
-);
-
-// notification allocator
-cstack_node_t *
-cupti_notification_node_new
-(
+ cupti_entry_correlation_t *entry,
  uint64_t host_op_id,
- cct_node_t *cct_node,
- void *record,
- cstack_node_t *next
+ void *activity_channel,
+ cct_node_t *copy_node,
+ cct_node_t *copyin_node,
+ cct_node_t *copyout_node,
+ cct_node_t *alloc_node,
+ cct_node_t *delete_node,
+ cct_node_t *sync_node,
+ cct_node_t *kernel_node,
+ cct_node_t *trace_node
 );
 
 
 void
-cupti_notification_node_set
+cupti_entry_trace_set
 (
- cstack_node_t *cupti_node,
- uint64_t host_op_id,
- cct_node_t *cct_node,
- void *record,
- cstack_node_t *next
+ cupti_entry_trace_t *entry,
+ uint64_t start,
+ uint64_t end,
+ cct_node_t *node
 );
+
 
 #endif

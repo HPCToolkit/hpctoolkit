@@ -28,9 +28,8 @@
  *****************************************************************************/
 
 struct cupti_function_id_map_entry_s {
-  uint64_t function_id;  // cupti function id
-  uint64_t function_index;
-  uint64_t cubin_id;
+  uint32_t function_id;  // cupti function id
+  ip_normalized_t ip_norm;
   struct cupti_function_id_map_entry_s *left;
   struct cupti_function_id_map_entry_s *right;
 }; 
@@ -47,13 +46,12 @@ static spinlock_t cupti_function_id_map_lock = SPINLOCK_UNLOCKED;
  *****************************************************************************/
 
 static cupti_function_id_map_entry_t *
-cupti_function_id_map_entry_new(uint64_t function_id, uint64_t function_index, uint64_t cubin_id)
+cupti_function_id_map_entry_new(uint32_t function_id, ip_normalized_t ip_norm)
 {
   cupti_function_id_map_entry_t *e;
   e = (cupti_function_id_map_entry_t *)hpcrun_malloc_safe(sizeof(cupti_function_id_map_entry_t));
   e->function_id = function_id;
-  e->function_index = function_index;
-  e->cubin_id = cubin_id;
+  e->ip_norm = ip_norm;
   e->left = NULL;
   e->right = NULL;
 
@@ -62,7 +60,7 @@ cupti_function_id_map_entry_new(uint64_t function_id, uint64_t function_index, u
 
 
 static cupti_function_id_map_entry_t *
-cupti_function_id_map_splay(cupti_function_id_map_entry_t *root, uint64_t key)
+cupti_function_id_map_splay(cupti_function_id_map_entry_t *root, uint32_t key)
 {
   REGULAR_SPLAY_TREE(cupti_function_id_map_entry_s, root, key, function_id, left, right);
   return root;
@@ -80,7 +78,7 @@ cupti_function_id_map_delete_root()
   } else {
     cupti_function_id_map_root->left = 
       cupti_function_id_map_splay(cupti_function_id_map_root->left, 
-			   cupti_function_id_map_root->function_id);
+        cupti_function_id_map_root->function_id);
     cupti_function_id_map_root->left->right = cupti_function_id_map_root->right;
     cupti_function_id_map_root = cupti_function_id_map_root->left;
   }
@@ -91,27 +89,27 @@ cupti_function_id_map_delete_root()
  *****************************************************************************/
 
 cupti_function_id_map_entry_t *
-cupti_function_id_map_lookup(uint64_t id)
+cupti_function_id_map_lookup(uint32_t function_id)
 {
   cupti_function_id_map_entry_t *result = NULL;
   spinlock_lock(&cupti_function_id_map_lock);
 
-  cupti_function_id_map_root = cupti_function_id_map_splay(cupti_function_id_map_root, id);
-  if (cupti_function_id_map_root && cupti_function_id_map_root->function_id == id) {
+  cupti_function_id_map_root = cupti_function_id_map_splay(cupti_function_id_map_root, function_id);
+  if (cupti_function_id_map_root && cupti_function_id_map_root->function_id == function_id) {
     result = cupti_function_id_map_root;
   }
 
   spinlock_unlock(&cupti_function_id_map_lock);
 
-  TMSG(DEFER_CTXT, "function_id map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(DEFER_CTXT, "function_id map lookup: id=0x%lx (record %p)", function_id, result);
   return result;
 }
 
 
 void
-cupti_function_id_map_insert(uint64_t function_id, uint64_t function_index, uint64_t cubin_id)
+cupti_function_id_map_insert(uint32_t function_id, ip_normalized_t ip_norm)
 {
-  cupti_function_id_map_entry_t *entry = cupti_function_id_map_entry_new(function_id, function_index, cubin_id);
+  cupti_function_id_map_entry_t *entry = cupti_function_id_map_entry_new(function_id, ip_norm);
 
   TMSG(DEFER_CTXT, "function_id map insert: id=0x%lx (record %p)", function_id, entry);
 
@@ -144,17 +142,10 @@ cupti_function_id_map_insert(uint64_t function_id, uint64_t function_index, uint
 }
 
 
-uint64_t 
-cupti_function_id_map_entry_function_index_get(cupti_function_id_map_entry_t *entry) 
+ip_normalized_t
+cupti_function_id_map_entry_ip_norm_get(cupti_function_id_map_entry_t *entry)
 {
-  return entry->function_index;
-}
-
-
-uint64_t 
-cupti_function_id_map_entry_cubin_id_get(cupti_function_id_map_entry_t *entry) 
-{
-  return entry->cubin_id;
+  return entry->ip_norm;
 }
 
 /******************************************************************************
@@ -165,9 +156,9 @@ static int
 cupti_function_id_map_count_helper(cupti_function_id_map_entry_t *entry) 
 {
   if (entry) {
-     int left = cupti_function_id_map_count_helper(entry->left);
-     int right = cupti_function_id_map_count_helper(entry->right);
-     return 1 + right + left; 
+    int left = cupti_function_id_map_count_helper(entry->left);
+    int right = cupti_function_id_map_count_helper(entry->right);
+    return 1 + right + left; 
   } 
   return 0;
 }

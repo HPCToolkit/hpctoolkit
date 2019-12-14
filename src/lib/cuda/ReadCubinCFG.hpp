@@ -1,10 +1,10 @@
 #include <set>
 
-#include <ElfHelper.hpp>
+#include <lib/binutils/VMAInterval.hpp>
+#include <lib/binutils/ElfHelper.hpp>
+
 #include <CodeSource.h>
 #include <CodeObject.h>
-
-#include <lib/binutils/VMAInterval.hpp>
 
 bool
 readCubinCFG
@@ -13,5 +13,8 @@ readCubinCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  Dyninst::ParseAPI::CodeSource **code_src, 
- Dyninst::ParseAPI::CodeObject **code_obj
+ Dyninst::ParseAPI::CodeObject **code_obj,
+ bool dump_insts = true,
+ bool slice = true,
+ bool livenes = false
 );

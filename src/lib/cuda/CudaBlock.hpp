@@ -3,12 +3,14 @@
 
 #include <CFG.h>
 
+#include "DotCFG.hpp"
+
 namespace Dyninst {
 namespace ParseAPI {
 
 class PARSER_EXPORT CudaBlock : public Block {
  public:
-  CudaBlock(CodeObject * o, CodeRegion * r, Address start, std::vector<Offset> &offsets);
+  CudaBlock(CodeObject * o, CodeRegion * r, CudaParse::Block * block);
 
   virtual ~CudaBlock() {}
 
@@ -17,7 +19,7 @@ class PARSER_EXPORT CudaBlock : public Block {
   virtual Address last() const;
 
  private:
-  std::vector<Offset> _inst_offsets;
+  std::vector<CudaParse::Instruction *> _insts;
 };
 
 }

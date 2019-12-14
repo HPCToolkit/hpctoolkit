@@ -465,12 +465,8 @@ if OPT_ENABLE_CUDA
 MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
 	sample-sources/nvidia/cuda-device-map.c			\
 	sample-sources/nvidia/cuda-state-placeholders.c  \
-	sample-sources/nvidia/nvidia.c			\
-	sample-sources/nvidia/cubin-id-map.c			\
-	sample-sources/nvidia/cubin-hash-map.c			\
-	sample-sources/nvidia/cubin-module-map.c			\
-	sample-sources/nvidia/cubin-symbols.c			\
-	sample-sources/nvidia/cstack.c
+	sample-sources/nvidia/gpu-driver-state-placeholders.c \
+	sample-sources/nvidia/nvidia.c
 endif
 
 if OPT_ENABLE_CUPTI
@@ -911,7 +907,8 @@ endif
 if OPT_ENABLE_CUDA
   libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
+  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
 
 if UNW_LIBUNW

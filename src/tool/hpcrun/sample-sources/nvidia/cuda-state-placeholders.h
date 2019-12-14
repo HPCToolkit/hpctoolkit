@@ -11,8 +11,9 @@ typedef struct {
 
 typedef struct {
   cuda_placeholder_t cuda_none_state;
-  cuda_placeholder_t cuda_memcpy_state;
-  cuda_placeholder_t cuda_memalloc_state;
+  cuda_placeholder_t cuda_copy_state;
+  cuda_placeholder_t cuda_alloc_state;
+  cuda_placeholder_t cuda_delete_state;
   cuda_placeholder_t cuda_kernel_state;
   cuda_placeholder_t cuda_sync_state;
 } cuda_placeholders_t;

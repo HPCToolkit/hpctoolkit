@@ -81,10 +81,14 @@
 
 #include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/VMAInterval.hpp>
+#include <lib/binutils/ElfHelper.hpp>
+#include <lib/binutils/InputFile.hpp>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+
+#include <lib/cuda/ReadCubinCFG.hpp>
 
 #include <boost/atomic.hpp>
 
@@ -99,14 +103,10 @@
 
 #include <include/hpctoolkit-config.h>
 
-#include "ElfHelper.hpp"
-#include "InputFile.hpp"
 #include "Struct.hpp"
 #include "Struct-Inline.hpp"
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
-
-#include "cuda/ReadCubinCFG.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

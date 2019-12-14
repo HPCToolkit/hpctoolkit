@@ -70,14 +70,29 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
+
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+else
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+endif
 
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ $(DYNINST_IFLAGS)
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
@@ -88,6 +103,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Analysis) \
 	$(HPCLIB_Banal_Simple) \
+	$(HPCLIB_Cuda) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_ProfLean) \
@@ -97,6 +113,8 @@ MYLDADD = \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(DYNINST_LFLAGS) \
+	$(MY_ELF_DWARF) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \

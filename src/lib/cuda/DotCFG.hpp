@@ -42,6 +42,8 @@ struct Block {
   size_t id;
   std::string name;
 
+  Block(size_t id) : id(id) {}
+
   Block(size_t id, const std::string &name) : id(id), name(name) {}
 
   bool operator<(const Block &other) const {
@@ -73,6 +75,9 @@ struct Function {
 
   Function(size_t id, const std::string &name) : id(id), name(name),
     address(0) {}
+
+  Function(size_t id, const std::string &name, int address) : id(id), name(name),
+    address(address) {}
 
   ~Function() {
     for (auto *block : blocks) {
