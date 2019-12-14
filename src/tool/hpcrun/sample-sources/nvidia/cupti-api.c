@@ -1559,7 +1559,7 @@ cupti_sample_process
     cupti_host_op_map_entry_t *host_op_entry = 
       cupti_host_op_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      PRINT("external_id %lu\n", external_id);
+      //PRINT("external_id %lu\n", external_id);
       // Delete a host op node if all the samples with the node are processed
       if (!cupti_host_op_map_samples_increase(external_id, sample->samples)) {
         cupti_correlation_id_map_delete(sample->correlationId);
@@ -1572,11 +1572,11 @@ cupti_sample_process
       // XXX(keren): for now, suppose a runtime api only launches a single kernel
       cct_node_t *func_node = hpcrun_cct_children(trace_node);
       if (func_node != NULL) {
-        cct_addr_t *func_addr = hpcrun_cct_addr(func_node);
-        ip_normalized_t ip_norm = {
-          .lm_id = func_addr->ip_norm.lm_id,
-          .lm_ip = func_addr->ip_norm.lm_ip + sample->pcOffset
-        };
+        cupti_function_id_map_entry_t *entry = 
+          cupti_function_id_map_lookup(sample->functionId);
+        // We cannot get function ids for device functions,
+        // So we lookup in the function map
+        ip_normalized_t ip_norm = cupti_function_id_map_entry_ip_norm_get(entry);
         cct_addr_t frm = { .ip_norm = ip_norm };
         cct_node_t *cct_child = NULL;
         if ((cct_child = hpcrun_cct_insert_addr(kernel_node, &frm)) != NULL) {
@@ -1608,7 +1608,6 @@ cupti_source_locator_process
 
 
 static void
-__attribute__ ((unused))
 cupti_function_process
 (
  CUpti_ActivityFunction *af
@@ -2067,11 +2066,14 @@ cupti_activity_process
 
   // unused functions
   case CUPTI_ACTIVITY_KIND_SOURCE_LOCATOR:
-  case CUPTI_ACTIVITY_KIND_FUNCTION:
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     cupti_sample_process(activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_FUNCTION:
+    cupti_function_process((CUpti_ActivityFunction *)activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING_RECORD_INFO:
