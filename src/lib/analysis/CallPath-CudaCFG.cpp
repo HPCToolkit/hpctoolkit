@@ -225,6 +225,15 @@ debugGPUInst() {
 
 
 static inline void
+debugGPUProf() {
+  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+    std::cout << "  " << gpu_inst_index[i];
+  }
+  std::cout << std::endl;
+}
+
+
+static inline void
 debugCallGraph(CCTGraph<Prof::CCT::ANode *> *cct_graph) {
   for (auto it = cct_graph->edgeBegin(); it != cct_graph->edgeEnd(); ++it) {
     std::string from, to;
@@ -269,9 +278,12 @@ debugProfTree(Prof::CCT::ANode *prof_root) {
       auto *stmt = getProcStmt(n); 
       auto *p_stmt = n->parent()->structure();
       std::cout << stmt->ancestorFile()->name() << ": " << dynamic_cast<Prof::CCT::AProcNode *>(n)->procName() <<
-        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec << ") called from " <<
-        dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
-        " node " << n->parent() << std::endl;
+        " (" << std::hex << stmt->vmaSet().begin()->beg() << std::dec;
+      if (p_stmt) { 
+        std::cout << ") called from " <<
+          dynamic_cast<Prof::Struct::ACodeNode *>(p_stmt)->begLine() <<
+          " node " << n->parent() << std::endl;
+      }
     }
   }
 }
@@ -301,8 +313,14 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     }
     return;
   }
+
   if (DEBUG_CALLPATH_CUDACFG) {
     debugGPUInst();
+  }
+
+  if (DEBUG_CALLPATH_CUDACFG) {
+    std::cout << "Initial prof tree: " << std::endl;
+    debugProfTree(prof.cct()->root());
   }
 
   // Find the parents of gpu global functions

@@ -404,8 +404,8 @@ void CudaAdvisor::overlayInstructionBlames(std::vector<CudaParse::Function *> &f
             block_blame.inst_blames.push_back(inst_blame);
             block_blame.blames[inst_blame.metric_id] += inst_blame.value;
             block_blame.blame_sum += inst_blame.value;
-            function_blame_blame.blames[inst_blame.metric_id] += inst_blame.value;
-            function_blame_blame.blame_sum += inst_blame.value;
+            function_blame.blames[inst_blame.metric_id] += inst_blame.value;
+            function_blame.blame_sum += inst_blame.value;
           }
         }
         _function_blames[mpi_rank][thread_id].push_back(function_blame);

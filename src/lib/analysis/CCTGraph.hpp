@@ -169,7 +169,6 @@ class CCTGraph {
 
     CCTEdge<T> edge(from, to);
     if (_edges.find(edge) == _edges.end()) {
-      std::cout << "add " << from << ", " << to << std::endl;
       _edges.insert(std::move(edge));
       _incoming_nodes[to].push_back(from);
       _outgoing_nodes[from].push_back(to);
