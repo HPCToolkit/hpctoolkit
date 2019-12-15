@@ -1,6 +1,6 @@
 <!-- ******************************************************************** -->
 <!-- HPCToolkit Experiment DTD						  -->
-<!-- Version 2.1							  -->
+<!-- Version 2.2							  -->
 <!-- ******************************************************************** -->
 <!ELEMENT HPCToolkitExperiment (Header, (SecCallPathProfile|SecFlatProfile)*)>
 <!ATTLIST HPCToolkitExperiment
@@ -34,16 +34,23 @@
     <!ELEMENT MetricTable (Metric)*>
 
     <!-- Metric: (i)d; (n)ame -->
+    <!--   md: metric description -->
+    <!--   mp: metric parent ID   -->
+    <!--   es: number of samples    (perf_events only) -->
+    <!--   em: event multiplexed    (perf_events only) -->
+    <!--   ep: average event period (perf_events only) -->
     <!--   (v)alue-type: transient type of values -->
-    <!--   (t)ype: persistent type of metric -->
+    <!--   (t)ype: persistent type of metric      -->
     <!--   fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
 	      i            CDATA #REQUIRED
 	      n            CDATA #REQUIRED
-	      es	   CDATA #IMPLIED
-	      em	   CDATA #IMPLIED
-	      ep	   CDATA #IMPLIED
+	      md	       CDATA #IMPLIED
+	      mp	       CDATA #IMPLIED
+	      es	       CDATA #IMPLIED
+	      em	       CDATA #IMPLIED
+	      ep	       CDATA #IMPLIED
 	      v            (raw|final|derived-incr|derived) "raw"
 	      t            (inclusive|exclusive|nil) "nil"
 	      partner      CDATA #IMPLIED
@@ -88,11 +95,13 @@
     <!ELEMENT TraceDBTable (TraceDB)>
 
     <!-- TraceDB: (i)d -->
+    <!--   u: unit time of the trace (ms, ns, ..) -->
     <!--   db-min-time: min beginning time stamp (global) -->
     <!--   db-max-time: max ending time stamp (global) -->
     <!ELEMENT TraceDB EMPTY>
     <!ATTLIST TraceDB
 	      i            CDATA #REQUIRED
+	      u            CDATA #IMPLIED
 	      db-glob      CDATA #IMPLIED
 	      db-min-time  CDATA #IMPLIED
 	      db-max-time  CDATA #IMPLIED

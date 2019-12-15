@@ -97,6 +97,11 @@ static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
 
+// temp options for call <C> tags, target (t) field, and device (d) field
+#define ENABLE_CALL_TAGS     1
+#define ENABLE_TARGET_FIELD  1
+#define ENABLE_DEVICE_FIELD  1
+
 //----------------------------------------------------------------------
 
 // Helpers to generate fields inside tags.  The macros are designed to
@@ -108,6 +113,9 @@ static const char * hpcstruct_xml_head =
 
 #define NUMBER(label, num)  \
   " " << label << "=\"" << num << "\""
+
+#define HEX(label, num)  \
+  " " << label << "=\"0x" << hex << num << dec << "\""
 
 #define STRING(label, str)  \
   " " << label << "=\"" << xml::EscapeStr(str) << "\""
@@ -159,6 +167,17 @@ doLoopList(ostream *, int, TreeNode *, HPC::StringTable &);
 
 static void
 locateTree(TreeNode *, ScopeInfo &, HPC::StringTable &, bool = false);
+
+//----------------------------------------------------------------------
+
+// Sort StmtInfo by line number and then by vma.
+static bool
+StmtLessThan(StmtInfo * s1, StmtInfo * s2)
+{
+  if (s1->line_num < s2->line_num) { return true; }
+  if (s1->line_num > s2->line_num) { return false; }
+  return s1->vma < s2->vma;
+}
 
 //----------------------------------------------------------------------
 
@@ -535,32 +554,45 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 
 //----------------------------------------------------------------------
 
-// Print the terminal statements at 'node' and compact multiple vma
-// ranges with the same line number to a single stmt.  Any guard
-// alien, if needed, has already been printed.
+// Print the terminal statements at 'node' as <S> and <C> tags.
+// Non-call <S> stmts combine their vma ranges by line number.
+// Call <C> stmts are always single instructions and never merged.
+//
+// Any guard alien, if needed, has already been printed.
 //
 static void
 doStmtList(ostream * os, int depth, TreeNode * node)
 {
   LineNumberMap lineMap;
+  vector <StmtInfo *> callVec;
 
-  // merge stmts with the same line number into a single vma set
+  // split StmtInfo's into call and non-call sets.  the non-call stmts
+  // with the same line number are merged into a single vma set.  call
+  // stmts are never merged.
   for (auto sit = node->stmtMap.begin(); sit != node->stmtMap.end(); ++sit) {
     StmtInfo * sinfo = sit->second;
-    VMAIntervalSet * vset = NULL;
 
-    auto mit = lineMap.find(sinfo->line_num);
-    if (mit != lineMap.end()) {
-      vset = mit->second;
+    if (sinfo->is_call && ENABLE_CALL_TAGS) {
+      callVec.push_back(sinfo);
     }
     else {
-      vset = new VMAIntervalSet;
-      lineMap[sinfo->line_num] = vset;
+      VMAIntervalSet * vset = NULL;
+      auto mit = lineMap.find(sinfo->line_num);
+
+      if (mit != lineMap.end()) {
+	vset = mit->second;
+      }
+      else {
+	vset = new VMAIntervalSet;
+	lineMap[sinfo->line_num] = vset;
+      }
+      vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
     }
-    vset->insert(sinfo->vma, sinfo->vma + sinfo->len);
   }
 
-  // print each vma set as a single <S> stmt
+  std::sort(callVec.begin(), callVec.end(), StmtLessThan);
+
+  // print non-call vma set as a single <S> stmt
   for (auto mit = lineMap.begin(); mit != lineMap.end(); ++mit) {
     long line = mit->first;
     VMAIntervalSet * vset = mit->second;
@@ -574,8 +606,28 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 
     delete vset;
   }
-  lineMap.clear();
+
+  // print each call stmt as a separate <C> tag
+  for (uint i = 0; i < callVec.size(); i++) {
+    StmtInfo * sinfo = callVec[i];
+
+    doIndent(os, depth);
+    *os << "<C"
+	<< INDEX
+	<< NUMBER("l", sinfo->line_num)
+	<< VRANGE(sinfo->vma, sinfo->len);
+
+    if (! sinfo->is_sink && ENABLE_TARGET_FIELD) {
+      *os << HEX("t", sinfo->target);
+    }
+    if (ENABLE_DEVICE_FIELD) {
+      *os << STRING("d", sinfo->device);
+    }
+    *os << "/>\n";
+  }
 }
+
+//----------------------------------------------------------------------
 
 // Print the loops at 'node' and their subtrees.  Any guard alien, if
 // needed, has already been printed.

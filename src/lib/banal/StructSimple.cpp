@@ -44,125 +44,119 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+// This file builds a Struct Simple tree of Prof::Struct nodes from a
+// binutils load module.  This is for load modules without a full
+// structure file.
 //
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
+// The tree consists of File, Proc, Stmt and single (guard) Alien
+// nodes, but not loops or full inline sequences.  The tree is built
+// incrementally only for vma's for which we take a sample.
 
-//************************* System Include Files ****************************
+//***************************************************************************
 
 #include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
-
-#include <iomanip>
-
-#include <fstream>
 #include <sstream>
-
 #include <string>
-using std::string;
 
-#include <map>
-#include <list>
-#include <vector>
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 
-#include <algorithm>
+#include <lib/prof/Struct-Tree.hpp>
 
-#include <cstring>
-
-//*************************** User Include Files ****************************
+#include <lib/support/dictionary.h>
+#include <lib/support/FileUtil.hpp>
 
 #include "StructSimple.hpp"
 
-#include <lib/prof/Struct-Tree.hpp>
-using namespace Prof;
+using namespace std;
 
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/Insn.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/FileUtil.hpp>
-
-
-//*************************** Forward Declarations ***************************
+#define DEBUG_STRUCT_SIMPLE  0
 
 //****************************************************************************
-// 
-//****************************************************************************
 
-// makeStructureSimple: Uses the line map to make structure
-Prof::Struct::Stmt*
-BAnal::Struct::makeStructureSimple(Prof::Struct::LM* lmStrct,
-				   BinUtil::LM* lm, VMA vma)
+//
+// makeStructureSimple -- make a Prof::Struct::Stmt node and path up
+// to lmStruct for vma.
+//
+Prof::Struct::Stmt *
+BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
+				   BinUtil::LM * lm, VMA vma)
 {
-  string procnm, filenm;
-  SrcFile::ln line = Prof::Struct::Tree::UnknownLine;
-  lm->findSrcCodeInfo(vma, 0 /*opIdx*/, procnm, filenm, line);
-  procnm = BinUtil::demangleProcName(procnm);
-  
-  if (filenm.empty()) {
-    filenm = Prof::Struct::Tree::UnknownFileNm
-      + " [" + FileUtil::basename(lm->name().c_str()) + "]";
+  //
+  // begin address for proc containing vma, and proc and file name
+  //
+  string prettynm, linknm, proc_filenm;
+  SrcFile::ln proc_line = 0;
+  VMA proc_vma = vma;
+
+  BinUtil::Proc * bproc = lm->findProc(vma);
+
+  if (bproc != NULL) {
+    proc_vma = bproc->begVMA();
+    lm->findSrcCodeInfo(proc_vma, 0, linknm, proc_filenm, proc_line);
   }
-  if (procnm.empty()) {
-    std::stringstream buf;
 
-    buf << Prof::Struct::Tree::UnknownProcNm
-	<< " 0x" << std::hex << vma << std::dec
-	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
-
-    procnm = buf.str();
+  if (proc_filenm.empty()) {
+    proc_filenm = string(UNKNOWN_FILE)
+        + " [" + FileUtil::basename(lm->name().c_str()) + "]";
   }
-  
-  Prof::Struct::File* fileStrct = Prof::Struct::File::demand(lmStrct, filenm);
-  Prof::Struct::Proc* procStrct = Prof::Struct::Proc::demand(fileStrct, procnm,
-							     "", line, line);
 
-  VMA begVMA = vma, endVMA = vma + 1;
-  BinUtil::Insn* insn = lm->findInsn(vma, 0 /*opIdx*/);
-  if (insn) {
-    endVMA = insn->endVMA();
-  }
-  Prof::Struct::Stmt* stmtStrct = demandStmtStructure(lmStrct, procStrct, line,
-						      begVMA, endVMA);
-  
-  return stmtStrct;
-}
-
-
-Struct::Stmt*
-BAnal::Struct::demandStmtStructure(Prof::Struct::LM* lmStrct,
-				   Prof::Struct::Proc* procStrct,
-				   SrcFile::ln line, VMA begVMA, VMA endVMA)
-{
-  Prof::Struct::Stmt* stmtStrct = procStrct->findStmt(line);
-
-  if (stmtStrct) {
-    if (0) {
-      // disable: potentially expensive to maintain
-      lmStrct->eraseStmtIf(stmtStrct);
-    }
-    stmtStrct->vmaSet().insert(begVMA, endVMA);
-    if (0) {
-      // disable: potentially expensive to maintain
-      lmStrct->insertStmtIf(stmtStrct);
-    }
+  if (! linknm.empty()) {
+    prettynm = BinUtil::demangleProcName(linknm);
   }
   else {
-    // N.B.: calls lmStrct->insertStmtIf()
-    stmtStrct = new Prof::Struct::Stmt(procStrct, line, line, begVMA, endVMA);
+    stringstream buf;
+
+    buf << UNKNOWN_PROC << " 0x" << hex << proc_vma << dec
+	<< " [" << FileUtil::basename(lm->name().c_str()) << "]";
+    prettynm = buf.str();
   }
 
-  return stmtStrct;
-}
+  Prof::Struct::File * fileStruct =
+    Prof::Struct::File::demand(lmStruct, proc_filenm);
 
+  Prof::Struct::Proc * procStruct =
+    Prof::Struct::Proc::demand(fileStruct, prettynm, linknm, proc_line, proc_line);
+
+  //
+  // file and line for vma (stmt), and end vma
+  //
+  string stmt_procnm, stmt_filenm;
+  SrcFile::ln stmt_line = 0;
+  VMA end_vma = vma + 1;
+
+  lm->findSrcCodeInfo(vma, 0, stmt_procnm, stmt_filenm, stmt_line);
+
+  BinUtil::Insn * insn = lm->findInsn(vma, 0);
+  if (insn) {
+    end_vma = insn->endVMA();
+  }
+
+  Prof::Struct::Stmt * stmt = NULL;
+
+  // stmts with known file and line that differs from proc need a
+  // guard alien
+  if ((! stmt_filenm.empty()) && stmt_line != 0
+      && (stmt_filenm != proc_filenm || stmt_line < proc_line))
+  {
+    Prof::Struct::Alien * alien = procStruct->demandGuardAlien(stmt_filenm, stmt_line);
+    stmt = alien->demandStmt(stmt_line, vma, end_vma);
+  }
+  else {
+    stmt = procStruct->demandStmtSimple(stmt_line, vma, end_vma);
+  }
+
+#if DEBUG_STRUCT_SIMPLE
+  cout << "------------------------------------------------------------\n"
+       << "0x" << hex << vma << "--0x" << end_vma << dec << "  (struct simple)\n"
+       << "line:  " << stmt_line << "\n"
+       << "file:  " << stmt_filenm << "\n"
+       << "name:  " << linknm << "\n\n";
+
+  stmt->dumpmePath(cout, 0, "");
+  cout << "\n";
+#endif
+
+  return stmt;
+}

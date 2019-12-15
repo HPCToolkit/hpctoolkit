@@ -109,7 +109,8 @@ static pmsg_category all_list_entries [] = {
  E(_TST_CTL),
  E(UNW),
  // E(UW_RECIPE_MAP),
- E(TRAMP),
+ // E(TRAMP), // Writing messages to logs in trampoline can lead to execution errors.
+ E(RETCNT_CTL),
  E(SEGV),
  E(MPI),
  E(INTV2),

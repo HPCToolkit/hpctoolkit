@@ -100,6 +100,7 @@ man_MANS = \
 	hpclink.1hpctoolkit \
 	hpcstruct.1hpctoolkit \
 	hpcprof.1hpctoolkit \
+	hpcprof-mpi.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
 	hpcsummary.1hpctoolkit \
 	hpctraceviewer.1hpctoolkit \

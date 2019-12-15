@@ -83,11 +83,6 @@ public:
   bool match(const char *pathname);
   SimpleSymbols *create();
 
-  void id(uint _id);
-  uint id();
-
-  void fileId(uint _id);
-  uint fileId();
 
 private:
   LinuxKernelSymbols *m_kernelSymbol;

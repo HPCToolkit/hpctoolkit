@@ -55,6 +55,7 @@
  *****************************************************************************/
 
 #include <hpcrun/cct_insert_backtrace.h>
+#include <lib/prof-lean/spinlock.h>     // hostid
 #include <lib/support-lean/OSUtil.h>     // hostid
 
 #include <include/linux_info.h>

@@ -305,6 +305,16 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   return need_to_allocate;
 }
 
+void
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
+{
+    adjust_num_logical_threads(1);
+    *data = allocate_and_init_thread_data(id, thr_ctxt);
+
+#if HPCRUN_THREADS_DEBUG
+    atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
+#endif
+}
 
 void
 hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
@@ -344,7 +354,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   // step 2: get the dummy node that marks the end of the thread trace
 
   cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
-  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0);
+  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, HPCTRACE_FMT_DLCA_NULL);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

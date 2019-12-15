@@ -1,5 +1,8 @@
 /* src/include/hpctoolkit-config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* "Cuda install prefix" */
+#undef CUDA_INSTALL_PREFIX
+
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
@@ -23,6 +26,9 @@
 
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
+
+/* The <cupti.h> header file is available. */
+#undef HAVE_CUPTI_H
 
 /* Define to 1 if you have the <cxxabi.h> header file. */
 #undef HAVE_CXXABI_H
@@ -123,6 +129,9 @@
 /* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
+/* HPCToolkit install prefix */
+#undef HPCTOOLKIT_INSTALL_PREFIX
+
 /* HPCToolkit version */
 #undef HPCTOOLKIT_VERSION
 
@@ -134,6 +143,9 @@
 
 /* Standard C headers */
 #undef NO_STD_CHEADERS
+
+/* Have support for cuda */
+#undef OPT_HAVE_CUDA
 
 /* Name of package */
 #undef PACKAGE
@@ -164,6 +176,9 @@
 
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW
+
+/* use ROCM */
+#undef USE_ROCM
 
 /* Use system byteswap.h */
 #undef USE_SYSTEM_BYTESWAP

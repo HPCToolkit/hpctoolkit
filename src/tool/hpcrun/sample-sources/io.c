@@ -152,10 +152,10 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   TMSG(IO, "create metrics for IO bytes read and bytes written");
-  metric_id_read = hpcrun_new_metric();
-  metric_id_write = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric_id_read,  "IO Bytes Read");
-  hpcrun_set_metric_info(metric_id_write, "IO Bytes Written");
+  kind_info_t *io_kind = hpcrun_metrics_new_kind();
+  metric_id_read = hpcrun_set_new_metric_info(io_kind, "IO Bytes Read");
+  metric_id_write = hpcrun_set_new_metric_info(io_kind, "IO Bytes Written");
+  hpcrun_close_kind(io_kind);
   TMSG(IO, "metric id read: %d, write: %d", metric_id_read, metric_id_write);
 }
 

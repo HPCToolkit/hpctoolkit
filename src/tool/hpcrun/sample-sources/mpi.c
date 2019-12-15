@@ -150,11 +150,8 @@ METHOD_FN(supports_event,const char *ev_str)
 static void
 METHOD_FN(process_event_list,int lush_metrics)
 {
-  hpmpi_metric_id = hpcrun_new_metric();
-
+  hpmpi_metric_id = hpcrun_set_new_metric_info("MPI_MSG(B)");
   TMSG(MPI, "Setting up metrics for MPI: %d", hpmpi_metric_id);
-
-  hpcrun_set_metric_info(hpmpi_metric_id, "MPI_MSG(B)");
 }
 
 

@@ -1,0 +1,66 @@
+Given an application binary, a shared library, or an hpctoolkit
+measurement directory collected for a GPU-accelerated program that run
+on NVIDIA GPUs, hpcstruct recovers the program structure of its object
+code.  Program structure is a mapping of a program's static source-level
+structure to its object code.  By default, hpcstruct writes its results
+to the file 'basename(<binary>).hpcstruct'.  This file is typically
+passed to HPCToolkit's correlation tool hpcprof.
+
+hpcstruct is designed for highly optimized binaries created from
+compiled languages such as C, C++, Fortran, and CUDA source code. Because
+hpcstruct's algorithms exploit a binary's debugging information, for best
+results, binary should be compiled with standard debugging information.
+See the documentation for more information.
+
+Options: General
+  -v [<n>], --verbose [<n>]
+                       Verbose: generate progress messages to stderr at
+                       verbosity level <n>. {1}
+  -V, --version        Print version information.
+  -h, --help           Print this help.
+  --debug=[<n>]        Debug: use debug level <n>. {1}
+  --debug-proc <glob>  Debug structure recovery for procedures matching
+                       the procedure glob <glob>
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.
+  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),
+                       default is same value for --jobs.
+  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.
+  --time               Display stats on time and space usage.
+
+Options: Structure recovery
+  -I <path>, --include <path>
+                       Use <path> when resolving source file names. For a
+                       recursive search, append a '*' after the last slash,
+                       e.g., '/mypath/*' (quote or escape to protect from
+                       the shell.) May pass multiple times.
+
+  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'
+                       Substitute instances of <old-path> with <new-path>;
+                       apply to all paths (profile's load map, source code)
+                       for which <old-path> is a prefix.  Use '\\' to escape
+                       instances of '=' within a path. May pass multiple
+                       times.
+  --use-binutils       Use binutils as the default binary instruction decoder
+                       On x86 default is Intel XED library.
+  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)
+                       in the control-flow graph.
+
+Options: Demangling
+  --demangle-library <path to demangling library>
+                       Specify the pathname for a dynamically-linked
+                       library whose demangler function should 
+                       be used for demangling. By default, the demangler used
+                       is __cxa_demangle in the C++ Standard Library linked into
+                       hpcstruct.
+
+  --demangle-function <name of the demangler>
+                       By default, the demangler used is __cxa_demangle, a function
+                       provided by the C++ Standard Library. This option enables
+                       one to specify an alternate demangler, e.g., cplus_demangle
+                       provided by the BFD library.
+
+Options: Output:
+  -o <file>, --output <file>
+                       Write hpcstruct file to <file>.
+                       Use '--output=-' to write output to stdout.
+  --compact            Generate compact output, eliminating extra white space

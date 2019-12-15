@@ -73,6 +73,8 @@ typedef struct cct_bundle_t {
 
   cct_node_t* partial_unw_root;   // adjunct tree for partial unwinds
 
+  cct_node_t* unresolved_root;    // special collection of ccts for omp deferred context
+
   cct_node_t* special_idle_node;  // node to signify "idle" resource (used by trace facility).
 
   cct_node_t* special_no_thread_node; // trace node when outside the thread
