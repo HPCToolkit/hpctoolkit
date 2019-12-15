@@ -93,14 +93,14 @@ typedef enum {
 
 // gpu memory allocation/deallocation
 #define FORALL_GMEM(macro)					\
-  macro("GMEM:UNK (b)",           GPU_MEM_UNKNOWN)		\
-  macro("GMEM:PAG (b)",           GPU_MEM_PAGEABLE)		\
-  macro("GMEM:PIN (b)",           GPU_MEM_PINNED)		\
-  macro("GMEM:DEV (b)",           GPU_MEM_DEVICE)		\
-  macro("GMEM:ARY (b)",           GPU_MEM_ARRAY)		\
-  macro("GMEM:MAN (b)",           GPU_MEM_MANAGED)		\
-  macro("GMEM:DST (b)",           GPU_MEM_DEVICE_STATIC)	\
-  macro("GMEM:MST (b)",           GPU_MEM_MANAGED_STATIC)
+  macro("GMEM:UNK (B)",           GPU_MEM_UNKNOWN)		\
+  macro("GMEM:PAG (B)",           GPU_MEM_PAGEABLE)		\
+  macro("GMEM:PIN (B)",           GPU_MEM_PINNED)		\
+  macro("GMEM:DEV (B)",           GPU_MEM_DEVICE)		\
+  macro("GMEM:ARY (B)",           GPU_MEM_ARRAY)		\
+  macro("GMEM:MAN (B)",           GPU_MEM_MANAGED)		\
+  macro("GMEM:DST (B)",           GPU_MEM_DEVICE_STATIC)	\
+  macro("GMEM:MST (B)",           GPU_MEM_MANAGED_STATIC)
 
 
 // gpu memory set
@@ -209,7 +209,7 @@ typedef enum {
   macro("GKER:THR_REG",           GPU_KINFO_REGISTERS)		\
   macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS)	\
   macro("GKER:BLK_SM",            GPU_KINFO_BLK_SMEM)		\
-  macro("GKER:COUNT ",            GPU_KINFO_COUNT)		\
+  macro("GKER:COUNT",             GPU_KINFO_COUNT)		\
   macro("GKER:OCC",               GPU_KINFO_OCCUPANCY)
 
 
