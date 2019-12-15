@@ -124,10 +124,9 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdin = fd1;
   fdout = fd2;
 
-#if 1
-// XXXX -- debug to get version into output
+// write version into output (.log file in the measurements directory)
   fprintf(stderr, "Begin hpcfnbounds2 server\n");
-#endif
+
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
   if (inbuf == NULL) {
@@ -193,23 +192,16 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     err(1, "read from fdin failed");
   }
 
-  if (verbose) {
-    fprintf(stderr, "Server processing file %s\n", inbuf);
-  }
+  // fprintf(stderr, "Server processing file %s\n", inbuf);
   ret = get_funclist(inbuf);
   if ( ret != NULL) {
-    if (verbose) {
-      fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
-    }
+    fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
+
     // send the error message to the server
     int rets = write_mesg(SYSERV_ERR, 0);
     if (rets != SUCCESS) {
       errx(1, "Server send error message failed");
-    }
-  } else {
-    if (verbose) {
-      fprintf(stderr, "\nServer success processing %s\n", inbuf );
-    }
+    }  // if success, message has been written in send_funcs
   }
   return;
 }
@@ -233,9 +225,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  if (verbose) {
-    fprintf(stderr, "Server farray contains %d unique addresses out of %d total\n", np, nfunc );
-  }
+  fprintf(stderr, "Server success: %s has %d unique addresses for %d functions\n", inbuf, np, nfunc );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);

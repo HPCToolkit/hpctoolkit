@@ -64,12 +64,6 @@ pltscan(int fd)
 		fprintf (stderr, "Processing functions from scanning .plt instructions\n");
 	    }
 	}
-#if 0
-	// NOT YET IMPLEMENTED
-	if(verbose) {
-	    fprintf (stderr, "\tscanning .plt instructions not yet implemented\n");
-	}
-#else
 Elf *e;
 GElf_Shdr secHead;
 size_t n, sz, secHeadStringIndex;
@@ -78,8 +72,6 @@ Elf_Scn *section;
 uint64_t pltFound,ii;
 uint64_t startAddr, endAddr, pltEntrySize;
 char nameBuff[256];
-static char ss[] = {"start .plt section"};
-static char es[] = {"end .plt section"};
 
 	pltFound = 0;
 	
@@ -108,24 +100,18 @@ static char es[] = {"end .plt section"};
 	    endAddr = startAddr + secHead.sh_size;
 	    pltEntrySize = secHead.sh_entsize;
 
-	    // add_function(startAddr, ss,"p");
-
 	    for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
 		sprintf(nameBuff,"stripped_0x%.lx",ii);
 	        char *vegamite = strdup(nameBuff);
 		add_function(ii, vegamite, "p");
 	    }
 
-	    // add_function(endAddr, es,"p");
-
 	} while (section != NULL);
 
 	elf_end(e);
+	pltFound = 1;	// we don't care if there is no .plt section
 	return !pltFound;
 
-
-
-#endif
 	// use "p" as source string in add_function() calls
 }
 
