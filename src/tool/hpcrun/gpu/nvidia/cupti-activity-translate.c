@@ -326,6 +326,10 @@ convert_kernel
   CUpti_ActivityKernel4 *activity
 )
 {
+  if (cuda_device_map_lookup(activity->deviceId) == NULL) {
+    cuda_device_map_insert(activity->deviceId);
+  }
+
   ga->kind = GPU_ACTIVITY_KERNEL;
 
   ga->details.kernel.correlation_id = activity->correlationId;

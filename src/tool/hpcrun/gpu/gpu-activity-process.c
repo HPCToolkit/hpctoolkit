@@ -356,13 +356,7 @@ gpu_kernel_process
 
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
-  // TODO: how to refactor this device map
   if (cid_map_entry != NULL) {
-#if 0
-    if (cuda_device_map_lookup(activity->deviceId) == NULL) {
-      cuda_device_map_insert(activity->deviceId);
-    }
-#endif
     gpu_correlation_id_map_kernel_update
       (correlation_id, activity->details.kernel.device_id, 
        activity->details.interval.start, activity->details.interval.end);
