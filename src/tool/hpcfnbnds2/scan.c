@@ -75,9 +75,10 @@ char nameBuff[256];
 
 	pltFound = 0;
 	
-	if (elf_version(EV_CURRENT) == EV_NONE) return 1;
+	// if a bad version, or there's no open file, return success anyway
+	if (elf_version(EV_CURRENT) == EV_NONE) return 0;
 	e = elf_begin(fd,ELF_C_READ, NULL);
-	if (e == NULL) return 1;
+	if (e == NULL) return 0;
 
 	elf_getshdrstrndx(e, &secHeadStringIndex);   // get sec header string index
 
@@ -102,7 +103,7 @@ char nameBuff[256];
 
 	    for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
 		sprintf(nameBuff,"stripped_0x%.lx",ii);
-	        char *vegamite = strdup(nameBuff);
+		char *vegamite = strdup(nameBuff);
 		add_function(ii, vegamite, "p");
 	    }
 

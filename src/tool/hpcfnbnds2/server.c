@@ -225,7 +225,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "Server success: %s has %d unique addresses for %d functions\n", inbuf, np, nfunc );
+  fprintf(stderr, "newfnb %s = %d -- %s functions\n", strrchr(inbuf, '/'), np, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);

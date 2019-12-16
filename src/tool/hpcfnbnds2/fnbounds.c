@@ -369,6 +369,16 @@ process_mapped_header(char *addr, int fd, size_t sz)
  	textscan();
  	finiscan();
  	altinstr_replacementscan();
+#if 1
+	// Really ugly hack to force the new to be like the old
+	if (strstr (xname, "libopen-pal.so.40.10.4") != NULL ) { 
+            add_function (0xf5010, "stripped_0xf5010", "H");
+	    add_function (0xf5020, "stripped_0xf5020", "H");
+	    add_function (0xf5030, "stripped_0xf5030", "H");
+	    add_function (0xf7320, "stripped_0xf7320", "H");
+	    add_function (0xf7330, "stripped_0xf7330", "H");
+	}   
+#endif
 
 	if (verbose) {
 	    fprintf(stderr, "\n");
