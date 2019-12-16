@@ -794,22 +794,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Fetch the event string for the sample source
   // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-  int frequency = 0;
-  int frequency_default = -1;
-  hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
-    &frequency, frequency_default);
-
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    trace_frequency = frequency == frequency_default ?
-      trace_frequency_default : frequency;
-    pc_sampling_frequency = frequency_default;
-  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
-    pc_sampling_frequency = frequency == frequency_default ?
-      pc_sampling_frequency_default : frequency;
-    trace_frequency = frequency_default;
-  }
 
 #define getindex(name, index) index
 
@@ -826,7 +810,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #define create_cur_kind cur_kind = hpcrun_metrics_new_kind()
 #define close_cur_kind hpcrun_close_kind(cur_kind)
 
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+  if (hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
 #define cur_kind stall_kind
 #define cur_metrics stall_metric_id
 
@@ -984,7 +968,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #undef cur_metrics
 #endif
 
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+  if (hpcrun_ev_is(nvidia_name, CUDA_PC_SAMPLING)) {
 #define cur_kind info_kind
 #define cur_metrics info_metric_id
 

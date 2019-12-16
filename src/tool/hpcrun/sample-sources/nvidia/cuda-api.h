@@ -88,15 +88,6 @@ cuda_bind
 );
 
 // returns 0 on success
-int
-cuda_path
-(
- struct dl_phdr_info *info,
- size_t size, 
- void *data
-);
-
-// returns 0 on success
 int 
 cuda_device_property_query
 (

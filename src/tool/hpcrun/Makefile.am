@@ -475,8 +475,7 @@ MY_CUPTI_FILES = sample-sources/nvidia/cupti-analysis.c			\
 	               sample-sources/nvidia/cupti-correlation-id-map.c	\
 	               sample-sources/nvidia/cupti-function-id-map.c		\
 	               sample-sources/nvidia/cupti-host-op-map.c		\
-	               sample-sources/nvidia/cupti-node.c			\
-	               sample-sources/nvidia/cupti-record.c
+	               sample-sources/nvidia/cupti-node.c
 endif
 
 if OPT_ENABLE_CUDA_SANITIZER

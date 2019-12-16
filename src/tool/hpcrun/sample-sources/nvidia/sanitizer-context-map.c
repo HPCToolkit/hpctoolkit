@@ -16,7 +16,6 @@
 
 #include "sanitizer-context-map.h"
 #include "sanitizer-stream-map.h"
-#include "cstack.h"
 
 /******************************************************************************
  * type definitions 
@@ -25,7 +24,6 @@
 struct sanitizer_context_map_entry_s {
   CUcontext context;
   CUstream priority_stream;
-  cstack_node_t *active_device_buffers;
   sanitizer_stream_map_entry_t *streams;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;
@@ -179,9 +177,9 @@ sanitizer_context_map_init(CUcontext context, CUstream priority_stream)
 
 
 void
-sanitizer_context_map_insert(CUcontext context, CUstream stream, cstack_node_t *notification)
+sanitizer_context_map_insert(CUcontext context, CUstream stream)
 {
-  sanitizer_stream_map_insert(&sanitizer_context_map_root->streams, stream, notification);
+  sanitizer_stream_map_insert(&sanitizer_context_map_root->streams, stream);
 }
 
 

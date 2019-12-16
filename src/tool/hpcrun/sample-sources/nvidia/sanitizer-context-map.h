@@ -13,7 +13,6 @@
 
 #include <cuda.h>
 
-#include "cstack.h"
 #include "sanitizer-record.h"
 
 /******************************************************************************
@@ -45,8 +44,7 @@ void
 sanitizer_context_map_insert
 (
  CUcontext context,
- CUstream stream,
- cstack_node_t *notification
+ CUstream stream
 );
 
 

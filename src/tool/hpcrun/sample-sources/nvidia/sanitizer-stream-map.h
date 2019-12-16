@@ -37,8 +37,7 @@ void
 sanitizer_stream_map_insert
 (
  sanitizer_stream_map_entry_t **root,
- CUstream stream,
- cstack_node_t *notification
+ CUstream stream
 );
 
 

@@ -8,7 +8,6 @@
 #include <cuda.h>
 #include <vector_types.h>
 
-#include "cstack.h"
 
 typedef enum {
   SANITIZER_ACTIVITY_TYPE_MEMORY = 0,
@@ -22,17 +21,11 @@ typedef struct sanitizer_entry_notification {
   CUcontext context;
   CUstream stream;
   uint64_t function_addr;
-  cstack_node_t *buffer_device;
+  void *buffer_device;
   cct_node_t *host_op_node;
   dim3 grid_size;
   dim3 block_size;
 } sanitizer_entry_notification_t;
-
-
-// buffer: device only
-typedef struct sanitizer_entry_buffer {
-  void *buffer;
-} sanitizer_entry_buffer_t;
 
 
 // sanitizer activities
@@ -49,14 +42,14 @@ typedef struct sanitizer_activity {
 } sanitizer_activity_t;
 
 
-cstack_node_t *
-sanitizer_notification_node_new
+sanitizer_entry_notification_t *
+sanitizer_notification_entry_new
 (
  CUmodule module,
  CUcontext context,
  CUstream stream,
  uint64_t function_addr, 
- cstack_node_t *buffer_device,
+ void *buffer_device,
  cct_node_t *host_op_node,
  dim3 grid_size,
  dim3 block_size
@@ -64,32 +57,17 @@ sanitizer_notification_node_new
 
 
 void
-sanitizer_notification_node_set
+sanitizer_notification_entry_set
 (
- cstack_node_t *node,
+ sanitizer_entry_notification_t *entry,
  CUmodule module,
  CUcontext context,
  CUstream stream,
  uint64_t function_addr, 
- cstack_node_t *buffer_device,
+ void *buffer_device,
  cct_node_t *host_op_node,
  dim3 grid_size,
  dim3 block_size
-);
-
-
-cstack_node_t *
-sanitizer_buffer_node_new
-(
- void *buffer
-);
-
-
-void
-sanitizer_buffer_node_set
-(
- cstack_node_t *node,
- void *buffer
 );
 
 #endif

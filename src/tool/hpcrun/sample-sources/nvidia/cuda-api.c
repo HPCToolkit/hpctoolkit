@@ -169,39 +169,6 @@ cuda_bind
 }
 
 
-int
-cuda_path
-(
- struct dl_phdr_info *info,
- size_t size, 
- void *data
-)
-{
-#ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
-  char *buffer = (char *) data;
-  const char *suffix = strstr(info->dlpi_name, "libcudart"); 
-  if (suffix) {
-    // CUDA library organization after 9.0
-    suffix = strstr(info->dlpi_name, "targets"); 
-    if (!suffix) {
-      // CUDA library organization in 9.0 or earlier
-      suffix = strstr(info->dlpi_name, "lib64"); 
-    }
-  }
-  if (suffix){
-    int len = suffix - info->dlpi_name;
-    strncpy(buffer, info->dlpi_name, len);
-    buffer[len] = 0;
-    return 1;
-  }
-  return 0;
-#else
-  return -1;
-#endif
-}
-
-
 CUstream
 cuda_priority_stream_create
 (

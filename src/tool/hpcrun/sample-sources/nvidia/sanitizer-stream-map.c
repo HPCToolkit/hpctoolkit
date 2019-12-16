@@ -24,7 +24,6 @@
 struct sanitizer_stream_map_entry_s {
   CUstream stream;
   spinlock_t lock;
-  cstack_t *notifications;
   struct sanitizer_stream_map_entry_s *left;
   struct sanitizer_stream_map_entry_s *right;
 }; 
@@ -70,7 +69,6 @@ sanitizer_stream_map_process_helper
 ) 
 {
   if (entry) {
-    fn(entry->notifications);
     sanitizer_stream_map_process_helper(entry->left, fn);
     sanitizer_stream_map_process_helper(entry->right, fn);
   } 
@@ -102,8 +100,7 @@ void
 sanitizer_stream_map_insert
 (
  sanitizer_stream_map_entry_t **root,
- CUstream stream,
- cstack_node_t *notification
+ CUstream stream
 )
 {
   sanitizer_stream_map_entry_t *entry = NULL;
@@ -134,8 +131,6 @@ sanitizer_stream_map_insert
     entry->left = entry->right = NULL;
     *root = entry;
   }
-
-  cstack_push(entry->notifications, notification);
 }
 
 
@@ -175,7 +170,7 @@ sanitizer_stream_map_stream_process
   sanitizer_stream_map_entry_t *entry = NULL;
 
   if ((entry = sanitizer_stream_map_lookup(root, stream)) != NULL) {
-    fn(entry->notifications);
+    fn();
   }
 }
 
@@ -217,11 +212,9 @@ sanitizer_stream_map_entry_new(CUstream stream)
   e = (sanitizer_stream_map_entry_t *)
     hpcrun_malloc(sizeof(sanitizer_stream_map_entry_t));
   e->stream = stream;
-  e->notifications = (cstack_t *)hpcrun_malloc(sizeof(cstack_t));
   e->left = NULL;
   e->right = NULL;
 
-  cstack_init(e->notifications);
   spinlock_init(&(e->lock));
 
   return e;
