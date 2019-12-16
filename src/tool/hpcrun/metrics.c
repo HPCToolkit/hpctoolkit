@@ -342,6 +342,19 @@ hpcrun_get_metric_proc(int metric_id)
 //
 int
 hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
+        MetricFlags_ValFmt_t valFmt, size_t period,
+        metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
+{
+  return hpcrun_set_new_metric_desc(kind, name, name, valFmt, period, upd_fn, prop);
+}
+
+//
+// create a new metric description
+// returns the new metric ID
+//
+int
+hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
+        			const char *description,
 				MetricFlags_ValFmt_t valFmt, size_t period,
 				metric_upd_proc_t upd_fn, metric_desc_properties_t prop)
 {
@@ -380,7 +393,7 @@ hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
   mdesc->flags = hpcrun_metricFlags_NULL;
 
   mdesc->name = (char*) name;
-  mdesc->description = (char*) name; // TODO
+  mdesc->description = (char*) description; 
   mdesc->period = period;
   mdesc->flags.fields.ty     = MetricFlags_Ty_Raw; // FIXME
   mdesc->flags.fields.valFmt = valFmt;
@@ -390,6 +403,14 @@ hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
   return metric_id;
 }
 
+
+int
+hpcrun_set_new_metric_desc_and_period(kind_info_t *kind, const char* name, const char *description,
+				      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop)
+{
+  return hpcrun_set_new_metric_desc(kind, name, description, valFmt, period,
+					 hpcrun_metric_std_inc, prop);
+}
 
 int
 hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
