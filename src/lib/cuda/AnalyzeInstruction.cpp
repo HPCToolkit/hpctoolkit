@@ -425,7 +425,11 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
 
               for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
                 if (reg_id == inst_stat->srcs[i]) {
-                  inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+                  auto beg = inst_stat->assign_pcs[reg_id].begin();
+                  auto end = inst_stat->assign_pcs[reg_id].end();
+                  if (std::find(beg, end, addr - func_addr) == end) {
+                    inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+                  }
                   break;
                 }
               }
