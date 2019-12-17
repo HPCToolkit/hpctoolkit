@@ -16,7 +16,7 @@ struct InstructionStat {
   std::string op;
   unsigned int pc;
   int predicate;  // P0-P6
-  int dst;  // R0-R255: only records normal registers
+  std::vector<int> dsts;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255, only records normal registers
   std::map<int, std::vector<int> > assign_pcs;
 
@@ -25,14 +25,14 @@ struct InstructionStat {
   explicit InstructionStat(const Instruction *inst);
 
   InstructionStat(const std::string &op,
-    unsigned int pc, int predicate, int dst, std::vector<int> &srcs) :
-    op(op), pc(pc), predicate(predicate), dst(dst),
+    unsigned int pc, int predicate, std::vector<int> &dsts, std::vector<int> &srcs) :
+    op(op), pc(pc), predicate(predicate), dsts(dsts),
     srcs(srcs) {}
 
   InstructionStat(const std::string &op,
-    unsigned int pc, int predicate, int dst, std::vector<int> &srcs,
+    unsigned int pc, int predicate, std::vector<int> &dsts, std::vector<int> &srcs,
     std::map<int, std::vector<int> > &assign_pcs) :
-    op(op), pc(pc), predicate(predicate), dst(dst),
+    op(op), pc(pc), predicate(predicate), dsts(dsts),
     srcs(srcs), assign_pcs(assign_pcs) {}
 
   bool operator < (const InstructionStat &other) const {
