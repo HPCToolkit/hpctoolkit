@@ -243,7 +243,6 @@ InstructionStat::InstructionStat(const Instruction *inst) {
   this->pc = inst->offset;
   // -1 means no value
   this->predicate = -1;
-  this->dst = -1;
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
     std::cout << inst->offset << " " << op << " ";
@@ -267,7 +266,38 @@ InstructionStat::InstructionStat(const Instruction *inst) {
 
     auto pos = inst->operands[0].find("R");
     if (pos != std::string::npos) {
-      this->dst = convert_reg(inst->operands[0], pos + 1);
+      bool store = false;
+      if (inst->operands[0].find("\[") != std::string::npos) {  // store instruction
+        store = true;
+      }
+      auto reg = convert_reg(inst->operands[0], pos + 1);
+      if (this->op.find("64") != std::string::npos) {  // vec 64
+        if (store) {
+          this->srcs.push_back(reg);
+          this->srcs.push_back(reg + 1);
+        } else {
+          this->dsts.push_back(reg);
+          this->dsts.push_back(reg + 1);
+        }
+      } else if (this->op.find("128") != std::string::npos) {  // vec 128
+        if (store) {
+          this->srcs.push_back(reg);
+          this->srcs.push_back(reg + 1);
+          this->srcs.push_back(reg + 2);
+          this->srcs.push_back(reg + 3);
+        } else {
+          this->dsts.push_back(reg);
+          this->dsts.push_back(reg + 1);
+          this->dsts.push_back(reg + 2);
+          this->dsts.push_back(reg + 3);
+        }
+      } else {  // vec 32, 16, 8
+        if (store) {
+          this->srcs.push_back(reg);
+        } else {
+          this->dsts.push_back(reg);
+        }
+      }
     }
 
     for (size_t i = 1; i < inst->operands.size(); ++i) {
@@ -447,6 +477,7 @@ bool dumpCudaInstructions(const std::string &file_path,
       for (auto *inst : block->insts) {
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
+        boost::property_tree::ptree ptree_dsts;
 
         if (inst->inst_stat == NULL) {
           // Append NOP instructions
@@ -461,11 +492,13 @@ bool dumpCudaInstructions(const std::string &file_path,
           } else {
             ptree_inst.put("pred", "");
           }
-          if (inst->inst_stat->dst != -1) {
-            ptree_inst.put("dst", inst->inst_stat->dst);
-          } else {
-            ptree_inst.put("dst", "");
+
+          for (auto dst : inst->inst_stat->dsts) {
+            boost::property_tree::ptree t;
+            t.put("", dst);
+            ptree_dsts.push_back(std::make_pair("", t));
           }
+          ptree_inst.add_child("dsts", ptree_dsts);
 
           for (auto src : inst->inst_stat->srcs) {
             boost::property_tree::ptree t;
@@ -556,7 +589,13 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int pc = ptree_inst.second.get<int>("pc", 0);
         std::string op = ptree_inst.second.get<std::string>("op", "");
         int pred = ptree_inst.second.get<int>("pred", -1);
-        int dst = ptree_inst.second.get<int>("dst", -1);
+
+        std::vector<int> dsts;
+        auto &ptree_dsts = ptree_inst.second.get_child("dsts");
+        for (auto &ptree_dst : ptree_dsts) {
+          int dst = boost::lexical_cast<int>(ptree_dst.second.data());
+          dsts.push_back(dst);
+        }
 
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
@@ -571,7 +610,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dst, srcs, assign_pcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -579,7 +618,11 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           std::cout << "Inst pc: " << pc << std::endl;
           std::cout << "     op: " << op << std::endl;
           std::cout << "     pred: " << pred << std::endl;
-          std::cout << "     dst: " << dst << std::endl;
+          std::cout << "     dsts: ";
+          for (auto dst : dsts) {
+            std::cout << dst << ", ";
+          }
+          std::cout << std::endl;
           std::cout << "     srcs: ";
           for (auto src : srcs) {
             std::cout << src << ": ";
