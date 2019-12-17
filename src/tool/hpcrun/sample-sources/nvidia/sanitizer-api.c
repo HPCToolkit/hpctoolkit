@@ -113,6 +113,8 @@ static __thread gpu_patch_buffer_t *gpu_patch_buffer = NULL;
 static __thread gpu_patch_record_t *gpu_patch_record = NULL;
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
 static __thread char *sanitizer_trace = NULL;
+static __thread dim3 grid_size;
+static __thread dim3 block_size;
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
@@ -862,9 +864,13 @@ sanitizer_subscribe_callback
     }
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
-    dim3 grid_size = { .x = ld->gridDim_x, .y = ld->gridDim_y, .z = ld->gridDim_z };
-    dim3 block_size = { .x = ld->blockDim_x, .y = ld->blockDim_y, .z = ld->blockDim_z };
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
+      grid_size.x = ld->gridDim_x;
+      grid_size.y = ld->gridDim_y;
+      grid_size.z = ld->gridDim_z;
+      block_size.x = ld->blockDim_x;
+      block_size.y = ld->blockDim_y;
+      block_size.z = ld->blockDim_z;
       PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
         ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
       // multi-thread
