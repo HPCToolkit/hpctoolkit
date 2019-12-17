@@ -463,19 +463,29 @@ endif
 
 if OPT_ENABLE_CUDA
 MY_CUDA_FILES = sample-sources/nvidia/cuda-api.c 		\
-	sample-sources/nvidia/cuda-device-map.c			\
-	sample-sources/nvidia/cuda-state-placeholders.c  \
-	sample-sources/nvidia/gpu-driver-state-placeholders.c \
-	sample-sources/nvidia/nvidia.c
+								sample-sources/nvidia/cubin-hash-map.c \
+								sample-sources/nvidia/cubin-module-map.c \
+								sample-sources/nvidia/cubin-symbols.c \
+								sample-sources/nvidia/cuda-device-map.c			\
+								sample-sources/nvidia/cuda-state-placeholders.c  \
+								sample-sources/nvidia/gpu-driver-state-placeholders.c \
+								sample-sources/nvidia/nvidia.c
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = sample-sources/nvidia/cupti-analysis.c			\
-	               sample-sources/nvidia/cupti-api.c			\
-	               sample-sources/nvidia/cupti-correlation-id-map.c	\
-	               sample-sources/nvidia/cupti-function-id-map.c		\
-	               sample-sources/nvidia/cupti-host-op-map.c		\
-	               sample-sources/nvidia/cupti-node.c
+MY_CUPTI_FILES = sample-sources/nvidia/cubin-id-map.c \
+								 sample-sources/nvidia/cupti-analysis.c \
+								 sample-sources/nvidia/cupti-api.c \
+								 sample-sources/nvidia/cupti-correlation-id-map.c \
+								 sample-sources/nvidia/cupti-function-id-map.c \
+								 sample-sources/nvidia/cupti-host-op-map.c \
+								 sample-sources/nvidia/cupti-node.c \
+								 sample-sources/nvidia/cupti-context-id-map.c \
+								 sample-sources/nvidia/cupti-stream-id-map.c \
+								 sample-sources/nvidia/cupti-trace-api.c \
+								 sample-sources/nvidia/cupti-trace-channel.c \
+								 sample-sources/nvidia/cupti-correlation-channel.c \
+								 sample-sources/nvidia/cupti-activity-channel.c
 endif
 
 if OPT_ENABLE_CUDA_SANITIZER
