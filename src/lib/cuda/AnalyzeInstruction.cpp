@@ -392,6 +392,10 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         auto inst_addr = inst_iter.first;
         auto *inst_stat = inst_stats_map[inst_addr];
 
+        if (INSTRUCTION_ANALYZER_DEBUG) {
+          std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
+        }
+
         std::vector<Dyninst::Assignment::Ptr> assignments;
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
@@ -411,7 +415,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
               auto addr = slice_node->addr();
 
               if (INSTRUCTION_ANALYZER_DEBUG) {
-                std::cout << "inst_addr " << inst_addr - func_addr <<
+                std::cout << "find inst_addr " << inst_addr - func_addr <<
                   " <- addr: " << addr - func_addr;
               }
 

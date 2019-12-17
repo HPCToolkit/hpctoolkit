@@ -41,17 +41,28 @@ void CudaBlock::getInsns(Insns &insns) const {
     InstructionAPI::Instruction instruction(*operation, 16, NULL, Arch_cuda);
 #endif
 
-    for (auto dst : inst->inst_stat->dsts) {
-      if (dst != -1) {
-        MachRegister r(dst | cuda::GPR | Arch_cuda);
-        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+    if (inst->inst_stat->dsts.size() == 0) {
+      // Fake register
+      MachRegister r(256 | cuda::GPR | Arch_cuda);
+      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
 #ifdef DYNINST_INSTRUCTION_PTR
-        instruction_ptr->appendOperand(reg_ptr, false, true);
+      instruction_ptr->appendOperand(reg_ptr, false, true);
 #else
-        instruction.appendOperand(reg_ptr, false, true);
+      instruction.appendOperand(reg_ptr, false, true);
 #endif
-      }
-    }
+    } else {
+      for (auto dst : inst->inst_stat->dsts) {
+        if (dst != -1) {
+          MachRegister r(dst | cuda::GPR | Arch_cuda);
+          InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+#ifdef DYNINST_INSTRUCTION_PTR
+          instruction_ptr->appendOperand(reg_ptr, false, true);
+#else
+          instruction.appendOperand(reg_ptr, false, true);
+#endif
+        }   
+      }   
+    }   
 
     for (auto src : inst->inst_stat->srcs) {
       if (src != -1) {
