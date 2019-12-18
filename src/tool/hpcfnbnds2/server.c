@@ -125,7 +125,7 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdout = fd2;
 
 // write version into output (.log file in the measurements directory)
-  fprintf(stderr, "Begin hpcfnbounds2 server\n");
+  fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
@@ -225,7 +225,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d -- %s functions\n", strrchr(inbuf, '/'), np, inbuf );
+  fprintf(stderr, "newfnb %s = %d (%d) -- %s functions\n", strrchr(inbuf, '/'), np, np+1, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);

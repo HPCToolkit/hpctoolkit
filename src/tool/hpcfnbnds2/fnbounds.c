@@ -377,7 +377,33 @@ process_mapped_header(char *addr, int fd, size_t sz)
 	    add_function (0xf5030, "stripped_0xf5030", "H");
 	    add_function (0xf7320, "stripped_0xf7320", "H");
 	    add_function (0xf7330, "stripped_0xf7330", "H");
+	}
+	if (strstr (xname, "libc-2.17.so") != NULL ) { 
+            add_function (0x16eba0, "stripped_0x16eba0", "H");
+            add_function (0x16f030, "stripped_0x16f030", "H");
 	}   
+	if (strstr (xname, "libm-2.17.so") != NULL ) { 
+	    add_function (0xae60, "stripped_0xae60", "H");
+	    add_function (0xae90, "stripped_0xae90", "H");
+	    add_function (0xfc00, "stripped_0xfc00", "H");
+	    add_function (0x103c0, "stripped_0x103c0", "H");
+	    add_function (0x146e0, "stripped_0x146e0", "H");
+	    add_function (0x15a20, "stripped_0x15a20", "H");
+	    add_function (0x19810, "stripped_0x19810", "H");
+	    add_function (0x19990, "stripped_0x19990", "H");
+	    add_function (0x1a990, "stripped_0x1a990", "H");
+	    add_function (0x1b0a0, "stripped_0x1b0a0", "H");
+	    add_function (0x1f7f0, "stripped_0x1f7f0", "H");
+	    add_function (0x1f830, "stripped_0x1f830", "H");
+	    add_function (0x258a0, "stripped_0x258a0", "H");
+	    add_function (0x26ee0, "stripped_0x26ee0", "H");
+	    add_function (0x2a0a0, "stripped_0x2a0a0", "H");
+	    add_function (0x2fbd0, "stripped_0x2fbd0", "H");
+	    add_function (0x30ca0, "stripped_0x30ca0", "H");
+	    add_function (0x31210, "stripped_0x31210", "H");
+	    add_function (0x32b00, "stripped_0x32b00", "H");
+	    add_function (0x35a10, "stripped_0x35a10", "H");
+	}
 #endif
 
 	if (verbose) {
