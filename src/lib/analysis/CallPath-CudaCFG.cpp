@@ -108,6 +108,7 @@ using std::string;
 
 
 #define DEBUG_CALLPATH_CUDACFG 0
+#define SHOW_CALLPATH_CUDACFG 1
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -217,15 +218,6 @@ getProcStmt(Prof::CCT::ANode *node) {
 static inline void
 debugGPUInst() {
   std::cout << "I: ";
-  for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
-    std::cout << "  " << gpu_inst_index[i];
-  }
-  std::cout << std::endl;
-}
-
-
-static inline void
-debugGPUProf() {
   for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
     std::cout << "  " << gpu_inst_index[i];
   }
@@ -400,6 +392,53 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
 
     delete cct_graph;
   }
+
+  if (SHOW_CALLPATH_CUDACFG) {
+    // root_vma->...p_vma->vma: call count
+    for (auto *gpu_root : gpu_roots) {
+      Prof::CCT::ANodeIterator prof_it(gpu_root, NULL/*filter*/, false/*leavesOnly*/,
+        IteratorStack::PreOrder);
+      for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
+        if (getCudaCallStmt(n) != NULL) {  // call
+          auto *stmt = n->structure();
+          auto vma = stmt->vmaSet().begin()->beg();
+          std::stack<VMA> call_stack;
+          call_stack.push(vma);
+          auto *p = n;
+          while (true) {
+            auto p_vma = 0;
+            p = p->ancestorProcFrm();
+            if (p != NULL) {
+              // if p is a call, p->ancestorCall returns p
+              p = p->ancestorCall();
+              if (p != NULL) {
+                auto *p_stmt = p->structure();
+                p_vma = p_stmt->vmaSet().begin()->beg();
+                call_stack.push(p_vma);
+                if (getCudaCallStmt(p) == NULL) {
+                  break;
+                }
+              } else {
+                break;
+              }
+            } else {
+              break;
+            }
+          }
+          while (call_stack.size() != 1) {
+            vma = call_stack.top();
+            call_stack.pop();
+            std::cout << std::hex << "0x" << vma << "->";
+          }
+          std::cout << std::hex << "0x" << call_stack.top() << ": ";
+          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+            std::cout << n->demandMetric(gpu_inst_index[i]) << " ";
+          }
+          std::cout << std::endl;
+        }
+      }
+    }
+  }
 }
 
 
@@ -567,10 +606,13 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph<Prof::CCT::ANode *> *cc
           auto *frm_proc = prof_call->ancestorProcFrm();
           auto *struct_proc = frm_proc->structure();
           auto frm_vma = struct_proc->vmaSet().begin()->beg();
-          // Inclusive
-          prof_call->demandMetric(gpu_inst_index[i]) = 1.0;
-          // XXX(Keren): Is adding exclusive necessary here?
-          prof_call->demandMetric(gpu_inst_index[i] + 1) = 1.0;
+          // Set gpu instruction to 1 if not sampled
+          if (prof_call->demandMetric(gpu_inst_index[i]) == 0.0) {
+            // Inclusive
+            prof_call->demandMetric(gpu_inst_index[i]) = 1.0;
+            // XXX(Keren): Is adding exclusive necessary here?
+            prof_call->demandMetric(gpu_inst_index[i] + 1) = 1.0;
+          }
           // The proc has not been added
           if (prof_inst_map[frm_proc].find(i) == prof_inst_map[frm_proc].end()) {
             prof_inst_map[prof_call->ancestorProcFrm()].insert(i);

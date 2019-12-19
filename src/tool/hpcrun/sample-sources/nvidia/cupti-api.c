@@ -1568,23 +1568,18 @@ cupti_sample_process
         cupti_host_op_map_entry_kernel_node_get(host_op_entry);
       cct_node_t *trace_node = 
         cupti_host_op_map_entry_trace_node_get(host_op_entry);
-      // XXX(keren): for now, suppose a runtime api only launches a single kernel
-      cct_node_t *func_node = hpcrun_cct_children(trace_node);
-      if (func_node != NULL) {
-        cupti_function_id_map_entry_t *entry = 
-          cupti_function_id_map_lookup(sample->functionId);
-        // We cannot get function ids for device functions,
-        // So we lookup in the function map
-        ip_normalized_t ip_norm = cupti_function_id_map_entry_ip_norm_get(entry);
-        cct_addr_t frm = { .ip_norm = ip_norm };
-        cct_node_t *cct_child = NULL;
-        if ((cct_child = hpcrun_cct_insert_addr(kernel_node, &frm)) != NULL) {
-          cupti_activity_channel_t *channel = 
-            cupti_host_op_map_entry_activity_channel_get(host_op_entry);
-          cupti_activity_channel_produce(channel, (CUpti_Activity *)sample, cct_child);
-        }
-      } else {
-        PRINT("host_op_map_entry %lu, func node not found\n", external_id);
+      cupti_function_id_map_entry_t *entry = 
+        cupti_function_id_map_lookup(sample->functionId);
+      // We cannot get function ids for device functions,
+      // So we lookup in the function map
+      ip_normalized_t ip_norm = cupti_function_id_map_entry_ip_norm_get(entry);
+      ip_norm.lm_ip += sample->pcOffset;
+      cct_addr_t frm = { .ip_norm = ip_norm };
+      cct_node_t *cct_child = NULL;
+      if ((cct_child = hpcrun_cct_insert_addr(kernel_node, &frm)) != NULL) {
+        cupti_activity_channel_t *channel = 
+          cupti_host_op_map_entry_activity_channel_get(host_op_entry);
+        cupti_activity_channel_produce(channel, (CUpti_Activity *)sample, cct_child);
       }
     } else {
       PRINT("host_op_map_entry %lu not found\n", external_id);
