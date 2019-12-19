@@ -49,7 +49,7 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_CALLPATH_CUDAADVISOR 1
+#define DEBUG_CALLPATH_CUDAADVISOR 0
 
 namespace Analysis {
 
