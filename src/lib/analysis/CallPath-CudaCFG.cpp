@@ -112,6 +112,8 @@ using std::string;
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
+#define WARP_SIZE 32
+
 
 namespace Analysis {
 
@@ -609,9 +611,9 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph<Prof::CCT::ANode *> *cc
           // Set gpu instruction to 1 if not sampled
           if (prof_call->demandMetric(gpu_inst_index[i]) == 0.0) {
             // Inclusive
-            prof_call->demandMetric(gpu_inst_index[i]) = 1.0;
+            prof_call->demandMetric(gpu_inst_index[i]) = WARP_SIZE;
             // XXX(Keren): Is adding exclusive necessary here?
-            prof_call->demandMetric(gpu_inst_index[i] + 1) = 1.0;
+            prof_call->demandMetric(gpu_inst_index[i] + 1) = WARP_SIZE;
           }
           // The proc has not been added
           if (prof_inst_map[frm_proc].find(i) == prof_inst_map[frm_proc].end()) {

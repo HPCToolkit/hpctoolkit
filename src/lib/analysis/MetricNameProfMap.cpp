@@ -46,7 +46,7 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_METRIC_NAME_PROF_MAP 1
+#define DEBUG_METRIC_NAME_PROF_MAP 0
 
 namespace Analysis {
 
