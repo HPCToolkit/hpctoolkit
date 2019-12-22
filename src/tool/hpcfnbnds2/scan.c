@@ -47,89 +47,64 @@
 
 #include <fnbounds.h>
 
-// scan the .plt section
-// this should take the already open elf descriptor, but that will screw the 
-// existing code.  So for now use the fd, and FIXME later.
-//
 uint64_t
-pltscan(int fd)
+skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
 {
-	if (pltscan_f == 0) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning .plt instructions\n");
-	    }
-	    return 0;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning .plt instructions\n");
-	    }
-	}
-Elf *e;
-GElf_Shdr secHead;
-size_t n, sz, secHeadStringIndex;
+size_t secHeadStringIndex;
 char *secName;
 Elf_Scn *section;
-uint64_t pltFound,ii;
+
+	elf_getshdrstrndx(e, &secHeadStringIndex);
+	secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+
+	if (secFlag == SC_SKIP) {
+	    if(verbose) {
+		fprintf (stderr, "Skipping scanning %s instructions\n",secName);
+	    }
+	    return SC_SKIP;
+	} else {
+	    if(verbose) {
+		fprintf (stderr, "Processing functions from scanning %s instructions\n",secName);
+	    }
+	}
+
+	return SC_DONE;
+}
+// scan the .plt section
+//
+uint64_t
+pltscan(Elf *e, GElf_Shdr secHead)
+{
+uint64_t ii;
 uint64_t startAddr, endAddr, pltEntrySize;
-char nameBuff[256];
+char nameBuff[TB_SIZE];
+char *vegamite;
 
-	pltFound = 0;
+	if (skipSectionScan(e, secHead, pltscan_f) == SC_SKIP) {
+	    return SC_SKIP;
+	}
 	
-	// if a bad version, or there's no open file, return success anyway
-	if (elf_version(EV_CURRENT) == EV_NONE) return 0;
-	e = elf_begin(fd,ELF_C_READ, NULL);
-	if (e == NULL) return 0;
+    	startAddr = secHead.sh_addr;
+	endAddr = startAddr + secHead.sh_size;
+	pltEntrySize = secHead.sh_entsize;
 
-	elf_getshdrstrndx(e, &secHeadStringIndex);   // get sec header string index
+	for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
+	    sprintf(nameBuff,"stripped_0x%lx",ii);
+	    vegamite = strdup(nameBuff);
+	    add_function(ii, vegamite, "p",FR_YES);
+	}
 
-	section = NULL; // this makes nextscn give pointer to first
-
-	do {
-	    section = elf_nextscn(e, section);
-	    if (section == NULL) break; // no more sections
-
-	    gelf_getshdr(section, &secHead);
-	    secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
-
-	    if (strcmp((const char *)secName,".plt")) { // not the .plt section?
-		continue;
-	    }
-
-	    pltFound = 1;
-
-	    startAddr = secHead.sh_addr;
-	    endAddr = startAddr + secHead.sh_size;
-	    pltEntrySize = secHead.sh_entsize;
-
-	    for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
-		sprintf(nameBuff,"stripped_0x%.lx",ii);
-		char *vegamite = strdup(nameBuff);
-		add_function(ii, vegamite, "p");
-	    }
-
-	} while (section != NULL);
-
-	elf_end(e);
-	pltFound = 1;	// we don't care if there is no .plt section
-	return !pltFound;
-
-	// use "p" as source string in add_function() calls
+	return SC_DONE;
 }
 
 // scan the .init section
-void
-initscan()
+uint64_t
+initscan(Elf *e, GElf_Shdr secHead)
 {
-	if (initscan_f == 0) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning .init instructions\n");
-	    }
-	    return;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning .init instructions\n");
-	    }
+	if (skipSectionScan(e, secHead, initscan_f) == SC_SKIP) {
+	    return SC_SKIP;
 	}
+	
 	// NOT YET IMPLEMENTED
 	if(verbose) {
 	    fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
@@ -138,19 +113,13 @@ initscan()
 }
 
 // scan the .text section
-void
-textscan()
+uint64_t
+textscan(Elf *e, GElf_Shdr secHead)
 {
-	if (textscan_f == 0) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning .text instructions\n");
-	    }
-	    return;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning .text instructions\n");
-	    }
+	if (skipSectionScan(e, secHead, textscan_f) == SC_SKIP) {
+	    return SC_SKIP;
 	}
+	
 	// NOT YET IMPLEMENTED
 	if(verbose) {
 	    fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
@@ -159,19 +128,13 @@ textscan()
 }
 
 // scan the .fini section
-void
-finiscan()
+uint64_t
+finiscan(Elf *e, GElf_Shdr secHead)
 {
-	if (finiscan_f == 0) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning .fini instructions\n");
-	    }
-	    return;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning .fini instructions\n");
-	    }
+	if (skipSectionScan(e, secHead, finiscan_f) == SC_SKIP) {
+	    return SC_SKIP;
 	}
+	
 	// NOT YET IMPLEMENTED
 	if(verbose) {
 	    fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
@@ -180,22 +143,30 @@ finiscan()
 }
 
 // scan the .fini section
-void
-altinstr_replacementscan()
+uint64_t
+altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
 {
-	if (altinstr_replacementscan_f == 0) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning .altinstr_replacement instructions\n");
-	    }
-	    return;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning .altinstr_replacement instructions\n");
-	    }
+	if (skipSectionScan(e, secHead, altinstr_replacementscan_f) == SC_SKIP) {
+	    return SC_SKIP;
 	}
+	
 	// NOT YET IMPLEMENTED
 	if(verbose) {
 	    fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
 	}
 	// use "a" as source string in add_function() calls
 }
+uint64_t
+ehframescan(Elf *e, GElf_Shdr secHead)
+{
+	if (skipSectionScan(e, secHead, ehframeread_f) == SC_SKIP) {
+	    return SC_SKIP;
+	}
+	
+	// NOT YET IMPLEMENTED
+	if (verbose) {
+	    fprintf(stderr, "\tprocessing .eh_frame not yet implemented\n");
+	}
+	// use "e" as source string in add_function() calls
+}
+

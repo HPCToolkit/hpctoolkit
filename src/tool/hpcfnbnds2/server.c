@@ -218,14 +218,14 @@ send_funcs ()
   // count the number of unique addresses to send
   int np = 0;
   uint64_t lastaddr = (uint64_t) -1;
-  uint64_t first_addr = farray[0].fadd;
+  uint64_t firstaddr = farray[0].fadd;
   for (i=0; i<nfunc; i ++) {
     if (farray[i].fadd != lastaddr ){
       np ++;
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d (%d) -- %s functions\n", strrchr(inbuf, '/'), np, np+1, inbuf );
+  fprintf(stderr, "newfnb %s = %d -- %s functions\n", strrchr(inbuf, '/'), np, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -249,7 +249,7 @@ send_funcs ()
         errx(1, "Server write_all to fdout failed");
       } else {
         if (verbose) {
-          fprintf(stderr, "Server write_all %d\n", num_addrs * sizeof(void *) );
+          fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
 	}
       }
       num_addrs = 0;
@@ -266,7 +266,7 @@ send_funcs ()
       errx(1, "Server write_all to fdout failed");
     } else {
       if (verbose) {
-        fprintf(stderr, "Server write_all %d\n", num_addrs * sizeof(void *) );
+        fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
       }
     }
     num_addrs = 0;
@@ -282,7 +282,7 @@ send_funcs ()
     errx(1, "Server flush write_all to fdout failed");
   } else {
     if (verbose) {
-      fprintf(stderr, "Server flush write_all %d bytes\n", num_addrs * sizeof(void *) );
+      fprintf(stderr, "Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
     }
   }
 
@@ -295,11 +295,15 @@ send_funcs ()
   }
   fnb_info.num_entries = np;
   fnb_info.is_relocatable = is_dotso;
-  if( is_dotso == 0 ){
-    fnb_info.reference_offset = first_addr;
-  } else {
-    fnb_info.reference_offset = 0;
+#if 1
+  // Ugly hack to get the reference offset address correct
+  if (strstr (xname, "2.17.so") != NULL ) {
+    firstaddr = 0;
   }
+  fnb_info.reference_offset = firstaddr;
+#else
+  fnb_info.reference_offset = refOffset;
+#endif
 
   fnb_info.magic = FNBOUNDS_MAGIC;
   fnb_info.status = SYSERV_OK;
@@ -308,7 +312,7 @@ send_funcs ()
     err(1, "Server fnb_into write_all to fdout failed");
   } else {
     if (verbose) {
-      fprintf(stderr, "Server fnb_info write_all %d bytes\n", sizeof(fnb_info) );
+      fprintf(stderr, "Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
     }
   }
 }
@@ -382,7 +386,7 @@ read_mesg(struct syserv_mesg *mesg)
     ret = FAILURE;
   }
   if (verbose) {
-	fprintf(stderr, "Server read  message, type = %d, len = %d\n",
+	fprintf(stderr, "Server read  message, type = %d, len = %ld\n",
 	    mesg->type, mesg->len);
   }
 
@@ -403,7 +407,7 @@ write_mesg(int32_t type, int64_t len)
   mesg.len = len;
 
   if (verbose) {
-	fprintf(stderr, "Server write  message, type = %d, len = %d\n",
+	fprintf(stderr, "Server write  message, type = %d, len = %ld\n",
 	    type, len);
   }
   return write_all(fdout, &mesg, sizeof(mesg));

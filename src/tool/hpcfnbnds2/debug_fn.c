@@ -48,11 +48,11 @@
 #include	"fnbounds.h"
 
 void
-print_elf_header64(Elf64_Ehdr *elf_header)
+print_elf_header64(GElf_Ehdr *elf_header)
 {
 
 	fprintf(stderr, "========================================\n");
-	fprintf(stderr, "\t\tELF Header\n");
+	fprintf(stderr, "\t\tELF Header: %s\n", xname);
 
 	/* Storage capacity class */
 	fprintf(stderr, "Storage class\t= ");
@@ -275,32 +275,76 @@ print_elf_header64(Elf64_Ehdr *elf_header)
 
 }
 
+// dump program headers
 void
-print_section_headers64(Elf64_Shdr sh_table[], int nsec, int strindx)
+print_program_headers64(Elf *e)
 {
-	uint32_t i;
-	char* sh_str;	/* section-header string-table is also a section. */
-
-	/* Compute section-header string-table address */
-	sh_str = (char *) ( (char *)elf + sh_table[strindx].sh_offset );
+	int64_t j,jn;
+	GElf_Phdr progHeader;
 
 	fprintf(stderr, "========================================");
 	fprintf(stderr, "========================================\n");
-	fprintf(stderr, "\t\tSection Headers\n");
+	fprintf(stderr, "\t\tProgram Headers: %s\n", xname);
+	fprintf(stderr, " idx type       flags      offset     virt-addr          phys-addr          file-size  mem-size   algn\n");
+	elf_getphdrnum(e,&jn);
+	for (j=0; j<jn; j++) {
+	    gelf_getphdr(e,j,&progHeader);
+	    if (progHeader.p_type == PT_LOAD) {
+		refOffset = progHeader.p_vaddr;
+	    }   
+		fprintf(stderr, "%4ld ", j);
+		fprintf(stderr, "0x%08lx ", progHeader.p_type);
+		fprintf(stderr, "0x%08lx ", progHeader.p_flags);
+		fprintf(stderr, "0x%08lx ", progHeader.p_offset);
+		fprintf(stderr, "0x%016lx ", progHeader.p_vaddr);
+		fprintf(stderr, "0x%016lx ", progHeader.p_paddr);
+		fprintf(stderr, "0x%08lx ", progHeader.p_filesz);
+		fprintf(stderr, "0x%08lx ", progHeader.p_memsz);
+		fprintf(stderr, "0x%08lx ", progHeader.p_align);
+		fprintf(stderr, "\n");
+	}
+	fprintf(stderr, "\n");	/* end of program header table */
+}
+
+// dump section header info
+void
+print_section_headers64(Elf *e)
+{
+	Elf_Scn *section;
+	GElf_Shdr secHead;
+	char *secName;
+	size_t secHeadStringIndex;
+	uint32_t i;
+
+	elf_getshdrstrndx(e, &secHeadStringIndex);
+	section = NULL;
+
+	fprintf(stderr, "========================================");
+	fprintf(stderr, "========================================\n");
+	fprintf(stderr, "\t\tSection Headers: %s\n", xname);
 	fprintf(stderr, " idx offset     load-addr          size       algn"
 			" flags      type       section\n");
 
-	for(i=0; i < nsec; i++) {
-		fprintf(stderr, " %03d ", i);
-		fprintf(stderr, "0x%08lx ", sh_table[i].sh_offset);
-		fprintf(stderr, "0x%016lx ", sh_table[i].sh_addr);
-		fprintf(stderr, "0x%08lx ", sh_table[i].sh_size);
-		fprintf(stderr, "%4ld ", sh_table[i].sh_addralign);
-		fprintf(stderr, "0x%08lx ", sh_table[i].sh_flags);
-		fprintf(stderr, "0x%08x ", sh_table[i].sh_type);
-		fprintf(stderr, "%s\t", (sh_str + sh_table[i].sh_name));
+	do {
+	   section = elf_nextscn(e, section);
+	   if (section == NULL) break;
+
+	   gelf_getshdr(section, &secHead);
+
+	   secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+
+		fprintf(stderr, " %03ld ", (uintmax_t)elf_ndxscn(section));
+		fprintf(stderr, "0x%08lx ", secHead.sh_offset);
+		fprintf(stderr, "0x%016lx ", secHead.sh_addr);
+		fprintf(stderr, "0x%08lx ", secHead.sh_size);
+		fprintf(stderr, "%4ld ", secHead.sh_addralign);
+		fprintf(stderr, "0x%08lx ", secHead.sh_flags);
+		fprintf(stderr, "0x%08x ", secHead.sh_type);
+		fprintf(stderr, "%s\t", secName );
 		fprintf(stderr, "\n");
-	}
+
+	} while (section != NULL);
 	fprintf(stderr, "\n");	/* end of section header table */
+
 }
 
