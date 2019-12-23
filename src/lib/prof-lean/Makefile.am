@@ -109,7 +109,7 @@ MYSOURCES = \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)  -I$(LIBELF_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

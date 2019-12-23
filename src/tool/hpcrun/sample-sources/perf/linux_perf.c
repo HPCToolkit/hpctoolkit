@@ -888,9 +888,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
+    const char *desc = pfmu_getEventDescription(name);
+
     // set the metric for this perf event
-    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_info_and_period(lnux_kind, name_dup,
-            MetricFlags_ValFmt_Real, threshold, prop);
+    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
+            desc, MetricFlags_ValFmt_Real, threshold, prop);
    
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
