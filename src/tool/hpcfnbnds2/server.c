@@ -218,7 +218,6 @@ send_funcs ()
   // count the number of unique addresses to send
   int np = 0;
   uint64_t lastaddr = (uint64_t) -1;
-  uint64_t firstaddr = farray[0].fadd;
   for (i=0; i<nfunc; i ++) {
     if (farray[i].fadd != lastaddr ){
       np ++;
@@ -295,15 +294,7 @@ send_funcs ()
   }
   fnb_info.num_entries = np;
   fnb_info.is_relocatable = is_dotso;
-#if 1
-  // Ugly hack to get the reference offset address correct
-  if (strstr (xname, "2.17.so") != NULL ) {
-    firstaddr = 0;
-  }
-  fnb_info.reference_offset = firstaddr;
-#else
   fnb_info.reference_offset = refOffset;
-#endif
 
   fnb_info.magic = FNBOUNDS_MAGIC;
   fnb_info.status = SYSERV_OK;

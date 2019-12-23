@@ -330,7 +330,11 @@ process_mapped_header(Elf *lelf)
 	elf_getphdrnum(lelf,&jn);
 	for (j=0; j<jn; j++) {
 	    gelf_getphdr(lelf,j,&progHeader);
+#if 0
 	    if (progHeader.p_type == PT_LOAD) {
+#else
+	    if ( (progHeader.p_type == PT_LOAD) && ((progHeader.p_flags & PF_X) == PF_X ) ){
+#endif
 		refOffset = progHeader.p_vaddr;
 		break;
 	    }
@@ -532,10 +536,8 @@ print_funcs()
 
 	// Print the function list
 	int np = 0;
-	uint64_t firstaddr = 0;
 	if (nfunc > 0) {
 	    // print the first entry, not beginning with new line
-	    firstaddr = farray[0].fadd;
 	    printf("0x%lx    %s(%s)", farray[0].fadd, farray[0].fnam, farray[0].src);
 	    uint64_t lastaddr = farray[0].fadd;
 	    np ++;
@@ -553,22 +555,8 @@ print_funcs()
 		}
 	    }
 	}
-#if 1
-	// Ugly hack to get the reference offset address correct
-	if (strstr (xname, "2.17.so") != NULL ) {
-	    firstaddr = 0;
-	}
-#endif
 	printf("\nnum symbols = %d, reference offset = 0x%lx, relocatable = %d\n", np,
-#if 1
-		firstaddr, is_dotso );
-#else
-		refOffset, is_dotso );
-#endif
-
-	if (is_dotso && refOffset) {
-	   printf("WARNING: for a dso expected 0 offset, but found 0x%.8lx\n",refOffset);
-	}
+	    refOffset, is_dotso );
 }
 
 void
