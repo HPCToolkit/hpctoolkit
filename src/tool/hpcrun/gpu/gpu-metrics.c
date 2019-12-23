@@ -94,7 +94,7 @@
 //------------------------------------------------------------------------------
 
 // macros for counting entries in a FORALL macro
-#define COUNT_FORALL_CLAUSE(a,b) + 1
+#define COUNT_FORALL_CLAUSE(a,b,c) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
 #define METRIC_KIND(name)			\
@@ -106,10 +106,10 @@ name ## _metric_kind
 #define METRIC_ID(name) \
   name ## _metric_id
 
-#define INITIALIZE_INDEXED_METRIC(name, value)			\
+#define INITIALIZE_INDEXED_METRIC(name, value)		\
   static int METRIC_ID(name)[NUM_CLAUSES( FORALL_ ## name)];
 
-#define INITIALIZE_SCALAR_METRIC(string, name)	\
+#define INITIALIZE_SCALAR_METRIC(string, name, desc)	\
   static int METRIC_ID(name);
 
 #define INITIALIZE_SCALAR_METRIC_KIND(kind, value)	\
@@ -130,27 +130,31 @@ name ## _metric_kind
   hpcrun_close_kind(APPLY(METRIC_KIND,CURRENT_METRIC))
 
 
-#define INITIALIZE_INDEXED_METRIC_INT(metric_desc, index) \
+#define INITIALIZE_INDEXED_METRIC_INT(metric_name, index, metric_desc)	\
    APPLY(METRIC_ID,CURRENT_METRIC)[index] =				\
-    hpcrun_set_new_metric_info(APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc);
+     hpcrun_set_new_metric_desc_and_period				\
+     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
+     MetricFlags_ValFmt_Int, 1, metric_property_none);
 
 
-#define INITIALIZE_INDEXED_METRIC_REAL(metric_desc, index)	\
-   APPLY(METRIC_ID,CURRENT_METRIC)[index] =		\
-    hpcrun_set_new_metric_info_and_period		\
-    (APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc,	\
+#define INITIALIZE_INDEXED_METRIC_REAL(metric_name, index, metric_desc)	\
+  APPLY(METRIC_ID,CURRENT_METRIC)[index] =				\
+    hpcrun_set_new_metric_desc_and_period				\
+    (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 
-#define INITIALIZE_SCALAR_METRIC_INT(metric_desc, metric_name) \
-   METRIC_ID(metric_name) =				\
-    hpcrun_set_new_metric_info(APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc);
+#define INITIALIZE_SCALAR_METRIC_INT(metric_name, metric_var, metric_desc) \
+  METRIC_ID(metric_var) =						\
+    hpcrun_set_new_metric_desc_and_period				\
+    (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
+     MetricFlags_ValFmt_Int, 1, metric_property_none);
 
 
-#define INITIALIZE_SCALAR_METRIC_REAL(metric_desc, metric_name)	\
-  METRIC_ID(metric_name) =				\
-    hpcrun_set_new_metric_info_and_period			\
-    (APPLY(METRIC_KIND,CURRENT_METRIC), metric_desc,	\
+#define INITIALIZE_SCALAR_METRIC_REAL(metric_name, metric_var, metric_desc) \
+  METRIC_ID(metric_var) =						\
+    hpcrun_set_new_metric_desc_and_period				\
+    (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 
@@ -210,7 +214,9 @@ gpu_metrics_attribute_metric_time_interval
 )
 {
   metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, time_index);
-  gpu_metrics_attribute_metric_real(metrics, time_index, (i->end - i->start) / 1000.0);
+
+  // convert from ns to s
+  gpu_metrics_attribute_metric_real(metrics, time_index, (i->end - i->start) / 1.0e9);
 }
 
 
@@ -237,7 +243,7 @@ gpu_metrics_attribute_pc_sampling
 
   if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
     int stall_summary_metric_index = 
-      METRIC_ID(GPU_INST_STALL)[GPU_INST_STALL_ALL];
+      METRIC_ID(GPU_INST_STALL)[GPU_INST_STALL_ANY];
 
     int stall_kind_metric_index = METRIC_ID(GPU_INST_STALL)[sinfo->stallReason];
 

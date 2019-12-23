@@ -72,6 +72,7 @@
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 
+#include "cuda-device-map.h"
 #include "cupti-activity-translate.h"
 #include "cupti-analysis.h"
 
