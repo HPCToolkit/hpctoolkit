@@ -210,7 +210,9 @@ gpu_metrics_attribute_metric_time_interval
 )
 {
   metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, time_index);
-  gpu_metrics_attribute_metric_real(metrics, time_index, (i->end - i->start) / 1000.0);
+
+  // convert from ns to s
+  gpu_metrics_attribute_metric_real(metrics, time_index, (i->end - i->start) / 1.0e9);
 }
 
 
