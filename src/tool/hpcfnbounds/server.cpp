@@ -306,7 +306,6 @@ static void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 {
   int ret;
-  long k;
 
   if (mesg->len > inbuf_size) {
     inbuf_size += mesg->len;
@@ -360,7 +359,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
       if (ret != SUCCESS) {
 	errx(1, "write to fdout failed");
       }
-      fprintf(stderr, "oldfnb %s = %d (%d) -- %s\n", strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
+      fprintf(stderr, "oldfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
 
       num_addrs = 0;
     }
