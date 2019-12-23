@@ -105,14 +105,14 @@ typedef enum {
 
 // gpu memory set
 #define FORALL_GMSET(macro)					\
-  macro("GMSET:UNK (b)",          GPU_MEM_UNKNOWN)		\
-  macro("GMSET:PAG (b)",          GPU_MEM_PAGEABLE)		\
-  macro("GMSET:PIN (b)",          GPU_MEM_PINNED)		\
-  macro("GMSET:DEV (b)",          GPU_MEM_DEVICE)		\
-  macro("GMSET:ARY (b)",          GPU_MEM_ARRAY)		\
-  macro("GMSET:MAN (b)",          GPU_MEM_MANAGED)		\
-  macro("GMSET:DST (b)",          GPU_MEM_DEVICE_STATIC)	\
-  macro("GMSET:MST (b)",          GPU_MEM_MANAGED_STATIC)
+  macro("GMSET:UNK (B)",          GPU_MEM_UNKNOWN)		\
+  macro("GMSET:PAG (B)",          GPU_MEM_PAGEABLE)		\
+  macro("GMSET:PIN (B)",          GPU_MEM_PINNED)		\
+  macro("GMSET:DEV (B)",          GPU_MEM_DEVICE)		\
+  macro("GMSET:ARY (B)",          GPU_MEM_ARRAY)		\
+  macro("GMSET:MAN (B)",          GPU_MEM_MANAGED)		\
+  macro("GMSET:DST (B)",          GPU_MEM_DEVICE_STATIC)	\
+  macro("GMSET:MST (B)",          GPU_MEM_MANAGED_STATIC)
 
 
 #define FORALL_GPU_INST_STALL(macro)					\
@@ -186,12 +186,12 @@ typedef enum {
 
 // gpu activity times
 #define FORALL_GTIMES(macro)					\
-  macro("GKER (us)",              GPU_TIME_KER)			\
-  macro("GMEM (us)",              GPU_TIME_MEM)			\
-  macro("GMSET (us)",             GPU_TIME_MSET)		\
-  macro("GXCOPY (us)",            GPU_TIME_XCOPY)		\
-  macro("GICOPY (us)",            GPU_TIME_ICOPY)		\
-  macro("GSYNC (us)",             GPU_TIME_SYNC)		\
+  macro("GKER (s)",               GPU_TIME_KER)			\
+  macro("GMEM (s)",               GPU_TIME_MEM)			\
+  macro("GMSET (s)",              GPU_TIME_MSET)		\
+  macro("GXCOPY (s)",             GPU_TIME_XCOPY)		\
+  macro("GICOPY (s)",             GPU_TIME_ICOPY)		\
+  macro("GSYNC (s)",              GPU_TIME_SYNC)		\
 
 
 // gpu instruction count

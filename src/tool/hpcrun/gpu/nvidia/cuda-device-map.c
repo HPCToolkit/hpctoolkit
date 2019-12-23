@@ -121,7 +121,7 @@
 struct cuda_device_map_entry_t {
   struct cuda_device_map_entry_t *left;
   struct cuda_device_map_entry_t *right;
-  uint32_t device; // key
+  uint64_t device; // key (must be 64 bits to use splay-uint64 base)
 
   cuda_device_property_t property;
 }; 
