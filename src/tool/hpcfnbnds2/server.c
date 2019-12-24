@@ -68,9 +68,6 @@
 //
 // 4. The server runs outside of hpcrun and libmonitor.
 //
-// Todo:
-// 1. The memory leak is fixed in symtab 8.0.
-
 //***************************************************************************
 
 #include <sys/types.h>
@@ -86,9 +83,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "fnbounds.h"
 #include "code-ranges.h"
 #include "function-entries.h"
 #include "process-ranges.h"
+
 #include "server.h"
 #include "syserv-mesg.h"
 
@@ -102,7 +101,7 @@
 static int fdin;
 static int fdout;
 
-static void *addr_buf[ADDR_SIZE];
+static uint64_t  addr_buf[ADDR_SIZE];
 static long  num_addrs;
 static long  total_num_addrs;
 static long  max_num_addrs;
@@ -117,6 +116,197 @@ static sigjmp_buf jmpbuf;
 
 static int sent_ok_mesg;
 
+void
+init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
+{
+  struct syserv_mesg mesg;
+
+  fdin = fd1;
+  fdout = fd2;
+
+// write version into output (.log file in the measurements directory)
+  fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+
+  inbuf_size = INIT_INBUF_SIZE;
+  inbuf = (char *) malloc(inbuf_size);
+  if (inbuf == NULL) {
+    err(1, "malloc for inbuf failed");
+  }
+  signal_handler_init();
+
+  for (;;) {
+    int ret = read_mesg(&mesg);
+
+    // failure on read from pipe
+    if (ret == FAILURE) {
+      err(1, "read from fdin failed");
+    }
+
+    // exit
+    if (ret == END_OF_FILE || mesg.type == SYSERV_EXIT) {
+      break;
+    }
+
+    // ack
+    if (mesg.type == SYSERV_ACK) {
+      write_mesg(SYSERV_ACK, 0);
+    }
+
+    // query
+    else if (mesg.type == SYSERV_QUERY) {
+      write_mesg(SYSERV_ACK, 0);
+      do_query(fn_discovery, &mesg);
+    }
+
+    // unknown message
+    else {
+      err(1, "unknown mesg type from client: %d", mesg.type);
+    }
+  }
+
+  exit(0);
+}
+
+
+//*****************************************************************
+// fnbounds server
+//*****************************************************************
+
+static void
+do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
+{
+  char *ret;
+  int ret2;
+  // Make sure the buffer is big enough to hold the name string
+  if (mesg->len > inbuf_size) {
+    inbuf_size += mesg->len;
+    inbuf = (char *) realloc(inbuf, inbuf_size);
+    if (inbuf == NULL) {
+      err(1, "realloc for inbuf failed");
+    }
+  }
+
+  // read the string following the message
+  ret2 = read_all(fdin, inbuf, mesg->len);
+  if (ret2 != SUCCESS) {
+    err(1, "read from fdin failed");
+  }
+
+  // fprintf(stderr, "Server processing file %s\n", inbuf);
+  ret = get_funclist(inbuf);
+  if ( ret != NULL) {
+    fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
+
+    // send the error message to the server
+    int rets = write_mesg(SYSERV_ERR, 0);
+    if (rets != SUCCESS) {
+      errx(1, "Server send error message failed");
+    }  // if success, message has been written in send_funcs
+  }
+  return;
+}
+
+
+
+// Send the list of functions to the client
+void
+send_funcs ()
+{
+  int ret;
+  int i;
+
+  // count the number of unique addresses to send
+  int np = 0;
+  uint64_t lastaddr = (uint64_t) -1;
+  for (i=0; i<nfunc; i ++) {
+    if (farray[i].fadd != lastaddr ){
+      np ++;
+      lastaddr = farray[i].fadd;
+    }
+  }
+  fprintf(stderr, "newfnb %s = %d -- %s functions\n", strrchr(inbuf, '/'), np, inbuf );
+
+  // send the OK mesg with the count of addresses
+  ret = write_mesg(SYSERV_OK, np+1);
+  if (ret != SUCCESS) {
+    errx(1, "Server write to fdout failed");
+  }
+
+  // Now go through the list, and add each unique address
+  // see if buffer needs to be flushed
+  lastaddr = (uint64_t) -1;
+  num_addrs = 0;
+
+  for (i=0; i<nfunc; i ++) {
+    if (farray[i].fadd == lastaddr ){
+      continue;
+    }
+    lastaddr = farray[i].fadd;
+    if (num_addrs >= ADDR_SIZE) {
+      ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+      if (ret != SUCCESS) {
+        errx(1, "Server write_all to fdout failed");
+      } else {
+        if (verbose) {
+          fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+	}
+      }
+      num_addrs = 0;
+    }
+
+    addr_buf[num_addrs] = farray[i].fadd;
+    num_addrs++;
+    total_num_addrs++;
+  }
+  // we've done the full list, check for buffer filled by the last entry
+  if (num_addrs >= ADDR_SIZE) {
+    ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+    if (ret != SUCCESS) {
+      errx(1, "Server write_all to fdout failed");
+    } else {
+      if (verbose) {
+        fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+      }
+    }
+    num_addrs = 0;
+  }
+
+  // add a zero at the end
+  addr_buf[num_addrs] = (uint64_t) 0;
+  num_addrs ++;
+
+  // flush the buffer
+  ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+  if (ret != SUCCESS) {
+    errx(1, "Server flush write_all to fdout failed");
+  } else {
+    if (verbose) {
+      fprintf(stderr, "Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
+    }
+  }
+
+  // now send the fnb end record
+  struct rusage usage;
+  if (getrusage(RUSAGE_SELF, &usage) == 0) {
+    fnb_info.memsize = usage.ru_maxrss;
+  } else {
+    fnb_info.memsize = -1;
+  }
+  fnb_info.num_entries = np;
+  fnb_info.is_relocatable = is_dotso;
+  fnb_info.reference_offset = refOffset;
+
+  fnb_info.magic = FNBOUNDS_MAGIC;
+  fnb_info.status = SYSERV_OK;
+  ret = write_all(fdout, &fnb_info, sizeof(fnb_info));
+  if (ret != SUCCESS) {
+    err(1, "Server fnb_into write_all to fdout failed");
+  } else {
+    if (verbose) {
+      fprintf(stderr, "Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
+    }
+  }
+}
 
 //*****************************************************************
 // I/O helper functions
@@ -186,6 +376,10 @@ read_mesg(struct syserv_mesg *mesg)
   if (ret == SUCCESS && mesg->magic != SYSERV_MAGIC) {
     ret = FAILURE;
   }
+  if (verbose) {
+	fprintf(stderr, "Server read  message, type = %d, len = %ld\n",
+	    mesg->type, mesg->len);
+  }
 
   return ret;
 }
@@ -203,53 +397,11 @@ write_mesg(int32_t type, int64_t len)
   mesg.type = type;
   mesg.len = len;
 
+  if (verbose) {
+	fprintf(stderr, "Server write  message, type = %d, len = %ld\n",
+	    type, len);
+  }
   return write_all(fdout, &mesg, sizeof(mesg));
-}
-
-
-//*****************************************************************
-// callback functions
-//*****************************************************************
-
-// Called from dump_function_entry().
-void
-syserv_add_addr(void *addr, long func_entry_map_size)
-{
-  int ret;
-
-#if 0
-  // send the OK mesg on first addr callback
-  if (! sent_ok_mesg) {
-    max_num_addrs = func_entry_map_size + 1;
-    ret = write_mesg(SYSERV_OK, max_num_addrs);
-    if (ret != SUCCESS) {
-      errx(1, "write to fdout failed");
-    }
-    sent_ok_mesg = 1;
-  }
-#endif
-
-  // see if buffer needs to be flushed
-  if (num_addrs >= ADDR_SIZE) {
-    ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
-    if (ret != SUCCESS) {
-      errx(1, "write to fdout failed");
-    }
-    num_addrs = 0;
-  }
-
-  addr_buf[num_addrs] = addr;
-  num_addrs++;
-  total_num_addrs++;
-}
-
-
-// Called from dump_header_info().
-void
-syserv_add_header(int is_relocatable, uintptr_t ref_offset)
-{
-  fnb_info.is_relocatable = is_relocatable;
-  fnb_info.reference_offset = ref_offset;
 }
 
 
@@ -297,152 +449,3 @@ signal_handler_init(void)
   }
 }
 
-
-//*****************************************************************
-// system server
-//*****************************************************************
-
-static void
-do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
-{
-  int ret;
-
-  if (mesg->len > inbuf_size) {
-    inbuf_size += mesg->len;
-    inbuf = (char *) realloc(inbuf, inbuf_size);
-    if (inbuf == NULL) {
-      err(1, "realloc for inbuf failed");
-    }
-  }
-
-  ret = read_all(fdin, inbuf, mesg->len);
-  if (ret != SUCCESS) {
-    err(1, "read from fdin failed");
-  }
-
-  num_addrs = 0;
-  total_num_addrs = 0;
-  max_num_addrs = 0;
-  sent_ok_mesg = 0;
-
-  if (sigsetjmp(jmpbuf, 1) == 0) {
-    // initial return on success
-    jmpbuf_ok = 1;
-    memset(&fnb_info, 0, sizeof(fnb_info));
-    code_ranges_reinit();
-    function_entries_reinit();
-
-    dump_file_info(inbuf, fn_discovery);
-    jmpbuf_ok = 0;
-
-    // pad list of addrs in case there are fewer function addrs than
-    // size of map.
-    fnb_info.num_entries = total_num_addrs;
-
-#if 0
-    // XXX why is this padding done?
-    for (k = total_num_addrs; k < max_num_addrs; k++) {
-      syserv_add_addr(NULL, 0);
-    }
-#endif
-    int oldcount = total_num_addrs;
-
-    ret = write_mesg(SYSERV_OK, oldcount+1);
-    if (ret != SUCCESS) {
-      errx(1, "write SYSERV_OK to fdout failed");
-    }
-    // add one extra zero
-    syserv_add_addr(NULL, 0);
-
-    if (num_addrs > 0) {
-      ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
-      if (ret != SUCCESS) {
-	errx(1, "write to fdout failed");
-      }
-      fprintf(stderr, "oldfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
-
-      num_addrs = 0;
-    }
-
-    // add rusage maxrss to allow client to track memory usage.
-    // units are Kbytes
-    struct rusage usage;
-    if (getrusage(RUSAGE_SELF, &usage) == 0) {
-      fnb_info.memsize = usage.ru_maxrss;
-    } else {
-      fnb_info.memsize = -1;
-    }
-
-    fnb_info.magic = FNBOUNDS_MAGIC;
-    fnb_info.status = SYSERV_OK;
-    ret = write_all(fdout, &fnb_info, sizeof(fnb_info));
-    if (ret != SUCCESS) {
-      err(1, "write to fdout failed");
-    }
-  }
-  else if (sent_ok_mesg) {
-    // failed return from long jmp after we've told the client ok.
-    // for now, close the pipe and exit.
-    errx(1, "caught signal after telling client ok");
-  }
-  else {
-    // failed return from long jmp before we've told the client ok.
-    // in this case, we can send an ERR mesg.
-    ret = write_mesg(SYSERV_ERR, 0);
-    if (ret != SUCCESS) {
-      errx(1, "write to fdout failed");
-    }
-  }
-}
-
-
-void
-system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
-{
-  struct syserv_mesg mesg;
-
-  fdin = fd1;
-  fdout = fd2;
-
-  // write version to runtime log
-  fprintf(stderr, "Begin hpcfnbounds (old) server, DiscoverFnTy = %d\n", fn_discovery);
-
-  inbuf_size = INIT_INBUF_SIZE;
-  inbuf = (char *) malloc(inbuf_size);
-  if (inbuf == NULL) {
-    err(1, "malloc for inbuf failed");
-  }
-  signal_handler_init();
-
-  for (;;) {
-    int ret = read_mesg(&mesg);
-
-    // failure on read from pipe
-    if (ret == FAILURE) {
-      err(1, "read from fdin failed");
-    }
-
-    // exit
-    if (ret == END_OF_FILE || mesg.type == SYSERV_EXIT) {
-      break;
-    }
-
-    // ack
-    if (mesg.type == SYSERV_ACK) {
-      write_mesg(SYSERV_ACK, 0);
-    }
-
-    // query
-    else if (mesg.type == SYSERV_QUERY) {
-      write_mesg(SYSERV_ACK, 0);
-      do_query(fn_discovery, &mesg);
-    }
-
-    // unknown message
-    else {
-      err(1, "unknown mesg type from client: %d", mesg.type);
-    }
-  }
-
-  exit(0);
-}

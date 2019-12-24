@@ -102,7 +102,8 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@@OPT_ENABLE_HPCSERVER_TRUE@am__append_2 = hpcserver
 @OPT_ENABLE_HPCRUN_TRUE@am__append_3 = \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcrun \
-@OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds
+@OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds \
+@OPT_ENABLE_HPCRUN_TRUE@	hpcfnbnds2
 
 @OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi 
 @OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcserver/mpi
@@ -177,7 +178,8 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpclump hpctracedump \
-	hpcserver hpcrun hpcfnbounds hpcprof-mpi hpcserver/mpi
+	hpcserver hpcrun hpcfnbounds hpcfnbnds2 hpcprof-mpi \
+	hpcserver/mpi
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)

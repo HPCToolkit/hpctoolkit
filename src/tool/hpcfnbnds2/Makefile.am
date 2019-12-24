@@ -60,42 +60,103 @@
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 
+#############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+BOOST_IFLAGS = @BOOST_IFLAGS@
+BOOST_LFLAGS = @BOOST_LFLAGS@
+
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+DYNINST_LFLAGS = @DYNINST_LFLAGS@
+
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC   = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
+TBB_LFLAGS = @TBB_LFLAGS@
+
+XED2_INC = @XED2_INC@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+
+ZLIB_LIB = @ZLIB_LIB@
+
+MYSOURCES = \
+	fnbounds.c \
+	debug_fn.c \
+	scan.c \
+	server.c
+
+MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
+	$(DYNINST_IFLAGS)
+
+MYCXXFLAGS = @HOST_CXXFLAGS@
+
+MYLDADD = -L$(LIBELF_LIB) -lelf
+
+# MYLDADD = libeh_frames.a  \
+# 	$(HPCLIB_SupportLean) \
+# 	$(DYNINST_LFLAGS)  \
+# 	$(BOOST_LFLAGS) \
+# 	$(TBB_LFLAGS)
+# 
+# if OPT_DYNINST_LIBDW
+#   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
+# else
+#   MYLDADD += -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+# endif
+
+#if OPT_USE_ZLIB
+#  MYLDADD += -L$(ZLIB_LIB) -lz
+#endif
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS =
+pkglibdir = @my_pkglibdir@
+pkglibexecdir = @my_pkglibexecdir@
 
-if OPT_BUILD_TOOL_ALL
-SUBDIRS += \
-	hpcstruct \
-	hpcprof \
-	hpcproftt \
-	hpclump \
-	hpctracedump
+# noinst_LIBRARIES = libeh_frames.a
 
-if OPT_ENABLE_HPCSERVER
-SUBDIRS += hpcserver
-endif
-endif
+pkglibexec_PROGRAMS = hpcfnbounds2
+# pkglibexec_SCRIPTS =  hpcfnbounds
 
-if OPT_ENABLE_HPCRUN
-  SUBDIRS += \
-	hpcrun \
-	hpcfnbounds \
-	hpcfnbnds2
-endif
+# libeh_frames_a_SOURCES = eh-frames.cpp
+# libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBDWARF_INC)
+# libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
-if OPT_ENABLE_MPI
-  SUBDIRS += hpcprof-mpi 
+hpcfnbounds2_SOURCES  = $(MYSOURCES)
+hpcfnbounds2_CPPFLAGS = $(MYCPPFLAGS)
+# hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcfnbounds2_LDADD    = $(MYLDADD)
 
-if OPT_ENABLE_HPCSERVER
-  SUBDIRS += hpcserver/mpi
-endif
-endif
+# if HOST_CPU_X86_FAMILY
+#   hpcfnbounds_bin_SOURCES  += x86-process-ranges.cpp amd-xop.c
+#   hpcfnbounds_bin_CPPFLAGS += -I$(XED2_INC)
+#   hpcfnbounds_bin_LDADD    += $(XED2_LIB_FLAGS)
+# else 
+# if HOST_CPU_AARCH64
+#   hpcfnbounds_bin_SOURCES  += arm-process-ranges.cpp
+# else
+#   hpcfnbounds_bin_SOURCES += generic-process-ranges.cpp
+# endif
+#endif
 
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
