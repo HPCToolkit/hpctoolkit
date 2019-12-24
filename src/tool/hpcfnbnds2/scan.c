@@ -50,123 +50,126 @@
 uint64_t
 skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
 {
-size_t secHeadStringIndex;
-char *secName;
-Elf_Scn *section;
+  size_t secHeadStringIndex;
+  char *secName;
+  Elf_Scn *section;
 
-	elf_getshdrstrndx(e, &secHeadStringIndex);
-	secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+  elf_getshdrstrndx(e, &secHeadStringIndex);
+  secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
 
-	if (secFlag == SC_SKIP) {
-	    if(verbose) {
-		fprintf (stderr, "Skipping scanning %s instructions\n",secName);
-	    }
-	    return SC_SKIP;
-	} else {
-	    if(verbose) {
-		fprintf (stderr, "Processing functions from scanning %s instructions\n",secName);
-	    }
-	}
+  if (secFlag == SC_SKIP) {
+    if(verbose) {
+  fprintf (stderr, "Skipping scanning %s instructions\n",secName);
+    }
+    return SC_SKIP;
+  } else {
+    if(verbose) {
+      fprintf (stderr, "Processing functions from scanning %s instructions\n",secName);
+    }
+  }
 
-	return SC_DONE;
+  return SC_DONE;
 }
+
 // scan the .plt section
 //
 uint64_t
 pltscan(Elf *e, GElf_Shdr secHead)
 {
-uint64_t ii;
-uint64_t startAddr, endAddr, pltEntrySize;
-char nameBuff[TB_SIZE];
-char *vegamite;
+  uint64_t ii;
+  uint64_t startAddr, endAddr, pltEntrySize;
+  char nameBuff[TB_SIZE];
+  char *vegamite;
 
-	if (skipSectionScan(e, secHead, pltscan_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-    	startAddr = secHead.sh_addr;
-	endAddr = startAddr + secHead.sh_size;
-	pltEntrySize = secHead.sh_entsize;
+  if (skipSectionScan(e, secHead, pltscan_f) == SC_SKIP) {
+    return SC_SKIP;
+  }
+  
+  startAddr = secHead.sh_addr;
+  endAddr = startAddr + secHead.sh_size;
+  pltEntrySize = secHead.sh_entsize;
 
-	for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
-	    sprintf(nameBuff,"stripped_0x%lx",ii);
-	    vegamite = strdup(nameBuff);
-	    add_function(ii, vegamite, "p",FR_YES);
-	}
+  for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
+    sprintf(nameBuff,"stripped_0x%lx",ii);
+    vegamite = strdup(nameBuff);
+    add_function(ii, vegamite, "p",FR_YES);
+  }
 
-	return SC_DONE;
+  return SC_DONE;
 }
 
 // scan the .init section
 uint64_t
 initscan(Elf *e, GElf_Shdr secHead)
 {
-	if (skipSectionScan(e, secHead, initscan_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-	// NOT YET IMPLEMENTED
-	if(verbose) {
-	    fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
-	}
-	// use "i" as source string in add_function() calls
+  if (skipSectionScan(e, secHead, initscan_f) == SC_SKIP) {
+      return SC_SKIP;
+  }
+  
+  // NOT YET IMPLEMENTED
+  if(verbose) {
+      fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
+  }
+  // use "i" as source string in add_function() calls
 }
 
 // scan the .text section
 uint64_t
 textscan(Elf *e, GElf_Shdr secHead)
 {
-	if (skipSectionScan(e, secHead, textscan_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-	// NOT YET IMPLEMENTED
-	if(verbose) {
-	    fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
-	}
-	// use "t" as source string in add_function() calls
+  if (skipSectionScan(e, secHead, textscan_f) == SC_SKIP) {
+      return SC_SKIP;
+  }
+  
+  // NOT YET IMPLEMENTED
+  if(verbose) {
+      fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
+  }
+  // use "t" as source string in add_function() calls
 }
 
 // scan the .fini section
 uint64_t
 finiscan(Elf *e, GElf_Shdr secHead)
 {
-	if (skipSectionScan(e, secHead, finiscan_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-	// NOT YET IMPLEMENTED
-	if(verbose) {
-	    fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
-	}
-	// use "f" as source string in add_function() calls
+  if (skipSectionScan(e, secHead, finiscan_f) == SC_SKIP) {
+      return SC_SKIP;
+  }
+  
+  // NOT YET IMPLEMENTED
+  if(verbose) {
+      fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
+  }
+  // use "f" as source string in add_function() calls
 }
 
 // scan the .fini section
 uint64_t
 altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
 {
-	if (skipSectionScan(e, secHead, altinstr_replacementscan_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-	// NOT YET IMPLEMENTED
-	if(verbose) {
-	    fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
-	}
-	// use "a" as source string in add_function() calls
+  if (skipSectionScan(e, secHead, altinstr_replacementscan_f) == SC_SKIP) {
+      return SC_SKIP;
+  }
+  
+  // NOT YET IMPLEMENTED
+  if(verbose) {
+    fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
+  }
+  // use "a" as source string in add_function() calls
 }
+
+// scan the .eh_frame section
 uint64_t
 ehframescan(Elf *e, GElf_Shdr secHead)
 {
-	if (skipSectionScan(e, secHead, ehframeread_f) == SC_SKIP) {
-	    return SC_SKIP;
-	}
-	
-	// NOT YET IMPLEMENTED
-	if (verbose) {
-	    fprintf(stderr, "\tprocessing .eh_frame not yet implemented\n");
-	}
-	// use "e" as source string in add_function() calls
+  if (skipSectionScan(e, secHead, ehframeread_f) == SC_SKIP) {
+    return SC_SKIP;
+  }
+  
+  // NOT YET IMPLEMENTED
+  if (verbose) {
+    fprintf(stderr, "\tprocessing .eh_frame not yet implemented\n");
+  }
+  // use "e" as source string in add_function() calls
 }
 

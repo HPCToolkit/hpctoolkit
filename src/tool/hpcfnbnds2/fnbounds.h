@@ -109,10 +109,10 @@ extern	char	*xname;
 #define FR_NO	(0)
 
 typedef struct Function {
-	uint64_t	fadd;
-	char	*fnam;
-	char	*src;
-	uint8_t fr_fnam;
+    uint64_t	fadd;
+    char	*fnam;
+    char	*src;
+    uint8_t fr_fnam;
 } Function_t;
 
 // Define initial maximum function count
