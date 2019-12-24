@@ -45,10 +45,23 @@
 // ******************************************************* EndRiceCopyright *
 /*  debug.c -- print out various elements of the data structures */
 
+//******************************************************************************
+// include files 
+//******************************************************************************
+
 #include	"fnbounds.h"
 
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 void
-print_elf_header64(GElf_Ehdr *elf_header)
+print_elf_header64
+(
+ GElf_Ehdr *elf_header
+)
 {
 
   fprintf(stderr, "========================================\n");
@@ -56,151 +69,146 @@ print_elf_header64(GElf_Ehdr *elf_header)
 
   /* Storage capacity class */
   fprintf(stderr, "Storage class\t= ");
-  switch(elf_header->e_ident[EI_CLASS])
-  {
-    case ELFCLASS32:
-      fprintf(stderr, "32-bit objects\n");
-      break;
+  switch(elf_header->e_ident[EI_CLASS]) {
+  case ELFCLASS32:
+    fprintf(stderr, "32-bit objects\n");
+    break;
 
-    case ELFCLASS64:
-      fprintf(stderr, "64-bit objects\n");
-      break;
+  case ELFCLASS64:
+    fprintf(stderr, "64-bit objects\n");
+    break;
 
-    default:
-      fprintf(stderr, "INVALID CLASS\n");
-      break;
+  default:
+    fprintf(stderr, "INVALID CLASS\n");
+    break;
   }
 
   /* Data Format */
   fprintf(stderr, "Data format\t= ");
-  switch(elf_header->e_ident[EI_DATA])
-  {
-    case ELFDATA2LSB:
-      fprintf(stderr, "2's complement, little endian\n");
-      break;
+  switch(elf_header->e_ident[EI_DATA]) {
+  case ELFDATA2LSB:
+    fprintf(stderr, "2's complement, little endian\n");
+    break;
 
-    case ELFDATA2MSB:
-      fprintf(stderr, "2's complement, big endian\n");
-      break;
+  case ELFDATA2MSB:
+    fprintf(stderr, "2's complement, big endian\n");
+    break;
 
-    default:
-      fprintf(stderr, "INVALID Format\n");
-      break;
+  default:
+    fprintf(stderr, "INVALID Format\n");
+    break;
   }
 
   /* OS ABI */
   fprintf(stderr, "OS ABI\t\t= ");
-  switch(elf_header->e_ident[EI_OSABI])
-  {
-    case ELFOSABI_SYSV:
-      fprintf(stderr, "UNIX System V ABI\n");
-      break;
+  switch(elf_header->e_ident[EI_OSABI]) {
+  case ELFOSABI_SYSV:
+    fprintf(stderr, "UNIX System V ABI\n");
+    break;
 
-    case ELFOSABI_HPUX:
-      fprintf(stderr, "HP-UX\n");
-      break;
+  case ELFOSABI_HPUX:
+    fprintf(stderr, "HP-UX\n");
+    break;
 
-    case ELFOSABI_NETBSD:
-      fprintf(stderr, "NetBSD\n");
-      break;
+  case ELFOSABI_NETBSD:
+    fprintf(stderr, "NetBSD\n");
+    break;
 
-    case ELFOSABI_LINUX:
-      fprintf(stderr, "Linux\n");
-      break;
+  case ELFOSABI_LINUX:
+    fprintf(stderr, "Linux\n");
+    break;
 
-    case ELFOSABI_SOLARIS:
-      fprintf(stderr, "Sun Solaris\n");
-      break;
+  case ELFOSABI_SOLARIS:
+    fprintf(stderr, "Sun Solaris\n");
+    break;
 
-    case ELFOSABI_AIX:
-      fprintf(stderr, "IBM AIX\n");
-      break;
+  case ELFOSABI_AIX:
+    fprintf(stderr, "IBM AIX\n");
+    break;
 
-    case ELFOSABI_IRIX:
-      fprintf(stderr, "SGI Irix\n");
-      break;
+  case ELFOSABI_IRIX:
+    fprintf(stderr, "SGI Irix\n");
+    break;
 
-    case ELFOSABI_FREEBSD:
-      fprintf(stderr, "FreeBSD\n");
-      break;
+  case ELFOSABI_FREEBSD:
+    fprintf(stderr, "FreeBSD\n");
+    break;
 
-    case ELFOSABI_TRU64:
-      fprintf(stderr, "Compaq TRU64 UNIX\n");
-      break;
+  case ELFOSABI_TRU64:
+    fprintf(stderr, "Compaq TRU64 UNIX\n");
+    break;
 
-    case ELFOSABI_MODESTO:
-      fprintf(stderr, "Novell Modesto\n");
-      break;
+  case ELFOSABI_MODESTO:
+    fprintf(stderr, "Novell Modesto\n");
+    break;
 
-    case ELFOSABI_OPENBSD:
-      fprintf(stderr, "OpenBSD\n");
-      break;
+  case ELFOSABI_OPENBSD:
+    fprintf(stderr, "OpenBSD\n");
+    break;
 
-    case ELFOSABI_ARM_AEABI:
-      fprintf(stderr, "ARM EABI\n");
-      break;
+  case ELFOSABI_ARM_AEABI:
+    fprintf(stderr, "ARM EABI\n");
+    break;
 
-    case ELFOSABI_ARM:
-      fprintf(stderr, "ARM\n");
-      break;
+  case ELFOSABI_ARM:
+    fprintf(stderr, "ARM\n");
+    break;
 
-    case ELFOSABI_STANDALONE:
-      fprintf(stderr, "Standalone (embedded) app\n");
-      break;
+  case ELFOSABI_STANDALONE:
+    fprintf(stderr, "Standalone (embedded) app\n");
+    break;
 
-    default:
-      fprintf(stderr, "Unknown (0x%x)\n", elf_header->e_ident[EI_OSABI]);
-      break;
+  default:
+    fprintf(stderr, "Unknown (0x%x)\n", elf_header->e_ident[EI_OSABI]);
+    break;
   }
 
   /* ELF filetype */
   fprintf(stderr, "Filetype \t= ");
-  switch(elf_header->e_type)
-  {
-    case ET_NONE:
-      fprintf(stderr, "N/A (0x0)\n");
-      break;
+  switch(elf_header->e_type) {
+  case ET_NONE:
+    fprintf(stderr, "N/A (0x0)\n");
+    break;
 
-    case ET_REL:
-      fprintf(stderr, "Relocatable\n");
-      break;
+  case ET_REL:
+    fprintf(stderr, "Relocatable\n");
+    break;
 
-    case ET_EXEC:
-      fprintf(stderr, "Executable\n");
-      break;
+  case ET_EXEC:
+    fprintf(stderr, "Executable\n");
+    break;
 
-    case ET_DYN:
-      fprintf(stderr, "Shared Object\n");
-      break;
+  case ET_DYN:
+    fprintf(stderr, "Shared Object\n");
+    break;
 
-    default:
-      fprintf(stderr, "Unknown (0x%x)\n", elf_header->e_type);
-      break;
+  default:
+    fprintf(stderr, "Unknown (0x%x)\n", elf_header->e_type);
+    break;
   }
 
   /* ELF Machine-id */
   fprintf(stderr, "Machine\t\t= ");
-  switch(elf_header->e_machine)
-  {
-    case EM_NONE:
-      fprintf(stderr, "None (0x0)\n");
-      break;
+  switch(elf_header->e_machine) {
+  case EM_NONE:
+    fprintf(stderr, "None (0x0)\n");
+    break;
 
-    case EM_386:
-      fprintf(stderr, "INTEL x86 (0x%x)\n", EM_386);
-      break;
+  case EM_386:
+    fprintf(stderr, "INTEL x86 (0x%x)\n", EM_386);
+    break;
 
-    case EM_X86_64:
-      fprintf(stderr, "AMD x86_64 (0x%x)\n", EM_X86_64);
-      break;
+  case EM_X86_64:
+    fprintf(stderr, "AMD x86_64 (0x%x)\n", EM_X86_64);
+    break;
 
-    case EM_AARCH64:
-      fprintf(stderr, "AARCH64 (0x%x)\n", EM_AARCH64);
-      break;
+  case EM_AARCH64:
+    fprintf(stderr, "AARCH64 (0x%x)\n", EM_AARCH64);
+    break;
 
-    default:
-      fprintf(stderr, " 0x%x\n", elf_header->e_machine);
-      break;
+  default:
+    fprintf(stderr, " 0x%x\n", elf_header->e_machine);
+    break;
   }
 
   /* Entry point */
@@ -226,45 +234,45 @@ print_elf_header64(GElf_Ehdr *elf_header)
   fprintf(stderr, "File flags \t= 0x%08x  ", elf_header->e_flags);
 
   /* ELF file flags are machine specific.
- * 	 * INTEL implements NO flags.
- * 	 	 * ARM implements a few.
- * 	 	 	 * Add support below to parse ELF file flags on ARM
- * 	 	 	 	 */
+   * INTEL implements NO flags.
+   * ARM implements a few.
+   * Add support below to parse ELF file flags on ARM
+   * 	 	 	 	 */
   int32_t ef = elf_header->e_flags;
-  if(ef & EF_ARM_RELEXEC)
+  if (ef & EF_ARM_RELEXEC)
     fprintf(stderr, ",RELEXEC ");
 
-  if(ef & EF_ARM_HASENTRY)
+  if (ef & EF_ARM_HASENTRY)
     fprintf(stderr, ",HASENTRY ");
 
-  if(ef & EF_ARM_INTERWORK)
+  if (ef & EF_ARM_INTERWORK)
     fprintf(stderr, ",INTERWORK ");
 
-  if(ef & EF_ARM_APCS_26)
+  if (ef & EF_ARM_APCS_26)
     fprintf(stderr, ",APCS_26 ");
 
-  if(ef & EF_ARM_APCS_FLOAT)
+  if (ef & EF_ARM_APCS_FLOAT)
     fprintf(stderr, ",APCS_FLOAT ");
 
-  if(ef & EF_ARM_PIC)
+  if (ef & EF_ARM_PIC)
     fprintf(stderr, ",PIC ");
 
-  if(ef & EF_ARM_ALIGN8)
+  if (ef & EF_ARM_ALIGN8)
     fprintf(stderr, ",ALIGN8 ");
 
-  if(ef & EF_ARM_NEW_ABI)
+  if (ef & EF_ARM_NEW_ABI)
     fprintf(stderr, ",NEW_ABI ");
 
-  if(ef & EF_ARM_OLD_ABI)
+  if (ef & EF_ARM_OLD_ABI)
     fprintf(stderr, ",OLD_ABI ");
 
-  if(ef & EF_ARM_SOFT_FLOAT)
+  if (ef & EF_ARM_SOFT_FLOAT)
     fprintf(stderr, ",SOFT_FLOAT ");
 
-  if(ef & EF_ARM_VFP_FLOAT)
+  if (ef & EF_ARM_VFP_FLOAT)
     fprintf(stderr, ",VFP_FLOAT ");
 
-  if(ef & EF_ARM_MAVERICK_FLOAT)
+  if (ef & EF_ARM_MAVERICK_FLOAT)
     fprintf(stderr, ",MAVERICK_FLOAT ");
 
   fprintf(stderr, "\n");
@@ -273,12 +281,14 @@ print_elf_header64(GElf_Ehdr *elf_header)
   fprintf(stderr, "ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
   fprintf(stderr, "\n");	/* End of ELF header */
-
 }
 
 // dump program headers
 void
-print_program_headers64(Elf *e)
+print_program_headers64
+(
+ Elf *e
+)
 {
   int64_t j,jn;
   GElf_Phdr progHeader;
@@ -304,12 +314,16 @@ print_program_headers64(Elf *e)
     fprintf(stderr, "0x%08lx ", progHeader.p_align);
     fprintf(stderr, "\n");
   }
+
   fprintf(stderr, "\n");	/* end of program header table */
 }
 
 // dump section header info
 void
-print_section_headers64(Elf *e)
+print_section_headers64
+(
+ Elf *e
+)
 {
   Elf_Scn *section;
   GElf_Shdr secHead;
@@ -345,7 +359,7 @@ print_section_headers64(Elf *e)
     fprintf(stderr, "\n");
 
   } while (section != NULL);
-  fprintf(stderr, "\n");	/* end of section header table */
 
+  fprintf(stderr, "\n");	/* end of section header table */
 }
 
