@@ -60,6 +60,7 @@
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 #include <hpcrun/gpu/gpu-event-id-map.h>
+#include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -347,6 +348,17 @@ gpu_memset_process
 
 
 static void
+gpu_function_process
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_function_id_map_insert(activity->details.function.function_id, activity->details.function.pc);
+  PRINT("Function id %u\n", activity->details.function.function_id);
+}
+
+
+static void
 gpu_kernel_process
 (
  gpu_activity_t *activity
@@ -575,6 +587,10 @@ gpu_activity_process
 
   case GPU_ACTIVITY_MEMSET:
     gpu_memset_process(ga);
+    break;
+
+  case GPU_ACTIVITY_FUNCTION:
+    gpu_function_process(ga);
     break;
 
   case GPU_ACTIVITY_KERNEL:
