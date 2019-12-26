@@ -5,6 +5,7 @@ case "$1" in
         cat <<EOF
 ${prog_name}: A member of HPCToolkit, version $VERSION
 git branch:  $git_version
+spack spec:  $spack_spec
 install dir: $HPCTOOLKIT
 EOF
 	exit 0

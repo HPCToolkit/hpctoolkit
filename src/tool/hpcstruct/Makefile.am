@@ -61,6 +61,9 @@ DYNINST_LFLAGS = @DYNINST_LFLAGS@
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
+SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+
 LIBELF_INC = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
@@ -105,6 +108,7 @@ MYLDADD = \
 	$(HPCLIB_Cuda) \
 	$(HPCLIB_Prof) \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
@@ -144,8 +148,8 @@ endif
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 GENHEADERS = \
-	$(srcdir)/cubins-analysis.h \
-	$(srcdir)/usage.h
+	cubins-analysis.h \
+	usage.h
 
 #----------------------------------------------------------------------
 
@@ -173,7 +177,7 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 # Other rules
 #############################################################################
 
-$(srcdir)/%.h : $(srcdir)/%.txt
+%.h : $(srcdir)/%.txt
 	$(srcdir)/stringify.py < $<  > $@
 
 

@@ -114,7 +114,6 @@ using std::string;
 
 #define WARP_SIZE 32
 
-
 namespace Analysis {
 
 namespace CallPath {
@@ -294,7 +293,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "GPU INST" &&
+    if (mgr->metric(i)->namePfxBase() == "GINS" &&
       mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
       // Assume exclusive metrics index is i+1
       gpu_inst_index.push_back(i);
@@ -609,7 +608,7 @@ constructCallGraph(Prof::CCT::ANode *prof_root, CCTGraph<Prof::CCT::ANode *> *cc
           auto *frm_proc = prof_call->ancestorProcFrm();
           auto *struct_proc = frm_proc->structure();
           auto frm_vma = struct_proc->vmaSet().begin()->beg();
-          // Set gpu instruction to 1 if not sampled
+          // Set gpu instruction to WARP SIZE if not sampled
           if (prof_call->demandMetric(gpu_inst_index[i]) == 0.0) {
             // Inclusive
             prof_call->demandMetric(gpu_inst_index[i]) = WARP_SIZE;

@@ -66,6 +66,13 @@
 #ifndef _POSIX_SOURCE
 #  define _POSIX_SOURCE // fdopen()
 #endif
+
+// quiets the warning about _SVID_SOURCE being deprecated
+// why are any of these flags necessary ?
+#ifndef _DEFAULT_SOURCE
+#  define _DEFAULT_SOURCE
+#endif
+
 #ifndef _SVID_SOURCE
 #  define _SVID_SOURCE  // fputc_unlocked()
 #endif

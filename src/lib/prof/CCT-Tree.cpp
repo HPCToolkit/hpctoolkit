@@ -108,8 +108,9 @@ namespace Prof {
 
 extern std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 extern std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
+extern std::map<uint, uint> m_mapLoadModuleIDs;      // map between load module IDs
 
-extern std::map<uint, uint> m_pairFakeLoadModule;
+
 
 // local function to convert from the original procedure ID into a 
 // a "compact" id to reduce redundancy if the procedure of the same
@@ -133,9 +134,10 @@ static uint
 getLoadModuleFromMap(uint lm_id)
 {
   uint id = lm_id;
-  std::map<uint, uint>::iterator it = Prof::m_pairFakeLoadModule.find(lm_id);
-
-  if (it != Prof::m_pairFakeLoadModule.end()) {
+  std::map<uint, uint>::iterator it = m_mapLoadModuleIDs.find(lm_id);
+  if (it != Prof::m_mapLoadModuleIDs.end()) {
+    // the file ID should redirected to another file ID which has 
+    // exactly the same filename
     id = it->second;
   }
   return id;

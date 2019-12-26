@@ -951,9 +951,9 @@ int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs)
 {
-  fprintf(fs, "(%"PRIu64", %u", HPCTRACE_FMT_GET_TIME(x->comp), x->cpId);
+  fprintf(fs, "(%llu, %u", HPCTRACE_FMT_GET_TIME(x->comp), x->cpId);
   if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS)) {
-    fprintf(fs, ", %u",  HPCTRACE_FMT_GET_DLCA(x->comp));
+    fprintf(fs, ", %llu",  HPCTRACE_FMT_GET_DLCA(x->comp));
   }
   if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     fprintf(fs, ", %u",  x->metricId);

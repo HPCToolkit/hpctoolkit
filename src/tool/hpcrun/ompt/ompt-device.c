@@ -70,11 +70,13 @@
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
 
-#include "sample-sources/nvidia/cuda-state-placeholders.h"
-#include "sample-sources/nvidia/gpu-driver-state-placeholders.h"
-#include "sample-sources/nvidia/cupti-api.h"
-#include "sample-sources/nvidia/cupti-channel.h"
-#include "sample-sources/nvidia/nvidia.h"
+#include "gpu/gpu-op-placeholders.h"
+#include "gpu/gpu-correlation-channel.h"
+#include "gpu/gpu-correlation-channel-set.h"
+#include "gpu/gpu-monitoring.h"
+
+#include "gpu/nvidia/cupti-api.h"
+#include "sample-sources/nvidia.h"
 
 
 
@@ -178,8 +180,8 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     ompt_runtime_api_flag = true;
     cupti_correlation_id_push(host_op_id);
 
-    gpu_driver_ccts_t gpu_driver_ccts;
-    memset(&gpu_driver_ccts, 0, sizeof(gpu_driver_ccts_t));
+    gpu_op_ccts_t gpu_op_ccts;
+    memset(&gpu_op_ccts, 0, sizeof(gpu_op_ccts_t));
 
     hpcrun_safe_enter();
 
@@ -188,32 +190,15 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     frm.ip_norm = ip_norm;
     cct_node_t *api_node = hpcrun_cct_insert_addr(target_node, &frm);
 
-    frm.ip_norm = gpu_driver_placeholders.gpu_copy_state.pc_norm;
-    gpu_driver_ccts.copy_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_copyin_state.pc_norm;
-    gpu_driver_ccts.copyin_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_copyout_state.pc_norm;
-    gpu_driver_ccts.copyout_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_alloc_state.pc_norm;
-    gpu_driver_ccts.alloc_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_delete_state.pc_norm;
-    gpu_driver_ccts.delete_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_kernel_state.pc_norm;
-    gpu_driver_ccts.kernel_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_trace_state.pc_norm;
-    gpu_driver_ccts.trace_node = hpcrun_cct_insert_addr(api_node, &frm);
-    frm.ip_norm = gpu_driver_placeholders.gpu_sync_state.pc_norm;
-    gpu_driver_ccts.sync_node = hpcrun_cct_insert_addr(api_node, &frm);
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
 
     hpcrun_safe_exit();
 
-    trace_node = gpu_driver_ccts.trace_node;
+    trace_node = gpu_op_ccts.ccts[gpu_placeholder_type_trace];
 
-    // Inform the worker about the placeholder
-    cupti_correlation_channel_t *channel = cupti_correlation_channel_get();
-    cupti_activity_channel_t *activity_channel = cupti_activity_channel_get();
-    cupti_correlation_channel_produce(channel, host_op_id,
-      activity_channel, &gpu_driver_ccts);
+    // Inform the worker about the placeholders
+    uint64_t cpu_gpu_time_offset = cupti_nanotime_offset();
+    gpu_correlation_channel_produce(host_op_id, &gpu_op_ccts, cpu_gpu_time_offset);
   } else {
     PRINT("exit ompt runtime op %lu\n", host_op_id);
     // Enter a runtime api
@@ -267,7 +252,8 @@ ompt_callback_buffer_complete
 )
 {
   // handle notifications
-  cupti_correlation_channel_consume(NULL);
+  gpu_correlation_channel_set_consume();
+
   // signal advance to return pointer to first record
   ompt_buffer_cursor_t next = begin;
   int status = 0;
@@ -315,7 +301,8 @@ ompt_trace_configure(ompt_device_t *device)
   
   // set pc sampling after other traces
   if (ompt_pc_sampling_enabled) {
-    ompt_set_pc_sampling(device, true, cupti_pc_sampling_frequency_get());
+    int freq_bits = gpu_monitoring_instruction_sample_frequency_get();
+    ompt_set_pc_sampling(device, true, freq_bits);
   }
 
   // turn on monitoring previously indicated

@@ -168,6 +168,28 @@ lm_contains_fn
 }
 
 
+int
+pseudo_module_p
+(
+  char *name
+)
+{
+    // last character in the name
+    char lastchar = 0;  // get the empty string case right
+
+    while (*name) {
+      lastchar = *name;
+      name++;
+    }
+
+    // pseudo modules have [name] in /proc/self/maps
+    // because we store [vdso] in hpctooolkit's measurement directory,
+    // it actually has the name /path/to/measurement/directory/[vdso].
+    // checking the last character tells us it is a virtual shared library.
+    return lastchar == ']'; 
+}
+
+
 
 //***************************************************************************
 // interface operations
@@ -270,17 +292,25 @@ module_ignore_map_ignore
   bool result = false;
   pfq_rwlock_node_t me;
   pfq_rwlock_write_lock(&modules_lock, &me);
-  for (i = 0; i < NUM_FNS; ++i) {
-    if (modules[i].empty == true) {
-      load_module_t *module = hpcrun_loadmap_findByAddr(start, end);
-      if (lm_contains_fn(module->name, NVIDIA_FNS[i])) {
-        modules[i].module = module;
-        modules[i].empty = false;
-        result = true;
-        break;
+
+
+  load_module_t *module = hpcrun_loadmap_findByAddr(start, end);
+
+  if (!pseudo_module_p(module->name)) {
+    // this is a real load module; let's see if it contains 
+    // any of the nvidia functions
+    for (i = 0; i < NUM_FNS; ++i) {
+      if (modules[i].empty == true) {
+	if (lm_contains_fn(module->name, NVIDIA_FNS[i])) {
+	  modules[i].module = module;
+	  modules[i].empty = false;
+	  result = true;
+	  break;
+	}
       }
     }
   }
+
   pfq_rwlock_write_unlock(&modules_lock, &me);
   return result;
 }
