@@ -108,7 +108,7 @@ using std::string;
 
 
 #define DEBUG_CALLPATH_CUDACFG 0
-#define SHOW_CALLPATH_CUDACFG 1
+#define SHOW_CALLPATH_CUDACFG 0
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
@@ -404,19 +404,24 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
         if (getCudaCallStmt(n) != NULL) {  // call
           auto *stmt = n->structure();
           auto vma = stmt->vmaSet().begin()->beg();
-          std::stack<VMA> call_stack;
-          call_stack.push(vma);
+          std::stack<std::pair<VMA, VMA>> call_stack;
+          call_stack.push(std::pair<int, int>(0, vma));
           auto *p = n;
           while (true) {
             auto p_vma = 0;
             p = p->ancestorProcFrm();
             if (p != NULL) {
+              auto &t = call_stack.top();
+              auto *p_stmt = p->structure();
+              p_vma = p_stmt->vmaSet().begin()->beg();
+              t.first = p_vma;
+              t.second = t.second - p_vma;
               // if p is a call, p->ancestorCall returns p
               p = p->ancestorCall();
               if (p != NULL) {
-                auto *p_stmt = p->structure();
+                p_stmt = p->structure();
                 p_vma = p_stmt->vmaSet().begin()->beg();
-                call_stack.push(p_vma);
+                call_stack.push(std::pair<int, int>(0, p_vma));
                 if (getCudaCallStmt(p) == NULL) {
                   break;
                 }
@@ -427,16 +432,12 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
               break;
             }
           }
-          while (call_stack.size() != 1) {
-            vma = call_stack.top();
+          while (call_stack.empty() == false) {
+            auto vmas = call_stack.top();
             call_stack.pop();
-            std::cout << std::hex << "0x" << vma << "->";
+            std::cout << "[" << std::hex << "0x" << vmas.first << "," << "0x" << vmas.second << "]" << "->";
           }
-          std::cout << std::hex << "0x" << call_stack.top() << ": ";
-          for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
-            std::cout << n->demandMetric(gpu_inst_index[i]) << " ";
-          }
-          std::cout << std::endl;
+          std::cout << std::fixed << n->demandMetric(gpu_inst_index[0]) << std::endl;
         }
       }
     }
