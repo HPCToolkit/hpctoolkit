@@ -70,7 +70,6 @@
 #include <list>
 #include <map>
 
-#include <lib/isa/ISA.hpp>
 #include <lib/isa/ISATypes.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
@@ -102,47 +101,41 @@ typedef list <LoopInfo *> LoopList;
 typedef map  <FLPIndex, TreeNode *, FLPCompare> NodeMap;
 
 
-// File, proc, line we get from Symtab inline call sites.
+// File, proc (pretty), line we get from Symtab inline call sites.
 class InlineNode {
 private:
   std::string  m_filenm;
-  std::string  m_procnm;
   std::string  m_prettynm;
   SrcFile::ln  m_lineno;
 
 public:
-  InlineNode(std::string &file, std::string &proc, std::string &pretty,
-	     SrcFile::ln line)
+  InlineNode(std::string &file, std::string &pretty, SrcFile::ln line)
   {
     m_filenm = file;
-    m_procnm = proc;
     m_prettynm = pretty;
     m_lineno = line;
   }
 
   std::string & getFileName() { return m_filenm; }
-  std::string & getProcName() { return m_procnm; }
   std::string & getPrettyName() { return m_prettynm; }
   SrcFile::ln getLineNum() { return m_lineno; }
 };
 
 
-// 3-tuple of indices for file, line, proc.
+// 3-tuple of indices for file, line, proc (pretty).
 class FLPIndex {
 public:
   long  file_index;
   long  base_index;
   long  line_num;
-  long  proc_index;
   long  pretty_index;
 
   // constructor by index
-  FLPIndex(long file, long base, long line, long proc, long pretty)
+  FLPIndex(long file, long base, long line, long pretty)
   {
     file_index = file;
     base_index = base;
     line_num = line;
-    proc_index = proc;
     pretty_index = pretty;
   }
 
@@ -154,7 +147,6 @@ public:
     file_index = strTab.str2index(fname);
     base_index = strTab.str2index(FileUtil::basename(fname.c_str()));
     line_num = (long) node.getLineNum();
-    proc_index = strTab.str2index(node.getProcName());
     pretty_index = strTab.str2index(node.getPrettyName());
   }
 
@@ -162,7 +154,7 @@ public:
   {
     return file_index == rhs.file_index
       && line_num == rhs.line_num
-      && proc_index == rhs.proc_index;
+      && pretty_index == rhs.pretty_index;
   }
 
   bool operator != (const FLPIndex rhs)
@@ -181,7 +173,7 @@ public:
     if (t1.file_index > t2.file_index) { return false; }
     if (t1.line_num < t2.line_num) { return true; }
     if (t1.line_num > t2.line_num) { return false; }
-    if (t1.proc_index < t2.proc_index) { return true; }
+    if (t1.pretty_index < t2.pretty_index) { return true; }
     return false;
   }
 };
@@ -209,9 +201,8 @@ public:
 
   // constructor by index
   StmtInfo(VMA vm, int ln, long file, long base, long line,
-     const std::string & device_tag,
-	   bool call = false, bool sink = false,
-     VMA targ = 0)
+	   const std::string & device_tag,
+	   bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;
@@ -227,9 +218,8 @@ public:
   // constructor by string name
   StmtInfo(HPC::StringTable & strTab, VMA vm, int ln,
 	   const std::string & filenm, long line,
-     const std::string & device_tag,
-	   bool call = false, bool sink = false,
-     VMA targ = 0)
+	   const std::string & device_tag,
+	   bool call = false, bool sink = false, VMA targ = 0)
   {
     vma = vm;
     len = ln;

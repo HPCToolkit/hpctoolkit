@@ -84,7 +84,6 @@
 #include <utility>
 #include <vector>
 
-#include <lib/isa/ISA.hpp>
 #include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
@@ -92,6 +91,7 @@
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
 
 #include "Struct-Inline.hpp"
 
@@ -103,62 +103,10 @@ using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
 
-static const string UNKNOWN_PROC ("unknown-proc");
-
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
 
-#define DEBUG_INLINE_NAMES  0
-
-//***************************************************************************
-
-// Old attempt to catch errors in Symtab and continue.  There isn't
-// any reasonable way to continue, so don't try.
-#if 0
-static struct sigaction old_act_abrt;
-static struct sigaction old_act_segv;
-static sigjmp_buf jbuf;
-static int jbuf_active = 0;
-static int num_queries = 0;
-static int num_errors = 0;
-
-static void restore_sighandler(void);
-
-static void
-banal_sighandler(int sig)
-{
-  if (jbuf_active) {
-    siglongjmp(jbuf, 1);
-  }
-
-  // caught a signal, but it didn't come from symtab
-  restore_sighandler();
-  DIAG_Die("banal caught unexpected signal " << sig);
-}
-
-static void
-init_sighandler(void)
-{
-  struct sigaction act;
-
-  memset(&act, 0, sizeof(act));
-  act.sa_handler = banal_sighandler;
-  act.sa_flags = 0;
-  sigemptyset(&act.sa_mask);
-
-  jbuf_active = 0;
-  sigaction(SIGABRT, &act, &old_act_abrt);
-  sigaction(SIGSEGV, &act, &old_act_segv);
-}
-
-static void
-restore_sighandler(void)
-{
-  sigaction(SIGABRT, &old_act_abrt, NULL);
-  sigaction(SIGSEGV, &old_act_segv, NULL);
-  jbuf_active = 0;
-}
-#endif
+#define DEBUG_INLINE_SEQNS  0
 
 //***************************************************************************
 
@@ -198,68 +146,6 @@ closeSymtab()
 
 //***************************************************************************
 
-// Lookup the Module (comp unit) containing 'vma' to see if it is from
-// a source file that mangles function names.  A full Symtab Function
-// already does this, but inlined functions do not, so we have to
-// decide this ourselves.
-//
-// Returns: true if 'vma' is from a C++ module (mangled names).
-//
-static string cplus_exts[] = {
-  ".C", ".cc", ".cpp", ".cxx", ".c++",
-  ".CC", ".CPP", ".CXX", ".hpp", ".hxx", ""
-};
-
-static bool
-analyzeDemangle(VMA vma)
-{
-  if (the_symtab == NULL) {
-    return false;
-  }
-
-  // find module (comp unit) containing vma
-  set <Module *> modSet;
-  the_symtab->findModuleByOffset(modSet, vma);
-
-  if (modSet.empty()) {
-    return false;
-  }
-
-  Module * mod = *(modSet.begin());
-  if (mod == NULL) {
-    return false;
-  }
-
-  // languages that need demangling
-  supportedLanguages lang = mod->language();
-  if (lang == lang_CPlusPlus || lang == lang_GnuCPlusPlus) {
-    return true;
-  }
-  if (lang != lang_Unknown) {
-    return false;
-  }
-
-  // if language is unknown, then try file name
-  string filenm = mod->fileName();
-  long file_len = filenm.length();
-
-  if (filenm == "") {
-    return false;
-  }
-
-  for (auto i = 0; cplus_exts[i] != ""; i++) {
-    string ext = cplus_exts[i];
-    long len = ext.length();
-
-    if (file_len > len && filenm.compare(file_len - len, len, ext) == 0) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
@@ -277,7 +163,6 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 
   if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL)
   {
-    bool demangle = analyzeDemangle(addr);
     ret = true;
 
     parent = func->getInlinedParent();
@@ -294,22 +179,17 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
       // symtab does not provide mangled and pretty names for
       // inlined functions, so we have to decide this ourselves
       string procnm = func->getName();
-      string prettynm = procnm;
+      string prettynm =
+	  (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
 
-      if (procnm == "") {
-	procnm = UNKNOWN_PROC;
-	prettynm = UNKNOWN_PROC;
-      }
-      else if (demangle) {
-	prettynm = BinUtil::demangleProcName(procnm);
-      }
-
-#if DEBUG_INLINE_NAMES
-      cout << "raw-inline:  0x" << hex << addr << dec
-	   << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
+#if DEBUG_INLINE_SEQNS
+      cout << "\n0x" << hex << addr << dec
+	   << "  l=" << lineno << "  file:  " << filenm << "\n"
+	   << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
+	   << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
 #endif
 
-      nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
+      nodelist.push_front(InlineNode(filenm, prettynm, lineno));
 
       func = parent;
       parent = func->getInlinedParent();
@@ -366,8 +246,8 @@ StmtMap::insert(StmtInfo * sinfo)
   // compare vma with stmt to the left
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, end_vma - vma, file, base, line,
-			sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
+    info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
   else if (left->base_index == base && left->line_num == line
@@ -384,8 +264,8 @@ StmtMap::insert(StmtInfo * sinfo)
     // truncate interval to start at left_end and insert
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
-      info = new StmtInfo(vma, end_vma - vma, file, base, line,
-        sinfo->device, sinfo->is_call, sinfo->is_sink, sinfo->target);
+      info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			  sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }

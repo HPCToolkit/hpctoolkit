@@ -106,8 +106,8 @@ MYLDADD = \
 	$(HPCLIB_Cuda) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \

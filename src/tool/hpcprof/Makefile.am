@@ -110,8 +110,8 @@ MYLDADD = \
 	$(HPCLIB_Cuda) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
@@ -121,6 +121,7 @@ MYLDADD = \
 	$(MY_ELF_DWARF) \
 	$(BOOST_LFLAGS) \
 	@LZMA_LDFLAGS_STAT@ \
+	@XERCES_LDLIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
 	@HOST_HPCPROF_LDFLAGS@

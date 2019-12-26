@@ -80,7 +80,6 @@ endif
 #############################################################################
 
 MYSOURCES = \
-        Demangler.hpp Demangler.cpp \
 	LM.hpp LM.cpp \
 	Seg.hpp Seg.cpp \
 	Proc.hpp Proc.cpp \

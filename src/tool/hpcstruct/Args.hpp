@@ -64,7 +64,6 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -114,14 +113,10 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
+  bool compute_gpu_cfg;
 
   // Parsed Data: optional arguments
-  std::string lush_agent;
   std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
   std::string dbgProcGlob;
 
   bool prettyPrintOutput;         // default: true
@@ -129,8 +124,8 @@ public:
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
-  std::vector<std::string> in_filenm;
-  std::vector<std::string> out_filenm;
+  std::string in_filenm;
+  std::string out_filenm;
 
 private:
   void

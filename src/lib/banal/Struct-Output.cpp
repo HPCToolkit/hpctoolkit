@@ -73,7 +73,6 @@
 #include <ostream>
 #include <string>
 
-#include <lib/isa/ISA.hpp> 
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
@@ -98,7 +97,7 @@ static const char * hpcstruct_xml_head =
 #include <lib/xml/hpc-structure.dtd.h>
   ;
 
-// temp options to control call <C> tags, target (t) field, and device (d) field 
+// temp options for call <C> tags, target (t) field, and device (d) field
 #define ENABLE_CALL_TAGS     1
 #define ENABLE_TARGET_FIELD  1
 #define ENABLE_DEVICE_FIELD  1
@@ -114,6 +113,9 @@ static const char * hpcstruct_xml_head =
 
 #define NUMBER(label, num)  \
   " " << label << "=\"" << num << "\""
+
+#define HEX(label, num)  \
+  " " << label << "=\"0x" << hex << num << dec << "\""
 
 #define STRING(label, str)  \
   " " << label << "=\"" << xml::EscapeStr(str) << "\""
@@ -616,10 +618,10 @@ doStmtList(ostream * os, int depth, TreeNode * node)
 	<< VRANGE(sinfo->vma, sinfo->len);
 
     if (! sinfo->is_sink && ENABLE_TARGET_FIELD) {
-      *os << " t=\"0x" << hex << sinfo->target << dec << "\"";
+      *os << HEX("t", sinfo->target);
     }
     if (ENABLE_DEVICE_FIELD) {
-      *os << " d=\"" << sinfo->device << "\"";
+      *os << STRING("d", sinfo->device);
     }
     *os << "/>\n";
   }

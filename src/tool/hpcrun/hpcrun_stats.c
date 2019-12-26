@@ -78,6 +78,7 @@ static atomic_long num_unwind_intervals_suspicious = ATOMIC_VAR_INIT(0);
 static atomic_long trolled = ATOMIC_VAR_INIT(0);
 static atomic_long frames_total = ATOMIC_VAR_INIT(0);
 static atomic_long trolled_frames = ATOMIC_VAR_INIT(0);
+static atomic_long frames_libfail_total = ATOMIC_VAR_INIT(0);
 
 static atomic_long acc_trace_records = ATOMIC_VAR_INIT(0);
 static atomic_long acc_trace_records_dropped = ATOMIC_VAR_INIT(0);
@@ -103,6 +104,7 @@ hpcrun_stats_reinit(void)
   atomic_store_explicit(&trolled, 0, memory_order_relaxed);
   atomic_store_explicit(&frames_total, 0, memory_order_relaxed);
   atomic_store_explicit(&trolled_frames, 0, memory_order_relaxed);
+  atomic_store_explicit(&frames_libfail_total, 0, memory_order_relaxed);
 
   atomic_store_explicit(&acc_trace_records, 0, memory_order_relaxed);
   atomic_store_explicit(&acc_trace_records_dropped, 0, memory_order_relaxed);
@@ -384,6 +386,21 @@ hpcrun_stats_frames_total(void)
 {
   return atomic_load_explicit(&frames_total, memory_order_relaxed);
 }
+//-------------------------------------------------------
+// number of (unwind) frames where libunwind failed
+//------------------------------------------------------
+
+void
+hpcrun_stats_frames_libfail_total_inc(long amt)
+{
+  atomic_fetch_add_explicit(&frames_libfail_total, amt, memory_order_relaxed);
+}
+
+long
+hpcrun_stats_frames_libfail_total(void)
+{
+  return atomic_load_explicit(&frames_libfail_total, memory_order_relaxed);
+}
 
 //---------------------------------------------------------------------
 // total number of (unwind) frames in sample set that employed trolling
@@ -438,6 +455,7 @@ hpcrun_stats_print_summary(void)
 
   long cpu_frames = atomic_load_explicit(&frames_total, memory_order_relaxed);
   long cpu_frames_trolled = atomic_load_explicit(&trolled_frames, memory_order_relaxed);
+  long cpu_frames_libfail_total = atomic_load_explicit(&frames_libfail_total, memory_order_relaxed);
 
   long cpu_intervals_total = atomic_load_explicit(&num_unwind_intervals_total, memory_order_relaxed);
   long cpu_intervals_susp = atomic_load_explicit(&num_unwind_intervals_suspicious, memory_order_relaxed);
@@ -450,21 +468,27 @@ hpcrun_stats_print_summary(void)
 
   hpcrun_memory_summary();
 
+  AMSG("UNWIND ANOMALIES: total: %ld errant: %ld, total-frames: %ld, total-libunwind-fails: %ld",
+       cpu_total, cpu_dropped, cpu_frames, cpu_frames_libfail_total );
+
+  AMSG("ACC SUMMARY:\n"
+       "         accelerator trace records: %ld (processed: %ld, dropped: %ld)\n"
+       "         accelerator samples: %ld (recorded: %ld, dropped: %ld)",
+       acc_trace + acc_trace_dropped, acc_trace, acc_trace_dropped,
+       acc_samp + acc_samp_dropped, acc_samp, acc_samp_dropped
+       );
+
   AMSG("SAMPLE ANOMALIES: blocks: %ld (async: %ld, dlopen: %ld), "
        "errors: %ld (segv: %ld, soft: %ld)",
        cpu_blocked, cpu_blocked_async, cpu_blocked_dlopen, 
        cpu_dropped, cpu_segv, cpu_dropped - cpu_segv);
 
-  AMSG("SUMMARY: cpu samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
+  AMSG("SUMMARY: samples: %ld (recorded: %ld, blocked: %ld, errant: %ld, trolled: %ld, yielded: %ld),\n"
        "         frames: %ld (trolled: %ld)\n"
-       "         intervals: %ld (suspicious: %ld)\n"
-       "         accelerator trace records: %ld (processed: %ld, dropped: %ld)\n"
-       "         accelerator samples: %ld (recorded: %ld, dropped: %ld)",
+       "         intervals: %ld (suspicious: %ld)",
        cpu_total, cpu_valid, cpu_blocked, cpu_dropped, cpu_trolled, cpu_yielded,
        cpu_frames, cpu_frames_trolled,
-       cpu_intervals_total, cpu_intervals_susp,
-       acc_trace + acc_trace_dropped, acc_trace, acc_trace_dropped,
-       acc_samp + acc_samp_dropped, acc_samp, acc_samp_dropped
+       cpu_intervals_total, cpu_intervals_susp
        );
 
   if (hpcrun_get_disabled()) {

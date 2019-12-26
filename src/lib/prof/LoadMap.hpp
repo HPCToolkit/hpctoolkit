@@ -160,6 +160,12 @@ public:
     void
     ddump() const;
 
+    static const std::string&
+    pretty_name(const std::string& lm_nm);
+
+    static std::string
+    pretty_file_name(const std::string& lm_nm);
+
   private:
     void
     id(LMId_t x)

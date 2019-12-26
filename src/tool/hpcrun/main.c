@@ -115,7 +115,6 @@
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
 #include "control-knob.h"
-#include "addr_to_module.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -128,7 +127,7 @@
 
 #include <memory/hpcrun-malloc.h>
 #include <memory/mmap.h>
-
+#include <tool/hpcrun/sample-sources/gpu/stream-tracing.h>
 #include <monitor-exts/monitor_ext.h>
 
 #include <cct/cct.h>
@@ -417,6 +416,8 @@ hpcrun_init_internal(bool is_child)
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
 
+  hpcrun_save_vdso();
+
   // init callbacks for each device
   hpcrun_initializer_init();
 
@@ -546,6 +547,13 @@ hpcrun_init_internal(bool is_child)
   }
 
   hpcrun_is_initialized_private = true;
+
+  // FIXME: this isn't in master-gpu-trace. how is it managed?
+  // stream_tracing_init();
+
+#ifdef USE_ROCM
+  roctracer_init();
+#endif
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -663,6 +671,13 @@ hpcrun_fini_internal()
 
     int is_process = 1;
     thread_finalize(is_process);
+
+// FIXME: this isn't in master-gpu-trace. how is it managed?
+    // stream_tracing_fini();
+
+#ifdef USE_ROCM
+    roctracer_fini();
+#endif
 
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
@@ -1651,3 +1666,23 @@ monitor_post_dlclose(void* handle, int ret)
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */
+
+
+//----------------------------------------------------------------------
+
+// FIXME: Add a weak symbol for cplus_demangle() for hpclink in the
+// static case.  Something is pulling in hpctoolkit_demangle() and
+// thus cplus_demangle() into libhpcrun.o and this breaks hpclink,
+// even though nothing actually uses them.  But the real fix should be
+// in the lib Makefiles.
+
+#ifdef HPCRUN_STATIC_LINK
+
+char * __attribute__ ((weak))
+cplus_demangle(char *str, int opts)
+{
+  return strdup(str);
+}
+
+#endif
+

@@ -437,7 +437,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
     unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
 
     // sanity check to avoid infinite unwind loop
-    if (sp <= cursor->sp) {
+    if (sp <= (void *) cursor->sp) {
       cursor->libunw_status = LIBUNW_UNAVAIL;
       unw_res = STEP_ERROR;
     }

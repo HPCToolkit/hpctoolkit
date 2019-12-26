@@ -576,6 +576,10 @@ public:
   dumpme(std::ostream& os = std::cerr, uint oFlags = 0,
 	 const char* pre = "") const;
 
+  virtual std::ostream&
+  dumpmePath(std::ostream& os = std::cerr, uint oFlags = 0,
+	 const char* pre = "") const;
+
 protected:
   bool
   writeXML_pre(std::ostream& os = std::cout, uint oFlags = 0,
@@ -1098,17 +1102,15 @@ public:
   codeName() const
   { return name(); }
 
-  const char *
-  pretty_name() const
-  { return m_pretty_name.c_str(); }
-
-  void
-  pretty_name(const char *nm)
-  { m_pretty_name = nm; }
-
   std::string
   baseName() const
   { return FileUtil::basename(m_name); }
+
+  void
+  pretty_name(const std::string& new_name)
+  {
+    m_pretty_name = new_name;
+  }
 
 
   // --------------------------------------------------------
@@ -1262,7 +1264,7 @@ protected:
 private:
   std::string m_name; // the load module name
 
-  // for pseudo module, this will be set
+  // for pseudo modules, this will be set
   // keep this in addition to m_name to avoid disturbing other
   // things that depend upon a full path
   std::string m_pretty_name;
@@ -1417,6 +1419,10 @@ protected:
 
 public:
 
+  // map of file name to alien node, for stmts with a single, guard
+  // alien from struct simple
+  typedef std::map <std::string, Alien *> AlienFileMap;
+
   // --------------------------------------------------------
   // Create/Destroy
   // --------------------------------------------------------
@@ -1437,6 +1443,7 @@ public:
   virtual ~Proc()
   {
     delete m_stmtMap;
+    delete m_alienMap;
   }
 
   virtual ANode*
@@ -1455,6 +1462,13 @@ public:
   demand(File* file, const std::string& name)
   { return demand(file, name, "", ln_NULL, ln_NULL, NULL); }
 
+  // find or create direct stmt node (no alien) for struct simple
+  Stmt*
+  demandStmtSimple(SrcFile::ln line, VMA beg_vma, VMA end_vma);
+
+  // find or create guard alien for struct simple
+  Alien*
+  demandGuardAlien(std::string & filenm, SrcFile::ln line);
 
   // --------------------------------------------------------
   //
@@ -1493,6 +1507,7 @@ public:
   // search for enclosing nodes
   // --------------------------------------------------------
 
+#if 0
   // FIXME: confusion between native and alien statements
   Stmt*
   findStmt(SrcFile::ln begLn)
@@ -1501,6 +1516,7 @@ public:
     Stmt* x = (it != m_stmtMap->end()) ? it->second : NULL;
     return x;
   }
+#endif
 
 
   // --------------------------------------------------------
@@ -1523,8 +1539,10 @@ private:
   void
   Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
 
+#if 0
   void
   insertStmtMap(Stmt* stmt);
+#endif
 
   friend class Stmt;
 
@@ -1532,7 +1550,11 @@ private:
   std::string m_name;
   std::string m_linkname;
   bool m_hasSym;
+
+  // for struct simple and guard aliens only.  all access should go
+  // through demandStmtSimple() and demandGuardAlien().
   StmtMap* m_stmtMap;
+  AlienFileMap* m_alienMap;
 };
 
 
@@ -1578,12 +1600,15 @@ public:
   }
 
   virtual ~Alien()
-  { }
+  { delete m_stmtMap; }
 
   virtual ANode*
   clone()
   { return new Alien(*this); }
 
+  // find or create a stmt inside the alien
+  Stmt*
+  demandStmt(SrcFile::ln line, VMA beg_vma, VMA end_vma);
 
   // --------------------------------------------------------
   //
@@ -1642,10 +1667,15 @@ private:
   Ctor(ACodeNode* parent, const char* filenm, const char* procnm,
        const char* displaynm);
 
+  friend class Stmt;
+
 private:
   std::string m_filenm;
   std::string m_name;
   std::string m_displaynm;
+
+  // for struct simple only
+  StmtMap *   m_stmtMap;
 
   Prof::Struct::Proc *m_proc;
 
@@ -1743,12 +1773,19 @@ public:
     DIAG_Assert((parent == NULL) || (t == TyGroup) || (t == TyFile)
 		|| (t == TyProc) || (t == TyAlien) || (t == TyLoop), "");
 
-    LM* lmStrct = NULL;
-    Proc* pStrct = ancestorProc();
-    if (pStrct) {
-      pStrct->insertStmtMap(this);
-      lmStrct = pStrct->ancestorLM();
+#if 0
+    // if parent is proc or alien, add to stmt map
+    if (t == TyProc) {
+      ((Proc *) parent)->insertStmtMap(this);
     }
+    else if (t == TyAlien) {
+      Alien * alien = (Alien *) parent;
+      (* (alien->m_stmtMap))[begLn] = this;
+    }
+#endif
+
+    // add vma to LM vma interval map
+    LM* lmStrct = parent->ancestorLM();
     if (lmStrct && begVMA) {
       lmStrct->insertStmtIf(this);
     }

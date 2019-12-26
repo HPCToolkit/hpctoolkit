@@ -99,14 +99,17 @@ MYSOURCES = \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
 	stacks.h stacks.c \
-	unordered_stack.h unordered_stack.c \
-	bi_unordered_channel.h bi_unordered_channel.c \
+	bistack.h bistack.c \
+	bichannel.h bichannel.c \
 	producer_wfq.h producer_wfq.c \
 	generic_pair.h generic_pair.c \
 	generic_val.h  mem_manager.h \
-	randomizer.h randomizer.c
+	procmaps.h procmaps.c \
+	vdso.h vdso.c \
+	randomizer.h randomizer.c \
+	splay-uint64.h splay-uint64.c
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)
+MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)  -I$(LIBELF_INC)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -114,9 +117,9 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = 
+MYLIBADD =
 
-MYCLEAN = 
+MYCLEAN =
 
 #############################################################################
 # zlib

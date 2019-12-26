@@ -64,7 +64,7 @@ static char *tmp;
 static char *tk;
 static char *last;
 
-static char *sep1 = " ,;";
+static char *sep1 = " ;";
 
 char *
 start_tok(char *lst)

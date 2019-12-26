@@ -73,8 +73,7 @@ SUBDIRS += \
 	hpcprof \
 	hpcproftt \
 	hpclump \
-	hpctracedump \
-	misc
+	hpctracedump
 
 if OPT_ENABLE_HPCSERVER
 SUBDIRS += hpcserver
@@ -84,7 +83,8 @@ endif
 if OPT_ENABLE_HPCRUN
   SUBDIRS += \
 	hpcrun \
-	hpcfnbounds
+	hpcfnbounds \
+	hpcfnbnds2
 endif
 
 if OPT_ENABLE_MPI
