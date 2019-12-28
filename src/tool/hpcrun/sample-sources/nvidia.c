@@ -447,10 +447,10 @@ METHOD_FN(process_event_list, int lush_metrics)
             &device_trace_finalizer_shutdown);
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_SANITIZER)) {
 #ifndef HPCRUN_STATIC_LINK
-  if (sanitizer_bind()) {
-    EEMSG("hpcrun: unable to bind to NVIDIA SANITIZER library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
+    if (sanitizer_bind()) {
+      EEMSG("hpcrun: unable to bind to NVIDIA SANITIZER library %s\n", dlerror());
+      monitor_real_exit(-1);
+    }
 #endif
 
 #ifndef HPCTOOLKIT_GPU_PATCH
