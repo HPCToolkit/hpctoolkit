@@ -61,7 +61,6 @@
 #include <stdio.h>     // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
-#include <unistd.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -186,32 +185,10 @@ typedef cct_node_t *(*cupti_correlation_callback_t)
 );
 
 
-typedef void (*cupti_load_callback_t)
-(
- uint32_t cubin_id, 
- const void *cubin, 
- size_t cubin_size
-);
-
-
 typedef struct {
   CUpti_BuffersCallbackRequestFunc buffer_request;
   CUpti_BuffersCallbackCompleteFunc buffer_complete;
 } cupti_activity_buffer_state_t;
-
-
-// DRIVER_UPDATE_CHECK(Keren): cufunc and cumod fields are reverse engineered
-typedef struct {
-  uint32_t unknown_field1[4]; 
-  uint32_t function_index;
-  uint32_t unknown_field2[3]; 
-  CUmodule cumod;
-} hpctoolkit_cufunc_st_t;
-
-
-typedef struct {
-  uint32_t cubin_id;
-} hpctoolkit_cumod_st_t;
 
 
 //******************************************************************************
@@ -239,8 +216,6 @@ cupti_correlation_callback_dummy
 // static data
 //******************************************************************************
 
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
-
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
 static __thread cct_node_t *cupti_trace_node = NULL;
@@ -255,11 +230,6 @@ static cupti_error_callback_t cupti_error_callback =
   cupti_error_callback_dummy;
 
 static cupti_activity_buffer_state_t cupti_activity_enabled = { 0, 0 };
-
-static cupti_load_callback_t cupti_load_callback = 0;
-
-static cupti_load_callback_t cupti_unload_callback = 0;
-
 
 static CUpti_SubscriberHandle cupti_subscriber;
 
@@ -574,113 +544,6 @@ cupti_error_report
 }
 
 
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static bool
-cupti_write_cubin
-(
- const char *file_name,
- const void *cubin,
- size_t cubin_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, cubin, cubin_size) != cubin_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
-
-void
-cupti_load_callback_cuda
-(
- uint32_t cubin_id, 
- const void *cubin, 
- size_t cubin_size
-)
-{
-  // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin);
-  unsigned char *hash;
-  unsigned int hash_len;
-  if (entry == NULL) {
-    cubin_hash_map_insert(cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin);
-  }
-  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
-
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  used += sprintf(&file_name[used], "%s", ".cubin");
-  PRINT("cubin_id %d hash %s\n", cubin_id, file_name);
-
-  // Write a file if does not exist
-  bool file_flag;
-  spinlock_lock(&files_lock);
-  file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
-  spinlock_unlock(&files_lock);
-
-  if (file_flag) {
-    char device_file[PATH_MAX];
-    sprintf(device_file, "%s", file_name);
-    uint32_t hpctoolkit_module_id;
-    load_module_t *module = NULL;
-    hpcrun_loadmap_lock();
-    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
-      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-    } else {
-      hpctoolkit_module_id = module->id;
-    }
-    hpcrun_loadmap_unlock();
-    PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
-    cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
-    if (entry == NULL) {
-      Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
-      cubin_id_map_insert(cubin_id, hpctoolkit_module_id, vector);
-    }
-  }
-}
-
-
-void
-cupti_unload_callback_cuda
-(
- uint32_t cubin_id, 
- const void *cubin, 
- size_t cubin_size
-)
-{
-  //cubin_id_map_delete(cubin_id);
-}
-
-
 static ip_normalized_t
 cupti_func_ip_resolve
 (
@@ -714,14 +577,14 @@ cupti_subscriber_callback
 
       PRINT("loaded module id %d, cubin size %" PRIu64 ", cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      DISPATCH_CALLBACK(cuda_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
       PRINT("unloaded module id %d, cubin size %" PRIu64 ", cubin %p\n",
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      DISPATCH_CALLBACK(cuda_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
       cupti_enable_activities(rd->context);
     }
@@ -758,12 +621,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_sync);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_sync);
           is_valid_op = true;
           break;
         }
-      // copyin apis
+        // copyin apis
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2:
@@ -771,12 +634,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copyin);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copyin);
           is_valid_op = true;
           break;
         }
-      // copyout apis
+        // copyout apis
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2:
@@ -784,12 +647,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copyout);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copyout);
           is_valid_op = true;
           break;
         }
-      // copy apis
+        // copy apis
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD:
@@ -846,12 +709,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copy);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copy);
           is_valid_op = true;
           break;
         }
-      // kernel apis
+        // kernel apis
       case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync:
@@ -861,14 +724,14 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_kernel);
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_trace);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_kernel);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_trace);
           is_valid_op = true;
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
-	    gpu_application_thread_process_activities();
+            gpu_application_thread_process_activities();
 
             // XXX(Keren): cannot parse this kind of kernel launch
             //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
@@ -882,7 +745,7 @@ cupti_subscriber_callback
         break;
     }
     bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags, 
-							gpu_placeholder_type_kernel);
+      gpu_placeholder_type_kernel);
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
@@ -898,20 +761,20 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
-	if (is_kernel_op) {
-	  cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-	  cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
-	  hpcrun_cct_retain(cct_func);
-	}
+        if (is_kernel_op) {
+          cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+          cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
+          hpcrun_cct_retain(cct_func);
+        }
 
         hpcrun_safe_exit();
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-					cpu_submit_time);
+          cpu_submit_time);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -920,16 +783,16 @@ cupti_subscriber_callback
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite == 
-	       CUPTI_API_ENTER) {
+      CUPTI_API_ENTER) {
       if (cupti_trace_node != NULL) {
         cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(cupti_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite == 
-	       CUPTI_API_ENTER) {
+      CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
+        cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     }
@@ -960,7 +823,7 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020:
-      // cuda copy apis
+        // cuda copy apis
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000:
@@ -1011,21 +874,21 @@ cupti_subscriber_callback
           is_valid_op = true;
           break;
         }
-      // cuda kernel apis
+        // cuda kernel apis
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
-      #if CUPTI_API_VERSION >= 10
+#if CUPTI_API_VERSION >= 10
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:
-      #endif
+#endif
         {
           is_valid_op = true;
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
-	    gpu_application_thread_process_activities();
+            gpu_application_thread_process_activities();
           }
           break;
         }
@@ -1049,16 +912,16 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
-        
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
+
         hpcrun_safe_exit();
 
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-					cpu_submit_time);
+          cpu_submit_time);
 
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -1077,7 +940,6 @@ cupti_subscriber_callback
     }
   }
 }
-
 
 
 //******************************************************************************
@@ -1293,8 +1155,6 @@ cupti_callbacks_subscribe
  void
 )
 {
-  cupti_load_callback = cupti_load_callback_cuda;
-  cupti_unload_callback = cupti_unload_callback_cuda;
   cupti_correlation_callback = gpu_application_thread_correlation_callback;
 
   HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_subscriber,
@@ -1317,8 +1177,6 @@ cupti_callbacks_unsubscribe
 (
 )
 {
-  cupti_load_callback = 0;
-  cupti_unload_callback = 0;
   cupti_correlation_callback = 0;
 
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));

@@ -495,32 +495,26 @@ MY_CUDA_FILES = sample-sources/nvidia.c \
 								gpu/nvidia/cubin-hash-map.c \
 								gpu/nvidia/cubin-id-map.c	\
 								gpu/nvidia/cubin-symbols.c \
-								gpu/nvidia/cuda-api.c \
 								gpu/nvidia/cuda-device-map.c
 endif
 
 if OPT_ENABLE_SANITIZER
 MY_SANITIZER_FILES = gpu/nvidia/sanitizer-api.c \
 										 gpu/nvidia/sanitizer-context-map.c \
-										 gpu/nvidia/sanitizer-stream-map.c \
-										 gpu/nvidia/sanitizer-node.c \
-										 gpu/nvidia/sanitizer-record.c
+										 gpu/nvidia/sanitizer-stream-map.c
 endif
 
 if OPT_ENABLE_CUPTI
-MY_CUPTI_FILES = \
-	gpu/nvidia/cupti-activity-translate.c	\
-	gpu/nvidia/cupti-analysis.c \
-	gpu/nvidia/cupti-api.c \
-	gpu/nvidia/cupti-gpu-api.c		
+MY_CUPTI_FILES = gpu/nvidia/cupti-activity-translate.c	\
+								 gpu/nvidia/cupti-analysis.c \
+								 gpu/nvidia/cupti-api.c \
+								 gpu/nvidia/cupti-gpu-api.c		
 endif
 
-
 if OPT_ENABLE_ROCM
-MY_ROCM_FILES=\
-	sample-sources/amd.c \
-	gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c 	
+MY_ROCM_FILES= sample-sources/amd.c \
+							 gpu/amd/roctracer-activity-translate.c \
+							 gpu/amd/roctracer-api.c 	
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

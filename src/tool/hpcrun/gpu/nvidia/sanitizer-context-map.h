@@ -1,5 +1,5 @@
-#ifndef _HPCTOOLKIT_SANITIZER_CONTEXT_MAP_H_
-#define _HPCTOOLKIT_SANITIZER_CONTEXT_MAP_H_
+#ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_CONTEXT_MAP_H_
+#define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_CONTEXT_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -13,13 +13,13 @@
 
 #include <cuda.h>
 
-#include "sanitizer-record.h"
-
 /******************************************************************************
  * type definitions 
  *****************************************************************************/
 
 typedef struct sanitizer_context_map_entry_s sanitizer_context_map_entry_t;
+
+typedef void (*sanitizer_process_fn_t)();
 
 /******************************************************************************
  * interface operations
@@ -32,11 +32,10 @@ sanitizer_context_map_lookup
 );
 
 
-void
+sanitizer_context_map_entry_t *
 sanitizer_context_map_init
 (
- CUcontext context,
- CUstream priority_stream
+ CUcontext context
 );
 
 
@@ -51,7 +50,7 @@ sanitizer_context_map_insert
 void
 sanitizer_context_map_process
 (
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 );
 
 
@@ -59,7 +58,7 @@ void
 sanitizer_context_map_context_process
 (
  CUcontext context,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 );
 
 
@@ -68,7 +67,7 @@ sanitizer_context_map_stream_process
 (
  CUcontext context,
  CUstream stream,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 );
 
 

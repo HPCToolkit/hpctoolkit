@@ -30,6 +30,7 @@ int cupti_trace_frequency_get();
 
 void cupti_enable_activities(CUcontext context);
 
+int sanitizer_block_sampling_frequency_get();
 
 
 #endif

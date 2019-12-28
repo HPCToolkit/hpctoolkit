@@ -1,5 +1,5 @@
-#ifndef _HPCTOOLKIT_SANITIZER_STREAM_MAP_H_
-#define _HPCTOOLKIT_SANITIZER_STREAM_MAP_H_
+#ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_STREAM_MAP_H_
+#define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_STREAM_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -13,7 +13,7 @@
 
 #include <cuda.h>
 
-#include "sanitizer-record.h"
+#include "sanitizer-context-map.h"
 
 /******************************************************************************
  * type definitions 
@@ -53,7 +53,7 @@ void
 sanitizer_stream_map_process
 (
  sanitizer_stream_map_entry_t **root,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 );
 
 
@@ -62,7 +62,7 @@ sanitizer_stream_map_stream_process
 (
  sanitizer_stream_map_entry_t **root,
  CUstream stream,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 );
 
 

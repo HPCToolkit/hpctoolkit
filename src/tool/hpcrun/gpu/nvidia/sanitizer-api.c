@@ -1,3 +1,60 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2019, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//   sanitizer-api.c
+//
+// Purpose:
+//   implementation of wrapper around NVIDIA's Sanitizer API
+//  
+//***************************************************************************
+
+//***************************************************************************
+// system includes
+//***************************************************************************
+
 #include <stdio.h>
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
@@ -17,6 +74,8 @@
 #endif
 
 #include <sanitizer.h>
+#include <gpu-patch.h>
+#include <vector_types.h>  // dim3
 
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/stdatomic.h>
@@ -28,22 +87,21 @@
 #include <hpcrun/main.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
-#include <hpcrun/sample-sources/libdl.h>
 
-#include "nvidia.h"
+#include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/gpu/gpu-correlation-id.h>
+#include <hpcrun/gpu/gpu-op-placeholders.h>
+
+#include <hpcrun/sample-sources/libdl.h>
+#include <hpcrun/sample-sources/nvidia.h>
 
 #include "cuda-api.h"
-#include "cuda-state-placeholders.h"
-
-#include "cubin-module-map.h"
 #include "cubin-hash-map.h"
-
+#include "cubin-id-map.h"
 #include "sanitizer-api.h"
-#include "sanitizer-record.h"
-#include "sanitizer-node.h"
-#include "sanitizer-stream-map.h"
 #include "sanitizer-context-map.h"
-
+#include "sanitizer-stream-map.h"
 
 #define SANITIZER_API_DEBUG 1
 
@@ -58,21 +116,17 @@
 #define GPU_PATCH_RECORD_NUM (256 * 1024)
 #define GPU_PATCH_BUFFER_POOL_NUM (128)
 
-#define CUFUNCTION_SYMBOL_INDEX_OFFSET (16)
-#define CUFUNCTION_FUNCTION_RECORD_OFFSET (16*8+8)
-#define FUNCTION_RECORD_FUNCTION_ADDR_OFFSET (16*3)
-
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
 #define SANITIZER_FN(fn, args) \
   static SanitizerResult (*SANITIZER_FN_NAME(fn)) args
 
 #define HPCRUN_SANITIZER_CALL(fn, args) \
-{      \
-  SanitizerResult status = SANITIZER_FN_NAME(fn) args;	\
-  if (status != SANITIZER_SUCCESS) {		\
-    sanitizer_error_report(status, #fn);		\
-  }						\
+{ \
+  SanitizerResult status = SANITIZER_FN_NAME(fn) args; \
+  if (status != SANITIZER_SUCCESS) { \
+    sanitizer_error_report(status, #fn); \
+  }	\
 }
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
@@ -93,15 +147,38 @@
   macro(sanitizerGetResultString)          \
   macro(sanitizerUnpatchModule)
 
-// only subscribe by the main thread
-static spinlock_t cubin_files_lock = SPINLOCK_UNLOCKED;
-static spinlock_t allocate_buffer_lock = SPINLOCK_UNLOCKED;
+
+typedef void (*sanitizer_error_callback_t)
+(
+ const char *type,
+ const char *fn,
+ const char *error_string
+);
+
+typedef cct_node_t *(*sanitizer_correlation_callback_t)
+(
+ uint64_t id
+);
+
+static cct_node_t *
+sanitizer_correlation_callback_dummy // __attribute__((unused))
+(
+ uint64_t id
+);
+
+static void
+sanitizer_error_callback_dummy // __attribute__((unused))
+(
+ const char *type,
+ const char *fn,
+ const char *error_string
+);
+
+// only subscribed by the main thread
 static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
 
 static __thread bool sanitizer_stop_flag = false;
-static __thread uint32_t sanitizer_thread_id = 0;
-static atomic_uint sanitizer_global_thread_id = ATOMIC_VAR_INIT(0);
-static atomic_uint sanitizer_allocated_buffer_num = ATOMIC_VAR_INIT(0);
+static __thread uint32_t sanitizer_thread_id_local = 0;
 
 static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
  .head_index = 0,
@@ -110,11 +187,17 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
  .full = 0
 };
 static __thread gpu_patch_buffer_t *gpu_patch_buffer = NULL;
-static __thread gpu_patch_record_t *gpu_patch_record = NULL;
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
+static __thread gpu_patch_record_t *gpu_patch_record = NULL;
 static __thread char *sanitizer_trace = NULL;
-static __thread dim3 grid_size;
-static __thread dim3 block_size;
+
+static sanitizer_correlation_callback_t sanitizer_correlation_callback =
+  sanitizer_correlation_callback_dummy;
+
+static sanitizer_error_callback_t sanitizer_error_callback =
+  sanitizer_error_callback_dummy;
+
+static atomic_uint sanitizer_thread_id = ATOMIC_VAR_INIT(0);
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
@@ -267,41 +350,46 @@ SANITIZER_FN
 );
 
 
-static cct_node_t *
-sanitizer_correlation_callback
-(
- cuda_placeholder_t cuda_state
-);
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
 
-static void
-sanitizer_error_callback // __attribute__((unused))
+
+static cct_node_t *
+sanitizer_correlation_callback_dummy // __attribute__((unused))
 (
- const char *type, 
- const char *fn, 
+ uint64_t id
+)
+{
+  return NULL;
+}
+
+
+static void
+sanitizer_error_callback_dummy // __attribute__((unused))
+(
+ const char *type,
+ const char *fn,
  const char *error_string
 )
 {
   PRINT("%s: function %s failed with error %s\n", type, fn, error_string);
   exit(-1);
-} 
+}
 
 
 static void
 sanitizer_error_report
 (
- SanitizerResult error, 
+ SanitizerResult error,
  const char *fn
 )
 {
   const char *error_string;
   SANITIZER_FN_NAME(sanitizerGetResultString)(error, &error_string);
   sanitizer_error_callback("Sanitizer result error", fn, error_string);
-} 
+}
+
 
 #ifndef HPCRUN_STATIC_LINK
 static const char *
@@ -373,70 +461,25 @@ static void
 sanitizer_load_callback
 (
  CUcontext context,
- CUmodule cubin_module, 
+ CUmodule module, 
  const void *cubin, 
  size_t cubin_size
 )
 {
-  // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin);
-  unsigned char *hash;
-  unsigned int hash_len;
-  if (entry == NULL) {
-    cubin_hash_map_insert(cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin);
-  }
-  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
+  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+  cuda_load_callback(cumod->cubin_id, cubin, cubin_size);
 
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  used += sprintf(&file_name[used], "%s", ".cubin");
-
-  // Write a file if does not exist
-  bool file_flag;
-  spinlock_lock(&cubin_files_lock);
-  file_flag = sanitizer_write_cubin(file_name, cubin, cubin_size);
-  spinlock_unlock(&cubin_files_lock);
-
-  if (file_flag) {
-    char device_file[PATH_MAX]; 
-    sprintf(device_file, "%s", file_name);
-    uint32_t hpctoolkit_module_id;
-    load_module_t *load_module = NULL;
-    hpcrun_loadmap_lock();
-    if ((load_module = hpcrun_loadmap_findByName(device_file)) == NULL) {
-      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-    } else {
-      hpctoolkit_module_id = load_module->id;
-    }
-    hpcrun_loadmap_unlock();
-    cubin_module_map_entry_t *entry = cubin_module_map_lookup(cubin_module);
-    if (entry == NULL) {
-      Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
-      cubin_module_map_insert(cubin_module, cubin, hpctoolkit_module_id, elf_vector);
-      cubin_module_map_insert_hash(cubin_module, hash);
-    }
-  }
-
-  PRINT("Patch CUBIN\n");
+  PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, (HPCTOOLKIT_GPU_PATCH, context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, cubin_module, "sanitizer_memory_access_callback"));
+    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, module, "sanitizer_memory_access_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_BLOCK_ENTER, cubin_module, "sanitizer_block_enter_callback"));
+    (SANITIZER_INSTRUCTION_BLOCK_ENTER, module, "sanitizer_block_enter_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_BLOCK_EXIT, cubin_module, "sanitizer_block_exit_callback"));
-  HPCRUN_SANITIZER_CALL(sanitizerPatchModule, (cubin_module));
+    (SANITIZER_INSTRUCTION_BLOCK_EXIT, module, "sanitizer_block_exit_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchModule, (module));
 }
 
 
@@ -448,8 +491,8 @@ sanitizer_unload_callback
  size_t cubin_size
 )
 {
-  cubin_hash_map_delete(cubin);
-  cubin_module_map_delete(module);
+  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+  cuda_unload_callback(cumod->cubin_id, cubin, cubin_size);
 }
 
 //******************************************************************************
@@ -459,10 +502,10 @@ sanitizer_unload_callback
 static bool
 sanitizer_write_trace
 (
-  unsigned char *hash,
-  unsigned int hash_len,
-  char *trace,
-  size_t trace_size
+ unsigned char *hash,
+ unsigned int hash_len,
+ char *trace,
+ size_t trace_size
 )
 {
   // Write a file if does not exist, otherwise append
@@ -478,7 +521,7 @@ sanitizer_write_trace
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
   used += sprintf(&file_name[used], "%s", ".trace.");
-  used += sprintf(&file_name[used], "%u", sanitizer_thread_id);
+  used += sprintf(&file_name[used], "%u", sanitizer_thread_id_local);
 
   int fd;
   errno = 0;
@@ -528,73 +571,71 @@ sanitizer_buffer_process
  dim3 block_size
 )
 {
-  // look up function addr
-  uint64_t function_ptr = (uint64_t)function;
-  uint32_t function_index = *((uint32_t *)(function_ptr + CUFUNCTION_SYMBOL_INDEX_OFFSET));
-  ip_normalized_t function_ip = cubin_module_transform(module, function_index, 0);
-  uint64_t function_record = *((uint64_t *)(function_ptr + CUFUNCTION_FUNCTION_RECORD_OFFSET));
-  uint64_t function_addr = *((uint64_t *)(function_record + FUNCTION_RECORD_FUNCTION_ADDR_OFFSET));
+  // Look up function addr
+  hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)function;
+  hpctoolkit_cufunc_record_st_t *cufunc_record = cufunc->cufunc_record;
+  uint64_t function_addr = cufunc_record->function_addr;
 
-  // get a place holder cct node
-  cuda_placeholder_t cuda_state = cuda_placeholders.cuda_kernel_state;
-  cct_node_t *host_op_node = sanitizer_correlation_callback(cuda_state);
+  // Look up hash
+  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cumod->cubin_id);
+  unsigned int hash_len = 0;
+  unsigned char *hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
 
-  // insert a function cct node
-  cct_addr_t frm;
-  memset(&frm, 0, sizeof(cct_addr_t));
-  frm.ip_norm = function_ip;
-  cct_node_t *host_function_node = hpcrun_cct_insert_addr(host_op_node, &frm);
+  // Get a place holder cct node
+  uint64_t correlation_id = gpu_correlation_id();
+  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
 
-  // first time copy back, allocate memory
+  // Insert a function cct node
+  gpu_op_ccts_t gpu_op_ccts;
+  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+    gpu_placeholder_type_kernel);
+	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  // TODO(Keren): correlate metrics with api_node
+
+  // First time copy back, allocate memory
   if (gpu_patch_buffer == NULL) {
     gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
   }
 
-  sanitizer_context_map_entry_t *entry = sanitizer_context_map_lookup(context);
+  if (gpu_patch_record == NULL) {
+    gpu_patch_record = (gpu_patch_record_t *) hpcrun_malloc_safe(
+      GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
+  }
+
+  if (sanitizer_trace == NULL) {
+    // * WARP_SIZE to guarantee sanitizer_trace buffer is greater than record size
+    sanitizer_trace = (char *)
+      hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * WARP_SIZE * sizeof(gpu_patch_record_t));
+  }
 
   while (true) {
+    // Copy buffer
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_buffer, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
 
     size_t num_records = gpu_patch_buffer->head_index;
-
-    //PRINT("gpu_patch_buffer full %u, head_index %u, tail_index %u, size %u, num_blocks %u, block_sampling_frequency %u\n",
-    //  gpu_patch_buffer->full, gpu_patch_buffer->head_index, gpu_patch_buffer->tail_index,
-    //  gpu_patch_buffer->size, gpu_patch_buffer->num_blocks, gpu_patch_buffer->block_sampling_frequency);
-
     size_t num_left_blocks = 0;
+
+    // If block sampling is set
     if (gpu_patch_buffer->block_sampling_frequency != 0) {
       size_t total = grid_size.x * grid_size.y * grid_size.z;
-      num_left_blocks = total - ((total - 1) / gpu_patch_buffer->block_sampling_frequency + 1);
+      num_left_blocks = total - ((total - 1) / sanitizer_block_sampling_frequency_get() + 1);
     }
 
+    // Wait until the buffer is full or the kernel is finished
     if (!(gpu_patch_buffer->num_blocks == num_left_blocks || gpu_patch_buffer->full) || num_records == 0) {
-      // Wait until the buffer is full or the kernel is finished
-      if (SANITIZER_API_DEBUG) {
-        //sleep(1);
-      }
       continue;
     }
 
-    // first time copy back, allocate memory
-    if (gpu_patch_record == NULL) {
-      gpu_patch_record = (gpu_patch_record_t *) hpcrun_malloc_safe(
-        GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
-    }
+    // Copy all records
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_record, gpu_patch_buffer->records, sizeof(gpu_patch_record_t) * num_records, priority_stream));
-    // copy finished
+    // Tell gpu copy is finished
     gpu_patch_buffer->full = 0;
-    // sync stream?
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, gpu_patch_buffer, sizeof(gpu_patch_buffer_t), priority_stream));
-
-    if (sanitizer_trace == NULL) {
-      // first time to allocate trace buffer,
-      // * WARP_SIZE to guarantee sanitizer_trace buffer is greater than record size
-      sanitizer_trace = (char *)
-        hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * WARP_SIZE * sizeof(gpu_patch_record_t));
-    }
 
     // XXX(Keren): tricky change offset here
     size_t used = 0;
@@ -632,17 +673,14 @@ sanitizer_buffer_process
     }
     used += sprintf(&sanitizer_trace[used], "\n");
 
-    cubin_module_map_entry_t *entry = cubin_module_map_lookup(module);
-    unsigned int hash_len = 0;
-    unsigned char *hash = cubin_module_map_entry_hash_get(entry, &hash_len);
-
     if (entry != NULL) {
       PRINT("Write file size %lu\n", used);
       if (sanitizer_write_trace(hash, hash_len, sanitizer_trace, used) == false) {
         PRINT("Write file error\n");
       }
     }
-
+    
+    // Finish all the blocks
     if (gpu_patch_buffer->num_blocks == num_left_blocks) {
       break;
     }
@@ -653,68 +691,6 @@ sanitizer_buffer_process
 //******************************************************************************
 // callbacks
 //******************************************************************************
-
-static cct_node_t *
-sanitizer_correlation_callback
-(
- cuda_placeholder_t cuda_state
-)
-{
-  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
-  int zero_metric_id = 0; // nothing to see here
-  ucontext_t uc;
-  getcontext(&uc);
-  thread_data_t *td = hpcrun_get_thread_data();
-
-  // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  hpcrun_safe_enter();
-
-  cct_node_t *node = 
-    hpcrun_sample_callpath(&uc, zero_metric_id, 
-      zero_metric_incr, 0, 1, NULL).sample_node; 
-
-  hpcrun_safe_exit();
-
-  // Compress callpath
-  cct_addr_t* node_addr = hpcrun_cct_addr(node);
-  static __thread uint16_t libhpcrun_id = 0;
-
-  // The lowest module must be libhpcrun, which is not 0
-  // Update libhpcrun_id only the first time
-  if (libhpcrun_id == 0) {
-    load_module_t* module = hpcrun_loadmap_findById(node_addr->ip_norm.lm_id);
-    if (module != NULL && strstr(module->name, "libhpcrun") != NULL) {
-      libhpcrun_id = node_addr->ip_norm.lm_id;
-    }
-  }
-
-  // Skip libhpcrun
-  while (libhpcrun_id != 0 && node_addr->ip_norm.lm_id == libhpcrun_id) {
-    //hpcrun_cct_delete_self(node);
-    node = hpcrun_cct_parent(node);
-    node_addr = hpcrun_cct_addr(node);
-  }
-
-  // Skip libcupti and libcuda
-  while (module_ignore_map_module_id_lookup(node_addr->ip_norm.lm_id)) {
-    //hpcrun_cct_delete_self(node);
-    node = hpcrun_cct_parent(node);
-    node_addr = hpcrun_cct_addr(node);
-  }
-  
-  hpcrun_safe_enter();
-
-  // Insert the corresponding cuda state node
-  cct_addr_t frm;
-  memset(&frm, 0, sizeof(cct_addr_t));
-  frm.ip_norm = cuda_state.pc_norm;
-  cct_node_t* cct_child = hpcrun_cct_insert_addr(node, &frm);
-
-  hpcrun_safe_exit();
-
-  return cct_child;
-}
-
 
 static void
 sanitizer_kernel_launch_callback
@@ -728,30 +704,6 @@ sanitizer_kernel_launch_callback
  dim3 block_size
 )
 {
-  // TODO(keren): add other instrumentation mode, do not allow two threads sharing a stream
-  // allocate a device memory buffer
-#if 0
-  cstack_node_t *buffer_device = gpu_patch_buffer_device();
-  while (buffer_device == NULL) {
-    uint32_t allocated_buffer_num = atomic_load(&sanitizer_allocated_buffer_num);
-    if (allocated_buffer_num >= GPU_PATCH_BUFFER_POOL_NUM) {
-      // Wait for previous buffer to be finished
-      // Use a background thread to handle other context
-      sanitizer_context_map_context_process(context, sanitizer_buffer_dispatch);
-    } else {
-      if (atomic_compare_exchange_strong(&sanitizer_allocated_buffer_num,
-        &allocated_buffer_num, allocated_buffer_num + 1)) {
-        // allocate a new one
-        break;
-      }
-    }
-    buffer_device = gpu_patch_buffer_device();
-  }
-  sanitizer_entry_buffer_t *buffer_device_entry = NULL;
-
-#endif
-
-
   if (gpu_patch_buffer_device == NULL) {
     // allocate buffer
     void *gpu_patch_records = NULL;
@@ -773,7 +725,9 @@ sanitizer_kernel_launch_callback
     gpu_patch_buffer_reset.records = gpu_patch_records;
     gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
     gpu_patch_buffer_reset.block_sampling_frequency = sanitizer_block_sampling_frequency_get();
+
     PRINT("Sampling frequency %d\n", sanitizer_block_sampling_frequency_get());
+
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
   } else {
@@ -801,9 +755,10 @@ sanitizer_subscribe_callback
 )
 {
   if (!sanitizer_stop_flag) {
-    sanitizer_thread_id = atomic_fetch_add(&sanitizer_global_thread_id, 1);
+    sanitizer_thread_id_local = atomic_fetch_add(&sanitizer_thread_id, 1);
     sanitizer_stop_flag_set();
   }
+
   // XXX(keren): assume single thread per stream
   if (domain == SANITIZER_CB_DOMAIN_RESOURCE) {
     switch (cbid) {
@@ -864,6 +819,10 @@ sanitizer_subscribe_callback
     }
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
+    static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
+    static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
+    static __thread CUstream priority_stream = NULL;
+
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       grid_size.x = ld->gridDim_x;
       grid_size.y = ld->gridDim_y;
@@ -871,51 +830,28 @@ sanitizer_subscribe_callback
       block_size.x = ld->blockDim_x;
       block_size.y = ld->blockDim_y;
       block_size.z = ld->blockDim_z;
+
       PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
         ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
-      // multi-thread
-      // gaurantee that each time only a single callback data is associated with a stream
-      sanitizer_context_map_stream_lock(ld->context, ld->stream);
-      sanitizer_context_map_entry_t *entry = sanitizer_context_map_lookup(ld->context);
-      CUstream priority_stream = NULL;
+      
+      // thread-safe
       // Create a high priority stream for the context at the first time
-      if (entry == NULL || sanitizer_context_map_entry_priority_stream_get(entry) == NULL) {
-        priority_stream = cuda_priority_stream_create();
-        sanitizer_context_map_init(ld->context, priority_stream);
-      } else {
-        priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
-      }
+      sanitizer_context_map_stream_lock(ld->context, ld->stream);
+      sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
+      priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+
       sanitizer_kernel_launch_callback(ld->context, ld->module, ld->function, ld->stream,
         priority_stream, grid_size, block_size);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
-      sanitizer_context_map_entry_t *entry = sanitizer_context_map_lookup(ld->context);
-      CUstream priority_stream = NULL;
-      // Create a high priority stream for the context at the first time
-      if (entry == NULL || sanitizer_context_map_entry_priority_stream_get(entry) == NULL) {
-        priority_stream = cuda_priority_stream_create();
-        sanitizer_context_map_init(ld->context, priority_stream);
-      } else {
-        priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
-      }
       sanitizer_buffer_process(ld->context, ld->module, ld->function, ld->stream,
         priority_stream, grid_size, block_size);
+
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
-  #if 0
-    Sanitizer_SynchronizeData *sd = (Sanitizer_SynchronizeData*)cbdata;
-    if (cbid == SANITIZER_CBID_SYNCHRONIZE_STREAM_SYNCHRONIZED) {
-      // multi-thread
-      PRINT("Synchronize stream %p\n", sd->stream);
-      sanitizer_context_map_stream_process(sd->context, sd->stream, sanitizer_buffer_dispatch);
-    } else if (cbid == SANITIZER_CBID_SYNCHRONIZE_CONTEXT_SYNCHRONIZED) {
-      // multi-thread
-      PRINT("Synchronize context %p\n", sd->context);
-      sanitizer_context_map_context_process(sd->context, sanitizer_buffer_dispatch);
-    }
-  #endif
+    // TODO(Keren): sync data
   }
 }
 
@@ -950,6 +886,8 @@ sanitizer_bind()
 void
 sanitizer_callbacks_subscribe() 
 {
+  sanitizer_correlation_callback = gpu_application_thread_correlation_callback;
+
   HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));
 
@@ -973,6 +911,8 @@ sanitizer_callbacks_subscribe()
 void
 sanitizer_callbacks_unsubscribe() 
 {
+  sanitizer_correlation_callback = 0;
+
   HPCRUN_SANITIZER_CALL(sanitizerUnsubscribe, (sanitizer_subscriber_handle));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,

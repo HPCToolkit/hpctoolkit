@@ -65,7 +65,7 @@ static void
 sanitizer_stream_map_process_helper
 (
  sanitizer_stream_map_entry_t *entry,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 ) 
 {
   if (entry) {
@@ -152,7 +152,7 @@ void
 sanitizer_stream_map_process
 (
  sanitizer_stream_map_entry_t **root,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 )
 {
   sanitizer_stream_map_process_helper(*root, fn);
@@ -164,7 +164,7 @@ sanitizer_stream_map_stream_process
 (
  sanitizer_stream_map_entry_t **root,
  CUstream stream,
- sanitizer_record_fn_t fn
+ sanitizer_process_fn_t fn
 )
 {
   sanitizer_stream_map_entry_t *entry = NULL;

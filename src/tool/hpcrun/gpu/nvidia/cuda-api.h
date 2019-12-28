@@ -51,18 +51,12 @@
 //  
 //***************************************************************************
 
-#ifndef cuda_api_h
-#define cuda_api_h
-
-
+#ifndef HPCTOOLKIT_GPU_NVIDIA_CUDA_API_H
+#define HPCTOOLKIT_GPU_NVIDIA_CUDA_API_H
 
 //*****************************************************************************
 // nvidia includes
 //*****************************************************************************
-
-#include <cuda.h>
-
-
 
 #include <link.h>
 #include <cuda.h>
@@ -81,6 +75,29 @@ typedef struct cuda_device_property {
   int sm_schedulers;
   int num_threads_per_warp;
 } cuda_device_property_t;
+
+
+typedef struct {
+  uint32_t unknown_field1[12];
+  uint64_t function_addr;
+} hpctoolkit_cufunc_record_st_t;
+
+
+// DRIVER_UPDATE_CHECK(Keren): cufunc and cumod fields are reverse engineered
+typedef struct {
+  uint32_t unknown_field1[4]; 
+  uint32_t function_index;
+  uint32_t unknown_field2[3]; 
+  CUmodule cumod;
+  uint32_t unknown_field3[24];
+  hpctoolkit_cufunc_record_st_t *cufunc_record;
+} hpctoolkit_cufunc_st_t;
+
+
+typedef struct {
+  uint32_t cubin_id;
+} hpctoolkit_cumod_st_t;
+;
 
 
 //*****************************************************************************
@@ -114,6 +131,24 @@ cuda_device_property_query
 CUstream
 cuda_priority_stream_create
 (
+);
+
+
+void
+cuda_load_callback
+(
+ uint32_t cubin_id, 
+ const void *cubin, 
+ size_t cubin_size
+);
+
+
+void
+cuda_unload_callback
+(
+ uint32_t cubin_id, 
+ const void *cubin, 
+ size_t cubin_size
 );
 
 #endif

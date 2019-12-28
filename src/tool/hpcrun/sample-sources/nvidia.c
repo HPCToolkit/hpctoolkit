@@ -83,6 +83,7 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
+#include <hpcrun/gpu/nvidia/sanitizer-api.h>
 
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/device-finalizers.h>
@@ -106,7 +107,7 @@
 
 #define NVIDIA_CUDA "gpu=nvidia" 
 #define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc" 
-
+#define NVIDIA_CUDA_SANITIZER "gpu=nvidia,sanitizer"
 
 
 /******************************************************************************
@@ -129,6 +130,8 @@ static long trace_frequency_default = -1;
 static long pc_sampling_frequency = -1;
 static long pc_sampling_frequency_default = 12;
 
+static long block_sampling_frequency = 0;
+static long block_sampling_frequency_default = 0;
 
 static int cupti_enabled_activities = 0;
 
@@ -239,6 +242,12 @@ cupti_trace_frequency_get()
 
 #endif
 
+int
+sanitizer_block_sampling_frequency_get()
+{
+  return block_sampling_frequency;
+}
+
 
 void
 cupti_enable_activities
@@ -327,7 +336,8 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING);
+  return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING) ||
+    hpcrun_ev_is(ev_str, NVIDIA_CUDA_SANITIZER);
 #else
   return false;
 #endif
@@ -336,6 +346,13 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+#ifndef HPCRUN_STATIC_LINK
+  if (cuda_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
+
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
@@ -349,87 +366,110 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
   
-  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    long int trace_frequency =
-      (frequency == frequency_default) ? trace_frequency_default : frequency;
-    gpu_monitoring_trace_sample_frequency_set(trace_frequency);
-  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
-    pc_sampling_frequency = (frequency == frequency_default) ? 
-      pc_sampling_frequency_default : frequency;
-    
-    gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
-
-    gpu_metrics_GPU_INST_enable(); // instruction counts      
-    
-    gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
-    
-    gpu_metrics_GSAMP_enable(); // GPU utilization from sampling      
-  }
-
   gpu_metrics_default_enable();
-  gpu_metrics_KINFO_enable();
-
+  
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA) || hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
 #ifndef HPCRUN_STATIC_LINK
-  if (cuda_bind()) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
+    if (cupti_bind()) {
+      EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
+      monitor_real_exit(-1);
+    }
+#endif
 
-  if (cupti_bind()) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
+    if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+      long int trace_frequency =
+        (frequency == frequency_default) ? trace_frequency_default : frequency;
+      gpu_monitoring_trace_sample_frequency_set(trace_frequency);
+    } else {
+      // pc sampling
+      pc_sampling_frequency = (frequency == frequency_default) ? 
+        pc_sampling_frequency_default : frequency;
+
+      gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
+
+      gpu_metrics_GPU_INST_enable(); // instruction counts      
+
+      gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
+
+      gpu_metrics_GSAMP_enable(); // GPU utilization from sampling      
+    }
+
+    gpu_metrics_KINFO_enable();
+
+    // Register hpcrun callbacks
+    device_finalizer_flush.fn = cupti_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, 
+            &device_finalizer_flush);
+
+    device_finalizer_shutdown.fn = cupti_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, 
+            &device_finalizer_shutdown);
+
+    // Get control knobs
+    int device_buffer_size = 
+      control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+
+    int device_semaphore_size = 
+      control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
+
+    if (device_buffer_size == 0) {
+      device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
+    }
+
+    if (device_semaphore_size == 0) {
+      device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
+    }
+
+    PRINT("Device buffer size %d\n", device_buffer_size);
+    PRINT("Device semaphore size %d\n", device_semaphore_size);
+
+    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+
+    // Register cupti callbacks
+    cupti_init();
+    cupti_callbacks_subscribe();
+    cupti_start();
+
+    // Set enabling activities
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
+
+    // Init records
+    gpu_trace_init();
+
+    // Register shutdown functions to write trace files
+    device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+    device_finalizer_register(device_finalizer_type_shutdown, 
+            &device_trace_finalizer_shutdown);
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_SANITIZER)) {
+#ifndef HPCRUN_STATIC_LINK
+  if (sanitizer_bind()) {
+    EEMSG("hpcrun: unable to bind to NVIDIA SANITIZER library %s\n", dlerror());
     monitor_real_exit(-1);
   }
 #endif
 
-  // Register hpcrun callbacks
-  device_finalizer_flush.fn = cupti_device_flush;
-  device_finalizer_register(device_finalizer_type_flush, 
-			    &device_finalizer_flush);
+#ifndef HPCTOOLKIT_GPU_PATCH
+    EEMSG("hpcrun: gpu patch not specified\n");
+    monitor_real_exit(-1);
+#endif
 
-  device_finalizer_shutdown.fn = cupti_device_shutdown;
-  device_finalizer_register(device_finalizer_type_shutdown, 
-			    &device_finalizer_shutdown);
+    block_sampling_frequency = frequency == 0 ?
+      block_sampling_frequency_default : frequency;
 
-  // Get control knobs
-  int device_buffer_size = 
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+    // Register hpcrun callbacks
+    device_finalizer_flush.fn = sanitizer_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+    device_finalizer_shutdown.fn = sanitizer_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-  int device_semaphore_size = 
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
-
-  if (device_buffer_size == 0) {
-    device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
+    // Register sanitizer callbacks
+    sanitizer_callbacks_subscribe();
   }
-
-  if (device_semaphore_size == 0) {
-    device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
-  }
-
-  PRINT("Device buffer size %d\n", device_buffer_size);
-  PRINT("Device semaphore size %d\n", device_semaphore_size);
-
-  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
-
-  // Register cupti callbacks
-  cupti_init();
-  cupti_callbacks_subscribe();
-  cupti_start();
-
-  // Set enabling activities
-  cupti_enabled_activities |= CUPTI_DRIVER;
-  cupti_enabled_activities |= CUPTI_RUNTIME;
-  cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-  cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-  cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-  cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-  // Init records
-  gpu_trace_init();
-
-  // Register shutdown functions to write trace files
-  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
-			    &device_trace_finalizer_shutdown);
 }
 
 static void
