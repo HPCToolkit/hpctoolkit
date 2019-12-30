@@ -61,20 +61,6 @@ sanitizer_stream_map_delete_root
 }
 
 
-static void 
-sanitizer_stream_map_process_helper
-(
- sanitizer_stream_map_entry_t *entry,
- sanitizer_process_fn_t fn
-) 
-{
-  if (entry) {
-    sanitizer_stream_map_process_helper(entry->left, fn);
-    sanitizer_stream_map_process_helper(entry->right, fn);
-  } 
-}
-
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
@@ -144,33 +130,6 @@ sanitizer_stream_map_delete
   *root = sanitizer_stream_map_splay(*root, stream);
   if (*root && (*root)->stream == stream) {
     sanitizer_stream_map_delete_root(root);
-  }
-}
-
-
-void
-sanitizer_stream_map_process
-(
- sanitizer_stream_map_entry_t **root,
- sanitizer_process_fn_t fn
-)
-{
-  sanitizer_stream_map_process_helper(*root, fn);
-}
-
-
-void
-sanitizer_stream_map_stream_process
-(
- sanitizer_stream_map_entry_t **root,
- CUstream stream,
- sanitizer_process_fn_t fn
-)
-{
-  sanitizer_stream_map_entry_t *entry = NULL;
-
-  if ((entry = sanitizer_stream_map_lookup(root, stream)) != NULL) {
-    fn();
   }
 }
 

@@ -1,6 +1,8 @@
 #ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 #define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 
+#include <pthread.h>
+
 bool
 sanitizer_bind();
 
@@ -21,5 +23,8 @@ sanitizer_device_flush(void *args);
 
 void
 sanitizer_device_shutdown(void *args);
+
+void
+sanitizer_process_init();
 
 #endif

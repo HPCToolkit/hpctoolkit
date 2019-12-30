@@ -30,7 +30,6 @@ struct sanitizer_context_map_entry_s {
   struct sanitizer_context_map_entry_s *right;
 }; 
 
-
 /******************************************************************************
  * global data 
  *****************************************************************************/
@@ -134,40 +133,9 @@ sanitizer_context_map_lookup_internal(CUcontext context)
   return result;
 }
 
-
-static void 
-sanitizer_context_map_process_helper
-(
- sanitizer_context_map_entry_t *entry,
- sanitizer_process_fn_t fn
-) 
-{
-  if (entry) {
-    sanitizer_stream_map_process(&entry->streams, fn);
-    sanitizer_context_map_process_helper(entry->left, fn);
-    sanitizer_context_map_process_helper(entry->right, fn);
-  } 
-}
-
 /******************************************************************************
  * interface operations
  *****************************************************************************/
-
-void
-sanitizer_context_map_delete
-(
- CUcontext context
-)
-{
-  spinlock_lock(&sanitizer_context_map_lock);
-
-  sanitizer_context_map_root = sanitizer_context_map_splay(sanitizer_context_map_root, context);
-  if (sanitizer_context_map_root && sanitizer_context_map_root->context == context) {
-    sanitizer_context_map_delete_root();
-  }
-
-  spinlock_unlock(&sanitizer_context_map_lock);
-}
 
 
 sanitizer_context_map_entry_t *
@@ -197,63 +165,26 @@ sanitizer_context_map_init(CUcontext context)
 
 
 void
+sanitizer_context_map_delete(CUcontext context)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_root = sanitizer_context_map_splay(sanitizer_context_map_root, context);
+  
+  if (sanitizer_context_map_root && sanitizer_context_map_root->context == context) {
+    sanitizer_context_map_delete_root();
+  }
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
 sanitizer_context_map_insert(CUcontext context, CUstream stream)
 {
   spinlock_lock(&sanitizer_context_map_lock);
 
   sanitizer_stream_map_insert(&sanitizer_context_map_root->streams, stream);
-
-  spinlock_unlock(&sanitizer_context_map_lock);
-}
-
-
-void
-sanitizer_context_map_process
-(
- sanitizer_process_fn_t fn
-)
-{
-  spinlock_lock(&sanitizer_context_map_lock);
-
-  sanitizer_context_map_process_helper(sanitizer_context_map_root, fn);
-
-  spinlock_unlock(&sanitizer_context_map_lock);
-}
-
-
-void
-sanitizer_context_map_context_process
-(
- CUcontext context,
- sanitizer_process_fn_t fn
-)
-{
-  sanitizer_context_map_entry_t *entry = NULL;
-
-  spinlock_lock(&sanitizer_context_map_lock);
-
-  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    sanitizer_stream_map_process(&entry->streams, fn);
-  }
-
-  spinlock_unlock(&sanitizer_context_map_lock);
-}
-
-
-void
-sanitizer_context_map_stream_process
-(
- CUcontext context,
- CUstream stream,
- sanitizer_process_fn_t fn
-)
-{
-  spinlock_lock(&sanitizer_context_map_lock);
-
-  sanitizer_context_map_entry_t *entry = NULL;
-  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    sanitizer_stream_map_stream_process(&entry->streams, stream, fn);
-  }
 
   spinlock_unlock(&sanitizer_context_map_lock);
 }

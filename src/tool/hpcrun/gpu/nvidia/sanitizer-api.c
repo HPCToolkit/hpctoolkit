@@ -97,11 +97,13 @@
 #include <hpcrun/sample-sources/nvidia.h>
 
 #include "cuda-api.h"
-#include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 #include "sanitizer-api.h"
 #include "sanitizer-context-map.h"
 #include "sanitizer-stream-map.h"
+#include "sanitizer-buffer.h"
+#include "sanitizer-buffer-channel.h"
+#include "sanitizer-buffer-channel-set.h"
 
 #define SANITIZER_API_DEBUG 1
 
@@ -174,8 +176,16 @@ sanitizer_error_callback_dummy // __attribute__((unused))
  const char *error_string
 );
 
+typedef struct {
+  pthread_t thread;
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+} sanitizer_thread_t;
+
 // only subscribed by the main thread
 static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
+// Single background process thread, can be extended
+static sanitizer_thread_t sanitizer_thread;
 
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_local = 0;
@@ -186,10 +196,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
  .size = GPU_PATCH_RECORD_NUM,
  .full = 0
 };
-static __thread gpu_patch_buffer_t *gpu_patch_buffer = NULL;
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
-static __thread gpu_patch_record_t *gpu_patch_record = NULL;
-static __thread char *sanitizer_trace = NULL;
 
 static sanitizer_correlation_callback_t sanitizer_correlation_callback =
   sanitizer_correlation_callback_dummy;
@@ -198,11 +205,13 @@ static sanitizer_error_callback_t sanitizer_error_callback =
   sanitizer_error_callback_dummy;
 
 static atomic_uint sanitizer_thread_id = ATOMIC_VAR_INIT(0);
+static atomic_uint sanitizer_process_thread_counter = ATOMIC_VAR_INIT(0);
+static atomic_bool sanitizer_process_awake_flag = ATOMIC_VAR_INIT(0);
+static atomic_bool sanitizer_process_stop_flag = ATOMIC_VAR_INIT(0);
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
 //----------------------------------------------------------
-
 
 SANITIZER_FN
 (
@@ -425,6 +434,77 @@ sanitizer_path
 
 #endif
 
+//******************************************************************************
+// asynchronous process thread
+//******************************************************************************
+
+static void
+sanitizer_process_signal
+(
+)
+{
+  pthread_cond_t *cond = &(sanitizer_thread.cond);
+  pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
+
+  pthread_mutex_lock(mutex);
+
+  atomic_store(&sanitizer_process_awake_flag, true);
+
+  pthread_cond_signal(cond);
+
+  pthread_mutex_unlock(mutex);
+}
+
+
+static void
+sanitizer_process_await
+(
+)
+{
+  pthread_cond_t *cond = &(sanitizer_thread.cond);
+  pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
+
+  pthread_mutex_lock(mutex);
+
+  while (!atomic_load(&sanitizer_process_awake_flag)) {
+    pthread_cond_wait(cond, mutex);
+  }
+
+  atomic_store(&sanitizer_process_awake_flag, false);
+
+  pthread_mutex_unlock(mutex);
+}
+
+
+static void*
+sanitizer_process_thread
+(
+ void *arg
+)
+{
+  pthread_cond_t *cond = &(sanitizer_thread.cond);
+  pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
+
+  while (!atomic_load(&sanitizer_process_stop_flag)) {
+    sanitizer_buffer_channel_set_consume();
+    sanitizer_process_await();
+  }
+
+  // Last records
+  sanitizer_buffer_channel_set_consume();
+  
+  atomic_fetch_add(&sanitizer_process_thread_counter, -1);
+
+  pthread_mutex_destroy(mutex);
+  pthread_cond_destroy(cond);
+
+  return NULL;
+}
+
+//******************************************************************************
+// Cubins
+//******************************************************************************
+
 static bool
 sanitizer_write_cubin
 (
@@ -560,7 +640,7 @@ dim3_id_transform
 
 
 static void
-sanitizer_buffer_process
+sanitizer_kernel_launch_sync
 (
  CUcontext context,
  CUmodule module,
@@ -576,12 +656,6 @@ sanitizer_buffer_process
   hpctoolkit_cufunc_record_st_t *cufunc_record = cufunc->cufunc_record;
   uint64_t function_addr = cufunc_record->function_addr;
 
-  // Look up hash
-  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cumod->cubin_id);
-  unsigned int hash_len = 0;
-  unsigned char *hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
-
   // Get a place holder cct node
   uint64_t correlation_id = gpu_correlation_id();
   cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
@@ -594,91 +668,50 @@ sanitizer_buffer_process
 	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   // TODO(Keren): correlate metrics with api_node
 
-  // First time copy back, allocate memory
-  if (gpu_patch_buffer == NULL) {
-    gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
-  }
+  int sampling_frequency = sanitizer_block_sampling_frequency_get();
+  size_t num_left_blocks = 0;
 
-  if (gpu_patch_record == NULL) {
-    gpu_patch_record = (gpu_patch_record_t *) hpcrun_malloc_safe(
-      GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
-  }
-
-  if (sanitizer_trace == NULL) {
-    // * WARP_SIZE to guarantee sanitizer_trace buffer is greater than record size
-    sanitizer_trace = (char *)
-      hpcrun_malloc_safe(GPU_PATCH_RECORD_NUM * WARP_SIZE * sizeof(gpu_patch_record_t));
+  // If block sampling is set
+  if (sampling_frequency != 0) {
+    size_t total = grid_size.x * grid_size.y * grid_size.z;
+    num_left_blocks = total - ((total - 1) / sampling_frequency + 1);
   }
 
   while (true) {
+    // Allocate memory
+    sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(GPU_PATCH_RECORD_NUM);
+    gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
+
     // Copy buffer
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_buffer, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
 
     size_t num_records = gpu_patch_buffer->head_index;
-    size_t num_left_blocks = 0;
-
-    // If block sampling is set
-    if (gpu_patch_buffer->block_sampling_frequency != 0) {
-      size_t total = grid_size.x * grid_size.y * grid_size.z;
-      num_left_blocks = total - ((total - 1) / sanitizer_block_sampling_frequency_get() + 1);
-    }
 
     // Wait until the buffer is full or the kernel is finished
     if (!(gpu_patch_buffer->num_blocks == num_left_blocks || gpu_patch_buffer->full) || num_records == 0) {
       continue;
     }
 
-    // Copy all records
+    gpu_patch_record_t *gpu_patch_record = (gpu_patch_record_t *)gpu_patch_buffer->records;
+
+    // Copy all records to CPU
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_record, gpu_patch_buffer->records, sizeof(gpu_patch_record_t) * num_records, priority_stream));
     // Tell gpu copy is finished
     gpu_patch_buffer->full = 0;
+    // Do not need to sync stream.
+    // The function will return once the pageable buffer has been copied to the staging memory
+    // for DMA transfer to device memory, but the DMA to final destination may not have completed.
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, gpu_patch_buffer, sizeof(gpu_patch_buffer_t), priority_stream));
+    
+    sanitizer_buffer_channel_push(sanitizer_buffer);
 
-    // XXX(Keren): tricky change offset here
-    size_t used = 0;
-    size_t i;
-    for (i = 0; i < num_records; ++i) {
-      gpu_patch_record_t *record = &(gpu_patch_record[i]);
-      size_t j;
-      for (j = 0; j < WARP_SIZE; ++j) {
-        // Only record active values?
-        if (((record->active) & (1 << j)) == 0) {
-          continue;
-        }
-        uint64_t pc = record->pc - function_addr;
-        uint32_t bid_x, bid_y, bid_z;
-        uint32_t tid_x, tid_y, tid_z;
-        dim3_id_transform(grid_size, record->flat_block_id, &bid_x, &bid_y, &bid_z);
-        dim3_id_transform(block_size, record->flat_thread_id + j, &tid_x, &tid_y, &tid_z);
-        used += sprintf(&sanitizer_trace[used], "%p|(%u,%u,%u)|(%u,%u,%u)|",
-          pc, bid_x, bid_y, bid_z, tid_x, tid_y, tid_z);
-        if (record->address[j]) {
-          used += sprintf(&sanitizer_trace[used], "%p|", record->address[j]);
-        } else {
-          used += sprintf(&sanitizer_trace[used], "0x0|");
-        }
-        size_t k;
-        used += sprintf(&sanitizer_trace[used], "0x");
-        for (k = 0; k < record->size; ++k) { 
-          used += sprintf(&sanitizer_trace[used], "%02x", record->value[j][k]);
-        }
-        if (SANITIZER_API_DEBUG) {
-          used += sprintf(&sanitizer_trace[used], "|%u", record->flags[j]);
-        }
-        used += sprintf(&sanitizer_trace[used], "\n");
-      }
-    }
-    used += sprintf(&sanitizer_trace[used], "\n");
-
-    if (entry != NULL) {
-      PRINT("Write file size %lu\n", used);
-      if (sanitizer_write_trace(hash, hash_len, sanitizer_trace, used) == false) {
-        PRINT("Write file error\n");
-      }
-    }
+    // Awake background thread
+    // If multiple application threads are created, it might miss a signal,
+    // but we finally still process all the records
+    sanitizer_process_signal(); 
     
     // Finish all the blocks
     if (gpu_patch_buffer->num_blocks == num_left_blocks) {
@@ -695,11 +728,7 @@ sanitizer_buffer_process
 static void
 sanitizer_kernel_launch_callback
 (
- CUcontext context,
- CUmodule module,
- CUfunction function,
  CUstream stream,
- CUstream priority_stream,
  dim3 grid_size,
  dim3 block_size
 )
@@ -836,14 +865,15 @@ sanitizer_subscribe_callback
       
       // thread-safe
       // Create a high priority stream for the context at the first time
-      sanitizer_context_map_stream_lock(ld->context, ld->stream);
       sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
+
+      sanitizer_context_map_stream_lock(ld->context, ld->stream);
+
       priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
 
-      sanitizer_kernel_launch_callback(ld->context, ld->module, ld->function, ld->stream,
-        priority_stream, grid_size, block_size);
+      sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
-      sanitizer_buffer_process(ld->context, ld->module, ld->function, ld->stream,
+      sanitizer_kernel_launch_sync(ld->context, ld->module, ld->function, ld->stream,
         priority_stream, grid_size, block_size);
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
@@ -854,7 +884,6 @@ sanitizer_subscribe_callback
     // TODO(Keren): sync data
   }
 }
-
 
 //******************************************************************************
 // interfaces
@@ -959,79 +988,30 @@ void
 sanitizer_device_shutdown(void *args)
 {
   sanitizer_callbacks_unsubscribe();
+
+  atomic_store(&sanitizer_process_stop_flag, true);
+
+  while (atomic_load(&sanitizer_process_thread_counter));
 }
 
-//
-//static _Atomic(bool) stop_trace_flag;
-//
-//#define SECONDS_UNTIL_WAKEUP 1
-//
-//typedef sanitizer_trace_record_t {
-//  pthread_mutex_t mutex;
-//  pthread_cond_t cond;
-//  cudaStream_t stream;
-//};
-//
-//
-//void
-//sanitizer_trace_activities_await
-//(
-// pthread_cond_t *cond,
-// pthread_mutex_t *mutex
-//)
-//{
-//  struct timespec time;
-//  clock_gettime(CLOCK_REALTIME, &time); // get current time
-//  time.tv_sec += SECONDS_UNTIL_WAKEUP;
-//
-//  // wait for a signal or for a few seconds. periodically waking
-//  // up avoids missing a signal.
-//  pthread_cond_timedwait(cond, mutex, &time); 
-//}
-//
-//
-//void
-//sanitizer_trace_activities_process
-//(
-// cudaStream_t stream
-//)
-//{
-//  while (gpu_patch_queue_empty()) {
-//    gpu_patch_queue_pop(); 
-//
-//
-//    sanitizer_trace_activities_await();
-//  }
-//}
-//
-//
-//void *
-//sanitizer_trace_thread
-//(
-// cudaStream_t *stream
-//)
-//{
-//  while (!atomic_load(&stop_trace_flag)) {
-//    sanitizer_trace_activities_process(stream);
-//    sanitizer_trace_activities_await(cond, mutex);
-//  }
-//
-//  sanitizer_trace_activities_process(stream);
-//
-//  return NULL;
-//}
-//
-//
-//void
-//sanitizer_trace_init()
-//{
-//  cudaStream_t stream = cuda_create_priority_stream();
-//
-//  // Create a new thread for the stream without libmonitor watching
-//  monitor_disable_new_threads();
-//
-//  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) sanitizer_trace_thread, 
-//		&stream);
-//
-//  monitor_enable_new_threads();
-//}
+
+void
+sanitizer_process_init
+(
+)
+{
+  pthread_t *thread = &(sanitizer_thread.thread);
+  pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
+  pthread_cond_t *cond = &(sanitizer_thread.cond);
+
+  // Create a new thread for the context without libmonitor watching
+  monitor_disable_new_threads();
+
+  atomic_fetch_add(&sanitizer_process_thread_counter, 1);
+
+  pthread_mutex_init(mutex, NULL);
+  pthread_cond_init(cond, NULL);
+  pthread_create(thread, NULL, sanitizer_process_thread, NULL);
+
+  monitor_enable_new_threads();
+}

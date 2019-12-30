@@ -13,7 +13,6 @@
 
 #include <cuda.h>
 
-#include "sanitizer-context-map.h"
 
 /******************************************************************************
  * type definitions 
@@ -46,23 +45,6 @@ sanitizer_stream_map_delete
 (
  sanitizer_stream_map_entry_t **root,
  CUstream stream
-);
-
-
-void
-sanitizer_stream_map_process
-(
- sanitizer_stream_map_entry_t **root,
- sanitizer_process_fn_t fn
-);
-
-
-void
-sanitizer_stream_map_stream_process
-(
- sanitizer_stream_map_entry_t **root,
- CUstream stream,
- sanitizer_process_fn_t fn
 );
 
 

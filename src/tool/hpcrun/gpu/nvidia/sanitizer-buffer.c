@@ -1,0 +1,136 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2019, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define UNIT_TEST 0
+
+#define DEBUG 0
+
+#include "../gpu-print.h"
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "sanitizer-buffer.h"
+
+#include <stddef.h>
+#include <gpu-patch.h>
+
+#include <hpcrun/memory/hpcrun-malloc.h>
+
+#include "sanitizer-buffer-channel.h"
+#include "../gpu-channel-item-allocator.h"
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef struct sanitizer_buffer_t {
+  s_element_t next;
+
+  gpu_patch_buffer_t *gpu_patch_buffer;
+} sanitizer_buffer_t;
+
+//******************************************************************************
+// interface operations 
+//******************************************************************************
+
+void
+sanitizer_buffer_process
+(
+ sanitizer_buffer_t *buffer
+)
+{
+}
+
+
+sanitizer_buffer_t *
+sanitizer_buffer_alloc
+(
+ sanitizer_buffer_channel_t *channel
+)
+{
+  return channel_item_alloc(channel, sanitizer_buffer_t);
+}
+
+
+void
+sanitizer_buffer_produce
+(
+ sanitizer_buffer_t *b,
+ size_t num_records
+)
+{
+  gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
+
+  if (gpu_patch_buffer->records == NULL) {
+    gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
+      num_records * sizeof(gpu_patch_record_t));
+  } 
+}
+
+
+void
+sanitizer_buffer_free
+(
+ sanitizer_buffer_channel_t *channel, 
+ sanitizer_buffer_t *b
+)
+{
+  channel_item_free(channel, b);
+}
+
+
+gpu_patch_buffer_t *
+sanitizer_buffer_entry_gpu_patch_buffer_get
+(
+ sanitizer_buffer_t *b
+)
+{
+  return b->gpu_patch_buffer;
+}
