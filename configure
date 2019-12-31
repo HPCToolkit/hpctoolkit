@@ -693,6 +693,10 @@ OPT_BUILD_FRONT_END_TRUE
 OPT_BUILD_BACK_END_FALSE
 OPT_BUILD_BACK_END_TRUE
 BACK_END_LABEL
+OPT_DYNINST_LIBDW_FALSE
+OPT_DYNINST_LIBDW_TRUE
+OPT_DYNINST_LIBDWARF_FALSE
+OPT_DYNINST_LIBDWARF_TRUE
 ZLIB_COPY
 ZLIB_HPCLINK_LIB
 ZLIB_LIB
@@ -778,10 +782,6 @@ LIBDWARF_LIB
 LIBELF_COPY
 LIBELF_LIB
 LIBELF_INC
-OPT_DYNINST_LIBDW_FALSE
-OPT_DYNINST_LIBDW_TRUE
-OPT_DYNINST_LIBDWARF_FALSE
-OPT_DYNINST_LIBDWARF_TRUE
 DYNINST_COPY
 DYNINST_LIB_DIR
 DYNINST_LFLAGS
@@ -1009,7 +1009,6 @@ with_binutils
 with_boost
 with_bzip
 with_dyninst
-with_dyninst_type
 with_elfutils
 with_libdwarf
 with_libiberty
@@ -1029,6 +1028,7 @@ with_tbb
 with_xed
 with_xerces
 with_zlib
+with_dyninst_type
 enable_back_end
 enable_hpcrun
 enable_hpcrun_static
@@ -1765,9 +1765,6 @@ Optional Packages:
   --with-boost=PATH       path to boost install directory
   --with-bzip=PATH        path to bzip2 install directory
   --with-dyninst=PATH     path to dyninst install directory
-  --with-dyninst-type=TYPE
-                          temp option for dyninst version (old, libdw, cuda),
-                          only needed if autoconf fails to detect correctly
   --with-elfutils=PATH    path to elfutils install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libiberty=PATH   path to libiberty install directory (only needed if
@@ -1782,6 +1779,9 @@ Optional Packages:
   --with-xed=PATH         path to intel xed install directory
   --with-xerces=PATH      path to xerces-c install directory
   --with-zlib=PATH        path to zlib install directory
+  --with-dyninst-type=TYPE
+                          temp option for dyninst version (old, libdw, cuda),
+                          only needed if autoconf fails to detect correctly
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
   --with-cuda=PATH        path to cuda install directory
   --with-cupti=PATH       path to cupti install directory, default is from
@@ -20411,280 +20411,6 @@ $as_echo "$DYNINST" >&6; }
 
 
 
-#-------------------------------------------------
-
-# Check that ParseAPI includes CFG loop support.
-
-ORIG_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} ${DYNINST_IFLAGS}"
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for parseapi CFG loop support" >&5
-$as_echo_n "checking for parseapi CFG loop support... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <vector>
-#include <Symtab.h>
-#include <Function.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace ParseAPI;
-using namespace std;
-long num_blocks(LoopTreeNode * node)
-{
-  Loop * loop = node->loop;
-  vector <Block *> bvec;
-  loop->getLoopBasicBlocks(bvec);
-  return (long) bvec.size();
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  cfg_loop_support=yes ; dyninst_features="$dyninst_features cfg"
-else
-  cfg_loop_support=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cfg_loop_support" >&5
-$as_echo "$cfg_loop_support" >&6; }
-
-  if test "$cfg_loop_support" != yes ; then
-    as_fn_error $? "parseAPI does not include CFG loop support" "$LINENO" 5
-  fi
-fi
-
-#-------------------------------------------------
-
-# Test if Block::getInsns() uses Instruction::Ptr or Instruction.
-# 9.3 uses Instruction::Ptr, new-par-par and 10.x use Instruction.
-
-use_instn_ptr=yes
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if parseapi uses Instruction::Ptr" >&5
-$as_echo_n "checking if parseapi uses Instruction::Ptr... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <map>
-#include <Symtab.h>
-#include <Function.h>
-#include <Instruction.h>
-#include <CFG.h>
-using namespace Dyninst;
-using namespace InstructionAPI;
-using namespace ParseAPI;
-using namespace std;
-long instruction_size(Block * block)
-{
-  map <Offset, Instruction::Ptr> imap;
-  block->getInsns(imap);
-  return (long) imap.begin()->second->size();
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  use_instn_ptr=yes
-else
-  use_instn_ptr=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_instn_ptr" >&5
-$as_echo "$use_instn_ptr" >&6; }
-fi
-
-if test "$use_instn_ptr" = yes ; then
-
-$as_echo "#define DYNINST_INSTRUCTION_PTR 1" >>confdefs.h
-
-fi
-
-#-------------------------------------------------
-
-# Test if dyninst was built with libdw or libdwarf.
-#
-# There is not a good compile or link test for this, so we fall back
-# on ldd.  But note: ldd only works for dynamic libraries and doesn't
-# work cross-platform.
-
-use_libdw=no
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with libdw.so" >&5
-$as_echo_n "checking if dyninst built with libdw.so... " >&6; }
-
-  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$dyn_dwarf" ; then
-    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
-    if test $? -eq 0 ; then
-       use_libdw=yes
-    fi
-  fi
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_libdw" >&5
-$as_echo "$use_libdw" >&6; }
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  if test "$use_libdw" = yes
-  then dyninst_features="$dyninst_features libdw"
-  else dyninst_features="$dyninst_features libdwarf"
-  fi
-fi
-
-#-------------------------------------------------
-
-# Test if dyninst supports cuda.
-
-use_cuda=no
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports cuda" >&5
-$as_echo_n "checking if dyninst supports cuda... " >&6; }
-
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-
-#include <Symtab.h>
-using namespace Dyninst;
-using namespace SymtabAPI;
-using namespace std;
-long cuda_type()
-{
-  return (long) Dyninst::Arch_cuda;
-}
-
-_ACEOF
-if ac_fn_cxx_try_compile "$LINENO"; then :
-  use_cuda=yes ; dyninst_features="$dyninst_features cuda"
-else
-  use_cuda=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_cuda" >&5
-$as_echo "$use_cuda" >&6; }
-fi
-
-#-------------------------------------------------
-
-# Test if dyninst was built with openmp support.
-# Again, not really a good test.
-
-dyninst_openmp=no
-
-if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with openmp" >&5
-$as_echo_n "checking if dyninst built with openmp... " >&6; }
-
-  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
-
-  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-  LD_LIBRARY_PATH=
-
-  if test -f "$parseapi" ; then
-    for lib in $openmp_lib_list ; do
-      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
-      if test $? -eq 0 ; then
-        dyninst_openmp=yes
-	dyninst_features="$dyninst_features openmp"
-	break
-      fi
-    done
-  fi
-
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_openmp" >&5
-$as_echo "$dyninst_openmp" >&6; }
-fi
-
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
-CXXFLAGS="$ORIG_CXXFLAGS"
-
-#-------------------------------------------------
-
-# Temporary option to identify version of dyninst, only necessary if
-# the above tests produce the wrong answer.
-#
-#  old = orig version from externals
-#  libdw = uses libdw instead of libdwarf, but not cuda
-#  cuda = uses libdw and supports cuda
-
-dyninst_type=unset
-
-
-# Check whether --with-dyninst-type was given.
-if test "${with_dyninst_type+set}" = set; then :
-  withval=$with_dyninst_type; dyninst_type="$withval"
-fi
-
-
-if test "$dyninst_type" != unset ; then
-  case "$dyninst_type" in
-    old )   use_libdw=no ;  use_cuda=no ;;
-    libdw ) use_libdw=yes ; use_cuda=no ;;
-    cuda )  use_libdw=yes ; use_cuda=yes ;;
-    * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
-  esac
-
-  { $as_echo "$as_me:${as_lineno-$LINENO}: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&5
-$as_echo "$as_me: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&6;}
-fi
-
- if test "$use_libdw" = no; then
-  OPT_DYNINST_LIBDWARF_TRUE=
-  OPT_DYNINST_LIBDWARF_FALSE='#'
-else
-  OPT_DYNINST_LIBDWARF_TRUE='#'
-  OPT_DYNINST_LIBDWARF_FALSE=
-fi
-
- if test "$use_libdw" = yes; then
-  OPT_DYNINST_LIBDW_TRUE=
-  OPT_DYNINST_LIBDW_FALSE='#'
-else
-  OPT_DYNINST_LIBDW_TRUE='#'
-  OPT_DYNINST_LIBDW_FALSE=
-fi
-
-
-if test "$use_libdw" = yes ; then
-
-$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
-
-fi
-
-if test "$use_cuda" = yes ; then
-
-$as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
-
-fi
-
 
 #-------------------------------------------------
 # Option: --with-elfutils=PATH
@@ -20705,7 +20431,7 @@ $as_echo_n "checking for elfutils... " >&6; }
 LIBELF_INC=no
 LIBELF_LIB=no
 LIBELF_COPY=no
-have_libdw=no
+elf_has_libdw=no
 
 case "$LIBELF" in
   /* )
@@ -20727,7 +20453,7 @@ case "$LIBELF" in
     LIBELF_COPY=yes
 
     if test -f "${LIBELF_LIB}/libdw.so" ; then
-      have_libdw=yes
+      elf_has_libdw=yes
     fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -20740,15 +20466,6 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
-
-if test "$use_libdw" = yes && test "$have_libdw" != yes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst uses libdw but elfutils is missing libdw" >&5
-$as_echo "$as_me: WARNING: dyninst uses libdw but elfutils is missing libdw" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst:  $DYNINST" >&5
-$as_echo "$as_me: WARNING: dyninst:  $DYNINST" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: elfutils: $LIBELF" >&5
-$as_echo "$as_me: WARNING: elfutils: $LIBELF" >&2;}
-fi
 
 
 
@@ -22297,6 +22014,299 @@ fi
 
 
 #----------------------------------------------------------------------------
+# Extra Dyninst tests
+#----------------------------------------------------------------------------
+
+# The dyninst compile if/else tests require TBB, so this comes after
+# all the package paths are known.
+
+# Check that ParseAPI includes CFG loop support.
+
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="${HOST_CXXFLAGS} ${CXXFLAGS} ${BOOST_IFLAGS} ${DYNINST_IFLAGS}"
+CXXFLAGS="${CXXFLAGS} -I${LIBELF_INC} ${TBB_IFLAGS}"
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for parseapi CFG loop support" >&5
+$as_echo_n "checking for parseapi CFG loop support... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <vector>
+#include <Symtab.h>
+#include <Function.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace ParseAPI;
+using namespace std;
+long num_blocks(LoopTreeNode * node)
+{
+  Loop * loop = node->loop;
+  vector <Block *> bvec;
+  loop->getLoopBasicBlocks(bvec);
+  return (long) bvec.size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  cfg_loop_support=yes ; dyninst_features="$dyninst_features cfg"
+else
+  cfg_loop_support=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $cfg_loop_support" >&5
+$as_echo "$cfg_loop_support" >&6; }
+
+  if test "$cfg_loop_support" != yes ; then
+    as_fn_error $? "parseAPI does not include CFG loop support" "$LINENO" 5
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if Block::getInsns() uses Instruction::Ptr or Instruction.
+# 9.3 uses Instruction::Ptr, new-par-par and 10.x use Instruction.
+
+use_instn_ptr=yes
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if parseapi uses Instruction::Ptr" >&5
+$as_echo_n "checking if parseapi uses Instruction::Ptr... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <map>
+#include <Symtab.h>
+#include <Function.h>
+#include <Instruction.h>
+#include <CFG.h>
+using namespace Dyninst;
+using namespace InstructionAPI;
+using namespace ParseAPI;
+using namespace std;
+long instruction_size(Block * block)
+{
+  map <Offset, Instruction::Ptr> imap;
+  block->getInsns(imap);
+  return (long) imap.begin()->second->size();
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_instn_ptr=yes
+else
+  use_instn_ptr=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_instn_ptr" >&5
+$as_echo "$use_instn_ptr" >&6; }
+fi
+
+if test "$use_instn_ptr" = yes ; then
+
+$as_echo "#define DYNINST_INSTRUCTION_PTR 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with libdw or libdwarf.
+#
+# There is not a good compile or link test for this, so we fall back
+# on ldd.  But note: ldd only works for dynamic libraries and doesn't
+# work cross-platform.
+
+use_libdw=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with libdw.so" >&5
+$as_echo_n "checking if dyninst built with libdw.so... " >&6; }
+
+  dyn_dwarf="${DYNINST_LIB_DIR}/libdynDwarf.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$dyn_dwarf" ; then
+    ldd "$dyn_dwarf" 2>/dev/null | $AWK '{print $1}' | grep -e 'libdw.so' >/dev/null
+    if test $? -eq 0 ; then
+       use_libdw=yes
+    fi
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_libdw" >&5
+$as_echo "$use_libdw" >&6; }
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  if test "$use_libdw" = yes
+  then dyninst_features="$dyninst_features libdw"
+  else dyninst_features="$dyninst_features libdwarf"
+  fi
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst supports cuda.
+
+use_cuda=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports cuda" >&5
+$as_echo_n "checking if dyninst supports cuda... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <Symtab.h>
+using namespace Dyninst;
+using namespace SymtabAPI;
+using namespace std;
+long cuda_type()
+{
+  return (long) Dyninst::Arch_cuda;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  use_cuda=yes ; dyninst_features="$dyninst_features cuda"
+else
+  use_cuda=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_cuda" >&5
+$as_echo "$use_cuda" >&6; }
+fi
+
+#-------------------------------------------------
+
+# Test if dyninst was built with openmp support.
+# Again, not really a good test.
+
+dyninst_openmp=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with openmp" >&5
+$as_echo_n "checking if dyninst built with openmp... " >&6; }
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
+
+  ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+  LD_LIBRARY_PATH=
+
+  if test -f "$parseapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        dyninst_openmp=yes
+	dyninst_features="$dyninst_features openmp"
+	break
+      fi
+    done
+  fi
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_openmp" >&5
+$as_echo "$dyninst_openmp" >&6; }
+fi
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+#-------------------------------------------------
+
+# Temporary option to identify version of dyninst, only necessary if
+# the above tests produce the wrong answer.
+#
+#  old = orig version from externals
+#  libdw = uses libdw instead of libdwarf, but not cuda
+#  cuda = uses libdw and supports cuda
+
+dyninst_type=unset
+
+
+# Check whether --with-dyninst-type was given.
+if test "${with_dyninst_type+set}" = set; then :
+  withval=$with_dyninst_type; dyninst_type="$withval"
+fi
+
+
+if test "$dyninst_type" != unset ; then
+  case "$dyninst_type" in
+    old )   use_libdw=no ;  use_cuda=no ;;
+    libdw ) use_libdw=yes ; use_cuda=no ;;
+    cuda )  use_libdw=yes ; use_cuda=yes ;;
+    * ) as_fn_error $? "bad value for --with-dyninst-type: $dyninst_type" "$LINENO" 5 ;;
+  esac
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&5
+$as_echo "$as_me: override dyninst-type ($dyninst_type): libdw: $use_libdw, cuda: $use_cuda" >&6;}
+fi
+
+ if test "$use_libdw" = no; then
+  OPT_DYNINST_LIBDWARF_TRUE=
+  OPT_DYNINST_LIBDWARF_FALSE='#'
+else
+  OPT_DYNINST_LIBDWARF_TRUE='#'
+  OPT_DYNINST_LIBDWARF_FALSE=
+fi
+
+ if test "$use_libdw" = yes; then
+  OPT_DYNINST_LIBDW_TRUE=
+  OPT_DYNINST_LIBDW_FALSE='#'
+else
+  OPT_DYNINST_LIBDW_TRUE='#'
+  OPT_DYNINST_LIBDW_FALSE=
+fi
+
+
+if test "$use_libdw" = yes ; then
+
+$as_echo "#define DYNINST_USE_LIBDW 1" >>confdefs.h
+
+fi
+
+if test "$use_cuda" = yes ; then
+
+$as_echo "#define DYNINST_USE_CUDA 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
+
+if test "$use_libdw" = yes && test "$elf_has_libdw" != yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst uses libdw but elfutils is missing libdw" >&5
+$as_echo "$as_me: WARNING: dyninst uses libdw but elfutils is missing libdw" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: dyninst:  $DYNINST" >&5
+$as_echo "$as_me: WARNING: dyninst:  $DYNINST" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: elfutils: $LIBELF" >&5
+$as_echo "$as_me: WARNING: elfutils: $LIBELF" >&2;}
+fi
+
+
+#----------------------------------------------------------------------------
 # Options
 #----------------------------------------------------------------------------
 
@@ -23685,14 +23695,6 @@ if test -z "${OPT_ENABLE_UPC_TRUE}" && test -z "${OPT_ENABLE_UPC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_UPC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${UNW_X86_TRUE}" && test -z "${UNW_X86_FALSE}"; then
   as_fn_error $? "conditional \"UNW_X86\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -23739,6 +23741,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_DYNINST_LIBDWARF_TRUE}" && test -z "${OPT_DYNINST_LIBDWARF_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDWARF\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_DYNINST_LIBDW_TRUE}" && test -z "${OPT_DYNINST_LIBDW_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_DYNINST_LIBDW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_BUILD_BACK_END_TRUE}" && test -z "${OPT_BUILD_BACK_END_FALSE}"; then
