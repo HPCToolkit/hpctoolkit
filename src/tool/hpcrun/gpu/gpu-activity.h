@@ -93,7 +93,8 @@ typedef enum {
   GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
   GPU_ACTIVITY_EVENT                   = 14,
-  GPU_ACTIVITY_FUNCTION                = 15
+  GPU_ACTIVITY_ENVIRONMENT             = 15,
+  GPU_ACTIVITY_FUNCTION                = 16
 } gpu_activity_kind_t;
 
 
@@ -337,6 +338,17 @@ typedef struct gpu_instruction_t {
 } gpu_instruction_t;
 
 
+typedef struct gpu_environment_t {
+  uint32_t device_id;
+  uint32_t core_clock_rate;
+  uint32_t sm_clock_rate;
+  uint32_t mem_clock_rate;
+  uint32_t fan_speed;
+  uint32_t temperature;
+  uint32_t power;
+} gpu_environment_t;
+
+
 typedef struct gpu_activity_details_t { 
   union {
     /* Each field stores the complete information needed
@@ -366,6 +378,8 @@ typedef struct gpu_activity_details_t {
 
     /* Fine grained measurement contains information about specific instructions */
     gpu_instruction_t instruction;
+
+    gpu_environment_t environment;
   };
 } gpu_activity_details_t;
 

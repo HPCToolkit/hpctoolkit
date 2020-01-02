@@ -558,6 +558,24 @@ convert_event
   ga->details.event.stream_id = activity->streamId;
 }
 
+static void
+convert_environment
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityEnvironment *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_ENVIRONMENT;
+
+  ga->details.environment.device_id = activity->deviceId;
+
+  if (activity->environmentKind == CUPTI_ACTIVITY_ENVIRONMENT_SPEED) {
+    ga->details.environment.core_clock_rate = activity->data.speed.smClock;
+  } else {
+    ga->details.environment.core_clock_rate = 0;
+  }
+}
+
 void
 convert_unknown
 (
@@ -642,6 +660,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_CUDA_EVENT:
     convert_event(ga, (CUpti_ActivityCudaEvent *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_ENVIRONMENT:
+    convert_environment(ga, (CUpti_ActivityEnvironment *) activity);
     break;
 
   default:

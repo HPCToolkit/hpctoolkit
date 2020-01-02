@@ -244,6 +244,7 @@ static __thread cct_node_t *cupti_trace_node = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
+static bool cupti_environment_enabled = false;
 
 static cupti_correlation_callback_t cupti_correlation_callback =
   cupti_correlation_callback_dummy;
@@ -895,18 +896,18 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
-	if (is_kernel_op) {
-	  cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-	  cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
-	  hpcrun_cct_retain(cct_func);
-	}
+        if (is_kernel_op) {
+          cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+          cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
+          hpcrun_cct_retain(cct_func);
+        }
 
         hpcrun_safe_exit();
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
 					cpu_submit_time);
 
@@ -926,7 +927,7 @@ cupti_subscriber_callback
 	       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
+        cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     }
@@ -1046,14 +1047,14 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
         
         hpcrun_safe_exit();
 
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
 					cpu_submit_time);
 
@@ -1395,6 +1396,37 @@ cupti_pc_sampling_disable
                      (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
     cupti_pc_sampling_enabled = false;
+  }
+}
+
+
+void
+cupti_environment_enable
+(
+)
+{
+  PRINT("enter cupti_environment_enable\n");
+
+  if (!cupti_environment_enabled) {
+    cupti_environment_enabled = true;
+
+    HPCRUN_CUPTI_CALL(cuptiActivityEnable, 
+      (CUPTI_ACTIVITY_KIND_ENVIRONMENT));
+  }
+
+  PRINT("exit cupti_environment_enable\n");
+}
+
+
+void
+cupti_environment_disable
+(
+)
+{
+  if (cupti_environment_enabled) {
+    HPCRUN_CUPTI_CALL(cuptiActivityDisable,
+                     (CUPTI_ACTIVITY_KIND_ENVIRONMENT));
+    cupti_environment_enabled = false;
   }
 }
 

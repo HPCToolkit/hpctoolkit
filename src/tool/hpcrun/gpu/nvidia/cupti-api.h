@@ -166,6 +166,18 @@ cupti_pc_sampling_disable
 );
 
 
+void
+cupti_environment_enable
+(
+);
+
+
+void
+cupti_environment_disable
+(
+);
+
+
 cupti_set_status_t 
 cupti_monitoring_set
 (

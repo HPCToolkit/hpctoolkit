@@ -270,6 +270,9 @@ cupti_enable_activities
 
   cupti_correlation_enable();
 
+  // XXX(keren): CUpti_Environment is only supported on x86, not powerpc
+  cupti_environment_enable();
+
   PRINT("Exit cupti_enable_activities\n");
 }
 
