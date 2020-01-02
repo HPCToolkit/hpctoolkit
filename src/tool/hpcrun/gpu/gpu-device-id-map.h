@@ -88,7 +88,7 @@ gpu_device_id_map_delete
 );
 
 
-uint32_t
+double
 gpu_device_id_map_entry_core_clock_rate_get
 (
  gpu_device_id_map_entry_t *entry

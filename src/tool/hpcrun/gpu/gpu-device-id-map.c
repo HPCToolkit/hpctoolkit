@@ -103,8 +103,9 @@ typedef struct typed_splay_node(device_id) {
   struct gpu_device_id_map_entry_t *right;
   uint64_t device_id;
 
-  // most recent properties
+  // average properties
   uint32_t core_clock_rate;
+  uint32_t core_clock_rate_instance;
   uint32_t sm_clock_rate;
   uint32_t mem_clock_rate;
   uint32_t fan_speed;
@@ -180,9 +181,9 @@ gpu_device_id_map_insert
     st_insert(&map_root, entry);
   }
 
-  // Update to most recent value
   if (core_clock_rate != 0) {
-    entry->core_clock_rate = core_clock_rate;
+    entry->core_clock_rate += core_clock_rate;
+    entry->core_clock_rate_instance += 1;
   }
 
   PRINT("device_id_map insert: device_id=0x%lx\n", device_id);
@@ -200,12 +201,12 @@ gpu_device_id_map_delete
 }
 
 
-uint32_t
+double
 gpu_device_id_map_entry_core_clock_rate_get
 (
  gpu_device_id_map_entry_t *entry
 )
 {
-  return entry->core_clock_rate;
+  return entry->core_clock_rate / entry->core_clock_rate_instance;
 }
 
