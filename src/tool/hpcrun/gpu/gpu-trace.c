@@ -160,15 +160,15 @@ gpu_trace_cct_root
 
 
 static cct_node_t *
-gpu_trace_cct_no_thread
+gpu_trace_cct_no_activity
 (
  thread_data_t* td
 )
 {
-  cct_node_t *no_thread = 
-    hpcrun_cct_bundle_get_nothread_node(&(td->core_profile_trace_data.epoch->csdata));
+  cct_node_t *no_activity = 
+    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
 
-  return no_thread;
+  return no_activity;
 }
 
 
@@ -216,7 +216,7 @@ static void
 gpu_trace_first
 (
  thread_data_t* td,
- cct_node_t *no_thread,
+ cct_node_t *no_activity,
  uint64_t start
 )
 {
@@ -224,7 +224,7 @@ gpu_trace_first
 
   if (first) {
     first = false;
-    gpu_trace_stream_append(td, no_thread, start - 1);
+    gpu_trace_stream_append(td, no_activity, start - 1);
   }
 }
 
@@ -262,7 +262,7 @@ consume_one_trace_item
 
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
-  cct_node_t *no_thread = gpu_trace_cct_no_thread(td);
+  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
   uint64_t start = gpu_trace_time(start_time);
   uint64_t end   = gpu_trace_time(end_time);
@@ -293,11 +293,11 @@ consume_one_trace_item
   }
 
   if (append) {
-    gpu_trace_first(td, no_thread, start);
+    gpu_trace_first(td, no_activity, start);
     
     gpu_trace_stream_append(td, leaf, start);
     
-    gpu_trace_stream_append(td, no_thread, end + 1);
+    gpu_trace_stream_append(td, no_activity, end + 1);
     
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
