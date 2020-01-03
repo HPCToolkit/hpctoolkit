@@ -317,7 +317,7 @@ hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_
 }
 
 void
-hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator)
 {
 
   // ---------------------------------------------------------------------
@@ -341,7 +341,15 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   //         to the file at the end of the process
   // ---------------------------------------------------------------------
 
-  // step 1: enqueue thread data into the free list
+  // step 1: get the dummy node that marks the end of the thread trace
+
+  if (!no_separator) {
+    cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
+    hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
+			HPCTRACE_FMT_DLCA_NULL);
+  }
+
+  // step 2: enqueue thread data into the free list
 
   spinlock_lock(&threaddata_lock);
 
@@ -350,11 +358,6 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
   spinlock_unlock(&threaddata_lock);
-
-  // step 2: get the dummy node that marks the end of the thread trace
-
-  cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
-  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, HPCTRACE_FMT_DLCA_NULL);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

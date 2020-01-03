@@ -166,7 +166,7 @@ gpu_trace_cct_no_thread
 )
 {
   cct_node_t *no_thread = 
-    td->core_profile_trace_data.epoch->csdata.special_no_thread_node;
+    hpcrun_cct_bundle_get_nothread_node(&(td->core_profile_trace_data.epoch->csdata));
 
   return no_thread;
 }
@@ -365,7 +365,8 @@ gpu_trace_stream_release
 {
   epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
 
-  hpcrun_threadMgr_data_put(epoch, td);
+  int no_separator = 1;
+  hpcrun_threadMgr_data_put(epoch, td, no_separator);
 
   atomic_fetch_add(&stream_counter, -1);
 }

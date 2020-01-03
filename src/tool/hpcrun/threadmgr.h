@@ -82,7 +82,7 @@ void
 hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data);
 
 void
-hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data );
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator);
 
 void
 hpcrun_threadMgr_data_fini(thread_data_t *td);
