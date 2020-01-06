@@ -413,6 +413,11 @@ public:
 		  SrcFile::ln& begLine, SrcFile::ln& endLine,
 		  unsigned flags = 1) /*const*/;
 
+  // used for kernel symbols
+  bool
+  findSimpleFunction(VMA vma, std::string& func);
+
+
   bool
   findProcSrcCodeInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 

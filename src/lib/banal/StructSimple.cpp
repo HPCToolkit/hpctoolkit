@@ -95,6 +95,8 @@ BAnal::Struct::makeStructureSimple(Prof::Struct::LM * lmStruct,
   if (bproc != NULL) {
     proc_vma = bproc->begVMA();
     lm->findSrcCodeInfo(proc_vma, 0, linknm, proc_filenm, proc_line);
+  } else {
+    lm->findSimpleFunction(proc_vma, linknm);
   }
 
   if (proc_filenm.empty()) {
