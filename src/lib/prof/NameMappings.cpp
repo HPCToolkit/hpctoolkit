@@ -51,7 +51,7 @@ const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
 const char *GPU_TRACE   = "<gpu kernel>";
 
-const char *NO_ACTIVITY = "<no thread>";
+const char *NO_ACTIVITY = "<no activity>";
 
 
 //******************************************************************************
