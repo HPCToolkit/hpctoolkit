@@ -78,6 +78,7 @@
 
 #include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
 #include "CallPath-CudaCFG.hpp"
 
@@ -101,6 +102,7 @@ using std::string;
 #include <lib/support/Logic.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
+
 
 #include <vector>
 #include <queue>

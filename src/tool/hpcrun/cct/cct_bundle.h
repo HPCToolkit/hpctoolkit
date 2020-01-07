@@ -100,6 +100,6 @@ extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t*
 //
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
 extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
-extern cct_node_t* hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct);
+extern cct_node_t* hpcrun_cct_bundle_get_no_activity_node(cct_bundle_t* cct);
 
 #endif // CCT_BUNDLE_H

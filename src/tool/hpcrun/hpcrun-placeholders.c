@@ -1,4 +1,13 @@
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <assert.h>
+#include <pthread.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -8,6 +17,43 @@
 #include <hpcrun/hpcrun-initializers.h>
 
 #include "hpcrun-placeholders.h"
+
+
+
+//******************************************************************************
+// private variables 
+//******************************************************************************
+
+static placeholder_t hpcrun_placeholders[hpcrun_placeholder_type_count];
+
+static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+void
+hpcrun_no_activity
+(
+ void
+)
+{
+  // this function is not meant to be called
+  assert(0);
+}
+
+
+static void
+hpcrun_default_placeholders_init
+(
+ void
+)
+{
+  init_placeholder(&hpcrun_placeholders[hpcrun_placeholder_type_no_activity], 
+		   hpcrun_no_activity);
+}
 
 
 
@@ -45,4 +91,16 @@ init_placeholder
         p->pc_norm = hpcrun_normalize_ip(cpc, pc_to_lm(cpc));
     }
     hpcrun_safe_exit();
+}
+
+
+placeholder_t *
+hpcrun_placeholder_get
+(
+ hpcrun_placeholder_type_t ph_type
+)
+{
+  pthread_once(&is_initialized, hpcrun_default_placeholders_init);
+
+  return &hpcrun_placeholders[ph_type];
 }

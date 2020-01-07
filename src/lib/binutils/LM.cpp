@@ -695,6 +695,20 @@ BinUtil::LM::findProcSrcCodeInfo(VMA vma, ushort opIndex,
 }
 
 
+bool
+BinUtil::LM::findSimpleFunction(VMA vma, string& func)
+{
+  bool STATUS = false;
+  func = "";
+
+  if (m_simpleSymbols) {
+    STATUS = m_simpleSymbols->findEnclosingFunction(vma, func);
+  }
+
+  return STATUS;
+}
+
+
 void
 BinUtil::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
 { 
