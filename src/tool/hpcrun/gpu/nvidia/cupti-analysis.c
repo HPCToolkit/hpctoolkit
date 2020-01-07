@@ -59,7 +59,7 @@
 #include "cupti-analysis.h"
 #include "cuda-device-map.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "../gpu-print.h"
 
