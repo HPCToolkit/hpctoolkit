@@ -45,46 +45,46 @@
 // ******************************************************* EndRiceCopyright *
 // funclist.c - program to print the function list from its load-object arguments
 
-#include	"fnbounds.h"
-#include	"code-ranges.h"
+#include  "fnbounds.h"
+#include  "code-ranges.h"
 
-int	verbose = 0;
-int	scan_code = 1;
-int	no_dwarf = 0;
+int verbose = 0;
+int scan_code = 1;
+int no_dwarf = 0;
 
-size_t	maxfunc = 0;
-size_t	nfunc = 0;
+size_t  maxfunc = 0;
+size_t  nfunc = 0;
 Function_t *farray = NULL;
 
 
-int	dynsymread_f = 1;
-int	symtabread_f = 1;
-int	ehframeread_f = 1;
-int	pltscan_f = 1;
-int	initscan_f = 1;
-int	textscan_f = 1;
-int	finiscan_f = 1;
-int	altinstr_replacementscan_f = 1;
+int dynsymread_f = SC_DONE;
+int symtabread_f = SC_DONE;
+int ehframeread_f = SC_DONE;
+int pltscan_f = SC_DONE;
+int initscan_f = SC_DONE;
+int textscan_f = SC_DONE;
+int finiscan_f = SC_DONE;
+int altinstr_replacementscan_f = SC_DONE;
 
-int	is_dotso;
-int	server_mode = 0;
+int is_dotso;
+int server_mode = 0;
 
 static char ebuf[1024]; 
 static char ebuf2[1024]; 
 
 uint64_t refOffset;
-char	*xname;
+char  *xname;
 
 int
 main(int argc, char **argv, char **envp)
 {
-  int	i;
-  char	**p;
-  char	*ret;
+  int i;
+  char  **p;
+  char  *ret;
 
   int disable_init = 0;
   p = argv;
-  p ++;
+  p++;
   for (i = 1; i < argc; i ++) {
     if ( strcmp (*p, "-v") == 0 ) {
        verbose = 1;
@@ -169,16 +169,16 @@ main(int argc, char **argv, char **envp)
 char *
 get_funclist(char *name)
 {
-  int	fd;
-  char	*ret = NULL;
-  int	i;
-  Elf 	*e;
+  int fd;
+  char  *ret = NULL;
+  int i;
+  Elf   *e;
   
   refOffset = 0;
 
   // Make sure function list array is allocated
   if ( farray == NULL) {
-    farray = (Function_t*) malloc(MAX_FUNC * sizeof(Function_t) );	
+    farray = (Function_t*) malloc(MAX_FUNC * sizeof(Function_t) );  
     maxfunc = MAX_FUNC;
     nfunc = 0;
     if ( verbose) {
@@ -250,7 +250,7 @@ cleanup()
   refOffset = 0;
 }
 
-char	*
+char  *
 process_vdso()
 {
   Elf *e = (Elf *)getauxval(AT_SYSINFO_EHDR);
@@ -272,7 +272,7 @@ process_vdso()
 char *
 process_mapped_header(Elf *lelf)
 {
-  int	i;
+  int i;
   size_t secHeadStringIndex,nsec;
   GElf_Shdr secHead;
   Elf_Scn *section;
@@ -282,7 +282,7 @@ process_mapped_header(Elf *lelf)
   char *fn;
   int64_t j,jn;
   GElf_Phdr progHeader;
-
+  ehRecord_t ehInfo;
 
   // verify the header is as it should be
 
@@ -318,7 +318,6 @@ process_mapped_header(Elf *lelf)
     return ebuf2;
   }
 
-
   //
   // determine the load address, it's the first v_addr of a program
   // header marked PT_LOAD, with the execute flag set
@@ -326,14 +325,14 @@ process_mapped_header(Elf *lelf)
   elf_getphdrnum(lelf,&jn);
   for (j=0; j<jn; j++) {
     gelf_getphdr(lelf,j,&progHeader);
-    if ( (progHeader.p_type == PT_LOAD) && ((progHeader.p_flags & PF_X) == PF_X ) ){
+    if ( (progHeader.p_type == PT_LOAD) && ((progHeader.p_flags & PF_X) == PF_X ) ) {
       refOffset = progHeader.p_vaddr;
       break;
     }
   }
 
   if (j == jn) {
-    sprintf( ebuf2, "no PT_LOAD program header found of %ld headers\n",jn);
+    sprintf( ebuf2, "no executable PT_LOAD program header found of %ld headers\n",jn);
     return ebuf2;
   }
 
@@ -342,11 +341,12 @@ process_mapped_header(Elf *lelf)
 
   section = NULL;
   //
+  // This is the main loop for traversing the sections.
   // NB section numbering starts at 1, not 0.
   //
-  for(i=0; i < nsec; i++) {
+  for(i=1; i < nsec; i++) {
     section = elf_nextscn(lelf, section);
-#if 0
+#if 1
     if (section == NULL) {
       sprintf( ebuf2, "section count mismatch, expected %d but got %d\n", (uint32_t)nsec, i);
       return ebuf2;
@@ -383,18 +383,33 @@ process_mapped_header(Elf *lelf)
       }
       else if (!strcmp(secName,".text")) {
         textscan(lelf, secHead); 
+        ehInfo.textSection = section;  // may be needed for eh_frame scan
+      }
+      else if (!strcmp(secName,".data")) {
+        textscan(lelf, secHead); 
+        ehInfo.dataSection = section;  // may be needed for eh_frame scan
       }
       else if (!strcmp(secName,".fini")) {
         finiscan(lelf, secHead); 
       }
-      else if (!strcmp(secName,".ehframe")) {
-        ehframescan(lelf, secHead); 
+      else if (!strcmp(secName,".eh_frame_hdr")) {
+      ehInfo.ehHdrIndex = elf_ndxscn(section);
+      ehInfo.ehHdrSection = section;
+      }
+      else if (!strcmp(secName,".eh_frame")) {
+      ehInfo.ehFrameIndex = elf_ndxscn(section);
+      ehInfo.ehFrameSection = section;
       }
       else if (!strcmp(secName,".altinstr_replacement")) {
         altinstr_replacementscan(lelf, secHead); 
       }
     }
   }
+  //
+  // any eh_frame scans are done after traversing the sections,
+  // because various of them may be needed for relative addressing
+  //
+  ehframescan(lelf, &ehInfo); 
 
   if (verbose) {
     fprintf(stderr, "\n");
@@ -431,28 +446,28 @@ disable_sources(char *str)
   for (i = 0; ; i++) {
     switch (str[i]) {
       case 'd':
-        dynsymread_f = 0;
+        dynsymread_f = SC_SKIP;
         break;
       case 's':
-        symtabread_f = 0;
+        symtabread_f = SC_SKIP;
         break;
       case 'e':
-        ehframeread_f = 0;
+        ehframeread_f = SC_SKIP;
         break;
       case 'p':
-        pltscan_f = 0;
+        pltscan_f = SC_SKIP;
         break;
       case 'i':
-        initscan_f = 0;
+        initscan_f = SC_SKIP;
         break;
       case 't':
-        textscan_f = 0;
+        textscan_f = SC_SKIP;
         break;
       case 'f':
-        finiscan_f = 0;
+        finiscan_f = SC_SKIP;
         break;
       case 'a':
-        altinstr_replacementscan_f = 0;
+        altinstr_replacementscan_f = SC_SKIP;
         break;
       default:
         return;
@@ -474,6 +489,7 @@ dynsymread(Elf *e, GElf_Shdr sechdr)
   return SC_DONE;
 
 }
+
 uint64_t 
 symtabread(Elf *e, GElf_Shdr sechdr)
 {
@@ -486,6 +502,7 @@ symtabread(Elf *e, GElf_Shdr sechdr)
   return SC_DONE;
 
 }
+
 void
 symsecread(Elf *e, GElf_Shdr secHead, char *src)
 {
