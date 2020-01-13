@@ -200,6 +200,35 @@ libunw_cursor_get_sp(hpcrun_unw_cursor_t* cursor)
   return (void *) tmp;
 }
 
+
+static void *
+libunw_cursor_get_bp(hpcrun_unw_cursor_t* cursor)
+{
+  unw_word_t tmp;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
+
+  return (void *) tmp;
+}
+
+
+
+static void **
+libunw_cursor_get_ra_loc(hpcrun_unw_cursor_t* cursor)
+{
+  unw_save_loc_t ip_loc;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_save_loc(unw_cursor, UNW_REG_IP, &ip_loc);
+
+  unw_word_t tmp = (ip_loc.type == UNW_SLT_MEMORY ? ip_loc.u.addr : 0);
+
+  return (void **) tmp;
+}
+
+
+
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
@@ -225,6 +254,8 @@ libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor, int decrement_pc)
   cursor->pc_unnorm = pc;
 
   cursor->sp = libunw_cursor_get_sp(cursor);
+  cursor->bp = libunw_cursor_get_bp(cursor);
+  cursor->ra_loc = libunw_cursor_get_ra_loc(cursor);
 
   if (decrement_pc) pc--;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
