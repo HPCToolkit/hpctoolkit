@@ -69,6 +69,8 @@
 // local includes
 //*****************************************************************************
 
+#include <lib/prof-lean/vdso.h>
+
 #include "code-ranges.h"
 #include "eh-frames.h"
 #include "process-ranges.h"
@@ -79,9 +81,18 @@
 #include "Symtab.h"
 #include "Symbol.h"
 
-using namespace std;
+
+
+//*****************************************************************************
+// namespaces
+//*****************************************************************************
+
 using namespace Dyninst;
 using namespace SymtabAPI;
+
+using namespace std;
+
+
 
 //*****************************************************************************
 // macros
@@ -442,6 +453,22 @@ assert_file_is_readable(const char *filename)
 }
 
 
+static Symtab *
+symtabOpenVDSO()
+{
+  Symtab * the_symtab = NULL;
+
+  char *mem_image = (char *) vdso_segment_addr();
+  size_t vdso_size = vdso_segment_len();
+
+  if (Symtab::openFile(the_symtab, mem_image, vdso_size,
+		       VDSO_SEGMENT_NAME_SHORT)) {
+    return the_symtab;
+  }
+  return NULL;
+}
+
+
 void 
 dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 {
@@ -450,15 +477,26 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
   vector<Symbol *> symvec;
   uintptr_t image_offset = 0;
 
-  assert_file_is_readable(filename);
+  if (strcmp(filename,"[vdso]") == 0) {
+    syms = symtabOpenVDSO();
+    if (syms == NULL) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- Symtab::openFile fails for in-memory segment [vdso]!\n");
+      exit(1);
+    }
+  } else {
+    assert_file_is_readable(filename);
 
-  if ( ! Symtab::openFile(syms, sfile) ) {
-    fprintf(stderr,
-	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
-	    "  -- file %s is readable, but Symtab::openFile fails !\n",
-	    filename);
-    exit(1);
+    if ( ! Symtab::openFile(syms, sfile) ) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- file %s is readable, but Symtab::openFile fails !\n",
+	      filename);
+      exit(1);
+    }
   }
+
   int relocatable = 0;
 
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
@@ -491,6 +529,9 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery)
 #endif // USE_SYMTABAPI_EXCEPTION_BLOCKS 
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+  if (symvec.size() == 0) {
+    syms->getAllSymbolsByType(symvec, Symbol::ST_NOTYPE);
+  }
 
 #ifdef __PPC64__
   {

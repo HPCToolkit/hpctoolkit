@@ -95,7 +95,6 @@ static __thread unsigned int urand_data;
 // interface functions
 //******************************************************************************
 
-
 // Function: urand
 //
 // Purpose:

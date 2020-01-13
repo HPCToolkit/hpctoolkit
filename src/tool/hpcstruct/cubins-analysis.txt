@@ -1,0 +1,75 @@
+#*******************************************************************************
+# a helper template makefile used by hpcstruct at runtime
+#
+# if hpcstruct is passed the name of a measurements directory that contains
+# a cubins subdirectory, this makefile will be used to orchestrate parallel
+# analysis of all cubins within the subdirectory.
+#
+# to simplify things at execution time, this makefile will be incorporated
+# into hpcstruct as a string and written to a temporary file if it is needed.
+# this avoids the need for hpcstruct to know how to find a copy of this
+# makefile at runtime in an hpctoolkit installation.
+#*******************************************************************************
+
+#-------------------------------------------------------------------------------
+# $(C): cubin files
+#-------------------------------------------------------------------------------
+C := $(wildcard $(CUBINS_DIR)/*.cubin)
+
+
+#-------------------------------------------------------------------------------
+# $(S): hpcstruct files for cubins
+#-------------------------------------------------------------------------------
+S := $(patsubst $(CUBINS_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(C))
+
+
+#-------------------------------------------------------------------------------
+# $(W): warning files that may be generated during structure analysis of cubins
+#-------------------------------------------------------------------------------
+W := $(patsubst %.hpcstruct,%.warnings,$(S))
+
+
+#-------------------------------------------------------------------------------
+# execute the sequence of commands for each target in a single shell
+#-------------------------------------------------------------------------------
+.ONESHELL:
+
+
+#-------------------------------------------------------------------------------
+# rule  for analyzing a cubin
+# 1. analyze a cubin file in $(CUBINS_DIR)
+# 2. produce a hpcstruct file in $(STRUCTS_DIR)
+# 3. leave a warnings file in $(STRUCTS_DIR) if trouble arises
+# 4. announce when analysis of a cubin begins and ends
+#-------------------------------------------------------------------------------
+$(STRUCTS_DIR)/%.hpcstruct: $(CUBINS_DIR)/%
+	@cubin_name=`basename -s x $<`
+	struct_name=$@
+	warn_name=$(STRUCTS_DIR)/$$cubin_name.warnings
+	echo msg: beginning analysis of $$cubin_name
+	hpcstruct --gpucfg $(CUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+	if [ -s $$warn_name ]; then
+		echo WARNING: incomplete analysis of $$cubin_name\\; see $$warn_name for details
+		if test ! -s $$struct_name ; then
+		    rm -f $$struct_name
+		fi
+	else
+		rm -f $$warn_name
+	fi
+	echo msg: completed analysis of $$cubin_name
+
+
+#-------------------------------------------------------------------------------
+# analyze all cubins to create structure files
+#-------------------------------------------------------------------------------
+analyze: $(S)
+
+
+#-------------------------------------------------------------------------------
+# remove all generated files
+#-------------------------------------------------------------------------------
+clean:
+	@echo removing all hpcstruct files in $(STRUCTS_DIR)
+	@rm -f $(S)
+	@echo removing all warnings in $(STRUCTS_DIR)
+	@rm -f $(W)

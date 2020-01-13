@@ -118,6 +118,9 @@ hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_INSTALL_PREFIX],
+  ["$prefix"], [HPCToolkit install prefix])
+
 #-------------------------------------------------
 # CONFIG_SITE
 #-------------------------------------------------
@@ -1099,6 +1102,47 @@ AC_SUBST([HPCRUN_LIBCXX_PATH])
 
 
 #-------------------------------------------------
+# CXXFLAGS for extended C++ alignment: -faligned-new
+#-------------------------------------------------
+
+# Test if CXX supports '-faligned-new' and add it to CXXFLAGS if
+# supported and not already supplied.  This suppresses warnings from
+# boost and dyninst:
+#   warning: 'new' of type 'SymtabCodeSource' with extended alignment 128
+
+flag='-faligned-new'
+
+AC_MSG_CHECKING([if CXX supports $flag])
+
+AC_LANG_PUSH([C++])
+ORIG_CXXFLAGS="$CXXFLAGS"
+CXXFLAGS="$HOST_CXXFLAGS $ORIG_CXXFLAGS $flag"
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#include <list>
+long mylen(std::list <int> lst)
+{
+  return (long) lst.size();
+}
+]])], [ans=yes], [ans=no])
+
+AC_MSG_RESULT([$ans])
+
+AC_LANG_POP
+
+CXXFLAGS="$ORIG_CXXFLAGS"
+
+# Add to CXXFLAGS if supported and not already supplied.
+if test "$ans" = yes ; then
+  case "x$CXXFLAGS" in
+    *${flag}* ) ;;
+    * ) HOST_CXXFLAGS="$HOST_CXXFLAGS $flag" ;;
+  esac
+fi
+
+
+#-------------------------------------------------
 # CXXFLAGS for OpenMP
 #-------------------------------------------------
 
@@ -1736,6 +1780,7 @@ AC_MSG_NOTICE([spack directory: $with_spack])
 default_binutils_prefix=no
 default_boost_prefix=no
 default_bzip_prefix=no
+default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
 default_libdwarf_prefix=no
@@ -1743,6 +1788,7 @@ default_libiberty_prefix=no
 default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
+default_mbedtls_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -1825,6 +1871,9 @@ then
   if find_spack_pkg bzip2 ; then
     default_bzip_prefix="$spack_ans"
   fi
+  if find_spack_pkg cuda ; then
+    default_cuda_prefix="$spack_ans"
+  fi
   if find_spack_pkg dyninst ; then
     default_dyninst_prefix="$spack_ans"
   fi
@@ -1845,6 +1894,9 @@ then
   fi
   if find_spack_pkg xz ; then
     default_lzma_prefix="$spack_ans"
+  fi
+  if find_spack_pkg mbedtls ; then
+    default_mbedtls_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -2023,7 +2075,7 @@ BOOST_COPY=no
 # dyninst would use (but no more).  But copy-libs won't fail on a
 # missing library, so it doesn't have to be exact.
 
-BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer'
+BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer graph regex'
 
 AC_MSG_CHECKING([for boost])
 
@@ -2613,6 +2665,100 @@ AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_INC])
 AC_SUBST([LZMA_LIB])
+
+
+#-------------------------------------------------
+# Option: --with-mbedtls=PATH
+#-------------------------------------------------
+
+# mbedtls is a lightweight library that includes libmbedcrypto.a for
+# computing md5 and SHA sums for buffers in memory.
+#
+# Note: we require libmbedcrypto.a to be compiled with -fPIC.
+
+MBEDTLS_COPY=no
+MBEDTLS="$default_mbedtls_prefix"
+MBEDTLS_IFLAGS=
+MBEDTLS_LIBS=
+MBEDTLS_LIB=
+
+AC_ARG_WITH([mbedtls],
+  [AS_HELP_STRING([--with-mbedtls=PATH],
+      [path to mbedtls install directory])],
+  [MBEDTLS="$withval"],
+  [])
+
+AC_MSG_CHECKING([for mbedtls])
+
+case "$MBEDTLS" in
+  /* )
+    if test ! -f "${MBEDTLS}/include/mbedtls/md5.h" ; then
+      AC_MSG_ERROR([unable to find md5.h in: $MBEDTLS])
+    fi
+    MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
+    for lib in $multilib_path ; do
+      if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
+	MBEDTLS_COPY=yes
+	MBEDTLS_LIB="${MBEDTLS}/lib"
+        MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
+	break
+      fi
+    done
+    if test "x$MBEDTLS_LIBS" = x ; then
+      AC_MSG_ERROR([unable to find libmbedcrypto.a in: $MBEDTLS])
+    fi
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([mbedtls directory must be absolute path: $MBEDTLS])
+    ;;
+esac
+
+AC_MSG_RESULT([$MBEDTLS])
+
+#
+# Test if libmbedcrypto.a was compiled with -fPIC
+#
+case "$MBEDTLS" in
+  /* )
+    AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
+    
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
+    LIBS="$MBEDTLS_LIBS"
+
+    AC_LANG_PUSH([C])
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <sys/types.h>
+#include "mbedtls/md5.h"
+void
+my_md5_hash(char *buf, size_t len)
+{
+    mbedtls_md5_context ctx;
+    mbedtls_md5_init(&ctx);
+    mbedtls_md5_update(&ctx, buf, len);
+}
+]])], [mbed_fpic=yes], [mbed_fpic=no])
+
+    AC_MSG_RESULT([$mbed_fpic])
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    if test "$mbed_fpic" != yes ; then
+      AC_MSG_ERROR([libmbedcrypto.a must be compiled with -fPIC])
+    fi
+    ;;
+esac
+
+AC_SUBST([MBEDTLS_COPY])
+AC_SUBST([MBEDTLS_LIB])
+AC_SUBST([MBEDTLS_IFLAGS])
+AC_SUBST([MBEDTLS_LIBS])
 
 
 #-------------------------------------------------
@@ -4192,138 +4338,167 @@ AC_LANG_POP
 # Option: --with-cuda=PATH
 #-------------------------------------------------
 
-# CUDA support for CPU-GPU-Blame-shifting
-# CUDA default install path is /usr/local/cuda
-# Include files will be in CUDADIR/include
-# CUDA 64 bit libraries under CUDADIR/lib64 and 32 bit in CUDADIR/lib
-# We need CUPTI for callbacks which is in CUDADIR/extras/CUPTI
-# CUPTI 64 bit libraries under CUPTIDIR/lib64 and 32 bit in CUPTIDIR/lib
+# CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
+# either in CUDA/extras/CUPTI or else in a separate install.
 
-
-if test "${host_sizeof_voidp}" = "4"; then
-    CUDA_LIB_SEARCH_ORDER="lib32 lib"
-else
-    CUDA_LIB_SEARCH_ORDER="lib64 lib"
-fi
-
+CUDA="$default_cuda_prefix"
 
 OPT_HAVE_CUDA=no
-OPT_CUDA=
-OPT_CUDA_INCPATH=
+OPT_CUDA_IFLAGS=
 OPT_CUDA_LDFLAGS=
-OPT_CUDA_LIBPATH=
-OPT_CUPTI_INCPATH=
-OPT_CUPTI_LIBPATH=
-OPT_CUPTI_LDFLAGS=
 
 AC_ARG_WITH([cuda],
-  AS_HELP_STRING([--with-cuda=PATH],
-                 [use given CUDA installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_CUDA=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-cuda requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_CUDA=${withval}
-   fi])
+  [AS_HELP_STRING([--with-cuda=PATH],
+      [path to cuda install directory])],
+  [CUDA="$withval"],
+  [])
 
-if test "$OPT_HAVE_CUDA" = "yes" ; then
- AC_ARG_WITH([cuda-include],
-  AS_HELP_STRING([--with-cuda-include=PATH],
-                 [use given CUDA include (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-cuda-include requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_CUDA_INCPATH=${withval}
-  fi],
+AC_MSG_CHECKING([for cuda])
 
-     [if test -f ${OPT_CUDA}/include/cuda.h; then
-         OPT_CUDA_INCPATH=${OPT_CUDA}/include
-     else
-         AC_MSG_ERROR(['${OPT_CUDA}/include/cuda.h' not found])
-     fi])  
-
-  OPT_CUDA_IFLAGS="-I${OPT_CUDA_INCPATH} "
-
-  AC_ARG_WITH([cuda-lib],
-  AS_HELP_STRING([--with-cuda-lib=PATH],
-                 [use given CUDA lib (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-cuda-lib requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_CUDA_LIBPATH=${withval}
-   fi], 
-  
-   [for lib in ${CUDA_LIB_SEARCH_ORDER} ; do
-    if test -f "${OPT_CUDA}/${lib}/libcudart.so" 
-    then
-      OPT_CUDA_LIBPATH="${OPT_CUDA}/${lib}"
-      break
+case "$CUDA" in
+  /* ) 
+    if test ! -f "${CUDA}/include/cuda.h" ; then
+      AC_MSG_ERROR([unable to find cuda.h in: $CUDA])
     fi
-  done 
-     if test  -z "${OPT_CUDA_LIBPATH}" ; then
-       AC_MSG_ERROR([libcudart.so not found])
-     fi
-   ] )
+    OPT_CUDA_IFLAGS="-I${CUDA}/include"
 
-  OPT_CUDA_LDFLAGS="-L${OPT_CUDA_LIBPATH} -lcudart "
+    for lib in $multilib_path ; do
+      if test -f "${CUDA}/${lib}/libcudart.so" ; then
+        OPT_CUDA_LDFLAGS="-L${CUDA}/${lib} -lcudart"
+        break
+      fi
+    done
+    if test "x$OPT_CUDA_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libcudart.so in: $CUDA])
+    fi
+    OPT_HAVE_CUDA=yes
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([cuda directory must be absolute path: $CUDA])
+    ;;
+esac
 
-fi
+AC_MSG_RESULT([$CUDA])
 
 AM_CONDITIONAL([OPT_ENABLE_CUDA], [test "$OPT_HAVE_CUDA" = yes])
 
-AC_SUBST([OPT_CUDA])
+if test "$OPT_HAVE_CUDA" = yes ; then
+  AC_DEFINE([OPT_HAVE_CUDA], [1], [Have support for cuda])
+fi
+
+AC_DEFINE_UNQUOTED([CUDA_INSTALL_PREFIX],
+  ["$CUDA"], ["Cuda install prefix"])
+
 AC_SUBST([OPT_CUDA_IFLAGS])
 AC_SUBST([OPT_CUDA_LDFLAGS])
 
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
+
+# CUPTI is either in CUDA/extras/CUPTI or else specified separately
+# here.
+
+CUPTI=no
+case "$CUDA" in
+  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+       ;;
+esac
+
 OPT_HAVE_CUPTI=no
-OPT_CUPTI=
 OPT_CUPTI_IFLAGS=
 OPT_CUPTI_LDFLAGS=
-OPT_CUPTI_LIBPATH=
 
 AC_ARG_WITH([cupti],
-  AS_HELP_STRING([--with-cupti=PATH],
-                 [use given CUDA/CUPTI installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_CUPTI=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-cupti requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_CUPTI=${withval}
-   fi])
+  [AS_HELP_STRING([--with-cupti=PATH],
+      [path to cupti install directory, default is from cuda])],
+  [CUPTI="$withval"],
+  [])
 
-#
-# Valid cupti library
-#
-if test "$OPT_HAVE_CUPTI" = yes; then
-   if test ! -f $OPT_CUPTI/include/cupti.h; then
-      AC_MSG_ERROR([--with-cupti=$OPT_CUPTI invalid! No cupti.h])
-   fi
+AC_MSG_CHECKING([for cupti])
+
+case "$CUPTI" in
+  /* )
+    if test ! -f "${CUPTI}/include/cupti.h" ; then
+      AC_MSG_ERROR([unable to find cupti.h in: $CUPTI])
+    fi
+    OPT_CUPTI_IFLAGS="-I${CUPTI}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${CUPTI}/${lib}/libcupti.so" ; then
+        OPT_CUPTI_LDFLAGS="-L${CUPTI}/$lib -Wl,-rpath=${CUPTI}/$lib -lcupti"
+        break
+      fi
+    done
+    if test "x$OPT_CUPTI_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libcupti.so in: $CUPTI])
+    fi
+    OPT_HAVE_CUPTI=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([cupti directory must be absolute path: $CUPTI])
+    ;;
+esac
+
+AC_MSG_RESULT([$CUPTI])
+
+# CUDA doesn't work without CUPTI.
+if test "$OPT_HAVE_CUDA" = yes && test "$OPT_HAVE_CUPTI" = no ; then
+  AC_MSG_WARN([cuda is configured without cupti])
+  AC_MSG_ERROR([use --with-cupti to provide location of cupti])
 fi
 
-if test "$use_papi_c_cupti" != no; then
-   if test "$OPT_HAVE_CUPTI" = yes; then
-       OPT_CUPTI_IFLAGS="-I$OPT_CUPTI/include"
-       if test "$OPT_HAVE_CUDA" = no; then
-          cuda_dir=$(dirnmame $(dirname $OPT_CUPTI))/include
-	  OPT_CUDA_IFLAGS="-I$cuda_dir"
-       fi
-       OPT_CUPTI_IFLAGS="$OPT_CUDA_IFLAGS $OPT_CUPTI_IFLAGS"
-   else
-      AC_MSG_ERROR([papi-c-cupti specified, but no cupti lib specified!])
-   fi
+if test "$OPT_HAVE_CUPTI" = yes ; then
+  AC_DEFINE([HAVE_CUPTI_H], [1], [The <cupti.h> header file is available.])
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
-AC_SUBST([OPT_CUPTI_IFLAGS])
+OPT_CUPTI="$CUPTI"
+
 AC_SUBST([OPT_CUPTI])
+AC_SUBST([OPT_CUPTI_IFLAGS])
+AC_SUBST([OPT_CUPTI_LDFLAGS])
+
+
+#-------------------------------------------------
+# Option: --with-rocm=PATH
+#-------------------------------------------------
+
+# ROCM default install path is /usr/local/rocm
+
+OPT_ROCM=
+OPT_ROCM_INCPATH=
+OPT_ROCM_LDFLAGS=
+OPT_ROCM_LIBPATH=
+
+AC_ARG_WITH([rocm],
+  AS_HELP_STRING([--with-rocm=PATH],
+                 [use given ROCM installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_ROCM=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-rocm requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_ROCM=${withval}
+   fi])
+
+if test "$OPT_HAVE_ROCM" = "yes" ; then
+  AC_DEFINE(USE_ROCM, 1, [use ROCM])
+  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
+
+AC_SUBST([OPT_ROCM])
+AC_SUBST([OPT_ROCM_IFLAGS])
+AC_SUBST([OPT_ROCM_LDFLAGS])
+
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -4490,6 +4665,7 @@ AC_CONFIG_FILES([ \
   src/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
+  src/tool/hpcfnbnds2/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
@@ -4621,13 +4797,15 @@ AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
 AC_MSG_NOTICE([  libunwind:    ${LIBUNWIND}])
 AC_MSG_NOTICE([  lzma:         ${LZMA}])
+AC_MSG_NOTICE([  mbedtls:      ${MBEDTLS}])
 AC_MSG_NOTICE([  papi:         ${papi_mesg}])
 AC_MSG_NOTICE([  perfmon:      ${perfmon_mesg}])
 AC_MSG_NOTICE([  tbb:          ${TBB}])
 AC_MSG_NOTICE([  xed:          ${XED2}])
 AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
-AC_MSG_NOTICE([  cuda:         ${OPT_CUDA}])
+AC_MSG_NOTICE([  cuda:         ${CUDA}])
+AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 
 if test "x$mult_spack_pkgs" != x ; then

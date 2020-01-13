@@ -13,6 +13,8 @@
   <!--   (n)ame -->
   <!--   (l)ine range: "beg-end" (inclusive range) -->
   <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
+  <!--   (t)arget: target function address -->
+  <!--   (d)evice: device name -->
   <!ELEMENT LM (F|P)*>
   <!ATTLIST LM
 	i CDATA #REQUIRED
@@ -49,14 +51,16 @@
 	f CDATA #IMPLIED
 	v CDATA #IMPLIED>
   <!-- Statement -->
-  <!ELEMENT S (S)*>
+  <!ELEMENT S EMPTY>
   <!ATTLIST S
 	i CDATA #REQUIRED
 	l CDATA #REQUIRED
 	v CDATA #IMPLIED>
   <!-- Callsite (a special Statement) -->
-  <!ELEMENT C EMPTY>
+  <!ELEMENT C (C)*>
   <!ATTLIST C
 	i CDATA #REQUIRED
 	l CDATA #REQUIRED
-	v CDATA #IMPLIED>
+	v CDATA #IMPLIED
+	t CDATA #IMPLIED
+	d CDATA #IMPLIED>

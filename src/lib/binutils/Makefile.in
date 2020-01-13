@@ -144,7 +144,10 @@ am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-SimpleSymbols.lo \
 	libHPCbinutils_la-SimpleSymbolsFactories.lo \
 	libHPCbinutils_la-Dbg-LM.lo libHPCbinutils_la-Dbg-Proc.lo \
-	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo
+	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
+	libHPCbinutils_la-Fatbin.lo libHPCbinutils_la-ElfHelper.lo \
+	libHPCbinutils_la-InputFile.lo \
+	libHPCbinutils_la-RelocateCubin.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -251,6 +254,10 @@ BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
 BINUTILS_LIBS = @BINUTILS_LIBS@
 BOOST_COPY = @BOOST_COPY@
 BOOST_COPY_LIST = @BOOST_COPY_LIST@
+
+#############################################################################
+# Common settings
+#############################################################################
 BOOST_IFLAGS = @BOOST_IFLAGS@
 BOOST_LFLAGS = @BOOST_LFLAGS@
 BOOST_LIB_DIR = @BOOST_LIB_DIR@
@@ -345,6 +352,10 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
+MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
+MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -357,16 +368,19 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
-OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_ROCM = @OPT_ROCM@
+OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
+OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -506,10 +520,7 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-
-#############################################################################
-# Common settings
-#############################################################################
+@OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
 
 #############################################################################
 # Local settings
@@ -528,12 +539,21 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp 
+	VMAInterval.hpp VMAInterval.cpp \
+	Fatbin.cpp \
+	ElfHelper.cpp \
+	InputFile.cpp \
+	RelocateCubin.cpp 
 
 
 #############################################################################
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
+	$(BOOST_IFLAGS)  \
+	$(DWARF_IFLAGS)  \
+	-I$(LIBELF_INC)  \
+	$(DYNINST_IFLAGS)
+
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -615,10 +635,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-ElfHelper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Fatbin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-InputFile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Insn.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-LinuxKernelSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-RelocateCubin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
@@ -721,6 +745,34 @@ libHPCbinutils_la-VMAInterval.lo: VMAInterval.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='VMAInterval.cpp' object='libHPCbinutils_la-VMAInterval.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp
+
+libHPCbinutils_la-Fatbin.lo: Fatbin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Fatbin.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-Fatbin.Tpo -c -o libHPCbinutils_la-Fatbin.lo `test -f 'Fatbin.cpp' || echo '$(srcdir)/'`Fatbin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-Fatbin.Tpo $(DEPDIR)/libHPCbinutils_la-Fatbin.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Fatbin.cpp' object='libHPCbinutils_la-Fatbin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Fatbin.lo `test -f 'Fatbin.cpp' || echo '$(srcdir)/'`Fatbin.cpp
+
+libHPCbinutils_la-ElfHelper.lo: ElfHelper.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-ElfHelper.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-ElfHelper.Tpo -c -o libHPCbinutils_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-ElfHelper.Tpo $(DEPDIR)/libHPCbinutils_la-ElfHelper.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ElfHelper.cpp' object='libHPCbinutils_la-ElfHelper.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp
+
+libHPCbinutils_la-InputFile.lo: InputFile.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-InputFile.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-InputFile.Tpo -c -o libHPCbinutils_la-InputFile.lo `test -f 'InputFile.cpp' || echo '$(srcdir)/'`InputFile.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-InputFile.Tpo $(DEPDIR)/libHPCbinutils_la-InputFile.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='InputFile.cpp' object='libHPCbinutils_la-InputFile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-InputFile.lo `test -f 'InputFile.cpp' || echo '$(srcdir)/'`InputFile.cpp
+
+libHPCbinutils_la-RelocateCubin.lo: RelocateCubin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-RelocateCubin.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-RelocateCubin.Tpo -c -o libHPCbinutils_la-RelocateCubin.lo `test -f 'RelocateCubin.cpp' || echo '$(srcdir)/'`RelocateCubin.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-RelocateCubin.Tpo $(DEPDIR)/libHPCbinutils_la-RelocateCubin.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='RelocateCubin.cpp' object='libHPCbinutils_la-RelocateCubin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-RelocateCubin.lo `test -f 'RelocateCubin.cpp' || echo '$(srcdir)/'`RelocateCubin.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -96,6 +96,16 @@ packages:
       visibility=global
 
 
+  # cuda -- Nvidia CUDA
+  #
+  # Version 10.1 reportedly has faster support for PC sampling
+  #
+  # cuda:
+  #   modules:
+  #     cuda@10.0:  cuda/10.0
+  #   buildable: False
+
+
   # bzip2 -- used by elfutils to read compressed sections (and copy
   # libs).
   #
@@ -118,8 +128,10 @@ packages:
   # dyninst -- used in hpcstruct for line map info, inline sequences
   # and loop analysis.
   #
-  # Need >= 10.0 or develop for best parseapi and CFG support.  On
-  # Blue Gene, with the default gcc 4.4 compilers, use version 9.3.2.
+  # Need >= 10.1.0 to provide support for injecting CFGs scraped from
+  # NVIDIA CUBINs by using nvdisasm -cfg. 
+  #
+  # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
   #

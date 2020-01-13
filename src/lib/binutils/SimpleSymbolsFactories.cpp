@@ -58,7 +58,6 @@
 
 #include "SimpleSymbolsFactories.hpp"
 #include "LinuxKernelSymbols.hpp"
-//#include "VdsoSymbols.hpp"
 
 
 
@@ -90,7 +89,6 @@ SimpleSymbolsFactories::SimpleSymbolsFactories
 )
 {
   R = new struct SimpleSymbolsFactoriesRepr; 
-  //R->factories.push_back(new VdsoSymbolsFactory);
   R->factories.push_back(new LinuxKernelSymbolsFactory);
 }
 

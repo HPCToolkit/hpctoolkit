@@ -19,7 +19,7 @@
 //
 struct cct2metrics_t {
   cct_node_id_t node;
-  metric_set_t* metrics;
+  metric_data_list_t* kind_metrics;
   //
   // left and right pointers for splay tree of siblings
   //
@@ -93,13 +93,13 @@ splay(cct2metrics_t* map, cct_node_id_t node)
 }
 
 static cct2metrics_t*
-cct2metrics_new(cct_node_id_t node, metric_set_t* metrics)
+cct2metrics_new(cct_node_id_t node, metric_data_list_t* kind_metrics)
 {
   cct2metrics_t* rv = hpcrun_malloc(sizeof(cct2metrics_t));
   rv->node = node;
-  rv->metrics = metrics;
+  rv->kind_metrics = kind_metrics;
   rv->left = rv->right = NULL;
-  TMSG(CCT2METRICS, "Node: %p, Metrics: %p", rv->node, rv->metrics);
+  TMSG(CCT2METRICS, "Node: %p, Metrics: %p", rv->node, rv->kind_metrics);
   return rv;
 }
 // ******** Interface operations **********
@@ -111,32 +111,26 @@ cct2metrics_new(cct_node_id_t node, metric_set_t* metrics)
 // create a metric set, and return it.
 //
 
-metric_set_t*
-hpcrun_reify_metric_set(cct_node_id_t cct_id)
+metric_data_list_t*
+hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
 {
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
-  metric_set_t* rv = hpcrun_get_metric_set(cct_id);
-  TMSG(CCT2METRICS, " -- Metric set found = %p", rv);
-
-  if (rv) return rv;
-
-  TMSG(CCT2METRICS, " -- Metric set was null, allocating new metric set");
-  cct2metrics_assoc(cct_id, rv = hpcrun_metric_set_new());
-  TMSG(CCT2METRICS, "REIFY returns %p", rv);
+  metric_data_list_t* rv = hpcrun_get_metric_data_list(cct_id);
+  if (rv == NULL) {
+    TMSG(CCT2METRICS, " -- Metric kind was null, allocating new metric kind");
+    rv = hpcrun_new_metric_data_list(metric_id);
+    cct2metrics_assoc(cct_id, rv);
+  }
+  else
+    TMSG(CCT2METRICS, " -- Metric kind found = %p", rv);
   return rv;
 }
 
-//
-// get metric set for a node (NULL return value means no metrics associated).
-// this function requires map between cct and metrics. If the map is null
-//  it uses the default local map.
-//
-metric_set_t*
-hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id)
+metric_data_list_t*
+hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
 {
   cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
-
-  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, map);
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", cct_id, current_map);
   if (! current_map) return NULL;
 
   current_map = splay(current_map, cct_id);
@@ -146,48 +140,70 @@ hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id)
   else
     THREAD_LOCAL_MAP() = current_map;
 
-  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, map);
+  TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, current_map);
 
   if (current_map->node == cct_id) {
     TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
-    return current_map->metrics;
+    return current_map->kind_metrics;
   }
   TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
   return NULL;
 }
 
-//
-// get metric set for a node (NULL return value means no metrics associated).
-//
-metric_set_t*
-hpcrun_get_metric_set(cct_node_id_t cct_id)
+metric_data_list_t*
+hpcrun_get_metric_data_list(cct_node_id_t cct_id)
 {
-  return hpcrun_get_metric_set_specific(NULL, cct_id);
+  return hpcrun_get_metric_data_list_specific(NULL, cct_id);
 }
 
-//
-// check to see if node already has metrics
-//
-bool
-hpcrun_has_metric_set(cct_node_id_t cct_id)
+metric_data_list_t *
+hpcrun_move_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t dest, cct_node_id_t source)
 {
-  return (hpcrun_get_metric_set(cct_id) != NULL);
+  if (dest == NULL || source == NULL) {
+    return NULL;
+  }
+
+  cct2metrics_t *current_map = map ? *map : THREAD_LOCAL_MAP();
+  TMSG(CCT2METRICS, "GET_METRIC_SET for %p, using map %p", source, current_map);
+  if (! current_map) return NULL;
+
+  if (map)
+    *map = current_map;
+  else
+    THREAD_LOCAL_MAP() = current_map;
+  TMSG(CCT2METRICS, " -- After Splay map = %p", source, current_map);
+
+  if (current_map->node == source) {
+    TMSG(CCT2METRICS, " -- found %p, returning metrics", current_map->node);
+    metric_data_list_t *metric_data_list = current_map->kind_metrics;
+    current_map->kind_metrics = NULL;
+    cct2metrics_assoc(dest, metric_data_list); 
+    return metric_data_list;
+  }
+  TMSG(CCT2METRICS, " -- cct_id NOT, found. Return NULL");
+  return NULL;
+}
+
+metric_data_list_t*
+hpcrun_move_metric_data_list(cct_node_id_t dest, cct_node_id_t source)
+{
+  return hpcrun_move_metric_data_list_specific(NULL, dest, source);
 }
 
 //
 // associate a metric set with a cct node
 //
 void
-cct2metrics_assoc(cct_node_id_t node, metric_set_t* metrics)
+cct2metrics_assoc(cct_node_id_t node, metric_data_list_t* kind_metrics)
 {
   cct2metrics_t* map = THREAD_LOCAL_MAP();
   TMSG(CCT2METRICS, "CCT2METRICS_ASSOC for %p, using map %p", node, map);
   if (! map) {
-    map = cct2metrics_new(node, metrics);
+    map = cct2metrics_new(node, kind_metrics);
     TMSG(CCT2METRICS, " -- new map created: %p", map);
   }
   else {
-    cct2metrics_t* new = cct2metrics_new(node, metrics);
+    cct2metrics_t* new = cct2metrics_new(node, kind_metrics);
     map = splay(map, node);
     TMSG(CCT2METRICS, " -- map after splay = %p,"
          " node sought = %p, mapnode = %p", map, node, map->node);
@@ -215,3 +231,5 @@ cct2metrics_assoc(cct_node_id_t node, metric_set_t* metrics)
   TMSG(CCT2METRICS, "METRICS_ASSOC final, THREAD_LOCAL_MAP = %p", THREAD_LOCAL_MAP());
   if (ENABLED(CCT2METRICS)) splay_tree_dump(THREAD_LOCAL_MAP());
 }
+
+

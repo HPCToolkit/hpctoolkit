@@ -57,12 +57,12 @@ private:
   hpcrun_metricVal_t *m_metrics;	   // metric values
   metric_desc_t*      m_list_metric_desc;  // metric descriptions
 
-  size_t m_num_metrics;
+  int m_num_metrics;
   int    m_error_code;
 
 public:
   bool   isVariable(char *expr);
-  double getValue(unsigned int var);
+  double getValue(int var);
   int    getErrorCode();
 
   VarMap(hpcrun_metricVal_t *metrics, 

@@ -209,6 +209,7 @@ static event_info_t  *event_desc = NULL;
 
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
+static kind_info_t *lnux_kind;
 
 
 /******************************************************************************
@@ -502,7 +503,7 @@ static sample_val_t*
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, sample_val_t* sv)
 {
-  if (current == NULL || current->event == NULL || current->event->metric < 0)
+  if (current == NULL || current->event == NULL || current->event->perf_metric_id < 0)
     return NULL;
 
   // ----------------------------------------------------------------------------
@@ -539,7 +540,7 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // set additional information for the metric description
   // ----------------------------------------------------------------------------
   thread_data_t *td = hpcrun_get_thread_data();
-  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->metric]);
+  metric_aux_info_t *info_aux = &(td->core_profile_trace_data.perf_event_info[current->event->perf_metric_id]);
 
   // check if this event is multiplexed. we need to notify the user that a multiplexed
   //  event is not accurate at all.
@@ -558,11 +559,11 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   sampling_info_t info = {.sample_clock = 0, .sample_data = mmap_data};
 
-  *sv = hpcrun_sample_callpath(context, current->event->metric,
+  *sv = hpcrun_sample_callpath(context, current->event->hpcrun_metric_id,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
 
-  blame_shift_apply(current->event->metric, sv->sample_node, 
+  blame_shift_apply(current->event->hpcrun_metric_id, sv->sample_node, 
                     counter /*metricIncr*/);
 
   return sv;
@@ -821,6 +822,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
   memset(event_desc, 0, size);
 
+  lnux_kind = hpcrun_metrics_new_kind();
   int i=0;
 
   set_default_threshold();
@@ -844,6 +846,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // This "customized" event will use one or more perf events
     // ------------------------------------------------------------
     event_desc[i].metric_custom = event_custom_find(name);
+    event_desc[i].perf_metric_id = i;
 
     if (event_desc[i].metric_custom != NULL) {
       if (event_desc[i].metric_custom->register_fn != NULL) {
@@ -885,8 +888,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
                                    // since the OS will free it, we don't have to do it in hpcrun
+    const char *desc = pfmu_getEventDescription(name);
+
     // set the metric for this perf event
-    event_desc[i].metric = hpcrun_new_metric();
+    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
+            desc, MetricFlags_ValFmt_Real, threshold, prop);
    
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
@@ -897,18 +903,16 @@ METHOD_FN(process_event_list, int lush_metrics)
       //                   since the period is determine dynamically
       threshold = 1;
     }
-    metric_desc_t *m = hpcrun_set_metric_info_and_period(event_desc[i].metric, name_dup,
-            MetricFlags_ValFmt_Real, threshold, prop);
-
-    if (m == NULL) {
-      EMSG("Error: unable to create metric #%d: %s", index, name);
-    } else {
-      m->is_frequency_metric = (event_desc[i].attr.freq == 1);
-    }
-    event_desc[i].metric_desc = m;
     METHOD_CALL(self, store_event, event_attr->config, threshold);
     free(name);
   }
+  while (i--) {
+    metric_desc_t *m = hpcrun_id2metric_linked(event_desc[i].hpcrun_metric_id);
+
+    m->is_frequency_metric = (event_desc[i].attr.freq == 1);
+    event_desc[i].metric_desc = m;
+  }
+  hpcrun_close_kind(lnux_kind);
 
   if (num_events > 0)
     perf_init();
@@ -923,7 +927,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   TMSG(LINUX_PERF, "gen_event_set");
 
   int nevents 	  = (self->evl).nevents;
-  int num_metrics = hpcrun_get_num_metrics();
+  int num_metrics = hpcrun_get_num_metrics(lnux_kind);
 
   // -------------------------------------------------------------------------
   // TODO: we need to fix this allocation.

@@ -28,12 +28,31 @@
 
 const char *PROGRAM_ROOT     = "<program root>";
 const char *THREAD_ROOT      = "<thread root>";
+
 const char *OMP_IDLE	     = "<omp idle>";
 const char *OMP_OVERHEAD     = "<omp overhead>";
-const char *OMP_BARRIER_WAIT = "<omp barrier wait>";
+const char *OMP_BARRIER_WAIT = "<omp barrier>";
 const char *OMP_TASK_WAIT    = "<omp task wait>"; 
 const char *OMP_MUTEX_WAIT   = "<omp mutex wait>";
-const char *NO_THREAD_ROOT   = "<no thread>";
+const char *OMP_REGION_UNR   = "<omp region unresolved>";
+
+const char *OMP_TGT_ALLOC    = "<omp tgt alloc>";
+const char *OMP_TGT_DELETE   = "<omp tgt delete>";
+const char *OMP_TGT_COPYIN   = "<omp tgt copyin>";
+const char *OMP_TGT_COPYOUT  = "<omp tgt copyout>";
+const char *OMP_TGT_KERNEL   = "<omp tgt kernel>";
+
+const char *GPU_COPY    = "<gpu copy>";
+const char *GPU_COPYIN  = "<gpu copyin>";
+const char *GPU_COPYOUT = "<gpu copyout>";
+const char *GPU_ALLOC   = "<gpu alloc>";
+const char *GPU_DELETE  = "<gpu delete>";
+const char *GPU_SYNC    = "<gpu sync>";
+const char *GPU_KERNEL  = "<gpu kernel>";
+const char *GPU_TRACE   = "<gpu kernel>";
+
+const char *NO_ACTIVITY = "<no activity>";
+
 
 //******************************************************************************
 // types
@@ -61,38 +80,47 @@ typedef struct {
 //******************************************************************************
 
 static NameMapping renamingTable[] = { 
-  { "monitor_main",           PROGRAM_ROOT     },
-  { "monitor_main_fence1",    PROGRAM_ROOT     },
-  { "monitor_main_fence2",    PROGRAM_ROOT     },
-  { "monitor_main_fence3",    PROGRAM_ROOT     },
-  { "monitor_main_fence4",    PROGRAM_ROOT     },
+  { "monitor_main",            PROGRAM_ROOT          },
+  { "monitor_main_fence1",     PROGRAM_ROOT          },
+  { "monitor_main_fence2",     PROGRAM_ROOT          },
+  { "monitor_main_fence3",     PROGRAM_ROOT          },
+  { "monitor_main_fence4",     PROGRAM_ROOT          },
+ 
+  { "monitor_begin_thread",    THREAD_ROOT           },
+  { "monitor_thread_fence1",   THREAD_ROOT           },
+  { "monitor_thread_fence2",   THREAD_ROOT           },
+  { "monitor_thread_fence3",   THREAD_ROOT           },
+  { "monitor_thread_fence4",   THREAD_ROOT           },
 
-  { "monitor_begin_thread",   THREAD_ROOT      },
-  { "monitor_thread_fence1",  THREAD_ROOT      },
-  { "monitor_thread_fence2",  THREAD_ROOT      },
-  { "monitor_thread_fence3",  THREAD_ROOT      },
-  { "monitor_thread_fence4",  THREAD_ROOT      },
+  { "ompt_idle_state",         OMP_IDLE              },
+  { "ompt_overhead_state",     OMP_OVERHEAD          },
+  { "ompt_barrier_wait_state", OMP_BARRIER_WAIT	     },
+  { "ompt_task_wait_state",    OMP_TASK_WAIT	       },
+  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	       },
 
-  { "ompt_idle_state",         OMP_IDLE         },
-  { "ompt_idle",               OMP_IDLE         },
+  { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
+  { "ompt_tgt_copyin",         OMP_TGT_COPYIN        },
+  { "ompt_tgt_copyout",        OMP_TGT_COPYOUT       },
+  { "ompt_tgt_delete",         OMP_TGT_DELETE        },
+  { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
+  { "ompt_tgt_kernel",         OMP_TGT_KERNEL        },
 
-  { "ompt_overhead_state",     OMP_OVERHEAD     },
-  { "omp_overhead",            OMP_OVERHEAD	},
+  { "ompt_region_unresolved",  OMP_REGION_UNR        },
 
-  { "ompt_barrier_wait_state", OMP_BARRIER_WAIT	    },
-  { "ompt_barrier_wait",       OMP_BARRIER_WAIT     },
+  { "gpu_op_copy",         GPU_COPY              },
+  { "gpu_op_copyin",       GPU_COPYIN            },
+  { "gpu_op_copyout",      GPU_COPYOUT           },
+  { "gpu_op_alloc",        GPU_ALLOC             },
+  { "gpu_op_delete",       GPU_DELETE            },
+  { "gpu_op_sync",         GPU_SYNC              },
+  { "gpu_op_kernel",       GPU_KERNEL            },
+  { "gpu_op_trace",        GPU_TRACE             },
 
-  { "ompt_task_wait_state",    OMP_TASK_WAIT	    },
-  { "ompt_task_wait",          OMP_TASK_WAIT	    },
-
-  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	    },
-  { "ompt_mutex_wait",         OMP_MUTEX_WAIT       },
-
-  { "NO_THREAD",               NO_THREAD_ROOT       }
+  { "hpcrun_no_activity",  NO_ACTIVITY           }
 };
 
 static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>"
+  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, NO_ACTIVITY, "<partial call paths>"
 };
 
 static NameMappings_t renamingMap;
@@ -111,10 +139,10 @@ normalize_name_load_renamings()
   if (initialized) return;
   initialized = 1;
 
-  for (unsigned int i = 0; i < sizeof(renamingTable) / sizeof(NameMapping); i++) {
+  for (unsigned int i=0; i < sizeof(renamingTable)/sizeof(NameMapping); i++) {
     renamingMap[renamingTable[i].in] =  renamingTable[i].out;
   }
-  for (unsigned int i = 0; i < sizeof(fakeProcedures) / sizeof(const char*); i++) {
+  for (unsigned int i=0; i < sizeof(fakeProcedures)/sizeof(const char*); i++) {
     fakeProcedureMap[fakeProcedures[i]] = "f";
   }
 }

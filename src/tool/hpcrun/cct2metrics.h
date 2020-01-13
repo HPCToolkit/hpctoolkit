@@ -37,23 +37,27 @@ extern void hpcrun_cct2metrics_init(cct2metrics_t** map);
 // if there are no metrics for the node, then
 // create a metric set, and return it.
 //
-extern metric_set_t* hpcrun_reify_metric_set(cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id);
 
 //
-// get metric set for a node (NULL value is ok).
+// get metric data list for a node (NULL value is ok).
 //
-extern metric_set_t* hpcrun_get_metric_set(cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id);
 
-extern metric_set_t* hpcrun_get_metric_set_specific(cct2metrics_t **map, cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_get_metric_data_list(cct_node_id_t cct_id);
 
 //
-// check to see if node already has metrics
+// move metric data list from one node to another
 //
-extern bool hpcrun_has_metric_set(cct_node_id_t cct_id);
+extern metric_data_list_t* hpcrun_move_metric_data_list_specific(cct2metrics_t **map,
+  cct_node_id_t dest_id, cct_node_id_t source_id);
 
-extern void cct2metrics_assoc(cct_node_t* node, metric_set_t* metrics);
+extern metric_data_list_t* hpcrun_move_metric_data_list(cct_node_id_t dest_id, cct_node_id_t source_id);
 
-//extern cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_set_t* metrics);
+
+extern void cct2metrics_assoc(cct_node_t* node, metric_data_list_t* kind_metrics);
+
+//extern cct2metrics_t* cct2metrics_new(cct_node_id_t node, metric_set_t** kind_metrics);
 
 typedef enum {SET, INCR} update_metric_t;
 
@@ -62,10 +66,7 @@ cct_metric_data_update(int metric_id,
 			  cct_node_t* x, update_metric_t type,
 			  cct_metric_data_t incr)
 {
-  if (! hpcrun_has_metric_set(x)) {
-    cct2metrics_assoc(x, hpcrun_metric_set_new());
-  }
-  metric_set_t* set = hpcrun_get_metric_set(x);
+  metric_data_list_t *set = hpcrun_reify_metric_set(x, metric_id);
   
   if (type == SET)
     hpcrun_metric_std_set(metric_id, set, incr);

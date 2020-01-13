@@ -113,16 +113,19 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
+  bool compute_gpu_cfg;
 
   // Parsed Data: optional arguments
   std::string searchPathStr;          // default: "."
   std::string dbgProcGlob;
 
-  std::string out_filenm;
+  bool prettyPrintOutput;         // default: true
+  bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
+  std::string out_filenm;
 
 private:
   void

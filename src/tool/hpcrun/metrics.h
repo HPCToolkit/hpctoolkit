@@ -75,18 +75,11 @@ typedef hpcrun_metricVal_t cct_metric_data_t;
 // abstract the metric set
 //
 typedef struct metric_set_t metric_set_t;
+typedef struct metric_data_list_t metric_data_list_t;
 
-typedef void metric_upd_proc_t(int metric_id, metric_set_t* set, cct_metric_data_t datum);
+typedef void metric_upd_proc_t(int metric_id, metric_data_list_t* set, cct_metric_data_t datum);
 
 typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
-
-typedef struct metric_proc_map_t {
-  struct metric_proc_map_t* next;
-  metric_upd_proc_t*        proc;
-  int                       id;
-  int                       kind_idx;     // metrics are divided into "kinds"
-  int                       offset;
-} metric_proc_map_t;
 
 //
 // To accomodate block sparse representation,
@@ -113,51 +106,69 @@ typedef struct kind_info_t kind_info_t;
 
 kind_info_t* hpcrun_metrics_new_kind();
 
-bool hpcrun_metrics_finalized(void);
-
-extern void hpcrun_finalize_metrics(void);
+void hpcrun_close_kind(kind_info_t *kind);
 
 void hpcrun_pre_allocate_metrics(size_t num);
 
-int hpcrun_get_num_metrics(void);
+int hpcrun_get_num_metrics(kind_info_t *kind);
+
+void hpcrun_metrics_data_finalize();
+
+int hpcrun_get_num_kind_metrics(void);
 
 metric_desc_t* hpcrun_id2metric(int id);
 
-metric_list_t* hpcrun_get_metric_data(void);
+void hpcrun_metrics_data_dump();
 
-metric_desc_p_tbl_t* hpcrun_get_metric_tbl(void);
+// non finalizing
+metric_desc_t* hpcrun_id2metric_linked(int metric_id);
+
+// non finalizing
+void hpcrun_set_display(int metric_id, uint8_t show);
+
+void hpcrun_set_percent(int metric_id, uint8_t show_percent);
+
+metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);
 
-// get a new metric from the cached kind
-int hpcrun_new_metric(void);
+int hpcrun_set_new_metric_info_w_fn(kind_info_t *kind, const char* name,
+				    MetricFlags_ValFmt_t valFmt, size_t period,
+				    metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
-metric_desc_t* 
-hpcrun_set_metric_info_w_fn(int metric_id, const char* name,
-				 MetricFlags_ValFmt_t valFmt, size_t period,
-				 metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
+		        const char *description,
+				MetricFlags_ValFmt_t valFmt, size_t period,
+				metric_upd_proc_t upd_fn, metric_desc_properties_t prop);
 
-metric_desc_t* 
-hpcrun_set_metric_info_and_period(int metric_id, const char* name,
-				       MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+int hpcrun_set_new_metric_desc_and_period(kind_info_t *kind, const char* name, const char *description,
+				      MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
 
-metric_desc_t* hpcrun_set_metric_info(int metric_id, const char* name);
+int hpcrun_set_new_metric_info_and_period(kind_info_t *kind, const char* name,
+					  MetricFlags_ValFmt_t valFmt, size_t period, metric_desc_properties_t prop);
+
+int hpcrun_set_new_metric_info(kind_info_t *kind, const char* name);
 
 void hpcrun_set_metric_name(int metric_id, char* name);
 
 // metric set operations
 
-extern metric_set_t* hpcrun_metric_set_new(void);
-extern cct_metric_data_t* hpcrun_metric_set_loc(metric_set_t* s, int id);
-extern void hpcrun_metric_std_set(int metric_id, metric_set_t* set,
+extern cct_metric_data_t* hpcrun_metric_set_loc(metric_data_list_t* rv, int id);
+extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
 				  hpcrun_metricVal_t value);
-extern void hpcrun_metric_std_inc(int metric_id, metric_set_t* set,
+extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
 				  hpcrun_metricVal_t incr);
+extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
+extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t *kind);
+extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *kind);
+
 //
 // copy a metric set
 //
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
-					 metric_set_t* set,
+					 metric_data_list_t* list,
 					 int num_metrics);
+
+extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
 
 #endif // METRICS_H

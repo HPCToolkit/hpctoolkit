@@ -113,6 +113,7 @@ using namespace xml;
 
 #define DEBUG_COALESCING 0
 
+#define DATABASE_VERSION "2.2"
 
 //*************************** Forward Declarations ***************************
 
@@ -126,11 +127,14 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
 
-
 static bool
-vdso_loadmodule(const char *pathname)
-{
-  return pathname && strstr(pathname,  "vdso");
+isVDSOLoadModule(string name) {  
+  // vdso load module name is in the following format:
+  // vdso/<md5 hash>.vdso
+  size_t ret = name.rfind("/");  
+  if (ret == string::npos) return false;
+  if (name.substr(0, ret) != "vdso") return false; 
+  return name.find(".[vdso]") == name.size() - 7;
 }
 
 
@@ -509,25 +513,34 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
                            bool printProgress)
 {
   const string& lm_nm = loadmap_lm->name();
+  const string& lm_pretty_name = Prof::LoadMap::LM::pretty_name(lm_nm);
+
   BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_nm);
-  }
-  else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_pretty_name);
+  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  }
-  else if (vdso_loadmodule(lm_nm.c_str()))  {
-    DIAG_WMsgIf(printProgress, "Cannot fully process samples for virtual load module " << lm_nm);
-  }
-  else {
-    // fill in lmStrct with struct simple
-
+  } else {
     try {
       lm = new BinUtil::LM();
-      lm->open(lm_nm.c_str());
+      if (isVDSOLoadModule(lm_nm)) {        
+        string path = "";
+        if (!prof.directorySet().empty()) {
+          // Assume we can find all version of the vdso in all measurement directories.          
+          // Can different runs encounter different vdso?
+          // If they can, it means a particular version of vdso may only
+          // show up in some of the measurement directories (not all).
+          // Then we cannot just choose the first measurement directory.                    
+          path = *(prof.directorySet().begin());
+        }        
+        path += "/" + lm_nm;
+        lm->open(path.c_str());
+      } else {
+        lm->open(lm_nm.c_str());
+      }
       lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
 
       if (vmaVec == NULL) {
@@ -541,13 +554,13 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
       delete lm;
       lm = NULL;
       DIAG_WMsgIf(printProgress, "Cannot fully process samples for load module " << 
-                  lm_nm << ": " << x.what());
+                  lm_pretty_name << ": " << x.what());
     }
-    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_nm);
+    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_pretty_name);
   }
 
   if (lm) {
-    lmStrct->pretty_name(lm->name().c_str());
+    lmStrct->pretty_name(lm->name());
   }
 
   overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, NULL);
@@ -671,10 +684,11 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
-					unkProcNm);
+        Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
+				unkProcNm);
       
       n->structure(strct);
+
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
@@ -841,46 +855,51 @@ coalesceStmts(Prof::CCT::ANode* node)
     if ( n->isLeaf() && (typeid(*n) == typeid(Prof::CCT::Stmt)) ) {
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
-      SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it_stmt = stmtMap->find(line);
-      if (it_stmt != stmtMap->end()) {
-	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
+      auto *strct = dynamic_cast<Prof::Struct::Stmt *>(n_stmt->structure());
 
-        DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
-		   << "\tx: " 
-		   << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
-		   << "\n\ty: " 
-		   << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+      // Filter out call stmts
+      if (strct->stmtType() == Prof::Struct::Stmt::STMT_STMT) {
+        SrcFile::ln line = n_stmt->begLine();
+        LineToStmtMap::iterator it_stmt = stmtMap->find(line);
+        if (it_stmt != stmtMap->end()) {
+          // found -- we have a duplicate
+          Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
 
-	// N.B.: Because (a) trace records contain a function's
-	// representative IP and (b) two traces that contain samples
-	// from the same function should have their conflict resolved
-	// in Prof::CallPath::Profile::merge(), we would expect that
-	// merge effects are impossible.  That is, we expect that it
-	// is impossible that a CCT::ProcFrm has multiple CCT::Stmts
-	// with distinct trace ids.
-	//
-	// However, merge effects are possible *after* static
-	// structure is added to the CCT.  The reason is that multiple
-	// object-level procedures can map to one source-level
-	// procedure (e.g., multiple template instantiations mapping
-	// to the same source template or multiple stripped functions
-	// mapping to UnknownProcNm).
-	if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
-	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
-	  DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
-		      << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
-		      << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
-	
-	  // remove 'n_stmt' from tree
-	  n_stmt->unlink();
-	  delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
-	}
-      }
-      else {
-	// no entry found -- add
-	stmtMap->insert(std::make_pair(line, n_stmt));
+          DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
+            << "\tx: " 
+            << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
+            << "\n\ty: " 
+            << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+          // N.B.: Because (a) trace records contain a function's
+          // representative IP and (b) two traces that contain samples
+          // from the same function should have their conflict resolved
+          // in Prof::CallPath::Profile::merge(), we would expect that
+          // merge effects are impossible.  That is, we expect that it
+          // is impossible that a CCT::ProcFrm has multiple CCT::Stmts
+          // with distinct trace ids.
+          //
+          // However, merge effects are possible *after* static
+          // structure is added to the CCT.  The reason is that multiple
+          // object-level procedures can map to one source-level
+          // procedure (e.g., multiple template instantiations mapping
+          // to the same source template or multiple stripped functions
+          // mapping to UnknownProcNm).
+          if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
+            Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
+            DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
+              << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+              << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+            // remove 'n_stmt' from tree
+            n_stmt->unlink();
+            delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+          }
+        }
+        else {
+          // no entry found -- add
+          stmtMap->insert(std::make_pair(line, n_stmt));
+        }
       }
     }
     else if (!n->isLeaf()) {
@@ -1276,7 +1295,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.1\">\n";
+  os << "<HPCToolkitExperiment version=\"" DATABASE_VERSION "\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

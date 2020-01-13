@@ -135,9 +135,15 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbanal_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbanal_la-ElfHelper.lo libHPCbanal_la-Fatbin.lo \
-	libHPCbanal_la-InputFile.lo libHPCbanal_la-RelocateCubin.lo \
-	libHPCbanal_la-Struct.lo libHPCbanal_la-Struct-Inline.lo \
+am__dirstamp = $(am__leading_dot)dirstamp
+am__objects_1 = cuda/libHPCbanal_la-CFGParser.lo \
+	cuda/libHPCbanal_la-CudaCFGFactory.lo \
+	cuda/libHPCbanal_la-CudaFunction.lo \
+	cuda/libHPCbanal_la-GraphReader.lo \
+	cuda/libHPCbanal_la-CudaBlock.lo \
+	cuda/libHPCbanal_la-CudaCodeSource.lo \
+	cuda/libHPCbanal_la-ReadCubinCFG.lo libHPCbanal_la-Struct.lo \
+	libHPCbanal_la-Struct-Inline.lo \
 	libHPCbanal_la-Struct-Output.lo
 am_libHPCbanal_la_OBJECTS = $(am__objects_1)
 libHPCbanal_la_OBJECTS = $(am_libHPCbanal_la_OBJECTS)
@@ -335,6 +341,10 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
+MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
+MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -347,16 +357,19 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
-OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_ROCM = @OPT_ROCM@
+OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
+OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -465,7 +478,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
 ############################################################
@@ -496,10 +509,13 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 @OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
 MYSOURCES = \
-	ElfHelper.cpp \
-	Fatbin.cpp \
-	InputFile.cpp \
-	RelocateCubin.cpp \
+	cuda/CFGParser.cpp  \
+	cuda/CudaCFGFactory.cpp  \
+	cuda/CudaFunction.cpp  \
+	cuda/GraphReader.cpp \
+	cuda/CudaBlock.cpp  \
+	cuda/CudaCodeSource.cpp  \
+	cuda/ReadCubinCFG.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -578,6 +594,26 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+cuda/$(am__dirstamp):
+	@$(MKDIR_P) cuda
+	@: > cuda/$(am__dirstamp)
+cuda/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) cuda/$(DEPDIR)
+	@: > cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-CFGParser.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-CudaCFGFactory.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-CudaFunction.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-GraphReader.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-CudaBlock.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
+cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/$(am__dirstamp) \
+	cuda/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbanal.la: $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_DEPENDENCIES) $(EXTRA_libHPCbanal_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbanal_la_LINK)  $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_LIBADD) $(LIBS)
@@ -587,67 +623,96 @@ libHPCbanal_simple.la: $(libHPCbanal_simple_la_OBJECTS) $(libHPCbanal_simple_la_
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f cuda/*.$(OBJEXT)
+	-rm -f cuda/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-ElfHelper.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Fatbin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-InputFile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-RelocateCubin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-Inline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_simple_la-StructSimple.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCbanal_la-ElfHelper.lo: ElfHelper.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-ElfHelper.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-ElfHelper.Tpo -c -o libHPCbanal_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-ElfHelper.Tpo $(DEPDIR)/libHPCbanal_la-ElfHelper.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='ElfHelper.cpp' object='libHPCbanal_la-ElfHelper.lo' libtool=yes @AMDEPBACKSLASH@
+cuda/libHPCbanal_la-CFGParser.lo: cuda/CFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CFGParser.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Tpo -c -o cuda/libHPCbanal_la-CFGParser.lo `test -f 'cuda/CFGParser.cpp' || echo '$(srcdir)/'`cuda/CFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CFGParser.cpp' object='cuda/libHPCbanal_la-CFGParser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CFGParser.lo `test -f 'cuda/CFGParser.cpp' || echo '$(srcdir)/'`cuda/CFGParser.cpp
 
-libHPCbanal_la-Fatbin.lo: Fatbin.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Fatbin.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Fatbin.Tpo -c -o libHPCbanal_la-Fatbin.lo `test -f 'Fatbin.cpp' || echo '$(srcdir)/'`Fatbin.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-Fatbin.Tpo $(DEPDIR)/libHPCbanal_la-Fatbin.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='Fatbin.cpp' object='libHPCbanal_la-Fatbin.lo' libtool=yes @AMDEPBACKSLASH@
+cuda/libHPCbanal_la-CudaCFGFactory.lo: cuda/CudaCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaCFGFactory.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Tpo -c -o cuda/libHPCbanal_la-CudaCFGFactory.lo `test -f 'cuda/CudaCFGFactory.cpp' || echo '$(srcdir)/'`cuda/CudaCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaCFGFactory.cpp' object='cuda/libHPCbanal_la-CudaCFGFactory.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-Fatbin.lo `test -f 'Fatbin.cpp' || echo '$(srcdir)/'`Fatbin.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaCFGFactory.lo `test -f 'cuda/CudaCFGFactory.cpp' || echo '$(srcdir)/'`cuda/CudaCFGFactory.cpp
 
-libHPCbanal_la-InputFile.lo: InputFile.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-InputFile.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-InputFile.Tpo -c -o libHPCbanal_la-InputFile.lo `test -f 'InputFile.cpp' || echo '$(srcdir)/'`InputFile.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-InputFile.Tpo $(DEPDIR)/libHPCbanal_la-InputFile.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='InputFile.cpp' object='libHPCbanal_la-InputFile.lo' libtool=yes @AMDEPBACKSLASH@
+cuda/libHPCbanal_la-CudaFunction.lo: cuda/CudaFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaFunction.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Tpo -c -o cuda/libHPCbanal_la-CudaFunction.lo `test -f 'cuda/CudaFunction.cpp' || echo '$(srcdir)/'`cuda/CudaFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaFunction.cpp' object='cuda/libHPCbanal_la-CudaFunction.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-InputFile.lo `test -f 'InputFile.cpp' || echo '$(srcdir)/'`InputFile.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaFunction.lo `test -f 'cuda/CudaFunction.cpp' || echo '$(srcdir)/'`cuda/CudaFunction.cpp
 
-libHPCbanal_la-RelocateCubin.lo: RelocateCubin.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-RelocateCubin.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-RelocateCubin.Tpo -c -o libHPCbanal_la-RelocateCubin.lo `test -f 'RelocateCubin.cpp' || echo '$(srcdir)/'`RelocateCubin.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-RelocateCubin.Tpo $(DEPDIR)/libHPCbanal_la-RelocateCubin.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='RelocateCubin.cpp' object='libHPCbanal_la-RelocateCubin.lo' libtool=yes @AMDEPBACKSLASH@
+cuda/libHPCbanal_la-GraphReader.lo: cuda/GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-GraphReader.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo -c -o cuda/libHPCbanal_la-GraphReader.lo `test -f 'cuda/GraphReader.cpp' || echo '$(srcdir)/'`cuda/GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/GraphReader.cpp' object='cuda/libHPCbanal_la-GraphReader.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-RelocateCubin.lo `test -f 'RelocateCubin.cpp' || echo '$(srcdir)/'`RelocateCubin.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-GraphReader.lo `test -f 'cuda/GraphReader.cpp' || echo '$(srcdir)/'`cuda/GraphReader.cpp
+
+cuda/libHPCbanal_la-CudaBlock.lo: cuda/CudaBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaBlock.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Tpo -c -o cuda/libHPCbanal_la-CudaBlock.lo `test -f 'cuda/CudaBlock.cpp' || echo '$(srcdir)/'`cuda/CudaBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaBlock.cpp' object='cuda/libHPCbanal_la-CudaBlock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaBlock.lo `test -f 'cuda/CudaBlock.cpp' || echo '$(srcdir)/'`cuda/CudaBlock.cpp
+
+cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/CudaCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaCodeSource.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Tpo -c -o cuda/libHPCbanal_la-CudaCodeSource.lo `test -f 'cuda/CudaCodeSource.cpp' || echo '$(srcdir)/'`cuda/CudaCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaCodeSource.cpp' object='cuda/libHPCbanal_la-CudaCodeSource.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaCodeSource.lo `test -f 'cuda/CudaCodeSource.cpp' || echo '$(srcdir)/'`cuda/CudaCodeSource.cpp
+
+cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/ReadCubinCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-ReadCubinCFG.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Tpo -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Tpo cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/ReadCubinCFG.cpp' object='cuda/libHPCbanal_la-ReadCubinCFG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
 
 libHPCbanal_la-Struct.lo: Struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct.Tpo -c -o libHPCbanal_la-Struct.lo `test -f 'Struct.cpp' || echo '$(srcdir)/'`Struct.cpp
@@ -682,6 +747,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf cuda/.libs cuda/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -796,6 +862,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f cuda/$(DEPDIR)/$(am__dirstamp)
+	-rm -f cuda/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -806,7 +874,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -852,7 +920,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

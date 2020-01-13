@@ -20,6 +20,7 @@ libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
+roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
 
 prog_name=hpcrun
 
@@ -133,6 +134,9 @@ Options: Profiling (Defaults shown in curly brackets {})
   -t, --trace          Generate a call path trace in addition to a call
                        path profile.
 
+  --omp-serial-only    When profiling using the OMPT interface for OpenMP,
+                       suppress all samples not in serial code.
+
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
@@ -195,8 +199,10 @@ arg_ok()
 # others can be set now.
 
 preload_list=
+roctracer_lib=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
+HPCRUN_CONTROL_KNOBS=
 
 while test "x$1" != x
 do
@@ -214,6 +220,12 @@ do
 	-dd | --dynamic-debug )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
+	    shift
+	    ;;
+
+  -ck | --control-knob )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
 	    ;;
 
@@ -241,6 +253,7 @@ do
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
+		amd-rocm*) roctracer_lib="${roctracer_lib_path}";;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -277,6 +290,13 @@ do
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
 	    ;;
+
+	# --------------------------------------------------
+
+	--omp-serial-only )
+	    export HPCRUN_OMP_SERIAL_ONLY=1
+	    ;;
+
 
 	# --------------------------------------------------
 
@@ -435,11 +455,13 @@ fi
 ulimit -S -c unlimited >/dev/null 2>&1
 
 # laks 2016.10.06: add perfmon directory
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
-export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+if [ "$HPCRUN_FNBOUNDS_CMD" = "" ] ; then
+    export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+fi
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 
