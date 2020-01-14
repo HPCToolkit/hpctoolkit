@@ -778,6 +778,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
+       << " o" << MakeAttrNum(m->order())
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " md=\"" << m->description()      << "\""
        << " em=\"" << m->isMultiplexed()    << "\""
@@ -1503,7 +1504,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
+#if 0
   ExprEval eval;
+#endif
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1517,6 +1520,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
     }
+#if 0
     // ------------------------------------------
     // check if the metric contains a formula
     //  if this is the case, we'll compute the metric based on the formula
@@ -1537,6 +1541,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
       }
     }
+#endif
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;
