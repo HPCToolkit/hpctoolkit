@@ -197,6 +197,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
  .full = 0
 };
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
+static __thread gpu_patch_buffer_t *gpu_patch_buffer_host = NULL;
 
 static sanitizer_correlation_callback_t sanitizer_correlation_callback =
   sanitizer_correlation_callback_dummy;
@@ -677,34 +678,41 @@ sanitizer_kernel_launch_sync
     num_left_blocks = total - ((total - 1) / sampling_frequency + 1);
   }
 
+  // Init a buffer on host
+  if (gpu_patch_buffer_host == NULL) {
+    gpu_patch_buffer_host = (gpu_patch_buffer_t *)hpcrun_malloc_safe(sizeof(gpu_patch_buffer_host));
+  }
+
   while (true) {
+    // Copy buffer
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+      (gpu_patch_buffer_host, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
+
+    size_t num_records = gpu_patch_buffer_host->head_index;
+
+    // Wait until the buffer is full or the kernel is finished
+    if (!(gpu_patch_buffer_host->num_blocks == num_left_blocks || gpu_patch_buffer_host->full) || num_records == 0) {
+      continue;
+    }
+
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(GPU_PATCH_RECORD_NUM);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
-    // Copy buffer
+    // Move host buffer to a cache
+    memcpy(gpu_patch_buffer, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_t) - sizeof(void *));
+    // Copy all records to the cache
+    gpu_patch_record_t *gpu_patch_record_device = (gpu_patch_record_t *)gpu_patch_buffer_host->records;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-      (gpu_patch_buffer, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
+      (gpu_patch_buffer->records, gpu_patch_record_device, sizeof(gpu_patch_record_t) * num_records, priority_stream));
 
-    size_t num_records = gpu_patch_buffer->head_index;
-
-    // Wait until the buffer is full or the kernel is finished
-    if (!(gpu_patch_buffer->num_blocks == num_left_blocks || gpu_patch_buffer->full) || num_records == 0) {
-      continue;
-    }
-
-    gpu_patch_record_t *gpu_patch_record = (gpu_patch_record_t *)gpu_patch_buffer->records;
-
-    // Copy all records to CPU
-    HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-      (gpu_patch_record, gpu_patch_buffer->records, sizeof(gpu_patch_record_t) * num_records, priority_stream));
     // Tell gpu copy is finished
-    gpu_patch_buffer->full = 0;
+    gpu_patch_buffer_host->full = 0;
     // Do not need to sync stream.
     // The function will return once the pageable buffer has been copied to the staging memory
     // for DMA transfer to device memory, but the DMA to final destination may not have completed.
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (gpu_patch_buffer_device, gpu_patch_buffer, sizeof(gpu_patch_buffer_t), priority_stream));
+      (gpu_patch_buffer_device, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_t), priority_stream));
     
     sanitizer_buffer_channel_push(sanitizer_buffer);
 
@@ -990,6 +998,8 @@ sanitizer_device_shutdown(void *args)
   sanitizer_callbacks_unsubscribe();
 
   atomic_store(&sanitizer_process_stop_flag, true);
+
+  sanitizer_process_signal();
 
   while (atomic_load(&sanitizer_process_thread_counter));
 }

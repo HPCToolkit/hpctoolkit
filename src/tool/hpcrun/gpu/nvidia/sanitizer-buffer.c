@@ -106,12 +106,11 @@ sanitizer_buffer_produce
  size_t num_records
 )
 {
-  gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
-
-  if (gpu_patch_buffer->records == NULL) {
-    gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
+  if (b->gpu_patch_buffer == NULL) {
+    b->gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
+    b->gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
       num_records * sizeof(gpu_patch_record_t));
-  } 
+  }
 }
 
 
