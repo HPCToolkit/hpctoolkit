@@ -76,6 +76,11 @@
 
 #include <lib/support/diagnostics.h>
 
+//*************************** macros or constants **************************//
+
+#define ORDER_ARTIFICIAL_METRIC -1
+
+
 //*************************** Forward Declarations **************************//
 
 namespace Prof {
@@ -99,16 +104,20 @@ class ADesc
 public:
   static const uint id_NULL = UINT_MAX;
 
+  // default value of formula: empty ? 
+  // or do we want metric to itself (like default value of combine and finalize)? tbd.
+  static const std::string s_formulaNULL;
+
 public:
   ADesc()
-    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
+    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL), 
       m_isVisible(true), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   { }
 
   ADesc(const char* nameBase, const char* description,
@@ -122,7 +131,7 @@ public:
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
@@ -139,7 +148,7 @@ public:
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   {
     nameFromString(nameBase);
   }
@@ -157,7 +166,7 @@ public:
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
       m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_formula(x.m_formula), m_order(x.m_order)
   { }
 
   ADesc&
@@ -185,6 +194,8 @@ public:
       m_sampling_type = x.m_sampling_type;
 
       m_isTemporary   = x.m_isTemporary;
+      m_formula       = x.m_formula;
+      m_order         = x.m_order;
     }
     return *this;
   }
@@ -206,6 +217,20 @@ public:
   id(uint id)
   { m_id = id; }
 
+  // -------------------------------------------------------
+  // hpcrun metric sequence order: need to keep the sequence order
+  // since hpcprof will reorder the ID.
+  // The sequence order is important when hpcrun has its
+  // metric formula to be passed to hpcviewer (or computed by hpcprof?)
+  // -------------------------------------------------------
+
+  void 
+  order(int sequence)
+  { m_order = sequence; }
+
+  int
+  order() const
+  {return m_order;} 
 
   // -------------------------------------------------------
   // type:
@@ -521,6 +546,14 @@ public:
   static ADescTy
   fromHPCRunMetricValTy(MetricFlags_ValTy_t ty);
 
+  void 
+  formula(std::string formula)
+  { m_formula = formula; }
+
+  std::string 
+  formula() const
+  { return m_formula; }
+
   // -------------------------------------------------------
   // perf-event additional info
   // -------------------------------------------------------
@@ -564,7 +597,6 @@ private:
   ADesc* m_partner;
 
   std::string m_nameBase, m_namePfx, m_nameSfx;
-
   std::string m_description;
 
   bool m_isVisible;
@@ -584,6 +616,12 @@ private:
   enum SamplingType_e m_sampling_type;
 
   bool m_isTemporary;
+
+  // hpcrun metric formula
+  std::string m_formula;
+
+  // hpcrun metric order
+  int m_order;
 };
 
 

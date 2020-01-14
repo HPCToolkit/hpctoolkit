@@ -824,6 +824,10 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	   << " frm=\"" << mDrvdExpr->finalizeString() << "\"/>\n";
       }
     }
+  if (!m->formula().empty()) {
+    	os << "      <MetricFormula t=\"finalize\""
+	   << " frm=\"" <<  m->formula() << "";
+  }
     
     // Info
     os << "      <Info>"

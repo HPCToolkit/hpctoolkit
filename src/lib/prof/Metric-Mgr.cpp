@@ -284,12 +284,17 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   bool isPercent = false;
   bool isVisible = mSrc->isVisible();
 
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
+
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+
+    // metric order is used to compute formula from hpcrun
+    metric_order = mSrc->order();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -336,6 +341,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
+  m->formula      (mSrc->formula());
+  m->order        (metric_order);
+
   insert(m);
   expr->accumId(0, m->id());
 
@@ -380,12 +388,17 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   bool isPercent = false;
   bool isVisible = mSrc->isVisible();
 
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
+
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
   Metric::AExprIncr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
+
+    // metric order is used to compute formula from hpcrun
+    metric_order = mSrc->order();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
@@ -430,6 +443,9 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   m->sampling_type(mSrc->sampling_type());
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
+
+  m->formula      (mSrc->formula());
+  m->order        (metric_order);
 
   insert(m);
   expr->accumId(0, m->id());
