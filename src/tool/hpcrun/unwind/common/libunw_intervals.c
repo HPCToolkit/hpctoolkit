@@ -200,17 +200,21 @@ libunw_cursor_get_sp(hpcrun_unw_cursor_t* cursor)
   return (void *) tmp;
 }
 
-
 static void *
 libunw_cursor_get_bp(hpcrun_unw_cursor_t* cursor)
 {
   unw_word_t tmp;
 
   unw_cursor_t *unw_cursor = &(cursor->uc);
+#if HOST_CPU_x86_64
   unw_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
+#else
+  tmp = 0;
+#endif
 
   return (void *) tmp;
 }
+
 
 
 

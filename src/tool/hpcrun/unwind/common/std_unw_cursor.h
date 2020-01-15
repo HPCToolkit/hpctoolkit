@@ -87,14 +87,14 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // common state
   // ------------------------------------------------------------
-  void *pc_unnorm; //only place where un-normalized pc will exist
-  void **bp;
+  void *pc_unnorm; // only place where un-normalized pc exists
+  void **bp;       // maintained only on x86_64
   void **sp;
   void *ra;
 
-  void *ra_loc;  // for trampolines
+  void *ra_loc;    // return address location (for trampolines)
 
-  fence_enum_t fence; // Details on which fence stopped an unwind
+  fence_enum_t fence; // which fence stopped an unwind
   unwindr_info_t unwr_info; // unwind recipe info
   ip_normalized_t the_function; // (normalized) ip for function
 
