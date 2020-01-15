@@ -19,6 +19,7 @@ struct InstructionStat {
   std::vector<int> dsts;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255, only records normal registers
   std::map<int, std::vector<int> > assign_pcs;
+  std::map<int, std::vector<std::vector<int> > > assign_pc_paths;
 
   InstructionStat() {}
 

@@ -364,16 +364,55 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
 };
 
 
+// DFS procedure
+static void trackReg(unsigned int use_pc, unsigned int def_pc, int reg,
+  Block *cur_block, std::set<int> &visited_blocks,
+  std::vector<std::vector<int>> &paths,
+  std::vector<int> &path, bool &first_block) {
+  if (visited_blocks.find(cur_block->id) != visited_blocks.end()) {
+    return;
+  }
+  visited_blocks.insert(cur_block->id);
+  path.push_back(cur_block->id);
+
+  if (use_pc <= cur_block->insts.back()->offset && use_pc >= cur_block->insts.front()->offset) {
+    // The first block needs special handle
+    if (use_pc <= def_pc && first_block) {
+      first_block = false;
+      visited_blocks.erase(cur_block->id);
+      for (auto *target : cur_block->targets) {
+        if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
+          trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
+        }
+      }
+    } else {
+      paths.push_back(path);
+    }
+  } else {
+    for (auto *target : cur_block->targets) {
+      if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
+        trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
+      }
+    }
+  }
+
+  visited_blocks.erase(cur_block->id);
+  path.pop_back();
+}
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
   std::map<unsigned int, InstructionStat *> inst_stats_map;
+  std::map<unsigned int, Block *> inst_block_map;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         if (inst->inst_stat) {
           auto *inst_stat = inst->inst_stat;
           inst_stats_map[inst->offset] = inst_stat;
+          inst_block_map[inst->offset] = block;
         }
       }
     }
@@ -437,6 +476,22 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
               if (INSTRUCTION_ANALYZER_DEBUG) {
                 std::cout << " reg " << reg_id << std::endl;
               }
+            }
+          }
+        }
+
+        for (auto &reg_iter : inst_stat->assign_pcs) {
+          if (reg_iter.second.size() > 1) {
+            for (auto def_pc : reg_iter.second) {
+              // Apply DFS only for regs with multiple definitions
+              std::vector<std::vector<int> > paths;
+              std::vector<int> path;
+              std::set<int> visited_blocks;
+              bool first_block = true;
+              trackReg(inst_stat->pc + func_addr, def_pc + func_addr, reg_iter.first,
+                inst_block_map[def_pc + func_addr],
+                visited_blocks, paths, path, first_block);
+              inst_stat->assign_pc_paths[reg_iter.first] = paths;
             }
           }
         }
@@ -516,9 +571,22 @@ bool dumpCudaInstructions(const std::string &file_path,
             auto iter = inst->inst_stat->assign_pcs.find(src);
             if (iter != inst->inst_stat->assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
+                boost::property_tree::ptree ptree_path;
+                ptree_path.put("pc", assign_pc);
+
                 boost::property_tree::ptree tt;
-                tt.put("", assign_pc);
-                ptree_assign_pcs.push_back(std::make_pair("", tt));
+                for (auto &path : inst->inst_stat->assign_pc_paths[src]) {
+                  boost::property_tree::ptree ttt;
+                  for (auto block_id : path) {
+                    boost::property_tree::ptree tttt;
+                    tttt.put("", block_id);
+                    ttt.push_back(std::make_pair("", tttt));
+                  }
+                  tt.push_back(std::make_pair("", ttt));
+                }
+                ptree_path.add_child("paths", tt);
+
+                ptree_assign_pcs.push_back(std::make_pair("", ptree_path));
               }
             }
             t.add_child("assign_pcs", ptree_assign_pcs);

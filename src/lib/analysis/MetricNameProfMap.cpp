@@ -50,8 +50,6 @@ using std::string;
 
 namespace Analysis {
 
-namespace CallPath {
-
 void MetricNameProfMap::init() {
   for (size_t i = 0; i < _mgr->size(); ++i) {
     auto suffix = _mgr->metric(i)->nameSfx();
@@ -159,7 +157,5 @@ bool MetricNameProfMap::add(const std::string &metric_name) {
   }
   return true;
 }
-
-}  // namespace CallPath
 
 }  // namespace Analysis
