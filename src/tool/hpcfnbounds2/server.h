@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,31 +43,26 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
+#ifndef _FNBOUNDS_SERVER_H_
+#define _FNBOUNDS_SERVER_H_
+
+#include <stdint.h>
+#include "code-ranges.h"
+#include "function-entries.h"
+#include "syserv-mesg.h"
+
+void	init_server(DiscoverFnTy, int, int);
+static	void	do_query(DiscoverFnTy , struct syserv_mesg *);
+static	void	signal_handler_init();
+static	int	read_all(int, void*, size_t);
+static	int	write_all(int, const void*, size_t);
+static	int	read_mesg(struct syserv_mesg *mesg);
+static	int	write_mesg(int32_t type, int64_t len);
+static	void	signal_handler(int);
 
 #if 0
-#include <string>
-#include <vector>
-
-using namespace std;
+void syserv_add_addr(void *, long);
+void syserv_add_header(int is_relocatable, uintptr_t ref_offset);
 #endif
-#include <sys/types.h>
-#include <inttypes.h>
-#include <stdbool.h>
-#include "code-ranges.h"
 
-int c_mode(void);
-
-void function_entries_reinit();
-
-void add_function_entry(void *address, const char *comment, bool isglobal, int call_count);
-void add_stripped_function_entry(void *function_entry, int call_count);
-bool contains_function_entry(void *address);
-
-void add_protected_range(void *start, void *end);
-int  is_possible_fn(void *addr);
-int  inside_protected_range(void *addr);
-
-void entries_in_range(void *start, void *end, void **result);
-bool query_function_entry(void *addr);
-
-void dump_reachable_functions();
+#endif  // _FNBOUNDS_SERVER_H_

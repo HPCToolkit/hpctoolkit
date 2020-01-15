@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,26 +43,31 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-#ifndef _FNBOUNDS_SERVER_H_
-#define _FNBOUNDS_SERVER_H_
 
-#include <stdint.h>
-#include "code-ranges.h"
-#include "function-entries.h"
-#include "syserv-mesg.h"
+#ifndef code_ranges_hpp
+#define code_ranges_hpp
 
-void	init_server(DiscoverFnTy, int, int);
-static	void	do_query(DiscoverFnTy , struct syserv_mesg *);
-static	void	signal_handler_init();
-static	int	read_all(int, void*, size_t);
-static	int	write_all(int, const void*, size_t);
-static	int	read_mesg(struct syserv_mesg *mesg);
-static	int	write_mesg(int32_t type, int64_t len);
-static	void	signal_handler(int);
+#include <stdio.h>
+
+typedef	enum DiscoverFnTy {
+  DiscoverFnTy_NULL = 0,
+  DiscoverFnTy_Aggressive,
+  DiscoverFnTy_Conservative,
+  DiscoverFnTy_None
+} DiscoverFnTy;
+
+void code_ranges_reinit();
 
 #if 0
-void syserv_add_addr(void *, long);
-void syserv_add_header(int is_relocatable, uintptr_t ref_offset);
+bool consider_possible_fn_address(void *addr);
+long offset_for_fn(void *addr);
+
+void new_code_range(const char *name, void *start, void *end, long offset,
+		    DiscoverFnTy discover);
+
+void process_code_ranges();
+
+long num_function_entries(void);
 #endif
 
-#endif  // _FNBOUNDS_SERVER_H_
+#endif // code_ranges_hpp

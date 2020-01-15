@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,30 +44,30 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef code_ranges_hpp
-#define code_ranges_hpp
-
-#include <stdio.h>
-
-typedef	enum DiscoverFnTy {
-  DiscoverFnTy_NULL = 0,
-  DiscoverFnTy_Aggressive,
-  DiscoverFnTy_Conservative,
-  DiscoverFnTy_None
-} DiscoverFnTy;
-
-void code_ranges_reinit();
-
 #if 0
-bool consider_possible_fn_address(void *addr);
-long offset_for_fn(void *addr);
+#include <string>
+#include <vector>
 
-void new_code_range(const char *name, void *start, void *end, long offset,
-		    DiscoverFnTy discover);
-
-void process_code_ranges();
-
-long num_function_entries(void);
+using namespace std;
 #endif
+#include <sys/types.h>
+#include <inttypes.h>
+#include <stdbool.h>
+#include "code-ranges.h"
 
-#endif // code_ranges_hpp
+int c_mode(void);
+
+void function_entries_reinit();
+
+void add_function_entry(void *address, const char *comment, bool isglobal, int call_count);
+void add_stripped_function_entry(void *function_entry, int call_count);
+bool contains_function_entry(void *address);
+
+void add_protected_range(void *start, void *end);
+int  is_possible_fn(void *addr);
+int  inside_protected_range(void *addr);
+
+void entries_in_range(void *start, void *end, void **result);
+bool query_function_entry(void *addr);
+
+void dump_reachable_functions();
