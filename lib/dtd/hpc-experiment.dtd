@@ -63,7 +63,7 @@
     <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
     <!ELEMENT MetricFormula (Info?)>
     <!ATTLIST MetricFormula
-	      t   (combine|finalize) "finalize"
+	      t   (combine|finalize|view) "finalize"
 	      i   CDATA #IMPLIED
 	      frm CDATA #REQUIRED>
 

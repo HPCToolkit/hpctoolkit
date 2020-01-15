@@ -826,8 +826,8 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
       }
     }
   if (!m->formula().empty()) {
-    	os << "      <MetricFormula t=\"finalize\""
-	   << " frm=\"" <<  m->formula() << "";
+    	os << "      <MetricFormula t=\"view\""
+	   << " frm=\"" <<  m->formula() << "\"/>\n";
   }
     
     // Info
@@ -1336,6 +1336,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show, false,
             mdesc.flags.fields.showPercent);
+    
+    m->order((int)i);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
@@ -1364,6 +1366,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->isMultiplexed(current_aux_info.is_multiplexed);
     m->periodMean   (current_aux_info.threshold_mean);
     m->num_samples  (current_aux_info.num_samples);
+    m->formula      (mdesc.formula);
 
     // ----------------------------------------
     // 1c. add to the list of metric
@@ -1385,6 +1388,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 	mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags(mdesc.flags);
+      mSmpl->formula(mdesc.formula);
       
       prof->metricMgr()->insert(mSmpl);
     }
