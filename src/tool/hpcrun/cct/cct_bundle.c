@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,39 +44,33 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// system includes
+//******************************************************************************
+
 #include <stdbool.h>
 
-#include "cct_bundle.h"
-#include "../unresolved.h"
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
 #include <lib/prof-lean/hpcrun-fmt.h>
-#include <cct/cct_addr.h>
-#include <messages/messages.h>
+
 #include <hpcrun/hpcrun_return_codes.h>
+#include <hpcrun/messages/messages.h>
 #include <hpcrun/unresolved.h>
+#include <hpcrun/hpcrun-placeholders.h>
 
-//
-// Private Operations
-//
+#include "cct_bundle.h"
+#include "cct_addr.h"
 
-//
-// "Special" routine to serve as a placeholder for "idle" resource
-//
 
-void
-GPU_IDLE(void)
-{
-}
 
-void
-NO_THREAD(void)
-{
-
-}
-
-//
-// Interface procedures
-//
-
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 void
 hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
@@ -105,8 +99,6 @@ hpcrun_cct_bundle_init(cct_bundle_t* bundle, cct_ctxt_t* ctxt)
   }
   bundle->partial_unw_root = hpcrun_cct_new_partial();
   bundle->unresolved_root = hpcrun_cct_top_new(UNRESOLVED_ROOT, 0);
-  bundle->special_idle_node = hpcrun_cct_new_special(GPU_IDLE);
-  bundle->special_no_thread_node = hpcrun_cct_new_special(NO_THREAD);
 }
 //
 // Write to file for cct bundle: 
@@ -154,23 +146,15 @@ hpcrun_empty_cct(cct_bundle_t* cct)
   return rv;
 }
 
-cct_node_t*
-hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct)
-  // attach special node to root if not already attached
-{
-  if (! hpcrun_cct_parent(cct->special_idle_node))
-    hpcrun_cct_insert_node(cct->partial_unw_root, cct->special_idle_node);
-
-  return cct->special_idle_node;
-}
-
 
 cct_node_t*
-hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct)
-  // attach special node to root if not already attached
+hpcrun_cct_bundle_get_no_activity_node
+(
+ cct_bundle_t* cct
+)
 {
-  if (! hpcrun_cct_parent(cct->special_no_thread_node))
-    hpcrun_cct_insert_node(cct->top, cct->special_no_thread_node);
-
-  return cct->special_no_thread_node;
+  placeholder_t *nap = hpcrun_placeholder_get(hpcrun_placeholder_type_no_activity);
+  cct_node_t *no_activity_cct = 
+    hpcrun_cct_insert_ip_norm(cct->top, nap->pc_norm); 
+  return no_activity_cct;
 }

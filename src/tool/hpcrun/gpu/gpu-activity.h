@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -92,7 +92,8 @@ typedef enum {
   GPU_ACTIVITY_PC_SAMPLING             = 11,
   GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
-  GPU_ACTIVITY_EVENT                   = 14
+  GPU_ACTIVITY_EVENT                   = 14,
+  GPU_ACTIVITY_FUNCTION                = 15
 } gpu_activity_kind_t;
 
 
@@ -263,6 +264,12 @@ typedef struct gpu_cdpkernel_t {
 } gpu_cdpkernel_t;
 
 
+typedef struct gpu_function_t {
+  uint32_t function_id;
+  ip_normalized_t pc;
+} gpu_function_t;
+
+
 typedef struct gpu_event_t {
   uint32_t event_id;
   uint32_t context_id;
@@ -341,6 +348,7 @@ typedef struct gpu_activity_details_t {
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
+    gpu_function_t function;
     gpu_cdpkernel_t cdpkernel;
     gpu_event_t event;
     gpu_global_access_t global_access;

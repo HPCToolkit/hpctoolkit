@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,12 +70,13 @@
 #include <hpcrun/utilities/ip-normalized.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 
 #include "cuda-device-map.h"
 #include "cupti-activity-translate.h"
 #include "cupti-analysis.h"
-
+#include "cubin-id-map.h"
 
 
 //******************************************************************************
@@ -192,6 +193,7 @@ set_gpu_instruction_fields
 (
  gpu_instruction_t *instruction,
  uint32_t activity_correlation_id,
+ uint32_t function_id,
  uint32_t pc_offset
 ) 
 {
@@ -206,10 +208,11 @@ set_gpu_instruction_fields
     gpu_host_correlation_map_lookup(host_correlation_id);
   assert(host_correlation_entry);
 
-  // get a normalized IP for the function enclosing the instruction
-  cct_node_t *func_node = 
-    gpu_host_correlation_map_entry_op_function_get(host_correlation_entry); 
-  ip_normalized_t pc = hpcrun_cct_addr(func_node)->ip_norm;
+  gpu_function_id_map_entry_t *fid_map_entry = 
+    gpu_function_id_map_lookup(function_id);
+  assert(fid_map_entry);
+
+  ip_normalized_t pc = gpu_function_id_map_entry_pc_get(fid_map_entry);
 
   // compute a normalized IP for the instruction by adding the
   // instruction's offset in the routine to the address of the routine
@@ -218,6 +221,7 @@ set_gpu_instruction_fields
   instruction->correlation_id = activity_correlation_id;
   instruction->pc = pc;
 }
+
 
 static void
 convert_pcsampling
@@ -239,7 +243,7 @@ convert_pcsampling
   ga->kind = GPU_ACTIVITY_PC_SAMPLING;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-			     activity->pcOffset); 
+           activity->functionId, activity->pcOffset); 
 
   ga->details.pc_sampling.stallReason = convert_stall_type(activity->stallReason);
   ga->details.pc_sampling.samples = activity->samples;
@@ -362,6 +366,24 @@ convert_kernel
 
 
 static void
+convert_function
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityFunction *activity
+)
+{
+  PRINT("Function id %u\n", activity->id);
+
+  ga->kind = GPU_ACTIVITY_FUNCTION;
+
+  ip_normalized_t pc = cubin_id_transform(activity->moduleId,
+    activity->functionIndex, 0);
+  ga->details.function.function_id = activity->id;
+  ga->details.function.pc = pc;
+}
+
+
+static void
 convert_global_access
 (
   gpu_activity_t *ga,
@@ -371,7 +393,7 @@ convert_global_access
   ga->kind = GPU_ACTIVITY_GLOBAL_ACCESS;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-			     activity->pcOffset); 
+           activity->functionId, activity->pcOffset); 
 
   ga->details.global_access.l2_transactions = 
     activity->l2_transactions;
@@ -400,14 +422,14 @@ convert_global_access
 static void
 convert_shared_access
 (
-  gpu_activity_t *ga,
-  CUpti_ActivitySharedAccess *activity
+ gpu_activity_t *ga,
+ CUpti_ActivitySharedAccess *activity
 )
 { 
   ga->kind = GPU_ACTIVITY_LOCAL_ACCESS;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-			     activity->pcOffset); 
+           activity->functionId, activity->pcOffset); 
 
   ga->details.local_access.sharedTransactions = 
     activity->sharedTransactions;
@@ -434,7 +456,7 @@ convert_branch
   ga->kind = GPU_ACTIVITY_BRANCH;
 
   set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-			     activity->pcOffset); 
+           activity->functionId, activity->pcOffset); 
 
   ga->details.branch.diverged = activity->diverged;
   ga->details.branch.executed = activity->executed;
@@ -580,6 +602,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_KERNEL:
     convert_kernel(ga, (CUpti_ActivityKernel4 *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_FUNCTION:
+    convert_function(ga, (CUpti_ActivityFunction *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS:

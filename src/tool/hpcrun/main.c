@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -791,8 +791,9 @@ hpcrun_thread_fini(epoch_t *epoch)
   // inform thread manager that we are terminating the thread
   // thread manager may enqueue the thread_data (in compact mode)
   // or flush the data into hpcrun file
+  int add_separator = 0;
   thread_data_t* td = hpcrun_get_thread_data();
-  hpcrun_threadMgr_data_put(epoch, td);
+  hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
   TMSG(PROCESS, "End of thread");
 }

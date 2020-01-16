@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -98,7 +98,7 @@ struct CCTEdge {
   bool operator < (const CCTEdge &other) const {
     if (this->from < other.from) {
       return true; 
-    } else if (this->to < other.to) {
+    } else if ((this->from == other.from) && (this->to < other.to)) {
       return true;
     }
     return false;

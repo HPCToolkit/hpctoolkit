@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -100,6 +100,6 @@ extern int hpcrun_cct_bundle_fwrite(FILE* fs, epoch_flags_t flags, cct_bundle_t*
 //
 extern bool hpcrun_empty_cct(cct_bundle_t* cct);
 extern cct_node_t* hpcrun_cct_bundle_get_idle_node(cct_bundle_t* cct);
-extern cct_node_t* hpcrun_cct_bundle_get_nothread_node(cct_bundle_t* cct);
+extern cct_node_t* hpcrun_cct_bundle_get_no_activity_node(cct_bundle_t* cct);
 
 #endif // CCT_BUNDLE_H

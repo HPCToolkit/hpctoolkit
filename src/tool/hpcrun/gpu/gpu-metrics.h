@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@
 // local includes
 //*****************************************************************************
 
+#include <include/gpu-metric-names.h>
+
 #include "gpu-activity.h"
 
 
@@ -57,6 +59,7 @@
 //*****************************************************************************
 // macros
 //*****************************************************************************
+
 
 enum {
   GPU_INST_STALL_ANY                   = 0
@@ -132,36 +135,36 @@ typedef enum {
 
 
 #define FORALL_GPU_INST_STALL(macro)					\
-  macro("GINS:STL_ANY",           GPU_INST_STALL_ANY,			\
+  macro(GPU_INST_METRIC_NAME ":STL_ANY",     GPU_INST_STALL_ANY,	\
 	"GPU instruction stalls: any")					\
-  macro("GINS:STL_NONE",          GPU_INST_STALL_NONE,			\
+  macro(GPU_INST_METRIC_NAME ":STL_NONE",    GPU_INST_STALL_NONE,	\
 	"GPU instruction stalls: no stall")				\
-  macro("GINS:STL_IFET",          GPU_INST_STALL_IFETCH,		\
+  macro(GPU_INST_METRIC_NAME ":STL_IFET",    GPU_INST_STALL_IFETCH,	\
 	"GPU instruction stalls: await availability of next "		\
 	"instruction (fetch or branch delay)")				\
-  macro("GINS:STL_IDEP",          GPU_INST_STALL_IDEPEND,		\
+  macro(GPU_INST_METRIC_NAME ":STL_IDEP",    GPU_INST_STALL_IDEPEND,	\
 	"GPU instruction stalls: await satisfaction of instruction "	\
-	"input dependence") \
-  macro("GINS:STL_GMEM",          GPU_INST_STALL_GMEM,			\
+	"input dependence")						\
+  macro(GPU_INST_METRIC_NAME ":STL_GMEM",    GPU_INST_STALL_GMEM,	\
 	"GPU instruction stalls: await completion of global memory "	\
 	"access")							\
-  macro("GINS:STL_TMEM",          GPU_INST_STALL_TMEM,			\
+  macro(GPU_INST_METRIC_NAME ":STL_TMEM",    GPU_INST_STALL_TMEM,	\
 	"GPU instruction stalls: texture memory request queue full")	\
-  macro("GINS:STL_CMEM",          GPU_INST_STALL_CMEM,			\
+  macro(GPU_INST_METRIC_NAME ":STL_CMEM",    GPU_INST_STALL_CMEM,	\
 	"GPU instruction stalls: await completion of constant or "	\
 	"immediate memory access")					\
-  macro("GINS:STL_SYNC",          GPU_INST_STALL_SYNC,			\
+  macro(GPU_INST_METRIC_NAME ":STL_SYNC",    GPU_INST_STALL_SYNC,	\
 	"GPU instruction stalls: await completion of thread or "	\
 	"memory synchronization")					\
-  macro("GINS:STL_MTHR",          GPU_INST_STALL_MEM_THROTTLE,		\
+  macro(GPU_INST_METRIC_NAME ":STL_MTHR",    GPU_INST_STALL_MEM_THROTTLE, \
 	"GPU instruction stalls: global memory request queue full")	\
-  macro("GINS:STL_NSEL",          GPU_INST_STALL_NOT_SELECTED,		\
+  macro(GPU_INST_METRIC_NAME ":STL_NSEL",    GPU_INST_STALL_NOT_SELECTED, \
 	"GPU instruction stalls: not selected for issue but ready")	\
-  macro("GINS:STL_OTHR",          GPU_INST_STALL_OTHER,			\
+  macro(GPU_INST_METRIC_NAME ":STL_OTHR",    GPU_INST_STALL_OTHER,	\
 	"GPU instruction stalls: other")				\
-  macro("GINS:STL_SLP",           GPU_INST_STALL_SLEEP,			\
+  macro(GPU_INST_METRIC_NAME ":STL_SLP",     GPU_INST_STALL_SLEEP,	\
 	"GPU instruction stalls: sleep")				\
-  macro("GINS:STL_INV",           GPU_INST_STALL_INVALID,		\
+  macro(GPU_INST_METRIC_NAME ":STL_INV",     GPU_INST_STALL_INVALID,	\
 	"GPU instruction stalls: invalid")
 
 
@@ -270,7 +273,7 @@ typedef enum {
 
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\
-  macro("GINS",                   GPU_INST_ALL,	\
+  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,	\
 	"GPU instructions executed")
 
 

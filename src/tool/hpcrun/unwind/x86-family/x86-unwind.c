@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -436,14 +436,14 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
      */
     unw_get_save_loc(&cursor->uc, UNW_REG_IP, &ip_loc);
 
-    // sanity check to avoid infinite unwind loop
+    // invariant: unwind must move x86 stack pointer 
     if (sp <= (void *) cursor->sp) {
       cursor->libunw_status = LIBUNW_UNAVAIL;
       unw_res = STEP_ERROR;
     }
     else
      save_registers(cursor, pc, bp, sp, 
-            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
+            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : 0);
     
     // if PC is trampoline, must skip libunw_find_step() to avoid trolling.
     if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))
@@ -546,6 +546,15 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
     }
   }
 
+  // invariant: unwind must move x86 stack pointer 
+  if (next_sp <= cursor->sp){
+    TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
+	 " New sp = %p, old sp = %p", cursor->pc_unnorm, next_sp,
+	 cursor->sp);
+      
+    return STEP_ERROR;
+  }
+
   if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
     return STEP_OK;
 
@@ -562,15 +571,6 @@ unw_step_sp(hpcrun_unw_cursor_t* cursor)
       return STEP_STOP_WEAK;
     }
     TMSG(UNW,"  sp STEP_ERROR: no next interval, step fails");
-    return STEP_ERROR;
-  }
-
-  // sanity check to avoid infinite unwind loop
-  if (next_sp <= cursor->sp){
-    TMSG(INTV_ERR,"@ pc = %p. sp unwind does not advance stack." 
-	 " New sp = %p, old sp = %p", cursor->pc_unnorm, next_sp,
-	 cursor->sp);
-      
     return STEP_ERROR;
   }
   TMSG(UNW,"  step_sp: STEP_OK, has_intvl=%d, bp=%p, sp=%p, pc=%p",
@@ -616,16 +616,14 @@ unw_step_bp(hpcrun_unw_cursor_t* cursor)
   void* ra_loc = (void*) next_sp;
   void *next_pc  = *next_sp++;
 
-  
-  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
-    return STEP_OK;
-
-  // this condition is a weak correctness check. only
-  // try building an interval for the return address again if it succeeds
+  // invariant: unwind must move x86 stack pointer 
   if ((void *)next_sp <= sp) {
     TMSG(UNW_STRATEGY,"BP unwind fails: bp (%p) < sp (%p)", bp, sp);
     return STEP_ERROR;
   }
+  
+  if (hpcrun_retry_libunw_find_step(cursor, next_pc, next_sp, next_bp))
+    return STEP_OK;
 
   unwindr_info_t unwr_info;
   bool found = uw_recipe_map_lookup(((char *)next_pc) - 1, NATIVE_UNWINDER, &unwr_info);
@@ -738,7 +736,9 @@ update_cursor_with_troll(hpcrun_unw_cursor_t* cursor, int offset)
     void **next_bp = (void **) cursor->bp; 
 
     next_sp += 1;
-    if ( next_sp <= cursor->sp){
+
+    // invariant: unwind must move x86 stack pointer 
+    if (next_sp <= cursor->sp) {
       TMSG(TROLL,"Something weird happened! trolling from %p"
 	   " resulted in sp not advancing", cursor->pc_unnorm);
       hpcrun_unw_throw();

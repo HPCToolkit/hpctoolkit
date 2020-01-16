@@ -47,7 +47,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CUBINS_DIR)/%
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cubin_name.warnings
 	echo msg: beginning analysis of $$cubin_name
-	hpcstruct -o $$struct_name $< > $$warn_name 2>&1
+	hpcstruct --gpucfg $(CUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 	if [ -s $$warn_name ]; then
 		echo WARNING: incomplete analysis of $$cubin_name\\; see $$warn_name for details
 		if test ! -s $$struct_name ; then
