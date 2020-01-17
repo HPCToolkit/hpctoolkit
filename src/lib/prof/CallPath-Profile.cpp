@@ -793,7 +793,11 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
        << ">\n";
 
     // MetricFormula
-    if (isDrvd) {
+    if (!m->formula().empty()) {
+    	os << "      <MetricFormula t=\"view\""
+	   << " frm=\"" <<  m->formula() << "\"/>\n";
+    }
+    else if (isDrvd) {
 
       // 0. retrieve combine formula (each DerivedIncrDesc corresponds
       // to an 'accumulator')
@@ -825,10 +829,6 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
 	   << " frm=\"" << mDrvdExpr->finalizeString() << "\"/>\n";
       }
     }
-  if (!m->formula().empty()) {
-    	os << "      <MetricFormula t=\"view\""
-	   << " frm=\"" <<  m->formula() << "\"/>\n";
-  }
     
     // Info
     os << "      <Info>"
