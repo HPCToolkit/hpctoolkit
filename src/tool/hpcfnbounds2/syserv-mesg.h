@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,77 +44,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef UNWIND_CURSOR_H
-#define UNWIND_CURSOR_H
-
-//************************* System Include Files ****************************
-
-#include <inttypes.h>
-#include <ucontext.h>
-
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
-
-//*************************** User Include Files ****************************
-
-#include <unwind/common/fence_enum.h>
-#include <utilities/ip-normalized.h>
-
-//*************************** Forward Declarations **************************
-
-// HPC_UNW_LITE: It is not safe to have a pointer to the interval
-// since we cannot use dynamic storage.
-#if (HPC_UNW_LITE)
-
-   // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t;
-#  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
-
-#else
-
-#include "unwindr_info.h"
-#define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
-
-#endif
-
-enum libunw_state {
-  LIBUNW_UNAVAIL,
-  LIBUNW_READY,
-};
-
-typedef struct hpcrun_unw_cursor_t {
-
-  // ------------------------------------------------------------
-  // common state
-  // ------------------------------------------------------------
-  void *pc_unnorm; // only place where un-normalized pc exists
-  void **bp;       // maintained only on x86_64
-  void **sp;
-  void *ra;
-
-  void *ra_loc;    // return address location (for trampolines)
-
-  fence_enum_t fence; // which fence stopped an unwind
-  unwindr_info_t unwr_info; // unwind recipe info
-  ip_normalized_t the_function; // (normalized) ip for function
-
-  //NOTE: will fail if HPC_UWN_LITE defined
-  ip_normalized_t pc_norm;
-
-  // ------------------------------------------------------------
-  // unwind-provider-specific state
-  // ------------------------------------------------------------
-  int32_t flags:30;
-  enum libunw_state libunw_status:2;
-
-#ifdef HOST_CPU_PPC
-  ucontext_t *ctxt; // needed for register-based unwinding
-#endif
-
-  unw_cursor_t uc;
-} hpcrun_unw_cursor_t;
-
+// This file defines the API for messages over the pipe between the
+// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
+// fnbounds server (server.cpp).
+//
+// Note: none of these structs needs to be platform-independent
+// because they're only used between processes within a single node
+// (same for the old server).
 
 //***************************************************************************
 
-#endif
+#ifndef _SYSERV_MESG_H_
+#define _SYSERV_MESG_H_
+
+#include <stdint.h>
+
+#define SYSERV_MAGIC    0x00f8f8f8
+#define FNBOUNDS_MAGIC  0x00f9f9f9
+
+enum {
+  SYSERV_ACK = 1,
+  SYSERV_QUERY,
+  SYSERV_EXIT,
+  SYSERV_OK,
+  SYSERV_ERR
+};
+
+struct syserv_mesg {
+  int32_t  magic;
+  int32_t  type;
+  int64_t  len;
+};
+
+struct syserv_fnbounds_info {
+  // internal fields for the client
+  int32_t   magic;
+  int32_t   status;
+  long      memsize;
+
+  // fields for the fnbounds file header
+  uint64_t  num_entries;
+  uint64_t  reference_offset;
+  int       is_relocatable;
+};
+
+#endif  // _SYSERV_MESG_H_

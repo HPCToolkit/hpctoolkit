@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2019, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,77 +44,30 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef UNWIND_CURSOR_H
-#define UNWIND_CURSOR_H
+#if 0
+#include <string>
+#include <vector>
 
-//************************* System Include Files ****************************
-
+using namespace std;
+#endif
+#include <sys/types.h>
 #include <inttypes.h>
-#include <ucontext.h>
+#include <stdbool.h>
+#include "code-ranges.h"
 
-#define UNW_LOCAL_ONLY
-#include <libunwind.h>
+int c_mode(void);
 
-//*************************** User Include Files ****************************
+void function_entries_reinit();
 
-#include <unwind/common/fence_enum.h>
-#include <utilities/ip-normalized.h>
+void add_function_entry(void *address, const char *comment, bool isglobal, int call_count);
+void add_stripped_function_entry(void *function_entry, int call_count);
+bool contains_function_entry(void *address);
 
-//*************************** Forward Declarations **************************
+void add_protected_range(void *start, void *end);
+int  is_possible_fn(void *addr);
+int  inside_protected_range(void *addr);
 
-// HPC_UNW_LITE: It is not safe to have a pointer to the interval
-// since we cannot use dynamic storage.
-#if (HPC_UNW_LITE)
+void entries_in_range(void *start, void *end, void **result);
+bool query_function_entry(void *addr);
 
-   // there should probably have a check to ensure this is big enough
-   typedef struct { char data[128]; } unw_interval_opaque_t;
-#  define UNW_CURSOR_INTERVAL_t unw_interval_opaque_t
-
-#else
-
-#include "unwindr_info.h"
-#define UNW_CURSOR_INTERVAL_t bitree_uwi_t*
-
-#endif
-
-enum libunw_state {
-  LIBUNW_UNAVAIL,
-  LIBUNW_READY,
-};
-
-typedef struct hpcrun_unw_cursor_t {
-
-  // ------------------------------------------------------------
-  // common state
-  // ------------------------------------------------------------
-  void *pc_unnorm; // only place where un-normalized pc exists
-  void **bp;       // maintained only on x86_64
-  void **sp;
-  void *ra;
-
-  void *ra_loc;    // return address location (for trampolines)
-
-  fence_enum_t fence; // which fence stopped an unwind
-  unwindr_info_t unwr_info; // unwind recipe info
-  ip_normalized_t the_function; // (normalized) ip for function
-
-  //NOTE: will fail if HPC_UWN_LITE defined
-  ip_normalized_t pc_norm;
-
-  // ------------------------------------------------------------
-  // unwind-provider-specific state
-  // ------------------------------------------------------------
-  int32_t flags:30;
-  enum libunw_state libunw_status:2;
-
-#ifdef HOST_CPU_PPC
-  ucontext_t *ctxt; // needed for register-based unwinding
-#endif
-
-  unw_cursor_t uc;
-} hpcrun_unw_cursor_t;
-
-
-//***************************************************************************
-
-#endif
+void dump_reachable_functions();
