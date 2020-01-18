@@ -19013,7 +19013,7 @@ HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 #-------------------------------------------------
 
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
+# hpcfnbounds.  It is not used by hpcfnbounds2.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -23456,7 +23456,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbnds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -24806,7 +24806,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
     "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
-    "src/tool/hpcfnbnds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbnds2/Makefile" ;;
+    "src/tool/hpcfnbounds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds2/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;
