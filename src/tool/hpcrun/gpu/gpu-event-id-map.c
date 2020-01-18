@@ -171,10 +171,22 @@ gpu_event_id_map_insert
  uint32_t stream_id
 )
 {
-  if (st_lookup(&map_root, event_id)) { 
-    assert(0);
+  gpu_event_id_map_entry_t *entry = gpu_event_id_map_lookup(event_id);
+
+  if (entry != NULL) {
+    // Update current event_id related context and stream
+    // If a event is recorded twice, use the later one
+    // A common pattern:
+    // cuEventRecord(a);
+    // cuLaunchKernel();
+    // cuEventRecord(b);
+    // cuEventSynchronize(a);
+    // --- We get events in sequence from the buffer, now we can ignore the first record of a
+    // cuEventRecord(a);
+    entry->context_id = context_id;
+    entry->stream_id = stream_id;
   } else {
-    gpu_event_id_map_entry_t *entry = gpu_event_id_map_entry_new(event_id, context_id, stream_id);
+    entry = gpu_event_id_map_entry_new(event_id, context_id, stream_id);
 
     st_insert(&map_root, entry);
 
