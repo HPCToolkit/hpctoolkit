@@ -1060,7 +1060,7 @@ AC_SUBST([cxx_c11_flag])
 #-------------------------------------------------
 
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
+# hpcfnbounds.  It is not used by hpcfnbounds2.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -4665,7 +4665,7 @@ AC_CONFIG_FILES([ \
   src/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
-  src/tool/hpcfnbnds2/Makefile \
+  src/tool/hpcfnbounds2/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
