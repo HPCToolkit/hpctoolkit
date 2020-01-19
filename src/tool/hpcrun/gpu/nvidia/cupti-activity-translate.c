@@ -470,6 +470,8 @@ convert_synchronization
  CUpti_ActivitySynchronization *activity_sync
 )
 {
+  PRINT("Synchronization correlationId %u\n", activity_sync->correlationId);
+
   ga->kind = GPU_ACTIVITY_SYNCHRONIZATION;
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
@@ -551,6 +553,9 @@ convert_event
  CUpti_ActivityCudaEvent *activity
 )
 {
+  PRINT("GPU event eventId %u, contextId %u, streamId %u, correlationId %u\n", activity->eventId,
+    activity->contextId, activity->streamId, activity->correlationId);
+
   ga->kind = GPU_ACTIVITY_EVENT;
 
   ga->details.event.event_id = activity->eventId;
