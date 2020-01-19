@@ -118,7 +118,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 pkglibexec_PROGRAMS = hpcfnbounds2$(EXEEXT)
-subdir = src/tool/hpcfnbnds2
+subdir = src/tool/hpcfnbounds2
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
@@ -573,9 +573,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/tool/hpcfnbnds2/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/tool/hpcfnbounds2/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign src/tool/hpcfnbnds2/Makefile
+	  $(AUTOMAKE) --foreign src/tool/hpcfnbounds2/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \

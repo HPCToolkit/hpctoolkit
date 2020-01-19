@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -443,7 +443,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
     }
     else
      save_registers(cursor, pc, bp, sp, 
-            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : NULL);
+            ip_loc.type == UNW_SLT_MEMORY ? (void**)ip_loc.u.addr : 0);
     
     // if PC is trampoline, must skip libunw_find_step() to avoid trolling.
     if (hpcrun_trampoline_at_entry(cursor->pc_unnorm))

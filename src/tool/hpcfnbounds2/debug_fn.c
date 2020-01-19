@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -304,8 +304,8 @@ print_program_headers64
       refOffset = progHeader.p_vaddr;
     }   
     fprintf(stderr, "%4ld ", j);
-    fprintf(stderr, "0x%08lx ", progHeader.p_type);
-    fprintf(stderr, "0x%08lx ", progHeader.p_flags);
+    fprintf(stderr, "0x%08x ", progHeader.p_type);
+    fprintf(stderr, "0x%08x ", progHeader.p_flags);
     fprintf(stderr, "0x%08lx ", progHeader.p_offset);
     fprintf(stderr, "0x%016lx ", progHeader.p_vaddr);
     fprintf(stderr, "0x%016lx ", progHeader.p_paddr);

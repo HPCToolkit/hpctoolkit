@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2019, Rice University
+dnl Copyright ((c)) 2002-2020, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -81,11 +81,11 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization: 
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2019.08-develop],
+AC_INIT([hpctoolkit], [2020-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2019, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2020, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
@@ -1060,7 +1060,7 @@ AC_SUBST([cxx_c11_flag])
 #-------------------------------------------------
 
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
+# hpcfnbounds.  It is not used by hpcfnbounds2.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -4665,7 +4665,7 @@ AC_CONFIG_FILES([ \
   src/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
-  src/tool/hpcfnbnds2/Makefile \
+  src/tool/hpcfnbounds2/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-mpi/Makefile \
