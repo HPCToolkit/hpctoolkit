@@ -100,6 +100,8 @@ MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
+MYCFLAGS = @HOST_CFLAGS@
+
 MYLDADD = -L$(LIBELF_LIB) -lelf
 
 # MYLDADD = libeh_frames.a  \
@@ -138,6 +140,7 @@ pkglibexec_PROGRAMS = hpcfnbounds2
 
 hpcfnbounds2_SOURCES  = $(MYSOURCES)
 hpcfnbounds2_CPPFLAGS = $(MYCPPFLAGS)
+hpcfnbounds2_CFLAGS = $(MYCFLAGS)
 # hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcfnbounds2_LDADD    = $(MYLDADD)
 
