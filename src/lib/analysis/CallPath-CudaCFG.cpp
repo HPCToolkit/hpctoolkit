@@ -291,7 +291,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {
-    if (mgr->metric(i)->namePfxBase() == "GINS" &&
+    if (mgr->metric(i)->namePfxBase() == GPU_INST_METRIC_NAME &&
       mgr->metric(i)->type() == Prof::Metric::ADesc::TyIncl) {
       // Assume exclusive metrics index is i+1
       gpu_inst_index.push_back(i);
