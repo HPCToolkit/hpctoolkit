@@ -436,6 +436,9 @@ void
 hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
    hpcrun_metricVal_t *metric, double value);
 
+void
+hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format);
+
 //***************************************************************************
 // loadmap
 //***************************************************************************

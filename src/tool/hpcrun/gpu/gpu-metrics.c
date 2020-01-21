@@ -65,6 +65,8 @@
 // macros
 //*****************************************************************************
 
+#define FORMAT_DISPLAY_PERCENTAGE     "6.2f \%"
+
 #define FORALL_INDEXED_METRIC_KINDS(macro)	\
   macro(GMEM, 0)				\
   macro(GMSET, 1)				\
@@ -738,10 +740,11 @@ gpu_metrics_GSAMP_enable
 
   char *util_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
 
-  sprintf(util_formula, "#%d/#%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
+  sprintf(util_formula, "100*#%d/#%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
 	  METRIC_ID(GPU_SAMPLE_EXPECTED));
 
   util_metric->formula = util_formula;
+  util_metric->format  = FORMAT_DISPLAY_PERCENTAGE;
 }
 
 

@@ -342,6 +342,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->isMultiplexed(mSrc->isMultiplexed());
 
   m->formula      (mSrc->formula());
+  m->format       (mSrc->format());
   m->order        (metric_order);
 
   insert(m);
@@ -445,6 +446,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   m->isMultiplexed(mSrc->isMultiplexed());
 
   m->formula      (mSrc->formula());
+  m->format       (mSrc->format());
   m->order        (metric_order);
 
   insert(m);

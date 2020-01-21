@@ -788,6 +788,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
     }
+    if (!m->format().empty()) {
+      os << " fmt" << MakeAttrStr(m->format());
+    }
     os << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
        << ">\n";
@@ -1356,7 +1359,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->flags(mdesc.flags);
     
     // ----------------------------------------
-    // 1b. Update the additional perf event attributes
+    // 1b. Update the additional attributes
     // ----------------------------------------
 
     Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
@@ -1366,7 +1369,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->isMultiplexed(current_aux_info.is_multiplexed);
     m->periodMean   (current_aux_info.threshold_mean);
     m->num_samples  (current_aux_info.num_samples);
+
     m->formula      (mdesc.formula);
+    m->format       (mdesc.format);
 
     // ----------------------------------------
     // 1c. add to the list of metric
@@ -1387,8 +1392,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
       }
-      mSmpl->flags(mdesc.flags);
+      mSmpl->flags  (mdesc.flags);
       mSmpl->formula(mdesc.formula);
+      mSmpl->format (mdesc.format);
       
       prof->metricMgr()->insert(mSmpl);
     }

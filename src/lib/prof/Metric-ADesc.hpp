@@ -166,7 +166,8 @@ public:
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
       m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
-	  m_isTemporary(false), m_formula(x.m_formula), m_order(x.m_order)
+      m_isTemporary(false), m_formula(x.m_formula), m_format(x.m_format), 
+      m_order(x.m_order)
   { }
 
   ADesc&
@@ -195,6 +196,7 @@ public:
 
       m_isTemporary   = x.m_isTemporary;
       m_formula       = x.m_formula;
+      m_format        = x.m_format;
       m_order         = x.m_order;
     }
     return *this;
@@ -554,6 +556,14 @@ public:
   formula() const
   { return m_formula; }
 
+  void 
+  format(std::string fmt)
+  { m_format = fmt; }
+
+  std::string
+  format() const
+  { return m_format; }
+
   // -------------------------------------------------------
   // perf-event additional info
   // -------------------------------------------------------
@@ -619,6 +629,9 @@ private:
 
   // hpcrun metric formula
   std::string m_formula;
+
+  // display format                                  
+  std::string m_format;
 
   // hpcrun metric order
   int m_order;
