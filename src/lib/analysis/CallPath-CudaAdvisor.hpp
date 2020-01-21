@@ -156,9 +156,9 @@ class CudaAdvisor {
 
   typedef VMAIntervalMap<Prof::Struct::ANode *> VMAStructMap;
 
-  typedef std::map<int, std::map<int, std::vector<InstructionBlame>>> InstBlames;
+  typedef std::map<int, std::map<int, std::vector<InstructionBlame> > > InstBlames;
 
-  typedef std::map<int, std::map<int, std::vector<FunctionBlame>>> FunctionBlames;
+  typedef std::map<int, std::map<int, std::vector<FunctionBlame> > > FunctionBlames;
 
  private:
   void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id, VMAProfMap &vma_prof_map,

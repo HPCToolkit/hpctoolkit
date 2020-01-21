@@ -675,18 +675,29 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
+        std::map<int, std::vector<std::vector<int> > > assign_pc_paths;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
         for (auto &ptree_src : ptree_srcs) {
           int src = ptree_src.second.get<int>("id", 0);
           srcs.push_back(src);
           auto &ptree_assign_pcs = ptree_src.second.get_child("assign_pcs");
           for (auto &ptree_assign_pc : ptree_assign_pcs) {
-            int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
+            int assign_pc = ptree_assign_pc.second.get<int>("pc");
             assign_pcs[src].push_back(assign_pc);
+
+            auto &ptree_paths = ptree_assign_pc.second.get_child("paths");
+            for (auto &ptree_path : ptree_paths) {
+              std::vector<int> path;
+              for (auto &ptree_path_element : ptree_path.second) {
+                int element = boost::lexical_cast<int>(ptree_path_element.second.data());
+                path.push_back(element);
+              }
+              assign_pc_paths[src].push_back(path);
+            }
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs, assign_pc_paths);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -705,7 +716,15 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
             auto iter = assign_pcs.find(src);
             if (iter != assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
-                std::cout << assign_pc << ", ";
+                std::cout << assign_pc << std::endl;
+
+                std::cout << "    paths: " << std::endl;
+                for (auto &path : assign_pc_paths[assign_pc]) {
+                  for (auto &e : path) {
+                    std::cout << e << ",";
+                  }
+                  std::cout << std::endl;
+                }
               }
             }
           }
