@@ -65,7 +65,7 @@
 // macros
 //*****************************************************************************
 
-#define FORMAT_DISPLAY_PERCENTAGE     "6.2f \%"
+#define FORMAT_DISPLAY_PERCENTAGE     "%6.2f %%"
 
 #define FORALL_INDEXED_METRIC_KINDS(macro)	\
   macro(GMEM, 0)				\
