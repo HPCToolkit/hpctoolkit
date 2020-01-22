@@ -518,9 +518,6 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcfnbounds2_SOURCES = $(MYSOURCES)
 hpcfnbounds2_CPPFLAGS = $(MYCPPFLAGS)
 hpcfnbounds2_CFLAGS = $(MYCFLAGS)
-
-# hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-
 hpcfnbounds2_LDADD = $(MYLDADD)
 
 # if HOST_CPU_X86_FAMILY
