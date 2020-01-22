@@ -80,8 +80,9 @@
   macro(GICOPY, 8)				\
   macro(GPU_INST, 9)				\
   macro(GTIMES, 10)				\
-  macro(KINFO, 11)				\
-  macro(GSAMP, 12)			
+  macro(GCOUNT, 11)       \
+  macro(KINFO, 12)				\
+  macro(GSAMP, 13)			
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -221,6 +222,22 @@ gpu_metrics_attribute_metric_time_interval
 
 
 static void
+gpu_metrics_attribute_metric_count
+(
+ cct_node_t *cct_node,
+ int count_index,
+ int count
+)
+{
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, count_index);
+
+  // convert from ns to s
+  gpu_metrics_attribute_metric_int(metrics, count_index, count);
+}
+
+
+
+static void
 gpu_metrics_attribute_pc_sampling
 (
  gpu_activity_t *activity
@@ -297,6 +314,7 @@ gpu_metrics_attribute_mem_op
  cct_node_t *cct_node,
  int bytes_metric_index, 
  int time_metric_index, 
+ int count_metric_index,
  gpu_mem_t *m
 )
 {
@@ -307,6 +325,9 @@ gpu_metrics_attribute_mem_op
 
   gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, 
 					     (gpu_interval_t *) m);
+  
+  // number of kernel launches
+  gpu_metrics_attribute_metric_count(cct_node, count_metric_index, 1);
 }
 
 
@@ -322,7 +343,7 @@ gpu_metrics_attribute_memory
   int bytes_metric_index = METRIC_ID(GMEM)[m->memKind];
 
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MEM), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MEM), METRIC_ID(GPU_COUNT_MEM), (gpu_mem_t *) m);
 }
 
 
@@ -338,7 +359,7 @@ gpu_metrics_attribute_memcpy
   int bytes_metric_index = METRIC_ID(GXCOPY)[m->copyKind];
 
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_XCOPY), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_XCOPY), METRIC_ID(GPU_COUNT_XCOPY), (gpu_mem_t *) m);
 }
 
 
@@ -354,7 +375,7 @@ gpu_metrics_attribute_memset
   int bytes_metric_index = METRIC_ID(GMSET)[m->memKind];
 
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MSET), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MSET), METRIC_ID(GPU_COUNT_MSET), (gpu_mem_t *) m);
 }
 
 
@@ -394,14 +415,14 @@ gpu_metrics_attribute_kernel
 
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
 				     k->blockSharedMemory);
-  
-    // number of kernel launches
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
   
   // kernel execution time
   gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER), 
 				     (gpu_interval_t *) k);
+  
+  // number of kernel launches
+  gpu_metrics_attribute_metric_count(cct_node, METRIC_ID(GPU_COUNT_KER), 1);
 }
 
 
@@ -422,6 +443,8 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node, 
 					     METRIC_ID(GPU_TIME_SYNC), 
 					     (gpu_interval_t *) s);
+
+  gpu_metrics_attribute_metric_count(cct_node, METRIC_ID(GPU_COUNT_SYNC), 1);
 }
 
 
@@ -580,6 +603,16 @@ gpu_metrics_default_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GTIMES(INITIALIZE_SCALAR_METRIC_REAL)
+
+  FINALIZE_METRIC_KIND();
+
+// Execution count metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GCOUNT
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GCOUNT(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
 

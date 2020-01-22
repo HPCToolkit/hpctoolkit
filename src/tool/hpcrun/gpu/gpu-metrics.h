@@ -271,6 +271,22 @@ typedef enum {
 	"GPU time: synchronization (seconds)")
 
 
+// gpu activity count
+#define FORALL_GCOUNT(macro)          \
+  macro("GKER:COUNT",               GPU_COUNT_KER,			\
+	"GPU count: kernel execution count")			\
+  macro("GMEM:COUNT",               GPU_COUNT_MEM,			\
+	"GPU count: memory allocation/deallocation count")	\
+  macro("GMSET:COUNT",              GPU_COUNT_MSET,		\
+	"GPU count: memory set count")			\
+  macro("GXCOPY:COUNT",             GPU_COUNT_XCOPY,		\
+	"GPU count: explicit data copy count")		\
+  macro("GICOPY:COUNT",             GPU_COUNT_ICOPY,		\
+	"GPU count: implicit data copy count")		\
+  macro("GSYNC:COUNT",              GPU_COUNT_SYNC,		\
+	"GPU count: synchronization count")
+
+
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\
   macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,	\
@@ -295,8 +311,6 @@ typedef enum {
 	"GPU kernel: thread count")				\
   macro("GKER:BLK_SM",            GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")		\
-  macro("GKER:COUNT",             GPU_KINFO_COUNT,		\
-	"GPU kernel: launch count")				\
   macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,		\
 	"GPU kernel: occupancy")
 
