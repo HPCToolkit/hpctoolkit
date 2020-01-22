@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,16 +41,57 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef process_ranges_hpp
-#define process_ranges_hpp
+#ifndef gpu_device_id_map_h
+#define gpu_device_id_map_h
 
-#include "code-ranges.h"
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-void process_range_init();
+#include <stdint.h>
 
-void process_range(const char *name, long offset, void *vstart, void *vend,
-		   DiscoverFnTy fn_discovery);
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
-bool range_contains_control_flow(void *vstart, void *vend);
+#include <lib/prof-lean/splay-uint64.h>
 
-#endif // process_ranges_hpp
+//*****************************************************************************
+// type declarations
+//*****************************************************************************
+
+typedef struct gpu_device_id_map_entry_t gpu_device_id_map_entry_t;
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+gpu_device_id_map_entry_t *
+gpu_device_id_map_lookup
+(
+ uint32_t device_id
+);
+
+
+void
+gpu_device_id_map_insert
+(
+ uint32_t device_id,
+ uint32_t core_clock_rate
+);
+
+
+void
+gpu_device_id_map_delete
+(
+ uint32_t device_id
+);
+
+
+double
+gpu_device_id_map_entry_core_clock_rate_get
+(
+ gpu_device_id_map_entry_t *entry
+);
+
+#endif

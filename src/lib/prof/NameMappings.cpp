@@ -51,7 +51,7 @@ const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
 const char *GPU_TRACE   = "<gpu kernel>";
 
-const char *NO_THREAD_ROOT   = "<no thread>";
+const char *NO_ACTIVITY = "<no activity>";
 
 
 //******************************************************************************
@@ -116,11 +116,11 @@ static NameMapping renamingTable[] = {
   { "gpu_op_kernel",       GPU_KERNEL            },
   { "gpu_op_trace",        GPU_TRACE             },
 
-  { "NO_THREAD",               NO_THREAD_ROOT        }
+  { "hpcrun_no_activity",  NO_ACTIVITY           }
 };
 
 static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, "<partial call paths>"
+  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, NO_ACTIVITY, "<partial call paths>"
 };
 
 static NameMappings_t renamingMap;

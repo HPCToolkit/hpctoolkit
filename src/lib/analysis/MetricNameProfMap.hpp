@@ -77,8 +77,6 @@
 
 namespace Analysis {
 
-namespace CallPath {
-
 class MetricNameProfMap {
  public:
   MetricNameProfMap(Prof::Metric::Mgr *mgr) : _mgr(mgr) {}
@@ -116,7 +114,5 @@ class MetricNameProfMap {
 };
 
 }  // Analysis
-
-}  // CallPath
 
 #endif  // Analysis_MetricNameProfMap_hpp

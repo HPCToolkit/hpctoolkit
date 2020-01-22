@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -250,15 +250,24 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *stall_metrics = 
       hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
 
-    int stall_count = sinfo->latencySamples * sample_period;
+    if (sinfo->stallReason == GPU_INST_STALL_NONE || sinfo->stallReason == GPU_INST_STALL_NOT_SELECTED) {
+      // sm is not stall
+      int sample_count = sinfo->samples * sample_period;
 
-    // stall summary metric
-    gpu_metrics_attribute_metric_int(stall_metrics, 
-				     stall_summary_metric_index, stall_count);
+      // stall reason specific metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+               stall_kind_metric_index, sample_count);
+    } else {
+      int stall_count = sinfo->latencySamples * sample_period;
 
-    // stall reason specific metric
-    gpu_metrics_attribute_metric_int(stall_metrics, 
-				     stall_kind_metric_index, stall_count);
+      // stall summary metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+               stall_summary_metric_index, stall_count);
+
+      // stall reason specific metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+               stall_kind_metric_index, stall_count);
+    }
   }
 }
 

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,48 +44,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the API for messages over the pipe between the
-// hpcrun client (hpcrun/fnbounds/fnbounds_client.c) and the new
-// fnbounds server (server.cpp).
-//
-// Note: none of these structs needs to be platform-independent
-// because they're only used between processes within a single node
-// (same for the old server).
+#ifndef process_ranges_hpp
+#define process_ranges_hpp
 
-//***************************************************************************
+#include "code-ranges.h"
 
-#ifndef _SYSERV_MESG_H_
-#define _SYSERV_MESG_H_
+void process_range_init();
 
-#include <stdint.h>
+void process_range(const char *name, long offset, void *vstart, void *vend,
+		   DiscoverFnTy fn_discovery);
 
-#define SYSERV_MAGIC    0x00f8f8f8
-#define FNBOUNDS_MAGIC  0x00f9f9f9
+bool range_contains_control_flow(void *vstart, void *vend);
 
-enum {
-  SYSERV_ACK = 1,
-  SYSERV_QUERY,
-  SYSERV_EXIT,
-  SYSERV_OK,
-  SYSERV_ERR
-};
-
-struct syserv_mesg {
-  int32_t  magic;
-  int32_t  type;
-  int64_t  len;
-};
-
-struct syserv_fnbounds_info {
-  // internal fields for the client
-  int32_t   magic;
-  int32_t   status;
-  long      memsize;
-
-  // fields for the fnbounds file header
-  uint64_t  num_entries;
-  uint64_t  reference_offset;
-  int       is_relocatable;
-};
-
-#endif  // _SYSERV_MESG_H_
+#endif // process_ranges_hpp

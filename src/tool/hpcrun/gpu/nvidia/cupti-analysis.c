@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,23 +54,18 @@
 //*****************************************************************************
 
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-device-id-map.h>
 
 #include "cupti-analysis.h"
 #include "cuda-device-map.h"
 
+#define DEBUG 0
 
+#include "../gpu-print.h"
 
 //*****************************************************************************
 // macros
 //*****************************************************************************
-
-#define CUPTI_ANALYSIS_DEBUG 0
-
-#if CUPTI_ANALYSIS_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 #define MIN3(m1, m2, m3) m1 > m2 ? (MIN2(m2, m3)) : (MIN2(m1, m3))
@@ -183,8 +178,19 @@ cupti_sm_efficiency_analyze
         cuda_device_map_entry_device_property_get(device);
 
       uint64_t sample_period_in_cycles = pc_sampling_record_info->samplingPeriodInCycles;
-      // khz to hz to hz/ns
-      double core_clock_rate = device_property->sm_clock_rate / 1000000.0;
+      double core_clock_rate = 0.0;
+     
+      // If gpu environment entry is avaiable, get the most recent core clock rate.
+      // Otherwise, use maximal core clock rate
+      gpu_device_id_map_entry_t *env = gpu_device_id_map_lookup(device_id);
+      if (env != NULL) {
+        // mhz to hz to hz/ns
+        core_clock_rate = gpu_device_id_map_entry_core_clock_rate_get(env) / 1000.0;
+      } else {
+        // khz to hz to hz/ns
+        core_clock_rate = device_property->sm_clock_rate / 1000000.0;
+      }
+
       uint64_t num_multiprocessors = device_property->sm_count;
       // ns
       uint64_t kernel_time = end - start;

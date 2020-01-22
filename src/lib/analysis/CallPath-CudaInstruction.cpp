@@ -18,6 +18,7 @@
 
 #include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
 #include "CallPath-CudaInstruction.hpp"
 #include "CallPath-CudaAdvisor.hpp"
@@ -187,7 +188,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
     auto *node = vma_stmts[cur_stmt_index].node;
-    auto issue_metric_ids = metric_name_prof_map.metric_ids("STALL:NONE");
+    auto issue_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE");
     auto in_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, true);
     auto ex_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, false);
     if (in_metric_ids.size() != ex_metric_ids.size()) {
@@ -229,7 +230,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
 
   // Check if prof contains gpu metrics
   // Skip non-gpu prof
-  if (metric_name_prof_map.metric_ids("STALL:NONE").size() == 0) {
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() == 0) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }

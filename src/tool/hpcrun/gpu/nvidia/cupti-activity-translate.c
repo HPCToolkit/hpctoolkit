@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -470,6 +470,8 @@ convert_synchronization
  CUpti_ActivitySynchronization *activity_sync
 )
 {
+  PRINT("Synchronization correlationId %u\n", activity_sync->correlationId);
+
   ga->kind = GPU_ACTIVITY_SYNCHRONIZATION;
   ga->details.synchronization.correlation_id = activity_sync->correlationId;
   ga->details.synchronization.context_id = activity_sync->contextId;
@@ -551,11 +553,32 @@ convert_event
  CUpti_ActivityCudaEvent *activity
 )
 {
+  PRINT("GPU event eventId %u, contextId %u, streamId %u, correlationId %u\n", activity->eventId,
+    activity->contextId, activity->streamId, activity->correlationId);
+
   ga->kind = GPU_ACTIVITY_EVENT;
 
   ga->details.event.event_id = activity->eventId;
   ga->details.event.context_id = activity->contextId;
   ga->details.event.stream_id = activity->streamId;
+}
+
+static void
+convert_environment
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityEnvironment *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_ENVIRONMENT;
+
+  ga->details.environment.device_id = activity->deviceId;
+
+  if (activity->environmentKind == CUPTI_ACTIVITY_ENVIRONMENT_SPEED) {
+    ga->details.environment.core_clock_rate = activity->data.speed.smClock;
+  } else {
+    ga->details.environment.core_clock_rate = 0;
+  }
 }
 
 void
@@ -642,6 +665,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_CUDA_EVENT:
     convert_event(ga, (CUpti_ActivityCudaEvent *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_ENVIRONMENT:
+    convert_environment(ga, (CUpti_ActivityEnvironment *) activity);
     break;
 
   default:

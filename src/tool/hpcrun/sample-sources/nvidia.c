@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2017, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -278,6 +278,9 @@ cupti_enable_activities
   }
 
   cupti_correlation_enable();
+
+  // XXX(keren): CUpti_Environment is only supported on x86, not powerpc
+  cupti_environment_enable();
 
   PRINT("Exit cupti_enable_activities\n");
 }

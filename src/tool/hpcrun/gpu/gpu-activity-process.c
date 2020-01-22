@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -59,6 +59,7 @@
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
+#include <hpcrun/gpu/gpu-device-id-map.h>
 #include <hpcrun/gpu/gpu-event-id-map.h>
 #include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
@@ -519,6 +520,21 @@ gpu_event_process
 
 
 static void
+gpu_environment_process
+(
+ gpu_activity_t *activity
+)
+{
+  uint32_t device_id = activity->details.environment.device_id;
+  uint32_t core_clock_rate = activity->details.environment.core_clock_rate;
+
+  gpu_device_id_map_insert(device_id, core_clock_rate);
+
+  PRINT("GPU device %u\n", device_id);
+}
+
+
+static void
 gpu_memory_process
 (
  gpu_activity_t *activity
@@ -617,6 +633,10 @@ gpu_activity_process
 
   case GPU_ACTIVITY_EVENT:
     gpu_event_process(ga);
+    break;
+
+  case GPU_ACTIVITY_ENVIRONMENT:
+    gpu_environment_process(ga);
     break;
 
   case GPU_ACTIVITY_MEMCPY2:

@@ -20,6 +20,7 @@
 
 #include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
 #include "CallPath-CudaAdvisor.hpp"
 #include "MetricNameProfMap.hpp"
@@ -62,18 +63,18 @@ void CudaAdvisor::init() {
   }
 
   // init individual metrics
-  _issue_metric = "STALL:NONE";
-  _inst_metric = "GPU INST";
+  _issue_metric = GPU_INST_METRIC_NAME":STL_NONE";
+  _inst_metric = GPU_INST_METRIC_NAME;
 
-  _invalid_stall_metric = "STALL:INVALID";
-  _tex_stall_metric = "STALL:TEX";
-  _ifetch_stall_metric = "STALL:IFETCH";
-  _pipe_bsy_stall_metric = "STALL:PIPE_BSY";
-  _mem_thr_stall_metric = "STALL:MEM_THR";
-  _nosel_stall_metric = "STALL:NOSEL";
-  _other_stall_metric = "STALL:OTHER";
-  _sleep_stall_metric = "STALL:SLEEP";
-  _cmem_stall_metric = "STALL:CMEM_DEP";
+  _invalid_stall_metric = GPU_INST_METRIC_NAME":STL_INV";
+  _tex_stall_metric = GPU_INST_METRIC_NAME":STL_TMEM";
+  _ifetch_stall_metric = GPU_INST_METRIC_NAME":STL_IFET";
+  _pipe_bsy_stall_metric = GPU_INST_METRIC_NAME":STL_PIPE";
+  _mem_thr_stall_metric = GPU_INST_METRIC_NAME":STL_MTHR";
+  _nosel_stall_metric = GPU_INST_METRIC_NAME":STL_NSEL";
+  _other_stall_metric = GPU_INST_METRIC_NAME":STL_OTHR";
+  _sleep_stall_metric = GPU_INST_METRIC_NAME":STL_SLP";
+  _cmem_stall_metric = GPU_INST_METRIC_NAME":STL_CMEM";
   
   _inst_stall_metrics.insert(_invalid_stall_metric);
   _inst_stall_metrics.insert(_tex_stall_metric);
@@ -85,9 +86,9 @@ void CudaAdvisor::init() {
   _inst_stall_metrics.insert(_sleep_stall_metric);
   _inst_stall_metrics.insert(_cmem_stall_metric);
 
-  _exec_dep_stall_metric = "STALL:EXC_DEP";
-  _mem_dep_stall_metric = "STALL:MEM_DEP";
-  _sync_stall_metric = "STALL:SYNC";
+  _exec_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP";
+  _mem_dep_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM";
+  _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
 
   _dep_stall_metrics.insert(_exec_dep_stall_metric);
   _dep_stall_metrics.insert(_mem_dep_stall_metric);
@@ -192,50 +193,52 @@ void CudaAdvisor::initInstGraph(std::vector<CudaParse::InstructionStat *> &inst_
 void CudaAdvisor::updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
   CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
   VMAStructMap &vma_struct_map, VMAInstMap &vma_inst_map) {
-  auto in_inst_metric_ids = _metric_name_prof_map->metric_ids(_inst_metric, true);
-  auto ex_inst_metric_ids = _metric_name_prof_map->metric_ids(_inst_metric, false);
-  auto in_issue_metric_ids = _metric_name_prof_map->metric_ids(_issue_metric, true);
-  auto ex_issue_metric_ids = _metric_name_prof_map->metric_ids(_issue_metric, false);
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
+        // skip tracing threads
+        continue;
+      }
 
-  // For each thread O(T)
-  for (size_t i = 0; i < in_issue_metric_ids.size(); ++i) {
-    // Init queue
-    std::queue<Prof::CCT::ADynNode *> nodes;
-    for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
-      auto *node = *iter;
-      // Every stalled instruction must be issued at least once
-      demandNodeMetrics(node);
-      nodes.push(node);
-    }
+      // For each thread O(T)
+      // Init queue
+      std::queue<Prof::CCT::ADynNode *> nodes;
+      for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
+        auto *node = *iter;
+        // Every stalled instruction must be issued at least once
+        demandNodeMetrics(node);
+        nodes.push(node);
+      }
 
-    // Complexity O(N)
-    while (nodes.empty() == false) {
-      auto *node = nodes.front();
-      nodes.pop();
-      auto *parent = node->parent();
+      // Complexity O(N)
+      while (nodes.empty() == false) {
+        auto *node = nodes.front();
+        nodes.pop();
+        auto *parent = node->parent();
 
-      auto node_vma = node->lmIP();
-      // Must have a correponding instruction
-      auto *node_inst = vma_inst_map[node_vma];
-      auto inst_iter = inst_dep_graph.outgoing_nodes(node_inst);
+        auto node_vma = node->lmIP();
+        // Must have a correponding instruction
+        auto *node_inst = vma_inst_map[node_vma];
+        auto inst_iter = inst_dep_graph.outgoing_nodes(node_inst);
 
-      if (inst_iter != inst_dep_graph.outgoing_nodes_end()) {
-        for (auto *inst_stat : inst_iter->second) {
-          auto vma = inst_stat->pc;
-          auto iter = vma_prof_map.find(vma);
-          if (iter != vma_prof_map.end()) {
-            // Existed CCT node
-            auto *neighbor_node = iter->second;
-            cct_dep_graph.addEdge(node, neighbor_node);
-          } else {
-            Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-            metric_data.clearMetrics();
-            auto *neighbor_node = new Prof::CCT::Stmt(parent,
-              HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL, lm_id, vma, 0, NULL, metric_data);
+        if (inst_iter != inst_dep_graph.outgoing_nodes_end()) {
+          for (auto *inst_stat : inst_iter->second) {
+            auto vma = inst_stat->pc;
+            auto iter = vma_prof_map.find(vma);
+            if (iter != vma_prof_map.end()) {
+              // Existed CCT node
+              auto *neighbor_node = iter->second;
+              cct_dep_graph.addEdge(node, neighbor_node);
+            } else {
+              Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+              metric_data.clearMetrics();
+              auto *neighbor_node = new Prof::CCT::Stmt(parent,
+                HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL, lm_id, vma, 0, NULL, metric_data);
 
-            cct_dep_graph.addEdge(node, neighbor_node);
-            vma_prof_map[vma] = neighbor_node;
-            nodes.push(neighbor_node);
+              cct_dep_graph.addEdge(node, neighbor_node);
+              vma_prof_map[vma] = neighbor_node;
+              nodes.push(neighbor_node);
+            }
           }
         }
       }
@@ -248,6 +251,10 @@ void CudaAdvisor::demandNodeMetrics(Prof::CCT::ADynNode *node) {
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
       auto ex_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, false);
+      if (ex_inst_metric_index == -1) {
+        // skip tracing threads
+        continue;
+      }
       int inst = node->demandMetric(ex_inst_metric_index);
       if (inst != 0) {
         demandNodeMetric(mpi_rank, thread_id, node);
@@ -262,6 +269,11 @@ int CudaAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNo
   auto ex_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, false);
   auto in_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
   auto ex_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, false);
+
+  if (ex_inst_metric_index == -1) {
+    // skip tracing threads
+    return 0;
+  }
 
   int ret = node->demandMetric(in_issue_metric_index);
   if (ret == 0) {
@@ -280,6 +292,10 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
   // for each thread
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
+        // skip tracing threads
+        continue;
+      }
       for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
         auto *node = *iter;
         auto src_vma = node->lmIP();
@@ -389,6 +405,11 @@ void CudaAdvisor::overlayInstructionBlames(std::vector<CudaParse::Function *> &f
       ++mpi_rank) {
       for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
         ++thread_id) {
+        if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
+          // skip tracing threads
+          continue;
+        }
+
         auto &thread_inst_blames = inst_blames[mpi_rank][thread_id];
         std::sort(thread_inst_blames.begin(), thread_inst_blames.end());
 
@@ -474,7 +495,7 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Func
     std::cout << std::endl;
   }
 
-  // 4. accumulate blames
+  //// 4. accumulate blames
   InstBlames inst_blames;
   blameCCTGraph(cct_dep_graph, vma_inst_map, inst_blames);
 

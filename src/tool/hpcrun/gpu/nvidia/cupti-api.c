@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -222,6 +222,7 @@ static __thread cct_node_t *cupti_trace_node = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
+static bool cupti_environment_enabled = false;
 
 static cupti_correlation_callback_t cupti_correlation_callback =
   cupti_correlation_callback_dummy;
@@ -1256,6 +1257,37 @@ cupti_pc_sampling_disable
                      (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 
     cupti_pc_sampling_enabled = false;
+  }
+}
+
+
+void
+cupti_environment_enable
+(
+)
+{
+  PRINT("enter cupti_environment_enable\n");
+
+  if (!cupti_environment_enabled) {
+    cupti_environment_enabled = true;
+
+    HPCRUN_CUPTI_CALL(cuptiActivityEnable, 
+      (CUPTI_ACTIVITY_KIND_ENVIRONMENT));
+  }
+
+  PRINT("exit cupti_environment_enable\n");
+}
+
+
+void
+cupti_environment_disable
+(
+)
+{
+  if (cupti_environment_enabled) {
+    HPCRUN_CUPTI_CALL(cuptiActivityDisable,
+                     (CUPTI_ACTIVITY_KIND_ENVIRONMENT));
+    cupti_environment_enabled = false;
   }
 }
 

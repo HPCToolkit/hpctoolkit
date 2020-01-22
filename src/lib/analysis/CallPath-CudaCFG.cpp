@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,7 @@
 
 #include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
 #include "CallPath-CudaCFG.hpp"
 
@@ -101,6 +102,7 @@ using std::string;
 #include <lib/support/Logic.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
+
 
 #include <vector>
 #include <queue>
@@ -395,48 +397,43 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   }
 
   if (SHOW_CALLPATH_CUDACFG) {
-    // root_vma->...p_vma->vma: call count
+    // [p_vma, c_vma]->[p_vma, c_vma]...->[p_vma, 0]: call count
     for (auto *gpu_root : gpu_roots) {
       Prof::CCT::ANodeIterator prof_it(gpu_root, NULL/*filter*/, false/*leavesOnly*/,
         IteratorStack::PreOrder);
       for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
-        if (getCudaCallStmt(n) != NULL) {  // call
-          auto *stmt = n->structure();
-          auto vma = stmt->vmaSet().begin()->beg();
+        if (getProcStmt(n) != NULL) {  // proc
+          auto *p_stmt = n->structure();
+          auto p_vma = p_stmt->vmaSet().begin()->beg();
           std::stack<std::pair<VMA, VMA>> call_stack;
-          call_stack.push(std::pair<int, int>(0, vma));
+          call_stack.push(std::pair<int, int>(p_vma, 0));
           auto *p = n;
+          Prof::CCT::ANode *last_call_node = NULL;
+
           while (true) {
-            auto p_vma = 0;
-            p = p->ancestorProcFrm();
-            if (p != NULL) {
-              auto &t = call_stack.top();
-              auto *p_stmt = p->structure();
-              p_vma = p_stmt->vmaSet().begin()->beg();
-              t.first = p_vma;
-              t.second = t.second - p_vma;
-              // if p is a call, p->ancestorCall returns p
-              p = p->ancestorCall();
-              if (p != NULL) {
-                p_stmt = p->structure();
-                p_vma = p_stmt->vmaSet().begin()->beg();
-                call_stack.push(std::pair<int, int>(0, p_vma));
-                if (getCudaCallStmt(p) == NULL) {
-                  break;
-                }
-              } else {
-                break;
+            auto *c = p->ancestorCall();
+            if (c != NULL && getCudaCallStmt(c) != NULL) {
+              if (last_call_node == NULL) {
+                last_call_node = c;
               }
+              auto *c_stmt = c->structure();
+              auto c_vma = c_stmt->vmaSet().begin()->beg();
+              p = c->ancestorProcFrm();
+              p_stmt = p->structure();
+              p_vma = p_stmt->vmaSet().begin()->beg();
+              call_stack.push(std::pair<int, int>(p_vma, c_vma - p_vma));
             } else {
               break;
             }
           }
-          while (call_stack.empty() == false) {
-            auto vmas = call_stack.top();
-            call_stack.pop();
-            std::cout << "[" << std::hex << "0x" << vmas.first << "," << "0x" << vmas.second << "]" << "->";
+          if (last_call_node != NULL) {
+            while (call_stack.empty() == false) {
+              auto vmas = call_stack.top();
+              call_stack.pop();
+              std::cout << "[" << std::hex << "0x" << vmas.first << "," << "0x" << vmas.second << "]" << "->";
+            }
+            std::cout << std::fixed << last_call_node->demandMetric(gpu_inst_index[0]) << std::endl;
           }
-          std::cout << std::fixed << n->demandMetric(gpu_inst_index[0]) << std::endl;
         }
       }
     }

@@ -364,16 +364,55 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
 };
 
 
+// DFS procedure
+static void trackReg(unsigned int use_pc, unsigned int def_pc, int reg,
+  Block *cur_block, std::set<int> &visited_blocks,
+  std::vector<std::vector<int>> &paths,
+  std::vector<int> &path, bool &first_block) {
+  if (visited_blocks.find(cur_block->id) != visited_blocks.end()) {
+    return;
+  }
+  visited_blocks.insert(cur_block->id);
+  path.push_back(cur_block->id);
+
+  if (use_pc <= cur_block->insts.back()->offset && use_pc >= cur_block->insts.front()->offset) {
+    // The first block needs special handle
+    if (use_pc <= def_pc && first_block) {
+      first_block = false;
+      visited_blocks.erase(cur_block->id);
+      for (auto *target : cur_block->targets) {
+        if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
+          trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
+        }
+      }
+    } else {
+      paths.push_back(path);
+    }
+  } else {
+    for (auto *target : cur_block->targets) {
+      if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
+        trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
+      }
+    }
+  }
+
+  visited_blocks.erase(cur_block->id);
+  path.pop_back();
+}
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
   std::map<unsigned int, InstructionStat *> inst_stats_map;
+  std::map<unsigned int, Block *> inst_block_map;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         if (inst->inst_stat) {
           auto *inst_stat = inst->inst_stat;
           inst_stats_map[inst->offset] = inst_stat;
+          inst_block_map[inst->offset] = block;
         }
       }
     }
@@ -437,6 +476,22 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
               if (INSTRUCTION_ANALYZER_DEBUG) {
                 std::cout << " reg " << reg_id << std::endl;
               }
+            }
+          }
+        }
+
+        for (auto &reg_iter : inst_stat->assign_pcs) {
+          if (reg_iter.second.size() > 1) {
+            for (auto def_pc : reg_iter.second) {
+              // Apply DFS only for regs with multiple definitions
+              std::vector<std::vector<int> > paths;
+              std::vector<int> path;
+              std::set<int> visited_blocks;
+              bool first_block = true;
+              trackReg(inst_stat->pc + func_addr, def_pc + func_addr, reg_iter.first,
+                inst_block_map[def_pc + func_addr],
+                visited_blocks, paths, path, first_block);
+              inst_stat->assign_pc_paths[reg_iter.first] = paths;
             }
           }
         }
@@ -516,9 +571,22 @@ bool dumpCudaInstructions(const std::string &file_path,
             auto iter = inst->inst_stat->assign_pcs.find(src);
             if (iter != inst->inst_stat->assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
+                boost::property_tree::ptree ptree_path;
+                ptree_path.put("pc", assign_pc);
+
                 boost::property_tree::ptree tt;
-                tt.put("", assign_pc);
-                ptree_assign_pcs.push_back(std::make_pair("", tt));
+                for (auto &path : inst->inst_stat->assign_pc_paths[src]) {
+                  boost::property_tree::ptree ttt;
+                  for (auto block_id : path) {
+                    boost::property_tree::ptree tttt;
+                    tttt.put("", block_id);
+                    ttt.push_back(std::make_pair("", tttt));
+                  }
+                  tt.push_back(std::make_pair("", ttt));
+                }
+                ptree_path.add_child("paths", tt);
+
+                ptree_assign_pcs.push_back(std::make_pair("", ptree_path));
               }
             }
             t.add_child("assign_pcs", ptree_assign_pcs);
@@ -607,18 +675,29 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
+        std::map<int, std::vector<std::vector<int> > > assign_pc_paths;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
         for (auto &ptree_src : ptree_srcs) {
           int src = ptree_src.second.get<int>("id", 0);
           srcs.push_back(src);
           auto &ptree_assign_pcs = ptree_src.second.get_child("assign_pcs");
           for (auto &ptree_assign_pc : ptree_assign_pcs) {
-            int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
+            int assign_pc = ptree_assign_pc.second.get<int>("pc");
             assign_pcs[src].push_back(assign_pc);
+
+            auto &ptree_paths = ptree_assign_pc.second.get_child("paths");
+            for (auto &ptree_path : ptree_paths) {
+              std::vector<int> path;
+              for (auto &ptree_path_element : ptree_path.second) {
+                int element = boost::lexical_cast<int>(ptree_path_element.second.data());
+                path.push_back(element);
+              }
+              assign_pc_paths[src].push_back(path);
+            }
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs, assign_pc_paths);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -637,7 +716,15 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
             auto iter = assign_pcs.find(src);
             if (iter != assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
-                std::cout << assign_pc << ", ";
+                std::cout << assign_pc << std::endl;
+
+                std::cout << "    paths: " << std::endl;
+                for (auto &path : assign_pc_paths[assign_pc]) {
+                  for (auto &e : path) {
+                    std::cout << e << ",";
+                  }
+                  std::cout << std::endl;
+                }
               }
             }
           }

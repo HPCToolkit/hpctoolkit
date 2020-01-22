@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -369,6 +369,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-correlation-channel-set.c \
 	gpu/gpu-correlation-id.c	\
 	gpu/gpu-correlation-id-map.c 	\
+	gpu/gpu-device-id-map.c	\
 	gpu/gpu-event-id-map.c \
 	gpu/gpu-function-id-map.c \
 	gpu/gpu-host-correlation-map.c 	\
