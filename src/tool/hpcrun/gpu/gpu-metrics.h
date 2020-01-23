@@ -150,12 +150,15 @@ typedef enum {
 	"access")							\
   macro(GPU_INST_METRIC_NAME ":STL_TMEM",    GPU_INST_STALL_TMEM,	\
 	"GPU instruction stalls: texture memory request queue full")	\
-  macro(GPU_INST_METRIC_NAME ":STL_CMEM",    GPU_INST_STALL_CMEM,	\
-	"GPU instruction stalls: await completion of constant or "	\
-	"immediate memory access")					\
   macro(GPU_INST_METRIC_NAME ":STL_SYNC",    GPU_INST_STALL_SYNC,	\
 	"GPU instruction stalls: await completion of thread or "	\
 	"memory synchronization")					\
+  macro(GPU_INST_METRIC_NAME ":STL_CMEM",    GPU_INST_STALL_CMEM,	\
+	"GPU instruction stalls: await completion of constant or "	\
+	"immediate memory access")					\
+  macro(GPU_INST_METRIC_NAME ":STL_PIPE",    GPU_INST_STALL_PIPE_BUSY,	\
+	"GPU instruction stalls: await completion of required "	\
+	"compute resources")					\
   macro(GPU_INST_METRIC_NAME ":STL_MTHR",    GPU_INST_STALL_MEM_THROTTLE, \
 	"GPU instruction stalls: global memory request queue full")	\
   macro(GPU_INST_METRIC_NAME ":STL_NSEL",    GPU_INST_STALL_NOT_SELECTED, \
