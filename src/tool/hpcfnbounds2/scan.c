@@ -257,11 +257,11 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   char *promite;  // mmmm
   uint8_t cieVersion;
   char *augString;
-  // uint64_t codeAlign;
-  // int64_t  dataAlign;
-  // uint8_t retReg;
+  uint64_t codeAlign;
+  int64_t  dataAlign;
+  uint8_t retReg;
   uint8_t fdeEnc;
-  // uint64_t augDataLen;
+  uint64_t augDataLen;
   uint64_t cieOffset, a;
   uint8_t *upt8;
   int64_t signedRelAddr64;
@@ -314,7 +314,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
     // support extended record lengths here
     if (recLen == 0xfffffffful) {
-      fprintf(stderr, "Error in eh_frame handling, extended records not supported\n");
+      fprintf(stderr, "Warning in eh_frame handling, extended records not supported\n");
       return SC_SKIP;
     }
 
@@ -341,7 +341,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       // we only support zR data. FIXME skip all FDEs not associated with zR?  better
       //
       if (strcmp((const char *)augString,"zR")) {
-        fprintf(stderr, "Error in eh_frame handling, unsupported augmentation string %s found\n",augString);
+        fprintf(stderr, "Warning in eh_frame handling, unsupported augmentation string %s found in %s\n",augString,xname);
         return SC_SKIP;
       }
 
@@ -349,25 +349,37 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       //
       cieOffset = EHF_CIE_BO_AUSTR + strlen(augString) + 1; // Extra byte for null terminator
 
-      /* codeAlign = */ (void) decodeULEB128(pb+cieOffset, &a);
+      codeAlign = decodeULEB128(pb+cieOffset, &a);
+      if (codeAlign == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
-      /* dataAlign = */ (void) decodeSLEB128(pb+cieOffset, &a);
+      dataAlign = decodeSLEB128(pb+cieOffset, &a);
+      if (dataAlign == EHF_SLEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
 
       if (cieVersion == EHF_CIE_VER_1) {
-        // retReg = *(pb+cieOffset);
+        retReg = *(pb+cieOffset);
         ++cieOffset;
       }
       else if (cieVersion == EHF_CIE_VER_3) {
-        /* retReg = */ (void) (uint8_t) decodeULEB128(pb+cieOffset, &a);
+        retReg = (uint8_t) decodeULEB128(pb+cieOffset, &a);
         cieOffset += a;
       }
       else {
         // FIXME error message?
         return SC_SKIP;
       }
+      if (retReg == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
 
-      /* augDataLen = */ (void) decodeULEB128(pb+cieOffset, &a);
+      augDataLen = decodeULEB128(pb+cieOffset, &a);
+      if (augDataLen == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
 
       fdeEnc = *(pb+cieOffset);
