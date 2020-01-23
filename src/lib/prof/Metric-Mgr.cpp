@@ -293,6 +293,9 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
 
+    doDispPercent = mSrc->doDispPercent();
+    isPercent     = mSrc->isPercent();
+
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
   }

@@ -761,7 +761,7 @@ gpu_metrics_GSAMP_enable
 
   char *util_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
 
-  sprintf(util_formula, "100*#%d/#%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
+  sprintf(util_formula, "min(100, max(0, 100*#%d/#%d))", METRIC_ID(GPU_SAMPLE_TOTAL), 
 	  METRIC_ID(GPU_SAMPLE_EXPECTED));
 
   util_metric->formula = util_formula;
