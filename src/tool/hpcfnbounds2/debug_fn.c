@@ -290,7 +290,7 @@ print_program_headers64
  Elf *e
 )
 {
-  int64_t j,jn;
+  size_t j,jn;
   GElf_Phdr progHeader;
 
   fprintf(stderr, "========================================");
@@ -329,7 +329,6 @@ print_section_headers64
   GElf_Shdr secHead;
   char *secName;
   size_t secHeadStringIndex;
-  uint32_t i;
 
   elf_getshdrstrndx(e, &secHeadStringIndex);
   section = NULL;

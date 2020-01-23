@@ -104,7 +104,6 @@ static int fdout;
 static uint64_t  addr_buf[ADDR_SIZE];
 static long  num_addrs;
 static long  total_num_addrs;
-static long  max_num_addrs;
 
 static char *inbuf;
 static long  inbuf_size;
@@ -113,8 +112,6 @@ static struct syserv_fnbounds_info fnb_info;
 
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
-
-static int sent_ok_mesg;
 
 void
 init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
