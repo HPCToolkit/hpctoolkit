@@ -4676,6 +4676,90 @@ AC_SUBST([OPT_GPU_PATCH_IFLAGS])
 AC_SUBST([OPT_GPU_PATCH_LDFLAGS])
 
 #-------------------------------------------------
+# Option: --with-redshow=PATH
+#-------------------------------------------------
+OPT_HAVE_REDSHOW=no
+OPT_REDSHOW=
+OPT_REDSHOW_INCPATH=
+OPT_REDSHOW_IFLAGS=
+OPT_REDSHOW_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    REDSHOW_LIB_SEARCH_ORDER="lib32 lib"
+else
+    REDSHOW_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+AC_ARG_WITH([redshow],
+  AS_HELP_STRING([--with-redshow=PATH],
+                 [use given REDSHOW installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_REDSHOW=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-redshow requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_REDSHOW=${withval}
+   fi])
+
+#
+# Valid redshow library
+#
+if test "$OPT_HAVE_REDSHOW" = yes; then
+    OPT_REDSHOW_IFLAGS="-I$OPT_REDSHOW/include"
+fi
+
+if test "$OPT_HAVE_REDSHOW" = "yes" ; then
+ AC_ARG_WITH([redshow-include],
+  AS_HELP_STRING([--with-redshow-include=PATH],
+                 [use given redshow include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-redshow-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_REDSHOW_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_REDSHOW}/include/redshow.h; then
+         OPT_REDSHOW_INCPATH=${OPT_REDSHOW}/include
+         AC_DEFINE(HAVE_REDSHOW_H, 1, [redshow include file available])
+     else
+         AC_MSG_ERROR(['${OPT_REDSHOW}/include/redshow.h' not found])
+     fi])  
+
+  OPT_REDSHOW_IFLAGS="-I${OPT_REDSHOW_INCPATH} "
+
+  AC_ARG_WITH([redshow-lib],
+  AS_HELP_STRING([--with-redshow-lib=PATH],
+                 [use given redshow lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-redshow-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_REDSHOW_LIBPATH=${withval}
+   fi], 
+  
+    [if test -f "${OPT_REDSHOW}/lib/libredshow.so" 
+    then
+      OPT_REDSHOW_LIBPATH="${OPT_REDSHOW}/lib"
+      break
+    fi
+    if test  -z "${OPT_REDSHOW_LIBPATH}" ; then
+      AC_MSG_ERROR([libredshow.so not found])
+    fi
+   ] )
+
+  OPT_REDSHOW_LDFLAGS="-L${OPT_REDSHOW_LIBPATH} -Wl,-rpath=${OPT_REDSHOW_LIBPATH} -lredshow"
+fi
+
+AC_MSG_RESULT([$OPT_REDSHOW])
+
+AM_CONDITIONAL([OPT_ENABLE_REDSHOW], [test "$OPT_HAVE_REDSHOW" = yes])
+
+AC_SUBST([OPT_REDSHOW])
+AC_SUBST([OPT_REDSHOW_IFLAGS])
+AC_SUBST([OPT_REDSHOW_LDFLAGS])
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -4984,6 +5068,7 @@ AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  sanitizer:    ${OPT_SANITIZER}])
 AC_MSG_NOTICE([  gpu-patch:    ${OPT_GPU_PATCH}])
+AC_MSG_NOTICE([  redshow:      ${OPT_REDSHOW}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 
 if test "x$mult_spack_pkgs" != x ; then

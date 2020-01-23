@@ -644,6 +644,11 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_REDSHOW_LDFLAGS
+OPT_REDSHOW_IFLAGS
+OPT_REDSHOW
+OPT_ENABLE_REDSHOW_FALSE
+OPT_ENABLE_REDSHOW_TRUE
 OPT_GPU_PATCH_LDFLAGS
 OPT_GPU_PATCH_IFLAGS
 OPT_GPU_PATCH
@@ -1058,6 +1063,9 @@ with_sanitizer_lib
 with_gpu_patch
 with_gpu_patch_include
 with_gpu_patch_lib
+with_redshow
+with_redshow_include
+with_redshow_lib
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1819,6 +1827,13 @@ Optional Packages:
                           hpcrun (default is NO)
   --with-gpu-patch-lib=PATH
                           use given gpu-patch lib (absolute path) with hpcrun
+                          (default is NO)
+  --with-redshow=PATH     use given REDSHOW installation (absolute path) with
+                          hpcrun (default is NO)
+  --with-redshow-include=PATH
+                          use given redshow include (absolute path) with
+                          hpcrun (default is NO)
+  --with-redshow-lib=PATH use given redshow lib (absolute path) with hpcrun
                           (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
@@ -23524,6 +23539,106 @@ fi
 
 
 #-------------------------------------------------
+# Option: --with-redshow=PATH
+#-------------------------------------------------
+OPT_HAVE_REDSHOW=no
+OPT_REDSHOW=
+OPT_REDSHOW_INCPATH=
+OPT_REDSHOW_IFLAGS=
+OPT_REDSHOW_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    REDSHOW_LIB_SEARCH_ORDER="lib32 lib"
+else
+    REDSHOW_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+
+# Check whether --with-redshow was given.
+if test "${with_redshow+set}" = set; then :
+  withval=$with_redshow; if test $withval != no; then
+     OPT_HAVE_REDSHOW=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-redshow requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_REDSHOW=${withval}
+   fi
+fi
+
+
+#
+# Valid redshow library
+#
+if test "$OPT_HAVE_REDSHOW" = yes; then
+    OPT_REDSHOW_IFLAGS="-I$OPT_REDSHOW/include"
+fi
+
+if test "$OPT_HAVE_REDSHOW" = "yes" ; then
+
+# Check whether --with-redshow-include was given.
+if test "${with_redshow_include+set}" = set; then :
+  withval=$with_redshow_include; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-redshow-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_REDSHOW_INCPATH=${withval}
+  fi
+else
+  if test -f ${OPT_REDSHOW}/include/redshow.h; then
+         OPT_REDSHOW_INCPATH=${OPT_REDSHOW}/include
+
+$as_echo "#define HAVE_REDSHOW_H 1" >>confdefs.h
+
+     else
+         as_fn_error $? "'${OPT_REDSHOW}/include/redshow.h' not found" "$LINENO" 5
+     fi
+fi
+
+
+  OPT_REDSHOW_IFLAGS="-I${OPT_REDSHOW_INCPATH} "
+
+
+# Check whether --with-redshow-lib was given.
+if test "${with_redshow_lib+set}" = set; then :
+  withval=$with_redshow_lib; if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-redshow-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_REDSHOW_LIBPATH=${withval}
+   fi
+else
+  if test -f "${OPT_REDSHOW}/lib/libredshow.so"
+    then
+      OPT_REDSHOW_LIBPATH="${OPT_REDSHOW}/lib"
+      break
+    fi
+    if test  -z "${OPT_REDSHOW_LIBPATH}" ; then
+      as_fn_error $? "libredshow.so not found" "$LINENO" 5
+    fi
+
+fi
+
+
+  OPT_REDSHOW_LDFLAGS="-L${OPT_REDSHOW_LIBPATH} -Wl,-rpath=${OPT_REDSHOW_LIBPATH} -lredshow"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_REDSHOW" >&5
+$as_echo "$OPT_REDSHOW" >&6; }
+
+ if test "$OPT_HAVE_REDSHOW" = yes; then
+  OPT_ENABLE_REDSHOW_TRUE=
+  OPT_ENABLE_REDSHOW_FALSE='#'
+else
+  OPT_ENABLE_REDSHOW_TRUE='#'
+  OPT_ENABLE_REDSHOW_FALSE=
+fi
+
+
+
+
+
+
+#-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
 #-------------------------------------------------
 
@@ -24060,6 +24175,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_GPU_PATCH_TRUE}" && test -z "${OPT_ENABLE_GPU_PATCH_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_GPU_PATCH\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_REDSHOW_TRUE}" && test -z "${OPT_ENABLE_REDSHOW_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_REDSHOW\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -26715,6 +26834,8 @@ $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 $as_echo "$as_me:   sanitizer:    ${OPT_SANITIZER}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   gpu-patch:    ${OPT_GPU_PATCH}" >&5
 $as_echo "$as_me:   gpu-patch:    ${OPT_GPU_PATCH}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   redshow:      ${OPT_REDSHOW}" >&5
+$as_echo "$as_me:   redshow:      ${OPT_REDSHOW}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 
