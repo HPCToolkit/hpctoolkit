@@ -146,7 +146,11 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processes.  For each process, enable measurement
                        (of all threads) with probability <frac>; <frac> is a
                        real number (0.10) or a fraction (1/10) between 0 and 1.
-  
+
+  -js <num>, --jobs-symtab <num>
+                       Use <num> openmp threads for Symtab in hpcfnbounds,
+                       if Symtab supports openmp (default 1).
+
   -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
                        This option is to reduce the number of generated
                        profile and trace files as each thread generates its own
@@ -223,7 +227,7 @@ do
 	    shift
 	    ;;
 
-  -ck | --control-knob )
+	-ck | --control-knob )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
@@ -273,7 +277,7 @@ do
 	# --------------------------------------------------
 
  	-c | --count )
- 	 	export HPCRUN_PERF_COUNT="$1"
+ 	    export HPCRUN_PERF_COUNT="$1"
 	    shift
 	    ;;
 
@@ -281,6 +285,13 @@ do
 
 	-t | --trace )
 	    export HPCRUN_TRACE=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-js | --jobs-symtab )
+	    export HPCFNBOUNDS_NUM_THREADS="$1"
+	    shift
 	    ;;
 
 	# --------------------------------------------------
@@ -304,13 +315,13 @@ do
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
-  # --------------------------------------------------
+	# --------------------------------------------------
 
-  -m | --merge-threads )
-      arg_ok "$1" || die "missing argument for $arg"
-      export HPCRUN_MERGE_THREADS="$1"
-      shift
-      ;;
+	-m | --merge-threads )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MERGE_THREADS="$1"
+	    shift
+	    ;;
       
 	# --------------------------------------------------
 

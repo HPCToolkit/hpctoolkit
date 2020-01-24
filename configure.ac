@@ -3732,33 +3732,51 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with openmp support.
+# Test if symtab and parseapi were built with openmp support.
 # Again, not really a good test.
 
-dyninst_openmp=no
+parse_openmp=no
+symtab_openmp=no
 
 if test "$DYNINST" != no ; then
-  AC_MSG_CHECKING([if dyninst built with openmp])
-
-  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
-
   ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
   LD_LIBRARY_PATH=
+
+  AC_MSG_CHECKING([if parseapi built with openmp])
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
 
   if test -f "$parseapi" ; then
     for lib in $openmp_lib_list ; do
       ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
-        dyninst_openmp=yes
+        parse_openmp=yes
 	dyninst_features="$dyninst_features openmp"
 	break
       fi
     done
   fi
 
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+  AC_MSG_RESULT([$parse_openmp])
 
-  AC_MSG_RESULT([$dyninst_openmp])
+  AC_MSG_CHECKING([if symtab built with openmp])
+
+  symtabapi="${DYNINST_LIB_DIR}/libsymtabAPI.so"
+
+  if test -f "$symtabapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$symtabapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        symtab_openmp=yes
+	dyninst_features="$dyninst_features par-symtab"
+	break
+      fi
+    done
+  fi
+
+  AC_MSG_RESULT([$symtab_openmp])
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
 AC_LANG_POP
@@ -3980,39 +3998,47 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 # enable-openmp
 #-------------------------------------------------
 
-# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
-# does.
+# Enable openmp support in hpcstruct and fnbounds.  Requires support
+# from ParseAPI and Symtab, so all this really does is disable it, if
+# desired.
+#
+# Note: this only controls openmp pragmas in hpctoolkit.  If dyninst
+# is compiled with openmp, then those pragmas still exist.
 
 AC_ARG_ENABLE([openmp],
   [AS_HELP_STRING([--enable-openmp],
-      [enable openmp support in hpcstruct (default is to test dyninst)])],
+      [enable openmp support in hpcstruct, requires support from dyninst])],
   [],
-  [enable_openmp="$dyninst_openmp"])
+  [enable_openmp="$parse_openmp"])
 
-AC_MSG_CHECKING([whether to enable openmp in hpcstruct])
-AC_MSG_RESULT([$enable_openmp])
+if test "x$enable_openmp" != xyes ; then
+  AC_MSG_NOTICE([disable openmp support in hpcstruct and hpcfnbounds])
+  parse_openmp=no
+  symtab_openmp=no
+fi
 
-case "$enable_openmp" in
-  yes | no ) ;;
-  * ) AC_MSG_WARN([bad value for enable-openmp: $enable_openmp])
-    enable_openmp="$dyninst_openmp"
-    ;;
-esac
+hpcstruct_mesg=serial
+ans=no
 
-if test "$enable_openmp" = yes ; then
-  AC_DEFINE([ENABLE_OPENMP], [1], [Build with openmp support])
+if test "$parse_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP], [1], [ParseAPI supports openmp (for hpcstruct)])
   hpcstruct_mesg=openmp
+  ans=hpcstruct
 else
   OPENMP_FLAG=
-  hpcstruct_mesg=serial
+  symtab_openmp=no
 fi
 
-if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
-then
-  hpcstruct_mesg=no
+if test "$symtab_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP_SYMTAB], [1], [Symtab supports openmp (for fnbounds)])
+  hpcstruct_mesg="$hpcstruct_mesg + fnbounds"
+  ans="$ans + fnbounds"
 fi
 
-AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
+AC_MSG_NOTICE([openmp support from dyninst: $ans])
+
+AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$parse_openmp" = yes])
+AM_CONDITIONAL([OPT_ENABLE_OPENMP_SYMTAB], [test "$symtab_openmp" = yes])
 
 
 #-------------------------------------------------

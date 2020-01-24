@@ -103,18 +103,16 @@ MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
-# MYLDADD = $(HPCLIB_SupportLean) \
-#         $(HPCLIB_ProfLean) \
-# 	-L$(SYMTABAPI_LIB) $(SYMTABAPI_LIB_LIST) \
-# 	-L$(LIBDWARF_LIB) -ldwarf \
-# 	-L$(LIBELF_LIB) -lelf
-
 MYLDADD = libeh_frames.a  \
 	$(HPCLIB_SupportLean) \
         $(HPCLIB_ProfLean) \
 	$(DYNINST_LFLAGS)  \
 	$(BOOST_LFLAGS) \
 	$(TBB_LFLAGS)
+
+if OPT_ENABLE_OPENMP_SYMTAB
+  MYCXXFLAGS += $(OPENMP_FLAG)
+endif
 
 if OPT_DYNINST_LIBDW
   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
