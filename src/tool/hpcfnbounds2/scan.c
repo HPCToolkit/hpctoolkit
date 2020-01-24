@@ -293,6 +293,10 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   data = NULL;
   data = elf_getdata(ehRecord->ehFrameSection,data);
 
+  if ((data->d_size == 0) || (data->d_buf == NULL)) {
+    return SC_SKIP;
+  }
+
   kc = 0; // cie count
   kf = 0; // fde count
   cf = EHF_CF_CONT; // continue flag
