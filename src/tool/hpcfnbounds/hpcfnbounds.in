@@ -43,58 +43,13 @@ esac
 
 @launch_early_options@
 
-# If -v is one of the options, then print extra info about what files
-# hpcfnbounds is run on, whether it succeeds, etc, to go in hpcrun
-# logfile.
-#
-server=no
-verbose=no
-base=
-dir=
-for arg in "$@"
-do
-    case "$arg" in
-	-s ) server=yes ;;
-	-v ) verbose=yes ;;
-	-* ) ;;
-	* )
-	    if test "x$base" = x ; then
-		base=`basename "$arg"`
-	    elif test "x$dir" = x ; then
-		dir="$arg"
-	    fi
-	    ;;
-    esac
-done
-
-# FIXME: integrate server and verbose.
+#------------------------------------------------------------
+# Set environment and exec
+#------------------------------------------------------------
 
 # Tell fnbounds where to find libdwarf.so for dlopen.
 export HPCTOOLKIT_EXT_LIBS_DIR="$ext_libs_dir"
 
-if test "$server" = yes ; then
-    export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
-    exec "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
-fi
+export LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}"
+exec "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
 
-if test "$verbose" = yes ; then
-    echo "hpcfnbounds $@"
-fi
-
-if test "x$dir" != x && test ! -d "$dir" ; then
-    mkdir -p "$dir"
-fi
-
-LD_LIBRARY_PATH="${ext_libs_dir}:${libcxx_path}:${LD_LIBRARY_PATH}" \
-    "${hpcfnbounds_dir}/hpcfnbounds-bin" "$@"
-
-ret=$?
-if test "$verbose" = yes ; then
-    if test $ret -ne 0 ; then
-	echo "hpcfnbounds $base FAILED"
-    fi
-    ls -l "${dir}/${base}"*
-    tail -1 "${dir}/${base}"*.txt
-fi
-
-exit $ret
