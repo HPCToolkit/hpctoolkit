@@ -463,6 +463,8 @@ hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format)
   metric_desc->format = format;
 }
 
+
+
 double 
 hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric)
 {

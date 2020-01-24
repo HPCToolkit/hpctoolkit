@@ -791,7 +791,7 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (!m->format().empty()) {
       os << " fmt" << MakeAttrStr(m->format());
     }
-    os << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
+    os << " show=\"" << m->visibility()  << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
        << ">\n";
 

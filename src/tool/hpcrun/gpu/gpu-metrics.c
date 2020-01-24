@@ -165,9 +165,9 @@ name ## _metric_kind
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
 #define DIVISION_FORMULA(name) \
-  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
   hpcrun_set_percent(METRIC_ID(name), 0); \
-  reg_metric = hpcrun_id2metric_linked(METRIC_ID(name)); \
+  reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
   reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
   reg_metric->formula = reg_formula; \

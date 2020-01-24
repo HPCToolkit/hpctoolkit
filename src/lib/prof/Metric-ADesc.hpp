@@ -111,7 +111,7 @@ public:
 public:
   ADesc()
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL), 
-      m_isVisible(true), m_isSortKey(false),
+      m_visibility(HPCRUN_FMT_METRIC_SHOW), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
@@ -121,11 +121,11 @@ public:
   { }
 
   ADesc(const char* nameBase, const char* description,
-	bool isVisible = true, bool isSortKey = false,
+	int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description((description) ? description : ""),
-      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_visibility(visibility), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
@@ -138,11 +138,11 @@ public:
   }
 
   ADesc(const std::string& nameBase, const std::string& description,
-	bool isVisible = true, bool isSortKey = false,
+	int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description(description),
-      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_visibility(visibility), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
@@ -160,7 +160,7 @@ public:
     : m_id(x.m_id), m_type(x.m_type), m_partner(x.m_partner),
       m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
       m_description(x.m_description),
-      m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
+      m_visibility(x.m_visibility), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
       m_computedTy(x.m_computedTy),
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
@@ -181,7 +181,7 @@ public:
       m_namePfx       = x.m_namePfx;
       m_nameSfx       = x.m_nameSfx;
       m_description   = x.m_description;
-      m_isVisible     = x.m_isVisible;
+      m_visibility    = x.m_visibility;
       m_isSortKey     = x.m_isSortKey;
       m_doDispPercent = x.m_doDispPercent;
       m_isPercent     = x.m_isPercent;
@@ -404,11 +404,16 @@ public:
   // isVisible
   bool
   isVisible() const
-  { return m_isVisible; }
+  { return m_visibility != HPCRUN_FMT_METRIC_HIDE; }
+
+
+  int
+  visibility() const
+  { return m_visibility; }
 
   void
-  isVisible(bool x)
-  { m_isVisible = x; }
+  visibility(int x)
+  { m_visibility = x; }
 
 
   bool
@@ -609,7 +614,7 @@ private:
   std::string m_nameBase, m_namePfx, m_nameSfx;
   std::string m_description;
 
-  bool m_isVisible;
+  int  m_visibility;
   bool m_isSortKey;
   bool m_doDispPercent;
   bool m_isPercent;
@@ -663,10 +668,10 @@ public:
 	      uint64_t period, bool isUnitsEvents,
 	      const char* profName, const char* profRelId,
 	      const char* profType,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
@@ -676,10 +681,10 @@ public:
 	      uint64_t period, bool isUnitsEvents,
 	      const std::string& profName, const std::string& profRelId,
 	      const std::string& profType, 
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
@@ -830,19 +835,19 @@ public:
   // Constructor: assumes ownership of 'expr'
   DerivedDesc(const char* nameBase, const char* description,
 	      Metric::AExpr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
   DerivedDesc(const std::string& nameBase, const std::string& description,
 	      Metric::AExpr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
@@ -912,19 +917,19 @@ public:
   // Constructor: assumes ownership of 'expr'
   DerivedIncrDesc(const char* nameBase, const char* description,
 		  Metric::AExprIncr* expr,
-		  bool isVisible = true, bool isSortKey = false,
+		  int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 		  bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
   DerivedIncrDesc(const std::string& nameBase, const std::string& description,
 	      Metric::AExprIncr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
