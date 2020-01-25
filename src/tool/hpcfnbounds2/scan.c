@@ -251,7 +251,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   uint32_t extra;
   uint8_t *pb;
   uint32_t *pw;
-  uint64_t kc, kf, recType, recLen, cf;
+  uint32_t kc, kf, recType, recLen, cf;
   uint8_t fdeAddrDecodeType, fdeAddrOpType;
   char nameBuff[TB_SIZE];
   char *promite;  // mmmm
@@ -322,7 +322,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       return SC_SKIP;
     }
 
-    if (recLen == 0ull) {
+    if (recLen == 0ul) {
       cf = EHF_CF_DONE;
       continue;
     }
@@ -482,7 +482,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
 
   if(verbose) {
-    fprintf (stderr, "scanning .eh_frame, found %ld CIE and %ld FDE records\n", kc, kf);
+    fprintf (stderr, "scanning .eh_frame, found %d CIE and %d FDE records\n", kc, kf);
     }
   
   return SC_DONE;
