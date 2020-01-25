@@ -341,7 +341,8 @@ cuda_load_callback
 (
  uint32_t cubin_id, 
  const void *cubin, 
- size_t cubin_size
+ size_t cubin_size,
+ char *file_name
 )
 {
   // Compute hash for cubin and store it into a map
@@ -355,7 +356,6 @@ cuda_load_callback
   hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
 
   // Create file name
-  char file_name[PATH_MAX];
   size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
@@ -398,9 +398,7 @@ cuda_load_callback
 void
 cuda_unload_callback
 (
- uint32_t cubin_id, 
- const void *cubin, 
- size_t cubin_size
+ uint32_t cubin_id
 )
 {
 }

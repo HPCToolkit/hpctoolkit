@@ -63,6 +63,7 @@
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
 #include <string.h>    // strstr
+#include <pthread.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -75,6 +76,7 @@
 
 #include <sanitizer.h>
 #include <gpu-patch.h>
+#include <redshow.h>
 #include <vector_types.h>  // dim3
 
 #include <lib/prof-lean/spinlock.h>
@@ -401,6 +403,16 @@ sanitizer_error_report
 }
 
 
+static void
+sanitizer_log_data_callback
+(
+ uint32_t kernel_id,
+ gpu_patch_buffer_t *trace_data
+)
+{
+}
+
+
 #ifndef HPCRUN_STATIC_LINK
 static const char *
 sanitizer_path
@@ -506,37 +518,6 @@ sanitizer_process_thread
 // Cubins
 //******************************************************************************
 
-static bool
-sanitizer_write_cubin
-(
- const char *file_name,
- const void *cubin,
- size_t cubin_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, cubin, cubin_size) != cubin_size) {
-      close(fd);
-      return false;   
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
 
 static void
 sanitizer_load_callback
@@ -548,7 +529,9 @@ sanitizer_load_callback
 )
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
-  cuda_load_callback(cumod->cubin_id, cubin, cubin_size);
+  char file_name[PATH_MAX];
+  cuda_load_callback(cumod->cubin_id, cubin, cubin_size, file_name);
+  redshow_cubin_register(cumod->cubin_id, file_name);
 
   PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
@@ -573,56 +556,13 @@ sanitizer_unload_callback
 )
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
-  cuda_unload_callback(cumod->cubin_id, cubin, cubin_size);
+  cuda_unload_callback(cumod->cubin_id);
+  redshow_cubin_unregister(cumod->cubin_id);
 }
 
 //******************************************************************************
 // record handlers
 //******************************************************************************
-
-static bool
-sanitizer_write_trace
-(
- unsigned char *hash,
- unsigned int hash_len,
- char *trace,
- size_t trace_size
-)
-{
-  // Write a file if does not exist, otherwise append
-  // FIXME(Keren): multiple processes
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  used += sprintf(&file_name[used], "%s", ".trace.");
-  used += sprintf(&file_name[used], "%u", sanitizer_thread_id_local);
-
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
-  if (fd >= 0) {
-    // Success
-    if (write(fd, trace, trace_size) != trace_size) {
-      close(fd);
-      return false;   
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
 
 static void
 dim3_id_transform
@@ -652,9 +592,14 @@ sanitizer_kernel_launch_sync
  dim3 block_size
 )
 {
+  // Look up module id
+  hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+  uint32_t cubin_id = cumod->cubin_id;
+
   // Look up function addr
   hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)function;
   hpctoolkit_cufunc_record_st_t *cufunc_record = cufunc->cufunc_record;
+  uint32_t function_index = cufunc->function_index;
   uint64_t function_addr = cufunc_record->function_addr;
 
   // Get a place holder cct node
@@ -696,7 +641,8 @@ sanitizer_kernel_launch_sync
     }
 
     // Allocate memory
-    sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(GPU_PATCH_RECORD_NUM);
+    sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
+      cubin_id, function_index, function_addr, (uint64_t)api_node, GPU_PATCH_RECORD_NUM);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache
@@ -839,13 +785,20 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
         {
+          uint64_t correlation_id = gpu_correlation_id();
+          cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
+
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          PRINT("Allocate memory address %p, size %zu\n", md->address, md->size);
+          redshow_memory_register(md->address, md->address + md->size, (uint64_t)api_node);
+
+          PRINT("Allocate memory address %p, size %zu, id %lu\n", md->address, md->size, api_node);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
         {
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          redshow_memory_unregister(md->address, md->address + md->size);
+
           PRINT("Free memory address %p, size %zu\n", md->address, md->size);
           break;
         }
@@ -921,9 +874,18 @@ sanitizer_bind()
 
 
 void
+sanitizer_analysis_enable()
+{
+  redshow_analysis_enable(REDSHOW_REUSE_DISTANCE);
+}
+
+
+void
 sanitizer_callbacks_subscribe() 
 {
   sanitizer_correlation_callback = gpu_application_thread_correlation_callback;
+
+  redshow_log_data_callback_register(sanitizer_log_data_callback);
 
   HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));

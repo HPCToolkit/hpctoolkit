@@ -469,6 +469,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
     device_finalizer_shutdown.fn = sanitizer_device_shutdown;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+    
+    // Register redshow analysis
+    sanitizer_analysis_enable();
 
     // Register sanitizer callbacks
     sanitizer_callbacks_subscribe();

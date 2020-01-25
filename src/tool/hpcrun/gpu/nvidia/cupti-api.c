@@ -578,14 +578,15 @@ cupti_subscriber_callback
 
       PRINT("loaded module id %d, cubin size %" PRIu64 ", cubin %p\n", 
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cuda_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      char file_name[PATH_MAX];
+      DISPATCH_CALLBACK(cuda_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize, file_name));
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
       PRINT("unloaded module id %d, cubin size %" PRIu64 ", cubin %p\n",
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cuda_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      DISPATCH_CALLBACK(cuda_unload_callback, (mrd->moduleId));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
       cupti_enable_activities(rd->context);
     }

@@ -72,6 +72,10 @@ void
 sanitizer_buffer_produce
 (
  sanitizer_buffer_t *b,
+ uint32_t cubin_id,
+ uint32_t function_index,
+ uint64_t function_addr,
+ uint64_t kernel_id,
  size_t num_records
 );
 

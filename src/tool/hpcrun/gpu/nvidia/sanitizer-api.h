@@ -1,10 +1,11 @@
 #ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 #define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 
-#include <pthread.h>
-
 bool
 sanitizer_bind();
+
+void
+sanitizer_analysis_enable();
 
 void
 sanitizer_callbacks_subscribe();

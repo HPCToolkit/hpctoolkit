@@ -139,16 +139,15 @@ cuda_load_callback
 (
  uint32_t cubin_id, 
  const void *cubin, 
- size_t cubin_size
+ size_t cubin_size,
+ char *file_name
 );
 
 
 void
 cuda_unload_callback
 (
- uint32_t cubin_id, 
- const void *cubin, 
- size_t cubin_size
+ uint32_t cubin_id
 );
 
 #endif

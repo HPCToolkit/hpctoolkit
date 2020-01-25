@@ -59,6 +59,7 @@
 
 #include <stddef.h>
 #include <gpu-patch.h>
+#include <redshow.h>
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
@@ -73,6 +74,10 @@
 typedef struct sanitizer_buffer_t {
   s_element_t next;
 
+  uint32_t cubin_id;
+  uint32_t function_index;
+  uint64_t function_addr;
+  uint64_t kernel_id;
   gpu_patch_buffer_t *gpu_patch_buffer;
 } sanitizer_buffer_t;
 
@@ -83,9 +88,16 @@ typedef struct sanitizer_buffer_t {
 void
 sanitizer_buffer_process
 (
- sanitizer_buffer_t *buffer
+ sanitizer_buffer_t *b
 )
 {
+  uint32_t cubin_id = b->cubin_id;
+  uint32_t function_index = b->function_index;
+  uint32_t function_addr = b->function_addr;
+  uint32_t kernel_id = b->kernel_id;
+  gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
+  
+  redshow_analyze(cubin_id, kernel_id, function_index, function_addr, gpu_patch_buffer);
 }
 
 
@@ -103,9 +115,18 @@ void
 sanitizer_buffer_produce
 (
  sanitizer_buffer_t *b,
+ uint32_t cubin_id,
+ uint32_t function_index,
+ uint64_t function_addr,
+ uint64_t kernel_id,
  size_t num_records
 )
 {
+  b->cubin_id = cubin_id;
+  b->function_index = function_index;
+  b->function_addr = function_addr;
+  b->kernel_id = kernel_id;
+
   if (b->gpu_patch_buffer == NULL) {
     b->gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
     b->gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
