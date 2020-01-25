@@ -290,7 +290,8 @@ print_program_headers64
  Elf *e
 )
 {
-  int64_t j,jn;
+  uint64_t j;
+  size_t jn;
   GElf_Phdr progHeader;
 
   fprintf(stderr, "========================================");
@@ -298,7 +299,7 @@ print_program_headers64
   fprintf(stderr, "\t\tProgram Headers: %s\n", xname);
   fprintf(stderr, " idx type       flags      offset     virt-addr          phys-addr          file-size  mem-size   algn\n");
   elf_getphdrnum(e,&jn);
-  for (j=0; j<jn; j++) {
+  for (j=0; j<(uint64_t)jn; j++) {
     gelf_getphdr(e,j,&progHeader);
     if (progHeader.p_type == PT_LOAD) {
       refOffset = progHeader.p_vaddr;
@@ -329,7 +330,6 @@ print_section_headers64
   GElf_Shdr secHead;
   char *secName;
   size_t secHeadStringIndex;
-  uint32_t i;
 
   elf_getshdrstrndx(e, &secHeadStringIndex);
   section = NULL;
