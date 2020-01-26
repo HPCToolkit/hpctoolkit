@@ -183,7 +183,11 @@ class CudaAdvisor {
 
   void overlayInstructionBlames(std::vector<CudaParse::Function *> &functions, InstBlames &inst_blames);
 
+  void debugOutstandingCCTs(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
   void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
+  void debugInstBlames(InstBlames &inst_blames);
 
   void demandNodeMetrics(Prof::CCT::ADynNode *node);
 

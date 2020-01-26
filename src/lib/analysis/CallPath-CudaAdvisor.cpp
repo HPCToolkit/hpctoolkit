@@ -296,6 +296,8 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
         // skip tracing threads
         continue;
       }
+
+      std::vector<InstructionBlame> inst_blame;
       for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
         auto *node = *iter;
         auto src_vma = node->lmIP();
@@ -353,7 +355,7 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
               dep_node->demandMetric(in_blame_metric_index) += latency * neighbor_ratio;
               dep_node->demandMetric(ex_blame_metric_index) += latency * neighbor_ratio;
               // one metric id is enough for inst blame analysis
-              inst_blames[mpi_rank][thread_id].emplace_back(
+              inst_blame.emplace_back(
                 InstructionBlame(src_vma, vma, ex_blame_metric_index, latency * neighbor_ratio));
             }
           }
@@ -373,10 +375,13 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
           node->demandMetric(in_blame_metric_index) += stall;
           node->demandMetric(ex_blame_metric_index) += stall;
           // one metric id is enough for inst blame analysis
-          inst_blames[mpi_rank][thread_id].emplace_back(
+          inst_blame.emplace_back(
             InstructionBlame(src_vma, src_vma, ex_blame_metric_index, stall));
         }
       }
+
+      std::sort(inst_blame.begin(), inst_blame.end());
+      inst_blames[mpi_rank][thread_id] = inst_blame;
     }
   }
 }
@@ -384,39 +389,45 @@ void CudaAdvisor::blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
 
 void CudaAdvisor::overlayInstructionBlames(std::vector<CudaParse::Function *> &functions,
   InstBlames &inst_blames) {
-  for (auto *function : functions) {
-    // Construct function boundaries
-    VMA function_start_pc = std::numeric_limits<VMA>::max();
-    VMA function_end_pc = std::numeric_limits<VMA>::min();
-    FunctionBlame function_blame;
-    for (auto *block : function->blocks) {
-      VMA block_start_pc = block->insts.front()->inst_stat->pc;
-      VMA block_end_pc = block->insts.back()->inst_stat->pc; 
-      function_start_pc = std::min(block_start_pc, function_start_pc);
-      function_end_pc = std::max(block_end_pc, function_end_pc);
-      BlockBlame block_blame(block_start_pc, block_end_pc);
-      function_blame.block_blames.push_back(block_blame);
-    }
-    function_blame.start = function_start_pc;
-    function_blame.end = function_end_pc;
+  // Overlay instructions
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
+    ++mpi_rank) {
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
+      ++thread_id) {
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
+        // Skip tracing threads
+        continue;
+      }
 
-    // Overlay instructions
-    for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
-      ++mpi_rank) {
-      for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
-        ++thread_id) {
-        if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
-          // skip tracing threads
-          continue;
+      auto thread_inst_blame_start = 0;
+      for (auto *function : functions) {
+        // Construct function boundaries
+        VMA function_start_pc = std::numeric_limits<VMA>::max();
+        VMA function_end_pc = std::numeric_limits<VMA>::min();
+        FunctionBlame function_blame;
+        for (auto *block : function->blocks) {
+          VMA block_start_pc = block->insts.front()->inst_stat->pc;
+          VMA block_end_pc = block->insts.back()->inst_stat->pc; 
+          function_start_pc = std::min(block_start_pc, function_start_pc);
+          function_end_pc = std::max(block_end_pc, function_end_pc);
+          BlockBlame block_blame(block_start_pc, block_end_pc);
+          function_blame.block_blames.push_back(block_blame);
         }
-
-        auto &thread_inst_blames = inst_blames[mpi_rank][thread_id];
-        std::sort(thread_inst_blames.begin(), thread_inst_blames.end());
+        function_blame.start = function_start_pc;
+        function_blame.end = function_end_pc;
 
         auto block_blame_index = 0;
-        for (size_t i = 0; i < thread_inst_blames.size(); ++i) {
+        auto &thread_inst_blames = inst_blames[mpi_rank][thread_id];
+        for (; thread_inst_blame_start < thread_inst_blames.size(); ++thread_inst_blame_start) {
           auto &block_blame = function_blame.block_blames[block_blame_index];
-          auto &inst_blame = thread_inst_blames[i];
+          auto &inst_blame = thread_inst_blames[thread_inst_blame_start];
+
+          if (inst_blame.src > function_blame.end) {
+            // Go to next function
+            break;
+          }
+
+          // Find the correponding block
           while (block_blame.end < inst_blame.src) {
             ++block_blame_index;
             block_blame = function_blame.block_blames[block_blame_index];
@@ -430,6 +441,54 @@ void CudaAdvisor::overlayInstructionBlames(std::vector<CudaParse::Function *> &f
           }
         }
         _function_blames[mpi_rank][thread_id].push_back(function_blame);
+      }
+    }
+  }
+}
+
+
+void CudaAdvisor::debugOutstandingCCTs(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
+        // skip tracing threads
+        continue;
+      }
+
+      // <dep_stalls, <vmas> >
+      std::map<int, std::vector<int> > exec_dep_vmas;
+      std::map<int, std::vector<int> > mem_dep_vmas;
+
+      for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
+        auto *node = *it;
+        auto node_vma = node->lmIP();
+        auto exec_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
+        auto exec_dep_stall_metric = node->demandMetric(exec_dep_stall_metric_id);
+        auto mem_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+        auto mem_dep_stall_metric = node->demandMetric(mem_dep_stall_metric_id);
+
+        exec_dep_vmas[exec_dep_stall_metric].push_back(node_vma);
+        mem_dep_vmas[mem_dep_stall_metric].push_back(node_vma);
+      }
+
+      std::cout << "[ " << mpi_rank << ", " << thread_id << "]" << std::endl;
+
+      std::cout << "exec_deps" << std::endl;
+      for (auto &iter : exec_dep_vmas) {
+        std::cout << iter.first << ": ";
+        for (auto vma : iter.second) {
+          std::cout << vma << ", ";
+        }
+        std::cout << std::endl;
+      }
+
+      std::cout << "mem_deps" << std::endl;
+      for (auto &iter : mem_dep_vmas) {
+        std::cout << iter.first << ": ";
+        for (auto vma : iter.second) {
+          std::cout << vma << ", ";
+        }
+        std::cout << std::endl;
       }
     }
   }
@@ -458,6 +517,26 @@ void CudaAdvisor::debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_grap
 }
 
 
+void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
+  for (auto &mpi_inst_blames : inst_blames) {
+    for (auto &thread_inst_blames : mpi_inst_blames.second) {
+      std::cout << "[" << mpi_inst_blames.first << "," <<
+        thread_inst_blames.first << "]:" << std::endl;
+      for (auto &inst_blame : thread_inst_blames.second) {
+        std::cout << std::hex << inst_blame.dst << "->";
+        if (inst_blame.src != inst_blame.dst) {
+          std::cout << inst_blame.src << ", ";
+        } else {
+          std::cout << "-1, ";
+        }
+        std::cout << std::dec << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
+          inst_blame.value << std::endl;
+      }
+    }
+  }
+}
+
+
 void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Function *> &functions,
   std::vector<CudaParse::InstructionStat *> &inst_stats) {
   // 1. Map pc to CCT and structs
@@ -480,7 +559,13 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Func
   initCCTGraph(inst_stats, cct_dep_graph, vma_prof_map);
 
   if (DEBUG_CALLPATH_CUDAADVISOR) {
-    std::cout << "CCT dependency graph before propgate: " << std::endl;
+    std::cout << "Outstanding CCTs before propgation: " << std::endl;
+    debugOutstandingCCTs(cct_dep_graph);
+    std::cout << std::endl;
+  }
+
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    std::cout << "CCT dependency graph before propgation: " << std::endl;
     debugCCTDepGraph(cct_dep_graph);
     std::cout << std::endl;
   }
@@ -490,7 +575,7 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Func
     vma_prof_map, vma_struct_map, vma_inst_map);
 
   if (DEBUG_CALLPATH_CUDAADVISOR) {
-    std::cout << "CCT dependency graph after propgate: " << std::endl;
+    std::cout << "CCT dependency graph after propgation: " << std::endl;
     debugCCTDepGraph(cct_dep_graph);
     std::cout << std::endl;
   }
@@ -500,22 +585,9 @@ void CudaAdvisor::blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Func
   blameCCTGraph(cct_dep_graph, vma_inst_map, inst_blames);
 
   if (DEBUG_CALLPATH_CUDAADVISOR) {
-    for (auto &mpi_inst_blames : inst_blames) {
-      for (auto &thread_inst_blames : mpi_inst_blames.second) {
-        std::cout << "[" << mpi_inst_blames.first << "," <<
-          thread_inst_blames.first << "]:" << std::endl;
-        for (auto &inst_blame : thread_inst_blames.second) {
-          std::cout << std::hex << inst_blame.dst << "->";
-          if (inst_blame.src != inst_blame.dst) {
-            std::cout << inst_blame.src << ", ";
-          } else {
-            std::cout << "-1, ";
-          }
-          std::cout << std::dec << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
-            inst_blame.value << std::endl;
-        }
-      }
-    }
+    std::cout << "Debug inst blames: " << std::endl;
+    debugInstBlames(inst_blames);
+    std::cout << std::endl;
   }
 
   // 4. overlay blames
