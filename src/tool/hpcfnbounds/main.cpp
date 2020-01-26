@@ -243,6 +243,12 @@ server_mode(void)
   return the_mode == MODE_SERVER;
 }
 
+bool
+verbose_mode(void)
+{
+  return verbose;
+}
+
 
 extern "C" {
 
@@ -279,7 +285,7 @@ usage(char *command, int status)
     "\t-js num \trun with num threads in symtab (default 1)\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
-    "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
+    "\t-v\tverbose mode for fnbounds server\n\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
