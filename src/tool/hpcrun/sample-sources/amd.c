@@ -141,10 +141,9 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
     int nevents = (self->evl).nevents;
+    gpu_metrics_default_enable();
 
-    TMSG(CUDA,"nevents = %d", nevents);
-
-#ifndef HPCRUN_STATIC_LINK
+ #ifndef HPCRUN_STATIC_LINK
     if (roctracer_bind()) {
         EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
         monitor_real_exit(-1);
@@ -157,15 +156,15 @@ METHOD_FN(process_event_list, int lush_metrics)
     char* evlist = METHOD_CALL(self, get_event_str);
     char* event = start_tok(evlist);
 #endif
-
-    gpu_metrics_default_enable();
-    roctracer_init();
+    roctracer_init();   
+    TMSG(CUDA,"nevents = %d", nevents);
 }
 
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
+
 }
 
 
