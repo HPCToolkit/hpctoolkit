@@ -436,6 +436,10 @@ roctracer_bind
  void
 )
 {
+  // This is a workaround for roctracer to not hang when taking timer interrupts
+  // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
+  setenv("HSA_ENABLE_INTERRUPT", "0", 1);
+  
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
@@ -477,7 +481,7 @@ roctracer_init
 void
 roctracer_fini
 (
- void
+ void* args
 )
 {
   HPCRUN_ROCTRACER_CALL(roctracer_disable_callback, ());

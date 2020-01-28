@@ -159,6 +159,10 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(IO, "metric id read: %d, write: %d", metric_id_read, metric_id_write);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 
 static void
 METHOD_FN(gen_event_set, int lush_metrics)

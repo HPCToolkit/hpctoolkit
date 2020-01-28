@@ -178,6 +178,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   ENABLE(USE_TRAMP);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
+
 //
 // Event sets not truly relevant for this sample source,
 //
