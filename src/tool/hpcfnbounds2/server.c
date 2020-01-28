@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -104,7 +104,7 @@ static int fdout;
 static uint64_t  addr_buf[ADDR_SIZE];
 static long  num_addrs;
 static long  total_num_addrs;
-static long  max_num_addrs;
+// static long  max_num_addrs;
 
 static char *inbuf;
 static long  inbuf_size;
@@ -114,7 +114,7 @@ static struct syserv_fnbounds_info fnb_info;
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
 
-static int sent_ok_mesg;
+// static int sent_ok_mesg;
 
 void
 init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
@@ -192,7 +192,7 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     err(1, "read from fdin failed");
   }
 
-  // fprintf(stderr, "Server processing file %s\n", inbuf);
+  fprintf(stderr, "newfnb begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
   ret = get_funclist(inbuf);
   if ( ret != NULL) {
     fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
@@ -224,7 +224,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d -- %s functions\n", strrchr(inbuf, '/'), np, inbuf );
+  fprintf(stderr, "newfnb %s = %d -- %s\n", strrchr(inbuf, '/'), np, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -435,9 +435,11 @@ signal_handler_init(void)
   act.sa_flags = 0;
   sigemptyset(&act.sa_mask);
 
+#if 0
   if (sigaction(SIGSEGV, &act, NULL) != 0) {
     err(1, "sigaction failed on SIGSEGV");
   }
+#endif
   if (sigaction(SIGBUS, &act, NULL) != 0) {
     err(1, "sigaction failed on SIGBUS");
   }

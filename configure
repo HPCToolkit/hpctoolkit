@@ -673,6 +673,8 @@ MPI_PROTO_FILE
 MPI_INC
 MPIF77
 MPICC
+OPT_ENABLE_OPENMP_SYMTAB_FALSE
+OPT_ENABLE_OPENMP_SYMTAB_TRUE
 OPT_ENABLE_OPENMP_FALSE
 OPT_ENABLE_OPENMP_TRUE
 OPT_ENABLE_HPCSERVER_FALSE
@@ -1734,8 +1736,8 @@ Optional Features:
   --enable-hpcrun-static  build hpcrun for statically linked executables
                           (default yes)
   --enable-hpcserver      build hpcserver and hpcserver-mpi (default no)
-  --enable-openmp         enable openmp support in hpcstruct (default is to
-                          test dyninst)
+  --enable-openmp         enable openmp support in hpcstruct, requires support
+                          from dyninst
   --enable-mpi-wrapper    enable MPI wrapper support, requires MPICC, MPIF77
                           and MPI_INC (default no)
   --enable-lush           use lush backtrace in hpcrun
@@ -19013,7 +19015,7 @@ HOST_CXXFLAGS="$HOST_CXXFLAGS $cxx_c11_flag"
 #-------------------------------------------------
 
 # Find location of libstdc++.  This is used to set LD_LIBRARY_PATH in
-# hpcfnbounds.
+# hpcfnbounds.  It is not used by hpcfnbounds2.
 #
 # Try --print-file-name first.  If that doesn't work, then try ldd.
 # If --print-file-name works, then its answer is more reliable because
@@ -22196,35 +22198,55 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with openmp support.
+# Test if symtab and parseapi were built with openmp support.
 # Again, not really a good test.
 
-dyninst_openmp=no
+parse_openmp=no
+symtab_openmp=no
 
 if test "$DYNINST" != no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst built with openmp" >&5
-$as_echo_n "checking if dyninst built with openmp... " >&6; }
-
-  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
-
   ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
   LD_LIBRARY_PATH=
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if parseapi built with openmp" >&5
+$as_echo_n "checking if parseapi built with openmp... " >&6; }
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
 
   if test -f "$parseapi" ; then
     for lib in $openmp_lib_list ; do
       ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
-        dyninst_openmp=yes
+        parse_openmp=yes
 	dyninst_features="$dyninst_features openmp"
 	break
       fi
     done
   fi
 
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $parse_openmp" >&5
+$as_echo "$parse_openmp" >&6; }
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_openmp" >&5
-$as_echo "$dyninst_openmp" >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if symtab built with openmp" >&5
+$as_echo_n "checking if symtab built with openmp... " >&6; }
+
+  symtabapi="${DYNINST_LIB_DIR}/libsymtabAPI.so"
+
+  if test -f "$symtabapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$symtabapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        symtab_openmp=yes
+	dyninst_features="$dyninst_features par-symtab"
+	break
+      fi
+    done
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $symtab_openmp" >&5
+$as_echo "$symtab_openmp" >&6; }
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
 ac_ext=cpp
@@ -22541,51 +22563,67 @@ fi
 # enable-openmp
 #-------------------------------------------------
 
-# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
-# does.
+# Enable openmp support in hpcstruct and fnbounds.  Requires support
+# from ParseAPI and Symtab, so all this really does is disable it, if
+# desired.
+#
+# Note: this only controls openmp pragmas in hpctoolkit.  If dyninst
+# is compiled with openmp, then those pragmas still exist.
 
 # Check whether --enable-openmp was given.
 if test "${enable_openmp+set}" = set; then :
   enableval=$enable_openmp;
 else
-  enable_openmp="$dyninst_openmp"
+  enable_openmp="$parse_openmp"
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable openmp in hpcstruct" >&5
-$as_echo_n "checking whether to enable openmp in hpcstruct... " >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_openmp" >&5
-$as_echo "$enable_openmp" >&6; }
+if test "x$enable_openmp" != xyes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: disable openmp support in hpcstruct and hpcfnbounds" >&5
+$as_echo "$as_me: disable openmp support in hpcstruct and hpcfnbounds" >&6;}
+  parse_openmp=no
+  symtab_openmp=no
+fi
 
-case "$enable_openmp" in
-  yes | no ) ;;
-  * ) { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: bad value for enable-openmp: $enable_openmp" >&5
-$as_echo "$as_me: WARNING: bad value for enable-openmp: $enable_openmp" >&2;}
-    enable_openmp="$dyninst_openmp"
-    ;;
-esac
+hpcstruct_mesg=serial
+ans=no
 
-if test "$enable_openmp" = yes ; then
+if test "$parse_openmp" = yes ; then
 
 $as_echo "#define ENABLE_OPENMP 1" >>confdefs.h
 
   hpcstruct_mesg=openmp
+  ans=hpcstruct
 else
   OPENMP_FLAG=
-  hpcstruct_mesg=serial
+  symtab_openmp=no
 fi
 
-if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
-then
-  hpcstruct_mesg=no
+if test "$symtab_openmp" = yes ; then
+
+$as_echo "#define ENABLE_OPENMP_SYMTAB 1" >>confdefs.h
+
+  hpcstruct_mesg="$hpcstruct_mesg + fnbounds"
+  ans="$ans + fnbounds"
 fi
 
- if test "$enable_openmp" = yes; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: openmp support from dyninst: $ans" >&5
+$as_echo "$as_me: openmp support from dyninst: $ans" >&6;}
+
+ if test "$parse_openmp" = yes; then
   OPT_ENABLE_OPENMP_TRUE=
   OPT_ENABLE_OPENMP_FALSE='#'
 else
   OPT_ENABLE_OPENMP_TRUE='#'
   OPT_ENABLE_OPENMP_FALSE=
+fi
+
+ if test "$symtab_openmp" = yes; then
+  OPT_ENABLE_OPENMP_SYMTAB_TRUE=
+  OPT_ENABLE_OPENMP_SYMTAB_FALSE='#'
+else
+  OPT_ENABLE_OPENMP_SYMTAB_TRUE='#'
+  OPT_ENABLE_OPENMP_SYMTAB_FALSE=
 fi
 
 
@@ -23456,7 +23494,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbnds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -23785,6 +23823,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_OPENMP_TRUE}" && test -z "${OPT_ENABLE_OPENMP_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_OPENMP\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_OPENMP_SYMTAB_TRUE}" && test -z "${OPT_ENABLE_OPENMP_SYMTAB_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_OPENMP_SYMTAB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_MPI_WRAP_TRUE}" && test -z "${OPT_ENABLE_MPI_WRAP_FALSE}"; then
@@ -24806,7 +24848,7 @@ do
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
     "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
-    "src/tool/hpcfnbnds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbnds2/Makefile" ;;
+    "src/tool/hpcfnbounds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds2/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -126,7 +126,6 @@ skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
 {
   size_t secHeadStringIndex;
   char *secName;
-  Elf_Scn *section;
 
   elf_getshdrstrndx(e, &secHeadStringIndex);
   secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
@@ -185,6 +184,7 @@ initscan(Elf *e, GElf_Shdr secHead)
     fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
   }
   // use "i" as source string in add_function() calls
+  return SC_SKIP;
 }
 
 // scan the .text section
@@ -200,6 +200,7 @@ textscan(Elf *e, GElf_Shdr secHead)
     fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
   }
   // use "t" as source string in add_function() calls
+  return SC_SKIP;
 }
 
 // scan the .fini section
@@ -215,6 +216,7 @@ finiscan(Elf *e, GElf_Shdr secHead)
     fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
   }
   // use "f" as source string in add_function() calls
+  return SC_SKIP;
 }
 
 // scan the .fini section
@@ -230,6 +232,7 @@ altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
     fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
   }
   // use "a" as source string in add_function() calls
+  return SC_SKIP;
 }
 
 // scan the .eh_frame section
@@ -241,16 +244,14 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 {
   GElf_Shdr ehSecHead,textSecHead,dataSecHead;
   Elf_Data *data;
-  int32_t signedBaseAddr32;
   uint64_t unsignedBaseAddr64;
   int32_t signedRelAddr32;
-  int32_t signedStreamOffset;
   uint64_t recordOffset;
   uint64_t calculatedAddr64;
   uint32_t extra;
   uint8_t *pb;
   uint32_t *pw;
-  uint64_t kc, kf, recType, recLen, cf;
+  uint32_t kc, kf, recType, recLen, cf;
   uint8_t fdeAddrDecodeType, fdeAddrOpType;
   char nameBuff[TB_SIZE];
   char *promite;  // mmmm
@@ -267,6 +268,11 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   uint64_t unsignedRelAddr64;
 
 
+  // don't process non-existant section
+  if (ehRecord->ehFrameSection == NULL) {
+    return SC_SKIP;
+  }
+
   gelf_getshdr(ehRecord->ehFrameSection, &ehSecHead);
 
   if (skipSectionScan(e, ehSecHead, ehframeread_f) == SC_SKIP) {
@@ -274,27 +280,32 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   }
   //
   // we may need these depending on the FDE encode field
+  // if the sections weren't present, those encodings make no sense, 
+  // so don't panic
   //
-  gelf_getshdr(ehRecord->textSection, &textSecHead);
-  gelf_getshdr(ehRecord->dataSection, &dataSecHead);
+  if (ehRecord->textSection != NULL) {
+    gelf_getshdr(ehRecord->textSection, &textSecHead);
+  }
+  if (ehRecord->dataSection != NULL) {
+    gelf_getshdr(ehRecord->dataSection, &dataSecHead);
+  }
 
   data = NULL;
   data = elf_getdata(ehRecord->ehFrameSection,data);
 
-  // rethink how this is done.  per fdeEnc method?
-  signedBaseAddr32 = (int32_t)ehSecHead.sh_addr;  //remove this FIXME
+  if ((data->d_size == 0) || (data->d_buf == NULL)) {
+    return SC_SKIP;
+  }
 
   kc = 0; // cie count
   kf = 0; // fde count
   cf = EHF_CF_CONT; // continue flag
 
-  signedStreamOffset = 0;
   recordOffset = 0;
 
   pb = (uint8_t *)(data -> d_buf);
 
   extra = sizeof(*pw);  // FIXME: is this true for all addrDecodeType?
-  // addrDecodeType = DW_EH_PE_absptr;  // FIXME: get this from the CIE
 
   //
   // read through the eh_frame until the terminating record is reached.
@@ -307,11 +318,11 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
     // support extended record lengths here
     if (recLen == 0xfffffffful) {
-      fprintf(stderr, "Error in eh_frame handling, extended records not supported\n");
+      fprintf(stderr, "Warning in eh_frame handling, extended records not supported\n");
       return SC_SKIP;
     }
 
-    if (recLen == 0ull) {
+    if (recLen == 0ul) {
       cf = EHF_CF_DONE;
       continue;
     }
@@ -321,30 +332,36 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
     //
     // if this is a CIE, we need to read through all the variable length records 
-    // in order to find the fdeEnc.  That's why we do a,b,c,d,e...  We don't actually need 
+    // in order to find the fdeEnc.  That's why we use cieOffset and a...  We don't actually need 
     // some of the values here, but we have to decode them in order to find our place in the
     // byte stream, then let the optimizer throw them out.
     // 
     if (recType == EHF_TP_CIE) {
       ++kc;
       cieVersion = *(pb + EHF_CIE_BO_VER);
-      augString = pb + EHF_CIE_BO_AUSTR;
+      augString = (char *) (pb + EHF_CIE_BO_AUSTR);
 
       //
       // we only support zR data. FIXME skip all FDEs not associated with zR?  better
       //
       if (strcmp((const char *)augString,"zR")) {
-        fprintf(stderr, "Error in eh_frame handling, unsupported augmentation string %s found\n",augString);
+        fprintf(stderr, "Warning in eh_frame handling, unsupported augmentation string %s found in %s\n",augString,xname);
         return SC_SKIP;
       }
 
-      // cieOffset is used to traverse the CIE where numbers are variable length
+      // cieOffset, in bytes, is used to traverse the CIE where numbers are variable length
       //
       cieOffset = EHF_CIE_BO_AUSTR + strlen(augString) + 1; // Extra byte for null terminator
 
       codeAlign = decodeULEB128(pb+cieOffset, &a);
+      if (codeAlign == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
       dataAlign = decodeSLEB128(pb+cieOffset, &a);
+      if (dataAlign == EHF_SLEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
 
       if (cieVersion == EHF_CIE_VER_1) {
@@ -359,8 +376,14 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         // FIXME error message?
         return SC_SKIP;
       }
+      if (retReg == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
 
       augDataLen = decodeULEB128(pb+cieOffset, &a);
+      if (augDataLen == EHF_ULEB128_ERROR) {
+        return SC_SKIP;
+      }
       cieOffset += a;
 
       fdeEnc = *(pb+cieOffset);
@@ -459,7 +482,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
 
   if(verbose) {
-    fprintf (stderr, "scanning .eh_frame, found %ld CIE and %ld FDE records\n", kc, kf);
+    fprintf (stderr, "scanning .eh_frame, found %d CIE and %d FDE records\n", kc, kf);
     }
   
   return SC_DONE;

@@ -84,7 +84,7 @@ if OPT_ENABLE_HPCRUN
   SUBDIRS += \
 	hpcrun \
 	hpcfnbounds \
-	hpcfnbnds2
+	hpcfnbounds2
 endif
 
 if OPT_ENABLE_MPI

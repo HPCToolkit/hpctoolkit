@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -95,28 +95,12 @@ MYSOURCES = \
 	scan.c \
 	server.c
 
-MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
-	$(DYNINST_IFLAGS)
+MYCPPFLAGS = $(HPC_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@
 
 MYLDADD = -L$(LIBELF_LIB) -lelf
-
-# MYLDADD = libeh_frames.a  \
-# 	$(HPCLIB_SupportLean) \
-# 	$(DYNINST_LFLAGS)  \
-# 	$(BOOST_LFLAGS) \
-# 	$(TBB_LFLAGS)
-# 
-# if OPT_DYNINST_LIBDW
-#   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl
-# else
-#   MYLDADD += -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
-# endif
-
-#if OPT_USE_ZLIB
-#  MYLDADD += -L$(ZLIB_LIB) -lz
-#endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -127,18 +111,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 pkglibdir = @my_pkglibdir@
 pkglibexecdir = @my_pkglibexecdir@
 
-# noinst_LIBRARIES = libeh_frames.a
-
 pkglibexec_PROGRAMS = hpcfnbounds2
-# pkglibexec_SCRIPTS =  hpcfnbounds
-
-# libeh_frames_a_SOURCES = eh-frames.cpp
-# libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBDWARF_INC)
-# libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
 
 hpcfnbounds2_SOURCES  = $(MYSOURCES)
 hpcfnbounds2_CPPFLAGS = $(MYCPPFLAGS)
-# hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
+
+hpcfnbounds2_CFLAGS   = $(MYCFLAGS)
+
 hpcfnbounds2_LDADD    = $(MYLDADD)
 
 # if HOST_CPU_X86_FAMILY

@@ -21,8 +21,11 @@
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
 
-/* Build with openmp support */
+/* ParseAPI supports openmp (for hpcstruct) */
 #undef ENABLE_OPENMP
+
+/* Symtab supports openmp (for fnbounds) */
+#undef ENABLE_OPENMP_SYMTAB
 
 /* Support for AMD XOP instructions */
 #undef ENABLE_XOP
