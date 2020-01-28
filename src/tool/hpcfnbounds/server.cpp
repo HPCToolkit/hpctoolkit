@@ -359,8 +359,10 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
       if (ret != SUCCESS) {
 	errx(1, "write to fdout failed");
       }
-      fprintf(stderr, "oldfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
-
+      if (verbose_mode()) {
+	fprintf(stderr, "oldfnb %s = %d (%ld) -- %s\n",
+		strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
+      }
       num_addrs = 0;
     }
 
@@ -405,7 +407,10 @@ system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdout = fd2;
 
   // write version to runtime log
-  fprintf(stderr, "Begin hpcfnbounds (old) server, DiscoverFnTy = %d\n", fn_discovery);
+  if (verbose_mode()) {
+    fprintf(stderr, "Begin hpcfnbounds (old) server, DiscoverFnTy = %d\n",
+	    fn_discovery);
+  }
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
