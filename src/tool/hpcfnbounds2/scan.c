@@ -266,6 +266,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   uint8_t *upt8;
   int64_t signedRelAddr64;
   uint64_t unsignedRelAddr64;
+  uint64_t dataSize;
 
 
   // don't process non-existant section
@@ -293,13 +294,16 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   data = NULL;
   data = elf_getdata(ehRecord->ehFrameSection,data);
 
-  if ((data->d_size == 0) || (data->d_buf == NULL)) {
+  dataSize = data->d_size;  // for clarity later
+  if ((dataSize == 0) || (data->d_buf == NULL)) {
     return SC_SKIP;
   }
 
   kc = 0; // cie count
   kf = 0; // fde count
   cf = EHF_CF_CONT; // continue flag
+  fdeAddrDecodeType = DW_EH_PE_omit;  // init these in case we get a corrupt section
+  fdeAddrOpType = DW_EH_PE_omit;
 
   recordOffset = 0;
 
@@ -394,6 +398,13 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     }
 
     else {
+      //
+      // skip any FDE marked omit
+      //
+      if ( (fdeAddrOpType == DW_EH_PE_omit) || (fdeAddrDecodeType == DW_EH_PE_omit)) {
+        fprintf(stderr, "Error in eh_frame handling, malformed section or omit found\n");
+        return SC_SKIP;
+      }
       ++kf; // bump count
 
       switch(fdeAddrOpType) {
@@ -478,6 +489,12 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
     pb += (recLen + extra);
     recordOffset +=  (recLen + extra);
+    //
+    // corner case where the last FDE is at the end of the section
+    //
+    if (recordOffset >= dataSize) {
+      cf = EHF_CF_DONE;
+    }
   } while (cf == EHF_CF_CONT);
 
 
