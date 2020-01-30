@@ -97,7 +97,7 @@ sanitizer_buffer_process
   uint32_t kernel_id = b->kernel_id;
   gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
   
-  redshow_analyze(cubin_id, kernel_id, function_index, function_addr, gpu_patch_buffer);
+  redshow_analyze(cubin_id, function_index, function_addr, kernel_id, gpu_patch_buffer);
 }
 
 
