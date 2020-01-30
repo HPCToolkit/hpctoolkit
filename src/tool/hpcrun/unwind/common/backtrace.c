@@ -220,7 +220,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
       hpcrun_unw_drop();
     }
 
-    else if (hpcrun_trampoline_at_entry(ip)) {
+    else if (ENABLED(USE_TRAMP) && hpcrun_trampoline_at_entry(ip)) {
       if (ret == STEP_ERROR){
 	// we are about to enter the trampoline code to synchronously 
 	// record a return. for now, simply do nothing ...
