@@ -117,8 +117,7 @@
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
-#define GPU_PATCH_RECORD_NUM (256 * 1024)
-#define GPU_PATCH_BUFFER_POOL_NUM (128)
+#define GPU_PATCH_RECORD_NUM (16 * 1024)
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
