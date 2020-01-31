@@ -317,9 +317,9 @@ MPIBlameShiftIdlenessFact::make(Prof::CallPath::Profile& prof)
 
     // find secondary source metric
     if (MetricComponentsFact::isTimeMetric(m)
-	&& MetricComponentsFact::isDerivedMetric(m, s_cfvar)
-	&& m->type() == Metric::ADesc::TyIncl
-	&& m->isVisible() /* not a temporary */) {
+	      && MetricComponentsFact::isDerivedMetric(m, s_cfvar)
+	      && m->type()      == Metric::ADesc::TyIncl
+	      && m->isVisible() /* not a temporary */) {
       DIAG_Assert(m->computedType() == Prof::Metric::ADesc::ComputedTy_NonFinal,
 		  DIAG_UnexpectedInput);
       metricBalanceIds.push_back(m->id());

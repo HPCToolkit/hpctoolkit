@@ -497,6 +497,7 @@ hpcrun_init_internal(bool is_child)
   //
   if (! is_child) {
     SAMPLE_SOURCES(process_event_list, lush_metrics);
+    SAMPLE_SOURCES(finalize_event_list);
     hpcrun_metrics_data_finalize();
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
@@ -550,10 +551,6 @@ hpcrun_init_internal(bool is_child)
 
   // FIXME: this isn't in master-gpu-trace. how is it managed?
   // stream_tracing_init();
-
-#ifdef USE_ROCM
-  roctracer_init();
-#endif
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -674,10 +671,6 @@ hpcrun_fini_internal()
 
 // FIXME: this isn't in master-gpu-trace. how is it managed?
     // stream_tracing_fini();
-
-#ifdef USE_ROCM
-    roctracer_fini();
-#endif
 
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());

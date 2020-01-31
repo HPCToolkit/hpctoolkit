@@ -300,7 +300,7 @@ makeMetrics(Prof::CallPath::Profile& prof,
   if (!Analysis::Args::MetricFlg_isThread(args.prof_metrics)) {
     for (uint mId = mSrcBeg; mId < mSrcEnd; ++mId) {
       Prof::Metric::ADesc* m = mMgr.metric(mId);
-      m->isVisible(false);
+      m->visibility(HPCRUN_FMT_METRIC_HIDE);
     }
   }
 

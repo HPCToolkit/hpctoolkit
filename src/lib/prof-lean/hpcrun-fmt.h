@@ -162,6 +162,10 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 #define HPCRUN_FMT_NV_traceMinTime "trace-min-time"
 #define HPCRUN_FMT_NV_traceMaxTime "trace-max-time"
 
+#define HPCRUN_FMT_METRIC_HIDE            0
+#define HPCRUN_FMT_METRIC_SHOW            1
+#define HPCRUN_FMT_METRIC_SHOW_INCLUSIVE  2
+#define HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE  3
 
 //***************************************************************************
 // epoch-hdr
@@ -435,6 +439,10 @@ hpcrun_fmt_metric_set_value_int( hpcrun_metricFlags_t *flags,
 void
 hpcrun_fmt_metric_set_value_real( hpcrun_metricFlags_t *flags,
    hpcrun_metricVal_t *metric, double value);
+
+void
+hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format);
+
 
 //***************************************************************************
 // loadmap

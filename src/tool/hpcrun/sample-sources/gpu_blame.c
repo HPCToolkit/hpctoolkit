@@ -235,6 +235,10 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     blame_shift_register(&bs_entry);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 static void METHOD_FN(gen_event_set, int lush_metrics)
 {
     // There is NO signal hander for us, we proxy with itimer or PAPI_TOT_CYC

@@ -126,7 +126,8 @@ typedef enum {
   GPU_SYNC_EVENT                 = 1,
   GPU_SYNC_STREAM_EVENT_WAIT     = 2,
   GPU_SYNC_STREAM                = 3,
-  GPU_SYNC_CONTEXT               = 4
+  GPU_SYNC_CONTEXT               = 4,
+  GPU_SYNC_COUNT                 = 5
 } gpu_sync_type_t;
 
 
@@ -141,7 +142,8 @@ typedef enum {
   GPU_MEMCPY_D2A = 7,  // device to device array
   GPU_MEMCPY_D2D = 8,  // device to device
   GPU_MEMCPY_H2H = 9,  // host to host
-  GPU_MEMCPY_P2P = 10  // device peer to device peer
+  GPU_MEMCPY_P2P = 10, // device peer to device peer
+  GPU_MEMCPY_COUNT = 11
 } gpu_memcpy_type_t;
 
 
@@ -170,7 +172,8 @@ typedef enum {
   GPU_MEM_PINNED          = 4,
   GPU_MEM_DEVICE_STATIC   = 5,
   GPU_MEM_MANAGED_STATIC  = 6,
-  GPU_MEM_UNKNOWN         = 7
+  GPU_MEM_UNKNOWN         = 7,
+  GPU_MEM_COUNT           = 8
 } gpu_mem_kind_t;
 
 

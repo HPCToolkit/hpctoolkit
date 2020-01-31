@@ -71,12 +71,12 @@
 //******************************************************************************
 
 #define FORALL_ROCTRACER_ROUTINES(macro)			\
-  macro(roctracer_open_pool)		\
+  macro(roctracer_open_pool_expl)   \
   macro(roctracer_enable_callback)  \
-  macro(roctracer_enable_activity)  \
+  macro(roctracer_enable_activity_expl)  \
   macro(roctracer_disable_callback) \
   macro(roctracer_disable_activity) \
-  macro(roctracer_flush_activity)   \
+  macro(roctracer_flush_activity_expl)   \
   macro(roctracer_activity_push_external_correlation_id) \
   macro(roctracer_activity_pop_external_correlation_id)
 
@@ -108,7 +108,7 @@
 
 ROCTRACER_FN
 (
- roctracer_open_pool,
+ roctracer_open_pool_expl,
  (
   const roctracer_properties_t*,
   roctracer_pool_t**
@@ -126,7 +126,7 @@ ROCTRACER_FN
 
 ROCTRACER_FN
 (
- roctracer_enable_activity,
+ roctracer_enable_activity_expl,
  (
   roctracer_pool_t*
  )
@@ -150,15 +150,7 @@ ROCTRACER_FN
 
 ROCTRACER_FN
 (
- roctracer_flush_activity,
- (
-  roctracer_pool_t*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_flush_activity,
+ roctracer_flush_activity_expl,
  (
   roctracer_pool_t*
  )
@@ -444,6 +436,10 @@ roctracer_bind
  void
 )
 {
+  // This is a workaround for roctracer to not hang when taking timer interrupts
+  // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
+  setenv("HSA_ENABLE_INTERRUPT", "0", 1);
+  
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
@@ -476,21 +472,21 @@ roctracer_init
   properties.alloc_fun = 0;
   properties.alloc_arg = 0;
   properties.buffer_callback_arg = 0;
-  HPCRUN_ROCTRACER_CALL(roctracer_open_pool,(&properties, NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl,(&properties, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_callback,
 			(roctracer_subscriber_callback, NULL));
-  HPCRUN_ROCTRACER_CALL(roctracer_enable_activity, (NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_activity_expl, (NULL));
 }
 
 void
 roctracer_fini
 (
- void
+ void* args
 )
 {
   HPCRUN_ROCTRACER_CALL(roctracer_disable_callback, ());
   HPCRUN_ROCTRACER_CALL(roctracer_disable_activity, ());
-  HPCRUN_ROCTRACER_CALL(roctracer_flush_activity, (NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
 
   gpu_application_thread_process_activities();
 }
