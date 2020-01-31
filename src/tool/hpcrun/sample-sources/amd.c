@@ -148,7 +148,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-    fprintf(stderr, "Enter finalize_event_list for amd\n");
 #ifndef HPCRUN_STATIC_LINK
     if (roctracer_bind()) {
         EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
