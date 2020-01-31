@@ -154,6 +154,10 @@ METHOD_FN(process_event_list,int lush_metrics)
   TMSG(MPI, "Setting up metrics for MPI: %d", hpmpi_metric_id);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 
 //
 // Event sets not relevant for this sample source

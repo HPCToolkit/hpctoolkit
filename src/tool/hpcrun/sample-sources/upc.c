@@ -311,6 +311,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
+
 /*
  * On BG/P, all UPC interrupts go to core 0, so we sample core 0 and
  * stay blind to the other cores.  We can sample on core 0 of every
