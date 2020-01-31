@@ -83,8 +83,8 @@
   macro(GICOPY, 8)				\
   macro(GPU_INST, 9)				\
   macro(GTIMES, 10)				\
-  macro(KINFO, 11)				\
-  macro(GSAMP, 12)			
+  macro(KINFO, 12)				\
+  macro(GSAMP, 13)			
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -97,6 +97,7 @@
 //------------------------------------------------------------------------------
 
 // macros for counting entries in a FORALL macro
+// The last entry of a indexed metric is reserved for API count
 #define COUNT_FORALL_CLAUSE(a,b,c) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
@@ -117,7 +118,6 @@ name ## _metric_kind
 
 #define INITIALIZE_SCALAR_METRIC_KIND(kind, value)	\
   FORALL_ ## kind (INITIALIZE_SCALAR_METRIC)
-
 
 //------------------------------------------------------------------------------
 // metric initialization
@@ -308,6 +308,7 @@ gpu_metrics_attribute_mem_op
  cct_node_t *cct_node,
  int bytes_metric_index, 
  int time_metric_index, 
+ int count_metric_index,
  gpu_mem_t *m
 )
 {
@@ -318,6 +319,12 @@ gpu_metrics_attribute_mem_op
 
   gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, 
 					     (gpu_interval_t *) m);
+
+  metric_data_list_t *count_metrics = 
+    hpcrun_reify_metric_set(cct_node, count_metric_index);
+
+  // increment the count of mem op
+  gpu_metrics_attribute_metric_int(count_metrics, count_metric_index, 1);
 }
 
 
@@ -332,8 +339,10 @@ gpu_metrics_attribute_memory
 
   int bytes_metric_index = METRIC_ID(GMEM)[m->memKind];
 
+  int count_metric_index = METRIC_ID(GMEM)[GPU_MEM_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MEM), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MEM), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -348,8 +357,10 @@ gpu_metrics_attribute_memcpy
 
   int bytes_metric_index = METRIC_ID(GXCOPY)[m->copyKind];
 
+  int count_metric_index = METRIC_ID(GXCOPY)[GPU_MEMCPY_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_XCOPY), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_XCOPY), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -364,8 +375,10 @@ gpu_metrics_attribute_memset
 
   int bytes_metric_index = METRIC_ID(GMSET)[m->memKind];
 
+  int count_metric_index = METRIC_ID(GMSET)[GPU_MEM_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MSET), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MSET), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -405,7 +418,7 @@ gpu_metrics_attribute_kernel
 
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM_ACUMU), 
 				     k->blockSharedMemory);
-  
+
     // number of kernel launches
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
@@ -433,6 +446,14 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node, 
 					     METRIC_ID(GPU_TIME_SYNC), 
 					     (gpu_interval_t *) s);
+
+  int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
+  
+  metric_data_list_t *count_metrics = hpcrun_reify_metric_set(cct_node, count_metric_index);
+
+  // increment the count of sync op
+  // use 1.0 because sync metrics array is initialized as REAL
+  gpu_metrics_attribute_metric_real(count_metrics, count_metric_index, 1.0);
 }
 
 
@@ -594,7 +615,7 @@ gpu_metrics_default_enable
 
   FINALIZE_METRIC_KIND();
 
-// Memcpy metrics
+// Memory alloc/free metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GMEM
 

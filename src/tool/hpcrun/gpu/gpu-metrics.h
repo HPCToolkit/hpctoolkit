@@ -111,7 +111,9 @@ typedef enum {
   macro("GMEM:DST (B)",           GPU_MEM_DEVICE_STATIC,	\
 	"GPU memory alloc/free: device static memory (bytes)")	\
   macro("GMEM:MST (B)",           GPU_MEM_MANAGED_STATIC,	\
-	"GPU memory alloc/free: managed static memory (bytes)")
+	"GPU memory alloc/free: managed static memory (bytes)") \
+  macro("GMEM:COUNT",             GPU_MEM_COUNT, \
+  "GPU memory alloc/free: count")
 
 
 // gpu memory set
@@ -131,7 +133,9 @@ typedef enum {
   macro("GMSET:DST (B)",          GPU_MEM_DEVICE_STATIC,	\
 	"GPU memory set: device static memory (bytes)")		\
   macro("GMSET:MST (B)",          GPU_MEM_MANAGED_STATIC,	\
-	"GPU memory set: managed static memory (bytes)")
+	"GPU memory set: managed static memory (bytes)") \
+  macro("GMSET:COUNT",            GPU_MEM_COUNT, \
+  "GPU memory set: count")
 
 
 #define FORALL_GPU_INST_STALL(macro)					\
@@ -194,7 +198,9 @@ typedef enum {
   macro("GXCOPY:H2H (B)",         GPU_MEMCPY_H2H,		\
 	"GPU explicit memory copy: host to host (bytes)")	\
   macro("GXCOPY:P2P (B)",         GPU_MEMCPY_P2P,		\
-	"GPU explicit memory copy: peer to peer (bytes)")
+	"GPU explicit memory copy: peer to peer (bytes)") \
+  macro("GXCOPY:COUNT",           GPU_MEMCPY_COUNT, \
+  "GPU explicit memory copy: count")
 
 
 #define FORALL_GSYNC(macro)					\
@@ -207,7 +213,9 @@ typedef enum {
   macro("GSYNC:STR (us)",         GPU_SYNC_STREAM,		\
 	"GPU synchronizations: stream")				\
   macro("GSYNC:CTX (us)",         GPU_SYNC_CONTEXT,		\
-	"GPU synchronizations: context")
+	"GPU synchronizations: context")     \
+  macro("GSYNC:COUNT",           GPU_SYNC_COUNT, \
+  "GPU synchronizations: count")
 
 // gpu global memory access
 #define FORALL_GGMEM(macro)						\
@@ -314,8 +322,8 @@ typedef enum {
 	"GPU kernel: thread count")				\
   macro("GKER:BLK_SM",            GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")		\
-  macro("GKER:COUNT",             GPU_KINFO_COUNT,		\
-	"GPU kernel: launch count")				\
+  macro("GKER:COUNT",             GPU_KINFO_COUNT,  \
+  "GPU kernel: launch count")  \
   macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,		\
 	"GPU kernel: occupancy")          \
   
@@ -343,7 +351,9 @@ typedef enum {
   macro("GICOPY:RMAP",            GPU_ICOPY_RMAP,		\
 	"GPU implicit copy: remote maps "			\
 	"(prevent thrashing by pinning memory for a time with "	\
-	"some processor mapping and accessing it remotely)")
+	"some processor mapping and accessing it remotely)")  \
+  macro("GICOPY:COUNT",           GPU_ICOPY_COUNT,  \
+  "GPU implicit copy: count")
 
 
 // gpu branch
