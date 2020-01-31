@@ -65,6 +65,9 @@
 // macros
 //*****************************************************************************
 
+#define FORMAT_DISPLAY_PERCENTAGE     "%6.2f %%"
+#define FORMAT_DISPLAY_INT            "%6.0f"
+
 #define FORALL_INDEXED_METRIC_KINDS(macro)	\
   macro(GMEM, 0)				\
   macro(GMSET, 1)				\
@@ -161,6 +164,14 @@ name ## _metric_kind
 #define HIDE_INDEXED_METRIC(name,  index) \
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
+#define DIVISION_FORMULA(name) \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
+  hpcrun_set_percent(METRIC_ID(name), 0); \
+  reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
+  reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
+  reg_metric->formula = reg_formula; \
+  reg_metric->format  = FORMAT_DISPLAY_INT; \
 
 
 //*****************************************************************************
@@ -369,30 +380,30 @@ gpu_metrics_attribute_kernel
 
   if (METRIC_KIND(KINFO)) {
     metric_data_list_t *metrics = 
-      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM));
+      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM_ACUMU), 
 				     k->staticSharedMemory);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM_ACUMU), 
 				     k->dynamicSharedMemory);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM_ACUMU), 
 				     k->localMemoryTotal);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), 
 				     k->activeWarpsPerSM);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU), 
 				     k->maxActiveWarpsPerSM);
   
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS_ACUMU), 
 				     k->threadRegisters);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS_ACUMU), 
 				     k->blockThreads);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM_ACUMU), 
 				     k->blockSharedMemory);
   
     // number of kernel launches
@@ -640,6 +651,18 @@ gpu_metrics_KINFO_enable
   FORALL_KINFO(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+
+  metric_desc_t* reg_metric;
+  char *reg_formula;
+
+  DIVISION_FORMULA(GPU_KINFO_STMEM);
+  DIVISION_FORMULA(GPU_KINFO_DYMEM);
+  DIVISION_FORMULA(GPU_KINFO_LMEM);
+  DIVISION_FORMULA(GPU_KINFO_FGP_ACT);
+  DIVISION_FORMULA(GPU_KINFO_FGP_MAX);
+  DIVISION_FORMULA(GPU_KINFO_REGISTERS);
+  DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
+  DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
 }
 
 
@@ -738,10 +761,11 @@ gpu_metrics_GSAMP_enable
 
   char *util_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
 
-  sprintf(util_formula, "$%d/$%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
+  sprintf(util_formula, "min(100, max(0, 100*#%d/#%d))", METRIC_ID(GPU_SAMPLE_TOTAL), 
 	  METRIC_ID(GPU_SAMPLE_EXPECTED));
 
   util_metric->formula = util_formula;
+  util_metric->format  = FORMAT_DISPLAY_PERCENTAGE;
 }
 
 

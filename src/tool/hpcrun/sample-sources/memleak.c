@@ -170,7 +170,7 @@ METHOD_FN(process_event_list,int lush_metrics)
   char *buffer = hpcrun_malloc(sizeof(char) * MAX_CHAR_FORMULA);
 
   // leak = allocated - freed
-  sprintf(buffer, "$%d-$%d", alloc_metric_id, free_metric_id);
+  sprintf(buffer, "#%d-#%d", alloc_metric_id, free_metric_id);
   memleak_metric->formula = buffer;
 }
 

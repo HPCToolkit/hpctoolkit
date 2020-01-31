@@ -282,6 +282,22 @@ typedef enum {
 
 // gpu kernel characteristics
 #define FORALL_KINFO(macro)					\
+  macro("GKER:STMEM_ACUMU (B)",         GPU_KINFO_STMEM_ACUMU,		\
+	"GPU kernel: static memory (bytes)")			\
+  macro("GKER:DYMEM_ACUMU (B)",         GPU_KINFO_DYMEM_ACUMU,		\
+	"GPU kernel: dynamic memory (bytes)")			\
+  macro("GKER:LMEM_ACUMU (B)",          GPU_KINFO_LMEM_ACUMU,		\
+	"GPU kernel: local memory (bytes)")			\
+  macro("GKER:FGP_ACT_ACUMU",           GPU_KINFO_FGP_ACT_ACUMU,		\
+	"GPU kernel: fine-grain parallelism, actual")		\
+  macro("GKER:FGP_MAX_ACUMU",           GPU_KINFO_FGP_MAX_ACUMU,		\
+	"GPU kernel: fine-grain parallelism, maximum")		\
+  macro("GKER:THR_REG_ACUMU",           GPU_KINFO_REGISTERS_ACUMU,		\
+	"GPU kernel: thread register count")			\
+  macro("GKER:BLK_THR_ACUMU",           GPU_KINFO_BLK_THREADS_ACUMU,	\
+	"GPU kernel: thread count")				\
+  macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,		\
+	"GPU kernel: block local memory (bytes)")		\
   macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,		\
 	"GPU kernel: static memory (bytes)")			\
   macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,		\
@@ -301,8 +317,8 @@ typedef enum {
   macro("GKER:COUNT",             GPU_KINFO_COUNT,		\
 	"GPU kernel: launch count")				\
   macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,		\
-	"GPU kernel: occupancy")
-
+	"GPU kernel: occupancy")          \
+  
 
 // gpu implicit copy
 #define FORALL_GICOPY(macro)					\
