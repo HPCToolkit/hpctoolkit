@@ -851,7 +851,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (event_desc[i].metric_custom != NULL) {
       if (event_desc[i].metric_custom->register_fn != NULL) {
     	// special registration for customized event
-        event_desc[i].metric_custom->register_fn( &event_desc[i] );
+        event_desc[i].metric_custom->register_fn( lnux_kind, &event_desc[i] );
         METHOD_CALL(self, store_event, event_desc[i].attr.config, threshold);
         continue;
       }
