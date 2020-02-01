@@ -615,6 +615,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
+
 //
 // There is only 1 event for itimer, hence the event "set" is always the same.
 // The signal setup, however, is done here.

@@ -260,6 +260,7 @@ hpcrun_sample_sources_from_eventlist(char* evl)
 // The mapped operations
 
 _AS1(process_event_list, int, lush_metrics)
+_AS0(finalize_event_list, 0);
 _AS0(init, 0)
 _AS0(thread_init, 0)
 _AS0(thread_init_action, 0)

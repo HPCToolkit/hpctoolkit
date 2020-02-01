@@ -209,6 +209,11 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
+
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
