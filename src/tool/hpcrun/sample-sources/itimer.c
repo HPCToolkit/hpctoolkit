@@ -125,25 +125,25 @@
 // Implement WALLCLOCK as CPUTIME where possible, except on Blue Gene
 // where we need to use ITIMER.
 
-#define IDLE_METRIC_NAME     "idleness (usec)"
+#define IDLE_METRIC_NAME     "idleness (s)"
 
 #define WALLCLOCK_EVENT_NAME   "WALLCLOCK"
-#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (usec)"
+#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (s)"
 
 #define ITIMER_EVENT_NAME    "ITIMER"
-#define ITIMER_METRIC_NAME   "ITIMER (usec)"
+#define ITIMER_METRIC_NAME   "ITIMER (s)"
 #define ITIMER_SIGNAL         SIGPROF
 #define ITIMER_TYPE           ITIMER_PROF
 
 #define REALTIME_EVENT_NAME   "REALTIME"
-#define REALTIME_METRIC_NAME  "REALTIME (usec)"
+#define REALTIME_METRIC_NAME  "REALTIME (s)"
 #define REALTIME_SIGNAL       (SIGRTMIN + 3)
 
 #define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
 #define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
 
 #define CPUTIME_EVENT_NAME    "CPUTIME"
-#define CPUTIME_METRIC_NAME   "CPUTIME (usec)"
+#define CPUTIME_METRIC_NAME   "CPUTIME (s)"
 #define CPUTIME_CLOCK_TYPE     CLOCK_THREAD_CPUTIME_ID
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
@@ -595,7 +595,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
   kind_info_t *timer_kind = hpcrun_metrics_new_kind();
   int metric_id =
-    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Int,
+    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Real,
 					  sample_period, metric_property_time);
   METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
@@ -736,7 +736,8 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
-  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
+  // convert microseconds to seconds
+  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
