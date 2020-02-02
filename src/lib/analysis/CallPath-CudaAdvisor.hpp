@@ -142,16 +142,20 @@ class CudaAdvisor {
   void initInstDepGraph(const std::vector<CudaParse::Function *> &functions,
     const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph);
 
-  void propagateCCTGraph(const VMAInstMap &vma_inst_map,
-    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map, 
-    int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void propagateCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map, 
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void pruneCCTGraph(const VMAInstMap &vma_inst_map,
-    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
-    int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void pruneCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map,
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
     
-  void blameCCTGraph(const VMAInstMap &vma_inst_map, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, 
-    int mpi_rank, int thread_id, InstBlames &inst_blames);
+  void blameCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+    InstBlames &inst_blames);
 
   void overlayInstBlames(const std::vector<CudaParse::Function *> &functions, const InstBlames &inst_blames,
     FunctionBlames &function_blames);
@@ -166,9 +170,7 @@ class CudaAdvisor {
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
-  void debugOutstandingCCTs(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
-
-  void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
 

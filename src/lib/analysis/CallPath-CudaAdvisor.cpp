@@ -60,7 +60,7 @@ namespace CallPath {
  * Debug methods
  */
 
-void CudaAdvisor::debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   std::cout << "Nodes (" << cct_dep_graph.size() << "):" << std::endl;
   for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
     auto *node = *it;
@@ -81,49 +81,40 @@ void CudaAdvisor::debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_grap
   }
 
   std::cout << "Outstanding latencies:" << std::endl;
-  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
-    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {
-      // Skip tracing threads
-      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
-        continue;
-      }
+  // <dep_stalls, <vmas> >
+  std::map<int, std::vector<int> > exec_dep_vmas;
+  std::map<int, std::vector<int> > mem_dep_vmas;
 
-      // <dep_stalls, <vmas> >
-      std::map<int, std::vector<int> > exec_dep_vmas;
-      std::map<int, std::vector<int> > mem_dep_vmas;
+  for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
+    auto *node = *it;
+    auto node_vma = node->lmIP();
+    auto exec_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
+    auto exec_dep_stall_metric = node->demandMetric(exec_dep_stall_metric_id);
+    auto mem_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+    auto mem_dep_stall_metric = node->demandMetric(mem_dep_stall_metric_id);
 
-      for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
-        auto *node = *it;
-        auto node_vma = node->lmIP();
-        auto exec_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
-        auto exec_dep_stall_metric = node->demandMetric(exec_dep_stall_metric_id);
-        auto mem_dep_stall_metric_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
-        auto mem_dep_stall_metric = node->demandMetric(mem_dep_stall_metric_id);
+    exec_dep_vmas[exec_dep_stall_metric].push_back(node_vma);
+    mem_dep_vmas[mem_dep_stall_metric].push_back(node_vma);
+  }
 
-        exec_dep_vmas[exec_dep_stall_metric].push_back(node_vma);
-        mem_dep_vmas[mem_dep_stall_metric].push_back(node_vma);
-      }
+  std::cout << "[ " << mpi_rank << ", " << thread_id << "]" << std::endl;
 
-      std::cout << "[ " << mpi_rank << ", " << thread_id << "]" << std::endl;
-
-      std::cout << "exec_deps" << std::endl;
-      for (auto &iter : exec_dep_vmas) {
-        std::cout << iter.first << ": ";
-        for (auto vma : iter.second) {
-          std::cout << std::hex << "0x" << vma << std::dec << ", ";
-        }
-        std::cout << std::endl;
-      }
-
-      std::cout << "mem_deps" << std::endl;
-      for (auto &iter : mem_dep_vmas) {
-        std::cout << iter.first << ": ";
-        for (auto vma : iter.second) {
-          std::cout << std::hex << "0x" << vma << std::dec << ", ";
-        }
-        std::cout << std::endl;
-      }
+  std::cout << "exec_deps" << std::endl;
+  for (auto &iter : exec_dep_vmas) {
+    std::cout << iter.first << ": ";
+    for (auto vma : iter.second) {
+      std::cout << std::hex << "0x" << vma << std::dec << ", ";
     }
+    std::cout << std::endl;
+  }
+
+  std::cout << "mem_deps" << std::endl;
+  for (auto &iter : mem_dep_vmas) {
+    std::cout << iter.first << ": ";
+    for (auto vma : iter.second) {
+      std::cout << std::hex << "0x" << vma << std::dec << ", ";
+    }
+    std::cout << std::endl;
   }
 }
 
@@ -261,9 +252,10 @@ void CudaAdvisor::initInstDepGraph(const std::vector<CudaParse::Function *> &fun
 }
 
 
-void CudaAdvisor::propagateCCTGraph(const VMAInstMap &vma_inst_map,
-  CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map, 
-  int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void CudaAdvisor::propagateCCTGraph(int mpi_rank, int thread_id,
+  const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map, 
+  CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Init queue
   std::queue<Prof::CCT::ADynNode *> nodes;
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
@@ -308,15 +300,17 @@ void CudaAdvisor::propagateCCTGraph(const VMAInstMap &vma_inst_map,
 }
 
 
-void CudaAdvisor::pruneCCTGraph(const VMAInstMap &vma_inst_map,
-  CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
-  int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void CudaAdvisor::pruneCCTGraph(int mpi_rank, int thread_id,
+  const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map,
+  CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
 }
 
 
-void CudaAdvisor::blameCCTGraph(const VMAInstMap &vma_inst_map,
+void CudaAdvisor::blameCCTGraph(int mpi_rank, int thread_id,
+  const VMAInstMap &vma_inst_map,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-  int mpi_rank, int thread_id, InstBlames &inst_blames) {
+  InstBlames &inst_blames) {
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *node = *iter;
     auto src_vma = node->lmIP();
@@ -618,16 +612,16 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "CCT dependency graph before propgation: " << std::endl;
-        debugCCTDepGraph(cct_dep_graph);
+        debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
       // 3.1. Iterative update CCT graph
-      propagateCCTGraph(vma_inst_map, inst_dep_graph, vma_prof_map, mpi_rank, thread_id, cct_dep_graph);
+      propagateCCTGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map, inst_dep_graph, cct_dep_graph);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "CCT dependency graph after propgation: " << std::endl;
-        debugCCTDepGraph(cct_dep_graph);
+        debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
@@ -635,18 +629,18 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
       // 1) Latency constraints
       // 2) Opcode constraints
       // 3) Use on the path constraints
-      pruneCCTGraph(vma_inst_map, inst_dep_graph, vma_prof_map, mpi_rank, thread_id, cct_dep_graph);
+      pruneCCTGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map, inst_dep_graph, cct_dep_graph);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "CCT dependency graph after pruning: " << std::endl;
-        debugCCTDepGraph(cct_dep_graph);
+        debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
       // 4. Accumulate blames and record significant pairs and paths
       // Apportion based on block latency coverage and def inst issue count
       InstBlames inst_blames;
-      blameCCTGraph(vma_inst_map, cct_dep_graph, mpi_rank, thread_id, inst_blames);
+      blameCCTGraph(mpi_rank, thread_id, vma_inst_map, cct_dep_graph, inst_blames);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "Debug inst blames: " << std::endl;
