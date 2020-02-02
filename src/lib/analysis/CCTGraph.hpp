@@ -77,8 +77,6 @@
 
 namespace Analysis {
 
-namespace CallPath {
-
 // Directed edge
 template<class T>
 struct CCTEdge {
@@ -134,20 +132,28 @@ class CCTGraph {
     return _incoming_nodes.end();
   }
 
-  size_t outgoing_nodes_size(T node) {
+  size_t outgoing_nodes_size(T node) const {
     auto iter = _outgoing_nodes.find(node); 
     if (iter == _outgoing_nodes.end()) {
       return 0;
     }
-    return _outgoing_nodes[node].size();
+    return iter->second.size();
   }
 
-  size_t incoming_nodes_size(T node) {
+  size_t incoming_nodes_size(T node) const {
     auto iter = _incoming_nodes.find(node); 
     if (iter == _incoming_nodes.end()) {
       return 0;
     }
-    return _incoming_nodes[node].size();
+    return iter->second.size();
+  }
+
+  typename NeighborNodeMap::iterator outgoing_nodes(T node) const {
+    return _outgoing_nodes.find(node);
+  }
+  
+  typename NeighborNodeMap::iterator outgoing_nodes_end() const {
+    return _outgoing_nodes.end();
   }
 
   typename NeighborNodeMap::iterator outgoing_nodes(T node) {
@@ -191,8 +197,6 @@ class CCTGraph {
   typename std::set<CCTEdge<T> > _edges;
   std::set<T> _nodes;
 };
-
-}  // CallPath
 
 }  // Analysis
 
