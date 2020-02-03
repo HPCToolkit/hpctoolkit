@@ -34,6 +34,7 @@
     <!ELEMENT MetricTable (Metric)*>
 
     <!-- Metric: (i)d; (n)ame -->
+    <!--   o: metric sequence order (hpcrun metric order) -->
     <!--   md: metric description -->
     <!--   mp: metric parent ID   -->
     <!--   es: number of samples    (perf_events only) -->
@@ -45,6 +46,7 @@
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
 	      i            CDATA #REQUIRED
+	      o	           CDATA #IMPLIED
 	      n            CDATA #REQUIRED
 	      md	       CDATA #IMPLIED
 	      mp	       CDATA #IMPLIED
@@ -61,7 +63,7 @@
     <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
     <!ELEMENT MetricFormula (Info?)>
     <!ATTLIST MetricFormula
-	      t   (combine|finalize) "finalize"
+	      t   (combine|finalize|view) "finalize"
 	      i   CDATA #IMPLIED
 	      frm CDATA #REQUIRED>
 

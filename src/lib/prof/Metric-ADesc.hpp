@@ -76,6 +76,11 @@
 
 #include <lib/support/diagnostics.h>
 
+//*************************** macros or constants **************************//
+
+#define ORDER_ARTIFICIAL_METRIC -1
+
+
 //*************************** Forward Declarations **************************//
 
 namespace Prof {
@@ -99,47 +104,51 @@ class ADesc
 public:
   static const uint id_NULL = UINT_MAX;
 
+  // default value of formula: empty ? 
+  // or do we want metric to itself (like default value of combine and finalize)? tbd.
+  static const std::string s_formulaNULL;
+
 public:
   ADesc()
-    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
-      m_isVisible(true), m_isSortKey(false),
+    : m_id(id_NULL), m_type(TyNULL), m_partner(NULL), 
+      m_visibility(HPCRUN_FMT_METRIC_SHOW), m_isSortKey(false),
       m_doDispPercent(true), m_isPercent(false),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   { }
 
   ADesc(const char* nameBase, const char* description,
-	bool isVisible = true, bool isSortKey = false,
+	int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description((description) ? description : ""),
-      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_visibility(visibility), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   {
     std::string nm = (nameBase) ? nameBase : "";
     nameFromString(nm);
   }
 
   ADesc(const std::string& nameBase, const std::string& description,
-	bool isVisible = true, bool isSortKey = false,
+	int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	bool doDispPercent = true, bool isPercent = false)
     : m_id(id_NULL), m_type(TyNULL), m_partner(NULL),
       m_description(description),
-      m_isVisible(isVisible), m_isSortKey(isSortKey),
+      m_visibility(visibility), m_isSortKey(isSortKey),
       m_doDispPercent(doDispPercent), m_isPercent(isPercent),
       m_computedTy(ComputedTy_NULL),
       m_dbId(id_NULL), m_dbNumMetrics(0),
       m_num_samples(0), m_isMultiplexed(false),
       m_period_mean(0), m_sampling_type(FREQUENCY),
-	  m_isTemporary(false)
+	  m_isTemporary(false), m_order(ORDER_ARTIFICIAL_METRIC)
   {
     nameFromString(nameBase);
   }
@@ -151,13 +160,14 @@ public:
     : m_id(x.m_id), m_type(x.m_type), m_partner(x.m_partner),
       m_nameBase(x.m_nameBase), m_namePfx(x.m_namePfx), m_nameSfx(x.m_nameSfx),
       m_description(x.m_description),
-      m_isVisible(x.m_isVisible), m_isSortKey(x.m_isSortKey),
+      m_visibility(x.m_visibility), m_isSortKey(x.m_isSortKey),
       m_doDispPercent(x.m_doDispPercent), m_isPercent(x.m_isPercent),
       m_computedTy(x.m_computedTy),
       m_dbId(x.m_dbId), m_dbNumMetrics(x.m_dbNumMetrics),
       m_num_samples(x.m_num_samples), m_isMultiplexed(x.m_isMultiplexed),
       m_period_mean(x.m_period_mean), m_sampling_type(x.m_sampling_type),
-	  m_isTemporary(false)
+      m_isTemporary(false), m_formula(x.m_formula), m_format(x.m_format), 
+      m_order(x.m_order)
   { }
 
   ADesc&
@@ -171,7 +181,7 @@ public:
       m_namePfx       = x.m_namePfx;
       m_nameSfx       = x.m_nameSfx;
       m_description   = x.m_description;
-      m_isVisible     = x.m_isVisible;
+      m_visibility    = x.m_visibility;
       m_isSortKey     = x.m_isSortKey;
       m_doDispPercent = x.m_doDispPercent;
       m_isPercent     = x.m_isPercent;
@@ -185,6 +195,9 @@ public:
       m_sampling_type = x.m_sampling_type;
 
       m_isTemporary   = x.m_isTemporary;
+      m_formula       = x.m_formula;
+      m_format        = x.m_format;
+      m_order         = x.m_order;
     }
     return *this;
   }
@@ -206,6 +219,20 @@ public:
   id(uint id)
   { m_id = id; }
 
+  // -------------------------------------------------------
+  // hpcrun metric sequence order: need to keep the sequence order
+  // since hpcprof will reorder the ID.
+  // The sequence order is important when hpcrun has its
+  // metric formula to be passed to hpcviewer (or computed by hpcprof?)
+  // -------------------------------------------------------
+
+  void 
+  order(int sequence)
+  { m_order = sequence; }
+
+  int
+  order() const
+  {return m_order;} 
 
   // -------------------------------------------------------
   // type:
@@ -377,11 +404,16 @@ public:
   // isVisible
   bool
   isVisible() const
-  { return m_isVisible; }
+  { return m_visibility != HPCRUN_FMT_METRIC_HIDE; }
+
+
+  int
+  visibility() const
+  { return m_visibility; }
 
   void
-  isVisible(bool x)
-  { m_isVisible = x; }
+  visibility(int x)
+  { m_visibility = x; }
 
 
   bool
@@ -521,6 +553,22 @@ public:
   static ADescTy
   fromHPCRunMetricValTy(MetricFlags_ValTy_t ty);
 
+  void 
+  formula(std::string formula)
+  { m_formula = formula; }
+
+  std::string 
+  formula() const
+  { return m_formula; }
+
+  void 
+  format(std::string fmt)
+  { m_format = fmt; }
+
+  std::string
+  format() const
+  { return m_format; }
+
   // -------------------------------------------------------
   // perf-event additional info
   // -------------------------------------------------------
@@ -564,10 +612,9 @@ private:
   ADesc* m_partner;
 
   std::string m_nameBase, m_namePfx, m_nameSfx;
-
   std::string m_description;
 
-  bool m_isVisible;
+  int  m_visibility;
   bool m_isSortKey;
   bool m_doDispPercent;
   bool m_isPercent;
@@ -584,6 +631,15 @@ private:
   enum SamplingType_e m_sampling_type;
 
   bool m_isTemporary;
+
+  // hpcrun metric formula
+  std::string m_formula;
+
+  // display format                                  
+  std::string m_format;
+
+  // hpcrun metric order
+  int m_order;
 };
 
 
@@ -612,10 +668,10 @@ public:
 	      uint64_t period, bool isUnitsEvents,
 	      const char* profName, const char* profRelId,
 	      const char* profType,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
@@ -625,10 +681,10 @@ public:
 	      uint64_t period, bool isUnitsEvents,
 	      const std::string& profName, const std::string& profRelId,
 	      const std::string& profType, 
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_period(period), m_flags(hpcrun_metricFlags_NULL),
       m_isUnitsEvents(isUnitsEvents),
       m_profName(profName), m_profileRelId(profRelId), m_profileType(profType)
@@ -779,19 +835,19 @@ public:
   // Constructor: assumes ownership of 'expr'
   DerivedDesc(const char* nameBase, const char* description,
 	      Metric::AExpr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
   DerivedDesc(const std::string& nameBase, const std::string& description,
 	      Metric::AExpr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
@@ -861,19 +917,19 @@ public:
   // Constructor: assumes ownership of 'expr'
   DerivedIncrDesc(const char* nameBase, const char* description,
 		  Metric::AExprIncr* expr,
-		  bool isVisible = true, bool isSortKey = false,
+		  int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 		  bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 
   DerivedIncrDesc(const std::string& nameBase, const std::string& description,
 	      Metric::AExprIncr* expr,
-	      bool isVisible = true, bool isSortKey = false,
+	      int visibility = HPCRUN_FMT_METRIC_SHOW, bool isSortKey = false,
 	      bool doDispPercent = true, bool isPercent = false)
     : ADesc(nameBase, description,
-	    isVisible, isSortKey, doDispPercent, isPercent),
+	    visibility, isSortKey, doDispPercent, isPercent),
       m_expr(expr)
   { }
 

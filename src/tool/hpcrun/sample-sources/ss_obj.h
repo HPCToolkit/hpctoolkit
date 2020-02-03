@@ -94,6 +94,7 @@ sample_source_t obj_name() = {
   .shutdown = shutdown,
   .supports_event = supports_event,
   .process_event_list = process_event_list,
+  .finalize_event_list = finalize_event_list,
   .gen_event_set = gen_event_set,
   .display_events = display_events,
 

@@ -125,7 +125,7 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
 
 static void
 gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts) {
+  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts, std::set<Prof::CCT::ADynNode *> &gpu_roots) {
   auto inst_pc_front = inst_stats.front()->pc;
   auto inst_pc_back = inst_stats.back()->pc;
 
@@ -138,24 +138,25 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
   Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
     IteratorStack::PreOrder);
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
-    // TODO(keren): match loadmap
-    //if (isStmt(n)) {
-      Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
-      if (n_dyn) {
-        Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
-        VMA n_lm_ip = n_dyn->lmIP();
-        // filter out
-        if (n_lm_id != lm_id || n_lm_ip < inst_pc_front || n_lm_ip > inst_pc_back) {
-          continue;
-        }
-
-        if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-          std::cout << "Find CCT node vma: 0x" << std::hex << n_lm_ip << std::dec << std::endl;
-        }
-
-        vma_stmts.emplace_back(n_lm_ip, n);
+    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+    if (n_dyn) {
+      Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
+      VMA n_lm_ip = n_dyn->lmIP();
+      // filter out
+      if (n_lm_id != lm_id || n_lm_ip < inst_pc_front || n_lm_ip > inst_pc_back) {
+        continue;
       }
-    //}
+
+      if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+        std::cout << "Find CCT node vma: 0x" << std::hex << n_lm_ip << std::dec << std::endl;
+      }
+
+      vma_stmts.emplace_back(n_lm_ip, n);
+
+      // Get the parent of an instruction node as the gpu root node
+      Prof::CCT::ADynNode* n_parent = dynamic_cast<Prof::CCT::ADynNode*>(n->parent());
+      gpu_roots.insert(n_parent);
+    }
   }
 
   // Sort stmt nodes O(nlogn)
@@ -263,26 +264,40 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     std::vector<CudaParse::Function *> functions;
     CudaParse::readCudaInstructions(file, functions);
 
-    // Step 2: Merge metrics
-    // Sort the instructions by PC
+    // Step 2: Sort the instructions by PC
     std::vector<CudaParse::InstructionStat *> inst_stats;
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
-    // Step 3: Blame instruction latencies
-    cuda_advisor.blame(lm_id, functions, inst_stats);
-
-    cuda_advisor.advise(lm_id);
-
-    // Find new metric names and insert new mappings between from name to prof metric ids
+    // Step 3: Find new metric names and insert new mappings between from name to prof metric ids
     createMetrics(inst_stats, metric_name_prof_map, *mgr);
-    
-    // Step 4: Gather all CCT nodes with lm_id
+
+    // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
+    std::set<Prof::CCT::ADynNode *> gpu_roots;
     auto *prof_root = prof.cct()->root();
-    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts);
+    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts, gpu_roots);
 
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
+
+    // Step 6: Make advise
+    // Find each GPU calling context, make recommendation for each calling context 
+    for (auto *gpu_root : gpu_roots) {
+      // Pass current gpu root 
+      cuda_advisor.config(gpu_root);
+
+      // <mpi_rank, <thread_id, <blames>>>
+      FunctionBlamesMap function_blames_map;
+
+      // Blame latencies
+      cuda_advisor.blame(functions, function_blames_map);
+
+      // Make advise for the calling context and cache result
+      cuda_advisor.advise(function_blames_map);
+    }
+
+    // Save advise for this file and clear cache
+    cuda_advisor.save(file + ".advise");
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;

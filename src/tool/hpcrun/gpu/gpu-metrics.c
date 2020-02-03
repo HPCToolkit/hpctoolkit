@@ -65,6 +65,9 @@
 // macros
 //*****************************************************************************
 
+#define FORMAT_DISPLAY_PERCENTAGE     "%6.2f %%"
+#define FORMAT_DISPLAY_INT            "%6.0f"
+
 #define FORALL_INDEXED_METRIC_KINDS(macro)	\
   macro(GMEM, 0)				\
   macro(GMSET, 1)				\
@@ -80,8 +83,8 @@
   macro(GICOPY, 8)				\
   macro(GPU_INST, 9)				\
   macro(GTIMES, 10)				\
-  macro(KINFO, 11)				\
-  macro(GSAMP, 12)			
+  macro(KINFO, 12)				\
+  macro(GSAMP, 13)			
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -94,6 +97,7 @@
 //------------------------------------------------------------------------------
 
 // macros for counting entries in a FORALL macro
+// The last entry of a indexed metric is reserved for API count
 #define COUNT_FORALL_CLAUSE(a,b,c) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
@@ -114,7 +118,6 @@ name ## _metric_kind
 
 #define INITIALIZE_SCALAR_METRIC_KIND(kind, value)	\
   FORALL_ ## kind (INITIALIZE_SCALAR_METRIC)
-
 
 //------------------------------------------------------------------------------
 // metric initialization
@@ -161,6 +164,15 @@ name ## _metric_kind
 #define HIDE_INDEXED_METRIC(name,  index) \
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
+#define DIVISION_FORMULA(name) \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
+  hpcrun_set_percent(METRIC_ID(name), 0); \
+  hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
+  reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
+  reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
+  reg_metric->formula = reg_formula; \
+  reg_metric->format  = FORMAT_DISPLAY_INT; \
 
 
 //*****************************************************************************
@@ -306,6 +318,7 @@ gpu_metrics_attribute_mem_op
  cct_node_t *cct_node,
  int bytes_metric_index, 
  int time_metric_index, 
+ int count_metric_index,
  gpu_mem_t *m
 )
 {
@@ -316,6 +329,12 @@ gpu_metrics_attribute_mem_op
 
   gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, 
 					     (gpu_interval_t *) m);
+
+  metric_data_list_t *count_metrics = 
+    hpcrun_reify_metric_set(cct_node, count_metric_index);
+
+  // increment the count of mem op
+  gpu_metrics_attribute_metric_int(count_metrics, count_metric_index, 1);
 }
 
 
@@ -330,8 +349,10 @@ gpu_metrics_attribute_memory
 
   int bytes_metric_index = METRIC_ID(GMEM)[m->memKind];
 
+  int count_metric_index = METRIC_ID(GMEM)[GPU_MEM_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MEM), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MEM), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -346,8 +367,10 @@ gpu_metrics_attribute_memcpy
 
   int bytes_metric_index = METRIC_ID(GXCOPY)[m->copyKind];
 
+  int count_metric_index = METRIC_ID(GXCOPY)[GPU_MEMCPY_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_XCOPY), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_XCOPY), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -362,8 +385,10 @@ gpu_metrics_attribute_memset
 
   int bytes_metric_index = METRIC_ID(GMSET)[m->memKind];
 
+  int count_metric_index = METRIC_ID(GMSET)[GPU_MEM_COUNT];
+
   gpu_metrics_attribute_mem_op(cct_node, bytes_metric_index, 
-			       METRIC_ID(GPU_TIME_MSET), (gpu_mem_t *) m);
+			       METRIC_ID(GPU_TIME_MSET), count_metric_index, (gpu_mem_t *) m);
 }
 
 
@@ -378,32 +403,32 @@ gpu_metrics_attribute_kernel
 
   if (METRIC_KIND(KINFO)) {
     metric_data_list_t *metrics = 
-      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM));
+      hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_STMEM_ACUMU), 
 				     k->staticSharedMemory);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_DYMEM_ACUMU), 
 				     k->dynamicSharedMemory);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_LMEM_ACUMU), 
 				     k->localMemoryTotal);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), 
 				     k->activeWarpsPerSM);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU), 
 				     k->maxActiveWarpsPerSM);
   
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS_ACUMU), 
 				     k->threadRegisters);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS_ACUMU), 
 				     k->blockThreads);
 
-    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM), 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM_ACUMU), 
 				     k->blockSharedMemory);
-  
+
     // number of kernel launches
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
@@ -431,6 +456,14 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node, 
 					     METRIC_ID(GPU_TIME_SYNC), 
 					     (gpu_interval_t *) s);
+
+  int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
+  
+  metric_data_list_t *count_metrics = hpcrun_reify_metric_set(cct_node, count_metric_index);
+
+  // increment the count of sync op
+  // use 1.0 because sync metrics array is initialized as REAL
+  gpu_metrics_attribute_metric_real(count_metrics, count_metric_index, 1.0);
 }
 
 
@@ -592,7 +625,7 @@ gpu_metrics_default_enable
 
   FINALIZE_METRIC_KIND();
 
-// Memcpy metrics
+// Memory alloc/free metrics
 #undef CURRENT_METRIC 
 #define CURRENT_METRIC GMEM
 
@@ -649,6 +682,18 @@ gpu_metrics_KINFO_enable
   FORALL_KINFO(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
+
+  metric_desc_t* reg_metric;
+  char *reg_formula;
+
+  DIVISION_FORMULA(GPU_KINFO_STMEM);
+  DIVISION_FORMULA(GPU_KINFO_DYMEM);
+  DIVISION_FORMULA(GPU_KINFO_LMEM);
+  DIVISION_FORMULA(GPU_KINFO_FGP_ACT);
+  DIVISION_FORMULA(GPU_KINFO_FGP_MAX);
+  DIVISION_FORMULA(GPU_KINFO_REGISTERS);
+  DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
+  DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
 }
 
 
@@ -747,10 +792,11 @@ gpu_metrics_GSAMP_enable
 
   char *util_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
 
-  sprintf(util_formula, "$%d/$%d", METRIC_ID(GPU_SAMPLE_TOTAL), 
+  sprintf(util_formula, "min(100, max(0, 100*#%d/#%d))", METRIC_ID(GPU_SAMPLE_TOTAL), 
 	  METRIC_ID(GPU_SAMPLE_EXPECTED));
 
   util_metric->formula = util_formula;
+  util_metric->format  = FORMAT_DISPLAY_PERCENTAGE;
 }
 
 

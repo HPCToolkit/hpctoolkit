@@ -78,6 +78,7 @@ MYSOURCES = \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
 	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
 	CallPath-CudaAdvisor.hpp CallPath-CudaAdvisor.cpp \
+	CallPath-CudaOptimizer.hpp CallPath-CudaOptimizer.cpp \
 	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
 	\
 	MetricNameProfMap.cpp \

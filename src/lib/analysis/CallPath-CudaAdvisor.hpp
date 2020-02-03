@@ -68,6 +68,7 @@
 #include <stack>
 #include <string>
 #include <map>
+#include <queue>
 
 //*************************** User Include Files ****************************
 
@@ -80,6 +81,7 @@
 
 #include <lib/cuda/AnalyzeInstruction.hpp>
 
+#include "CallPath-CudaOptimizer.hpp"
 #include "CCTGraph.hpp"
 #include "MetricNameProfMap.hpp"
 
@@ -91,49 +93,6 @@ namespace Analysis {
 
 namespace CallPath {
 
-struct InstructionBlame {
-  VMA src, dst; 
-  int metric_id;
-  double value;
-
-  InstructionBlame() {}
-  InstructionBlame(VMA src, VMA dst, int metric_id, double value) : 
-    src(src), dst(dst), metric_id(metric_id), value(value) {}
-
-  bool operator < (const InstructionBlame &other) const {
-    return this->src < other.src;
-  }
-};
-
-
-struct BlockBlame {
-  VMA start, end;
-  std::vector<InstructionBlame> inst_blames;
-  std::map<int, double> blames;
-  double blame_sum;
-
-  BlockBlame() {}
-  BlockBlame(VMA start, VMA end) : start(start), end(end) {}
-};
-
-
-struct FunctionBlame {
-  VMA start, end;
-  std::vector<BlockBlame> block_blames;
-  std::map<int, double> blames;
-  double blame_sum;
-};
-
-
-struct Bottleneck {
-  Prof::LoadMap::LMId_t lm_id;
-  size_t function_id;
-  size_t block_id;
-
-  // BLAME latency->pcs
-  std::map<std::string, std::vector<std::pair<VMA, double> > > hotspots;
-};
-
 
 class CudaAdvisor {
  public:
@@ -142,56 +101,78 @@ class CudaAdvisor {
 
   void init();
 
-  void blame(Prof::LoadMap::LMId_t lm_id, std::vector<CudaParse::Function *> &functions,
-    std::vector<CudaParse::InstructionStat *> &inst_stats);
+  void config(Prof::CCT::ADynNode *gpu_root);
 
-  void advise(Prof::LoadMap::LMId_t lm_id);
+  void blame(const std::vector<CudaParse::Function *> &functions, FunctionBlamesMap &function_blames);
+
+  void advise(const FunctionBlamesMap &function_blames);
 
   void save(const std::string &file_name);
  
+  ~CudaAdvisor() {
+    for (auto *optimizer : _intra_warp_optimizers) {
+      delete optimizer;
+    }
+    for (auto *optimizer : _inter_warp_optimizers) {
+      delete optimizer;
+    }
+  }
+
  private:
   typedef std::map<VMA, Prof::CCT::ADynNode *> VMAProfMap;
 
   typedef std::map<VMA, CudaParse::InstructionStat *> VMAInstMap;
 
-  typedef VMAIntervalMap<Prof::Struct::ANode *> VMAStructMap;
+  typedef std::vector<InstructionBlame> InstBlames;
 
-  typedef std::map<int, std::map<int, std::vector<InstructionBlame> > > InstBlames;
+  typedef std::vector<FunctionBlame> FunctionBlames;
 
-  typedef std::map<int, std::map<int, std::vector<FunctionBlame> > > FunctionBlames;
+  typedef std::priority_queue<BlockBlame> BlockBlameQueue;
+
+  typedef std::map<CudaOptimizer *, double> OptimizerScoreMap;
 
  private:
-  void constructVMAProfMap(Prof::LoadMap::LMId_t lm_id, VMAProfMap &vma_prof_map,
+  void constructVMAProfMap(VMAProfMap &vma_prof_map);
+
+  void constructVMAInstMap(const std::vector<CudaParse::Function *> &functions,
     VMAInstMap &vma_inst_map);
 
   void constructVMAStructMap(VMAStructMap &vma_struct_map);
 
-  void constructVMAInstMap(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    VMAInstMap &vma_inst_map);
+  void initInstDepGraph(const std::vector<CudaParse::Function *> &functions,
+    const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph);
 
-  void initInstGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAInstMap &vma_inst_map);
+  void propagateCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map, 
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
+  void pruneCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map,
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+    
+  void blameCCTGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+    InstBlames &inst_blames);
+
+  void overlayInstBlames(const std::vector<CudaParse::Function *> &functions, const InstBlames &inst_blames,
+    FunctionBlames &function_blames);
+
+  void selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames);
+
+  void rankOptimizers(const VMAStructMap &vma_struct_map,
+    BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores);
+
+  void concatAdvise(const OptimizerScoreMap &optimizer_scores);
   
-  void initCCTGraph(std::vector<CudaParse::InstructionStat *> &inst_stats,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAProfMap &vma_prof_map);
+  // Helper functions
+  int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
-  void updateCCTGraph(Prof::LoadMap::LMId_t lm_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph, VMAProfMap &vma_prof_map,
-    VMAStructMap &vma_struct_map, VMAInstMap &vma_inst_map);
-
-  void blameCCTGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, VMAInstMap &vma_inst_map, InstBlames &inst_blames);
-
-  void overlayInstructionBlames(std::vector<CudaParse::Function *> &functions, InstBlames &inst_blames);
-
-  void debugOutstandingCCTs(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
-
-  void debugCCTDepGraph(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
-
-  void demandNodeMetrics(Prof::CCT::ADynNode *node);
-
-  int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
  private:
   std::string _inst_metric;
@@ -213,11 +194,26 @@ class CudaAdvisor {
 
   std::set<std::string> _inst_stall_metrics;
   std::set<std::string> _dep_stall_metrics;
+
   Prof::CallPath::Profile *_prof;
   MetricNameProfMap *_metric_name_prof_map;
 
-  // <mpi_rank, <thread_id, <blames>>>
-  std::map<int, std::map<int, std::vector<FunctionBlame>>> _function_blames;
+  Prof::CCT::ADynNode *_gpu_root;
+
+  std::string _cache;
+
+  std::vector<CudaOptimizer *> _intra_warp_optimizers;
+  std::vector<CudaOptimizer *> _inter_warp_optimizers;
+
+  CudaOptimizer *_loop_unroll_optimizer;
+  CudaOptimizer *_memory_layout_optimizer;
+  CudaOptimizer *_strength_reduction_optimizer;
+  CudaOptimizer *_adjust_threads_optimizer;
+  CudaOptimizer *_adjust_registers_optimizer;
+ 
+ private:
+  const int _top_block_blames = 5;
+  const int _top_optimizers = 5;
 };
 
 

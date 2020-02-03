@@ -63,7 +63,15 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <unistd.h>
+
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP_SYMTAB
+#include <omp.h>
+#endif
+
 
 //*****************************************************************************
 // local includes
@@ -80,7 +88,6 @@
 #include "syserv-mesg.h"
 #include "Symtab.h"
 #include "Symbol.h"
-
 
 
 //*****************************************************************************
@@ -137,6 +144,13 @@ main(int argc, char* argv[])
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char *object_file;
   int n, fdin, fdout;
+  int jobs = 1;
+
+  // num threads may be specified via environ or -js arg
+  char *str = getenv("HPCFNBOUNDS_NUM_THREADS");
+  if (str != NULL) {
+    jobs = atoi(str);
+  }
 
   for (n = 1; n < argc; n++) {
     if (strcmp(argv[n], "-c") == 0) {
@@ -147,6 +161,13 @@ main(int argc, char* argv[])
     }
     else if (strcmp(argv[n], "-h") == 0 || strcmp(argv[n], "--help") == 0) {
       usage(argv[0], 0);
+    }
+    else if (strcmp(argv[n], "-js") == 0) {
+      if (argc < n + 2 || sscanf(argv[n+1], "%d", &jobs) < 1 || jobs < 1) {
+	fprintf(stderr, "hpcfnbounds: bad or missing number of threads for -js\n");
+	usage(argv[0], 1);
+      }
+      n += 1;
     }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
@@ -176,6 +197,12 @@ main(int argc, char* argv[])
       break;
     }
   }
+
+  // If symtab supports openmp, then set num threads.
+#ifdef ENABLE_OPENMP_SYMTAB
+  if (jobs < 1) { jobs = 1; }
+  omp_set_num_threads(jobs);
+#endif
 
   // Run as the system server.
   if (server_mode()) {
@@ -216,6 +243,12 @@ server_mode(void)
   return the_mode == MODE_SERVER;
 }
 
+bool
+verbose_mode(void)
+{
+  return verbose;
+}
+
 
 extern "C" {
 
@@ -249,9 +282,10 @@ usage(char *command, int status)
     "\t-c\twrite output in C source code\n"
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
+    "\t-js num \trun with num threads in symtab (default 1)\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
-    "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
+    "\t-v\tverbose mode for fnbounds server\n\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);

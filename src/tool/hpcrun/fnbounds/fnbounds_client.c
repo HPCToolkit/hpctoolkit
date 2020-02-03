@@ -431,7 +431,7 @@ launch_server(void)
     }
 
     // make the command line and exec
-    char *arglist[8];
+    char *arglist[10];
     char fdin_str[10], fdout_str[10];
     sprintf(fdin_str,  "%d", sendfd[0]);
     sprintf(fdout_str, "%d", recvfd[1]);
@@ -444,6 +444,11 @@ launch_server(void)
     }
     if (noscan) {
       arglist[j++] = "-d";
+    }
+#else
+    // verbose from hpcrun -dd var
+    if (ENABLED(FNBOUNDS_SERVER)) {
+      arglist[j++] = "-v";
     }
 #endif
     arglist[j++] = "-s";

@@ -146,7 +146,15 @@ Options: Profiling (Defaults shown in curly brackets {})
                        processes.  For each process, enable measurement
                        (of all threads) with probability <frac>; <frac> is a
                        real number (0.10) or a fraction (1/10) between 0 and 1.
-  
+
+  -fnb <path>, --fnbounds <path>
+                       Use <path> as alternate hpcfnbounds command.
+                       (mostly for developers)
+
+  -js <num>, --jobs-symtab <num>
+                       Use <num> openmp threads for Symtab in hpcfnbounds,
+                       if Symtab supports openmp (default 1).
+
   -m, --merge-threads  Merge non-overlapped threads into one virtual thread.
                        This option is to reduce the number of generated
                        profile and trace files as each thread generates its own
@@ -223,7 +231,7 @@ do
 	    shift
 	    ;;
 
-  -ck | --control-knob )
+	-ck | --control-knob )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
@@ -273,7 +281,7 @@ do
 	# --------------------------------------------------
 
  	-c | --count )
- 	 	export HPCRUN_PERF_COUNT="$1"
+ 	    export HPCRUN_PERF_COUNT="$1"
 	    shift
 	    ;;
 
@@ -281,6 +289,20 @@ do
 
 	-t | --trace )
 	    export HPCRUN_TRACE=1
+	    ;;
+
+	# --------------------------------------------------
+
+	-fnb | --fnbounds )
+	    HPCRUN_FNBOUNDS_CMD="$1"
+	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-js | --jobs-symtab )
+	    export HPCFNBOUNDS_NUM_THREADS="$1"
+	    shift
 	    ;;
 
 	# --------------------------------------------------
@@ -304,13 +326,13 @@ do
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
 
-  # --------------------------------------------------
+	# --------------------------------------------------
 
-  -m | --merge-threads )
-      arg_ok "$1" || die "missing argument for $arg"
-      export HPCRUN_MERGE_THREADS="$1"
-      shift
-      ;;
+	-m | --merge-threads )
+	    arg_ok "$1" || die "missing argument for $arg"
+	    export HPCRUN_MERGE_THREADS="$1"
+	    shift
+	    ;;
       
 	# --------------------------------------------------
 
@@ -459,9 +481,19 @@ hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:$
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
-if [ "$HPCRUN_FNBOUNDS_CMD" = "" ] ; then
-    export HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+# Allow fnbounds command relative to hpcfnbounds_dir.
+case "$HPCRUN_FNBOUNDS_CMD" in
+    /* ) ;;
+    '' ) HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds" ;;
+    * )  HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/$HPCRUN_FNBOUNDS_CMD" ;;
+esac
+
+if test ! -x "$HPCRUN_FNBOUNDS_CMD" ; then
+    echo "bad HPCRUN_FNBOUNDS_CMD command: $HPCRUN_FNBOUNDS_CMD" >&2
+    HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
 fi
+export HPCRUN_FNBOUNDS_CMD
+
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 

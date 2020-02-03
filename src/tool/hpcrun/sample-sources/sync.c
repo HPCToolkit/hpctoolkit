@@ -171,6 +171,10 @@ METHOD_FN(process_event_list,int lush_metrics)
   hpcrun_close_kind(sync_kind);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 
 //
 // Event sets not relevant for this sample source
