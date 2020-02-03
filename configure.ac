@@ -883,6 +883,7 @@ fi
 
 # These tests only use GNU syntax.  Intel, Clang, etc use a different
 # format, but we don't really build with those.
+# For example:  gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
 
 find_version()
 {
@@ -928,7 +929,10 @@ test_is_gnu()
 # C, C++ compiler versions and paths
 #-------------------------------------------------
 
-warn_non_gcc=no
+# Find path and version for CC/CXX, test if GNU, and check if recent
+# enough version >= 5.x.
+
+cc_is_gnu=yes
 
 CC_VERSION=`find_version "$CC"`
 CC_PATH=`find_path "$CC"`
@@ -937,8 +941,8 @@ AC_MSG_NOTICE([C compiler: $CC_VERSION])
 AC_MSG_NOTICE([C path: $CC_PATH])
 
 if test_is_gnu "$CC" ; then : ; else
-  warn_non_gcc=yes
   AC_MSG_WARN([Not using the GNU C compiler.])
+  cc_is_gnu=no
 fi
 
 CXX_VERSION=`find_version "$CXX"`
@@ -948,8 +952,40 @@ AC_MSG_NOTICE([C++ compiler: $CXX_VERSION])
 AC_MSG_NOTICE([C++ path: $CXX_PATH])
 
 if test_is_gnu "$CXX" ; then : ; else
-  warn_non_gcc=yes
   AC_MSG_WARN([Not using the GNU C++ compiler.])
+  cc_is_gnu=no
+fi
+
+warn_non_gnu=no
+warn_non_gnu_mesg=
+
+warn_old_gnu=no
+
+warn_identify_compiler=no
+warn_identify_compiler_mesg=
+have_cc_version=no
+
+# parse CC version: gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
+if test "$cc_is_gnu" = yes ; then
+  ver=`echo $CC_VERSION | sed -e '[s/^[^)]*[)]//]' | awk '{print $1}'`
+  cc_major=`echo $ver | awk -F. '{print $1}'`
+  cc_minor=`echo $ver | awk -F. '{print $2}'`
+
+  if test "x$cc_minor" != x ; then
+    have_cc_version=yes
+    if test "$cc_major" -lt 5 ; then
+      AC_MSG_WARN([CC/CXX compiler too old for hpctoolkit])
+      AC_MSG_WARN([Use GNU version 5.x or later])
+      warn_old_gnu=yes
+    fi
+  else
+    AC_MSG_WARN([unable to identify CC/CXX compiler version: $CC_VERSION])
+    warn_identify_compiler=yes
+    warn_identify_compiler_mesg='CC/CXX'
+  fi
+else
+  warn_non_gnu=yes
+  warn_non_gnu_mesg='CC/CXX'
 fi
 
 
@@ -1450,8 +1486,9 @@ if test "x$MPICXX" != x ; then
   AC_MSG_NOTICE([MPICXX path: $MPICXX_PATH])
 
   if test_is_gnu "$MPICXX" ; then : ; else
-    warn_non_gcc=yes
     AC_MSG_WARN([Not using the GNU MPICXX compiler.])
+    warn_non_gnu=yes
+    warn_non_gnu_mesg="$warn_non_gnu_mesg MPICXX"
   fi
 
   AC_MSG_CHECKING([if MPICXX is a valid MPI C++ compiler])
@@ -1923,23 +1960,54 @@ fi
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
-# If still using externals, verify that toolkit and externals use the
-# same C and C++ compilers.  Spack does things differently.
+# If using --with-spack, try to test if the spack compiler and the
+# toolkit compiler are both GNU and the same rev.  This is mostly
+# heuristic, we may throw false positives.  For example:
+#
+# spack path:  /home/krentel/Spack/install/linux-fedora26-x86_64/gcc-7.3.1
+# CC version:  gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
+
+have_spack_version=no
+
+# parse spack version from path: .../gcc-7.3.1
+case "$with_spack" in
+  /* )
+    base=`basename "$with_spack"`
+    AC_MSG_NOTICE([checking that CC matches the spack compiler: $base])
+
+    case "$base" in
+      gcc-* )
+        ver=`echo $base | sed -e 's/gcc-//'`
+        spack_major=`echo $ver | awk -F. '{print $1}'`
+        spack_minor=`echo $ver | awk -F. '{print $2}'`
+
+        if test "x$spack_minor" != x ; then
+	  have_spack_version=yes
+	else
+          AC_MSG_WARN([unable to identify spack compiler version: $with_spack])
+	  warn_identify_compiler=yes
+	  warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
+        fi
+	;;
+      * )
+        AC_MSG_WARN([not using the GNU compiler for spack prereqs: $with_spack])
+        warn_non_gnu=yes
+        warn_non_gnu_mesg="$warn_non_gnu_mesg spack"
+	;;
+    esac
+    ;;
+esac
 
 warn_compiler_mismatch=no
 
-if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
+if test "$have_spack_version" = yes && test "$have_cc_version" = yes  \
+   && test "x${spack_major}-${spack_minor}" != "x${cc_major}-${cc_minor}"
 then
+  AC_MSG_WARN([the CC and spack compilers are not the same version])
   warn_compiler_mismatch=yes
-  AC_MSG_WARN([The C compiler does not match the one used to build \
-hpctoolkit-externals.])
 fi
-if test "$ext_cxx_path" != unknown && test "$ext_cxx_path" != "$CXX_PATH"
-then
-  warn_compiler_mismatch=yes
-  AC_MSG_WARN([The C++ compiler does not match the one used to build \
-hpctoolkit-externals.])
-fi
+
+#-------------------------------------------------
 
 # Continue to set multilib_path for package tests below, but we really
 # only support 64-bit now.
@@ -3732,33 +3800,51 @@ fi
 
 #-------------------------------------------------
 
-# Test if dyninst was built with openmp support.
+# Test if symtab and parseapi were built with openmp support.
 # Again, not really a good test.
 
-dyninst_openmp=no
+parse_openmp=no
+symtab_openmp=no
 
 if test "$DYNINST" != no ; then
-  AC_MSG_CHECKING([if dyninst built with openmp])
-
-  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
-
   ORIG_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
   LD_LIBRARY_PATH=
+
+  AC_MSG_CHECKING([if parseapi built with openmp])
+
+  parseapi="${DYNINST_LIB_DIR}/libparseAPI.so"
 
   if test -f "$parseapi" ; then
     for lib in $openmp_lib_list ; do
       ldd "$parseapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
       if test $? -eq 0 ; then
-        dyninst_openmp=yes
+        parse_openmp=yes
 	dyninst_features="$dyninst_features openmp"
 	break
       fi
     done
   fi
 
-  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
+  AC_MSG_RESULT([$parse_openmp])
 
-  AC_MSG_RESULT([$dyninst_openmp])
+  AC_MSG_CHECKING([if symtab built with openmp])
+
+  symtabapi="${DYNINST_LIB_DIR}/libsymtabAPI.so"
+
+  if test -f "$symtabapi" ; then
+    for lib in $openmp_lib_list ; do
+      ldd "$symtabapi" 2>/dev/null | $AWK '{print $1}' | grep -e "$lib" >/dev/null
+      if test $? -eq 0 ; then
+        symtab_openmp=yes
+	dyninst_features="$dyninst_features par-symtab"
+	break
+      fi
+    done
+  fi
+
+  AC_MSG_RESULT([$symtab_openmp])
+
+  LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
 AC_LANG_POP
@@ -3980,39 +4066,47 @@ AM_CONDITIONAL([OPT_ENABLE_HPCSERVER], [test "$enable_hpcserver" = yes])
 # enable-openmp
 #-------------------------------------------------
 
-# Enable openmp support in hpcstruct.  Default is to do what ParseAPI
-# does.
+# Enable openmp support in hpcstruct and fnbounds.  Requires support
+# from ParseAPI and Symtab, so all this really does is disable it, if
+# desired.
+#
+# Note: this only controls openmp pragmas in hpctoolkit.  If dyninst
+# is compiled with openmp, then those pragmas still exist.
 
 AC_ARG_ENABLE([openmp],
   [AS_HELP_STRING([--enable-openmp],
-      [enable openmp support in hpcstruct (default is to test dyninst)])],
+      [enable openmp support in hpcstruct, requires support from dyninst])],
   [],
-  [enable_openmp="$dyninst_openmp"])
+  [enable_openmp="$parse_openmp"])
 
-AC_MSG_CHECKING([whether to enable openmp in hpcstruct])
-AC_MSG_RESULT([$enable_openmp])
+if test "x$enable_openmp" != xyes ; then
+  AC_MSG_NOTICE([disable openmp support in hpcstruct and hpcfnbounds])
+  parse_openmp=no
+  symtab_openmp=no
+fi
 
-case "$enable_openmp" in
-  yes | no ) ;;
-  * ) AC_MSG_WARN([bad value for enable-openmp: $enable_openmp])
-    enable_openmp="$dyninst_openmp"
-    ;;
-esac
+hpcstruct_mesg=serial
+ans=no
 
-if test "$enable_openmp" = yes ; then
-  AC_DEFINE([ENABLE_OPENMP], [1], [Build with openmp support])
+if test "$parse_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP], [1], [ParseAPI supports openmp (for hpcstruct)])
   hpcstruct_mesg=openmp
+  ans=hpcstruct
 else
   OPENMP_FLAG=
-  hpcstruct_mesg=serial
+  symtab_openmp=no
 fi
 
-if test "x$DYNINST" = xno || test "x$BOOST" = xno || test "x$LIBELF" = xno
-then
-  hpcstruct_mesg=no
+if test "$symtab_openmp" = yes ; then
+  AC_DEFINE([ENABLE_OPENMP_SYMTAB], [1], [Symtab supports openmp (for fnbounds)])
+  hpcstruct_mesg="$hpcstruct_mesg + fnbounds"
+  ans="$ans + fnbounds"
 fi
 
-AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$enable_openmp" = yes])
+AC_MSG_NOTICE([openmp support from dyninst: $ans])
+
+AM_CONDITIONAL([OPT_ENABLE_OPENMP], [test "$parse_openmp" = yes])
+AM_CONDITIONAL([OPT_ENABLE_OPENMP_SYMTAB], [test "$symtab_openmp" = yes])
 
 
 #-------------------------------------------------
@@ -4848,29 +4942,38 @@ if test "$warn_no_perfmon" = yes ; then
   AC_MSG_WARN([Mnemonic names will not be available for perf events.])
 fi
 
-if test "x$with_externals" = xno && test "x$with_spack" = xno  \
-   && test "$num_pkgs" -lt 8
-then
+if test "x$with_spack" = xno && test "$num_pkgs" -lt 8 ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using hpctoolkit externals or spack.])
+  AC_MSG_WARN([Not using --with-spack.])
   AC_MSG_WARN([Unless you're building hpctoolkit only for docs or make dist,])
-  AC_MSG_WARN([this is probably an error.  First, checkout, configure and])
-  AC_MSG_WARN([build externals and then reconfigure hpctoolkit with:])
-  AC_MSG_WARN([--with-externals=/path/to/externals/install/directory])
+  AC_MSG_WARN([this is probably an error.  Rerun configure with:])
+  AC_MSG_WARN([  --with-spack=/path/to/spack/install/gcc-x.y.z])
 fi
 
-if test "$warn_non_gcc" = yes ; then
+if test "$warn_non_gnu" = yes ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Not using the GNU C or C++ or MPICXX compiler.])
+  AC_MSG_WARN([Not using the GNU compiler for: $warn_non_gnu_mesg])
   AC_MSG_WARN([This is not necessarily an error, but some parts of hpctoolkit])
   AC_MSG_WARN([may not compile cleanly without gcc or g++.  If the build fails,])
   AC_MSG_WARN([try using GNU gcc and g++ before reporting an error.])
+
+elif test "$warn_identify_compiler" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([Unable to identify the compiler version for: $warn_identify_compiler_mesg])
+  AC_MSG_WARN([Check that CC, CXX and the compiler for the spack prereqs are])
+  AC_MSG_WARN([all GNU and the same version.])
+
+elif test "$warn_old_gnu" = yes ; then
+  AC_MSG_NOTICE([])
+  AC_MSG_WARN([The CC/CXX compiler is too old: $CC_VERSION])
+  AC_MSG_WARN([Please use GNU gcc/g++ version 5.x or later.])
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
   AC_MSG_NOTICE([])
-  AC_MSG_WARN([Mismatched C or C++ compiler.])
-  AC_MSG_WARN([The C or C++ compiler does not match the one used to build])
-  AC_MSG_WARN([hpctoolkit-externals.  Check the externals configure summary])
-  AC_MSG_WARN([and try again with the same compilers.])
+  AC_MSG_WARN([The CC/CXX and spack compilers are not the same version.])
+  AC_MSG_WARN([Check that CC, CXX and the compiler for the spack prereqs are])
+  AC_MSG_WARN([all GNU and the same version.])
+  AC_MSG_WARN([CC/CXX:  $CC_VERSION])
+  AC_MSG_WARN([Spack:   $with_spack])
 fi

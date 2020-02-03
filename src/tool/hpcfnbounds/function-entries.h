@@ -51,6 +51,7 @@ using namespace std;
 
 int c_mode(void);
 int server_mode(void);
+bool verbose_mode(void);
 
 void function_entries_reinit();
 

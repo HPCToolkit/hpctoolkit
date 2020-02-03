@@ -171,7 +171,6 @@ get_funclist(char *name)
 {
   int fd;
   char  *ret = NULL;
-  int i;
   Elf   *e;
   
   refOffset = 0;
@@ -280,7 +279,7 @@ process_mapped_header(Elf *lelf)
   char *secName;
   char foo[TB_SIZE];
   char *fn;
-  int64_t j,jn;
+  size_t j,jn;
   GElf_Phdr progHeader;
   ehRecord_t ehInfo;
 
@@ -338,6 +337,15 @@ process_mapped_header(Elf *lelf)
 
   elf_getshdrnum(lelf, &nsec);
   elf_getshdrstrndx(lelf, &secHeadStringIndex);
+
+  // initialize ehRecord
+  ehInfo.e = lelf;
+  ehInfo.ehHdrSection = NULL;
+  ehInfo.ehFrameSection = NULL;
+  ehInfo.textSection = NULL;
+  ehInfo.dataSection = NULL;
+  ehInfo.ehHdrIndex = 0;
+  ehInfo.ehFrameIndex = 0;
 
   section = NULL;
   //
@@ -409,7 +417,7 @@ process_mapped_header(Elf *lelf)
   // any eh_frame scans are done after traversing the sections,
   // because various of them may be needed for relative addressing
   //
-  ehframescan(lelf, &ehInfo); 
+  ehframescan(lelf, &ehInfo);  // FIXME: ehRecord has the elf pointer
 
   if (verbose) {
     fprintf(stderr, "\n");
@@ -507,8 +515,8 @@ void
 symsecread(Elf *e, GElf_Shdr secHead, char *src)
 {
   Elf_Data *data;
-  uint8_t *symName;
-  uint64_t symAddr, count;
+  char *symName;
+  uint64_t count;
   GElf_Sym curSym;
   Elf_Scn *section;
   uint64_t ii,symType;

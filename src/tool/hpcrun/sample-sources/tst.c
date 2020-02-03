@@ -326,6 +326,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
+
 //
 // Event "sets" not possible for this sample source.
 // It has only 1 event.
