@@ -264,9 +264,11 @@ gpu_metrics_attribute_pc_sampling
 
     int stall_count = sinfo->latencySamples * sample_period;
 
-    // stall summary metric
-    gpu_metrics_attribute_metric_int(stall_metrics, 
-				     stall_summary_metric_index, stall_count);
+    if (sinfo->stallReason != GPU_INST_STALL_NONE) {
+      // stall summary metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+				       stall_summary_metric_index, stall_count);
+    }
 
     // stall reason specific metric
     gpu_metrics_attribute_metric_int(stall_metrics, 
