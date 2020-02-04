@@ -479,22 +479,6 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
             }
           }
         }
-
-        for (auto &reg_iter : inst_stat->assign_pcs) {
-          if (reg_iter.second.size() > 1) {
-            for (auto def_pc : reg_iter.second) {
-              // Apply DFS only for regs with multiple definitions
-              std::vector<std::vector<int> > paths;
-              std::vector<int> path;
-              std::set<int> visited_blocks;
-              bool first_block = true;
-              trackReg(inst_stat->pc + func_addr, def_pc + func_addr, reg_iter.first,
-                inst_block_map[def_pc + func_addr],
-                visited_blocks, paths, path, first_block);
-              inst_stat->assign_pc_paths[reg_iter.first] = paths;
-            }
-          }
-        }
       }
     }   
   }
@@ -514,6 +498,7 @@ bool dumpCudaInstructions(const std::string &file_path,
     boost::property_tree::ptree ptree_function;
     boost::property_tree::ptree ptree_blocks;
     ptree_function.put("id", function->id);
+    ptree_function.put("index", function->index);
     ptree_function.put("name", function->name);
     ptree_function.put("address", function->address);
 
@@ -573,20 +558,6 @@ bool dumpCudaInstructions(const std::string &file_path,
               for (auto assign_pc : iter->second) {
                 boost::property_tree::ptree ptree_path;
                 ptree_path.put("pc", assign_pc);
-
-                boost::property_tree::ptree tt;
-                for (auto &path : inst->inst_stat->assign_pc_paths[src]) {
-                  boost::property_tree::ptree ttt;
-                  for (auto block_id : path) {
-                    boost::property_tree::ptree tttt;
-                    tttt.put("", block_id);
-                    ttt.push_back(std::make_pair("", tttt));
-                  }
-                  tt.push_back(std::make_pair("", ttt));
-                }
-                ptree_path.add_child("paths", tt);
-
-                ptree_assign_pcs.push_back(std::make_pair("", ptree_path));
               }
             }
             t.add_child("assign_pcs", ptree_assign_pcs);
@@ -630,9 +601,10 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   for (auto &ptree_function : root) {
     int function_id = ptree_function.second.get<int>("id", 0);
+    int function_index = ptree_function.second.get<int>("index", 0);
     int function_address = ptree_function.second.get<int>("address", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(function_id, name, function_address);
+    auto *function = new Function(function_id, function_index, name, function_address);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;
@@ -675,7 +647,6 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
-        std::map<int, std::vector<std::vector<int> > > assign_pc_paths;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
         for (auto &ptree_src : ptree_srcs) {
           int src = ptree_src.second.get<int>("id", 0);
@@ -684,20 +655,10 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           for (auto &ptree_assign_pc : ptree_assign_pcs) {
             int assign_pc = ptree_assign_pc.second.get<int>("pc");
             assign_pcs[src].push_back(assign_pc);
-
-            auto &ptree_paths = ptree_assign_pc.second.get_child("paths");
-            for (auto &ptree_path : ptree_paths) {
-              std::vector<int> path;
-              for (auto &ptree_path_element : ptree_path.second) {
-                int element = boost::lexical_cast<int>(ptree_path_element.second.data());
-                path.push_back(element);
-              }
-              assign_pc_paths[src].push_back(path);
-            }
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs, assign_pc_paths);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -717,14 +678,6 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
             if (iter != assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
                 std::cout << assign_pc << std::endl;
-
-                std::cout << "    paths: " << std::endl;
-                for (auto &path : assign_pc_paths[assign_pc]) {
-                  for (auto &e : path) {
-                    std::cout << e << ",";
-                  }
-                  std::cout << std::endl;
-                }
               }
             }
           }
