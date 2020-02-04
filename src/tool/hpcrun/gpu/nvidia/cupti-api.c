@@ -1474,7 +1474,10 @@ cupti_correlation_id_pop()
 void
 cupti_device_shutdown(void *args)
 {
-  cupti_callbacks_unsubscribe();
-  cupti_activity_flush();
+  if (cupti_stop_flag) {
+    cupti_callbacks_unsubscribe();
+    cupti_stop_flag_unset();
+    cupti_activity_flush();
+  }
 }
 
