@@ -498,6 +498,7 @@ bool dumpCudaInstructions(const std::string &file_path,
     boost::property_tree::ptree ptree_function;
     boost::property_tree::ptree ptree_blocks;
     ptree_function.put("id", function->id);
+    ptree_function.put("index", function->index);
     ptree_function.put("name", function->name);
     ptree_function.put("address", function->address);
 
@@ -600,9 +601,10 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   for (auto &ptree_function : root) {
     int function_id = ptree_function.second.get<int>("id", 0);
+    int function_index = ptree_function.second.get<int>("index", 0);
     int function_address = ptree_function.second.get<int>("address", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(function_id, name, function_address);
+    auto *function = new Function(function_id, function_index, name, function_address);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;

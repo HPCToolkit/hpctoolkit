@@ -117,6 +117,8 @@ parseDotCFG
         // Local functions inside a global function cannot be independently parsed
         for (auto *func : funcs) {
           if (function_map.find(func->name) == function_map.end()) {
+            // Assign symbol index to function
+            func->index = index;
             function_map[func->name] = func;
           }
         }
@@ -176,6 +178,8 @@ parseDotCFG
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
     auto *function = new CudaParse::Function(max_function_id++, std::move(function_name));
+    // Assign symbol index to function
+    function->index = symbol->getIndex();
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new CudaParse::Block(max_block_id++, std::move(block_name));
