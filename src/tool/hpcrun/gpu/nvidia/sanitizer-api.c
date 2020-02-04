@@ -64,6 +64,7 @@
 #include <sys/stat.h>  // mkdir
 #include <string.h>    // strstr
 #include <pthread.h>
+#include <time.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -698,6 +699,10 @@ sanitizer_kernel_launch_callback
  dim3 block_size
 )
 {
+  int num_blocks = grid_size.x * grid_size.y * grid_size.z;
+  int block_sampling_offset = rand() % num_blocks;
+  int sampling_frequency = sanitizer_block_sampling_frequency_get();
+
   if (gpu_patch_buffer_device == NULL) {
     // allocate buffer
     void *gpu_patch_records = NULL;
@@ -718,15 +723,19 @@ sanitizer_kernel_launch_callback
 
     gpu_patch_buffer_reset.records = gpu_patch_records;
     gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
-    gpu_patch_buffer_reset.block_sampling_frequency = sanitizer_block_sampling_frequency_get();
+    gpu_patch_buffer_reset.block_sampling_frequency = sampling_frequency;
+    gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
 
-    PRINT("Sampling frequency %d\n", sanitizer_block_sampling_frequency_get());
+    PRINT("Sampling offset %d\n", block_sampling_offset);
+    PRINT("Sampling frequency %d\n", sampling_frequency);
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
   } else {
     // reset buffer
     gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
+    gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
+
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset,
        sizeof(gpu_patch_buffer_t) - sizeof(void *), stream));

@@ -56,6 +56,7 @@
 #include <dlfcn.h>
 #endif
 
+#include <time.h> 
 
 
 //******************************************************************************
@@ -460,6 +461,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: gpu patch not specified\n");
     monitor_real_exit(-1);
 #endif
+
+    // Init random number generator
+    srand(time(0));
 
     block_sampling_frequency = frequency == 0 ?
       block_sampling_frequency_default : frequency;
