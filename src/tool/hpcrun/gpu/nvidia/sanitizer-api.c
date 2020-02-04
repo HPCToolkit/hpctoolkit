@@ -528,9 +528,27 @@ sanitizer_load_callback
 )
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+
+  // Write cubin
   char file_name[PATH_MAX];
   cuda_load_callback(cumod->cubin_id, cubin, cubin_size, file_name);
-  redshow_cubin_register(cumod->cubin_id, file_name);
+
+  cubin_id_map_entry_t *entry = cubin_id_map_lookup(cumod->cubin_id);
+  Elf_SymbolVector *elf_vector = cubin_id_map_entry_elf_vector_get(entry);
+
+  // Query cubin function offsets
+  uint64_t *addrs = (uint64_t *)hpcrun_malloc_safe(sizeof(uint64_t) * elf_vector->nsymbols);
+  int i;
+  for (i = 0; i < elf_vector->nsymbols; ++i) {
+    addrs[i] = 0;
+    if (elf_vector->symbols[i] != 0) {
+      uint64_t pc;
+      uint64_t size;
+      sanitizerGetFunctionPcAndSize(module, elf_vector->names[i], &pc, &size);
+      addrs[i] = pc;
+    }
+  }
+  redshow_cubin_register(cumod->cubin_id, elf_vector->nsymbols, addrs, file_name);
 
   PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
@@ -595,12 +613,6 @@ sanitizer_kernel_launch_sync
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   uint32_t cubin_id = cumod->cubin_id;
 
-  // Look up function addr
-  hpctoolkit_cufunc_st_t *cufunc = (hpctoolkit_cufunc_st_t *)function;
-  hpctoolkit_cufunc_record_st_t *cufunc_record = cufunc->cufunc_record;
-  uint32_t function_index = cufunc->function_index;
-  uint64_t function_addr = cufunc_record->function_addr;
-
   // Get a place holder cct node
   uint64_t correlation_id = gpu_correlation_id();
   cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
@@ -641,7 +653,7 @@ sanitizer_kernel_launch_sync
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      cubin_id, function_index, function_addr, (uint64_t)api_node, GPU_PATCH_RECORD_NUM);
+      cubin_id, (uint64_t)api_node, GPU_PATCH_RECORD_NUM);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache

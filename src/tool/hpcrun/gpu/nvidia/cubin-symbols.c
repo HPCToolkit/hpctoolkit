@@ -193,6 +193,7 @@ relocateSymbolsHelper
   if (datap) {
     symbol_values = newSymbolsVector(nsymbols);
     for (int i = 0; i < nsymbols; i++) {
+      symbol_values->symbols[i] = 0;
       GElf_Sym sym;
       GElf_Sym *symp = gelf_getsym(datap, i, &sym);
       if (symp) { // symbol properly read

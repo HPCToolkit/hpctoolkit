@@ -141,8 +141,6 @@ sanitizer_buffer_t *
 sanitizer_buffer_channel_produce
 (
  uint32_t cubin_id,
- uint32_t function_index,
- uint64_t function_addr,
  uint64_t kernel_id,
  size_t num_records
 )
@@ -151,7 +149,7 @@ sanitizer_buffer_channel_produce
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, cubin_id, function_index, function_addr, kernel_id, num_records);
+  sanitizer_buffer_produce(b, cubin_id, kernel_id, num_records);
 
   return b;
 }
