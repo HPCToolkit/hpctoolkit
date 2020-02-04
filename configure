@@ -18748,6 +18748,7 @@ fi
 
 # These tests only use GNU syntax.  Intel, Clang, etc use a different
 # format, but we don't really build with those.
+# For example:  gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
 
 find_version()
 {
@@ -18833,7 +18834,10 @@ test_is_gnu()
 # C, C++ compiler versions and paths
 #-------------------------------------------------
 
-warn_non_gcc=no
+# Find path and version for CC/CXX, test if GNU, and check if recent
+# enough version >= 5.x.
+
+cc_is_gnu=yes
 
 CC_VERSION=`find_version "$CC"`
 CC_PATH=`find_path "$CC"`
@@ -18844,9 +18848,9 @@ $as_echo "$as_me: C compiler: $CC_VERSION" >&6;}
 $as_echo "$as_me: C path: $CC_PATH" >&6;}
 
 if test_is_gnu "$CC" ; then : ; else
-  warn_non_gcc=yes
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C compiler." >&2;}
+  cc_is_gnu=no
 fi
 
 CXX_VERSION=`find_version "$CXX"`
@@ -18858,9 +18862,44 @@ $as_echo "$as_me: C++ compiler: $CXX_VERSION" >&6;}
 $as_echo "$as_me: C++ path: $CXX_PATH" >&6;}
 
 if test_is_gnu "$CXX" ; then : ; else
-  warn_non_gcc=yes
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C++ compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU C++ compiler." >&2;}
+  cc_is_gnu=no
+fi
+
+warn_non_gnu=no
+warn_non_gnu_mesg=
+
+warn_old_gnu=no
+
+warn_identify_compiler=no
+warn_identify_compiler_mesg=
+have_cc_version=no
+
+# parse CC version: gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
+if test "$cc_is_gnu" = yes ; then
+  ver=`echo $CC_VERSION | sed -e 's/^[^)]*[)]//' | awk '{print $1}'`
+  cc_major=`echo $ver | awk -F. '{print $1}'`
+  cc_minor=`echo $ver | awk -F. '{print $2}'`
+
+  if test "x$cc_minor" != x ; then
+    have_cc_version=yes
+    if test "$cc_major" -lt 5 ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CC/CXX compiler too old for hpctoolkit" >&5
+$as_echo "$as_me: WARNING: CC/CXX compiler too old for hpctoolkit" >&2;}
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Use GNU version 5.x or later" >&5
+$as_echo "$as_me: WARNING: Use GNU version 5.x or later" >&2;}
+      warn_old_gnu=yes
+    fi
+  else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to identify CC/CXX compiler version: $CC_VERSION" >&5
+$as_echo "$as_me: WARNING: unable to identify CC/CXX compiler version: $CC_VERSION" >&2;}
+    warn_identify_compiler=yes
+    warn_identify_compiler_mesg='CC/CXX'
+  fi
+else
+  warn_non_gnu=yes
+  warn_non_gnu_mesg='CC/CXX'
 fi
 
 
@@ -19470,9 +19509,10 @@ $as_echo "$as_me: MPICXX compiler: $MPICXX_VERSION" >&6;}
 $as_echo "$as_me: MPICXX path: $MPICXX_PATH" >&6;}
 
   if test_is_gnu "$MPICXX" ; then : ; else
-    warn_non_gcc=yes
     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU MPICXX compiler." >&5
 $as_echo "$as_me: WARNING: Not using the GNU MPICXX compiler." >&2;}
+    warn_non_gnu=yes
+    warn_non_gnu_mesg="$warn_non_gnu_mesg MPICXX"
   fi
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking if MPICXX is a valid MPI C++ compiler" >&5
@@ -20072,27 +20112,58 @@ fi
 # Check consistency of C, C++ and wordsize
 #-------------------------------------------------
 
-# If still using externals, verify that toolkit and externals use the
-# same C and C++ compilers.  Spack does things differently.
+# If using --with-spack, try to test if the spack compiler and the
+# toolkit compiler are both GNU and the same rev.  This is mostly
+# heuristic, we may throw false positives.  For example:
+#
+# spack path:  /home/krentel/Spack/install/linux-fedora26-x86_64/gcc-7.3.1
+# CC version:  gcc (GCC) 7.3.1 20180130 (Red Hat 7.3.1-2)
+
+have_spack_version=no
+
+# parse spack version from path: .../gcc-7.3.1
+case "$with_spack" in
+  /* )
+    base=`basename "$with_spack"`
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking that CC matches the spack compiler: $base" >&5
+$as_echo "$as_me: checking that CC matches the spack compiler: $base" >&6;}
+
+    case "$base" in
+      gcc-* )
+        ver=`echo $base | sed -e 's/gcc-//'`
+        spack_major=`echo $ver | awk -F. '{print $1}'`
+        spack_minor=`echo $ver | awk -F. '{print $2}'`
+
+        if test "x$spack_minor" != x ; then
+	  have_spack_version=yes
+	else
+          { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to identify spack compiler version: $with_spack" >&5
+$as_echo "$as_me: WARNING: unable to identify spack compiler version: $with_spack" >&2;}
+	  warn_identify_compiler=yes
+	  warn_identify_compiler_mesg="$warn_identify_compiler_mesg spack"
+        fi
+	;;
+      * )
+        { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: not using the GNU compiler for spack prereqs: $with_spack" >&5
+$as_echo "$as_me: WARNING: not using the GNU compiler for spack prereqs: $with_spack" >&2;}
+        warn_non_gnu=yes
+        warn_non_gnu_mesg="$warn_non_gnu_mesg spack"
+	;;
+    esac
+    ;;
+esac
 
 warn_compiler_mismatch=no
 
-if test "$ext_cc_path" != unknown && test "$ext_cc_path" != "$CC_PATH"
+if test "$have_spack_version" = yes && test "$have_cc_version" = yes  \
+   && test "x${spack_major}-${spack_minor}" != "x${cc_major}-${cc_minor}"
 then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: the CC and spack compilers are not the same version" >&5
+$as_echo "$as_me: WARNING: the CC and spack compilers are not the same version" >&2;}
   warn_compiler_mismatch=yes
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The C compiler does not match the one used to build \
-hpctoolkit-externals." >&5
-$as_echo "$as_me: WARNING: The C compiler does not match the one used to build \
-hpctoolkit-externals." >&2;}
 fi
-if test "$ext_cxx_path" != unknown && test "$ext_cxx_path" != "$CXX_PATH"
-then
-  warn_compiler_mismatch=yes
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The C++ compiler does not match the one used to build \
-hpctoolkit-externals." >&5
-$as_echo "$as_me: WARNING: The C++ compiler does not match the one used to build \
-hpctoolkit-externals." >&2;}
-fi
+
+#-------------------------------------------------
 
 # Continue to set multilib_path for package tests below, but we really
 # only support 64-bit now.
@@ -26570,45 +26641,61 @@ $as_echo "$as_me: WARNING: Perf events is enabled, but perfmon is not available.
 $as_echo "$as_me: WARNING: Mnemonic names will not be available for perf events." >&2;}
 fi
 
-if test "x$with_externals" = xno && test "x$with_spack" = xno  \
-   && test "$num_pkgs" -lt 8
-then
+if test "x$with_spack" = xno && test "$num_pkgs" -lt 8 ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using hpctoolkit externals or spack." >&5
-$as_echo "$as_me: WARNING: Not using hpctoolkit externals or spack." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using --with-spack." >&5
+$as_echo "$as_me: WARNING: Not using --with-spack." >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&5
 $as_echo "$as_me: WARNING: Unless you're building hpctoolkit only for docs or make dist," >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: this is probably an error.  First, checkout, configure and" >&5
-$as_echo "$as_me: WARNING: this is probably an error.  First, checkout, configure and" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: build externals and then reconfigure hpctoolkit with:" >&5
-$as_echo "$as_me: WARNING: build externals and then reconfigure hpctoolkit with:" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: --with-externals=/path/to/externals/install/directory" >&5
-$as_echo "$as_me: WARNING: --with-externals=/path/to/externals/install/directory" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: this is probably an error.  Rerun configure with:" >&5
+$as_echo "$as_me: WARNING: this is probably an error.  Rerun configure with:" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:   --with-spack=/path/to/spack/install/gcc-x.y.z" >&5
+$as_echo "$as_me: WARNING:   --with-spack=/path/to/spack/install/gcc-x.y.z" >&2;}
 fi
 
-if test "$warn_non_gcc" = yes ; then
+if test "$warn_non_gnu" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU C or C++ or MPICXX compiler." >&5
-$as_echo "$as_me: WARNING: Not using the GNU C or C++ or MPICXX compiler." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Not using the GNU compiler for: $warn_non_gnu_mesg" >&5
+$as_echo "$as_me: WARNING: Not using the GNU compiler for: $warn_non_gnu_mesg" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: This is not necessarily an error, but some parts of hpctoolkit" >&5
 $as_echo "$as_me: WARNING: This is not necessarily an error, but some parts of hpctoolkit" >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&5
 $as_echo "$as_me: WARNING: may not compile cleanly without gcc or g++.  If the build fails," >&2;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: try using GNU gcc and g++ before reporting an error." >&5
 $as_echo "$as_me: WARNING: try using GNU gcc and g++ before reporting an error." >&2;}
+
+elif test "$warn_identify_compiler" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Unable to identify the compiler version for: $warn_identify_compiler_mesg" >&5
+$as_echo "$as_me: WARNING: Unable to identify the compiler version for: $warn_identify_compiler_mesg" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Check that CC, CXX and the compiler for the spack prereqs are" >&5
+$as_echo "$as_me: WARNING: Check that CC, CXX and the compiler for the spack prereqs are" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all GNU and the same version." >&5
+$as_echo "$as_me: WARNING: all GNU and the same version." >&2;}
+
+elif test "$warn_old_gnu" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The CC/CXX compiler is too old: $CC_VERSION" >&5
+$as_echo "$as_me: WARNING: The CC/CXX compiler is too old: $CC_VERSION" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Please use GNU gcc/g++ version 5.x or later." >&5
+$as_echo "$as_me: WARNING: Please use GNU gcc/g++ version 5.x or later." >&2;}
 fi
 
 if test "$warn_compiler_mismatch" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Mismatched C or C++ compiler." >&5
-$as_echo "$as_me: WARNING: Mismatched C or C++ compiler." >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The C or C++ compiler does not match the one used to build" >&5
-$as_echo "$as_me: WARNING: The C or C++ compiler does not match the one used to build" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpctoolkit-externals.  Check the externals configure summary" >&5
-$as_echo "$as_me: WARNING: hpctoolkit-externals.  Check the externals configure summary" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: and try again with the same compilers." >&5
-$as_echo "$as_me: WARNING: and try again with the same compilers." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The CC/CXX and spack compilers are not the same version." >&5
+$as_echo "$as_me: WARNING: The CC/CXX and spack compilers are not the same version." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Check that CC, CXX and the compiler for the spack prereqs are" >&5
+$as_echo "$as_me: WARNING: Check that CC, CXX and the compiler for the spack prereqs are" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: all GNU and the same version." >&5
+$as_echo "$as_me: WARNING: all GNU and the same version." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: CC/CXX:  $CC_VERSION" >&5
+$as_echo "$as_me: WARNING: CC/CXX:  $CC_VERSION" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Spack:   $with_spack" >&5
+$as_echo "$as_me: WARNING: Spack:   $with_spack" >&2;}
 fi
