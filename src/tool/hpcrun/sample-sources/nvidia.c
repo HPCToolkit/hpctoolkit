@@ -283,6 +283,9 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
+
+  // Reset cupti flags
+  cupti_device_init();
 }
 
 static void
