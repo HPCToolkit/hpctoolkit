@@ -367,6 +367,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     local_event[n_events].code   = YOUR_NAME_TO_CODE(event);
     local_event[n_events].thresh = thresh;
 
+    kind_info_t *metric_kind = hpcrun_metrics_new_kind();
+
     // for each event, process metrics for that event
     // If there is only 1 metric for each event, then the loop is unnecessary
     //
@@ -381,9 +383,9 @@ METHOD_FN(process_event_list, int lush_metrics)
       // For a standard updating metric (add some counts at each sample time), use
       // hpcrun_set_metric_info_and_period routine, as shown below
       //
-        metric_id = hpcrun_set_new_metric_info_and_period(name,
-                                          HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
-                                          thresh, metric_property_none);
+        metric_id = hpcrun_set_new_metric_info_and_period(
+          metric_kind, name, HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
+          thresh, metric_property_none);
       }
       else { // NON STANDARD METRIC
         // For a metric that updates in a NON standard fashion, use
@@ -393,10 +395,10 @@ METHOD_FN(process_event_list, int lush_metrics)
       }
       metrics[n_events++][i] = metric_id;
     }
-  }
-  
-  // NOTE: some lush-aware event list processing may need to be done here ...
 
+    hpcrun_close_kind(metric_kind);
+  }
+  // NOTE: some lush-aware event list processing may need to be done here ...
 }
 
 static void
