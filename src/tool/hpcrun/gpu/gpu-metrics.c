@@ -165,8 +165,9 @@ name ## _metric_kind
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
 #define DIVISION_FORMULA(name) \
-  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
   hpcrun_set_percent(METRIC_ID(name), 0); \
+  hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
   reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
   reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
@@ -263,9 +264,11 @@ gpu_metrics_attribute_pc_sampling
 
     int stall_count = sinfo->latencySamples * sample_period;
 
-    // stall summary metric
-    gpu_metrics_attribute_metric_int(stall_metrics, 
-				     stall_summary_metric_index, stall_count);
+    if (sinfo->stallReason != GPU_INST_STALL_NONE) {
+      // stall summary metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+				       stall_summary_metric_index, stall_count);
+    }
 
     // stall reason specific metric
     gpu_metrics_attribute_metric_int(stall_metrics, 
