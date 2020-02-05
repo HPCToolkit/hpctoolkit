@@ -641,6 +641,9 @@ LTLIBOBJS
 LIBOBJS
 my_pkglibexecdir
 my_pkglibdir
+OPT_ENABLE_VG_ANNOTATIONS_FALSE
+OPT_ENABLE_VG_ANNOTATIONS_TRUE
+VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
@@ -1047,6 +1050,8 @@ with_rocm
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
+with_valgrind
+enable_valgrind_annotations
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1747,6 +1752,9 @@ Optional Features:
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-devtools       Build development tools (enable debugging)
+  --enable-valgrind-annotations
+                          Add extra annotations for Valgrind analysis (aids
+                          debugging)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1792,6 +1800,8 @@ Optional Packages:
                           hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
+  --with-valgrind=PATH    use given Valgrind installation (absolute path) for
+                          adding Valgrind annotations (default is NO)
 
 Some influential environment variables:
   HPCPROFMPI_LT_LDFLAGS
@@ -23551,6 +23561,74 @@ fi
 
 
 
+#-------------------------------------------------
+# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+#-------------------------------------------------
+OPT_HAVE_VALGRIND=no
+OPT_VALGRIND=
+VALGRIND_IFLAGS=
+
+
+# Check whether --with-valgrind was given.
+if test "${with_valgrind+set}" = set; then :
+  withval=$with_valgrind; if test $withval != no; then
+     OPT_HAVE_VALGRIND=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-valgrind requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_VALGRIND=${withval}
+   fi
+fi
+
+
+# Check for validity of the root directory
+
+if test "$OPT_HAVE_VALGRIND" = yes; then
+   if test ! -f $OPT_VALGRIND/include/valgrind/valgrind.h; then
+      as_fn_error $? "--with-valgrind=$OPT_VALGRIND invalid! No valgrind.h" "$LINENO" 5
+   fi
+   VALGRIND_IFLAGS="-I$OPT_VALGRIND/include"
+fi
+
+
+
+# Handle the --enable flag
+
+OPT_ENABLE_VG_ANNOTATIONS="no"
+
+# Check whether --enable-valgrind-annotations was given.
+if test "${enable_valgrind_annotations+set}" = set; then :
+  enableval=$enable_valgrind_annotations; case "${enableval}" in
+     yes) OPT_ENABLE_VG_ANNOTATIONS="yes" ;;
+     no)  OPT_ENABLE_VG_ANNOTATIONS="no" ;;
+     *) as_fn_error $? "bad value ${enableval} for --enable-valgrind-annotations" "$LINENO" 5 ;;
+   esac
+else
+  OPT_ENABLE_VG_ANNOTATIONS=no
+fi
+
+
+if test "$OPT_ENABLE_VG_ANNOTATIONS" = yes; then
+  if test "$OPT_HAVE_VALGRIND" != yes; then
+    as_fn_error $? "Valgrind annotations requested but valgrind headers not available!" "$LINENO" 5
+  fi
+
+$as_echo "#define ENABLE_VG_ANNOTATIONS 1" >>confdefs.h
+
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
+$as_echo "${OPT_ENABLE_VG_ANNOTATIONS}" >&6; }
+ if test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes"; then
+  OPT_ENABLE_VG_ANNOTATIONS_TRUE=
+  OPT_ENABLE_VG_ANNOTATIONS_FALSE='#'
+else
+  OPT_ENABLE_VG_ANNOTATIONS_TRUE='#'
+  OPT_ENABLE_VG_ANNOTATIONS_FALSE=
+fi
+
+
+
 #----------------------------------------------------------------------------
 # Should we expect statically linked binaries
 #----------------------------------------------------------------------------
@@ -23999,6 +24077,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_VG_ANNOTATIONS_TRUE}" && test -z "${OPT_ENABLE_VG_ANNOTATIONS_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_VG_ANNOTATIONS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

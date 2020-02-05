@@ -4706,6 +4706,61 @@ AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
 AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 
 
+#-------------------------------------------------
+# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+#-------------------------------------------------
+OPT_HAVE_VALGRIND=no
+OPT_VALGRIND=
+VALGRIND_IFLAGS=
+
+AC_ARG_WITH([valgrind],
+  AS_HELP_STRING([--with-valgrind=PATH],
+                 [use given Valgrind installation (absolute path) for adding Valgrind annotations (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_VALGRIND=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-valgrind requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_VALGRIND=${withval}
+   fi])
+
+# Check for validity of the root directory
+
+if test "$OPT_HAVE_VALGRIND" = yes; then
+   if test ! -f $OPT_VALGRIND/include/valgrind/valgrind.h; then
+      AC_MSG_ERROR([--with-valgrind=$OPT_VALGRIND invalid! No valgrind.h])
+   fi
+   VALGRIND_IFLAGS="-I$OPT_VALGRIND/include"
+fi
+
+AC_SUBST([VALGRIND_IFLAGS])
+
+# Handle the --enable flag
+
+OPT_ENABLE_VG_ANNOTATIONS="no"
+
+AC_ARG_ENABLE([valgrind-annotations],
+  AS_HELP_STRING([--enable-valgrind-annotations],
+                 [Add extra annotations for Valgrind analysis (aids debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_VG_ANNOTATIONS="yes" ;;
+     no)  OPT_ENABLE_VG_ANNOTATIONS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-valgrind-annotations]) ;;
+   esac],
+  [OPT_ENABLE_VG_ANNOTATIONS=no])
+
+if test "$OPT_ENABLE_VG_ANNOTATIONS" = yes; then
+  if test "$OPT_HAVE_VALGRIND" != yes; then
+    AC_MSG_ERROR([Valgrind annotations requested but valgrind headers not available!])
+  fi
+  AC_DEFINE([ENABLE_VG_ANNOTATIONS], [1],
+            [Add extra annotations for debugging with Valgrind])
+fi
+
+AC_MSG_RESULT([${OPT_ENABLE_VG_ANNOTATIONS}])
+AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
+
+
 #----------------------------------------------------------------------------
 # Should we expect statically linked binaries
 #----------------------------------------------------------------------------
