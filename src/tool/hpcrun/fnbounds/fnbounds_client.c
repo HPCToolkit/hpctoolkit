@@ -124,6 +124,7 @@ char	*outfile;
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -373,12 +374,67 @@ shutdown_server(void)
   TMSG(SYSTEM_SERVER, "syserv shutdown");
 }
 
+static int
+hpcfnbounds_child(void* fds_vp)
+{
+  //
+  // child process: disable profiling, dup the log file fd onto
+  // stderr and exec hpcfnbounds in server mode.
+  //
+  hpcrun_set_disabled();
+
+  struct {
+    int sendfd[2], recvfd[2];
+  }* fds = fds_vp;
+
+  close(fds->sendfd[1]);
+  close(fds->recvfd[0]);
+
+  // dup the hpcrun log file fd onto stdout and stderr.
+  if (dup2(messages_logfile_fd(), 1) < 0) {
+    warn("dup of log fd onto stdout failed");
+  }
+  if (dup2(messages_logfile_fd(), 2) < 0) {
+    warn("dup of log fd onto stderr failed");
+  }
+
+  // make the command line and exec
+  char *arglist[10];
+  char fdin_str[10], fdout_str[10];
+  sprintf(fdin_str,  "%d", fds->sendfd[0]);
+  sprintf(fdout_str, "%d", fds->recvfd[1]);
+
+  int j = 0;
+  arglist[j++] = server;
+#ifdef STAND_ALONE_CLIENT
+  if (serv_verbose) {
+    arglist[j++] = "-v";
+  }
+  if (noscan) {
+    arglist[j++] = "-d";
+  }
+#else
+  // verbose from hpcrun -dd var
+  if (ENABLED(FNBOUNDS_SERVER)) {
+    arglist[j++] = "-v";
+  }
+#endif
+  arglist[j++] = "-s";
+  arglist[j++] = fdin_str;
+  arglist[j++] = fdout_str;
+  arglist[j++] = NULL;
+
+  monitor_real_execve(server, arglist, environ);
+  err(1, "hpcrun system server: exec(%s) failed", server);
+}
 
 // Returns: 0 on success, else -1 on failure.
 static int
 launch_server(void)
 {
-  int sendfd[2], recvfd[2];
+  struct {
+    int sendfd[2], recvfd[2];
+  } fds;
   bool sampling_is_running;
   pid_t pid;
 
@@ -392,7 +448,7 @@ launch_server(void)
     shutdown_server();
   }
 
-  if (pipe(sendfd) != 0 || pipe(recvfd) != 0) {
+  if (pipe(fds.sendfd) != 0 || pipe(fds.recvfd) != 0) {
     EMSG("SYSTEM_SERVER ERROR: syserv launch failed: pipe failed");
     return -1;
   }
@@ -403,7 +459,9 @@ launch_server(void)
   if (sampling_is_running) {
     SAMPLE_SOURCES(stop);
   }
-  pid = monitor_real_fork();
+  char stack[1024 * 1024 * 2];
+  // For safety, we don't assume the direction of stack growth
+  pid = clone(hpcfnbounds_child, &stack[1024 * 1024], 0, &fds);
 
   if (pid < 0) {
     //
@@ -412,61 +470,14 @@ launch_server(void)
     EMSG("SYSTEM_SERVER ERROR: syserv launch failed: fork failed");
     return -1;
   }
-  else if (pid == 0) {
-    //
-    // child process: disable profiling, dup the log file fd onto
-    // stderr and exec hpcfnbounds in server mode.
-    //
-    hpcrun_set_disabled();
-
-    close(sendfd[1]);
-    close(recvfd[0]);
-
-    // dup the hpcrun log file fd onto stdout and stderr.
-    if (dup2(messages_logfile_fd(), 1) < 0) {
-      warn("dup of log fd onto stdout failed");
-    }
-    if (dup2(messages_logfile_fd(), 2) < 0) {
-      warn("dup of log fd onto stderr failed");
-    }
-
-    // make the command line and exec
-    char *arglist[10];
-    char fdin_str[10], fdout_str[10];
-    sprintf(fdin_str,  "%d", sendfd[0]);
-    sprintf(fdout_str, "%d", recvfd[1]);
-
-    int j = 0;
-    arglist[j++] = server;
-#ifdef STAND_ALONE_CLIENT
-    if (serv_verbose) {
-      arglist[j++] = "-v";
-    }
-    if (noscan) {
-      arglist[j++] = "-d";
-    }
-#else
-    // verbose from hpcrun -dd var
-    if (ENABLED(FNBOUNDS_SERVER)) {
-      arglist[j++] = "-v";
-    }
-#endif
-    arglist[j++] = "-s";
-    arglist[j++] = fdin_str;
-    arglist[j++] = fdout_str;
-    arglist[j++] = NULL;
-
-    monitor_real_execve(server, arglist, environ);
-    err(1, "hpcrun system server: exec(%s) failed", server);
-  }
 
   //
   // parent process: return and wait for queries.
   //
-  close(sendfd[0]);
-  close(recvfd[1]);
-  fdout = sendfd[1];
-  fdin = recvfd[0];
+  close(fds.sendfd[0]);
+  close(fds.recvfd[1]);
+  fdout = fds.sendfd[1];
+  fdin = fds.recvfd[0];
   my_pid = getpid();
   server_pid = pid;
   client_status = SYSERV_ACTIVE;
