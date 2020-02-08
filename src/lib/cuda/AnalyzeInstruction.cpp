@@ -556,8 +556,9 @@ bool dumpCudaInstructions(const std::string &file_path,
             auto iter = inst->inst_stat->assign_pcs.find(src);
             if (iter != inst->inst_stat->assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
-                boost::property_tree::ptree ptree_path;
-                ptree_path.put("pc", assign_pc);
+                boost::property_tree::ptree tt;
+                tt.put("", assign_pc);
+                ptree_assign_pcs.push_back(std::make_pair("", tt));
               }
             }
             t.add_child("assign_pcs", ptree_assign_pcs);
@@ -653,7 +654,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           srcs.push_back(src);
           auto &ptree_assign_pcs = ptree_src.second.get_child("assign_pcs");
           for (auto &ptree_assign_pc : ptree_assign_pcs) {
-            int assign_pc = ptree_assign_pc.second.get<int>("pc");
+            int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
             assign_pcs[src].push_back(assign_pc);
           }
         }
