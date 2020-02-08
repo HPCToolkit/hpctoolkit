@@ -428,6 +428,7 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
     if (sinfo->line_num > 0
 	&& (sinfo->base_index != scope.base_index || sinfo->line_num < scope.line_num))
     {
+#if 0
       auto ait = alienMap.find(sinfo->base_index);
       if (ait != alienMap.end()) {
 	node = ait->second;
@@ -436,6 +437,9 @@ doTreeNode(ostream * os, int depth, TreeNode * root, ScopeInfo scope,
 	node = new TreeNode(sinfo->file_index);
 	alienMap[sinfo->base_index] = node;
       }
+#else
+      node = new TreeNode(sinfo->file_index);
+#endif
     }
     else {
       // not a guard alien
