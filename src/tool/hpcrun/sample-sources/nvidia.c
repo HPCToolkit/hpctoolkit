@@ -465,7 +465,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // Init random number generator
     srand(time(0));
 
-    block_sampling_frequency = frequency == 0 ?
+    block_sampling_frequency = frequency == frequency_default ?
       block_sampling_frequency_default : frequency;
 
     // Register hpcrun callbacks
