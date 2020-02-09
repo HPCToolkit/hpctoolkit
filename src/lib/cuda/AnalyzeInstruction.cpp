@@ -62,10 +62,16 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
 
   width = ".32";
   for (auto &modifier : inst.modifiers) {
-    if (modifier == "8" || modifier == "U8" ||
-      modifier == "16" || modifier == "U16" ||
-      modifier == "32" || modifier == "64" || modifier == "128") {
-      width = "." + modifier;
+    if (modifier == "8" || modifier == "U8" || modifier == "S8") {
+      width = "." + std::to_string(8);
+    } else if (modifier == "16" || modifier == "U16" || modifier == "S16") {
+      width = "." + std::to_string(16);
+    } else if (modifier == "32" || modifier == "U32" || modifier == "S32") {
+      width = "." + std::to_string(32);
+    } else if (modifier == "64" || modifier == "U64" || modifier == "S64") {
+      width = "." + std::to_string(64);
+    } else if (modifier == "128" || modifier == "U128" || modifier == "S128") {
+      width = "." + std::to_string(128);
     }
   }
 
