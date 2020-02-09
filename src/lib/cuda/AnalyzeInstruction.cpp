@@ -62,7 +62,8 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
 
   width = ".32";
   for (auto &modifier : inst.modifiers) {
-    if (modifier == "64" || modifier == "128") {
+    if (modifier == "8" || modifier == "16" || modifier == "32" ||
+      modifier == "64" || modifier == "128") {
       width = "." + modifier;
     }
   }
