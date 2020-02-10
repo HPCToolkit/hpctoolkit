@@ -530,9 +530,28 @@ sanitizer_load_callback
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
 
-  // Write cubin
+  // Compute hash for cubin and store it into a map
+  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin_id);
+  unsigned char *hash;
+  unsigned int hash_len;
+  if (entry == NULL) {
+    cubin_hash_map_insert(cubin_id, cubin, cubin_size);
+    entry = cubin_hash_map_lookup(cubin_id);
+  }
+  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
+
+  // Create file name
   char file_name[PATH_MAX];
-  cuda_load_callback(cumod->cubin_id, cubin, cubin_size, file_name);
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/cubins/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < hash_len; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
+  }
+  used += sprintf(&file_name[used], "%s", ".cubin");
+  PRINT("cubin_id %d hash %s\n", cubin_id, file_name);
 
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cumod->cubin_id);
   Elf_SymbolVector *elf_vector = cubin_id_map_entry_elf_vector_get(entry);
