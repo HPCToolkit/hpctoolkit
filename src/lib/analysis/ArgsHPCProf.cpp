@@ -153,10 +153,9 @@ Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
                        {./" Analysis_DB_DIR "}\n\
-                       Experiment format {" Analysis_OUT_DB_EXPERIMENT "}\n\
   --metric-db <yes|no>\n\
                        Control whether to generate a thread-level metric\n\
-                       value database for hpcviewer scatter plots. {yes}\n\
+                       value database for hpcviewer scatter plots. {no}\n\
   --remove-redundancy \n\
                        Eliminate procedure name redundancy in experiment.xml\n\
   --struct-id          Add 'str=nnn' field to profile data with the hpcstruct\n\
@@ -335,14 +334,14 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
-      exit(1);
+      exit(0);
     }
     if (parser.isOpt("remove-redundancy")) { 
       remove_redundancy = true;
     }
     if (parser.isOpt("version")) { 
       printVersion(std::cerr);
-      exit(1);
+      exit(0);
     }
     if (parser.isOpt("verbose")) {
       int verb = 1;

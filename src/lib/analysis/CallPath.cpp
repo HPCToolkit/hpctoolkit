@@ -499,6 +499,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   }
   
   applyThreadMetricAgents(prof, agent);
+
+  normalize(prof, "none", true);
 }
 
 
