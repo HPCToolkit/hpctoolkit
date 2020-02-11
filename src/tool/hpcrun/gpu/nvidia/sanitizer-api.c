@@ -101,6 +101,7 @@
 
 #include "cuda-api.h"
 #include "cubin-id-map.h"
+#include "cubin-hash-map.h"
 #include "sanitizer-api.h"
 #include "sanitizer-context-map.h"
 #include "sanitizer-stream-map.h"
@@ -529,16 +530,17 @@ sanitizer_load_callback
 )
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
+  uint32_t cubin_id = cumod->cubin_id;
 
   // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin_id);
+  cubin_hash_map_entry_t *cubin_hash_entry = cubin_hash_map_lookup(cubin_id);
   unsigned char *hash;
   unsigned int hash_len;
-  if (entry == NULL) {
+  if (cubin_hash_entry == NULL) {
     cubin_hash_map_insert(cubin_id, cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin_id);
+    cubin_hash_entry = cubin_hash_map_lookup(cubin_id);
   }
-  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
+  hash = cubin_hash_map_entry_hash_get(cubin_hash_entry, &hash_len);
 
   // Create file name
   char file_name[PATH_MAX];
@@ -553,12 +555,11 @@ sanitizer_load_callback
   used += sprintf(&file_name[used], "%s", ".cubin");
   PRINT("cubin_id %d hash %s\n", cubin_id, file_name);
 
-  cubin_id_map_entry_t *entry = cubin_id_map_lookup(cumod->cubin_id);
-  Elf_SymbolVector *elf_vector = cubin_id_map_entry_elf_vector_get(entry);
+  // Compute elf vector
+  Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
 
   // Query cubin function offsets
   uint64_t *addrs = (uint64_t *)hpcrun_malloc_safe(sizeof(uint64_t) * elf_vector->nsymbols);
-  int i;
   for (i = 0; i < elf_vector->nsymbols; ++i) {
     addrs[i] = 0;
     if (elf_vector->symbols[i] != 0) {
@@ -568,7 +569,7 @@ sanitizer_load_callback
       addrs[i] = pc;
     }
   }
-  redshow_cubin_register(cumod->cubin_id, elf_vector->nsymbols, addrs, file_name);
+  redshow_cubin_register(cubin_id, elf_vector->nsymbols, addrs, file_name);
 
   PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);

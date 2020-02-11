@@ -357,7 +357,7 @@ cuda_load_callback
   // Create file name
   size_t i;
   size_t used = 0;
-  file_name[PATH_MAX];
+  char file_name[PATH_MAX];
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&file_name[used], "%s", "/cubins/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
