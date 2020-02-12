@@ -119,6 +119,28 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
 }
 
 
+void CudaAdvisor::debugCCTDepGraphSinglePath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+  double total_path = 0.0;
+  double single_path = 0.0;
+
+  for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
+    auto *node = *it;
+
+    auto out = cct_dep_graph.outgoing_nodes_size(node);
+    if (out == 1) {
+      ++single_path;
+    }
+    total_path += out;
+  }
+
+  std::cout << single_path / total_path << std::endl;
+}
+
+
+void CudaAdvisor::debugInstDepGraph(CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph) {
+}
+
+
 void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
   for (auto &inst_blame : inst_blames) {
     std::cout << std::hex << inst_blame.dst->pc << "->";
@@ -203,8 +225,45 @@ int CudaAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNo
 
 
 void CudaAdvisor::initInstDepGraph(const std::vector<CudaParse::Function *> &functions,
-  const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph) {
+  const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+  std::map<VMA, int> &vma_latency_lower, std::map<VMA, int> &vma_latency_upper,
+  std::map<VMA, int> &vma_latency_throughput) {
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (size_t i = 0; i < block->insts.size(); ++i) {
+        auto *inst = block->insts[i]->inst_stat;
+        inst_dep_graph.addNode(inst);
+
+        // Assign latencies
+        std::pair<int, int> latency = _arch->latency(inst->op);
+        vma_latency_lower[inst->pc] = latency.first;
+        vma_latency_upper[inst->pc] = latency.second;
+        vma_latency_throughput[inst->pc] = _arch->throughput(inst->op);
+
+        // Add latency dependencies
+        for (auto &iter : inst->assign_pcs) {
+          for (auto pc : iter.second) {
+            auto *dep_inst = vma_inst_map.at(pc);
+            inst_dep_graph.addEdge(dep_inst, inst);
+          }
+        }
+      }
+    }
+  }
+}
+
+
+void CudaAdvisor::distInstDepGraph(
+  const std::vector<CudaParse::Function *> &functions,
+  const std::map<VMA, int> &vma_latency_lower,
+  const std::map<VMA, int> &vma_latency_upper,
+  const std::map<VMA, int> &vma_latency_throughput,
+  CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+  std::map<VMA, int> &vma_min_dist, std::map<VMA, int> &vma_max_dist) {
+  InstPairs inst_issue_forward_pairs;
+  InstPairs inst_issue_backward_pairs;
   std::map<CudaParse::Block *, std::vector<CudaParse::Block *> > dep_blocks;
+
   // Construct block dependencies
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
@@ -214,37 +273,138 @@ void CudaAdvisor::initInstDepGraph(const std::vector<CudaParse::Function *> &fun
     }
   }
 
-  std::set<std::pair<CudaParse::InstructionStat *, CudaParse::InstructionStat *> > inst_issue_dep_pairs;
-  std::set<std::pair<CudaParse::InstructionStat *, CudaParse::InstructionStat *> > inst_latency_dep_pairs;
-
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (size_t i = 0; i < block->insts.size(); ++i) {
         auto *inst = block->insts[i]->inst_stat;
-        inst_dep_graph.addNode(inst);
         // Add issue dependencies
         if (i == 0) {
           // First instruction
           for (auto *dep_block : dep_blocks[block]) {
             auto *dep_inst = dep_block->insts.back()->inst_stat;
-            inst_dep_graph.addEdge(inst, dep_inst);
-            inst_issue_dep_pairs.insert(std::pair<CudaParse::InstructionStat *,
-              CudaParse::InstructionStat *>(inst, dep_inst));
+            inst_issue_forward_pairs[dep_inst] = inst;
+            inst_issue_backward_pairs[inst] = dep_inst;
           }
         } else {
           auto *dep_inst = block->insts[i - 1]->inst_stat;
-          inst_dep_graph.addEdge(inst, dep_inst);
-          inst_issue_dep_pairs.insert(std::pair<CudaParse::InstructionStat *,
-            CudaParse::InstructionStat *>(inst, dep_inst));
+          inst_issue_forward_pairs[dep_inst] = inst;
+          inst_issue_backward_pairs[inst] = dep_inst;
         }
-        // Add latency dependencies
-        for (auto &iter : inst->assign_pcs) {
-          for (auto pc : iter.second) {
-            auto *dep_inst = vma_inst_map.at(pc);
-            inst_dep_graph.addEdge(inst, dep_inst);
-            inst_latency_dep_pairs.insert(std::pair<CudaParse::InstructionStat *,
-              CudaParse::InstructionStat *>(inst, dep_inst));
-          }
+      }
+    }
+  }
+
+  // Toplogical sort
+  std::queue<CudaParse::InstructionStat *> inst_queue;
+  std::map<CudaParse::InstructionStat *, int> outdegree;
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (size_t i = 0; i < block->insts.size(); ++i) {
+        auto *inst = block->insts[i]->inst_stat;
+        auto issue = 0;
+        if (inst_issue_forward_pairs.find(inst) != inst_issue_forward_pairs.end()) {
+          issue += 1;
+        }
+        issue += inst_dep_graph.outgoing_nodes_size(inst);
+
+        outdegree[inst] = issue;
+
+        if (issue == 0) {
+          inst_queue.push(inst);
+        }
+      }
+    }
+  }
+
+  std::stack<CudaParse::InstructionStat *> inst_stack;
+  while (inst_queue.empty() == false) {
+    auto *inst = inst_queue.front();
+    inst_queue.pop();
+    auto iter = inst_issue_backward_pairs.find(inst);
+    if (iter != inst_issue_backward_pairs.end()) {
+      auto *from_inst = iter->second;
+      --outdegree[from_inst];
+      if (outdegree[from_inst] == 0) {
+        inst_queue.push(from_inst);
+        inst_stack.push(from_inst);
+      }
+    }
+
+    auto edge_iter = inst_dep_graph.incoming_nodes(inst);
+    if (edge_iter != inst_dep_graph.incoming_nodes_end()) {
+      for (auto *from_inst : edge_iter->second) {
+        --outdegree[from_inst];
+        if (outdegree[from_inst] == 0) {
+          inst_queue.push(from_inst);
+          inst_stack.push(from_inst);
+        }
+      }
+    }
+  }
+
+  // Update min and max dists
+  while (inst_stack.empty() == false) {
+    auto *inst = inst_stack.top();
+    inst_stack.pop();
+    auto latency_throughput = vma_latency_throughput.at(inst->pc);
+    auto latency_lower = vma_latency_lower.at(inst->pc);
+    auto latency_upper = vma_latency_upper.at(inst->pc);
+    auto min_dist = vma_min_dist[inst->pc];
+    auto max_dist = vma_max_dist[inst->pc];
+
+    // Issue based distance
+    auto iter = inst_issue_forward_pairs.find(inst);
+    if (iter != inst_issue_forward_pairs.end()) {
+      auto *to_inst = iter->second;
+      auto to_vma = to_inst->pc;
+      auto min_dist_iter = vma_min_dist.find(to_vma);
+      if (min_dist_iter == vma_min_dist.end()) {
+        // Not exist, just update
+        // TODO(Keren): update based on throughput
+        vma_min_dist[to_vma] = min_dist + latency_throughput;
+      } else {
+        auto min_dist = min_dist_iter->second;
+        // TODO(Keren): update based on throughput
+        vma_min_dist[to_vma] = std::min(min_dist, min_dist + latency_throughput);
+      }
+
+      auto max_dist_iter = vma_max_dist.find(to_vma);
+      if (max_dist_iter == vma_max_dist.end()) {
+        // Not exist, just update
+        // TODO(Keren): update based on throughput
+        vma_max_dist[to_vma] = max_dist + latency_throughput;
+      } else {
+        auto max_dist = max_dist_iter->second;
+        // TODO(Keren): update based on throughput
+        vma_max_dist[to_vma] = std::max(max_dist, max_dist + latency_throughput);
+      }
+    } 
+
+    // Dep based distance
+    auto edge_iter = inst_dep_graph.incoming_nodes(inst);
+    if (edge_iter != inst_dep_graph.incoming_nodes_end()) {
+      for (auto *to_inst : edge_iter->second) {
+        auto to_vma = to_inst->pc;
+        auto min_dist_iter = vma_min_dist.find(to_vma);
+        if (min_dist_iter == vma_min_dist.end()) {
+          // Not exist, just update
+          // TODO(Keren): update based on latency
+          vma_min_dist[to_vma] = min_dist + latency_lower;
+        } else {
+          auto min_dist = min_dist_iter->second;
+          // TODO(Keren): update based on latency
+          vma_min_dist[to_vma] = std::min(min_dist, min_dist + latency_lower);
+        }
+
+        auto max_dist_iter = vma_max_dist.find(to_vma);
+        if (max_dist_iter == vma_max_dist.end()) {
+          // Not exist, just update
+          // TODO(Keren): update based on latency
+          vma_max_dist[to_vma] = max_dist + latency_upper;
+        } else {
+          auto max_dist = max_dist_iter->second;
+          // TODO(Keren): update based on latency
+          vma_max_dist[to_vma] = std::max(max_dist, max_dist + latency_upper);
         }
       }
     }
@@ -252,17 +412,15 @@ void CudaAdvisor::initInstDepGraph(const std::vector<CudaParse::Function *> &fun
 }
 
 
-void CudaAdvisor::propagateCCTGraph(int mpi_rank, int thread_id,
+void CudaAdvisor::propagateCCTDepGraph(int mpi_rank, int thread_id,
   const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map, 
   CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Init queue
   std::queue<Prof::CCT::ADynNode *> nodes;
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
-    auto *node = *iter;
-    // Every stalled instruction must be issued at least once
-    demandNodeMetric(mpi_rank, thread_id, node);
-    nodes.push(node);
+    // These nodes have dependencies
+    nodes.push(*iter);
   }
 
   // Complexity O(N)
@@ -274,25 +432,33 @@ void CudaAdvisor::propagateCCTGraph(int mpi_rank, int thread_id,
     auto node_vma = node->lmIP();
     // Must have a correponding instruction
     auto *node_inst = vma_inst_map.at(node_vma);
-    auto inst_iter = inst_dep_graph.outgoing_nodes(node_inst);
+    auto inst_iter = inst_dep_graph.incoming_nodes(node_inst);
 
-    if (inst_iter != inst_dep_graph.outgoing_nodes_end()) {
-      for (auto *inst_stat : inst_iter->second) {
-        auto vma = inst_stat->pc;
+    bool find_neighbor = false;
+    if (inst_iter != inst_dep_graph.incoming_nodes_end()) {
+      for (auto *inst : inst_iter->second) {
+        auto vma = inst->pc;
         auto iter = vma_prof_map.find(vma);
         if (iter != vma_prof_map.end()) {
           // Existed CCT node
           auto *neighbor_node = iter->second;
-          cct_dep_graph.addEdge(node, neighbor_node);
-        } else {
+          cct_dep_graph.addEdge(neighbor_node, node);
+          find_neighbor = true;
+        }
+      }
+
+      if (find_neighbor == false) {
+        // Make up dependent nodes
+        for (auto *inst : inst_iter->second) {
+          auto vma = inst->pc;
           Prof::Metric::IData metric_data(_prof->metricMgr()->size());
           metric_data.clearMetrics();
           auto *neighbor_node = new Prof::CCT::Stmt(parent,
             HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL, _gpu_root->lmId(), vma, 0, NULL, metric_data);
 
-          cct_dep_graph.addEdge(node, neighbor_node);
+          cct_dep_graph.addEdge(neighbor_node, node);
           vma_prof_map[vma] = neighbor_node;
-          nodes.push(neighbor_node);
+          // The new node does not come with any latency, do not need to push 
         }
       }
     }
@@ -300,25 +466,109 @@ void CudaAdvisor::propagateCCTGraph(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::pruneCCTGraph(int mpi_rank, int thread_id,
-  const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map,
+void CudaAdvisor::pruneCCTDepGraph(int mpi_rank, int thread_id,
+  const VMAInstMap &vma_inst_map, const VMAProfMap &vma_prof_map,
+  const std::map<VMA, int> &vma_min_dist, const std::map<VMA, int> &vma_max_dist,
+  const std::map<VMA, int> &vma_latency_lower, const std::map<VMA, int> &vma_latency_upper, 
+  const std::map<VMA, int> &vma_latency_throughput, 
   CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+  // Profile single path coverage
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    std::cout << "Single path coverage before opcode constraints:" << std::endl;
+    debugCCTDepGraphSinglePath(mpi_rank, thread_id, cct_dep_graph);
+    std::cout << std::endl;
+  }
+
+  auto mem_dep_stall_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+  auto exec_dep_stall_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
+
+  // 1) Opcode constraints
+  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
+  for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
+    auto edge = *iter;
+    auto *from = edge.from;
+    auto *to = edge.to;
+    auto to_vma = to->lmIP();
+    auto *to_inst = vma_inst_map.at(to_vma);
+
+    if (to_inst->op.find("MEMORY") != std::string::npos) {
+      if (to_inst->op.find("SHARED") != std::string::npos) {
+        // Shared memory instructions only cause short_scoreboard wait
+        if (from->demandMetric(exec_dep_stall_id) == 0) {
+          remove_edges.push_back(iter);
+        }
+      } else {
+        // L1TEX Memory instructions only cause memory dep
+        if (from->demandMetric(mem_dep_stall_id) == 0) {
+          remove_edges.push_back(iter);
+        }
+      }
+    } else {
+      // XXX(Keren): Other type instructions cause either short_scoreboard or
+      // fixed dependency 
+      if (from->demandMetric(exec_dep_stall_id) == 0) {
+        remove_edges.push_back(iter);
+      }
+    }
+  }
+
+  for (auto &iter : remove_edges) {
+    cct_dep_graph.removeEdge(iter);
+  }
+  remove_edges.clear();
+
+  // Profile single path coverage
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    std::cout << "Single path coverage after opcode constraints:" << std::endl;
+    debugCCTDepGraphSinglePath(mpi_rank, thread_id, cct_dep_graph);
+    std::cout << std::endl;
+  }
+
+  // 2) Latency constraints
+  for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
+    auto edge = *iter;
+    auto *from = edge.from;
+    auto *to = edge.to;
+    auto to_vma = to->lmIP();
+    auto from_vma = from->lmIP();
+    auto min_dist = abs(vma_min_dist.at(to_vma) - vma_max_dist.at(from_vma));
+    if (min_dist > vma_latency_upper.at(from_vma) && min_dist > vma_latency_throughput.at(from_vma)) {
+      // If mini distance is greater than the max latency, then cut edge
+      remove_edges.push_back(iter);
+    }
+  }
+
+  for (auto &iter : remove_edges) {
+    cct_dep_graph.removeEdge(iter);
+  }
+
+  // Profile single path coverage
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    std::cout << "Single path coverage after opcode constraints:" << std::endl;
+    debugCCTDepGraphSinglePath(mpi_rank, thread_id, cct_dep_graph);
+    std::cout << std::endl;
+  }
 }
 
 
-void CudaAdvisor::blameCCTGraph(int mpi_rank, int thread_id,
+void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
   const VMAInstMap &vma_inst_map,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
   InstBlames &inst_blames) {
+  // Profile single path coverage
+  
+  // 3) use on the path
+
+  // 4) Apportion
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *node = *iter;
     auto src_vma = node->lmIP();
     auto src_inst = vma_inst_map.at(src_vma);
-    auto niter = cct_dep_graph.outgoing_nodes(node);
+    auto niter = cct_dep_graph.incoming_nodes(node);
 
     std::map<std::string, double> sum;
-    if (niter != cct_dep_graph.outgoing_nodes_end()) {
+    if (niter != cct_dep_graph.incoming_nodes_end()) {
       for (auto *dep_node : niter->second) {
         auto dst_vma = dep_node->lmIP();
         auto *dst_inst = vma_inst_map.at(dst_vma);
@@ -339,7 +589,7 @@ void CudaAdvisor::blameCCTGraph(int mpi_rank, int thread_id,
     }
 
     // dependent latencies
-    if (niter != cct_dep_graph.outgoing_nodes_end()) {
+    if (niter != cct_dep_graph.incoming_nodes_end()) {
       for (auto *dep_node : niter->second) {
         auto dst_vma = dep_node->lmIP();
         auto *dst_inst = vma_inst_map.at(dst_vma);
@@ -572,6 +822,9 @@ void CudaAdvisor::init() {
 void CudaAdvisor::config(Prof::CCT::ADynNode *gpu_root) {
   this->_gpu_root = gpu_root;
   // Update kernel characteristics
+
+  // Find device tag and init archtecture
+  this->_arch = new SM70(); 
 }
 
 
@@ -584,10 +837,26 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
   constructVMAProfMap(vma_prof_map);
 
   // 2. Init a instruction dependency graph
-  // a->b means 'a' depends on 'b'.
+  // a->b means 'b' depends on 'a'.
   // Latency metrics include issue 'dependency' and latency 'dependency'
   CCTGraph<CudaParse::InstructionStat *> inst_dep_graph;
-  initInstDepGraph(functions, vma_inst_map, inst_dep_graph);
+  std::map<VMA, int> vma_latency_lower;
+  std::map<VMA, int> vma_latency_upper;
+  std::map<VMA, int> vma_latency_throughput;
+  initInstDepGraph(functions, vma_inst_map, inst_dep_graph,
+    vma_latency_lower, vma_latency_upper, vma_latency_throughput);
+
+  std::map<VMA, int> vma_min_dist;
+  std::map<VMA, int> vma_max_dist;
+  distInstDepGraph(functions,
+    vma_latency_lower, vma_latency_upper, vma_latency_throughput,
+    inst_dep_graph, vma_min_dist, vma_max_dist);
+
+  if (DEBUG_CALLPATH_CUDAADVISOR) {
+    std::cout << "Instruction dependency graph: " << std::endl;
+    debugInstDepGraph(inst_dep_graph);
+    std::cout << std::endl;
+  }
 
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
@@ -611,13 +880,14 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
       }
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
-        std::cout << "CCT dependency graph before propgation: " << std::endl;
+        std::cout << "CCT dependency graph before pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
       // 3.1. Iterative update CCT graph
-      propagateCCTGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map, inst_dep_graph, cct_dep_graph);
+      propagateCCTDepGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map,
+        inst_dep_graph, cct_dep_graph);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "CCT dependency graph after propgation: " << std::endl;
@@ -628,8 +898,10 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
       // 3.2. Prune cold paths in CCT graph
       // 1) Latency constraints
       // 2) Opcode constraints
-      // 3) Use on the path constraints
-      pruneCCTGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map, inst_dep_graph, cct_dep_graph);
+      pruneCCTDepGraph(mpi_rank, thread_id, vma_inst_map, vma_prof_map,
+        vma_min_dist, vma_max_dist,
+        vma_latency_lower, vma_latency_upper, vma_latency_throughput,
+        inst_dep_graph, cct_dep_graph);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "CCT dependency graph after pruning: " << std::endl;
@@ -639,8 +911,10 @@ void CudaAdvisor::blame(const std::vector<CudaParse::Function *> &functions, Fun
 
       // 4. Accumulate blames and record significant pairs and paths
       // Apportion based on block latency coverage and def inst issue count
+      // 1) Use on the path constraints
+      // 2) Apportion by block stall rate
       InstBlames inst_blames;
-      blameCCTGraph(mpi_rank, thread_id, vma_inst_map, cct_dep_graph, inst_blames);
+      blameCCTDepGraph(mpi_rank, thread_id, vma_inst_map, cct_dep_graph, inst_blames);
 
       if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "Debug inst blames: " << std::endl;
