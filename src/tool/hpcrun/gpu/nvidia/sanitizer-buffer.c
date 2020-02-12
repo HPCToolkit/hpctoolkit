@@ -76,6 +76,7 @@ typedef struct sanitizer_buffer_t {
 
   uint32_t cubin_id;
   uint64_t kernel_id;
+  uint64_t host_op_id;
   gpu_patch_buffer_t *gpu_patch_buffer;
 } sanitizer_buffer_t;
 
@@ -90,10 +91,12 @@ sanitizer_buffer_process
 )
 {
   uint32_t cubin_id = b->cubin_id;
-  uint32_t kernel_id = b->kernel_id;
+  uint64_t kernel_id = b->kernel_id;
+  uint64_t host_op_id = b->host_op_id;
+
   gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
   
-  redshow_analyze(cubin_id, kernel_id, gpu_patch_buffer);
+  redshow_analyze(cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
 }
 
 
@@ -113,11 +116,13 @@ sanitizer_buffer_produce
  sanitizer_buffer_t *b,
  uint32_t cubin_id,
  uint64_t kernel_id,
+ uint64_t host_op_id,
  size_t num_records
 )
 {
   b->cubin_id = cubin_id;
   b->kernel_id = kernel_id;
+  b->host_op_id = host_op_id;
 
   if (b->gpu_patch_buffer == NULL) {
     b->gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));

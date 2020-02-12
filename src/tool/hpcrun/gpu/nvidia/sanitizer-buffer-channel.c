@@ -78,6 +78,9 @@
 #define channel_push  \
   typed_bichannel_push(sanitizer_buffer_t)
 
+#define channel_reverse \
+  typed_bichannel_reverse(sanitizer_buffer_t)
+
 #define channel_steal \
   typed_bichannel_steal(sanitizer_buffer_t)
 
@@ -142,6 +145,7 @@ sanitizer_buffer_channel_produce
 (
  uint32_t cubin_id,
  uint64_t kernel_id,
+ uint64_t host_op_id,
  size_t num_records
 )
 {
@@ -149,7 +153,7 @@ sanitizer_buffer_channel_produce
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, cubin_id, kernel_id, num_records);
+  sanitizer_buffer_produce(b, cubin_id, kernel_id, host_op_id, num_records);
 
   return b;
 }
@@ -175,6 +179,9 @@ sanitizer_buffer_channel_consume
 {
   // steal elements previously enqueued by the producer
   channel_steal(channel, bichannel_direction_forward);
+
+  // reverse them so that they are in FIFO order
+  channel_reverse(channel, bichannel_direction_forward);
 
   // consume all elements enqueued before this function was called
   for (;;) {

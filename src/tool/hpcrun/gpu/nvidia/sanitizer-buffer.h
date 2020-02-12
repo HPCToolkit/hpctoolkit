@@ -74,6 +74,7 @@ sanitizer_buffer_produce
  sanitizer_buffer_t *b,
  uint32_t cubin_id,
  uint64_t kernel_id,
+ uint64_t host_op_id,
  size_t num_records
 );
 

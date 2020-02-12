@@ -500,7 +500,9 @@ sanitizer_process_thread
   pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
 
   while (!atomic_load(&sanitizer_process_stop_flag)) {
+    redshow_analysis_begin();
     sanitizer_buffer_channel_set_consume();
+    redshow_analysis_end();
     sanitizer_process_await();
   }
 
@@ -638,6 +640,8 @@ sanitizer_kernel_launch_sync
   uint64_t correlation_id = gpu_correlation_id();
   cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
 
+  PRINT("op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
+
   // Insert a function cct node
   gpu_op_ccts_t gpu_op_ccts;
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
@@ -674,7 +678,7 @@ sanitizer_kernel_launch_sync
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      cubin_id, (uint64_t)api_node, GPU_PATCH_RECORD_NUM);
+      cubin_id, (uint64_t)api_node, correlation_id, GPU_PATCH_RECORD_NUM);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache
@@ -829,17 +833,20 @@ sanitizer_subscribe_callback
           cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
 
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          redshow_memory_register(md->address, md->address + md->size, (uint64_t)api_node);
+          redshow_memory_register(md->address, md->address + md->size, correlation_id, (uint64_t)api_node);
 
-          PRINT("Allocate memory address %p, size %zu, id %lu\n", md->address, md->size, api_node);
+          PRINT("Allocate memory address %p, size %zu, op %lu, id %lu\n",
+            md->address, md->size, correlation_id, api_node);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
         {
-          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          redshow_memory_unregister(md->address, md->address + md->size);
+          uint64_t correlation_id = gpu_correlation_id();
 
-          PRINT("Free memory address %p, size %zu\n", md->address, md->size);
+          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          redshow_memory_unregister(md->address, md->address + md->size, correlation_id);
+
+          PRINT("Free memory address %p, size %zu, op %lu\n", md->address, md->size, correlation_id);
           break;
         }
       default:
