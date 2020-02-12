@@ -401,6 +401,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   hpcrun_pre_allocate_metrics(nevents + num_lush_metrics);
 
+  kind_info_t *papi_kind = hpcrun_metrics_new_kind();
+
   some_derived = 0;
   some_overflow = 0;
   for (i = 0; i < nevents; i++) {
@@ -431,23 +433,29 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
 
     int metric_id = /* weight */
-      hpcrun_set_new_metric_info_and_period(strdup(buffer),
-					    MetricFlags_ValFmt_Int,
-					    self->evl.events[i].thresh, prop);
+      hpcrun_set_new_metric_info_and_period(
+        papi_kind,
+        strdup(buffer),
+        MetricFlags_ValFmt_Int,
+        self->evl.events[i].thresh, prop);
     METHOD_CALL(self, store_metric_id, i, metric_id);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
       int mid_idleness =
-	hpcrun_set_new_metric_info_and_period("idleness",
-					      MetricFlags_ValFmt_Real,
-					      self->evl.events[i].thresh, prop);
+        hpcrun_set_new_metric_info_and_period(
+          papi_kind,
+          "idleness",
+          MetricFlags_ValFmt_Real,
+          self->evl.events[i].thresh, prop);
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
     }
   }
+
+  hpcrun_close_kind(papi_kind);
 
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
