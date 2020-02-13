@@ -210,12 +210,8 @@ kernel_block_handler( event_thread_t *current_event, sample_val_t sv,
  * - context switch metric to store the number of context switches
  ****************************************************************/
 static void
-register_blocking(event_info_t *event_desc)
+register_blocking(kind_info_t *kb_kind, event_info_t *event_desc)
 {
-  static kind_info_t *kb_kind;
-
-  kb_kind = hpcrun_metrics_new_kind();
-
   // ------------------------------------------
   // create metric to compute blocking time
   // ------------------------------------------
@@ -257,8 +253,6 @@ register_blocking(event_info_t *event_desc)
       1           /* sample every context switch*/,
       sample_type /* need additional info for sample type */
   );
-
-  hpcrun_close_kind(kb_kind);
 
   event_desc->attr.context_switch = 1;
   event_desc->attr.sample_id_all = 1;

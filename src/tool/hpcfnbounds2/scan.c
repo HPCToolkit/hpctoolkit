@@ -161,6 +161,9 @@ pltscan(Elf *e, GElf_Shdr secHead)
   startAddr = secHead.sh_addr;
   endAddr = startAddr + secHead.sh_size;
   pltEntrySize = secHead.sh_entsize;
+  if ( pltEntrySize == 0 ) {
+    return SC_DONE;
+  }
 
   for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
     sprintf(nameBuff,"stripped_0x%lx",ii);
