@@ -670,11 +670,9 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         completProcName.append(":");
 
         if ((strct->type() == Prof::Struct::ANode::TyAlien) &&
-            strct->name().compare("<inline>")==0) 
-            {
+            strct->name().compare("<inline>")==0) {
           Prof::Struct::ANode *parent = strct->parent();
-          if (parent) 
-          {
+          if (parent) {
             char buffer[128];
             sprintf(buffer, "%d:", parent->id());
             completProcName.append(buffer);
