@@ -669,6 +669,18 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         completProcName.append(file_key);
         completProcName.append(":");
 
+        if ((strct->type() == Prof::Struct::ANode::TyAlien) &&
+            strct->name().compare("<inline>")==0) 
+            {
+          Prof::Struct::ANode *parent = strct->parent();
+          if (parent) 
+          {
+            char buffer[128];
+            sprintf(buffer, "%d:", parent->id());
+            completProcName.append(buffer);
+          }
+        }
+
         const char *lnm;
 
         // a procedure name within the same file has to be unique.
