@@ -321,7 +321,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 
   if ((void*)sp >= monitor_stack_bottom()) {
     TMSG(FENCE_UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
-    cursor->fence = FENCE_MAIN;
     return STEP_STOP;
   }
 

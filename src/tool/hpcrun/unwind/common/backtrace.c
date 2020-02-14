@@ -302,8 +302,10 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   }
 
   TMSG(BT, "succeeds");
-  bt->partial_unwind = false;
-  return true;
+
+  bt->partial_unwind = (bt->fence == FENCE_NONE);
+
+  return !bt->partial_unwind;
 }
 
 //
