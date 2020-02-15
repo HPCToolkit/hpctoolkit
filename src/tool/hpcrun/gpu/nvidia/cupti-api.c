@@ -1472,9 +1472,35 @@ cupti_correlation_id_pop()
 
 
 void
+cupti_device_init()
+{
+  cupti_stop_flag = false;
+  cupti_runtime_api_flag = false;
+  cupti_trace_node = NULL;
+
+  cupti_correlation_enabled = false;
+  cupti_pc_sampling_enabled = false;
+
+  cupti_correlation_callback = cupti_correlation_callback_dummy;
+
+  cupti_error_callback = cupti_error_callback_dummy;
+
+  cupti_activity_enabled.buffer_request = 0;
+  cupti_activity_enabled.buffer_complete = 0;
+
+  cupti_load_callback = 0;
+
+  cupti_unload_callback = 0;
+}
+
+
+void
 cupti_device_shutdown(void *args)
 {
-  cupti_callbacks_unsubscribe();
-  cupti_activity_flush();
+  if (cupti_stop_flag) {
+    cupti_callbacks_unsubscribe();
+    cupti_stop_flag_unset();
+    cupti_activity_flush();
+  }
 }
 
