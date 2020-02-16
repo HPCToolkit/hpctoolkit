@@ -80,6 +80,7 @@ MYSOURCES = \
 	CallPath-CudaAdvisor.hpp CallPath-CudaAdvisor.cpp \
 	CallPath-CudaOptimizer.hpp CallPath-CudaOptimizer.cpp \
 	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
+	GPUArchitecture.hpp GPUArchitecture.cpp \
 	\
 	MetricNameProfMap.cpp \
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \

@@ -84,6 +84,7 @@
 #include "CallPath-CudaOptimizer.hpp"
 #include "CCTGraph.hpp"
 #include "MetricNameProfMap.hpp"
+#include "GPUArchitecture.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -116,6 +117,7 @@ class CudaAdvisor {
     for (auto *optimizer : _inter_warp_optimizers) {
       delete optimizer;
     }
+    delete _arch;
   }
 
  private:
@@ -131,6 +133,8 @@ class CudaAdvisor {
 
   typedef std::map<CudaOptimizer *, double> OptimizerScoreMap;
 
+  typedef std::map<CudaParse::InstructionStat *, CudaParse::InstructionStat *> InstPairs;
+
  private:
   void constructVMAProfMap(VMAProfMap &vma_prof_map);
 
@@ -140,19 +144,32 @@ class CudaAdvisor {
   void constructVMAStructMap(VMAStructMap &vma_struct_map);
 
   void initInstDepGraph(const std::vector<CudaParse::Function *> &functions,
-    const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph);
+    const VMAInstMap &vma_inst_map, CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    std::map<VMA, int> &vma_latency_lower, std::map<VMA, int> &vma_latency_upper,
+    std::map<VMA, int> &vma_latency_throughput);
 
-  void propagateCCTGraph(int mpi_rank, int thread_id,
+  void distInstDepGraph(
+    const std::vector<CudaParse::Function *> &functions,
+    const std::map<VMA, int> &vma_latency_lower,
+    const std::map<VMA, int> &vma_latency_upper,
+    const std::map<VMA, int> &vma_latency_throughput,
+    CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
+    std::map<VMA, int> &vma_min_dist, std::map<VMA, int> &vma_max_dist);
+
+  void propagateCCTDepGraph(int mpi_rank, int thread_id,
     const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map, 
     CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void pruneCCTGraph(int mpi_rank, int thread_id,
-    const VMAInstMap &vma_inst_map, VMAProfMap &vma_prof_map,
+  void pruneCCTDepGraph(int mpi_rank, int thread_id,
+    const VMAInstMap &vma_inst_map, const VMAProfMap &vma_prof_map,
+    const std::map<VMA, int> &vma_min_dist, const std::map<VMA, int> &vma_max_dist,
+    const std::map<VMA, int> &vma_latency_lower, const std::map<VMA, int> &vma_latency_upper, 
+    const std::map<VMA, int> &vma_latency_throughput, 
     CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
     
-  void blameCCTGraph(int mpi_rank, int thread_id,
+  void blameCCTDepGraph(int mpi_rank, int thread_id,
     const VMAInstMap &vma_inst_map,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
     InstBlames &inst_blames);
@@ -170,7 +187,11 @@ class CudaAdvisor {
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
+  void debugInstDepGraph(CCTGraph<CudaParse::InstructionStat *> &inst_dep_graph);
+
   void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
+  void debugCCTDepGraphSinglePath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
 
@@ -210,6 +231,8 @@ class CudaAdvisor {
   CudaOptimizer *_strength_reduction_optimizer;
   CudaOptimizer *_adjust_threads_optimizer;
   CudaOptimizer *_adjust_registers_optimizer;
+
+  GPUArchitecture *_arch;
  
  private:
   const int _top_block_blames = 5;

@@ -99,7 +99,7 @@ struct CCTEdge {
 template<class T>
 class CCTGraph {
  public:
-  typedef std::map<T, std::vector<T> > NeighborNodeMap;
+  typedef std::map<T, std::set<T> > NeighborNodeMap;
 
  public:
   CCTGraph() {}
@@ -176,9 +176,17 @@ class CCTGraph {
     CCTEdge<T> edge(from, to);
     if (_edges.find(edge) == _edges.end()) {
       _edges.insert(std::move(edge));
-      _incoming_nodes[to].push_back(from);
-      _outgoing_nodes[from].push_back(to);
+      _incoming_nodes[to].insert(from);
+      _outgoing_nodes[from].insert(to);
     }
+  }
+
+  void removeEdge(typename std::set<CCTEdge<T> >::iterator edge) {
+    T from = edge->from;
+    T to = edge->to;
+    _incoming_nodes[to].erase(from);
+    _outgoing_nodes[from].erase(to);
+    _edges.erase(edge);
   }
 
   void addNode(T node) {

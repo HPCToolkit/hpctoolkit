@@ -811,7 +811,7 @@ gatherIncomingSamples(CCTGraph<Prof::CCT::ANode *> *cct_graph, IncomingInstMap &
     Prof::CCT::ANode *node = *it;
     if ((find_recursion && isSCCNode(node)) || (!find_recursion && getProcStmt(node) != NULL)) {
       if (cct_graph->incoming_nodes(node) != cct_graph->incoming_nodes_end()) {
-        std::vector<Prof::CCT::ANode *> &vec = cct_graph->incoming_nodes(node)->second;
+        std::set<Prof::CCT::ANode *> &vec = cct_graph->incoming_nodes(node)->second;
         for (auto *neighbor : vec) {
           for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
             node_map[node][neighbor][i] = neighbor->demandMetric(gpu_inst_index[i]);
