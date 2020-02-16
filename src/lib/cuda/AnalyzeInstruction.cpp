@@ -272,37 +272,38 @@ InstructionStat::InstructionStat(const Instruction *inst) {
       std::cout << inst->operands[0] << " ";
     }
 
+    // STORE [R1], R2
+    // LOAD R1, [R2]
+    // FADD R1, R2, R3
     auto pos = inst->operands[0].find("R");
+    bool store = false;
     if (pos != std::string::npos) {
-      bool store = false;
       if (inst->operands[0].find("\[") != std::string::npos) {  // store instruction
         store = true;
       }
+
       auto reg = convert_reg(inst->operands[0], pos + 1);
-      if (this->op.find("64") != std::string::npos) {  // vec 64
-        if (store) {
+      if (store) {
+        if (this->op.find(".SHARED") != std::string::npos ||
+          this->op.find(".LOCAL") != std::string::npos) {
+          // memory 32-bit
+          this->srcs.push_back(reg);
+        } else {
+          // memory 64-bit
           this->srcs.push_back(reg);
           this->srcs.push_back(reg + 1);
-        } else {
+        }
+      } else {
+        // load or arithmetic
+        if (this->op.find("64") != std::string::npos) {  // vec 64
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
-        }
-      } else if (this->op.find("128") != std::string::npos) {  // vec 128
-        if (store) {
-          this->srcs.push_back(reg);
-          this->srcs.push_back(reg + 1);
-          this->srcs.push_back(reg + 2);
-          this->srcs.push_back(reg + 3);
-        } else {
+        } else if (this->op.find("128") != std::string::npos) {  // vec 128
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
           this->dsts.push_back(reg + 2);
           this->dsts.push_back(reg + 3);
-        }
-      } else {  // vec 32, 16, 8
-        if (store) {
-          this->srcs.push_back(reg);
-        } else {
+        } else {  // vec 32, 16, 8
           this->dsts.push_back(reg);
         }
       }
@@ -315,7 +316,43 @@ InstructionStat::InstructionStat(const Instruction *inst) {
 
       pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
-        this->srcs.push_back(convert_reg(inst->operands[i], pos + 1));
+        auto reg = convert_reg(inst->operands[i], pos + 1);
+        if (store) {
+          if (this->op.find("64") != std::string::npos) {  // vec 64
+            if (reg == -1) {  // rz
+              this->srcs.push_back(reg);
+              this->srcs.push_back(reg);
+            } else {
+              this->srcs.push_back(reg);
+              this->srcs.push_back(reg + 1);
+            }
+          } else if (this->op.find("128") != std::string::npos) {  // vec 128
+            if (reg == -1) {
+              this->srcs.push_back(-1);
+              this->srcs.push_back(-1);
+              this->srcs.push_back(-1);
+              this->srcs.push_back(-1);
+            } else {
+              this->srcs.push_back(reg);
+              this->srcs.push_back(reg + 1);
+              this->srcs.push_back(reg + 2);
+              this->srcs.push_back(reg + 3);
+            }
+          } else {  // vec 32, 16, 8
+            this->srcs.push_back(reg);
+          }
+        } else {
+          // load or arithmetic
+          if (this->op.find(".SHARED") != std::string::npos ||
+            this->op.find(".LOCAL") != std::string::npos) {
+            // memory 32-bit
+            this->srcs.push_back(reg);
+          } else {
+            // memory 64-bit
+            this->srcs.push_back(reg);
+            this->srcs.push_back(reg + 1);
+          }
+        }
       }
     }
   }
@@ -535,13 +572,14 @@ bool dumpCudaInstructions(const std::string &file_path,
         boost::property_tree::ptree ptree_srcs;
         boost::property_tree::ptree ptree_dsts;
 
+        // Instruction offsets have been relocated
         if (inst->inst_stat == NULL) {
-          // Append NOP instructions
-          ptree_inst.put("pc", inst->offset);
-          ptree_inst.put("op", "NOP");
+          // Append artificial NOP instructions
+          ptree_inst.put("pc", inst->offset - function->address);
+          ptree_inst.put("op", "MISC.OTHER");
         } else {
           // Append Normal instructions
-          ptree_inst.put("pc", inst->inst_stat->pc);
+          ptree_inst.put("pc", inst->offset - function->address);
           ptree_inst.put("op", inst->inst_stat->op);
           if (inst->inst_stat->predicate != -1) {
             ptree_inst.put("pred", inst->inst_stat->predicate);
