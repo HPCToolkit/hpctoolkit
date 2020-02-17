@@ -229,6 +229,8 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     uva_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "UVA_BYTES");
     // Accumulates the time between last kernel end to current Sync point as a potential GPU overload factor
     gpu_overload_potential_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_OVERLOAD_POTENTIAL");
+
+    hpcrun_close_kind(blame_kind);
     
     bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
     bs_entry.next = 0;

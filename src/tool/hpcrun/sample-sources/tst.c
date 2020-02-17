@@ -306,19 +306,21 @@ METHOD_FN(process_event_list, int lush_metrics)
 # define sample_period period
 #endif
 
-  int metric_id = hpcrun_set_new_metric_info_and_period("_TST",
-							MetricFlags_ValFmt_Int,
-							sample_period, metric_property_none);
+  kind_info_t *tst_kind = hpcrun_metrics_new_kind();
+
+  int metric_id = hpcrun_set_new_metric_info_and_period(,
+    tst_kind, "_TST", MetricFlags_ValFmt_Int, sample_period, metric_property_none);
   METHOD_CALL(self, store_metric_id, _TST_EVENT, metric_id);
   TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
   if (lush_metrics == 1) {
     int mid_idleness = 
-      hpcrun_set_new_metric_info_and_period("idleness (ms)",
-					    MetricFlags_ValFmt_Real,
-					    sample_period, metric_property_none);
+      hpcrun_set_new_metric_info_and_period(tst_kind, "idleness (ms)",
+        MetricFlags_ValFmt_Real, sample_period, metric_property_none);
     lush_agents->metric_idleness = mid_idleness;
     lush_agents->metric_time = metric_id;
   }
+
+  hpcrun_close_kind(tst_kind);
 
   event = next_tok();
   if (more_tok()) {

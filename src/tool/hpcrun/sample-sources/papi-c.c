@@ -569,6 +569,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
   }
 
+  hpcrun_close_kind(papi_kind);
+
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
   }
