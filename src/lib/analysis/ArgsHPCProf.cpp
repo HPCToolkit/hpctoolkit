@@ -238,7 +238,7 @@ ArgsHPCProf::ArgsHPCProf()
   // Analysis::Args
   prof_metrics = Analysis::Args::MetricFlg_StatsSum;
 
-  db_makeMetricDB = true;
+  db_makeMetricDB = false;
   remove_redundancy = false;
 }
 
