@@ -201,6 +201,7 @@ int lush_metrics = 0; // FIXME: global variable for now
  * (public declaration) thread-local variables
  *****************************************************************************/
  __thread bool hpcrun_thread_suppress_sample = true;
+ __thread int hpcrun_thread_dl_operation = 0;
 
 
 //***************************************************************************
@@ -1596,6 +1597,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 void
 monitor_pre_dlopen(const char* path, int flags)
 {
+  hpcrun_thread_dl_operation += 1;
   if (! hpcrun_dlopen_forced) {
     if (! hpcrun_is_initialized()) {
       hpcrun_dlopen_flags_push(false);
@@ -1615,6 +1617,7 @@ monitor_pre_dlopen(const char* path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void* handle)
 {
+  hpcrun_thread_dl_operation -= 1;
   if (!hpcrun_dlopen_flags_pop()) {
     return;
   }
@@ -1634,6 +1637,7 @@ monitor_dlopen(const char *path, int flags, void* handle)
 void
 monitor_dlclose(void* handle)
 {
+  hpcrun_thread_dl_operation += 1;
   if (! hpcrun_is_initialized()) {
     hpcrun_dlclose_flags_push(false);
     return;
@@ -1648,6 +1652,7 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
+  hpcrun_thread_dl_operation -= 1;
   if (! hpcrun_dlclose_flags_pop()) {
     return;
   }
