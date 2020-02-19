@@ -90,6 +90,7 @@
 #include "sample-sources/common.h"
 #include "sample-sources/ss-errno.h"
  
+#include <hpcrun/main.h>
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>

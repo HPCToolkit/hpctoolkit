@@ -81,6 +81,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>

@@ -103,6 +103,7 @@
 #include "common.h"
 #include "ss-errno.h"
  
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>

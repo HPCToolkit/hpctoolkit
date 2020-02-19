@@ -82,6 +82,7 @@
 #include "papi-c-extended-info.h"
 #include "sample-filters.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
