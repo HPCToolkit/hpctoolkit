@@ -117,11 +117,6 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 
 /******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
-
-/******************************************************************************
  * local variables
  *****************************************************************************/
 
@@ -195,7 +190,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_suppress_sample()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled
