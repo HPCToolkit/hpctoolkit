@@ -515,9 +515,9 @@ MYSOURCES = \
 	main.cpp master.cpp worker.cpp
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	@VALGRIND_IFLAGS@ $(am__append_1)
+	$(am__append_1)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ $(am__append_2)
+	@BOOST_IFLAGS@ $(am__append_2)
 MYLDFLAGS = \
 	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
 	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
