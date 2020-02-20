@@ -63,15 +63,15 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
   width = ".32";
   for (auto &modifier : inst.modifiers) {
     if (modifier == "8" || modifier == "U8" || modifier == "S8") {
-      width = "." + std::to_string(8);
+      width = ".8";
     } else if (modifier == "16" || modifier == "U16" || modifier == "S16") {
-      width = "." + std::to_string(16);
+      width = ".16";
     } else if (modifier == "32" || modifier == "U32" || modifier == "S32") {
-      width = "." + std::to_string(32);
+      width = ".32";
     } else if (modifier == "64" || modifier == "U64" || modifier == "S64") {
-      width = "." + std::to_string(64);
+      width = ".64";
     } else if (modifier == "128" || modifier == "U128" || modifier == "S128") {
-      width = "." + std::to_string(128);
+      width = ".128";
     }
   }
 
@@ -139,7 +139,17 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
     type = ".OTHER";
   }
 
-  op += type;
+  auto width = ".32";
+
+  // IADD only has 32 bit operands, it simulates 64 bit calculation by two IADD instructions
+  // IMAD could have 64 bit operands with a 'wide' modifier
+  for (auto &modifier : inst.modifiers) {
+    if (modifier == "WIDE") {
+      width = ".64";
+    }
+  }
+
+  op += type + width;
 }
 
 
@@ -275,6 +285,7 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     // STORE [R1], R2
     // LOAD R1, [R2]
     // FADD R1, R2, R3
+    // IMAD.WIDE R1, R2, R3
     auto pos = inst->operands[0].find("R");
     bool store = false;
     if (pos != std::string::npos) {
@@ -295,10 +306,10 @@ InstructionStat::InstructionStat(const Instruction *inst) {
         }
       } else {
         // load or arithmetic
-        if (this->op.find("64") != std::string::npos) {  // vec 64
+        if (this->op.find(".64") != std::string::npos) {  // vec 64
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
-        } else if (this->op.find("128") != std::string::npos) {  // vec 128
+        } else if (this->op.find(".128") != std::string::npos) {  // vec 128
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
           this->dsts.push_back(reg + 2);
@@ -317,32 +328,8 @@ InstructionStat::InstructionStat(const Instruction *inst) {
       pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
         auto reg = convert_reg(inst->operands[i], pos + 1);
-        if (store) {
-          if (this->op.find("64") != std::string::npos) {  // vec 64
-            if (reg == -1) {  // rz
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg);
-            } else {
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg + 1);
-            }
-          } else if (this->op.find("128") != std::string::npos) {  // vec 128
-            if (reg == -1) {
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-            } else {
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg + 1);
-              this->srcs.push_back(reg + 2);
-              this->srcs.push_back(reg + 3);
-            }
-          } else {  // vec 32, 16, 8
-            this->srcs.push_back(reg);
-          }
-        } else {
-          // load or arithmetic
+        if (this->op.find(".LOAD") != std::string::npos) {
+          // load
           if (this->op.find(".SHARED") != std::string::npos ||
             this->op.find(".LOCAL") != std::string::npos) {
             // memory 32-bit
@@ -351,6 +338,36 @@ InstructionStat::InstructionStat(const Instruction *inst) {
             // memory 64-bit
             this->srcs.push_back(reg);
             this->srcs.push_back(reg + 1);
+          }
+        } else {
+          if (this->op.find("INTEGER") != std::string::npos) {
+            // integer source only have 32
+            this->srcs.push_back(reg);
+          } else {
+            // arithmetic or store
+            if (this->op.find(".64") != std::string::npos) {  // vec 64
+              if (reg == -1) {  // rz
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg);
+              } else {
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg + 1);
+              }
+            } else if (this->op.find(".128") != std::string::npos) {  // vec 128
+              if (reg == -1) {
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+              } else {
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg + 1);
+                this->srcs.push_back(reg + 2);
+                this->srcs.push_back(reg + 3);
+              }
+            } else {  // vec 32, 16, 8
+              this->srcs.push_back(reg);
+            }
           }
         }
       }
