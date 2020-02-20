@@ -140,9 +140,6 @@ struct FunctionBlame {
   FunctionBlame() : FunctionBlame(0) {}
 };
 
-// This type is shared with CallPath-CudaAdvisor.hpp
-typedef VMAIntervalMap<Prof::Struct::ANode *> VMAStructMap;
-
 // This type is shared with CallPath-CudaInstruction.hpp
 typedef std::map<int, std::map<int, std::vector<FunctionBlame>>> FunctionBlamesMap;
 
@@ -160,7 +157,7 @@ class CudaOptimizer {
  public:
   CudaOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) = 0;
+  virtual double match(const BlockBlame &block_blame) = 0;
 
   virtual std::string advise() = 0;
 
@@ -172,7 +169,7 @@ class CudaLoopUnrollOptimizer : public CudaOptimizer {
  public:
   CudaLoopUnrollOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame);
+  virtual double match(const BlockBlame &block_blame);
 
   virtual std::string advise();
 };
@@ -182,7 +179,7 @@ class CudaMemoryLayoutOptimizer : public CudaOptimizer {
  public:
   CudaMemoryLayoutOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame);
+  virtual double match(const BlockBlame &block_blame);
 
   virtual std::string advise();
 };
@@ -192,7 +189,7 @@ class CudaStrengthReductionOptimizer : public CudaOptimizer {
  public:
   CudaStrengthReductionOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame);
+  virtual double match(const BlockBlame &block_blame);
 
   virtual std::string advise();
 };
@@ -202,7 +199,7 @@ class CudaAdjustRegistersOptimizer : public CudaOptimizer {
  public:
   CudaAdjustRegistersOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame);
+  virtual double match(const BlockBlame &block_blame);
 
   virtual std::string advise();
 };
@@ -212,7 +209,7 @@ class CudaAdjustThreadsOptimizer : public CudaOptimizer {
  public:
   CudaAdjustThreadsOptimizer() {}
 
-  virtual double match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame);
+  virtual double match(const BlockBlame &block_blame);
 
   virtual std::string advise();
 };

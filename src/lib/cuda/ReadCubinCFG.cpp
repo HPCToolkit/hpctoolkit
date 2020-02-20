@@ -184,7 +184,7 @@ parseDotCFG
     auto block_name = symbol->getMangledName() + "_0";
     auto *block = new CudaParse::Block(max_block_id++, std::move(block_name));
     block->begin_offset = cuda_arch >= 70 ? 0 : 8;
-    block->address = symbol->getOffset() + block->begin_offset;
+    block->address = block->begin_offset;
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {

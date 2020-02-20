@@ -87,7 +87,7 @@ CudaOptimizer *CudaOptimizerFactory(CudaOptimizerType type) {
 
 
 
-double CudaLoopUnrollOptimizer::match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) {
+double CudaLoopUnrollOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
@@ -98,7 +98,7 @@ std::string CudaLoopUnrollOptimizer::advise() {
 }
 
 
-double CudaMemoryLayoutOptimizer::match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) {
+double CudaMemoryLayoutOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
@@ -109,7 +109,7 @@ std::string CudaMemoryLayoutOptimizer::advise() {
 }
 
 
-double CudaStrengthReductionOptimizer::match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) {
+double CudaStrengthReductionOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
@@ -120,7 +120,7 @@ std::string CudaStrengthReductionOptimizer::advise() {
 }
 
 
-double CudaAdjustThreadsOptimizer::match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) {
+double CudaAdjustThreadsOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
@@ -131,7 +131,7 @@ std::string CudaAdjustThreadsOptimizer::advise() {
 }
 
 
-double CudaAdjustRegistersOptimizer::match(const VMAStructMap &vma_struct_map, const BlockBlame &block_blame) {
+double CudaAdjustRegistersOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 

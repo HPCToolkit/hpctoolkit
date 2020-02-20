@@ -40,6 +40,8 @@ struct InstructionStat {
   }
 };
 
+void relocateCudaInstructionStats(std::vector<Function *> &functions);
+
 void flatCudaInstructionStats(const std::vector<Function *> &functions,
   std::vector<InstructionStat *> &inst_stats);
 

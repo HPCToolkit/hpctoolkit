@@ -378,19 +378,33 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
         if (inst->inst_stat) {
           // Calculate absolute address
           auto *inst_stat = inst->inst_stat;
-          inst_stat->pc += function->address;
-          for (auto &iter : inst_stat->assign_pcs) {
-            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
-              *piter += function->address;
-            }
-          }
-          inst_stats.emplace_back(inst_stat);
+          inst_stats.push_back(inst_stat);
         }
       }
     }
   }
 
   std::sort(inst_stats.begin(), inst_stats.end(), InstructionStatPointCompare());
+}
+
+
+void relocateCudaInstructionStats(std::vector<Function *> &functions) {
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        if (inst->inst_stat) {
+          // Calculate absolute address
+          auto *inst_stat = inst->inst_stat;
+          inst_stat->pc += function->address;
+          for (auto &iter : inst_stat->assign_pcs) {
+            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
+              *piter += function->address;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -407,43 +421,6 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
     return true;
   }
 };
-
-
-// DFS procedure
-static void trackReg(unsigned int use_pc, unsigned int def_pc, int reg,
-  Block *cur_block, std::set<int> &visited_blocks,
-  std::vector<std::vector<int>> &paths,
-  std::vector<int> &path, bool &first_block) {
-  if (visited_blocks.find(cur_block->id) != visited_blocks.end()) {
-    return;
-  }
-  visited_blocks.insert(cur_block->id);
-  path.push_back(cur_block->id);
-
-  if (use_pc <= cur_block->insts.back()->offset && use_pc >= cur_block->insts.front()->offset) {
-    // The first block needs special handle
-    if (use_pc <= def_pc && first_block) {
-      first_block = false;
-      visited_blocks.erase(cur_block->id);
-      for (auto *target : cur_block->targets) {
-        if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
-          trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
-        }
-      }
-    } else {
-      paths.push_back(path);
-    }
-  } else {
-    for (auto *target : cur_block->targets) {
-      if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
-        trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
-      }
-    }
-  }
-
-  visited_blocks.erase(cur_block->id);
-  path.pop_back();
-}
 
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
@@ -641,7 +618,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   boost::property_tree::read_json(file_path, root);
 
-  // block-> < pc, <target block id, type> > 
+  // CFG does not have parallel edges
+  // block-> <target block id, <pc, type> > 
   std::map<Block *, std::map<int, std::pair<int, int> > > block_target_map;
   std::map<int, Block *> block_map;
   std::map<int, Instruction *> inst_map;
@@ -675,7 +653,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int inst_pc = ptree_tgt.second.get<int>("pc", 0);
         int target_id = ptree_tgt.second.get<int>("id", 0);
         int type = ptree_tgt.second.get<int>("type", 0);
-        block_target_map[block][inst_pc] = std::make_pair(target_id, type);
+        block_target_map[block][target_id] = std::make_pair(inst_pc, type);
       }
 
       // Insts
@@ -744,8 +722,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
   for (auto &block_iter : block_target_map) {
     auto *block = block_iter.first;
     for (auto &iter : block_iter.second) {
-      auto pc = iter.first;
-      auto target_id = iter.second.first;
+      auto target_id = iter.first;
+      auto pc = iter.second.first;
       auto type = iter.second.second;
       auto *inst = inst_map[pc];
       auto *target_block = block_map[target_id];

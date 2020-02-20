@@ -199,6 +199,13 @@ class CCTGraph {
     return _nodes.size();
   }  
 
+  void clear() {
+    _nodes.clear();
+    _edges.clear();
+    _incoming_nodes.clear();
+    _outgoing_nodes.clear();
+  }
+
  private:
   NeighborNodeMap _incoming_nodes;
   NeighborNodeMap _outgoing_nodes;

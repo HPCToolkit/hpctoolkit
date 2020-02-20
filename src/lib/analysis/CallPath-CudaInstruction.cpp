@@ -265,6 +265,8 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     CudaParse::readCudaInstructions(file, functions);
 
     // Step 2: Sort the instructions by PC
+    CudaParse::relocateCudaInstructionStats(functions);
+
     std::vector<CudaParse::InstructionStat *> inst_stats;
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
@@ -280,22 +282,25 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
 
+    cuda_advisor.configInst(functions);
+
     // Step 6: Make advise
     // Find each GPU calling context, make recommendation for each calling context 
     for (auto *gpu_root : gpu_roots) {
       // Pass current gpu root 
-      cuda_advisor.config(gpu_root);
+      cuda_advisor.configGPURoot(gpu_root);
 
       // <mpi_rank, <thread_id, <blames>>>
       FunctionBlamesMap function_blames_map;
 
       // Blame latencies
-      cuda_advisor.blame(functions, function_blames_map);
+      cuda_advisor.blame(function_blames_map);
 
       // Make advise for the calling context and cache result
       cuda_advisor.advise(function_blames_map);
     }
 
+    // TODO(Keren): output advise using this file other than cuda_advisor
     // Save advise for this file and clear cache
     cuda_advisor.save(file + ".advise");
     
