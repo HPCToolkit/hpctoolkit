@@ -95,6 +95,8 @@ class GPUArchitecture {
   // warp throughput, not block throughput
   virtual int throughput(const std::string &opcode) = 0;
 
+  virtual int inst_size() = 0;
+
   virtual ~GPUArchitecture() {}
 
  protected:
@@ -109,6 +111,10 @@ class SM70 : public GPUArchitecture {
   virtual std::pair<int, int> latency(const std::string &opcode);
 
   virtual int throughput(const std::string &opcode);
+
+  virtual int inst_size() {
+    return 16;
+  }
 
  protected:
   Vendor _vendor;

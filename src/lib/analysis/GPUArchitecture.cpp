@@ -76,11 +76,10 @@ std::pair<int, int> SM70::latency(const std::string &opcode) {
       // Use cache hit latency
       return std::pair<int, int>(28, 512);
     }
-  } else if (opcode.find("CONTROL") != std::string::npos) {
-    // Use pipeline latency
-    // At least 4
-    return std::pair<int, int>(4, 4);
   }
+  // Use pipeline latency
+  // At least 4
+  return std::pair<int, int>(4, 4);
 }
 
 
@@ -114,10 +113,9 @@ int SM70::throughput(const std::string &opcode) {
     } else {
       return 4;
     }
-  } else {
-    // At least 1
-    return 1;
   }
+  // At least 1
+  return 1;
 }
 
 }  // Analysis

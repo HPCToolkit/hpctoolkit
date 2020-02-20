@@ -63,15 +63,15 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
   width = ".32";
   for (auto &modifier : inst.modifiers) {
     if (modifier == "8" || modifier == "U8" || modifier == "S8") {
-      width = "." + std::to_string(8);
+      width = ".8";
     } else if (modifier == "16" || modifier == "U16" || modifier == "S16") {
-      width = "." + std::to_string(16);
+      width = ".16";
     } else if (modifier == "32" || modifier == "U32" || modifier == "S32") {
-      width = "." + std::to_string(32);
+      width = ".32";
     } else if (modifier == "64" || modifier == "U64" || modifier == "S64") {
-      width = "." + std::to_string(64);
+      width = ".64";
     } else if (modifier == "128" || modifier == "U128" || modifier == "S128") {
-      width = "." + std::to_string(128);
+      width = ".128";
     }
   }
 
@@ -139,7 +139,17 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
     type = ".OTHER";
   }
 
-  op += type;
+  auto width = ".32";
+
+  // IADD only has 32 bit operands, it simulates 64 bit calculation by two IADD instructions
+  // IMAD could have 64 bit operands with a 'wide' modifier
+  for (auto &modifier : inst.modifiers) {
+    if (modifier == "WIDE") {
+      width = ".64";
+    }
+  }
+
+  op += type + width;
 }
 
 
@@ -275,6 +285,7 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     // STORE [R1], R2
     // LOAD R1, [R2]
     // FADD R1, R2, R3
+    // IMAD.WIDE R1, R2, R3
     auto pos = inst->operands[0].find("R");
     bool store = false;
     if (pos != std::string::npos) {
@@ -295,10 +306,10 @@ InstructionStat::InstructionStat(const Instruction *inst) {
         }
       } else {
         // load or arithmetic
-        if (this->op.find("64") != std::string::npos) {  // vec 64
+        if (this->op.find(".64") != std::string::npos) {  // vec 64
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
-        } else if (this->op.find("128") != std::string::npos) {  // vec 128
+        } else if (this->op.find(".128") != std::string::npos) {  // vec 128
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
           this->dsts.push_back(reg + 2);
@@ -317,32 +328,8 @@ InstructionStat::InstructionStat(const Instruction *inst) {
       pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
         auto reg = convert_reg(inst->operands[i], pos + 1);
-        if (store) {
-          if (this->op.find("64") != std::string::npos) {  // vec 64
-            if (reg == -1) {  // rz
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg);
-            } else {
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg + 1);
-            }
-          } else if (this->op.find("128") != std::string::npos) {  // vec 128
-            if (reg == -1) {
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-              this->srcs.push_back(-1);
-            } else {
-              this->srcs.push_back(reg);
-              this->srcs.push_back(reg + 1);
-              this->srcs.push_back(reg + 2);
-              this->srcs.push_back(reg + 3);
-            }
-          } else {  // vec 32, 16, 8
-            this->srcs.push_back(reg);
-          }
-        } else {
-          // load or arithmetic
+        if (this->op.find(".LOAD") != std::string::npos) {
+          // load
           if (this->op.find(".SHARED") != std::string::npos ||
             this->op.find(".LOCAL") != std::string::npos) {
             // memory 32-bit
@@ -351,6 +338,36 @@ InstructionStat::InstructionStat(const Instruction *inst) {
             // memory 64-bit
             this->srcs.push_back(reg);
             this->srcs.push_back(reg + 1);
+          }
+        } else {
+          if (this->op.find("INTEGER") != std::string::npos) {
+            // integer source only have 32
+            this->srcs.push_back(reg);
+          } else {
+            // arithmetic or store
+            if (this->op.find(".64") != std::string::npos) {  // vec 64
+              if (reg == -1) {  // rz
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg);
+              } else {
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg + 1);
+              }
+            } else if (this->op.find(".128") != std::string::npos) {  // vec 128
+              if (reg == -1) {
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+                this->srcs.push_back(-1);
+              } else {
+                this->srcs.push_back(reg);
+                this->srcs.push_back(reg + 1);
+                this->srcs.push_back(reg + 2);
+                this->srcs.push_back(reg + 3);
+              }
+            } else {  // vec 32, 16, 8
+              this->srcs.push_back(reg);
+            }
           }
         }
       }
@@ -378,19 +395,33 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
         if (inst->inst_stat) {
           // Calculate absolute address
           auto *inst_stat = inst->inst_stat;
-          inst_stat->pc += function->address;
-          for (auto &iter : inst_stat->assign_pcs) {
-            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
-              *piter += function->address;
-            }
-          }
-          inst_stats.emplace_back(inst_stat);
+          inst_stats.push_back(inst_stat);
         }
       }
     }
   }
 
   std::sort(inst_stats.begin(), inst_stats.end(), InstructionStatPointCompare());
+}
+
+
+void relocateCudaInstructionStats(std::vector<Function *> &functions) {
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        if (inst->inst_stat) {
+          // Calculate absolute address
+          auto *inst_stat = inst->inst_stat;
+          inst_stat->pc += function->address;
+          for (auto &iter : inst_stat->assign_pcs) {
+            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
+              *piter += function->address;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -407,43 +438,6 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
     return true;
   }
 };
-
-
-// DFS procedure
-static void trackReg(unsigned int use_pc, unsigned int def_pc, int reg,
-  Block *cur_block, std::set<int> &visited_blocks,
-  std::vector<std::vector<int>> &paths,
-  std::vector<int> &path, bool &first_block) {
-  if (visited_blocks.find(cur_block->id) != visited_blocks.end()) {
-    return;
-  }
-  visited_blocks.insert(cur_block->id);
-  path.push_back(cur_block->id);
-
-  if (use_pc <= cur_block->insts.back()->offset && use_pc >= cur_block->insts.front()->offset) {
-    // The first block needs special handle
-    if (use_pc <= def_pc && first_block) {
-      first_block = false;
-      visited_blocks.erase(cur_block->id);
-      for (auto *target : cur_block->targets) {
-        if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
-          trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
-        }
-      }
-    } else {
-      paths.push_back(path);
-    }
-  } else {
-    for (auto *target : cur_block->targets) {
-      if (target->type != TargetType::CALL && target->type != TargetType::CALL_FT) {
-        trackReg(use_pc, def_pc, reg, target->block, visited_blocks, paths, path, first_block);
-      }
-    }
-  }
-
-  visited_blocks.erase(cur_block->id);
-  path.pop_back();
-}
 
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
@@ -463,8 +457,8 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     }
   }
 
-  Dyninst::AssignmentConverter ac(true, false);
   for (auto *dyn_func : func_set) {
+    Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
     for (auto *dyn_block : dyn_func->blocks()) {
@@ -484,8 +478,8 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
         for (auto a : assignments) {
-          Dyninst::Slicer s(a, dyn_block, dyn_func);
           FirstMatchPred p;
+          Dyninst::Slicer s(a, dyn_block, dyn_func, &ac);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
           Dyninst::NodeIterator exit_begin, exit_end;
@@ -641,7 +635,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
 
   boost::property_tree::read_json(file_path, root);
 
-  // block-> < pc, <target block id, type> > 
+  // CFG does not have parallel edges
+  // block-> <target block id, <pc, type> > 
   std::map<Block *, std::map<int, std::pair<int, int> > > block_target_map;
   std::map<int, Block *> block_map;
   std::map<int, Instruction *> inst_map;
@@ -675,7 +670,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int inst_pc = ptree_tgt.second.get<int>("pc", 0);
         int target_id = ptree_tgt.second.get<int>("id", 0);
         int type = ptree_tgt.second.get<int>("type", 0);
-        block_target_map[block][inst_pc] = std::make_pair(target_id, type);
+        block_target_map[block][target_id] = std::make_pair(inst_pc, type);
       }
 
       // Insts
@@ -744,8 +739,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
   for (auto &block_iter : block_target_map) {
     auto *block = block_iter.first;
     for (auto &iter : block_iter.second) {
-      auto pc = iter.first;
-      auto target_id = iter.second.first;
+      auto target_id = iter.first;
+      auto pc = iter.second.first;
       auto type = iter.second.second;
       auto *inst = inst_map[pc];
       auto *target_block = block_map[target_id];

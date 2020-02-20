@@ -23,22 +23,22 @@ Address CudaBlock::last() const {
 void CudaBlock::getInsns(Insns &insns) const {
   // Manually decoding cuda instructions
   for (auto *inst : _insts) {
-    InstructionAPI::Operation *operation = NULL;
-    const std::string &op_class = inst->inst_stat->op;
+    entryID entry_id = cuda_op_general;
 
+    const std::string &op_class = inst->inst_stat->op;
     if (op_class.find("CALL") != std::string::npos) {
-      operation = new InstructionAPI::Operation(cuda_op_call, op_class, Arch_cuda);
-    } else {
-      operation = new InstructionAPI::Operation(cuda_op_general, op_class, Arch_cuda);
-    } 
+      entry_id = cuda_op_call;
+    }
+
+    InstructionAPI::Operation op(entry_id, op_class, Arch_cuda);
 
     // TODO(Keren): sm_60-> size 8
     // It does not matter now because hpcstruct explicitly set length of instructions
 #ifdef DYNINST_INSTRUCTION_PTR
     InstructionAPI::InstructionPtr instruction_ptr(
-      new InstructionAPI::Instruction(*operation, 16, NULL, Arch_cuda));
+      new InstructionAPI::Instruction(op, 16, NULL, Arch_cuda));
 #else
-    InstructionAPI::Instruction instruction(*operation, 16, NULL, Arch_cuda);
+    InstructionAPI::Instruction instruction(op, 16, NULL, Arch_cuda);
 #endif
 
     if (inst->inst_stat->dsts.size() == 0) {
