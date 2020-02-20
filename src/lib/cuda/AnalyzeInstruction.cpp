@@ -457,8 +457,8 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     }
   }
 
-  Dyninst::AssignmentConverter ac(true, false);
   for (auto *dyn_func : func_set) {
+    Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
     for (auto *dyn_block : dyn_func->blocks()) {
@@ -478,8 +478,8 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
         for (auto a : assignments) {
-          Dyninst::Slicer s(a, dyn_block, dyn_func);
           FirstMatchPred p;
+          Dyninst::Slicer s(a, dyn_block, dyn_func, &ac);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
           Dyninst::NodeIterator exit_begin, exit_end;
