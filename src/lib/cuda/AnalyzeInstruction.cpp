@@ -461,6 +461,17 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
+    Dyninst::Slicer::InsnCache dyn_inst_cache;
+    for (auto *dyn_block : dyn_func->blocks()) {
+      // Create instruction cache for slicing
+      Dyninst::ParseAPI::Block::Insns insns;
+      dyn_block->getInsns(insns);
+      for (auto &iter : insns) {
+        std::pair<Dyninst::InstructionAPI::Instruction, Dyninst::Address> p(iter.second, iter.first);
+        dyn_inst_cache[dyn_block].emplace_back(std::move(p));
+      }
+    }
+
     for (auto *dyn_block : dyn_func->blocks()) {
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
@@ -479,7 +490,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
 
         for (auto a : assignments) {
           FirstMatchPred p;
-          Dyninst::Slicer s(a, dyn_block, dyn_func, &ac);
+          Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
           Dyninst::NodeIterator exit_begin, exit_end;
