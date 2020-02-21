@@ -286,6 +286,9 @@ METHOD_FN(init)
 
   // Reset cupti flags
   cupti_device_init();
+
+  // Init records
+  gpu_trace_init();
 }
 
 static void
@@ -427,7 +430,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_OVERHEAD;
 
   // Init records
-  gpu_trace_init();
+  //gpu_trace_init();
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;

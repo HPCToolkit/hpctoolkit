@@ -107,7 +107,7 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_API_DEBUG 0
+#define CUPTI_API_DEBUG 1
 
 #if CUPTI_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -1478,6 +1478,7 @@ cupti_device_init()
   cupti_runtime_api_flag = false;
   cupti_trace_node = NULL;
 
+/*
   cupti_correlation_enabled = false;
   cupti_pc_sampling_enabled = false;
 
@@ -1491,6 +1492,7 @@ cupti_device_init()
   cupti_load_callback = 0;
 
   cupti_unload_callback = 0;
+*/
 }
 
 
