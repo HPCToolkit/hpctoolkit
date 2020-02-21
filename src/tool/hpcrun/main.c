@@ -200,7 +200,8 @@ int lush_metrics = 0; // FIXME: global variable for now
 /******************************************************************************
  * (public declaration) thread-local variables
  *****************************************************************************/
- __thread bool hpcrun_thread_suppress_sample = true;
+ static __thread bool hpcrun_thread_suppress_sample = true;
+ static __thread int hpcrun_thread_dl_operation = 0;
 
 
 //***************************************************************************
@@ -223,6 +224,31 @@ static spinlock_t hpcrun_aux_cleanup_lock = SPINLOCK_UNLOCKED;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
+
+//***************************************************************************
+// Interface functions for suppressing samples
+//***************************************************************************
+
+void hpcrun_dlfunction_begin()
+{
+  hpcrun_thread_dl_operation += 1;
+}
+
+void hpcrun_dlfunction_end()
+{
+  hpcrun_thread_dl_operation -= 1;
+}
+
+bool hpcrun_dlfunction_is_active()
+{
+  return hpcrun_thread_dl_operation > 0;
+}
+
+bool hpcrun_suppress_sample()
+{
+  return hpcrun_dlfunction_is_active() || hpcrun_thread_suppress_sample;
+}
+
 
 //
 // Local functions
@@ -1596,6 +1622,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 void
 monitor_pre_dlopen(const char* path, int flags)
 {
+  hpcrun_dlfunction_begin();
   if (! hpcrun_dlopen_forced) {
     if (! hpcrun_is_initialized()) {
       hpcrun_dlopen_flags_push(false);
@@ -1615,6 +1642,7 @@ monitor_pre_dlopen(const char* path, int flags)
 void
 monitor_dlopen(const char *path, int flags, void* handle)
 {
+  hpcrun_dlfunction_end();
   if (!hpcrun_dlopen_flags_pop()) {
     return;
   }
@@ -1634,6 +1662,7 @@ monitor_dlopen(const char *path, int flags, void* handle)
 void
 monitor_dlclose(void* handle)
 {
+  hpcrun_dlfunction_begin();
   if (! hpcrun_is_initialized()) {
     hpcrun_dlclose_flags_push(false);
     return;
@@ -1648,6 +1677,7 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
+  hpcrun_dlfunction_end();
   if (! hpcrun_dlclose_flags_pop()) {
     return;
   }
