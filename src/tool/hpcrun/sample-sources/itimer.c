@@ -126,25 +126,25 @@
 // Implement WALLCLOCK as CPUTIME where possible, except on Blue Gene
 // where we need to use ITIMER.
 
-#define IDLE_METRIC_NAME     "idleness (s)"
+#define IDLE_METRIC_NAME     "idleness (sec)"
 
 #define WALLCLOCK_EVENT_NAME   "WALLCLOCK"
-#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (s)"
+#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (sec)"
 
 #define ITIMER_EVENT_NAME    "ITIMER"
-#define ITIMER_METRIC_NAME   "ITIMER (s)"
+#define ITIMER_METRIC_NAME   "ITIMER (sec)"
 #define ITIMER_SIGNAL         SIGPROF
 #define ITIMER_TYPE           ITIMER_PROF
 
 #define REALTIME_EVENT_NAME   "REALTIME"
-#define REALTIME_METRIC_NAME  "REALTIME (s)"
+#define REALTIME_METRIC_NAME  "REALTIME (sec)"
 #define REALTIME_SIGNAL       (SIGRTMIN + 3)
 
 #define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
 #define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
 
 #define CPUTIME_EVENT_NAME    "CPUTIME"
-#define CPUTIME_METRIC_NAME   "CPUTIME (s)"
+#define CPUTIME_METRIC_NAME   "CPUTIME (sec)"
 #define CPUTIME_CLOCK_TYPE     CLOCK_THREAD_CPUTIME_ID
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
