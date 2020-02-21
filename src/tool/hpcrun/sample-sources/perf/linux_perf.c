@@ -90,6 +90,7 @@
 #include "sample-sources/common.h"
 #include "sample-sources/ss-errno.h"
  
+#include <hpcrun/main.h>
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -210,13 +211,6 @@ static event_info_t  *event_desc = NULL;
 static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENCY};
 
 static kind_info_t *lnux_kind;
-
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
-
 
 //******************************************************************************
 // private operations 
@@ -1087,7 +1081,7 @@ perf_event_handler(
   // check #2:
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_suppress_sample()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled

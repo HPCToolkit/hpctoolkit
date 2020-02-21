@@ -91,6 +91,7 @@
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
+#include <hpcrun/main.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
@@ -205,11 +206,6 @@ static struct itimerspec itspec_stop;
 static sigset_t timer_mask;
 
 static __thread bool wallclock_ok = false;
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 // ****************************************************************************
 // * public helper function
@@ -690,7 +686,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   sample_source_t *self = &_itimer_obj;
 
   // if sampling is suppressed for this thread, restart timer, & exit
-  if (hpcrun_thread_suppress_sample || sample_filters_apply()) {
+  if (hpcrun_suppress_sample() || sample_filters_apply()) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
 
