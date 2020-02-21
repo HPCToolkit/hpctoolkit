@@ -1832,6 +1832,7 @@ default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
+default_valgrind_prefix=no
 
 if test "$use_externals" = yes ; then
   default_binutils_prefix="$ext_binutils_prefix"
@@ -1952,6 +1953,9 @@ then
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
+  fi
+  if find_spack_pkg valgrind ; then
+    default_valgrind_prefix="$spack_ans"
   fi
 fi
 
@@ -4707,35 +4711,45 @@ AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
 
 
 #-------------------------------------------------
-# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+# Option: --with-valgrind=PATH
 #-------------------------------------------------
-OPT_HAVE_VALGRIND=no
-OPT_VALGRIND=
-VALGRIND_IFLAGS=
+
+VALGRIND="$default_valgrind_prefix"
 
 AC_ARG_WITH([valgrind],
   AS_HELP_STRING([--with-valgrind=PATH],
-                 [use given Valgrind installation (absolute path) for adding Valgrind annotations (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_VALGRIND=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-valgrind requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_VALGRIND=${withval}
-   fi])
+                 [path to Valgrind install directory]),
+  [VALGRIND="$withval"],
+  [])
 
-# Check for validity of the root directory
+VALGRIND_IFLAGS=
 
-if test "$OPT_HAVE_VALGRIND" = yes; then
-   if test ! -f $OPT_VALGRIND/include/valgrind/valgrind.h; then
-      AC_MSG_ERROR([--with-valgrind=$OPT_VALGRIND invalid! No valgrind.h])
-   fi
-   VALGRIND_IFLAGS="-I$OPT_VALGRIND/include"
-fi
+AC_MSG_CHECKING([for Valgrind headers])
+
+case "$VALGRIND" in
+  /* )
+    # valgrind/valgrind.h must exist on the include path
+    if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
+      VALGRIND_IFLAGS=-I"$VALGRIND"/include
+    else
+      AC_MSG_ERROR([unable to find valgrind.h in: $VALGRIND])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([Valgrind directory must be an absolute path])
+    ;;
+esac
+
+AC_MSG_RESULT([$VALGRIND])
 
 AC_SUBST([VALGRIND_IFLAGS])
 
-# Handle the --enable flag
+
+#-------------------------------------------------
+# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+#-------------------------------------------------
 
 OPT_ENABLE_VG_ANNOTATIONS="no"
 
@@ -4749,15 +4763,14 @@ AC_ARG_ENABLE([valgrind-annotations],
    esac],
   [OPT_ENABLE_VG_ANNOTATIONS=no])
 
-if test "$OPT_ENABLE_VG_ANNOTATIONS" = yes; then
-  if test "$OPT_HAVE_VALGRIND" != yes; then
+if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xyes; then
+  if test x"$VALGRIND" = xno; then
     AC_MSG_ERROR([Valgrind annotations requested but valgrind headers not available!])
   fi
   AC_DEFINE([ENABLE_VG_ANNOTATIONS], [1],
             [Add extra annotations for debugging with Valgrind])
 fi
 
-AC_MSG_RESULT([${OPT_ENABLE_VG_ANNOTATIONS}])
 AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
 
 
