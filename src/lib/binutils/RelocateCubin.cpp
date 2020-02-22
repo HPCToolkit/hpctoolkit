@@ -247,6 +247,26 @@ applyLineMapRelocations
 }
 
 
+static void
+applyDebugInfoRelocations
+(
+ Elf_SymbolVector *symbol_values,
+ char *debug_info,
+ int n_relocations,
+ Elf_Data *relocations_data
+)
+{
+  //----------------------------------------------------------------
+  // apply each debug info relocation
+  //----------------------------------------------------------------
+  for (int i = 0; i < n_relocations; i++) {
+    GElf_Rela rela_v;
+    GElf_Rela *rela = gelf_getrela(relocations_data, i, &rela_v);
+    applyRELArelocation(debug_info, symbol_values, rela);
+  }
+}
+
+
 // if the cubin contains a line map section and a matching line map relocations
 // section, apply the relocations to the line map
 static void
@@ -298,8 +318,9 @@ relocateLineMap
         Elf_Scn *scn = *si;
         GElf_Shdr shdr;
         if (!gelf_getshdr(scn, &shdr)) continue;
-        if (shdr.sh_type == SHT_REL)  {
+        if (shdr.sh_type == SHT_REL || shdr.sh_type == SHT_RELA)  {
           if (section_index(shdr.sh_info) == line_map_scn_index) {
+            // We may find either REL relocation or RELA relocation
             // the relocation section refers to the line map section
 #if DEBUG_CUBIN_RELOCATION
             std::cout << "line map relocations section name: "
@@ -319,8 +340,13 @@ relocateLineMap
 #endif
               if (n_relocations > 0) {
                 Elf_Data *relocations_data = elf_getdata(scn, NULL);
-                applyLineMapRelocations(symbol_values, line_map,
-                  n_relocations, relocations_data);
+                if (shdr.sh_type == SHT_RELA) {
+                  applyDebugInfoRelocations(symbol_values, line_map,
+                    n_relocations, relocations_data);
+                } else {
+                  applyLineMapRelocations(symbol_values, line_map,
+                    n_relocations, relocations_data);
+                }
               }
             }
             return;
@@ -328,26 +354,6 @@ relocateLineMap
         }
       }
     }
-  }
-}
-
-
-static void
-applyDebugInfoRelocations
-(
- Elf_SymbolVector *symbol_values,
- char *debug_info,
- int n_relocations,
- Elf_Data *relocations_data
-)
-{
-  //----------------------------------------------------------------
-  // apply each debug info relocation
-  //----------------------------------------------------------------
-  for (int i = 0; i < n_relocations; i++) {
-    GElf_Rela rela_v;
-    GElf_Rela *rela = gelf_getrela(relocations_data, i, &rela_v);
-    applyRELArelocation(debug_info, symbol_values, rela);
   }
 }
 
