@@ -228,7 +228,7 @@ applyRELArelocation
 
 
 static void
-applyLineMapRelocations
+applyRELrelocations
 (
  Elf_SymbolVector *symbol_values,
  char *line_map,
@@ -248,7 +248,7 @@ applyLineMapRelocations
 
 
 static void
-applyDebugInfoRelocations
+applyRELArelocations
 (
  Elf_SymbolVector *symbol_values,
  char *debug_info,
@@ -341,10 +341,10 @@ relocateLineMap
               if (n_relocations > 0) {
                 Elf_Data *relocations_data = elf_getdata(scn, NULL);
                 if (shdr.sh_type == SHT_RELA) {
-                  applyDebugInfoRelocations(symbol_values, line_map,
+                  applyRELArelocations(symbol_values, line_map,
                     n_relocations, relocations_data);
                 } else {
-                  applyLineMapRelocations(symbol_values, line_map,
+                  applyRELrelocations(symbol_values, line_map,
                     n_relocations, relocations_data);
                 }
               }
@@ -427,7 +427,7 @@ relocateDebugInfo
               int n_relocations = shdr.sh_size / shdr.sh_entsize;
               if (n_relocations > 0) {
                 Elf_Data *relocations_data = elf_getdata(scn, NULL);
-                applyDebugInfoRelocations(symbol_values, debug_info,
+                applyRELArelocations(symbol_values, debug_info,
                   n_relocations, relocations_data);
               }
             }
