@@ -148,6 +148,8 @@ char	*outfile;
 
 // Limit on memory use at which we restart the server in Meg.
 #define SERVER_MEM_LIMIT  140
+// Size to allocate for the stack of the server setup function, in KiB.
+#define SERVER_STACK_SIZE 1024
 #define MIN_NUM_QUERIES   12
 
 #define SUCCESS   0
@@ -161,6 +163,7 @@ enum {
 
 static int client_status = SYSERV_INACTIVE;
 static char *server;
+static char *server_stack;
 
 static int fdout = -1;
 static int fdin = -1;
@@ -459,9 +462,9 @@ launch_server(void)
   if (sampling_is_running) {
     SAMPLE_SOURCES(stop);
   }
-  char stack[1024 * 1024 * 2];
+
   // For safety, we don't assume the direction of stack growth
-  pid = clone(hpcfnbounds_child, &stack[1024 * 1024], 0, &fds);
+  pid = clone(hpcfnbounds_child, &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
 
   if (pid < 0) {
     //
@@ -514,6 +517,10 @@ hpcrun_syserv_init(void)
     size = SERVER_MEM_LIMIT;
   }
   mem_limit = size * 1024;
+
+  // Allocate enough space for fnbounds summoning.
+  // Twice as much to allow for growth in either direction.
+  server_stack = mmap_anon(SERVER_STACK_SIZE * 1024 * 2);
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
     EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");

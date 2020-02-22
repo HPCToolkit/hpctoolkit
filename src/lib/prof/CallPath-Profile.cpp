@@ -599,7 +599,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     bool fake_procedure = false;
 
     if (type == 1) { // LoadModule
-      nm = Prof::LoadMap::LM::pretty_name(strct->name()).c_str(); 
+      pretty_filename = Prof::LoadMap::LM::pretty_name(strct->name());
+      nm = pretty_filename.c_str(); 
       // check load module duplicates
       std::map<std::string, uint>::iterator it = m_mapLoadModules.find(nm);
 
@@ -647,11 +648,11 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 3) { // Proc
-      const char *proc_name = strct->name().c_str();
-      nm = normalize_name(proc_name, fake_procedure);
+      pretty_filename = Prof::LoadMap::LM::pretty_file_name(strct->name());
+      nm = normalize_name(pretty_filename.c_str(), fake_procedure);
 
       if (remove_redundancy && 
-          proc_name != Prof::Struct::Tree::UnknownProcNm)
+          pretty_filename != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
@@ -689,7 +690,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         {
           if (proc->linkName().empty()) {
             // the proc has no mangled name
-            lnm = proc_name;
+            lnm = pretty_filename.c_str();
           } else
           { // get the mangled name
             lnm = proc->linkName().c_str();
