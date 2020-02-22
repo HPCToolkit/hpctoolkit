@@ -163,15 +163,15 @@ class CudaAdvisor {
   void pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
+  void pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+    CCTEdgePathMap &cct_edge_path_map);
+
   void trackReg(int to_vma, int from_vma, int reg,
     CudaParse::Block *to_block, CudaParse::Block *from_block,
     int latency_throughput, int latency, std::set<CudaParse::Block *> &visited_blocks,
     std::vector<CudaParse::Block *> &path,
     std::vector<std::vector<CudaParse::Block *>> &paths);
-
-  void pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-    CCTEdgePathMap &cct_edge_path_map);
 
   double computePathStallRatio(int mpi_rank, int thread_id, int to_vma, int from_vma,
     std::vector<CudaParse::Block *> &path);
@@ -196,8 +196,8 @@ class CudaAdvisor {
   void debugInstDepGraph();
 
   void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
-
-  void debugCCTDepGraphSinglePath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  
+  void debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
 
