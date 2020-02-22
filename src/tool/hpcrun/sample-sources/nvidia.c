@@ -429,9 +429,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
   cupti_enabled_activities |= CUPTI_OVERHEAD;
 
-  // Init records
-  //gpu_trace_init();
-
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
   device_finalizer_register(device_finalizer_type_shutdown, 
