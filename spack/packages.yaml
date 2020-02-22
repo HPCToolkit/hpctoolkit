@@ -49,13 +49,14 @@ packages:
   # hpctoolkit -- these settings can be specified here or else on the
   # spack install command line.
   #
-  # Use version 'master' for the latest snapshot from master.
+  # Use version 'master' for the latest snapshot from master, which
+  # now includes gpu support.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2019.08.14, master]
+  #   version:  [2019.12.28, master]
   #   variants: +mpi
 
 
@@ -69,7 +70,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   binutils:
-    version:  [2.32]
+    version:  [2.33.1]
     variants: +libiberty ~nls
 
 
@@ -85,25 +86,15 @@ packages:
   # +graph, +regex, etc are for toolkit proper.
   # ~mpi, ~python, etc are to reduce prereqs.
   # ~debug is to build release (optimized) variant.
-  # master-gpu branch requires visibility=global
+  # visibility=global is required for recent hpctoolkit.
   #
   boost:
-    version:  [1.66.0]
+    version:  [1.72.0]
     variants: >
       +atomic +chrono +date_time +filesystem +system +thread +timer
       +graph +regex +shared +multithreaded ~debug
       ~mpi ~python ~iostreams ~numpy
       visibility=global
-
-
-  # cuda -- Nvidia CUDA
-  #
-  # Version 10.1 reportedly has faster support for PC sampling
-  #
-  # cuda:
-  #   modules:
-  #     cuda@10.0:  cuda/10.0
-  #   buildable: False
 
 
   # bzip2 -- used by elfutils to read compressed sections (and copy
@@ -116,21 +107,26 @@ packages:
     variants: +shared
 
 
-  # cuda -- used by the gpu branch.
+  # cuda -- nvidia cuda, now used in master.
   #
   # If there is a pre-built cuda for the system, then it may be better
   # to use that with a 'paths:' or 'modules:' entry.
   #
+  # If installing here, then use >= 10.1 and check that the cuda
+  # system drivers are installed.
+  #
   cuda:
+    # modules:
+    #  cuda@10.1:  cuda/10.1
+    #  buildable: False
+    #
     version:  [10.1.243]
 
 
   # dyninst -- used in hpcstruct for line map info, inline sequences
   # and loop analysis.
   #
-  # Need >= 10.1.0 to provide support for injecting CFGs scraped from
-  # NVIDIA CUBINs by using nvdisasm -cfg. 
-  #
+  # Need >= 10.1.0 for full cuda CFG support.
   # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
@@ -150,7 +146,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.177]
+    version:  [0.178]
     variants: +bzip2 +xz ~nls
 
 
@@ -162,7 +158,7 @@ packages:
   # support transactional memory (no-op on non-x86).
   #
   intel-tbb:
-    version:  [2019.4]
+    version:  [2020.1]
     variants: +shared +tm
 
 
@@ -197,7 +193,7 @@ packages:
   # +pic is needed to link with dyninst shared library.
   #
   libiberty:
-    version:  [2.31.1]
+    version:  [2.33.1]
     variants: +pic
 
 
@@ -229,7 +225,19 @@ packages:
     version:  [4.10.1]
 
 
-  # mbedtls -- used by the gpu branch.
+  # libunwind -- used in hpcrun to help with unwinding.
+  #
+  # Normally, we need the most recent snapshot (not the default), or
+  # else develop.  Use >= 1.4 (1.4-rc1 replaces 2018.10.12.)
+  #
+  # +xz is for reading compressed symbol tables.
+  #
+  libunwind:
+    version:  [1.4-rc1, 2018.10.12]
+    variants: +xz
+
+
+  # mbedtls -- now used in master.
   #
   # Use a recent version >= 2.16.1.
   #
@@ -238,18 +246,6 @@ packages:
   mbedtls:
     version:  [2.16.1]
     variants: +pic
-
-
-  # libunwind -- used in hpcrun to help with unwinding.
-  #
-  # Normally, we need the most recent snapshot (not the default), or
-  # else develop.
-  #
-  # +xz is for reading compressed symbol tables.
-  #
-  libunwind:
-    version:  [2018.10.12, develop]
-    variants: +xz
 
 
   # papi -- used in hpcrun for access to the hardware performance
@@ -402,7 +398,7 @@ packages:
   #------------------------------------------------------------
 
   # GCC -- hpctoolkit requires building with GNU gcc/g++.  We require
-  # version 4.8 at a minimum and preferably 5.x or later.
+  # version 5.x or later.
   #
   # Spack handles compilers specially with the compilers.yaml file.
   # This example is only for building a more recent compiler.
