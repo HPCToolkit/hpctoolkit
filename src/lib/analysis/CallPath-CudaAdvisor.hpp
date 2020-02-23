@@ -163,7 +163,7 @@ class CudaAdvisor {
   void pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
+  void pruneCCTDepGraphLatency(
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
     CCTEdgePathMap &cct_edge_path_map);
 
@@ -194,6 +194,8 @@ class CudaAdvisor {
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
   void debugInstDepGraph();
+
+  void debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map);
 
   void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
   

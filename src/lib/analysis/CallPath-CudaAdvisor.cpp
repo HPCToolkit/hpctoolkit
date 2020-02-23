@@ -51,8 +51,14 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_CALLPATH_CUDAADVISOR 1
+#define DEBUG_CALLPATH_CUDAADVISOR 0
 #define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 0
+
+// Define an offset in cubin
+// It varies for different cubins.
+// It is hard to figure out a way to find the offset automatically,
+// because we could have device functions before global functions in cubins
+#define DEBUG_OFFSET(x) (x - 0)
 
 namespace Analysis {
 
@@ -63,14 +69,7 @@ namespace CallPath {
  */
 
 void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
-  std::cout << "Nodes (" << cct_dep_graph.size() << "):" << std::endl;
-  for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
-    auto *node = *it;
-    auto node_vma = node->lmIP();
-
-    std::cout << std::hex << "0x" << node_vma << std::dec << std::endl;
-  }
-
+  std::cout << "Nodes (" << cct_dep_graph.size() << ")" << std::endl;
   std::cout << "Edges:" << std::endl;
   for (auto it = cct_dep_graph.edgeBegin(); it != cct_dep_graph.edgeEnd(); ++it) {
     auto *from_node = it->from;
@@ -79,10 +78,11 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
     auto from_vma = from_node->lmIP();
     auto to_vma = to_node->lmIP();
 
-    std::cout << std::hex << "0x" << from_vma << "-> 0x" << to_vma << std::dec << std::endl;
+    std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << " -> 0x" <<
+      DEBUG_OFFSET(to_vma) << std::dec << std::endl;
   }
 
-  std::cout << "Outstanding latencies:" << std::endl;
+  std::cout << std::endl << "Outstanding Latencies:" << std::endl;
 
   // <dep_stalls, <vmas> >
   std::map<int, std::vector<int> > exec_dep_vmas;
@@ -100,22 +100,26 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
     mem_dep_vmas[mem_dep_stall_metric].push_back(node_vma);
   }
 
-  std::cout << "[" << mpi_rank << ", " << thread_id << "]" << std::endl;
-
-  std::cout << "exec_deps" << std::endl;
+  std::cout << "Exec_deps" << std::endl;
   for (auto &iter : exec_dep_vmas) {
+    if (iter.first == 0) {
+      continue;
+    }
     std::cout << iter.first << ": ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << vma << std::dec << ", ";
+      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
     }
     std::cout << std::endl;
   }
 
-  std::cout << "mem_deps" << std::endl;
+  std::cout << "Mem_deps" << std::endl;
   for (auto &iter : mem_dep_vmas) {
+    if (iter.first == 0) {
+      continue;
+    }
     std::cout << iter.first << ": ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << vma << std::dec << ", ";
+      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
     }
     std::cout << std::endl;
   }
@@ -144,15 +148,32 @@ void CudaAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cc
 }
 
 
-void CudaAdvisor::debugInstDepGraph() {
-  std::cout << "Nodes (" << _inst_dep_graph.size() << "):" << std::endl;
-  for (auto it = _inst_dep_graph.nodeBegin(); it != _inst_dep_graph.nodeEnd(); ++it) {
-    auto *node = *it;
-    auto node_vma = node->pc;
-
-    std::cout << std::hex << "0x" << node_vma << std::dec << std::endl;
+void CudaAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
+  for (auto &from_iter : cct_edge_path_map) {
+    auto from_vma = from_iter.first;
+    for (auto &to_iter : from_iter.second) {
+      if (to_iter.second.size() == 0) {
+        // Skip zero path entries
+        continue;
+      }
+      auto to_vma = to_iter.first;
+      std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << " -> 0x" <<
+        DEBUG_OFFSET(to_vma) << std::dec << ":" << std::endl;
+      for (auto &path : to_iter.second) {
+        std::cout << "[";
+        for (auto *b : path) {
+          auto front_vma = b->insts.front()->inst_stat->pc;
+          std::cout << std::hex << "0x" << DEBUG_OFFSET(front_vma) << ",";
+        }
+        std::cout << "]" << std::endl;
+      }
+    }
   }
+}
 
+
+void CudaAdvisor::debugInstDepGraph() {
+  std::cout << "Nodes (" << _inst_dep_graph.size() << ")" << std::endl;
   std::cout << "Edges:" << std::endl;
   for (auto it = _inst_dep_graph.edgeBegin(); it != _inst_dep_graph.edgeEnd(); ++it) {
     auto *from_node = it->from;
@@ -161,14 +182,15 @@ void CudaAdvisor::debugInstDepGraph() {
     auto from_vma = from_node->pc;
     auto to_vma = to_node->pc;
 
-    std::cout << std::hex << "0x" << from_vma << "-> 0x" << to_vma << std::dec << std::endl;
+    std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << " -> 0x" <<
+      DEBUG_OFFSET(to_vma) << std::dec << std::endl;
   }
 }
 
 
 void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
   for (auto &inst_blame : inst_blames) {
-    std::cout << std::hex << inst_blame.dst->pc << "->";
+    std::cout << std::hex << inst_blame.dst->pc << " ->";
     if (inst_blame.src->pc != inst_blame.dst->pc) {
       std::cout << inst_blame.src->pc << ", ";
     } else {
@@ -302,7 +324,6 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   for (auto &iter : remove_edges) {
     cct_dep_graph.removeEdge(iter);
   }
-  remove_edges.clear();
 
   // Profile single path coverage
   if (DEBUG_CALLPATH_CUDAADVISOR) {
@@ -325,8 +346,8 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
   visited_blocks.insert(from_block);
   path.push_back(from_block);
 
-  auto front_vma = to_block->insts.front()->inst_stat->pc;
-  auto back_vma = to_block->insts.back()->inst_stat->pc;
+  auto front_vma = from_block->insts.front()->inst_stat->pc;
+  auto back_vma = from_block->insts.back()->inst_stat->pc;
 
   // Accumulate throughput
   bool find_def = false;
@@ -341,11 +362,19 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
 
   // [front_vma, to_vma, back_vma]
   if (to_vma <= back_vma && to_vma >= front_vma) {
-    end_vma = to_vma;
+    end_vma = to_vma - _arch->inst_size();
+  }
+
+  // If from_vma and to_vma are in the same block but from_vma >= to_vma
+  // It indicates we have a loop
+  if (from_vma <= back_vma && from_vma >= front_vma &&
+    to_vma <= back_vma && to_vma >= front_vma &&
+    from_vma >= to_vma) {
+    end_vma = back_vma;
   }
 
   // Iterate inst until reaching the use inst
-  while (start_vma < end_vma) {
+  while (start_vma <= end_vma) {
     auto *inst = _vma_prop_map[start_vma].inst;
     latency_throughput += _vma_prop_map[start_vma].latency_throughput;
 
@@ -356,7 +385,7 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
     }
 
     // 2. Latency constraint
-    if (latency_throughput > latency) {
+    if (latency_throughput >= latency) {
       hidden = true;
       break;
     }
@@ -381,13 +410,13 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
     }
   }
 
-  visited_blocks.erase(to_block);
+  visited_blocks.erase(from_block);
   path.pop_back();
 }
 
 
-void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, CCTEdgePathMap &cct_edge_path_map) {
+void CudaAdvisor::pruneCCTDepGraphLatency(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+  CCTEdgePathMap &cct_edge_path_map) {
   // Profile single path coverage
   if (DEBUG_CALLPATH_CUDAADVISOR) {
     std::cout << "Single path coverage before path constraints:" << std::endl;
@@ -413,7 +442,7 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
         // Since the single path rate here is expected to be high,
         // The following code section only executes few times.
         // Two constraints:
-        // 1. A path is eliminated if a instruction on the way defines dst
+        // 1. A path is eliminated if a instruction on the way uses dst
         // 2. A path is eliminated if the throughput cycles is greater than latency
         auto *from_block = _vma_prop_map.at(from_vma).block;
         auto *to_block = _vma_prop_map.at(to_vma).block;
@@ -424,17 +453,35 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
         trackReg(from_vma, to_vma, dst, from_block, to_block,
           0, latency, visited_blocks, path, paths);
 
-        // Associate paths with edge
-        if (paths.size() != 0) {
-          // Merge paths
-          for (auto &path : paths) {
+        // Merge paths
+        for (auto &path : paths) {
+          bool new_path = true;
+          // Existing paths
+          for (auto &p : cct_edge_path_map[from_vma][to_vma]) {
+            if (path.size() != p.size()) {
+              continue;
+            }
+            // Same size paths, comparing every element
+            bool same_path = true;
+            for (size_t i = 0; i < p.size(); ++i) {
+              if (p[i] != path[i]) {
+                same_path = false;
+                break;
+              }
+            }
+            if (same_path == true) {
+              new_path = false;
+              break;
+            }
+          }
+          if (new_path == true) {
             cct_edge_path_map[from_vma][to_vma].push_back(path);
           }
         }
       }
     }
 
-    // If there's only no satisfied path
+    // If there's no satisfied path
     if (cct_edge_path_map[from_vma][to_vma].size() == 0) {
       // This edge can be removed
       remove_edges.push_back(iter);
@@ -444,7 +491,12 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
   for (auto &iter : remove_edges) {
     cct_dep_graph.removeEdge(iter);
   }
-  remove_edges.clear();
+
+  if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+    std::cout << "CCT dependency paths: " << std::endl;
+    debugCCTDepPaths(cct_edge_path_map);
+    std::cout << std::endl;
+  }
 
   // Profile single path coverage
   if (DEBUG_CALLPATH_CUDAADVISOR) {
@@ -567,7 +619,7 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         for (auto *from_node : from_nodes) {
           auto from_vma = from_node->lmIP();
-          auto ps = cct_edge_path_map[to_vma][from_vma];
+          auto ps = cct_edge_path_map[from_vma][to_vma];
 
           for (auto &path : ps) {
             auto stall_ratio = computePathStallRatio(mpi_rank, thread_id, to_vma, from_vma, path);
@@ -931,12 +983,18 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // Opcode constraints
       pruneCCTDepGraphOpcode(mpi_rank, thread_id, cct_dep_graph);
 
+      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+        std::cout << "CCT dependency graph after opcode pruning: " << std::endl;
+        debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
+
       // Path latency constraints
       CCTEdgePathMap cct_edge_path_map;
-      pruneCCTDepGraphLatency(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
+      pruneCCTDepGraphLatency(cct_dep_graph, cct_edge_path_map);
 
       if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
-        std::cout << "CCT dependency graph after pruning: " << std::endl;
+        std::cout << "CCT dependency graph after latency pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
@@ -947,7 +1005,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       //blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
       if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
-        std::cout << "Debug inst blames: " << std::endl;
+        std::cout << "Inst blames: " << std::endl;
         debugInstBlames(inst_blames);
         std::cout << std::endl;
       }

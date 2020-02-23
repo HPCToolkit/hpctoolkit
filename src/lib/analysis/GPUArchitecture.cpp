@@ -114,8 +114,8 @@ int SM70::throughput(const std::string &opcode) {
       return 4;
     }
   }
-  // At least 1
-  return 1;
+  // At least 2
+  return 2;
 }
 
 }  // Analysis
