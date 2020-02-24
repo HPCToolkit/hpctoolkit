@@ -170,14 +170,10 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
   if (opcode.find("MEMBAR") != std::string::npos ||
     opcode.find("DEPBAR") != std::string::npos) {
     type = ".BAR";
-  } else if (opcode.find("SYNC") != std::string::npos ||
-    opcode.find("BAR") != std::string::npos) {
+  } else if (opcode.find("SYNC") != std::string::npos) {
+    type = ".CONVERGE";
+  } else if (opcode.find("BAR") != std::string::npos) {
     type = ".SYNC";
-    if (opcode.find("WARP") != std::string::npos) {
-      type += ".WARP";
-    } else {
-      type += ".BLOCK";
-    }
   } else if (opcode.find("CAL") != std::string::npos) {
     type = ".CALL";
   } else if (opcode.find("EXIT") != std::string::npos) {
@@ -440,11 +436,35 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
 };
 
 
+void controlCudaInstructions(const char *cubin, std::vector<Function *> &functions) {
+  for (auto *function : functions) {
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        if (inst->inst_stat) {
+          // Calculate absolute address
+          auto *inst_stat = inst->inst_stat;
+          auto offset = inst_stat->pc + function->address + 8;
+          // TODO(Keren): only 
+          uint64_t bits = *((uint64_t *)(cubin + offset));
+          // Reuse
+          inst_stat->control.reuse = ((bits & (0x3c00000000000000)) >> 58);
+          inst_stat->control.wait  = ((bits & (0x03f0000000000000)) >> 52);
+          inst_stat->control.read  = ((bits & (0x000e000000000000)) >> 49);
+          inst_stat->control.write = ((bits & (0x0001c00000000000)) >> 46);
+          inst_stat->control.yield = ((bits & (0x0000200000000000)) >> 45);
+          inst_stat->control.stall = ((bits & (0x00001e0000000000)) >> 41);
+        }
+      }
+    }
+  }
+}
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
-  std::map<unsigned int, InstructionStat *> inst_stats_map;
-  std::map<unsigned int, Block *> inst_block_map;
+  std::map<int, InstructionStat *> inst_stats_map;
+  std::map<int, Block *> inst_block_map;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
@@ -592,6 +612,16 @@ bool dumpCudaInstructions(const std::string &file_path,
             ptree_inst.put("pred", "");
           }
 
+          // Control info
+          boost::property_tree::ptree control;
+          control.put("reuse", inst->inst_stat->control.reuse);
+          control.put("wait",  inst->inst_stat->control.wait);
+          control.put("read",  inst->inst_stat->control.read);
+          control.put("write", inst->inst_stat->control.write);
+          control.put("yield", inst->inst_stat->control.yield);
+          control.put("stall", inst->inst_stat->control.stall);
+          ptree_inst.add_child("control", control);
+
           for (auto dst : inst->inst_stat->dsts) {
             boost::property_tree::ptree t;
             t.put("", dst);
@@ -691,6 +721,15 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         std::string op = ptree_inst.second.get<std::string>("op", "");
         int pred = ptree_inst.second.get<int>("pred", -1);
 
+        InstructionStat::Control control;
+        auto &ptree_control = ptree_inst.second.get_child("control");
+        control.reuse = ptree_control.get<int>("reuse", 0);
+        control.wait = ptree_control.get<int>("wait", 0);
+        control.read = ptree_control.get<int>("read", 0);
+        control.write = ptree_control.get<int>("write", 0);
+        control.yield = ptree_control.get<int>("yield", 0);
+        control.stall = ptree_control.get<int>("stall", 0);
+
         std::vector<int> dsts;
         auto &ptree_dsts = ptree_inst.second.get_child("dsts");
         for (auto &ptree_dst : ptree_dsts) {
@@ -711,7 +750,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs);
+        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs, control);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 

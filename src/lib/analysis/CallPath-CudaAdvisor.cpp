@@ -51,14 +51,14 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_CALLPATH_CUDAADVISOR 0
-#define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 0
+#define DEBUG_CALLPATH_CUDAADVISOR 1
+#define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 1
 
 // Define an offset in cubin
 // It varies for different cubins.
 // It is hard to figure out a way to find the offset automatically,
 // because we could have device functions before global functions in cubins
-#define DEBUG_OFFSET(x) (x - 0)
+#define DEBUG_OFFSET(x) (x - 22400)
 
 namespace Analysis {
 
@@ -163,7 +163,7 @@ void CudaAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
         std::cout << "[";
         for (auto *b : path) {
           auto front_vma = b->insts.front()->inst_stat->pc;
-          std::cout << std::hex << "0x" << DEBUG_OFFSET(front_vma) << ",";
+          std::cout << std::hex << "0x" << DEBUG_OFFSET(front_vma) << std::dec << ",";
         }
         std::cout << "]" << std::endl;
       }
@@ -313,8 +313,8 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
         }
       }
     } else {
-      // XXX(Keren): Other type instructions cause either short_scoreboard or
-      // fixed dependency 
+      // XXX(Keren): Other type instructions cause either
+      // short_scoreboard or fixed dependency 
       if (to->demandMetric(exec_dep_stall_id) == 0) {
         remove_edges.push_back(iter);
       }
@@ -322,6 +322,18 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   }
 
   for (auto &iter : remove_edges) {
+    if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      auto edge = *iter;
+      auto *from = edge.from;
+      auto from_vma = from->lmIP();
+      auto *to = edge.to;
+      auto to_vma = to->lmIP();
+      auto mem_dep = to->demandMetric(mem_dep_stall_id);
+      auto exec_dep = to->demandMetric(exec_dep_stall_id);
+      std::cout << "Remove 0x" << std::hex << DEBUG_OFFSET(from_vma) << " -> 0x" <<
+        DEBUG_OFFSET(to_vma) << std::dec << ", Mem_deps: " << mem_dep <<
+        ", Exec_deps: " << exec_dep << std::endl;
+    }
     cct_dep_graph.removeEdge(iter);
   }
 
@@ -415,7 +427,8 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
 }
 
 
-void CudaAdvisor::pruneCCTDepGraphLatency(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
+  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
   CCTEdgePathMap &cct_edge_path_map) {
   // Profile single path coverage
   if (DEBUG_CALLPATH_CUDAADVISOR) {
@@ -423,6 +436,9 @@ void CudaAdvisor::pruneCCTDepGraphLatency(CCTGraph<Prof::CCT::ADynNode *> &cct_d
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
   }
+
+  auto mem_dep_stall_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+  auto exec_dep_stall_id = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
 
   std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
@@ -489,6 +505,18 @@ void CudaAdvisor::pruneCCTDepGraphLatency(CCTGraph<Prof::CCT::ADynNode *> &cct_d
   }
 
   for (auto &iter : remove_edges) {
+    if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      auto edge = *iter;
+      auto *from = edge.from;
+      auto from_vma = from->lmIP();
+      auto *to = edge.to;
+      auto to_vma = to->lmIP();
+      auto mem_dep = to->demandMetric(mem_dep_stall_id);
+      auto exec_dep = to->demandMetric(exec_dep_stall_id);
+      std::cout << "Remove 0x" << std::hex << DEBUG_OFFSET(from_vma) << " -> 0x" <<
+        DEBUG_OFFSET(to_vma) << std::dec << ", Mem_deps: " << mem_dep <<
+        ", Exec_deps: " << exec_dep << std::endl;
+    }
     cct_dep_graph.removeEdge(iter);
   }
 
@@ -991,7 +1019,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
 
       // Path latency constraints
       CCTEdgePathMap cct_edge_path_map;
-      pruneCCTDepGraphLatency(cct_dep_graph, cct_edge_path_map);
+      pruneCCTDepGraphLatency(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
       if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after latency pruning: " << std::endl;
