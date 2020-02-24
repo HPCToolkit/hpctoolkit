@@ -43,28 +43,56 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-#ifndef _FNBOUNDS_SERVER_H_
-#define _FNBOUNDS_SERVER_H_
+// scan.h - program to print the function list from its load-object arguments
 
-#include <stdint.h>
-#include "code-ranges.h"
-#include "function-entries.h"
-#include "syserv-mesg.h"
+#ifndef _FNBOUNDS_SCAN_H_
+#define _FNBOUNDS_SCAN_H_
 
-uint64_t	init_server(DiscoverFnTy, int, int);
-void	do_query(DiscoverFnTy , struct syserv_mesg *);
-void  send_funcs();
 
-void	signal_handler_init();
-int	read_all(int, void*, size_t);
-int	write_all(int, const void*, size_t);
-int	read_mesg(struct syserv_mesg *mesg);
-int	write_mesg(int32_t type, int64_t len);
-void	signal_handler(int);
+#include  <stdio.h>
+#include  <stdlib.h>
+#include  <unistd.h>
+#include  <string.h>
+#include  <elf.h>
+#include  <libelf.h>
+#include  <gelf.h>
+#include 	<dwarf.h>
 
-#if 0
-void syserv_add_addr(void *, long);
-void syserv_add_header(int is_relocatable, uintptr_t ref_offset);
-#endif
+typedef struct __ehRecord {
+  Elf_Scn   *ehHdrSection;
+  Elf_Scn   *ehFrameSection;
+  Elf_Scn   *textSection;
+  Elf_Scn   *dataSection; 
+  size_t    ehHdrIndex;
+  size_t    ehFrameIndex;
+} ehRecord_t;
 
-#endif  // _FNBOUNDS_SERVER_H_
+// prototypes
+uint64_t	pltscan(Elf *e, GElf_Shdr sh);
+uint64_t	initscan(Elf *e, GElf_Shdr sh);
+uint64_t	textscan(Elf *e, GElf_Shdr sh);
+uint64_t	finiscan(Elf *e, GElf_Shdr sh);
+uint64_t	altinstr_replacementscan(Elf *e, GElf_Shdr sh);
+uint64_t	ehframescan(Elf *e, ehRecord_t *ehRecord);
+uint64_t 	skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag);
+uint64_t  decodeULEB128(uint8_t *input, uint64_t *sizeInBytes);
+int64_t  decodeSLEB128(uint8_t *input, uint64_t *sizeInBytes);
+
+
+// Defines 
+#define EHF_CF_DONE	      (0)
+#define EHF_CF_CONT	      (1)
+#define EHF_WO_TYPE	      (1)
+#define EHF_WO_FS	        (2)
+#define EHF_TP_CIE	      (0)
+#define EHF_SLEB128_ERROR (-1)
+#define EHF_ULEB128_ERROR (0xffffffffffffffffull)
+
+#define EHF_CIE_BO_VER    (8)
+#define EHF_CIE_BO_AUSTR  (9)
+
+#define EHF_CIE_VER_1     (1)
+#define EHF_CIE_VER_3     (3)
+
+
+#endif  // _FNBOUNDS_SCAN_H_
