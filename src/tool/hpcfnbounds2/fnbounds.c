@@ -47,6 +47,8 @@
 
 #include  "fnbounds.h"
 #include  "code-ranges.h"
+#include  "server.h"
+#include  "scan.h"
 
 int verbose = 0;
 int scan_code = 1;
@@ -73,7 +75,20 @@ static char ebuf[1024];
 static char ebuf2[1024]; 
 
 uint64_t refOffset;
+uint64_t sr;
 char  *xname;
+
+// external strings containing the function sources
+//
+const char __null_[] = {""};
+const char __p_[] = {"p"};
+const char __d_[] = {"d"};
+const char __s_[] = {"s"};
+const char __i_[] = {"i"};
+const char __t_[] = {"t"};
+const char __f_[] = {"f"};
+const char __a_[] = {"a"};
+const char __e_[] = {"e"};
 
 int
 main(int argc, char **argv, char **envp)
@@ -131,12 +146,14 @@ main(int argc, char **argv, char **envp)
        server_mode = 1;
        if (scan_code == 1) {
          // aggressively search for stripped functions
-         init_server(DiscoverFnTy_Aggressive, _infd, _outfd);
+         sr = init_server(DiscoverFnTy_Aggressive, _infd, _outfd);
        } else {
          // conservatively search for stripped functions
-         init_server(DiscoverFnTy_Conservative, _infd, _outfd);
+         sr = init_server(DiscoverFnTy_Conservative, _infd, _outfd);
        }
-       // never returns
+       // init_server returns 0 when done.  If it has finished, us too.
+       // if an error in init_server is reported, we report it here too.
+       return sr;
       }
       // any other arguments must be the name of a load objects to process
       // First, check to see if environment varirable HPCFNBOUNDS_NO_USE is set
@@ -171,15 +188,28 @@ get_funclist(char *name)
 {
   int fd;
   char  *ret = NULL;
+  uint64_t k;
   Elf   *e;
   
   refOffset = 0;
 
   // Make sure function list array is allocated
+  // And that initial values are set to something reasonable in case of early exit
+  //
   if ( farray == NULL) {
-    farray = (Function_t*) malloc(MAX_FUNC * sizeof(Function_t) );  
+    farray = (Function_t*) valloc(MAX_FUNC * sizeof(Function_t) );  
     maxfunc = MAX_FUNC;
     nfunc = 0;
+    //
+    // This is a "safe" initialization.  If it causes extra memory to be
+    // mapped (i.e. memory usage increases markedly, it could be removed.
+    //
+    for (k = 0; k < maxfunc; k++) {
+      farray[k].fadd = 0ull;
+      farray[k].fnam = NULL;
+      farray[k].src = SC_FNTYPE_NONE;
+      farray[k].fr_fnam = FR_NO;
+    }
     if ( verbose) {
       fprintf(stderr, "Initial farray allocated for %ld functions\n", maxfunc);
     }
@@ -198,6 +228,7 @@ get_funclist(char *name)
   if (fd == -1) {
     // the open failed
     sprintf( ebuf, "open failed -- %s", strerror(errno) );
+    cleanup();  // ensure farray freed in case of error
     return ebuf;
   }
 
@@ -211,6 +242,7 @@ get_funclist(char *name)
   if (e == NULL) {
     sprintf( ebuf, "%s", elf_errmsg(-1));
     close (fd);
+    cleanup();  // ensure farray freed in case of error
     return ebuf;
   }
   
@@ -256,11 +288,11 @@ process_vdso()
 #if 1
   Elf_Kind ek = elf_kind(e);
   if (ek != ELF_K_ELF) {
-    fprintf(stderr, "vdso is not elf_kind!\n");
-    exit(1);
+    sprintf( ebuf2, "Warning, vdso is not elf_kind" );
+    return ebuf2;
   } else {
-    fprintf(stderr, "vdso IS elf_kind!\n");
-    exit(1);
+    sprintf( ebuf2, "Warning, vdso IS elf_kind" );
+    return ebuf2;
   }
 #endif
   char* ret = process_mapped_header(e);
@@ -282,6 +314,7 @@ process_mapped_header(Elf *lelf)
   size_t j,jn;
   GElf_Phdr progHeader;
   ehRecord_t ehInfo;
+  uint32_t symTabPresent;
 
   // verify the header is as it should be
 
@@ -339,7 +372,6 @@ process_mapped_header(Elf *lelf)
   elf_getshdrstrndx(lelf, &secHeadStringIndex);
 
   // initialize ehRecord
-  ehInfo.e = lelf;
   ehInfo.ehHdrSection = NULL;
   ehInfo.ehFrameSection = NULL;
   ehInfo.textSection = NULL;
@@ -348,6 +380,8 @@ process_mapped_header(Elf *lelf)
   ehInfo.ehFrameIndex = 0;
 
   section = NULL;
+
+  symTabPresent = FR_NO;
   //
   // This is the main loop for traversing the sections.
   // NB section numbering starts at 1, not 0.
@@ -368,14 +402,15 @@ process_mapped_header(Elf *lelf)
 
       sprintf(foo, "start %s section", secName);
       fn = strdup(foo);
-      add_function (secHead.sh_addr, fn, "",FR_YES);
+      add_function (secHead.sh_addr, fn, SC_FNTYPE_NONE, FR_YES);
 
       sprintf(foo, "end %s section", secName);
       fn = strdup(foo);
-      add_function(secHead.sh_addr+secHead.sh_size, fn, "",FR_YES);
+      add_function(secHead.sh_addr+secHead.sh_size, fn, SC_FNTYPE_NONE, FR_YES);
     }
       
     if (secHead.sh_type == SHT_SYMTAB) {
+      symTabPresent = FR_YES;
       symtabread(lelf, secHead);
     }
     else if (secHead.sh_type == SHT_DYNSYM) {
@@ -401,12 +436,12 @@ process_mapped_header(Elf *lelf)
         finiscan(lelf, secHead); 
       }
       else if (!strcmp(secName,".eh_frame_hdr")) {
-      ehInfo.ehHdrIndex = elf_ndxscn(section);
-      ehInfo.ehHdrSection = section;
+        ehInfo.ehHdrIndex = elf_ndxscn(section);
+        ehInfo.ehHdrSection = section;
       }
       else if (!strcmp(secName,".eh_frame")) {
-      ehInfo.ehFrameIndex = elf_ndxscn(section);
-      ehInfo.ehFrameSection = section;
+        ehInfo.ehFrameIndex = elf_ndxscn(section);
+        ehInfo.ehFrameSection = section;
       }
       else if (!strcmp(secName,".altinstr_replacement")) {
         altinstr_replacementscan(lelf, secHead); 
@@ -416,8 +451,11 @@ process_mapped_header(Elf *lelf)
   //
   // any eh_frame scans are done after traversing the sections,
   // because various of them may be needed for relative addressing
+  // Only scan the eh_frame if no symtab available.
   //
-  ehframescan(lelf, &ehInfo);  // FIXME: ehRecord has the elf pointer
+  if (symTabPresent == FR_NO) {
+    ehframescan(lelf, &ehInfo);  
+  }
 
   if (verbose) {
     fprintf(stderr, "\n");
@@ -492,7 +530,7 @@ dynsymread(Elf *e, GElf_Shdr sechdr)
     return SC_SKIP;
   }
 
-  symsecread (e, sechdr, "d");
+  symsecread (e, sechdr, SC_FNTYPE_DYNSYM);
 
   return SC_DONE;
 
@@ -505,7 +543,7 @@ symtabread(Elf *e, GElf_Shdr sechdr)
       return SC_SKIP;
   }
 
-  symsecread (e, sechdr, "s");
+  symsecread (e, sechdr, SC_FNTYPE_SYMTAB);
 
   return SC_DONE;
 
@@ -578,6 +616,9 @@ print_funcs()
 void
 add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
 {
+  Function_t * of;
+  uint64_t k;
+
   farray[nfunc].fadd = faddr;
   farray[nfunc].fnam = fname;
   farray[nfunc].src = src;
@@ -595,15 +636,24 @@ add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
   if (nfunc >= maxfunc) {
     // current table is full; double its size
     maxfunc = 2*maxfunc;
-    Function_t * of = farray;
+    of = farray;
     farray = (Function_t *)realloc(farray, maxfunc * sizeof(Function_t) );
     if ( verbose) {
       fprintf(stderr, "Increasing farray size to %ld functions %s\n",
-         maxfunc, (of ==farray ? "(not moved)": "(moved)") );
+         maxfunc, (of == farray ? "(not moved)" : "(moved)") );
     }
     if (farray == NULL) {
       fprintf(stderr, "Fatal error: unable to increase function table to %ld functions; exiting", maxfunc);
       exit(1);
+    }
+    //
+    // initialize the new part of the table.
+    //
+    for (k = nfunc; k < maxfunc; k++) {
+      farray[k].fadd = 0ull;
+      farray[k].fnam = NULL;
+      farray[k].src = SC_FNTYPE_NONE;
+      farray[k].fr_fnam = FR_NO;
     }
   }
 }

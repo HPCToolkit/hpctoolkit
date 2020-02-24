@@ -46,7 +46,7 @@
 // This file contains the routines that scan instructions to identify functions
 
 #include <fnbounds.h>
-
+#include <scan.h>
 
 int64_t 
 decodeSLEB128(uint8_t *input, uint64_t *adv) 
@@ -161,6 +161,10 @@ pltscan(Elf *e, GElf_Shdr secHead)
   startAddr = secHead.sh_addr;
   endAddr = startAddr + secHead.sh_size;
   pltEntrySize = secHead.sh_entsize;
+  //
+  // For a static build, even though the section contains trampolines,
+  // the entry size may be zero.  If so, just skip the section for now.
+  //
   if ( pltEntrySize == 0 ) {
     return SC_DONE;
   }
@@ -168,7 +172,7 @@ pltscan(Elf *e, GElf_Shdr secHead)
   for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
     sprintf(nameBuff,"stripped_0x%lx",ii);
     vegamite = strdup(nameBuff);
-    add_function(ii, vegamite, "p",FR_YES);
+    add_function(ii, vegamite, SC_FNTYPE_PLT, FR_YES);
   }
 
   return SC_DONE;
@@ -186,7 +190,7 @@ initscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
   }
-  // use "i" as source string in add_function() calls
+  // use SC_FNTYPE_INIT as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -202,7 +206,7 @@ textscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
   }
-  // use "t" as source string in add_function() calls
+  // use SC_FNTYPE_TEXT as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -218,7 +222,7 @@ finiscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
   }
-  // use "f" as source string in add_function() calls
+  // use SC_FNTYPE_FINI as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -234,7 +238,7 @@ altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
   }
-  // use "a" as source string in add_function() calls
+  // use SC_FNTYPE_ALTINSTR as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -487,7 +491,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 
       sprintf(nameBuff,"stripped_0x%lx",calculatedAddr64);
       promite = strdup(nameBuff);
-      add_function(calculatedAddr64, promite, "e", FR_YES);
+      add_function(calculatedAddr64, promite, SC_FNTYPE_EH_FRAME, FR_YES);
     }
 
     pb += (recLen + extra);
