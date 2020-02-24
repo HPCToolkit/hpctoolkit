@@ -266,17 +266,17 @@ typedef enum {
 
 // gpu activity times
 #define FORALL_GTIMES(macro)					\
-  macro("GKER (s)",               GPU_TIME_KER,			\
+  macro("GKER (sec)",               GPU_TIME_KER,			\
 	"GPU time: kernel execution (seconds)")			\
-  macro("GMEM (s)",               GPU_TIME_MEM,			\
+  macro("GMEM (sec)",               GPU_TIME_MEM,			\
 	"GPU time: memory allocation/deallocation (seconds)")	\
-  macro("GMSET (s)",              GPU_TIME_MSET,		\
+  macro("GMSET (sec)",              GPU_TIME_MSET,		\
 	"GPU time: memory set (seconds)")			\
-  macro("GXCOPY (s)",             GPU_TIME_XCOPY,		\
+  macro("GXCOPY (sec)",             GPU_TIME_XCOPY,		\
 	"GPU time: explicit data copy (seconds)")		\
-  macro("GICOPY (s)",             GPU_TIME_ICOPY,		\
+  macro("GICOPY (sec)",             GPU_TIME_ICOPY,		\
 	"GPU time: implicit data copy (seconds)")		\
-  macro("GSYNC (s)",              GPU_TIME_SYNC,		\
+  macro("GSYNC (sec)",              GPU_TIME_SYNC,		\
 	"GPU time: synchronization (seconds)")
 
 

@@ -81,6 +81,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -139,11 +140,6 @@ static int papi_unavail = 0;
 static int derived[MAX_EVENTS];
 static int some_derived;
 static int some_overflow;
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * method functions
@@ -677,7 +673,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int i, ret;
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_suppress_sample()) return;
 
 
   // If the interrupt came from inside our code, then drop the sample

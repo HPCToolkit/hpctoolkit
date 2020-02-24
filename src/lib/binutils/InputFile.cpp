@@ -167,7 +167,7 @@ InputFile::openFile
   if (result) {
     filevector = new ElfFileVector;
     filevector->push_back(elfFile);
-    findCubins(elfFile, filevector);
+    //findCubins(elfFile, filevector);
   } else {
     DIAG_EMsg("not an ELF binary: " << filename);
     delete elfFile;

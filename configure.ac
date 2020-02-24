@@ -2143,7 +2143,8 @@ BOOST_COPY=no
 # dyninst would use (but no more).  But copy-libs won't fail on a
 # missing library, so it doesn't have to be exact.
 
-BOOST_COPY_LIST='atomic chrono date_time filesystem system thread timer graph regex'
+BOOST_COPY_LIST='atomic chrono date_time filesystem graph regex system thread timer'
+BOOST_NEEDED_LIST='graph regex system'
 
 AC_MSG_CHECKING([for boost])
 
@@ -2178,21 +2179,25 @@ esac
 
 AC_MSG_RESULT([$BOOST])
 
-# Toolkit doesn't use a boost library directly, but something from a
-# dyninst header pulls in libboost_system (not sure how).  So, we just
-# add everything from the copy list to the link line.  (They're pulled
-# in indirectly anyway).
-
 if test "x$BOOST_LIB_DIR" != x ; then
   boost_lib_list=
+  boost_lflag_list=
 
-  for lib in $BOOST_COPY_LIST ; do
+  for lib in $BOOST_NEEDED_LIST ; do
     if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
-      boost_lib_list="${boost_lib_list} -lboost_$lib"
+      boost_lflag_list="${boost_lflag_list} -lboost_$lib"
+    else
+      AC_MSG_ERROR([boost ${lib} is required])
     fi
   done
 
-  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lib_list"
+  for lib in $BOOST_COPY_LIST ; do
+    if test -f "${BOOST_LIB_DIR}/libboost_${lib}.so" ; then
+      boost_lib_list="${boost_lib_list} $lib"
+    fi
+  done
+
+  BOOST_LFLAGS="-L${BOOST_LIB_DIR} $boost_lflag_list"
 
   AC_MSG_NOTICE([boost libs: $boost_lib_list])
 fi
