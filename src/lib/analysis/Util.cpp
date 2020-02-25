@@ -340,12 +340,14 @@ demandStructure(VMA vma, Prof::Struct::LM* lmStruct,
     else {
       char tmp_buf[TMP_BUFFER_LEN];
       string unknown_proc = (unknownProcNm) ? *unknownProcNm : string(UNKNOWN_PROC);
-
-      snprintf(tmp_buf, TMP_BUFFER_LEN, " 0x%lx", vma);
-      unknown_proc += tmp_buf;
-      if (lmStruct != NULL) {
-        snprintf(tmp_buf, TMP_BUFFER_LEN, " [%s]", FileUtil::basename(lmStruct->name().c_str()).c_str());
+      if (unknown_proc == UNKNOWN_PROC) {
+        snprintf(tmp_buf, TMP_BUFFER_LEN, " 0x%lx", vma);
         unknown_proc += tmp_buf;
+        if (lmStruct != NULL) {
+          std::string base = FileUtil::basename(lmStruct->name().c_str());
+          snprintf(tmp_buf, TMP_BUFFER_LEN, " [%s]", base.c_str());
+          unknown_proc += tmp_buf;
+        }
       }
       Struct::File * fileStruct = Struct::File::demand(lmStruct, UNKNOWN_FILE);
       Struct::Proc * procStruct = Struct::Proc::demand(fileStruct, unknown_proc);
