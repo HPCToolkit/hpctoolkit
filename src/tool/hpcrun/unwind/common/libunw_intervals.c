@@ -299,7 +299,36 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
 
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
   if (!uw) {
-    TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+    // If we don't have unwind info, let libunwind do its thing.
+    int ret = unw_step(&(cursor->uc));
+    if(ret > 0) return STEP_OK;
+    // Libunwind failed (or the frame-chain ended). Log an error and error.
+    switch(-ret) {
+    case 0:
+      TMSG(UNW, "libunw_take_step: error: frame-chain ended at %p\n", pc);
+      break;
+    case UNW_EUNSPEC:
+      TMSG(UNW, "libunw_take_step: error: unspecified error at %p\n", pc);
+      break;
+    case UNW_ENOINFO:
+      TMSG(UNW, "libunw_take_step: error: no unwind info at %p\n", pc);
+      break;
+    case UNW_EBADVERSION:
+      TMSG(UNW, "libunw_take_step: error: unreadable unwind info at %p\n", pc);
+      break;
+    case UNW_EINVALIDIP:
+      TMSG(UNW, "libunw_take_step: error: invalid pc at %p\n", pc);
+      break;
+    case UNW_EBADFRAME:
+      TMSG(UNW, "libunw_take_step: error: bad frame at %p\n", pc);
+      break;
+    case UNW_ESTOPUNWIND:
+      TMSG(UNW, "libunw_take_step: error: libunwind stopped unwind at %p\n", pc);
+      break;
+    default:
+      TMSG(UNW, "libunw_take_step: error: unknown libunwind error at %p\n", pc);
+      break;
+    }
     return STEP_ERROR;
   }
 
