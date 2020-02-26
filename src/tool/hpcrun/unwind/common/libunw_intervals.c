@@ -299,7 +299,36 @@ libunw_take_step(hpcrun_unw_cursor_t* cursor)
 
   bitree_uwi_t* uw = cursor->unwr_info.btuwi;
   if (!uw) {
-    TMSG(UNW, "libunw_take_step: error: failed at: %p\n", pc);
+    // If we don't have unwind info, let libunwind do its thing.
+    int ret = unw_step(&(cursor->uc));
+    if(ret > 0) return STEP_OK;
+    // Libunwind failed (or the frame-chain ended). Log an error and error.
+    switch(-ret) {
+    case 0:
+      TMSG(UNW, "libunw_take_step: error: frame-chain ended at %p\n", pc);
+      break;
+    case UNW_EUNSPEC:
+      TMSG(UNW, "libunw_take_step: error: unspecified error at %p\n", pc);
+      break;
+    case UNW_ENOINFO:
+      TMSG(UNW, "libunw_take_step: error: no unwind info at %p\n", pc);
+      break;
+    case UNW_EBADVERSION:
+      TMSG(UNW, "libunw_take_step: error: unreadable unwind info at %p\n", pc);
+      break;
+    case UNW_EINVALIDIP:
+      TMSG(UNW, "libunw_take_step: error: invalid pc at %p\n", pc);
+      break;
+    case UNW_EBADFRAME:
+      TMSG(UNW, "libunw_take_step: error: bad frame at %p\n", pc);
+      break;
+    case UNW_ESTOPUNWIND:
+      TMSG(UNW, "libunw_take_step: error: libunwind stopped unwind at %p\n", pc);
+      break;
+    default:
+      TMSG(UNW, "libunw_take_step: error: unknown libunwind error at %p\n", pc);
+      break;
+    }
     return STEP_ERROR;
   }
 
@@ -344,7 +373,7 @@ dwarf_reg_states_callback(void *token,
   struct builder *b = token;
   bitree_uwi_t *u = bitree_uwi_malloc(b->uw, size);
   if (!u)
-    return (-1);
+    return (1);
   bitree_uwi_set_rightsubtree(b->latest, u);
   uwi_t *uwi =  bitree_uwi_rootval(u);
   uwi->interval.start = (uintptr_t)start_ip;
@@ -369,13 +398,21 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
   bitree_uwi_t *dummy = (bitree_uwi_t*)space;
   struct builder b = {DWARF_UNWINDER, dummy, 0};
   int status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
-  /* whatever libutils says about the last address range,
-   * we insist that it extend to the last address of this 
-   * function range. but we can't rely on the so-called end of the function
-   * really being all the way to the end.*/
-  if (status == 0 &&
-      bitree_uwi_rootval(b.latest)->interval.end < (uintptr_t)(beg_insn + len))
-    bitree_uwi_rootval(b.latest)->interval.end = (uintptr_t)(beg_insn + len);
+
+  intptr_t end = bitree_uwi_rootval(b.latest)->interval.end;
+  uintptr_t end_insn = (uintptr_t)beg_insn + len;
+  while(status == 0 &&
+        (end = bitree_uwi_rootval(b.latest)->interval.end) < end_insn) {
+    // If we aren't lined up with the end of the interval, scan for any other
+    // info we can possibly pull.
+    end++;
+    do {
+      unw_set_reg(&c, UNW_REG_IP, end);
+      status = unw_reg_states_iterate(&c, dwarf_reg_states_callback, &b);
+      end++;  // In case this doesn't work, move to the next byte
+    } while(status < 0 && end < end_insn);
+    if(end >= end_insn) break;  // Scanned to the end, just go with what we got
+  }
   bitree_uwi_set_rightsubtree(b.latest, NULL);
 
   btuwi_status_t stat;
