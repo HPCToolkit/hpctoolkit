@@ -1,0 +1,364 @@
+To measure the performance of GPU-accelerated applications, HPCToolkit can measure CPU performance using asynchronous sampling (triggered by Linux timers or hardware counter events as described in 
+Section~\ref{sample-sources}) and monitor GPU performance using monitoring libraries provided by GPU vendors.
+
+At the heart of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. At present, adaptors for NVIDIA and AMD GPUs interface NVIDIA's CUPTI and AMD's ROC-tracer monitoring libraries with this monitoring substrate. HPCToolkit reports GPU performance metrics in a vendor-neutral way. For instance, rather than focusing on NVIDIA warps or AMD wavefronts, HPCToolkit presents both as fine-grain thread-level parallelism.
+
+In the following sections, we describe how to measure GPU metrics for GPU-accelerated applications. We begin with a discussion of NVIDIA GPUs since HPCToolkit's support for them is more complete than for others.
+
+\begin{comment}
+
+To measure both CUDA and OpenMP offloading performance, use one of the CUDA events specified above.
+Postprocessing GPU Performance Measurements with HPCToolkit
+
+Collecting Program Structure Information Using Binary Analysis
+hpcstruct <load module>
+Perform binary analysis to recover program structure of your executable or a shared library, as well as any NVIDIA CUBIN GPU binaries that are embedded in ELF segments. (Clang directly embeds NVIDIA CUBINs in ELF segments.)
+hpcstruct hpctoolkit-<your application>-measurements
+\end{comment}
+
+\section{NVIDIA GPUs}
+
+HPCToolkit supports two levels of performance monitoring for NVIDIA GPUs: coarse-grain profiling and tracing of GPU activities at the operation level (e.g., kernel launches, memory, copies, ...) , and fine-grain profiling of GPU computations using PC sampling at the instruction-level.  Section~\ref{nvidia-pc-sampling} describes fine-grain GPU performance measurement using PC sampling and the metrics it provides. 
+
+When performing coarse-grain monitoring of kernel execution, memory copies, etc., HPCToolkit will collect a timeline of activity for each GPU stream if  tracing is enabled. Table~\ref{nvidia-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well.
+
+\begin{table}
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Argument to \hpcrun{} & What is monitored\\\hline\hline
+{\tt -e gpu=nvidia} & profiling of GPU operations\\\hline
+{\tt -e gpu=nvidia -t} & profiling and tracing of GPU operations\\\hline
+{\tt -e gpu=nvidia,pc} &  PC sampling of GPU computations in addition to profiling of GPU operations\\\hline
+{\tt -e gpu=nvidia,pc -t} &  PC sampling of GPU computations in addition to profiling and tracing of GPU operations\\\hline
+\end{tabular}
+\caption{Monitoring performance on NVIDIA GPUs.}
+\label{nvidia-monitoring-options} 
+\end{table}
+
+At present, using NVIDIA's CUPTI (CUDA Performance Tools Interface) library adds substantial measurement overhead.  Unlike CPU monitoring based on asynchronous sampling, GPU performance monitoring uses vendor-provided callback interfaces to intercept the initiation of each GPU operation. Accordingly,  the overhead of GPU performance monitoring depends upon how frequently GPU operations are launched. 
+In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$. The overhead of GPU monitoring is principally on the host side. The time spent in GPU operations as measured by CUPTI  or PC sampling measurements are expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
+
+For instance, if a GPU-accelerated program runs in 1000s without HPCToolkit monitoring GPU activity but slows to 2000s when GPU profiling and tracing is enabled, then if GPU profiles and traces show that the GPU is active for 25\% of the execution time, one must  re-scale the accurate measurements of GPU activity by considering the $2\times$ dilation when monitoring GPU activity. Without monitoring, one would expect the same level of GPU activity, but the host time would be twice as fast. Thus, without monitoring, the ratio of GPU activity to host activity would be roughly double.
+ 
+\subsection{Attributing Measurements to Source Code for NVIDIA GPUs}
+
+NVIDIA's {\tt nvcc} compiler doesn't record information about how GPU machine code maps to CUDA source without proper compiler arguments. Using the {\tt -G} compiler option to {\tt nvcc}, one may generate NVIDIA CUBINs with full DWARF information that includes not only line maps, which map each machine instruction back to a program source line, but also detailed information about inlined code. However, the price of turning on {\tt -G} is that the optimizer will be turned off. For that reason, one may find this option of interest to see how template-based programming models instantiate GPU code, but the performance of code compiled {\tt -G} is vastly slower. Performance measurements of code compiled with {\tt -G} must be considered with that in mind.
+
+One can use the {\tt -lineinfo }  option to instruct  {\tt nvcc}  to record line map information, which relates each machine instruction back to a program source line. The {\tt -lineinfo} option can be used in conjunction with {\tt nvcc} optimization. Using {\tt -lineinfo}, one can measure and interpret the performance of optimized code. However, line map information is a poor substitute for full DWARF information. When {\tt nvcc} inlines code during optimization, the resulting line map information simply shows that the source lines that were compiled into a GPU function. A developer examining performance data must reason on their own about how those lines got there, typically as the result of inlining or macro expansion.
+
+When HPCToolkit uses NVIDIA's CUPTI to monitor a GPU-accelerated application, 
+CUPTI notifies HPCToolkit every time it loads a CUDA binary, known as a CUBIN, into a GPU.
+At runtime, HPCToolkit computes a cryptographic hash of the binary contents and records it into it's measurement directory for the execution. 
+For instance, suppose a CUBIN were launched and its cryptographic hash was 972349aed8, HPCToolkit would record 972349aed8.cubin inside a 'cubins' subdirectory of an HPCToolkit measurement directory. 
+
+To  attribute GPU performance measurements back to source, HPCToolkit supports analysis of NVIDIA CUBIN binaries. Since many CUBIN binaries may be loaded  by an application in a single 
+One wants to apply HPCToolkit's hpcstruct binary analyzer to each of the CUBINs seen at runtime to relate the GPU code back to source. 
+To make this easy, hpcstruct can be applied to a HPCToolkit measurement directory as a whole. 
+This will apply hcstruct to each cubin inside the measurement directory in parallel because there may be many cubin files inside. 
+Note: deficiencies in NVIDIA's tool chain require HPCToolkit to invoke NVIDIA's nvdisasm separately on each function in the symbol table of each CUBIN. 
+This can take a while.
+
+hpcprof -S <load module 1>.hpcstruct  -S <load module 2>.hpcstruct hpctoolkit--<your application>-measurements
+Combine measurements from hpcrun with program structure information collected by hpcstruct to attribute both CPU and GPU performance metrics.
+mMetrics on NVIDIA Devices
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GKER (sec)  &  GPU time: kernel execution (seconds)  \\\hline 
+  GMEM (sec)  &  GPU time: memory allocation/deallocation (seconds)  \\\hline 
+  GMSET (sec)  &  GPU time: memory set (seconds)  \\\hline 
+  GXCOPY (sec)  &  GPU time: explicit data copy (seconds)  \\\hline 
+  GICOPY (sec)  &  GPU time: implicit data copy (seconds)  \\\hline 
+  GSYNC (sec)  &  GPU time: synchronization (seconds)  \\\hline 
+\end{tabular}
+\caption{GPU operation timings.}
+\label{table:gtimes}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GMEM:UNK (B)  &  GPU memory alloc/free: unknown memory kind (bytes)  \\\hline
+  GMEM:PAG (B)  &  GPU memory alloc/free: pageable memory (bytes)  \\\hline
+  GMEM:PIN (B)  &  GPU memory alloc/free: pinned memory (bytes)  \\\hline
+  GMEM:DEV (B)  &  GPU memory alloc/free: device memory (bytes)  \\\hline
+  GMEM:ARY (B)  &  GPU memory alloc/free: array memory (bytes)  \\\hline
+  GMEM:MAN (B)  &  GPU memory alloc/free: managed memory (bytes)  \\\hline
+  GMEM:DST (B)  &  GPU memory alloc/free: device static memory (bytes)  \\\hline
+  GMEM:MST (B)  &  GPU memory alloc/free: managed static memory (bytes)  \\\hline
+  GMEM:COUNT  &  GPU memory alloc/free: count  \\\hline
+\end{tabular}
+\caption{GPU memory allocation and deallocation.}
+\label{table:gmem}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GMSET:UNK (B)  &  GPU memory set: unknown memory kind (bytes)  \\\hline
+  GMSET:PAG (B)  &  GPU memory set: pageable memory (bytes)  \\\hline
+  GMSET:PIN (B)  &  GPU memory set: pinned memory (bytes)  \\\hline
+  GMSET:DEV (B)  &  GPU memory set: device memory (bytes)  \\\hline
+  GMSET:ARY (B)  &  GPU memory set: array memory (bytes)  \\\hline
+  GMSET:MAN (B)  &  GPU memory set: managed memory (bytes)  \\\hline
+  GMSET:DST (B)  &  GPU memory set: device static memory (bytes)  \\\hline
+  GMSET:MST (B)  &  GPU memory set: managed static memory (bytes)  \\\hline
+  GMSET:COUNT  &  GPU memory set: count  \\\hline
+\end{tabular}
+\caption{GPU memory set metrics.}
+\label{table:gmset}
+\end{table}
+
+
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GXCOPY:UNK (B)  &  GPU explicit memory copy: unknown kind (bytes)  \\\hline 
+  GXCOPY:H2D (B)  &  GPU explicit memory copy: host to device (bytes)  \\\hline 
+  GXCOPY:D2H (B)  &  GPU explicit memory copy: device to host (bytes)  \\\hline 
+  GXCOPY:H2A (B)  &  GPU explicit memory copy: host to array (bytes)  \\\hline 
+  GXCOPY:A2H (B)  &  GPU explicit memory copy: array to host (bytes)  \\\hline 
+  GXCOPY:A2A (B)  &  GPU explicit memory copy: array to array (bytes)  \\\hline 
+  GXCOPY:A2D (B)  &  GPU explicit memory copy: array to device (bytes)  \\\hline 
+  GXCOPY:D2A (B)  &  GPU explicit memory copy: device to array (bytes)  \\\hline 
+  GXCOPY:D2D (B)  &  GPU explicit memory copy: device to device (bytes)  \\\hline 
+  GXCOPY:H2H (B)  &  GPU explicit memory copy: host to host (bytes)  \\\hline 
+  GXCOPY:P2P (B)  &  GPU explicit memory copy: peer to peer (bytes)  \\\hline 
+  GXCOPY:COUNT  &  GPU explicit memory copy: count  \\\hline 
+\end{tabular}
+\caption{GPU explicit memory copy metrics.}
+\label{table:gmem}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GSYNC:UNK (us)  &  GPU synchronizations: unknown kind  \\\hline 
+  GSYNC:EVT (us)  &  GPU synchronizations: event  \\\hline 
+  GSYNC:STRE (us)  &  GPU synchronizations: stream event wait  \\\hline 
+  GSYNC:STR (us)  &  GPU synchronizations: stream  \\\hline 
+  GSYNC:CTX (us)  &  GPU synchronizations: context  \\\hline 
+  GSYNC:COUNT  &  GPU synchronizations: count  \\\hline 
+
+\end{tabular}
+\caption{GPU synchronization metrics.}
+\label{table:gmem}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Metric & Description\\\hline\hline
+ GGMEM:LDC (B)  &  GPU global memory: load cacheable memory (bytes)  \\\hline 
+  GGMEM:LDU (B)  &  GPU global memory: load uncacheable memory (bytes)  \\\hline 
+  GGMEM:ST (B)  &  GPU global memory: store (bytes)  \\\hline 
+  GGMEM:LDC (L2T)  &  GPU global memory: load cacheable (L2 cache transactions)  \\\hline 
+  GGMEM:LDU (L2T)  &  GPU global memory: load uncacheable (L2 cache transactions)  \\\hline 
+  GGMEM:ST (L2T)  &  GPU global memory: store (L2 cache transactions)  \\\hline 
+  GGMEM:LDCT (L2T)  &  GPU global memory: load cacheable    (L2 cache transactions, theoretical)  \\\hline 
+  GGMEM:LDUT (L2T)  &  GPU global memory: load uncacheable    (L2 cache transactions, theoretical)  \\\hline 
+  GGMEM:STT (L2T)  &  GPU global memory: store    (L2 cache transactions, theoretical)  \\\hline 
+\end{tabular}
+\caption{GPU global memory metrics.}
+\label{table:gmem}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GLMEM:LD (B)  &  GPU local memory: load (bytes)  \\\hline 
+  GLMEM:ST (B)  &  GPU local memory: store (bytes)  \\\hline 
+  GLMEM:LD (T)  &  GPU local memory: load (transactions)  \\\hline 
+  GLMEM:ST (T)  &  GPU local memory: store (transactions)  \\\hline 
+  GLMEM:LDT (T)  &  GPU local memory: load (transactions, theoretical)  \\\hline 
+  GLMEM:STT (T)  &  GPU local memory: store (transactions, theoretical)  \\\hline 
+\end{tabular}
+\caption{GPU local memory metrics.}
+\label{table:gmem}
+\end{table}
+
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Metric & Description\\\hline\hline
+ GICOPY:UNK (B)  &  GPU implicit copy: unknown kind (bytes)  \\\hline 
+  GICOPY:H2D (B)  &  GPU implicit copy: host to device (bytes)  \\\hline 
+  GICOPY:D2H (B)  &  GPU implicit copy: device to host (bytes)  \\\hline 
+  GICOPY:D2D (B)  &  GPU implicit copy: device to device (bytes)  \\\hline 
+  GICOPY:CPU\_PF  &  GPU implicit copy: CPU page faults  \\\hline 
+  GICOPY:GPU\_PF  &  GPU implicit copy: GPU page faults  \\\hline 
+  GICOPY:THRASH  &  GPU implicit copy: CPU thrashing page faults    (data frequently migrating between processors)  \\\hline 
+  GICOPY:THROT  &  GPU implicit copy: throttling    (prevent thrashing by delaying page fault service)  \\\hline 
+  GICOPY:RMAP  &  GPU implicit copy: remote maps    (prevent thrashing by pinning memory for a time with    some processor mapping and accessing it remotely)  \\\hline 
+  GICOPY:COUNT  &  GPU implicit copy: count  \\\hline 
+\end{tabular}
+\caption{GPU implicit memory copy metrics.}
+\label{table:gtimes}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GBR:DIV  &  GPU branches: diverged  \\\hline 
+  GBR:EXE  &  GPU branches: executed  \\\hline 
+\end{tabular}
+\caption{GPU branch metrics.}
+\label{table:gbr}
+\end{table}
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}\hline
+Metric & Description\\\hline\hline
+ GSAMP:DRP  &  GPU PC samples: dropped  \\\hline 
+  GSAMP:EXP  &  GPU PC samples: expected  \\\hline 
+  GSAMP:TOT  &  GPU PC samples: measured  \\\hline 
+  GSAMP:PER (cyc)  &  GPU PC samples: period (GPU cycles)  \\\hline 
+
+\end{tabular}
+\caption{GPU PC sampling statistics.}
+\label{table:gsamp}
+\end{table}
+
+\subsection{PC Sampling on NVIDIA GPUs}
+\label{nvidia-pc-sampling} 
+
+\begin{figure}[htp]
+\includegraphics[width=\textwidth]{mental-model.pdf}
+\caption{NVIDIA's GPU PC sampling example on an SM. $P-6P$ represent
+six sample periods P cycles apart. $S_{1}-S_{4}$ represent four schedulers on an SM.}
+\label{fig:pc sampling}
+\vspace{-2ex}
+\end{figure}
+
+NVIDIA's GPUs have supported PC sampling since Maxwell~\cite{cuptipcsampling}.
+Instruction samples are collected separately on each active streaming
+multiprocessor (SM) and merged in a buffer returned by NVIDIA's CUPTI
+API~\cite{cupti}. 
+In each sampling period, one warp scheduler of each active SM 
+samples the next instruction from one of its active warps. Sampling rotates through
+an SM's warp schedulers in a round robin fashion.
+When an instruction is sampled, its stall reason (if any) is
+recorded. If all warps on a scheduler are stalled when a sample is
+taken, the sample is marked as a latency sample, meaning no instruction will be issued by the warp scheduler in the next cycle.
+Figure~\ref{fig:pc sampling} shows a PC sampling example on an SM with four schedulers. Among the six collected samples, four are latency samples, so the estimated stall ratio is $4/6$.
+
+\subsection{Measurement using PC Sampling on NVIDIA GPUs}
+
+For CUDA 10, measurement using PC sampling with CUPTI serializes the execution of GPU kernels. Thus, measurement of GPU kernels using PC sampling will distort the execution of a GPU-accelerated application by blocking concurrent execution of GPU kernels. For applications that rely on concurrent kernel execution to keep the GPU busy, this will significantly distort execution and PC sampling measurements will only reflect the GPU activity of kernels running in isolation.
+
+HPCToolkit supports four modes for monitoring performance of GPU-accelerated applications on NVIDIA GPUs.  
+
+
+\subsubsection{GPU Calling Context Tree Reconstruction}
+\label{nvidia-cct}
+
+\begin{figure*}[ht]
+\centering
+\begin{subfigure}{0.22\textwidth}
+\centering
+\includegraphics[width=0.6\textwidth]{cct-1.pdf}
+\caption{}
+\end{subfigure}
+~
+\begin{subfigure}{0.22\textwidth}
+\centering
+\includegraphics[width=0.6\textwidth]{cct-2.pdf}
+\caption{}
+\end{subfigure}
+~
+\begin{subfigure}{0.22\textwidth}
+\centering
+\includegraphics[width=0.6\textwidth]{cct-3.pdf}
+\caption{}
+\end{subfigure}
+~
+\begin{subfigure}{0.22\textwidth}
+\centering
+\includegraphics[width=0.8\textwidth]{cct-4.pdf}
+\caption{}
+\end{subfigure}
+\caption{Reconstruct a GPU calling context tree. A-F represent GPU functions. Each subscript denotes the number of samples associated with the function. Each $(a, c)$ pair indicates an edge at address $a$ has $c$ call instruction samples.}
+\label{fig:gpu calling context tree}
+
+\vspace{-1ex}
+\end{figure*}
+
+The CUPTI API returns flat PC samples without any information about GPU call stacks.
+With complex code generated from higher-level GPU programming models, we need calling contexts on GPUs to understand the code and its performance.
+
+Currently, no API is available for efficiently unwinding call stacks on NVIDIA's GPUs.
+To address this issue, we designed a method to reconstruct approximate GPU calling contexts offline.
+
+
+\begin{table}
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Metric & Description\\\hline\hline
+GINST & GPU instructions executed\\\hline
+GINST:STL\_ANY  &  GPU instruction stalls: any  \\\hline 
+ GINST:STL\_NONE  &  GPU instruction stalls: no stall  \\\hline 
+ GINST:STL\_IFET  &  GPU instruction stalls: await availability of next    instruction (fetch or branch delay)  \\\hline 
+ GINST:STL\_IDEP  &  GPU instruction stalls: await satisfaction of instruction    input dependence  \\\hline 
+ GINST:STL\_GMEM  &  GPU instruction stalls: await completion of global memory    access  \\\hline 
+ GINST:STL\_TMEM  &  GPU instruction stalls: texture memory request queue full  \\\hline 
+ GINST:STL\_SYNC  &  GPU instruction stalls: await completion of thread or    memory synchronization  \\\hline 
+ GINST:STL\_CMEM  &  GPU instruction stalls: await completion of constant or    immediate memory access  \\\hline 
+ GINST:STL\_PIPE  &  GPU instruction stalls: await completion of required    compute resources  \\\hline 
+ GINST:STL\_MTHR  &  GPU instruction stalls: global memory request queue full  \\\hline 
+ GINST:STL\_NSEL  &  GPU instruction stalls: not selected for issue but ready  \\\hline 
+ GINST:STL\_OTHR  &  GPU instruction stalls: other  \\\hline 
+ GINST:STL\_SLP  &  GPU instruction stalls: sleep  \\\hline 
+\end{tabular}
+\caption{GPU instruction execution and stall metrics.}
+\label{table:gmem}
+\end{table}
+
+
+\clearpage
+
+\section{AMD GPUs}
+
+At present, HPCToolkit only contains basic support for monitoring performance of GPU-accelerated applications on AMD GPUs.  HPCToolkit supports monitoring the execution applications that offload computation onto AMD GPUs using  AMD's HIP programming model. 
+
+The table below
+shows arguments to \hpcrun{} to monitor the performance of GPU operations on AMD GPUs.
+
+\begin{table}
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Argument to \hpcrun{} & What is monitored\\\hline\hline
+{\tt -e gpu=amd} & profiling of AMD GPU operations\\\hline
+{\tt -e gpu=amd -t} & profiling and tracing of AMD GPU operations\\\hline
+\end{tabular}
+\caption{Monitoring performance on AMD GPUs.}
+\end{table}
+
+\begin{quote}
+\begin{verbatim}
+hpcrun -e gpu=amd app arg ...
+\end{verbatim}
+\end{quote}
+
+\section{Intel GPUs}
+
+HPCToolkit does not yet support measurement and analysis of performance on Intel GPUs.
