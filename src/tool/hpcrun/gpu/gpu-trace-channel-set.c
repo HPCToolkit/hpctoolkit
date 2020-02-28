@@ -41,12 +41,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //******************************************************************************
-// system includes
+// local includes
 //******************************************************************************
 
-#include <assert.h>
+#include <lib/prof-lean/stacks.h>
+
+#include <hpcrun/memory/hpcrun-malloc.h>
+
+#include "gpu-trace-channel.h"
+#include "gpu-trace-channel-set.h"
 
 
 
@@ -54,99 +58,118 @@
 // macros
 //******************************************************************************
 
-#define UNIT_TEST 0
+#define channel_stack_push  \
+  typed_stack_push(gpu_trace_channel_ptr_t, cstack)
 
-#define DEBUG 1
+#define channel_stack_forall \
+  typed_stack_forall(gpu_trace_channel_ptr_t, cstack)
 
-#include "gpu-print.h"
+#define channel_stack_elem_t \
+  typed_stack_elem(gpu_trace_channel_ptr_t)
 
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "gpu-activity.h"
-#include "gpu-channel-item-allocator.h"
+#define channel_stack_elem_ptr_set \
+  typed_stack_elem_ptr_set(gpu_trace_channel_ptr_t, cstack)
 
 
 
 //******************************************************************************
-// interface functions
+// type declarations
+//******************************************************************************
+
+//----------------------------------------------------------
+// support for a stack of trace channels
+//----------------------------------------------------------
+
+typedef gpu_trace_channel_t *gpu_trace_channel_ptr_t;
+
+
+typedef struct {
+  s_element_ptr_t next;
+  gpu_trace_channel_ptr_t channel;
+} typed_stack_elem(gpu_trace_channel_ptr_t);
+
+
+typed_stack_declare_type(gpu_trace_channel_ptr_t);
+
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+
+static 
+typed_stack_elem_ptr(gpu_trace_channel_ptr_t)
+gpu_trace_channel_stack[MAX_THREADS_CONSUMERS];
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+// implement stack of trace channels
+typed_stack_impl(gpu_trace_channel_ptr_t, cstack);
+
+
+static void
+channel_forone
+(
+ channel_stack_elem_t *se,
+ void *arg
+)
+{
+  gpu_trace_channel_t *channel = se->channel;
+
+  gpu_trace_channel_fn_t channel_fn =
+    (gpu_trace_channel_fn_t) arg;
+
+  channel_fn(channel);
+}
+
+
+static void
+gpu_trace_channel_set_forall
+(
+ gpu_trace_channel_fn_t channel_fn,
+ int thread_num
+)
+{
+  channel_stack_forall( & gpu_trace_channel_stack[thread_num], channel_forone,
+		       channel_fn);
+}
+
+
+//******************************************************************************
+// interface operations
 //******************************************************************************
 
 void
-gpu_context_activity_dump
+gpu_trace_channel_set_insert
 (
- gpu_activity_t *activity,
- const char *context
+// gpu_trace_channel_t *channel
+ int thread_num
 )
 {
-  PRINT("context %s gpu activity %p kind = %d\n", context, activity, activity->kind);
+  // allocate and initialize new entry for channel stack
+  channel_stack_elem_t *e = 
+    (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
+
+  // initialize the new entry
+//  e->channel = channel;
+  e->channel = gpu_trace_channel_stack[thread_num];
+  channel_stack_elem_ptr_set(e, 0); // clear the entry's next ptr
+
+  // add the entry to the channel stack
+  channel_stack_push(&gpu_trace_channel_stack, e);
 }
 
 
 void
-gpu_activity_dump
+gpu_trace_channel_set_consume
 (
- gpu_activity_t *activity
+ int thread_num
 )
 {
-  gpu_context_activity_dump(activity, "DEBUGGER");
-}
-
-
-void
-gpu_activity_consume
-(
- gpu_activity_t *activity,
- gpu_activity_attribute_fn_t aa_fn
-)
-{
-  gpu_context_activity_dump(activity, "CONSUME");
-
-  aa_fn(activity);
-}
-
-
-gpu_activity_t *
-gpu_activity_alloc
-(
- gpu_activity_channel_t *channel
-)
-{
-  return channel_item_alloc(channel, gpu_activity_t);
-}
-
-
-void
-gpu_activity_free
-(
- gpu_activity_channel_t *channel, 
- gpu_activity_t *a
-)
-{
-  channel_item_free(channel, a);
-}
-
-void
-set_gpu_instruction
-(
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
-)
-{
-  insn->pc = pc;
-}
-
-void
-set_gpu_interval
-(
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
-)
-{
-  interval->start = start;
-  interval->end = end;
+  gpu_trace_channel_set_forall(gpu_trace_channel_consume, thread_num);
 }

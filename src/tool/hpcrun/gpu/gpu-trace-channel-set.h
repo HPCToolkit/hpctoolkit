@@ -41,112 +41,48 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef gpu_trace_channel_set_h
+#define gpu_trace_channel_set_h
 
+
+#define MAX_THREADS_CONSUMERS 256
 //******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <assert.h>
-
-
-
-//******************************************************************************
-// macros
+// forward type declarations
 //******************************************************************************
 
-#define UNIT_TEST 0
-
-#define DEBUG 1
-
-#include "gpu-print.h"
+typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 
 
 //******************************************************************************
-// local includes
+// type declarations
 //******************************************************************************
 
-#include "gpu-activity.h"
-#include "gpu-channel-item-allocator.h"
+typedef void (*gpu_trace_channel_fn_t)
+(
+ gpu_trace_channel_t *channel
+);
 
 
 
 //******************************************************************************
-// interface functions
+// interface operations
 //******************************************************************************
 
 void
-gpu_context_activity_dump
+gpu_trace_channel_set_insert
 (
- gpu_activity_t *activity,
- const char *context
-)
-{
-  PRINT("context %s gpu activity %p kind = %d\n", context, activity, activity->kind);
-}
+// gpu_trace_channel_t *channel
+ int thread_num
+);
 
 
 void
-gpu_activity_dump
+gpu_trace_channel_set_consume
 (
- gpu_activity_t *activity
-)
-{
-  gpu_context_activity_dump(activity, "DEBUGGER");
-}
+ int thread_num
+);
 
 
-void
-gpu_activity_consume
-(
- gpu_activity_t *activity,
- gpu_activity_attribute_fn_t aa_fn
-)
-{
-  gpu_context_activity_dump(activity, "CONSUME");
 
-  aa_fn(activity);
-}
-
-
-gpu_activity_t *
-gpu_activity_alloc
-(
- gpu_activity_channel_t *channel
-)
-{
-  return channel_item_alloc(channel, gpu_activity_t);
-}
-
-
-void
-gpu_activity_free
-(
- gpu_activity_channel_t *channel, 
- gpu_activity_t *a
-)
-{
-  channel_item_free(channel, a);
-}
-
-void
-set_gpu_instruction
-(
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
-)
-{
-  insn->pc = pc;
-}
-
-void
-set_gpu_interval
-(
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
-)
-{
-  interval->start = start;
-  interval->end = end;
-}
+#endif

@@ -74,7 +74,7 @@
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
 
-
+#include "gpu-trace-channel-set.h"
 
 //******************************************************************************
 // macros
@@ -180,7 +180,7 @@ gpu_trace_cct_insert_context
 )
 {
   cct_node_t *leaf = 
-    hpcrun_cct_insert_path_return_leaf(gpu_trace_cct_root(td), path);
+             (gpu_trace_cct_root(td), path);
 
   return leaf;
 }
@@ -351,6 +351,7 @@ gpu_trace_stream_acquire
 
   hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
 
+  // TODO: not needed
   hpcrun_set_thread_data(td);
 
   return td;
@@ -395,9 +396,11 @@ gpu_trace_record
  gpu_trace_t *thread_args
 )
 {
+    // just creates a thread data
   thread_data_t* td = gpu_trace_stream_acquire();
 
   while (!atomic_load(&stop_trace_flag)) {
+      //getting data from a trace channel
     gpu_trace_activities_process(td, thread_args);
     gpu_trace_activities_await(thread_args);
   }
@@ -426,6 +429,43 @@ gpu_trace_fini
 }
 
 
+
+
+
+
+
+
+
+
+void *
+schedule_multi_threads
+(
+ gpu_trace_t *trace
+)
+{
+
+    int streams_per_thread = 8;
+    static int num_threads = -1;
+    unsigned long long stream_counter_local = atomic_fetch_add(&stream_counter, 1);
+
+
+    if(stream_counter_local % streams_per_thread == 0){
+
+        pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
+
+        gpu_trace_channel_set_consume( ++num_threads );
+    }else{
+
+        gpu_trace_channel_set_insert( num_threads );
+    }
+
+
+    return NULL;
+
+}
+
+
+
 gpu_trace_t *
 gpu_trace_create
 (
@@ -438,10 +478,13 @@ gpu_trace_create
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
-  atomic_fetch_add(&stream_counter, 1);
 
-  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, 
-		 trace);
+  schedule_multi_threads(trace);
+
+//  atomic_fetch_add(&stream_counter, 1);
+//  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record,
+//		 trace);
+
 
   monitor_enable_new_threads();
 
