@@ -52,24 +52,24 @@ namespace Analysis {
 // TODO(Keren): add more latency components
 std::pair<int, int> SM70::latency(const std::string &opcode) {
   if (opcode.find("INTEGER") != std::string::npos) {
-    if (opcode.find("MAD") != std::string::npos) {
+    if (opcode.find(".MAD") != std::string::npos) {
       return std::pair<int, int>(5, 5);
     } else {
       return std::pair<int, int>(4, 4);
     }
   } else if (opcode.find("FLOAT") != std::string::npos) {
-    if (opcode.find("MUFU") != std::string::npos) {
+    if (opcode.find(".MUFU") != std::string::npos) {
       return std::pair<int, int>(14, 14);
-    } else if (opcode.find("16") != std::string::npos) {
+    } else if (opcode.find(".16") != std::string::npos) {
       // TODO(Keren): tensor core
       return std::pair<int, int>(6, 6);
-    } else if (opcode.find("32") != std::string::npos) {
+    } else if (opcode.find(".32") != std::string::npos) {
       return std::pair<int, int>(4, 4);
-    } else if (opcode.find("64") != std::string::npos) {
+    } else if (opcode.find(".64") != std::string::npos) {
       return std::pair<int, int>(8, 8);
     }
   } else if (opcode.find("MEMORY") != std::string::npos) {
-    if (opcode.find("SHARED") != std::string::npos) {
+    if (opcode.find(".SHARED") != std::string::npos) {
       return std::pair<int, int>(19, 19 + 31);
     } else {
       // Hard to estimate memory latency
@@ -84,31 +84,31 @@ std::pair<int, int> SM70::latency(const std::string &opcode) {
 
 
 // XXX: throughput latency, not throughput
-int SM70::throughput(const std::string &opcode) {
+int SM70::issue(const std::string &opcode) {
   if (opcode.find("INTEGER") != std::string::npos) {
     // 32 / 16 = 2
     return 2;
   } else if (opcode.find("FLOAT") != std::string::npos) {
-    if (opcode.find("MUFU") != std::string::npos) {
+    if (opcode.find(".MUFU") != std::string::npos) {
       // 32 / 4 = 8
       return 8;
-    } else if (opcode.find("16") != std::string::npos) {
+    } else if (opcode.find(".16") != std::string::npos) {
       // 32 / 32 = 1
       // TODO(Keren): tensor core
       return 1;
-    } else if (opcode.find("32") != std::string::npos) {
+    } else if (opcode.find(".32") != std::string::npos) {
       // 32 / 16 = 2
       return 2;
-    } else if (opcode.find("64") != std::string::npos) {
+    } else if (opcode.find(".64") != std::string::npos) {
       // 32 / 8 = 4
       return 4;
     }
   } else if (opcode.find("MEMORY") != std::string::npos) {
-    if (opcode.find("32") != std::string::npos) {
+    if (opcode.find(".32") != std::string::npos) {
       return 4;
-    } else if (opcode.find("64") != std::string::npos) {
+    } else if (opcode.find(".64") != std::string::npos) {
       return 8;
-    } else if (opcode.find("128") != std::string::npos) {
+    } else if (opcode.find(".128") != std::string::npos) {
       return 16;
     } else {
       return 4;
