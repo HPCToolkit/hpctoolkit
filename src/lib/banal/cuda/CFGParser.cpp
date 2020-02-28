@@ -97,6 +97,7 @@ void CFGParser::link_dangling_blocks(
   for (auto *function : functions) {
     bool find = true;
     // Find a matched dangling_block and insert it
+    // A while loop is for the case when we have a chain of dangling blocks not in sorted order
     while (find) {
       find = false;
       for (auto iter = dangling_blocks.begin(); iter != dangling_blocks.end(); ++iter) {
@@ -107,17 +108,27 @@ void CFGParser::link_dangling_blocks(
           auto prev_offset1 = block->insts.front()->offset - 8;
           auto prev_offset2 = block->insts.front()->offset - 16;
           if (dangling_block->insts.front()->offset == next_offset1 ||
-            dangling_block->insts.front()->offset == next_offset2) {
-            // block->dangling_block
-            find = true;
-            block->targets.push_back(
-              new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
-          } else if (dangling_block->insts.back()->offset == prev_offset1 ||
+            dangling_block->insts.front()->offset == next_offset2 ||
+            dangling_block->insts.back()->offset == prev_offset1 ||
             dangling_block->insts.back()->offset == prev_offset2) {
-            // dangling_block->block
-            find = true;
-            dangling_block->targets.push_back(
-              new Target(dangling_block->insts.back(), block, TargetType::DIRECT));
+            // block->dangling_block
+            // Either block.address > dangling_block.address or dangling_block.address > block.address
+            bool duplicate = false;
+            for (auto *b : function->blocks) {
+              if (dangling_block->insts.back()->offset >= b->insts.front()->offset &&
+                dangling_block->insts.front()->offset <= b->insts.back()->offset) {
+                // Find existing inst, skip
+                duplicate = true;
+                break;
+              }
+            }
+            if (!duplicate) {
+              find = true;
+              block->targets.push_back(
+                new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
+            }
+            // Either we inserted the target or we found a duplicate
+            break;
           }
         }
         if (find) {
