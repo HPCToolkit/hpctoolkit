@@ -3,9 +3,16 @@
 @setfilename install.texi
 @settitle Installing HPCToolkit with Spack
 
-@ifhtml
+@ifinfo
+Installing HPCToolkit with Spack@*
+================================
+@end ifinfo
+
 @contents
-@end ifhtml
+
+@ifinfo
+@w{ }
+@end ifinfo
 
 @section Introduction
 
@@ -24,7 +31,7 @@ Linux (64-bit) on x86_64, big and little-endian powerpc (power7, 8 and
 Cray XT/XE/XK/XC on x86_64 and Compute Node Linux.
 
 @item
-IBM Blue Gene/Q on ppc64.
+IBM Blue Gene/Q on ppc64 (now deprecated).
 @end enumerate
 
 @noindent
@@ -66,7 +73,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: Oct 4, 2019.
+Last revised: Feb 28, 2020.
 
 @c ------------------------------------------------------------
 
@@ -76,9 +83,12 @@ Building HPCToolkit requires the following prerequisites.
 
 @enumerate
 @item
-The GNU gcc and g++ compilers version 4.8 or later and preferably 5.x or
-later.  On systems with older compilers, you can use spack to build a
-later version of gcc.
+The GNU gcc and g++ compilers version 5.x or later.  On systems with
+older compilers, you can use spack to build a later version of gcc.
+
+@item
+GNU glibc version 2.16 or later.  Note: Red Hat 6.x uses glibc 2.12
+which is too old.
 
 @item
 Basic build tools: make, ld, ar, objcopy, nm, etc, and shell utilities:
@@ -119,7 +129,7 @@ the available versions and variants for a package.  In most cases,
 spaces are optional between elements of a spec.  For example:
 
 @example
-boost@@1.66.0    dyninst @@10.1.0    hpctoolkit@@master
+boost@@1.66.0    dyninst @@10.1.0    hpctoolkit @@master
 @end example
 
 @item
@@ -208,7 +218,7 @@ spack would concretize a spec, use @code{spack spec <partial-spec>}.
 @section Clone Spack and HPCToolkit
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 3,500 packages (and
+spack machinery and recipes for building more than 3,900 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
 
@@ -394,10 +404,9 @@ Dependencies'.
 
 @section Compilers and compilers.yaml
 
-Building HPCToolkit requires GNU gcc/g++ at a minimum version 4.8 and
-preferably 5.x or later.  By default, spack uses the latest available
-version of gcc, but you can specify a different compiler, if one is
-available.
+Building HPCToolkit requires GNU gcc/g++ version 5.x or later.  By
+default, spack uses the latest available version of gcc, but you can
+specify a different compiler, if one is available.
 
 Spack uses a separate file, @code{compilers.yaml} to store information
 about available compilers.  This file is normally in your home directory
@@ -578,6 +587,39 @@ version with a @code{--with-package} option.
 
 @section Advanced Options
 
+@subsection CUDA
+
+Beginning with the 2020.03.01 version, HPCToolkit now supports
+profiling CUDA binaries (nVidia only).  For best results, use CUDA
+version 10.1 or later and Dyninst 10.1 or later.  Note: in addition to
+a CUDA installation, you also need the CUDA system drivers installed.
+This normally requires root access and is outside the scope of spack.
+
+For a spack install with CUDA, use the @code{+cuda} variant.
+
+@example
+spack install hpctoolkit +cuda
+@end example
+
+@noindent
+For a manual install, either download and install CUDA or use an
+existing module, and then use the @code{--with-cuda} configure option.
+
+@example
+configure  \
+   --prefix=/path/to/hpctoolkit/install/prefix  \
+   --with-spack=/path/to/spack/install/dir   \
+   --with-cuda=/path/to/cuda/install/prefix  \
+   ...
+@end example
+
+@noindent
+If you installed CUDA with spack in the same directory as the rest of
+the prerequisites, then the @code{--with-spack} option should find it
+automatically (but check the summary at the end of the configure
+output).  If you are using CUDA from a separate system module, then you
+will need the @code{--with-cuda} option.
+
 @subsection MPI
 
 HPCToolkit always supports profiling MPI applications.  For
@@ -615,6 +657,13 @@ be available.
 @section Platform Specific Notes
 
 @subsection Blue Gene
+
+Support for Blue Gene/Q is now deprecated and versions 2020.03.01 and
+later will no longer build.  If you want to install HPCToolkit on Blue
+Gene, then use spack version 2019.12.28 or git commit 0d91fb34edb2
+with gcc 4.8.x and follow the directions below.  These directions will
+also work (without Blue Gene) for Red Hat 6.x (glibc 2.12 is too old
+to support current hpctoolkit).
 
 Blue Gene systems are being phased out, without a next generation
 replacement, but are still supported by hpctoolkit (for now).  Blue
@@ -1035,22 +1084,20 @@ and re-add the appropriate modules automatically.
 
 If your system does not support modules, then you will have to add it.
 If you have root access, the easiest solution is to install a system
-package for modules.  If not, then use @code{spack bootstrap} to build
-the environment-modules package.  Source the bash or csh script in the
+package for modules.  If not, then use spack to install the
+environment-modules package.  Source the bash or csh script in the
 @code{init} directory to add the @code{module} function to your
 environment.  For example,
 
 @example
-spack bootstrap
+spack install environment-modules
 cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
 (bash)  . ./bash
 (csh)   source ./csh
 @end example
 
 @noindent
-Again, add the setup command to your shell's startup scripts.  Note:
-@code{spack bootstrap} is just shorthand for @code{spack install
-environment-modules} and you could run that instead.
+Again, add the setup command to your shell's startup scripts.
 
 @c ------------------------------------------------------------
 
